@@ -1,0 +1,95 @@
+import { describe, expect, it } from "vitest";
+import { getFirstVisibleHotelId, getRequiredRoutePermission, getRouteScopeDecision } from "./routeScope";
+
+describe("route scope", () => {
+  it("allows super admins to access platform and every hotel route", () => {
+    expect(getRouteScopeDecision({
+      role: "super_admin",
+      pathname: "/settings/admin-users",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: true });
+
+    expect(getRouteScopeDecision({
+      role: "super_admin",
+      pathname: "/hotels/other-hotel/bookings",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: true });
+  });
+
+  it("requires reporting permission for Channel analytics", () => {
+    expect(getRequiredRoutePermission("/dashboard/channels")).toBe("property.view_reports");
+    expect(getRouteScopeDecision({
+      role: "hotel_owner",
+      pathname: "/dashboard/channels",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: true });
+    expect(getRouteScopeDecision({
+      role: "front_desk",
+      pathname: "/dashboard/channels",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "permission_required" });
+  });
+
+  it("denies hotel owners from platform-only routes", () => {
+    expect(getRouteScopeDecision({
+      role: "hotel_owner",
+      pathname: "/settings/admin-users",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "permission_required" });
+
+    expect(getRouteScopeDecision({
+      role: "hotel_owner",
+      pathname: "/hotels",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "permission_required" });
+  });
+
+  it("requires the property staff permission for the Hotel Staff route", () => {
+    expect(getRequiredRoutePermission("/hotels/hotel-1/staff")).toBe("property.manage_staff");
+
+    expect(getRouteScopeDecision({
+      role: "hotel_owner",
+      pathname: "/hotels/hotel-1/staff",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: true });
+
+    expect(getRouteScopeDecision({
+      role: "front_desk",
+      pathname: "/hotels/hotel-1/staff",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "permission_required" });
+  });
+
+  it("denies direct URLs for hotels outside the owner scope", () => {
+    expect(getRouteScopeDecision({
+      role: "hotel_owner",
+      pathname: "/hotels/hotel-2/calendar",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "hotel_not_visible" });
+
+    expect(getRouteScopeDecision({
+      role: "hotel_owner",
+      pathname: "/hotels/hotel-1/calendar",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: true });
+  });
+
+  it("denies private routes when the role is missing or unsupported", () => {
+    expect(getRouteScopeDecision({
+      role: undefined,
+      pathname: "/dashboard",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: false, reason: "role_required" });
+
+    expect(getRouteScopeDecision({
+      role: "support",
+      pathname: "/hotels/hotel-1/bookings",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "role_required" });
+  });
+
+  it("uses the first RLS-visible hotel as the default property context", () => {
+    expect(getFirstVisibleHotelId(["hotel-1", "hotel-2"])).toBe("hotel-1");
+    expect(getFirstVisibleHotelId([])).toBeUndefined();
+  });
+});
