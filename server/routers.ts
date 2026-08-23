@@ -549,12 +549,19 @@ export const appRouter = router({
       requirePermission(ctx.user, 'platform.manage_users');
       const client = await requireSuperAdmin(ctx.user.accessToken);
       try {
-        const [user, hotel] = await Promise.all([
+        const [user, hotel, assignments] = await Promise.all([
           getAuthUser(input.user_id),
           getManagedHotel(client, input.hotel_id),
+          listHotelUserAssignments(client),
         ]);
         if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'The selected Auth user was not found.' });
         if (!hotel) throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
+        if (assignments.some(row => row.hotel_id === input.hotel_id && row.user_id === input.user_id)) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'This user is already assigned to the selected hotel.' });
+        }
+        if (input.role === 'hotel_owner') {
+          assertSingleHotelAdmin(assignments, input.hotel_id);
+        }
         return await createHotelUserAssignment(client, input);
       } catch (error) {
         if (error instanceof TRPCError) throw error;

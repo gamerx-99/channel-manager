@@ -155,6 +155,45 @@ describe('channelManager.assignAdminUser', () => {
       role: 'hotel_owner',
     });
   });
+
+  it('rejects assigning a user who already has a membership at the selected hotel', async () => {
+    const client = { requestScoped: true };
+    supabaseMocks.createRlsSupabaseClient.mockReturnValueOnce(client);
+    supabaseMocks.getAuthUser.mockResolvedValueOnce({ id: otherUserId, email: 'owner@example.com' });
+    dbMocks.getManagedHotel.mockResolvedValueOnce({ id: hotelId });
+    dbMocks.listHotelUserAssignments.mockResolvedValueOnce([membership]);
+    const app = await caller();
+
+    await expect(app.channelManager.assignAdminUser({
+      user_id: otherUserId,
+      hotel_id: hotelId,
+      role: 'revenue_manager',
+    })).rejects.toMatchObject({
+      code: 'CONFLICT',
+      message: 'This user is already assigned to the selected hotel.',
+    });
+    expect(dbMocks.createHotelUserAssignment).not.toHaveBeenCalled();
+  });
+
+  it('rejects assigning a second Hotel Admin for the same hotel', async () => {
+    const client = { requestScoped: true };
+    const newOwnerId = '9b3e6d3a-2f7d-4a26-8c60-2f5a9b6a5f01';
+    supabaseMocks.createRlsSupabaseClient.mockReturnValueOnce(client);
+    supabaseMocks.getAuthUser.mockResolvedValueOnce({ id: newOwnerId, email: 'second-owner@example.com' });
+    dbMocks.getManagedHotel.mockResolvedValueOnce({ id: hotelId });
+    dbMocks.listHotelUserAssignments.mockResolvedValueOnce([membership]);
+    const app = await caller();
+
+    await expect(app.channelManager.assignAdminUser({
+      user_id: newOwnerId,
+      hotel_id: hotelId,
+      role: 'hotel_owner',
+    })).rejects.toMatchObject({
+      code: 'CONFLICT',
+      message: 'This hotel already has one Hotel Admin. Reassign the existing Hotel Admin before assigning another.',
+    });
+    expect(dbMocks.createHotelUserAssignment).not.toHaveBeenCalled();
+  });
 });
 
 describe('channelManager.removeAdminMembership', () => {
