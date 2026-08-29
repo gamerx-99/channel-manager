@@ -6,7 +6,6 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
 
 const app = express();
 
@@ -25,6 +24,9 @@ app.use(
 );
 
 async function startServer() {
+  // Imported lazily so Vercel's Lambda (which never reaches this function)
+  // never has to load the real `vite`/rollup packages at cold start.
+  const { serveStatic, setupVite } = await import("./vite");
   const server = createServer(app);
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
