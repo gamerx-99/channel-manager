@@ -1,5 +1,6 @@
 export const APP_ROLES = [
   "super_admin",
+  "admin",
   "hotel_owner",
   "revenue_manager",
   "front_desk",
@@ -12,8 +13,28 @@ export type HumanRole = Exclude<AppRole, "api_service">;
 
 export const HUMAN_ROLES = APP_ROLES.filter((role): role is HumanRole => role !== "api_service");
 
+/**
+ * Platform-level roles are not property memberships. Their `hotel_users` row still
+ * carries a `hotel_id` because the column is NOT NULL, but the database gatekeeper
+ * `public.is_platform_admin()` ignores which hotel the row points at.
+ */
+export const PLATFORM_ROLES = ["super_admin", "admin"] as const;
+export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
+/** Roles a property may hand out to its own staff. Platform roles are never assignable per hotel. */
+export type AssignableStaffRole = Exclude<HumanRole, PlatformRole>;
+
+export const ASSIGNABLE_STAFF_ROLES = HUMAN_ROLES.filter(
+  (role): role is AssignableStaffRole => !PLATFORM_ROLES.includes(role as PlatformRole),
+);
+
+export function isPlatformRole(role: string | null | undefined): role is PlatformRole {
+  return PLATFORM_ROLES.includes(role as PlatformRole);
+}
+
 export const ROLE_LABELS: Record<AppRole, string> = {
   super_admin: "Super Admin",
+  admin: "Platform Admin (read-only)",
   hotel_owner: "Hotel Admin / Property Owner",
   revenue_manager: "Revenue Manager",
   front_desk: "Front Desk / Operations Staff",
@@ -22,6 +43,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 };
 
 export const PERMISSIONS = [
+  "platform.view_all_hotels",
   "platform.manage_hotels",
   "platform.manage_users",
   "platform.manage_billing",
@@ -60,6 +82,18 @@ export type Permission = (typeof PERMISSIONS)[number];
  */
 export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   super_admin: PERMISSIONS.filter(permission => !permission.startsWith("service.")),
+  // Platform operations / support: cross-hotel READ only. Every write capability is
+  // withheld here and at the database layer, where `admin` is granted nothing beyond
+  // the `for select` policies that route through `public.is_hotel_member()`.
+  admin: [
+    "platform.view_all_hotels",
+    "property.view",
+    "property.view_reports",
+    "operations.view_bookings",
+    "housekeeping.view_room_status",
+    "ota.view_status",
+    "ota.view_sync_logs",
+  ],
   hotel_owner: [
     "property.view",
     "property.manage_profile",
@@ -113,6 +147,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
 
 export const ROLE_PRIORITY: Record<AppRole, number> = {
   super_admin: 100,
+  admin: 90,
   hotel_owner: 80,
   revenue_manager: 60,
   front_desk: 40,

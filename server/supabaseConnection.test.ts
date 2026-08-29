@@ -1,16 +1,26 @@
-import { promises as dns } from "node:dns";
+import { resolve4 } from "node:dns/promises";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-const databaseUrl = process.env.SUPABASE_POOLER_DB_URL ?? process.env.SUPABASE_DB_URL;
+const databaseUrl =
+  process.env.SUPABASE_POOLER_DB_URL ?? process.env.SUPABASE_DB_URL;
+const isExplicitlyEnabled =
+  process.env.RUN_SUPABASE_INTEGRATION_TESTS === "true";
 
-describe("Supabase PostgreSQL migration connection", () => {
+if (isExplicitlyEnabled && !databaseUrl) {
+  throw new Error(
+    "RUN_SUPABASE_INTEGRATION_TESTS=true requires SUPABASE_POOLER_DB_URL or SUPABASE_DB_URL."
+  );
+}
+
+const integrationDescribe = isExplicitlyEnabled ? describe : describe.skip;
+
+integrationDescribe("Supabase PostgreSQL migration connection", () => {
   let client: Client | undefined;
 
   beforeAll(async () => {
-    expect(databaseUrl).toBeTruthy();
     const connection = new URL(databaseUrl!);
-    const [ipv4Host] = await dns.resolve4(connection.hostname);
+    const [ipv4Host] = await resolve4(connection.hostname);
     expect(ipv4Host).toBeTruthy();
 
     client = new Client({
@@ -26,7 +36,7 @@ describe("Supabase PostgreSQL migration connection", () => {
       connectionTimeoutMillis: 15_000,
     });
     await client.connect();
-  });
+  }, 20_000);
 
   afterAll(async () => {
     await client?.end();

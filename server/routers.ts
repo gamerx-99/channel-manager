@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { hasAnyPermission, roleHasPermission, type AppRole, type HumanRole, type Permission } from '@shared/authorization';
+import { hasAnyPermission, isPlatformRole, roleHasPermission, type AppRole, type HumanRole, type Permission } from '@shared/authorization';
 import { TM30_HEADERS } from './tm30';
 import { getOtaConnections, getGlobalOtaSummary, getUpdatedItemCount, upsertOtaConnection, getOtaSyncLogs, triggerOtaCalendarSync } from './otaSync';
 import { TRPCError } from '@trpc/server';
@@ -56,7 +56,7 @@ const createRoomTypeSchema = z.object({
 const updateRoomTypeSchema = createRoomTypeSchema.extend({ room_type_id: z.string().uuid() });
 const deleteRoomTypeSchema = z.object({ hotel_id: hotelIdSchema, room_type_id: z.string().uuid() });
 const adminUserIdSchema = z.string().uuid();
-const adminUserRoleSchema = z.enum(['super_admin', 'hotel_owner', 'revenue_manager', 'front_desk', 'housekeeping']);
+const adminUserRoleSchema = z.enum(['super_admin', 'admin', 'hotel_owner', 'revenue_manager', 'front_desk', 'housekeeping']);
 const adminUserEmailSchema = z.string().trim().email('Enter a valid email address.').max(320).transform(email => email.toLowerCase());
 const assignUserSchema = z.object({
   user_id: adminUserIdSchema,
@@ -138,9 +138,14 @@ function requireHotelPermission(
 ) {
   const roles = getIdentityRoles(user);
   const memberships = user.memberships ?? [];
-  const allowed = roles.includes('super_admin') || memberships.some(
-    membership => membership.hotelId === hotelId && roleHasPermission(membership.role, permission),
-  );
+  // Platform roles are not property memberships, so they bypass the membership check.
+  // `super_admin` bypasses unconditionally; `admin` only for capabilities the matrix
+  // actually grants it, which is what keeps its cross-hotel access read-only.
+  const allowed = roles.includes('super_admin')
+    || roles.some(role => isPlatformRole(role) && roleHasPermission(role, permission))
+    || memberships.some(
+      membership => membership.hotelId === hotelId && roleHasPermission(membership.role, permission),
+    );
   if (!allowed) {
     throw new TRPCError({ code: 'FORBIDDEN', message: `Missing permission for hotel: ${permission}` });
   }
@@ -462,7 +467,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a different staff member to receive Hotel Admin access.' });
         }
         const targetRole = target.role as AppRole;
-        if (targetRole === 'super_admin' || targetRole === 'api_service') {
+        if (isPlatformRole(targetRole) || targetRole === 'api_service') {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only a human hotel staff member can receive Hotel Admin access.' });
         }
         const transferred = await transferHotelAdmin(client, {

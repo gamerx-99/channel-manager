@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   APP_ROLES,
+  ASSIGNABLE_STAFF_ROLES,
   HUMAN_ROLES,
+  PLATFORM_ROLES,
   ROLE_PERMISSIONS,
   isHumanRole,
+  isPlatformRole,
   roleHasPermission,
 } from "./authorization";
 
-describe("six-role authorization matrix", () => {
-  it("declares the six canonical roles and keeps api_service out of human roles", () => {
+describe("seven-role authorization matrix", () => {
+  it("declares the canonical roles and keeps api_service out of human roles", () => {
     expect(APP_ROLES).toEqual([
       "super_admin",
+      "admin",
       "hotel_owner",
       "revenue_manager",
       "front_desk",
@@ -19,6 +23,7 @@ describe("six-role authorization matrix", () => {
     ]);
     expect(HUMAN_ROLES).toEqual([
       "super_admin",
+      "admin",
       "hotel_owner",
       "revenue_manager",
       "front_desk",
@@ -28,8 +33,32 @@ describe("six-role authorization matrix", () => {
     expect(isHumanRole("housekeeping")).toBe(true);
   });
 
-  it("keeps platform permissions exclusive to super_admin", () => {
+  it("separates platform roles from the roles a property may assign to its staff", () => {
+    expect(PLATFORM_ROLES).toEqual(["super_admin", "admin"]);
+    expect(ASSIGNABLE_STAFF_ROLES).toEqual([
+      "hotel_owner",
+      "revenue_manager",
+      "front_desk",
+      "housekeeping",
+    ]);
+    expect(isPlatformRole("admin")).toBe(true);
+    expect(isPlatformRole("hotel_owner")).toBe(false);
+  });
+
+  it("keeps the platform admin role strictly read-only across every hotel", () => {
+    expect(roleHasPermission("admin", "platform.view_all_hotels")).toBe(true);
+    expect(roleHasPermission("admin", "property.view")).toBe(true);
+    expect(roleHasPermission("admin", "operations.view_bookings")).toBe(true);
+    expect(roleHasPermission("admin", "ota.view_sync_logs")).toBe(true);
+
+    const writeCapability = /^(platform\.manage_|platform\.view_system_logs|property\.manage_|revenue\.|operations\.manage_|operations\.export_|housekeeping\.update_|ota\.manage_|ota\.trigger_|service\.)/;
+    expect(ROLE_PERMISSIONS.admin.filter(permission => writeCapability.test(permission))).toEqual([]);
+  });
+
+  it("keeps platform management permissions exclusive to super_admin", () => {
     expect(roleHasPermission("super_admin", "platform.manage_hotels")).toBe(true);
+    expect(roleHasPermission("admin", "platform.manage_hotels")).toBe(false);
+    expect(roleHasPermission("admin", "platform.manage_users")).toBe(false);
     expect(roleHasPermission("hotel_owner", "platform.manage_hotels")).toBe(false);
     expect(roleHasPermission("revenue_manager", "platform.manage_billing")).toBe(false);
     expect(roleHasPermission("api_service", "platform.view_system_logs")).toBe(false);

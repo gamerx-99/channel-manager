@@ -25,7 +25,7 @@ describe("WorkspaceMenu", () => {
         onToggle={onToggle}
         onClose={onClose}
         hotels={[{ id: "hotel-1", name: "Little Bro", slug: "little-bro" }]}
-        isSuperAdmin
+        isPlatformAdmin
       />,
     );
 
@@ -40,7 +40,7 @@ describe("WorkspaceMenu", () => {
         onToggle={onToggle}
         onClose={onClose}
         hotels={[{ id: "hotel-1", name: "Little Bro", slug: "little-bro" }]}
-        isSuperAdmin
+        isPlatformAdmin
       />,
     );
 
@@ -63,7 +63,7 @@ describe("WorkspaceMenu", () => {
           { id: "hotel-1", name: "Little Bro", slug: "little-bro" },
           { id: "hotel-2", name: "Other Hotel", slug: "other-hotel" },
         ]}
-        isSuperAdmin={false}
+        isPlatformAdmin={false}
         activeHotelName="Little Bro"
       />,
     );

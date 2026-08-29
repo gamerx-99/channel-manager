@@ -1,5 +1,6 @@
 import {
   isHumanRole,
+  isPlatformRole,
   roleHasPermission,
   type AppRole,
   type Permission,
@@ -22,7 +23,8 @@ export type RouteScopeDecision =
 const HOTEL_ROUTE_PATTERN = /^\/hotels\/([^/]+)/i;
 
 export function getRequiredRoutePermission(pathname: string): Permission | null {
-  if (pathname.startsWith("/settings/admin-users") || pathname === "/hotels") return "platform.manage_hotels";
+  if (pathname.startsWith("/settings/admin-users")) return "platform.manage_users";
+  if (pathname === "/hotels") return "platform.view_all_hotels";
   if (pathname.startsWith("/dashboard/channels")) return "property.view_reports";
   if (pathname.includes("/ota")) return "ota.view_status";
   if (pathname.includes("/staff")) return "property.manage_staff";
@@ -45,7 +47,9 @@ export function getRouteScopeDecision({ role, roles, pathname, routeHotelId, vis
 
   const hotelId = routeHotelId ?? HOTEL_ROUTE_PATTERN.exec(pathname)?.[1];
   if (!hotelId) return { allowed: true };
-  if (effectiveRoles.includes("super_admin")) return { allowed: true };
+  // Platform roles read across every hotel; the per-route permission check above is
+  // what keeps a read-only `admin` out of the write surfaces.
+  if (effectiveRoles.some(candidate => isPlatformRole(candidate))) return { allowed: true };
   if (!visibleHotelIds.includes(hotelId)) return { allowed: false, reason: "hotel_not_visible" };
   return { allowed: true };
 }

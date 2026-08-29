@@ -4,13 +4,13 @@ import { Link } from "wouter";
 import { ArrowRightLeft, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
-import { HUMAN_ROLES, ROLE_LABELS, type HumanRole } from "@shared/authorization";
+import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
 
 type HotelStaffProps = { id: string };
 
 type InviteForm = {
   email: string;
-  role: Exclude<HumanRole, "super_admin">;
+  role: AssignableStaffRole;
 };
 
 type StaffConfirmation =
@@ -18,14 +18,14 @@ type StaffConfirmation =
       kind: "remove";
       membershipId: string;
       email: string | null;
-      currentRole: Exclude<HumanRole, "super_admin">;
+      currentRole: AssignableStaffRole;
     }
   | {
       kind: "role";
       membershipId: string;
       email: string | null;
-      currentRole: Exclude<HumanRole, "super_admin">;
-      nextRole: Exclude<HumanRole, "super_admin">;
+      currentRole: AssignableStaffRole;
+      nextRole: AssignableStaffRole;
     }
   | {
       kind: "transfer";
@@ -35,9 +35,7 @@ type StaffConfirmation =
       targetEmail: string | null;
     };
 
-const STAFF_ROLES = HUMAN_ROLES.filter(
-  (role): role is Exclude<HumanRole, "super_admin"> => role !== "super_admin",
-);
+const STAFF_ROLES = ASSIGNABLE_STAFF_ROLES;
 
 const emptyInvite: InviteForm = { email: "", role: "front_desk" };
 
@@ -128,7 +126,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const currentHotelAdmin = staff.find(member => member.role === "hotel_owner");
   const hotelAdminAlreadyAssigned = Boolean(currentHotelAdmin);
   const auditUserLabel = (userId: string) => staff.find(member => member.user_id === userId)?.email ?? userId;
-  const transferCandidates = staff.filter(member => member.role !== "hotel_owner" && member.role !== "super_admin");
+  const transferCandidates = staff.filter(member => member.role !== "hotel_owner" && !isPlatformRole(member.role));
   const hotelAdminRestrictionText = "Only one Hotel Admin is allowed per hotel. Reassign or remove the current Hotel Admin before assigning this role.";
 
   function submitInvite(event: FormEvent<HTMLFormElement>) {
@@ -146,15 +144,15 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
     membershipId: string,
     email: string | null,
     currentRole: HumanRole,
-    nextRole: Exclude<HumanRole, "super_admin">,
+    nextRole: AssignableStaffRole,
   ) {
-    if (isPending || currentRole === "super_admin" || currentRole === nextRole) return;
+    if (isPending || isPlatformRole(currentRole) || currentRole === nextRole) return;
     setFormError(null);
     setConfirmation({
       kind: "role",
       membershipId,
       email,
-      currentRole: currentRole as Exclude<HumanRole, "super_admin">,
+      currentRole: currentRole as AssignableStaffRole,
       nextRole,
     });
   }
@@ -164,13 +162,13 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
     email: string | null,
     currentRole: HumanRole,
   ) {
-    if (isPending || currentRole === "super_admin") return;
+    if (isPending || isPlatformRole(currentRole)) return;
     setFormError(null);
     setConfirmation({
       kind: "remove",
       membershipId,
       email,
-      currentRole: currentRole as Exclude<HumanRole, "super_admin">,
+      currentRole: currentRole as AssignableStaffRole,
     });
   }
 
@@ -278,14 +276,14 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                                 <select
                                   aria-label={`Role for ${member.email ?? member.user_id}`}
                                   aria-describedby={hotelAdminAlreadyAssigned && member.role !== "hotel_owner" ? `hotel-admin-role-help-${member.id}` : undefined}
-                                  value={member.role === "super_admin" ? "hotel_owner" : member.role}
+                                  value={isPlatformRole(member.role) ? "hotel_owner" : member.role}
                                   onChange={event => requestRoleChange(
                                     member.id,
                                     member.email,
                                     member.role,
-                                    event.target.value as Exclude<HumanRole, "super_admin">,
+                                    event.target.value as AssignableStaffRole,
                                   )}
-                                  disabled={isPending || member.role === "super_admin"}
+                                  disabled={isPending || isPlatformRole(member.role)}
                                 >
                                   {STAFF_ROLES.map(role => {
                                     const hotelAdminOptionDisabled = role === "hotel_owner" && hotelAdminAlreadyAssigned && member.role !== "hotel_owner";
@@ -305,7 +303,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                       </td>
                       <td>{member.last_sign_in_at ? `Last sign-in ${formatDate(member.last_sign_in_at)}` : member.confirmed_at ? `Confirmed ${formatDate(member.confirmed_at)}` : "Invitation pending"}</td>
                       <td>{formatDate(member.created_at)}</td>
-                      <td className="align-right"><button className="button button-quiet button-small" type="button" onClick={() => requestRemoveMember(member.id, member.email, member.role)} disabled={isPending || member.role === "super_admin"}>{removeStaff.isPending ? "Removing…" : "Remove"}</button></td>
+                      <td className="align-right"><button className="button button-quiet button-small" type="button" onClick={() => requestRemoveMember(member.id, member.email, member.role)} disabled={isPending || isPlatformRole(member.role)}>{removeStaff.isPending ? "Removing…" : "Remove"}</button></td>
                     </tr>
                   ))}
                 </tbody>

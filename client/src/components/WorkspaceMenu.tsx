@@ -13,7 +13,7 @@ type WorkspaceMenuProps = {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
-  isSuperAdmin?: boolean;
+  isPlatformAdmin?: boolean;
   activeHotelName?: string;
 };
 
@@ -22,27 +22,27 @@ export function WorkspaceMenu({
   open,
   onToggle,
   onClose,
-  isSuperAdmin = false,
+  isPlatformAdmin = false,
   activeHotelName,
 }: WorkspaceMenuProps) {
-  const workspaceName = isSuperAdmin ? "Support console" : activeHotelName ?? hotels?.[0]?.name ?? "Hotel workspace";
-  const workspaceLabel = isSuperAdmin ? "Workspace" : "Property workspace";
-  const overviewLabel = isSuperAdmin ? "All properties overview" : "Property overview";
-  const visibleHotels = isSuperAdmin ? hotels : hotels?.slice(0, 1);
+  const workspaceName = isPlatformAdmin ? "Support console" : activeHotelName ?? hotels?.[0]?.name ?? "Hotel workspace";
+  const workspaceLabel = isPlatformAdmin ? "Workspace" : "Property workspace";
+  const overviewLabel = isPlatformAdmin ? "All properties overview" : "Property overview";
+  const visibleHotels = isPlatformAdmin ? hotels : hotels?.slice(0, 1);
 
   return (
     <div className="workspace-menu-anchor">
       <button
         className="workspace-switcher interactive"
         onClick={onToggle}
-        title={isSuperAdmin ? "Current active workspace" : `Current property: ${workspaceName}`}
-        aria-label={isSuperAdmin ? "เลือก workspace และโรงแรม" : `เลือกโรงแรม ${workspaceName}`}
+        title={isPlatformAdmin ? "Current active workspace" : `Current property: ${workspaceName}`}
+        aria-label={isPlatformAdmin ? "เลือก workspace และโรงแรม" : `เลือกโรงแรม ${workspaceName}`}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls="workspace-menu"
         type="button"
       >
-        <div className="workspace-avatar" aria-hidden="true">{isSuperAdmin ? "S" : workspaceName.slice(0, 1).toUpperCase()}</div>
+        <div className="workspace-avatar" aria-hidden="true">{isPlatformAdmin ? "S" : workspaceName.slice(0, 1).toUpperCase()}</div>
         <div>
           <small>{workspaceLabel}</small>
           <strong>{workspaceName}</strong>
@@ -60,7 +60,7 @@ export function WorkspaceMenu({
           <Link href="/dashboard" className="workspace-dropdown-item menu-surface-item" role="menuitem" onClick={onClose}>
             {overviewLabel}
           </Link>
-          <div className="workspace-dropdown-section-label menu-surface-kicker">{isSuperAdmin ? "Visible hotel workspaces" : "Assigned property"}</div>
+          <div className="workspace-dropdown-section-label menu-surface-kicker">{isPlatformAdmin ? "Visible hotel workspaces" : "Assigned property"}</div>
           {visibleHotels?.length ? visibleHotels.map(hotel => (
             <Link
               key={hotel.id}

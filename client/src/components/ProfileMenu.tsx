@@ -3,7 +3,10 @@ import { Link } from "wouter";
 import { LogOut } from "lucide-react";
 
 export type ProfileMenuProps = {
-  isSuperAdmin: boolean;
+  /** `super_admin` or `admin`: sees every property. */
+  isPlatformAdmin: boolean;
+  /** Only `super_admin` may reach the Admin Users console; a read-only `admin` may not. */
+  canManageUsers?: boolean;
   roleLabel?: string;
   userEmail: string | null;
   userName: string;
@@ -14,7 +17,8 @@ export type ProfileMenuProps = {
 };
 
 export function ProfileMenu({
-  isSuperAdmin,
+  isPlatformAdmin,
+  canManageUsers = false,
   roleLabel,
   userEmail,
   userName,
@@ -23,7 +27,7 @@ export function ProfileMenu({
   onLogout,
   onClose,
 }: ProfileMenuProps) {
-  const propertyLabel = isSuperAdmin
+  const propertyLabel = isPlatformAdmin
     ? "Manage Properties"
     : `Manage ${propertyName ? `${propertyName} property` : "My Property"}`;
 
@@ -39,10 +43,10 @@ export function ProfileMenu({
           {userEmail ?? userName}
         </p>
         <p className="menu-surface-meta">
-          {isSuperAdmin ? "Super Admin · Global access" : `${propertyName ?? "My property"} · ${roleLabel ?? "Hotel Admin"}`}
+          {isPlatformAdmin ? `${roleLabel ?? "Super Admin"} · Global access` : `${propertyName ?? "My property"} · ${roleLabel ?? "Hotel Admin"}`}
         </p>
       </div>
-      {isSuperAdmin && (
+      {canManageUsers && (
         <Link
           href="/settings/admin-users"
           className="menu-surface-item"
@@ -53,7 +57,7 @@ export function ProfileMenu({
         </Link>
       )}
       <Link
-        href={isSuperAdmin ? "/hotels" : "/dashboard"}
+        href={isPlatformAdmin ? "/hotels" : "/dashboard"}
         className="menu-surface-item"
         role="menuitem"
         onClick={onClose}

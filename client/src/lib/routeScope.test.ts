@@ -16,6 +16,32 @@ describe("route scope", () => {
     })).toEqual({ allowed: true });
   });
 
+  it("gives the read-only platform admin cross-hotel reads but no write surfaces", () => {
+    expect(getRouteScopeDecision({
+      role: "admin",
+      pathname: "/hotels",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: true });
+
+    expect(getRouteScopeDecision({
+      role: "admin",
+      pathname: "/hotels/hotel-outside-scope/bookings",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: true });
+
+    expect(getRouteScopeDecision({
+      role: "admin",
+      pathname: "/hotels/hotel-1/staff",
+      visibleHotelIds: ["hotel-1"],
+    })).toEqual({ allowed: false, reason: "permission_required" });
+
+    expect(getRouteScopeDecision({
+      role: "admin",
+      pathname: "/settings/admin-users",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: false, reason: "permission_required" });
+  });
+
   it("requires reporting permission for Channel analytics", () => {
     expect(getRequiredRoutePermission("/dashboard/channels")).toBe("property.view_reports");
     expect(getRouteScopeDecision({

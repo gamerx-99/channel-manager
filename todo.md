@@ -274,6 +274,20 @@ Verification: 31 test files passed, 104 tests passed, 2 skipped; `pnpm check` pa
 - [x] Run tests, TypeScript check, production build, visual verification, and save checkpoint
 
 ## Latest Project Archive Export
-- [ ] Create the latest compressed project archive excluding dependencies, build output, logs, temporary artifacts, and secrets
-- [ ] Verify archive integrity and confirm the Channel Performance Dashboard files are included
-- [ ] Attach the latest archive for download
+- [x] Create the latest compressed project archive excluding dependencies, build output, logs, temporary artifacts, and secrets
+- [x] Verify archive integrity and confirm the Channel Performance Dashboard files are included
+- [ ] Attach the latest archive for download — not possible from this environment; archive is written to disk and the path is reported to the user instead
+
+Archive: `channel-manager-mvp-20260824.tar.gz` (340 KB, 250 entries). Excluded: `node_modules/`, `dist/`, `build/`, `.git/`, `.env*` (only `.env.example` kept), logs, coverage, `tmp/`, `.cache/`, `.webdev/`, `.vscode/`, `.idea/`, `*.tsbuildinfo`. Integrity verified with `gzip -t` and a full `tar -tzf` listing; all six Channel Performance Dashboard files (`client/src/pages/ChannelPerformance{,.utils,.utils.test,.contract.test}.*`, `server/channelPerformance{,.test}.ts`) confirmed present.
+
+## Platform Admin Role (`admin`) — Part 2: application layer
+- [x] Add `admin` to the shared role matrix with a read-only permission set and a new `platform.view_all_hotels` permission
+- [x] Introduce `PLATFORM_ROLES` / `ASSIGNABLE_STAFF_ROLES` so platform roles can never be handed out as per-hotel staff roles
+- [x] Let platform roles bypass hotel membership in `requireHotelPermission` only for capabilities the matrix grants them
+- [x] Split `/hotels` (view) from `/settings/admin-users` (manage) in route scope and give platform roles the cross-hotel bypass
+- [x] Update AppShell, ProfileMenu, WorkspaceMenu, Home, HotelStaff and AdminUsers to distinguish global access from user management
+- [x] Add regression tests for the read-only matrix, route scope, profile menu split, tRPC cross-hotel access, and the migration SQL contract
+- [x] Rename the migration to `20260824_add_admin_role_and_platform_admin.sql` and update `AUTHORIZATION_MODEL.md`
+- [x] Apply `20260824_add_admin_role_and_platform_admin.sql` to the Supabase project (user ran it on 2026-08-24; reported `Success. No rows returned`)
+- [ ] Run `verify_20260824_platform_admin.sql` and confirm all five checks report PASS
+- [ ] Create a real `admin` account and verify in the browser that it reads every property but cannot write to any

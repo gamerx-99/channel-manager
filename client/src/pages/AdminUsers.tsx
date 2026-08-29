@@ -2,7 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { ShieldCheck, UserPlus, UserRound, Users, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { canLoadAdminHotels, formatAdminDate } from '@/lib/adminUsers';
-import { HUMAN_ROLES, ROLE_LABELS, type HumanRole } from '@shared/authorization';
+import { HUMAN_ROLES, ROLE_LABELS, isPlatformRole, type HumanRole } from '@shared/authorization';
 
 type AdminRole = HumanRole;
 type InviteForm = { email: string; hotel_id: string; role: AdminRole };
@@ -62,7 +62,7 @@ export default function AdminUsers() {
   const roleByUser = useMemo(() => {
     const map = new Map<string, AdminRole>();
     assignments.forEach(assignment => {
-      if (assignment.role === 'super_admin' || !map.has(assignment.user_id)) {
+      if (isPlatformRole(assignment.role) || !map.has(assignment.user_id)) {
         map.set(assignment.user_id, assignment.role);
       }
     });
@@ -117,7 +117,7 @@ export default function AdminUsers() {
       </section>
 
       {formError && <div className="form-error page-alert" role="alert">{formError}<button type="button" className="icon-button" onClick={() => setFormError(null)} aria-label="Dismiss error"><X size={15} /></button></div>}
-      {adminQuery.error && <section className="panel empty-state"><ShieldCheck size={20} /><strong>Admin access required</strong><span>{adminQuery.error.message}</span><small>Assign this account a <code>super_admin</code> row in <code>public.hotel_users</code> before using this page.</small></section>}
+      {adminQuery.error && <section className="panel empty-state"><ShieldCheck size={20} /><strong>Admin access required</strong><span>{adminQuery.error.message}</span><small>Assign this account a <code>super_admin</code> row in <code>public.hotel_users</code> before using this page. The read-only <code>admin</code> role cannot manage user access.</small></section>}
       {!adminQuery.error && hotelsQuery.error && <section className="panel empty-state"><ShieldCheck size={20} /><strong>Hotel options unavailable</strong><span>{hotelsQuery.error.message}</span></section>}
       {!adminQuery.error && (
         <>

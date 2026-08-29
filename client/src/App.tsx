@@ -42,7 +42,7 @@ import { trpc } from "./lib/trpc";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import ProfileMenu from "./components/ProfileMenu";
 import { getRouteScopeDecision } from "./lib/routeScope";
-import { hasAnyPermission, ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
+import { hasAnyPermission, isPlatformRole, ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
 
 function BrandMark() {
   return (
@@ -75,11 +75,14 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
       ]
     : [];
   const isSuperAdmin = roles.includes("super_admin");
+  // `admin` shares super_admin's cross-hotel visibility but none of its write surfaces,
+  // so global-access affordances key off this while create/manage actions stay on `can()`.
+  const isPlatformAdmin = roles.some(role => isPlatformRole(role));
   const navItems = [
-    { href: "/dashboard", label: "Overview", Thai: isSuperAdmin ? "ภาพรวมระบบ" : "ภาพรวมโรงแรม", icon: LayoutDashboard },
+    { href: "/dashboard", label: "Overview", Thai: isPlatformAdmin ? "ภาพรวมระบบ" : "ภาพรวมโรงแรม", icon: LayoutDashboard },
     ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: "Channel analytics", Thai: "สถิติช่องทาง", icon: BarChart3 }] : []),
-    ...(isSuperAdmin ? [{ href: "/hotels", label: "Hotels Management", Thai: "จัดการโรงแรมทั้งหมด", icon: Hotel }] : []),
-    ...(isSuperAdmin ? [{ href: "/settings/admin-users", label: "Admin Users", Thai: "จัดการสิทธิ์ผู้ใช้", icon: ShieldCheck }] : []),
+    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: "Hotels Management", Thai: "จัดการโรงแรมทั้งหมด", icon: Hotel }] : []),
+    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: "Admin Users", Thai: "จัดการสิทธิ์ผู้ใช้", icon: ShieldCheck }] : []),
     ...hotelNavItems,
   ];
   const initials = userName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "U";
@@ -116,7 +119,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           open={workspaceMenuOpen}
           onToggle={() => { setWorkspaceMenuOpen(prev => !prev); setAddMenuOpen(false); setUserMenuOpen(false); }}
           onClose={() => setWorkspaceMenuOpen(false)}
-          isSuperAdmin={isSuperAdmin}
+          isPlatformAdmin={isPlatformAdmin}
           activeHotelName={selectedHotelName}
         />
 
@@ -189,7 +192,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             <span>Exports</span>
             <small>ส่งออกข้อมูล</small>
           </a>}
-          {isSuperAdmin && (
+          {can("platform.manage_users") && (
             <Link
               href="/settings/admin-users"
               className={`nav-link ${location === "/settings/admin-users" ? "active" : ""}`}
@@ -290,7 +293,8 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
               </button>
               {userMenuOpen && (
                 <ProfileMenu
-                  isSuperAdmin={isSuperAdmin}
+                  isPlatformAdmin={isPlatformAdmin}
+                  canManageUsers={can("platform.manage_users")}
                   roleLabel={roles[0] ? ROLE_LABELS[roles[0]] : "Authorized user"}
                   userEmail={userEmail}
                   userName={userName}
