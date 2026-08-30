@@ -29,7 +29,11 @@ import { useAuth } from "./_core/hooks/useAuth";
 import Dashboard from "./pages/Home";
 import ChannelPerformance from "./pages/ChannelPerformance";
 import Financials from "./pages/Financials";
+import AdvancedPricing from "./pages/AdvancedPricing";
+import Housekeeping from "./pages/Housekeeping";
+import Communications from "./pages/Communications";
 import Login from "./pages/Login";
+import MfaEnroll from "./pages/MfaEnroll";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
@@ -37,8 +41,10 @@ import Bookings from "./pages/Bookings";
 import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
+import SecuritySettings from "./pages/SecuritySettings";
 import HotelStaff from "./pages/HotelStaff";
 import OtaSync from "./pages/OtaSync";
+import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { trpc } from "./lib/trpc";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
@@ -169,31 +175,64 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             <span>Payments</span>
             <small>การรับชำระเงิน</small>
           </button>}
-          {can("operations.view_bookings") && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Communications & Messaging module is coming soon in future releases.")}>
-            <Bell size={17} strokeWidth={1.8} />
-            <span>Communications</span>
-            <small>ข้อความแขก</small>
-          </button>}
-          {can("housekeeping.view_room_status") && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Housekeeping task board module is coming soon in future releases.")}>
-            <Users size={17} strokeWidth={1.8} />
-            <span>Housekeeping</span>
-            <small>สถานะแม่บ้าน</small>
-          </button>}
-          <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Website Builder module is coming soon in future releases.")}>
-            <Globe size={17} strokeWidth={1.8} />
+          {can("operations.view_bookings") && (
+            <Link
+              href="/communications"
+              className={`nav-link ${location === "/communications" || location.startsWith("/communications") ? "active" : ""}`}
+              onClick={() => setOpen(false)}
+            >
+              <Bell size={17} strokeWidth={location.startsWith("/communications") ? 2.3 : 1.8} />
+              <span>Communications</span>
+              <small>ข้อความแขก</small>
+            </Link>
+          )}
+          {can("housekeeping.view_room_status") && (
+            <Link
+              href="/housekeeping"
+              className={`nav-link ${location === "/housekeeping" || location.startsWith("/housekeeping/") ? "active" : ""}`}
+              onClick={() => setOpen(false)}
+            >
+              <Users size={17} strokeWidth={location === "/housekeeping" ? 2.3 : 1.8} />
+              <span>Housekeeping</span>
+              <small>สถานะแม่บ้าน</small>
+            </Link>
+          )}
+          <Link
+            href="/website-builder"
+            className={`nav-link ${location === "/website-builder" ? "active" : ""}`}
+            onClick={() => setOpen(false)}
+          >
+            <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
             <span>Website Builder</span>
             <small>เว็บไซต์โรงแรม</small>
-          </button>
-          <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Booking Engines module is coming soon in future releases.")}>
+          </Link>
+          <button
+            type="button"
+            className="nav-link w-full text-left bg-transparent border-0 cursor-pointer"
+            onClick={() => {
+              const hotel = visibleHotels.find(h => h.id === selectedHotelId) || visibleHotels[0];
+              if (hotel?.slug) {
+                window.open(`/${hotel.slug}#book`, '_blank');
+              } else {
+                toast.info("Select or add a hotel first to open its live booking engine.");
+              }
+            }}
+          >
             <CalendarDays size={17} strokeWidth={1.8} />
             <span>Booking Engines</span>
             <small>ระบบจองตรง</small>
           </button>
-          {can("revenue.manage_rates") && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Advanced Pricing module is coming soon in future releases.")}>
-            <BarChart3 size={17} strokeWidth={1.8} />
-            <span>Advanced Pricing</span>
-            <small>ตั้งราคาขั้นสูง</small>
-          </button>}
+          {can("revenue.manage_pricing_rules") && (
+            <Link
+              href="/dashboard/pricing"
+              className={`nav-link ${location === "/dashboard/pricing" ? "active" : ""}`}
+              onClick={() => setOpen(false)}
+            >
+              <BarChart3 size={17} strokeWidth={location === "/dashboard/pricing" ? 2.3 : 1.8} />
+              <span>Advanced Pricing</span>
+              <small>ตั้งราคาขั้นสูง</small>
+            </Link>
+          )}
           <p className="nav-label nav-label-spaced">System</p>
           {can("operations.export_tm30") && <a className="nav-link" href="#" onClick={(event) => { event.preventDefault(); toast.info("TM.30 and report exports are available directly inside each hotel's Bookings workspace."); }}>
             <FileSpreadsheet size={17} strokeWidth={1.8} />
@@ -254,7 +293,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           <div className="breadcrumbs">
             <span>Operating ledger</span>
             <span className="crumb-slash">/</span>
-              <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.startsWith("/dashboard/financials") ? "Financials" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
+              <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.startsWith("/dashboard/pricing") ? "Advanced Pricing" : location.startsWith("/dashboard/financials") ? "Financials" : location.startsWith("/housekeeping") ? "Housekeeping" : location.startsWith("/communications") ? "Communications" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
           </div>
           <div className="topbar-actions">
             <label className="topbar-search">
@@ -367,6 +406,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/mfa/enroll" component={MfaEnroll} />
       <Route path="/signup/:token">
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
@@ -376,6 +416,15 @@ function Router() {
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
+      <Route path="/dashboard/pricing">
+        <PrivateRoute><AdvancedPricing /></PrivateRoute>
+      </Route>
+      <Route path="/housekeeping">
+        <PrivateRoute><Housekeeping /></PrivateRoute>
+      </Route>
+      <Route path="/communications">
+        <PrivateRoute><Communications /></PrivateRoute>
+      </Route>
       <Route path="/dashboard">
         <PrivateRoute><Dashboard /></PrivateRoute>
       </Route>
@@ -384,6 +433,9 @@ function Router() {
       </Route>
       <Route path="/settings/admin-users">
         <PrivateRoute><AdminUsers /></PrivateRoute>
+      </Route>
+      <Route path="/settings/security">
+        <PrivateRoute><SecuritySettings /></PrivateRoute>
       </Route>
       <Route path="/hotels/:id/bookings">
         {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}
@@ -399,6 +451,9 @@ function Router() {
       </Route>
       <Route path="/hotels/:id">
         {(params) => <PrivateRoute><HotelDetail id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/website-builder">
+        <PrivateRoute><WebsiteBuilder /></PrivateRoute>
       </Route>
       <Route path="/:slug">
         {(params) => <PublicHotel slug={params.slug} />}

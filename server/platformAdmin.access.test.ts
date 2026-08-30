@@ -77,6 +77,7 @@ describe('read-only platform admin access', () => {
         name: 'Deluxe',
         capacity: 2,
         base_price: 1200,
+        quantity: 5,
       })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }
 

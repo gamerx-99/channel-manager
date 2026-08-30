@@ -1,7 +1,9 @@
+import React from 'react';
 import { ArrowRight, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
+import { hasVerifiedTotpFactor, MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
 
 export default function Login() {
   const [, navigate] = useLocation();
@@ -15,11 +17,59 @@ export default function Login() {
     setSubmitting(true);
     setError(null);
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
     if (signInError) {
+      setSubmitting(false);
       setError(signInError.message);
       return;
     }
+
+    // T09-04: blocking MFA enrollment for platform roles (super_admin/admin).
+    // After password verification, check if the user has a verified TOTP factor;
+    // if missing and the user is a platform role, redirect to the enroll flow.
+    try {
+      const { data: factorData } = await supabase.auth.mfa.listFactors();
+      const hasFactor = hasVerifiedTotpFactor(factorData as unknown as { totp?: Array<{ status: string }>; all?: Array<{ factor_type: string; status: string }> } | null);
+      if (!hasFactor) {
+        let roles: string[] = [];
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const userId = userData?.user?.id;
+          const metaRole =
+            (userData?.user?.app_metadata as Record<string, unknown> | undefined)?.role ??
+            (userData?.user?.user_metadata as Record<string, unknown> | undefined)?.role;
+          if (typeof metaRole === "string" && metaRole) roles.push(metaRole);
+          if (userId) {
+            try {
+              const { data: memberships } = await (supabase.from as unknown as (table: string) => { select: (cols: string) => { eq: (col: string, val: string) => Promise<{ data: Array<{ role: string }> | null }> } })("hotel_users").select("role").eq("user_id", userId);
+              if (memberships) {
+                for (const row of memberships) {
+                  if (row.role && !roles.includes(row.role)) roles.push(row.role);
+                }
+              }
+            } catch {
+              // ignore membership fetch errors — fall back to metadata role
+            }
+            try {
+              const { data: isSuperAdmin } = await (supabase.rpc as unknown as (fn: string) => Promise<{ data: unknown }>)("is_super_admin");
+              if (isSuperAdmin === true && !roles.includes("super_admin")) roles.push("super_admin");
+            } catch {
+              // ignore RPC errors
+            }
+          }
+        } catch {
+          // ignore role resolution errors — allow navigation to dashboard
+        }
+        if (shouldEnforceMfaForRoles(roles)) {
+          setSubmitting(false);
+          navigate(MFA_ENROLL_PATH);
+          return;
+        }
+      }
+    } catch {
+      // Ignore MFA check errors — allow navigation to dashboard rather than blocking login entirely
+    }
+
+    setSubmitting(false);
     navigate('/dashboard');
   }
 

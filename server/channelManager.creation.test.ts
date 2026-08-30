@@ -108,6 +108,7 @@ describe('channelManager.createRoomType', () => {
       name: 'Deluxe King',
       capacity: 2,
       base_price: 2500,
+      quantity: 5,
     })).rejects.toMatchObject({
       code: 'NOT_FOUND',
       message: 'This hotel is not available to your account.',
@@ -128,6 +129,7 @@ describe('channelManager.createRoomType', () => {
       name: '  Deluxe King  ',
       capacity: 2,
       base_price: 2500,
+      quantity: 5,
     })).resolves.toEqual({ id: 'room-type-created' });
 
     expect(dbMocks.getManagedHotel).toHaveBeenCalledWith(client, '88ed76e4-cc93-4aa7-9c4d-30999d35ada4');
@@ -136,6 +138,7 @@ describe('channelManager.createRoomType', () => {
       name: 'Deluxe King',
       capacity: 2,
       base_price: 2500,
+      quantity: 5,
     });
   });
 
@@ -147,6 +150,7 @@ describe('channelManager.createRoomType', () => {
       name: 'Deluxe King',
       capacity: 2,
       base_price: 0,
+      quantity: 5,
     })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
 
     expect(dbMocks.getManagedHotel).not.toHaveBeenCalled();
@@ -163,6 +167,7 @@ describe('channelManager.createRoomType', () => {
       name: 'Duplicate',
       capacity: 2,
       base_price: 2500,
+      quantity: 5,
     })).rejects.toMatchObject({
       code: 'CONFLICT',
       message: 'A hotel or room type with the same unique details already exists.',

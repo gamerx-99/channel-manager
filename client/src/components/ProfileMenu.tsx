@@ -57,6 +57,14 @@ export function ProfileMenu({
         </Link>
       )}
       <Link
+        href="/settings/security"
+        className="menu-surface-item"
+        role="menuitem"
+        onClick={onClose}
+      >
+        Security &amp; MFA
+      </Link>
+      <Link
         href={isPlatformAdmin ? "/hotels" : "/dashboard"}
         className="menu-surface-item"
         role="menuitem"

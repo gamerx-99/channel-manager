@@ -15,7 +15,7 @@ export async function createContext(
   try {
     user = await getSupabaseIdentity(opts.req);
   } catch (error) {
-    // Authentication is optional for public procedures.
+    console.error("[Auth] Unexpected error during getSupabaseIdentity in createContext:", error instanceof Error ? error.message : String(error));
     user = null;
   }
 

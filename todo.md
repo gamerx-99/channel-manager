@@ -324,3 +324,168 @@ Archive: `channel-manager-mvp-20260824.tar.gz` (340 KB, 250 entries). Excluded: 
 - [x] `pnpm test` (174 passed / 3 skipped), `pnpm check`, `pnpm build` all pass
 - [ ] Apply `20260830_add_hotel_signup_links.sql` to the live Supabase project and confirm `verify_20260830_hotel_signup_links.sql` reports all PASS
 - [ ] Browser walkthrough on production: generate a link, complete signup, confirm single-use + expiry enforcement
+
+---
+
+# Roadmap: Remaining Modules
+
+Six "coming soon" placeholders remain in `client/src/App.tsx`'s sidebar
+(`toast.info(...)` buttons), plus OTA's iCal-only scope, plus a platform-security
+addition (Phase I) the human asked to add mid-roadmap. Each phase below turns one
+into a real module, in the order that minimizes rework (data model and revenue-adjacent
+pieces first, since later phases build on them). Every phase should follow this
+session's working pattern: `EnterPlanMode` → confirm scope/permission boundaries with
+the user → implement → `pnpm test`/`check`/`build` → migration (if any) applied via the
+Supabase SQL editor + a `verify_*.sql` companion → push → verify on the live deploy.
+
+**As of 2026-08-30 these eight-plus-one phases are also written as executable specs**
+in `specs/00-OVERVIEW.md` and `specs/01`–`specs/09`, under a full orchestration
+scaffold (`CLAUDE.md` + `.agent/`) adapted from a human-supplied multi-agent
+template. That scaffold is the source of truth for dependency ordering and per-phase
+acceptance criteria going forward; this section stays as the plain-language summary.
+Phase I (Authenticator/MFA, `specs/09-authenticator-mfa.md`) now gates Phase A: no
+SlipOK settings ship without an MFA step-up check in front of them, per the human's
+explicit request.
+
+## Phase I: Authenticator (TOTP MFA) — gates Phase A
+Decided 2026-08-30: use Supabase Auth's built-in MFA (`supabase.auth.mfa.*`), no
+custom TOTP implementation. Required for `super_admin`/`admin` from the start;
+optional for hotel-level roles initially. The specific trigger for building this now
+rather than later: the human wants a fresh MFA verification required before anyone
+(including `hotel_owner`) can open or save a hotel's SlipOK settings in Phase A —
+full detail and acceptance criteria in `specs/09-authenticator-mfa.md`.
+- [ ] Enroll/challenge/verify/unenroll flow using Supabase Auth's MFA API
+- [ ] `super_admin`/`admin` required to enroll (blocking or grace-period — decide
+      when this ticket starts)
+- [ ] Hotel-level roles can opt in, not required
+- [ ] Step-up check reusable by any future sensitive action, starting with Phase A's
+      SlipOK settings
+
+## Phase A: Payments & Gateway (bank-transfer slip verification, BYO key per hotel)
+Decided: not a central platform payment gateway. KBank's own corporate API requires
+≥300 slips/month, which no single hotel on this platform clears yet — so instead each
+hotel brings its own **SlipOK** (slip-verification-as-a-service) API key and manages it
+themselves. The platform never touches real money or card data; it only verifies that
+a bank-transfer/PromptPay slip a guest submitted is genuine. This is the same shape as
+the existing per-hotel iCal URL pattern in OTA Sync (`OtaSync.tsx`/`otaSync.ts`) — one
+more per-hotel external-service credential — not a new architecture.
+- [ ] Add a `hotel_payment_settings` table (or extend `hotels`): `slipok_api_key`
+      (encrypted at rest — check whether Supabase Vault or a simple app-level
+      encryption via a server-only secret is more appropriate before picking one),
+      `slipok_enabled`. RLS: only the owning hotel's `hotel_owner`/`super_admin` can
+      read/write, same boundary as `property.view_financials`
+- [ ] Server: `verifySlip(hotelId, slipImageOrData)` calling the hotel's own SlipOK
+      key — returns verified amount/timestamp/sender, following SlipOK's API contract
+      (fetch their docs when implementing; not yet checked against this codebase)
+- [ ] Add `payment_status`/`amount_paid` to bookings (or a separate `payments` table
+      recording each verified slip) — currently `server/db.ts`'s `BookingRecord` has
+      only `price`, no paid/outstanding tracking (noted as a gap during the Financials
+      pass)
+- [ ] Client: hotel-scoped settings page for entering/rotating the SlipOK key (gated
+      on `property.manage_profile` or a new dedicated permission — decide when this
+      phase starts, mirroring how `property.view_financials` was scoped narrowly on
+      purpose), and a "submit slip for this booking" action in `Bookings.tsx` that
+      calls `verifySlip` and updates `payment_status` on success
+- [ ] **Requires Phase I first**: opening/saving this settings page must require a
+      fresh MFA (authenticator) verification, for every role including `hotel_owner`
+- [ ] Financials module follow-up: once `payment_status` exists, add a "collected vs
+      outstanding" breakdown to `client/src/pages/Financials.tsx` (flagged as
+      out-of-scope in that module's original plan for exactly this reason)
+- [ ] Out of scope for this phase: card/PromptPay checkout, refunds, KBank's own API —
+      revisit KBank only once a hotel's real slip volume clears the 300/month bar
+
+## Phase B: Advanced Pricing
+- [ ] The permission (`revenue.manage_pricing_rules`) and role (`revenue_manager`)
+      already exist and are wired into `HotelStaff.tsx`'s role list — this phase is
+      mostly new data model + UI, not new authorization
+- [ ] New tables: seasonal/date-range rate overrides per room type, minimum-stay rules
+- [ ] Pricing resolution logic: given a date + room type, compute the effective rate
+      (base_price with overrides applied) — a pure function like
+      `buildFinancialsSummary`/`buildChannelPerformanceSummary`, unit-testable in
+      isolation before wiring into bookings
+- [ ] Client: replace the "Advanced Pricing" placeholder (`App.tsx`, gated on
+      `can("revenue.manage_rates")`) with a calendar-style rate editor
+
+## Phase C: Housekeeping Task Board
+- [ ] `housekeeping.view_room_status`/`housekeeping.update_room_status` permissions
+      and the `rooms.status` column already exist (used today for simple status
+      badges) — this phase adds task assignment and a turnover checklist on top
+- [ ] New table: daily housekeeping tasks (room, assigned staff, checklist state,
+      due date) linked to `rooms`/`bookings` check-out dates
+- [ ] Client: replace the "Housekeeping" placeholder with a per-day task board,
+      gated the same way `DashboardCalendarView` already scopes edit vs. view-only
+      by role (front_desk/housekeeping view, hotel_owner/revenue_manager edit)
+
+## Phase D: Communications & Messaging
+- [ ] New tables: message threads (per booking or per guest) and messages
+- [ ] Decide delivery channel with the user (in-app only vs. also email/SMS — SMS
+      needs a third-party provider decision similar to Phase A's payment provider)
+- [ ] Templated pre-arrival/post-stay messages, triggered off `bookings.check_in`/
+      `check_out` (a scheduled job — check whether Vercel Cron or a Supabase
+      scheduled function fits better, since this project has no existing job runner)
+- [ ] Client: replace the "Communications" placeholder (gated on
+      `can("operations.view_bookings")`) with a per-booking message thread in
+      `Bookings.tsx`
+
+## Phase E: Direct Booking Engine (guest-facing checkout)
+- [ ] Depends on Phase A (payments) being done first — `PublicHotel.tsx` already says
+      "Online checkout is not enabled in this MVP" at the booking section
+- [ ] Public availability query (extend `getPublicHotel`'s RPC-backed read in
+      `server/db.ts` to include live availability, respecting the same
+      RLS/public-RPC boundary used for `get_public_hotel`)
+- [ ] Guest checkout flow: date selection → room type → guest details → payment →
+      `createBookingWithGuests` (already exists server-side; needs a public-safe
+      entry point, following the same "public procedure + narrow, validated input"
+      pattern established by `completeHotelOwnerSignup` in this session)
+- [ ] Replace the "Booking Engines" placeholder with a link to preview/configure this
+      flow per hotel
+
+## Phase F: Website Builder
+- [ ] `hotel_media` already has schema + a read path (`server/db.ts:249`, used by
+      `PublicHotel.tsx`) but no admin upload UI exists yet — start there before
+      anything more ambitious (image upload via the existing `registerStorageProxy`
+      in `server/_core/storageProxy.ts`, if it already supports arbitrary uploads —
+      check before adding a new storage path)
+- [ ] `hotel_domains` table exists in the schema but is completely unused in
+      application code (confirmed via search this session) — custom domain support
+      is schema-ready but has zero implementation; needs both app code and actual
+      DNS/Vercel domain-verification work
+- [ ] Theme/content customization for `PublicHotel.tsx` (currently one fixed layout
+      for every hotel) — likely a `hotel_site_config` table (hero copy, color
+      accents, section visibility) rather than a full drag-and-drop builder for v1
+- [ ] Replace the "Website Builder" placeholder with hotel-scoped settings for the
+      above
+
+## Phase G: Live OTA API Integrations
+- [ ] Scope is currently iCal-only by design (`AUTHORIZATION_MODEL.md`'s OTA scope
+      section); `service.ari_sync_reserved` and `service.booking_push_reserved`
+      permissions already exist in `shared/authorization.ts` but are granted to
+      nothing — this is a deliberate placeholder, not an oversight
+- [ ] Requires per-OTA API credentials and partner approval (Booking.com/Agoda/
+      Expedia/Airbnb all gate API access behind a partner program) — a business/
+      legal step before any code, flag this to the user early
+- [ ] ARI (Availability-Rates-Inventory) push: extend `server/otaSync.ts`'s existing
+      iCal sync job pattern to also push rate/availability changes outward
+- [ ] Booking push: inbound webhook ingestion creating real `bookings` rows,
+      reusing `createBookingWithGuests` — needs idempotency handling (OTA webhooks
+      commonly retry) since nothing in this codebase currently guards against
+      duplicate webhook delivery
+
+## Phase H: Cross-cutting platform hardening
+Not tied to one placeholder button — pick up opportunistically alongside the phases
+above, or as a dedicated pass once A–G are underway:
+- [ ] Notifications (in-app and/or email) for key events — new bookings, payment
+      received, signup link used, OTA sync failures
+- [ ] Automate Supabase migration application — every migration this session
+      (`20260824_...`, `20260830_...`) was applied by hand via the SQL editor because
+      `DATABASE_URL`/`SUPABASE_POOLER_DB_URL` in `.env` are placeholders; either get
+      real pooler credentials into the environment so `server/runPostgresMigration.mjs`
+      works, or accept manual application as the permanent process and document it
+      clearly for whoever runs migrations next
+- [ ] Rate limiting / abuse protection for the two public-facing surfaces added this
+      session (`/signup/:token`, and the pre-existing `/:slug` public hotel pages) —
+      both are `publicProcedure` with no request throttling
+- [ ] Revisit the 1.8 MB main JS bundle (`vite build`'s size warning, seen on every
+      build this session) via route-level code splitting, once enough new pages
+      exist to make the split worthwhile
+

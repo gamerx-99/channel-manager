@@ -15,7 +15,7 @@ import { RoomTypeActions } from '@/components/RoomTypeActions';
 import { PageState } from '@/components/PageState';
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
-const emptyRoomTypeForm = { name: '', capacity: '', base_price: '' };
+const emptyRoomTypeForm = { name: '', capacity: '', base_price: '', quantity: '' };
 type RoomType = { id: string; hotel_id: string; name: string; capacity: number; base_price: number | string };
 
 export default function HotelDetail({ id }: { id: string }) {
@@ -86,7 +86,7 @@ export default function HotelDetail({ id }: { id: string }) {
 
   function openEditRoomType(type: RoomType) {
     setSelectedRoomTypeId(type.id);
-    setRoomTypeForm({ name: type.name, capacity: String(type.capacity), base_price: String(type.base_price) });
+    setRoomTypeForm({ name: type.name, capacity: String(type.capacity), base_price: String(type.base_price), quantity: '' });
     setRoomTypeError(null);
     setShowEditRoomType(true);
   }
@@ -101,6 +101,7 @@ export default function HotelDetail({ id }: { id: string }) {
     const name = roomTypeForm.name.trim();
     const capacity = Number(roomTypeForm.capacity);
     const basePrice = Number(roomTypeForm.base_price);
+    const quantity = Number(roomTypeForm.quantity);
     if (!name) {
       setRoomTypeError('Enter a room type name.');
       return null;
@@ -113,7 +114,11 @@ export default function HotelDetail({ id }: { id: string }) {
       setRoomTypeError('Base price must be greater than zero.');
       return null;
     }
-    return { name, capacity, base_price: basePrice };
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      setRoomTypeError('Number of rooms must be a positive whole number.');
+      return null;
+    }
+    return { name, capacity, base_price: basePrice, quantity };
   }
 
   function submitCreateRoomType(event: FormEvent<HTMLFormElement>) {
@@ -156,6 +161,7 @@ export default function HotelDetail({ id }: { id: string }) {
             <label className="form-span-two">Room type name<input autoFocus required value={roomTypeForm.name} onChange={event => setRoomTypeForm({ ...roomTypeForm, name: event.target.value })} placeholder="Enter room type name" /></label>
             <label>Capacity<input required min="1" step="1" type="number" value={roomTypeForm.capacity} onChange={event => setRoomTypeForm({ ...roomTypeForm, capacity: event.target.value })} placeholder="Number of guests" /></label>
             <label>Base price (THB)<input required min="0.01" step="0.01" type="number" value={roomTypeForm.base_price} onChange={event => setRoomTypeForm({ ...roomTypeForm, base_price: event.target.value })} placeholder="Amount in THB" /></label>
+            <label>Number of rooms<input required min="1" step="1" type="number" value={roomTypeForm.quantity} onChange={event => setRoomTypeForm({ ...roomTypeForm, quantity: event.target.value })} placeholder="How many rooms" /></label>
           </div>
           <DialogFooter className="modal-actions"><button className="button button-quiet" type="button" onClick={() => closeRoomTypeDialog(false)} disabled={createRoomType.isPending}>Cancel</button><button className="button button-primary" type="submit" disabled={createRoomType.isPending}>{createRoomType.isPending ? 'Creating…' : 'Create room type'}</button></DialogFooter>
         </form>
