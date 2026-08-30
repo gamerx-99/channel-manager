@@ -75,4 +75,10 @@ describe("seven-role authorization matrix", () => {
     expect(roleHasPermission("api_service", "service.ari_sync_reserved")).toBe(false);
     expect(roleHasPermission("api_service", "service.booking_push_reserved")).toBe(false);
   });
+
+  it("keeps property.view_financials scoped to hotel_owner only, even excluding super_admin's blanket grant", () => {
+    for (const role of APP_ROLES) {
+      expect(roleHasPermission(role, "property.view_financials")).toBe(role === "hotel_owner");
+    }
+  });
 });

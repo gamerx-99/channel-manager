@@ -53,6 +53,7 @@ export const PERMISSIONS = [
   "property.manage_room_structure",
   "property.manage_staff",
   "property.view_reports",
+  "property.view_financials",
   "revenue.manage_rates",
   "revenue.manage_pricing_rules",
   "revenue.manage_allotment",
@@ -81,7 +82,13 @@ export type Permission = (typeof PERMISSIONS)[number];
  * explicitly expanded beyond the current iCal-only implementation.
  */
 export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
-  super_admin: PERMISSIONS.filter(permission => !permission.startsWith("service.")),
+  // Hotel revenue is the property's own business data, not platform operations data.
+  // `property.view_financials` is deliberately withheld from the super_admin blanket
+  // grant below (and never added to `admin`/`revenue_manager`) so that, by default,
+  // only the hotel_owner can see a property's revenue — not even the platform operator.
+  super_admin: PERMISSIONS.filter(
+    permission => !permission.startsWith("service.") && permission !== "property.view_financials",
+  ),
   // Platform operations / support: cross-hotel READ only. Every write capability is
   // withheld here and at the database layer, where `admin` is granted nothing beyond
   // the `for select` policies that route through `public.is_hotel_member()`.
@@ -100,6 +107,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "property.manage_room_structure",
     "property.manage_staff",
     "property.view_reports",
+    "property.view_financials",
     "operations.view_bookings",
     "operations.manage_bookings",
     "operations.manage_guests",

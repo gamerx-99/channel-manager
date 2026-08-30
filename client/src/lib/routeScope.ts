@@ -26,6 +26,7 @@ export function getRequiredRoutePermission(pathname: string): Permission | null 
   if (pathname.startsWith("/settings/admin-users")) return "platform.manage_users";
   if (pathname === "/hotels") return "platform.view_all_hotels";
   if (pathname.startsWith("/dashboard/channels")) return "property.view_reports";
+  if (pathname.startsWith("/dashboard/financials")) return "property.view_financials";
   if (pathname.includes("/ota")) return "ota.view_status";
   if (pathname.includes("/staff")) return "property.manage_staff";
   if (pathname.includes("/bookings")) return "operations.view_bookings";

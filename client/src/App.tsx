@@ -28,6 +28,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./_core/hooks/useAuth";
 import Dashboard from "./pages/Home";
 import ChannelPerformance from "./pages/ChannelPerformance";
+import Financials from "./pages/Financials";
 import Login from "./pages/Login";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
@@ -151,11 +152,17 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             );
           })}
           <p className="nav-label nav-label-spaced">Operations & Modules</p>
-          {can("property.view_reports") && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Financials & Payments module is coming soon in future releases.")}>
-            <BarChart3 size={17} strokeWidth={1.8} />
-            <span>Financials</span>
-            <small>การเงินและชำระเงิน</small>
-          </button>}
+          {can("property.view_financials") && (
+            <Link
+              href="/dashboard/financials"
+              className={`nav-link ${location === "/dashboard/financials" ? "active" : ""}`}
+              onClick={() => setOpen(false)}
+            >
+              <BarChart3 size={17} strokeWidth={location === "/dashboard/financials" ? 2.3 : 1.8} />
+              <span>Financials</span>
+              <small>การเงินและชำระเงิน</small>
+            </Link>
+          )}
           {isSuperAdmin && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Payments & Gateway module is coming soon in future releases.")}>
             <FileSpreadsheet size={17} strokeWidth={1.8} />
             <span>Payments</span>
@@ -246,7 +253,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           <div className="breadcrumbs">
             <span>Operating ledger</span>
             <span className="crumb-slash">/</span>
-              <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
+              <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.startsWith("/dashboard/financials") ? "Financials" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
           </div>
           <div className="topbar-actions">
             <label className="topbar-search">
@@ -361,6 +368,9 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard/channels">
         <PrivateRoute><ChannelPerformance /></PrivateRoute>
+      </Route>
+      <Route path="/dashboard/financials">
+        <PrivateRoute><Financials /></PrivateRoute>
       </Route>
       <Route path="/dashboard">
         <PrivateRoute><Dashboard /></PrivateRoute>

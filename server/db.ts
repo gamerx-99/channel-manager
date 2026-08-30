@@ -114,6 +114,26 @@ export async function listManagedHotels(client: SupabaseClient) {
   }>;
 }
 
+/** Lists RLS-visible hotels with bookings joined to their room type name, for revenue reporting. */
+export async function listManagedHotelsForFinancials(client: SupabaseClient) {
+  const { data, error } = await client
+    .from('hotels')
+    .select('id,bookings(id,status,check_in,check_out,price,rooms(room_types(name)))')
+    .order('created_at', { ascending: false });
+  throwOnError(error);
+  return (data ?? []) as unknown as Array<{
+    id: string;
+    bookings: Array<{
+      id: string;
+      status: BookingRecord['status'];
+      check_in: string;
+      check_out: string;
+      price: number | string;
+      rooms: { room_types: { name: string } | null } | null;
+    }>;
+  }>;
+}
+
 export async function getManagedHotel(client: SupabaseClient, hotelId: string) {
   const { data, error } = await client
     .from('hotels')

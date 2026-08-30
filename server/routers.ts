@@ -23,6 +23,7 @@ import {
   listAvailabilityForHotel,
   listBookingsForHotel,
   listManagedHotels,
+  listManagedHotelsForFinancials,
   updateAvailability,
 } from './db';
 import { systemRouter } from './_core/systemRouter';
@@ -36,6 +37,7 @@ import {
 } from './supabase';
 import { buildTm30Rows, createTm30Workbook } from './tm30';
 import { buildChannelPerformanceSummary } from './channelPerformance';
+import { buildFinancialsSummary } from './financials';
 
 const hotelIdSchema = z.string().uuid();
 const bookingStatusSchema = z.enum(['confirmed', 'checked_in', 'checked_out', 'cancelled']);
@@ -237,6 +239,18 @@ export const appRouter = router({
           getGlobalOtaSummary(ctx.user.accessToken),
         ]);
         return buildChannelPerformanceSummary(hotels, otaSummary);
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+    financials: protectedProcedure.query(async ({ ctx }) => {
+      // Deliberately requirePermission (not requireHotelPermission): the latter
+      // unconditionally bypasses for super_admin, which would defeat the point of
+      // property.view_financials being withheld from platform roles by default.
+      requirePermission(ctx.user, 'property.view_financials');
+      try {
+        const hotels = await listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken));
+        return buildFinancialsSummary(hotels);
       } catch (error) {
         return rethrowDomainError(error);
       }

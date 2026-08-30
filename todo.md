@@ -289,5 +289,26 @@ Archive: `channel-manager-mvp-20260824.tar.gz` (340 KB, 250 entries). Excluded: 
 - [x] Add regression tests for the read-only matrix, route scope, profile menu split, tRPC cross-hotel access, and the migration SQL contract
 - [x] Rename the migration to `20260824_add_admin_role_and_platform_admin.sql` and update `AUTHORIZATION_MODEL.md`
 - [x] Apply `20260824_add_admin_role_and_platform_admin.sql` to the Supabase project (user ran it on 2026-08-24; reported `Success. No rows returned`)
-- [ ] Run `verify_20260824_platform_admin.sql` and confirm all five checks report PASS
-- [ ] Create a real `admin` account and verify in the browser that it reads every property but cannot write to any
+- [x] Run `verify_20260824_platform_admin.sql` and confirm all five checks report PASS (2026-08-29, all 5 PASS)
+- [x] Create a real `admin` account and verify in the browser that it reads every property but cannot write to any — created `admingamer@gmail.com`, bound as `admin` on the seeded hotel
+
+## Production Data Seed
+- [x] Seeded the first real hotel "Little Bro Mae Hong Son" in Supabase (`hotels`/`hotel_users` were empty until 2026-08-29)
+- [x] Bound `lannatc@gmail.com` → `super_admin`, `littlebromhs@gmail.com` → `hotel_owner`, `admingamer@gmail.com` → `admin`, all on that hotel
+
+## Vercel Deployment Fix
+- [x] Diagnosed production serving raw server source as plain text at `/` — no `vercel.json` existed, so Vercel's auto-detected "vite" framework routed requests to the wrong build output
+- [x] Added `vercel.json` (rewrites for `/api/*` and SPA fallback, `outputDirectory: dist/public`) and `api/index.ts` as the serverless entry, refactored `server/_core/index.ts` to export the Express app and guard `app.listen()` behind `process.env.VERCEL !== "1"`
+- [x] Fixed `ERR_MODULE_NOT_FOUND`: pointed `api/index.ts` at the pre-bundled `dist/index.js` instead of the unbundled `server/_core/index.ts` source (Vercel's zero-config TS builder doesn't resolve `@shared/*` aliases across files)
+- [x] Fixed a rollup/vite native-binary crash on cold start: made the `./vite` import inside `server/_core/index.ts` a dynamic import, built with esbuild `--splitting` so it ships as a separate chunk never loaded on Vercel
+- [x] Verified end-to-end in the browser: login → `auth.me` 200 → dashboard renders with the seeded hotel ("Total Properties: 1")
+
+## Financials Module (v1: revenue reporting)
+- [x] Added `property.view_financials` permission, granted only to `hotel_owner` — explicitly excluded from `super_admin`'s blanket grant and never given to `admin`/`revenue_manager`, since hotel revenue is the property's own business data
+- [x] Added `server/financials.ts` (`buildFinancialsSummary`) and `listManagedHotelsForFinancials` in `server/db.ts`, mirroring the existing `channelPerformance.ts` pattern with a room-type revenue breakdown
+- [x] Added `channelManager.financials` tRPC procedure, gated with `requirePermission` (not `requireHotelPermission`, which unconditionally bypasses for `super_admin`)
+- [x] Built `client/src/pages/Financials.tsx` (revenue trend chart, revenue-by-room-type chart, CSV export) and wired `/dashboard/financials` into `App.tsx` and `routeScope.ts`, replacing the old "coming soon" toast
+- [x] Added regression tests: `server/financials.test.ts`, `server/financials.access.test.ts` (confirms `super_admin`/`admin`/`revenue_manager` all get `FORBIDDEN`), `client/src/pages/Financials.contract.test.ts`, and a `shared/authorization.test.ts` matrix check
+- [x] Fixed a pre-existing gap: `vitest.config.ts`'s `include` glob never covered `shared/**/*.test.ts`, so `shared/authorization.test.ts` was never actually running under `pnpm test`
+- [x] `pnpm test` (157 passed / 3 skipped), `pnpm check`, `pnpm build` all pass
+- [ ] "Payments & Gateway" module (super-admin-only payment provider config) — separate, later task, not started
