@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import React from "react";
 import { Link } from "wouter";
-import { ArrowRightLeft, ShieldCheck, UserPlus, Users, X } from "lucide-react";
+import { ArrowRightLeft, Check, Copy, Link2, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
 import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
@@ -56,6 +56,8 @@ function roleLabel(role: HumanRole) {
 
 export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const utils = trpc.useUtils();
+  const { data: authMe } = trpc.auth.me.useQuery();
+  const isSuperAdmin = authMe?.role === "super_admin";
   const staffQuery = trpc.channelManager.hotelStaff.useQuery(
     { hotel_id: hotelId },
     { enabled: Boolean(hotelId) },
@@ -71,6 +73,10 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const [inviteForm, setInviteForm] = useState<InviteForm>(emptyInvite);
   const [confirmation, setConfirmation] = useState<StaffConfirmation | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [signupLinkOpen, setSignupLinkOpen] = useState(false);
+  const [signupLinkHours, setSignupLinkHours] = useState(72);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const inviteStaff = trpc.channelManager.inviteHotelStaff.useMutation({
     onSuccess: async () => {
@@ -101,6 +107,18 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
     },
     onError: error => setFormError(error.message),
   });
+  const signupLinksQuery = trpc.channelManager.listSignupLinks.useQuery(
+    { hotel_id: hotelId },
+    { enabled: Boolean(hotelId) && isSuperAdmin },
+  );
+  const createSignupLink = trpc.channelManager.createSignupLink.useMutation({
+    onSuccess: async data => {
+      setGeneratedLink(`${window.location.origin}/signup/${data.token}`);
+      setLinkCopied(false);
+      await signupLinksQuery.refetch();
+    },
+    onError: error => setFormError(error.message),
+  });
   const transferAdmin = trpc.channelManager.transferHotelAdmin.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -128,6 +146,23 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const auditUserLabel = (userId: string) => staff.find(member => member.user_id === userId)?.email ?? userId;
   const transferCandidates = staff.filter(member => member.role !== "hotel_owner" && !isPlatformRole(member.role));
   const hotelAdminRestrictionText = "Only one Hotel Admin is allowed per hotel. Reassign or remove the current Hotel Admin before assigning this role.";
+
+  async function copyGeneratedLink() {
+    if (!generatedLink) return;
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      setLinkCopied(true);
+    } catch {
+      setFormError("Could not copy the link automatically. Select and copy it manually.");
+    }
+  }
+
+  function closeSignupLinkModal() {
+    setSignupLinkOpen(false);
+    setGeneratedLink(null);
+    setLinkCopied(false);
+    setSignupLinkHours(72);
+  }
 
   function submitInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,9 +252,16 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
           <h1>Hotel staff<span className="title-mark">.</span></h1>
           <p className="lede">Invite staff and assign only the hotel-level role they need. Platform roles and service identities stay outside this workspace.</p>
         </div>
-        <button className="button button-primary" type="button" onClick={() => { setFormError(null); setInviteOpen(true); }}>
-          <UserPlus size={16} /> Invite staff
-        </button>
+        <div className="page-intro-actions" style={{ display: "flex", gap: "0.5rem" }}>
+          {isSuperAdmin && !hotelAdminAlreadyAssigned && (
+            <button className="button button-quiet" type="button" onClick={() => { setFormError(null); setSignupLinkOpen(true); }}>
+              <Link2 size={16} /> Generate signup link
+            </button>
+          )}
+          <button className="button button-primary" type="button" onClick={() => { setFormError(null); setInviteOpen(true); }}>
+            <UserPlus size={16} /> Invite staff
+          </button>
+        </div>
       </section>
 
       {formError && (
@@ -523,6 +565,72 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
               </label>
               <div className="modal-actions"><button className="button button-quiet" type="button" onClick={() => setInviteOpen(false)} disabled={isPending}>Cancel</button><button className="button button-primary" type="submit" disabled={isPending}>{inviteStaff.isPending ? "Sending invite…" : "Send invitation"}</button></div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {signupLinkOpen && (
+        <div className="admin-modal-backdrop" role="presentation">
+          <div className="panel admin-modal" role="dialog" aria-modal="true" aria-labelledby="signup-link-title">
+            <div className="panel-heading">
+              <div><div className="eyebrow">Property team / Self-service</div><h2 id="signup-link-title">Generate signup link</h2></div>
+              <button type="button" className="icon-button" onClick={closeSignupLinkModal} aria-label="Close signup link form"><X size={17} /></button>
+            </div>
+            <div className="admin-form">
+              <p className="modal-lede">Anyone who opens this link before it expires can create their own login and becomes the Hotel Admin for this property. It can be used once.</p>
+
+              {!generatedLink ? (
+                <>
+                  <label>Link expires in (hours)
+                    <input
+                      type="number"
+                      min={1}
+                      max={720}
+                      value={signupLinkHours}
+                      onChange={event => setSignupLinkHours(Math.max(1, Math.min(720, Number(event.target.value) || 1)))}
+                    />
+                  </label>
+                  <div className="modal-actions">
+                    <button className="button button-quiet" type="button" onClick={closeSignupLinkModal} disabled={createSignupLink.isPending}>Cancel</button>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      disabled={createSignupLink.isPending}
+                      onClick={() => createSignupLink.mutate({ hotel_id: hotelId, expiresInHours: signupLinkHours })}
+                    >
+                      {createSignupLink.isPending ? "Generating…" : "Generate link"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label>Signup link
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <input type="text" readOnly value={generatedLink} className="font-mono" style={{ flex: 1 }} onFocus={event => event.target.select()} />
+                      <button type="button" className="button button-quiet" onClick={copyGeneratedLink} aria-label="Copy signup link">
+                        {linkCopied ? <Check size={16} /> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  </label>
+                  <p className="field-help">Send this link to the new hotel owner. It expires in {signupLinkHours} hour{signupLinkHours === 1 ? "" : "s"} and can only be used once.</p>
+                  <div className="modal-actions"><button className="button button-primary" type="button" onClick={closeSignupLinkModal}>Done</button></div>
+                </>
+              )}
+
+              {signupLinksQuery.data && signupLinksQuery.data.length > 0 && (
+                <div className="signup-links-history">
+                  <p className="field-help" style={{ marginTop: "1rem" }}>Previously generated links</p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {signupLinksQuery.data.map(link => (
+                      <li key={link.id} style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", padding: "0.35rem 0" }}>
+                        <span className="font-mono" style={{ fontSize: "0.75rem" }}>{link.token.slice(0, 10)}…</span>
+                        <span className={`badge badge-${link.status === "active" ? "success" : link.status === "used" ? "info" : "muted"}`}>{link.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

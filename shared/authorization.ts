@@ -48,6 +48,7 @@ export const PERMISSIONS = [
   "platform.manage_users",
   "platform.manage_billing",
   "platform.view_system_logs",
+  "platform.manage_signup_links",
   "property.view",
   "property.manage_profile",
   "property.manage_room_structure",

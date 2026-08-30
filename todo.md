@@ -312,3 +312,15 @@ Archive: `channel-manager-mvp-20260824.tar.gz` (340 KB, 250 entries). Excluded: 
 - [x] Fixed a pre-existing gap: `vitest.config.ts`'s `include` glob never covered `shared/**/*.test.ts`, so `shared/authorization.test.ts` was never actually running under `pnpm test`
 - [x] `pnpm test` (157 passed / 3 skipped), `pnpm check`, `pnpm build` all pass
 - [ ] "Payments & Gateway" module (super-admin-only payment provider config) — separate, later task, not started
+
+## Self-Service Hotel-Owner Signup Links
+- [x] Added `hotel_signup_links` table (migration `20260830_add_hotel_signup_links.sql` + `verify_20260830_hotel_signup_links.sql`) — RLS enabled with zero policies, every access goes through the service-role admin client, never anon/authenticated
+- [x] Added `platform.manage_signup_links` permission, granted to `super_admin` only
+- [x] Added `server/signupLinks.ts` (token generation + status derivation) and admin-client helpers in `server/supabase.ts` (`createSignupLink`, `listSignupLinksForHotel`, `getValidSignupLink`, `redeemSignupLink`, `createHotelOwnerMembership`)
+- [x] Added 4 tRPC procedures: `createSignupLink`/`listSignupLinks` (protected, super_admin), `validateSignupLink`/`completeHotelOwnerSignup` (public, for the unauthenticated signer) — single-use enforced via an atomic `used_at is null` update guard
+- [x] Added "Generate signup link" action in `HotelStaff.tsx` (visible only when `isSuperAdmin && !hotelAdminAlreadyAssigned`) with a real copy-to-clipboard button (first one in the app) and a link-history list
+- [x] Built public `client/src/pages/HotelOwnerSignup.tsx` (`/signup/:token`, outside `PrivateRoute`) — validates the token, self-registers via `supabase.auth.signUp`, then binds the new user as `hotel_owner` on the pre-existing hotel
+- [x] Added regression tests: `server/signupLinks.test.ts`, `client/src/pages/HotelOwnerSignup.contract.test.ts`, extended `shared/authorization.test.ts`
+- [x] `pnpm test` (174 passed / 3 skipped), `pnpm check`, `pnpm build` all pass
+- [ ] Apply `20260830_add_hotel_signup_links.sql` to the live Supabase project and confirm `verify_20260830_hotel_signup_links.sql` reports all PASS
+- [ ] Browser walkthrough on production: generate a link, complete signup, confirm single-use + expiry enforcement

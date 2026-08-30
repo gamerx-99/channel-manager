@@ -30,6 +30,7 @@ import Dashboard from "./pages/Home";
 import ChannelPerformance from "./pages/ChannelPerformance";
 import Financials from "./pages/Financials";
 import Login from "./pages/Login";
+import HotelOwnerSignup from "./pages/HotelOwnerSignup";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
 import Bookings from "./pages/Bookings";
@@ -366,6 +367,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/signup/:token">
+        {(params) => <HotelOwnerSignup token={params.token} />}
+      </Route>
       <Route path="/dashboard/channels">
         <PrivateRoute><ChannelPerformance /></PrivateRoute>
       </Route>

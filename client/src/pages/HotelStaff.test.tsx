@@ -52,12 +52,18 @@ const mocks = vi.hoisted(() => {
     updateRole: { isPending: false, mutate: vi.fn() },
     remove: { isPending: false, mutate: vi.fn() },
     transfer: { isPending: false, mutate: vi.fn() },
+    createSignupLink: { isPending: false, mutate: vi.fn() },
   };
+
+  const authMeQuery = { data: { role: "hotel_owner" as const }, isLoading: false, error: null as { message: string } | null };
+  const signupLinksQuery = { data: [] as Array<{ id: string; token: string; status: string }>, isLoading: false, error: null as { message: string } | null, refetch: vi.fn() };
 
   return {
     query,
     auditQuery,
     mutations,
+    authMeQuery,
+    signupLinksQuery,
     invalidate: vi.fn(),
   };
 });
@@ -70,13 +76,18 @@ vi.mock("@/lib/trpc", () => ({
         dashboard: { invalidate: mocks.invalidate },
       },
     }),
+    auth: {
+      me: { useQuery: vi.fn(() => mocks.authMeQuery) },
+    },
     channelManager: {
       hotelStaff: { useQuery: vi.fn(() => mocks.query) },
       listHotelAdminAuditLogs: { useQuery: vi.fn(() => mocks.auditQuery) },
+      listSignupLinks: { useQuery: vi.fn(() => mocks.signupLinksQuery) },
       inviteHotelStaff: { useMutation: vi.fn(() => mocks.mutations.invite) },
       updateHotelStaffRole: { useMutation: vi.fn(() => mocks.mutations.updateRole) },
       removeHotelStaff: { useMutation: vi.fn(() => mocks.mutations.remove) },
       transferHotelAdmin: { useMutation: vi.fn(() => mocks.mutations.transfer) },
+      createSignupLink: { useMutation: vi.fn(() => mocks.mutations.createSignupLink) },
     },
   },
 }));
@@ -116,6 +127,9 @@ beforeEach(() => {
   mocks.mutations.updateRole.mutate.mockReset();
   mocks.mutations.remove.mutate.mockReset();
   mocks.mutations.transfer.mutate.mockReset();
+  mocks.mutations.createSignupLink.mutate.mockReset();
+  mocks.authMeQuery.data = { role: "hotel_owner" };
+  mocks.signupLinksQuery.data = [];
 });
 
 describe("HotelStaff", () => {

@@ -81,4 +81,10 @@ describe("seven-role authorization matrix", () => {
       expect(roleHasPermission(role, "property.view_financials")).toBe(role === "hotel_owner");
     }
   });
+
+  it("grants platform.manage_signup_links to super_admin only", () => {
+    for (const role of APP_ROLES) {
+      expect(roleHasPermission(role, "platform.manage_signup_links")).toBe(role === "super_admin");
+    }
+  });
 });

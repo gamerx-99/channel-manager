@@ -30,14 +30,20 @@ import { systemRouter } from './_core/systemRouter';
 import { protectedProcedure, publicProcedure, router } from './_core/trpc';
 import {
   createRlsSupabaseClient,
+  createHotelOwnerMembership,
+  createSignupLink,
   deleteAuthUser,
   getAuthUser,
+  getValidSignupLink,
   inviteAuthUser,
   listAuthUsers,
+  listSignupLinksForHotel,
+  redeemSignupLink,
 } from './supabase';
 import { buildTm30Rows, createTm30Workbook } from './tm30';
 import { buildChannelPerformanceSummary } from './channelPerformance';
 import { buildFinancialsSummary } from './financials';
+import { deriveSignupLinkStatus, generateSignupToken } from './signupLinks';
 
 const hotelIdSchema = z.string().uuid();
 const bookingStatusSchema = z.enum(['confirmed', 'checked_in', 'checked_out', 'cancelled']);
@@ -428,6 +434,56 @@ export const appRouter = router({
         if (error instanceof TRPCError) throw error;
         return rethrowDomainError(error);
       }
+    }),
+    createSignupLink: protectedProcedure.input(z.object({
+      hotel_id: hotelIdSchema,
+      expiresInHours: z.number().int().min(1).max(720),
+    })).mutation(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
+      const client = rlsClient(ctx.user.accessToken);
+      try {
+        const hotel = await getManagedHotel(client, input.hotel_id);
+        if (!hotel) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
+        }
+        const assignments = await listHotelUserAssignments(client);
+        assertSingleHotelAdmin(assignments, input.hotel_id);
+        const token = generateSignupToken();
+        const expiresAt = new Date(Date.now() + input.expiresInHours * 60 * 60 * 1000).toISOString();
+        return await createSignupLink(input.hotel_id, ctx.user.id, token, expiresAt);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        return rethrowDomainError(error);
+      }
+    }),
+    listSignupLinks: protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
+      try {
+        const links = await listSignupLinksForHotel(input.hotel_id);
+        return links.map(link => ({ ...link, status: deriveSignupLinkStatus(link) }));
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+    validateSignupLink: publicProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ input }) => {
+      const link = await getValidSignupLink(input.token);
+      if (!link) return { valid: false as const };
+      return { valid: true as const, hotelName: link.hotelName };
+    }),
+    completeHotelOwnerSignup: publicProcedure.input(z.object({
+      token: z.string().min(1),
+      userId: z.string().uuid(),
+    })).mutation(async ({ input }) => {
+      const redeemed = await redeemSignupLink(input.token, input.userId);
+      if (!redeemed) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'This signup link is no longer valid.' });
+      }
+      try {
+        await createHotelOwnerMembership(redeemed.hotel_id, input.userId);
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+      return { success: true as const };
     }),
     updateHotelStaffRole: protectedProcedure.input(hotelStaffRoleSchema).mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
