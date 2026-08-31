@@ -19,6 +19,12 @@ Status: BLOCKED — live database verification required
 
 No live migration or RLS result is claimed as PASS.
 
+The original `20260904_add_notifications.sql` still contains the historical
+`public.users` reference and broad `FOR ALL USING (true)` policy. The project has
+no `public.users` table; roles are stored in `public.hotel_users`. The separate
+`20260905_harden_notifications_rls.sql` migration is the corrective migration and
+must be applied after the original notifications table exists.
+
 ## Source Audit
 
 - Payment settings: SELECT/INSERT/UPDATE use `public.is_hotel_member`; tRPC adds `property.manage_profile` and MFA.

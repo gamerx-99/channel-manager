@@ -5,6 +5,7 @@
 - **Live database status**: Not verifiable in this environment. `node server/verifySupabaseMigration.mjs` failed with `SUPABASE_POOLER_DB_URL or SUPABASE_DB_URL is required.` No migration is claimed as applied or verified.
 - **Verification**: `pnpm test` — 63 files passed, 344 tests passed, 2 files / 3 tests skipped. `pnpm check` passed. `pnpm build` passed before the SQL-only Phase 10 additions.
 - **Human action required**: Apply and verify `20260904_add_hotel_payment_settings.sql`, `20260904_add_notifications.sql`, then `20260905_harden_notifications_rls.sql`; paste all-PASS results and cross-hotel isolation evidence here. Do not start Phase 11 until live RLS isolation is confirmed.
+- **Follow-up diagnosis**: The original notifications migration contains the invalid `public.users` reference and broad `FOR ALL USING (true)` policy. If Supabase reports `42P01 relation public.users does not exist`, ensure the full corrective `20260905_harden_notifications_rls.sql` is run after the notifications table exists; it drops the old policies and uses `public.hotel_users` directly.
 
 ## [2026-08-31] SlipOK / RLS / Mobile UI / Language review & polish — DONE ✅
 - **Ticket scope**: Independent code review of previous session's work (SlipOK hotel ID fix, payment-settings RLS migration, mobile responsive CSS, language switcher), plus small polish fixes.
