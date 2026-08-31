@@ -426,16 +426,21 @@ BEGIN
     ELSE v_failures := array_append(v_failures, 'T7 unexpected: ' || SQLERRM); RAISE NOTICE 'FAIL T7: unexpected error %', SQLERRM; END IF;
   END;
 
-  -- T8: member cannot DELETE
+  -- T8: member cannot DELETE (RLS denies qualifying rows -> 0 rows deleted, or raises 42501)
   BEGIN
     PERFORM set_config('request.jwt.claims', json_build_object('sub', v_member_a::text, 'role','authenticated')::text, true);
     SET LOCAL ROLE authenticated;
     DELETE FROM public.notifications WHERE hotel_id = v_hotel_a AND type = 'phase10_selftest';
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
     RESET ROLE;
-    v_failures := array_append(v_failures, 'T8 DELETE was NOT blocked');
-    RAISE NOTICE 'FAIL T8: DELETE was not blocked';
+    IF v_rows = 0 THEN
+      RAISE NOTICE 'PASS T8: DELETE denied by RLS (0 rows affected)';
+    ELSE
+      v_failures := array_append(v_failures, 'T8 DELETE was NOT blocked');
+      RAISE NOTICE 'FAIL T8: DELETE was not blocked (deleted % rows)', v_rows;
+    END IF;
   EXCEPTION WHEN others THEN
-    IF SQLSTATE = '42501' THEN RAISE NOTICE 'PASS T8: DELETE denied by RLS';
+    IF SQLSTATE = '42501' THEN RAISE NOTICE 'PASS T8: DELETE denied by RLS (42501)';
     ELSE v_failures := array_append(v_failures, 'T8 unexpected: ' || SQLERRM); RAISE NOTICE 'FAIL T8: unexpected error %', SQLERRM; END IF;
   END;
 

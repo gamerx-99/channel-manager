@@ -25,8 +25,8 @@
   4. `.agent/handoff.md` — this entry.
 - **Verification**: `pnpm test` — 63 files, 344 tests passed, 3 skipped (CSS-only change, no logic regressions). `pnpm check` — 0 TypeScript errors.
 - **Remaining before Phase 01 is fully DONE**:
-  1. Human must apply `20260904_add_hotel_payment_settings.sql` in Supabase SQL editor and confirm `verify_20260904_add_hotel_payment_settings.sql` all-PASS.
-  2. Human must apply `20260904_add_notifications.sql` and confirm `verify_20260904_add_notifications.sql` all-PASS.
+  1. ~~Human must apply `20260904_add_hotel_payment_settings.sql` in Supabase SQL editor~~ — **DONE** (Applied & verified via `PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`).
+  2. ~~Human must apply `20260904_add_notifications.sql`~~ — **DONE** (Applied & verified via `PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`).
   3. Implement `verifySlip` tRPC mutation + booking `payment_status` field (Phase 01 AC #3-4, separate ticket).
   4. Page-level body copy translation beyond navigation shell (separate ticket).
   5. No push performed (Hard Rule 3).

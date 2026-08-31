@@ -56,9 +56,9 @@ both as proposals to confirm before implementation starts, not settled decisions
 - Client contract test for the settings page route + MFA step-up verification
 
 ## Definition of Done
-- [ ] `pnpm test` passes
-- [ ] `pnpm check` + `pnpm build` pass
-- [ ] No TODO/FIXME left in touched files
-- [ ] Migration + `verify_*.sql` pair written and human-applied
+- [x] `pnpm test` passes (344 passed)
+- [x] `pnpm check` + `pnpm build` pass
+- [x] No TODO/FIXME left in touched files
+- [x] Migration + `verify_*.sql` pair written and human-applied (`PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`)
 - [ ] Spec status updated to DONE, `.agent/handoff.md` entry written
 - [ ] Reviewer approved with evidence
