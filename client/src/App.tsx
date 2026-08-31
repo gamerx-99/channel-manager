@@ -71,25 +71,24 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const { hotels: visibleHotels, selectedHotelId, selectedHotel, setSelectedHotelId } = useHotel();
-  const { language } = useLanguage();
   const can = (permission: Permission) => hasAnyPermission(roles, permission);
   const selectedHotelName = selectedHotel?.name;
   const hotelNavItems = selectedHotelId
     ? [
-      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: "Room operations", Thai: "จัดการห้องพัก", icon: BedDouble }] : []),
-      ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: "Bookings", Thai: "การจอง", icon: Users }] : []),
-      ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: "Availability", Thai: "ปฏิทินห้องว่าง", icon: CalendarDays }] : []),
-      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: "OTA Sync", Thai: "ซิงก์ OTA", icon: Globe }] : []),
-      ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: "Hotel Staff", Thai: "จัดการพนักงาน", icon: ShieldCheck }] : []),
+      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: "Room operations", icon: BedDouble }] : []),
+      ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: "Bookings", icon: Users }] : []),
+      ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: "Availability", icon: CalendarDays }] : []),
+      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: "OTA Sync", icon: Globe }] : []),
+      ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: "Hotel Staff", icon: ShieldCheck }] : []),
     ]
     : [];
   const isSuperAdmin = roles.includes("super_admin");
   const isPlatformAdmin = roles.some(role => isPlatformRole(role));
   const navItems = [
-    { href: "/dashboard", label: language === "th" ? (isPlatformAdmin ? "ภาพรวมระบบ" : "ภาพรวมโรงแรม") : "Overview", Thai: "ภาพรวมโรงแรม", icon: LayoutDashboard },
-    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: language === "th" ? "สถิติช่องทาง" : "Channel analytics", Thai: "สถิติช่องทาง", icon: BarChart3 }] : []),
-    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: language === "th" ? "จัดการโรงแรมทั้งหมด" : "Hotels Management", Thai: "จัดการโรงแรมทั้งหมด", icon: Hotel }] : []),
-    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: language === "th" ? "จัดการสิทธิ์ผู้ใช้" : "Admin Users", Thai: "จัดการสิทธิ์ผู้ใช้", icon: ShieldCheck }] : []),
+    { href: "/dashboard", label: isPlatformAdmin ? "Overview" : "Overview", icon: LayoutDashboard },
+    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: "Channel analytics", icon: BarChart3 }] : []),
+    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: "Hotels Management", icon: Hotel }] : []),
+    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: "Admin Users", icon: ShieldCheck }] : []),
     ...hotelNavItems,
   ];
   const initials = userName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "U";
@@ -116,7 +115,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
               <em>manager</em>
             </span>
           </Link>
-          <button className="icon-button sidebar-close" onClick={() => setOpen(false)} aria-label="ปิดเมนู">
+          <button className="icon-button sidebar-close" onClick={() => setOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
         </div>
@@ -131,17 +130,16 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           onSelectHotelId={setSelectedHotelId}
         />
 
-        <nav className="nav-list" aria-label="เมนูหลัก">
-          <p className="nav-label">{language === "th" ? "พื้นที่ทำงาน" : "Workspace"}</p>
+        <nav className="nav-list" aria-label="Main navigation">
+          <p className="nav-label">Workspace</p>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = Boolean(item.href && activePath === item.href);
             if (!item.href) {
               return (
-                <span key={item.label} className="nav-link" aria-disabled="true" title="เลือกโรงแรมจากหน้า Hotels ก่อน" style={{ opacity: 0.48, cursor: "not-allowed" }}>
+                <span key={item.label} className="nav-link" aria-disabled="true" title="Select a hotel from Hotels page first" style={{ opacity: 0.48, cursor: "not-allowed" }}>
                   <Icon size={17} strokeWidth={1.8} />
                   <span>{item.label}</span>
-                  <small>{item.Thai}</small>
                 </span>
               );
             }
@@ -154,7 +152,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
               >
                 <Icon size={17} strokeWidth={isActive ? 2.3 : 1.8} />
                 <span>{item.label}</span>
-                <small>{item.Thai}</small>
               </Link>
             );
           })}
@@ -167,13 +164,11 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             >
               <BarChart3 size={17} strokeWidth={location === "/dashboard/financials" ? 2.3 : 1.8} />
               <span>Financials</span>
-              <small>การเงินและชำระเงิน</small>
             </Link>
           )}
           {isSuperAdmin && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Payments & Gateway module is coming soon in future releases.")}>
             <FileSpreadsheet size={17} strokeWidth={1.8} />
             <span>Payments</span>
-            <small>การรับชำระเงิน</small>
           </button>}
           {can("operations.view_bookings") && (
             <Link
@@ -183,7 +178,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             >
               <Bell size={17} strokeWidth={location.startsWith("/communications") ? 2.3 : 1.8} />
               <span>Communications</span>
-              <small>ข้อความแขก</small>
             </Link>
           )}
           {can("housekeeping.view_room_status") && (
@@ -194,7 +188,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             >
               <Users size={17} strokeWidth={location === "/housekeeping" ? 2.3 : 1.8} />
               <span>Housekeeping</span>
-              <small>สถานะแม่บ้าน</small>
             </Link>
           )}
           <Link
@@ -204,7 +197,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           >
             <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
             <span>Website Builder</span>
-            <small>เว็บไซต์โรงแรม</small>
           </Link>
           <button
             type="button"
@@ -220,7 +212,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           >
             <CalendarDays size={17} strokeWidth={1.8} />
             <span>Booking Engines</span>
-            <small>ระบบจองตรง</small>
           </button>
           {can("revenue.manage_pricing_rules") && (
             <Link
@@ -230,14 +221,12 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             >
               <BarChart3 size={17} strokeWidth={location === "/dashboard/pricing" ? 2.3 : 1.8} />
               <span>Advanced Pricing</span>
-              <small>ตั้งราคาขั้นสูง</small>
             </Link>
           )}
           <p className="nav-label nav-label-spaced">System</p>
           {can("operations.export_tm30") && <a className="nav-link" href="#" onClick={(event) => { event.preventDefault(); toast.info("TM.30 and report exports are available directly inside each hotel's Bookings workspace."); }}>
             <FileSpreadsheet size={17} strokeWidth={1.8} />
             <span>Exports</span>
-            <small>ส่งออกข้อมูล</small>
           </a>}
           {can("platform.manage_users") && (
             <Link
@@ -247,7 +236,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             >
               <Settings2 size={17} strokeWidth={1.8} />
               <span>Settings</span>
-              <small>ตั้งค่าระบบ</small>
             </Link>
           )}
         </nav>
@@ -269,8 +257,8 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             <button
               className="icon-button"
               onClick={onLogout}
-              title="ออกจากระบบ"
-              aria-label="ออกจากระบบ"
+              title="Sign out"
+              aria-label="Sign out"
             >
               <LogOut size={14} />
             </button>
@@ -278,11 +266,11 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
         </div>
       </aside>
 
-      {open && <button className="mobile-scrim" aria-label="ปิดเมนู" onClick={() => setOpen(false)} />}
+      {open && <button className="mobile-scrim" aria-label="Close menu" onClick={() => setOpen(false)} />}
 
       <main className="main-canvas">
         <header className="topbar">
-          <button className="icon-button menu-button" onClick={() => setOpen(true)} aria-label="เปิดเมนู">
+          <button className="icon-button menu-button" onClick={() => setOpen(true)} aria-label="Open menu">
             <Menu size={19} />
           </button>
           <Link href="/dashboard" className="topbar-brand">
@@ -298,8 +286,8 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           <div className="topbar-actions">
             <label className="topbar-search">
               <Search size={15} aria-hidden="true" />
-              <span className="sr-only">ค้นหาในระบบ</span>
-              <input placeholder={language === "th" ? "ค้นหาในระบบ..." : "Search system..."} aria-label={language === "th" ? "ค้นหาในระบบ" : "Search system"} />
+              <span className="sr-only">Search system</span>
+              <input placeholder="Search system..." aria-label="Search system" />
             </label>
             {isSuperAdmin && (
               <div className="dropdown-anchor">
@@ -308,10 +296,10 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
                   onClick={() => { setAddMenuOpen(prev => !prev); setUserMenuOpen(false); setWorkspaceMenuOpen(false); }}
                   aria-expanded={addMenuOpen}
                 >
-                  <Plus size={15} /> <span>{language === "th" ? "เพิ่มข้อมูล" : "Add new"}</span> <ChevronDown size={14} />
+                  <Plus size={15} /> <span>Add new</span> <ChevronDown size={14} />
                 </button>
                 {addMenuOpen && (
-                  <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label="เมนูเพิ่มข้อมูล">
+                  <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label="Add new menu">
                     <Link href="/hotels" className="menu-surface-item" onClick={() => setAddMenuOpen(false)}>
                       Add new hotel / property
                     </Link>
@@ -331,7 +319,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
                 className="user-mini"
                 onClick={() => { setUserMenuOpen(prev => !prev); setAddMenuOpen(false); setWorkspaceMenuOpen(false); }}
                 aria-expanded={userMenuOpen}
-                aria-label="บัญชีผู้ใช้"
+                aria-label="Account menu"
               >
                 <span className="user-avatar small">{initials}</span>
                 <ChevronDown size={14} />

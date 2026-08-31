@@ -59,8 +59,15 @@ body { background: var(--paper); color: var(--ink); }
 .topbar-search:focus-within { border-color: var(--pine); box-shadow: 0 0 0 3px rgba(149,72,49,.1); }
 .topbar-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; }
 .topbar-search input::placeholder { color: #9c9693; }
-.language-switcher{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--rule);border-radius:10px;background:#fff;color:var(--ink-soft);font-size:11px;font-weight:700;letter-spacing:.04em;transition:background .16s var(--ease-out),color .16s var(--ease-out),border-color .16s var(--ease-out)}
-.language-switcher:hover,.language-switcher:focus-visible{background:var(--pine-soft);border-color:#e8cfc5;color:var(--pine);outline:none}
+.language-switcher{display:none} /* legacy — replaced by lang-toggle */
+/* Language Toggle Pill — EN | TH */
+.lang-toggle{display:inline-flex;align-items:center;height:30px;padding:2px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);gap:0;cursor:pointer;transition:border-color .15s ease}
+.lang-toggle:hover{border-color:#c4d5cc}
+.lang-toggle:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
+.lang-option{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--ink-soft);transition:background .15s ease,color .15s ease;user-select:none}
+.lang-option--active{background:var(--pine);color:#fff}
+.lang-divider{width:1px;height:12px;background:var(--rule);margin:0 1px;flex-shrink:0}
+
 .notification-menu{width:min(320px,calc(100vw - 24px));max-width:calc(100vw - 24px);}
 .notif-menu-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--rule)}
 .notif-menu-title{font-size:13px;font-weight:700;color:var(--ink)}
