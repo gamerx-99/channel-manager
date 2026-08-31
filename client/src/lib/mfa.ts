@@ -188,8 +188,16 @@ export async function enrollTotpFactor(): Promise<EnrollTotpResult> {
     return prep;
   }
 
+  // Supabase requires a factor's friendly_name to be unique per user across
+  // ALL factors (verified or not). The default name ("Authenticator") is the
+  // same every time, so any leftover factor under that name — one this
+  // session's cleanup above didn't manage to remove, e.g. from before that
+  // cleanup existed, or a timing/consistency gap between listFactors() and
+  // enroll() — causes a hard "friendly name already exists" failure on every
+  // retry. A unique name per attempt sidesteps the whole failure class.
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
+    friendlyName: `Authenticator-${Date.now().toString(36)}`,
   });
 
   if (error || !data) {

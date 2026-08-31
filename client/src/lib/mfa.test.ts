@@ -89,7 +89,10 @@ describe("MFA Enrollment and Cleanup flow", () => {
     }
     expect(mocks.listFactors).toHaveBeenCalledTimes(1);
     expect(mocks.unenroll).not.toHaveBeenCalled();
-    expect(mocks.enroll).toHaveBeenCalledWith({ factorType: "totp" });
+    expect(mocks.enroll).toHaveBeenCalledWith({
+      factorType: "totp",
+      friendlyName: expect.stringMatching(/^Authenticator-/),
+    });
   });
 
   it("successfully removes stale unverified factors before enrollment", async () => {
@@ -120,7 +123,10 @@ describe("MFA Enrollment and Cleanup flow", () => {
       expect(res.data.id).toBe("factor-new");
     }
     expect(mocks.unenroll).toHaveBeenCalledWith({ factorId: "factor-stale-1" });
-    expect(mocks.enroll).toHaveBeenCalledWith({ factorType: "totp" });
+    expect(mocks.enroll).toHaveBeenCalledWith({
+      factorType: "totp",
+      friendlyName: expect.stringMatching(/^Authenticator-/),
+    });
   });
 
   it("surfaces unenroll failure and prevents enrollment", async () => {

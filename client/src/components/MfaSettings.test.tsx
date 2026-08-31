@@ -70,7 +70,10 @@ describe("MfaSettings", () => {
     await waitFor(() => expect(mocks.listFactors).toHaveBeenCalled());
 
     await user.click(screen.getByRole("button", { name: "Enroll authenticator" }));
-    expect(mocks.enroll).toHaveBeenCalledWith({ factorType: "totp" });
+    expect(mocks.enroll).toHaveBeenCalledWith({
+      factorType: "totp",
+      friendlyName: expect.stringMatching(/^Authenticator-/),
+    });
 
     await waitFor(() => expect(screen.getByTestId("mfa-enroll-panel")).toBeTruthy());
     expect(screen.getByTestId("mfa-qr").getAttribute("src")).toContain("data:image");
