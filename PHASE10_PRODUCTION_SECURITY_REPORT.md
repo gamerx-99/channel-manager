@@ -9,10 +9,19 @@ Status: BLOCKED — live database verification required
 Code Fix        PASS
 Root Cause      CONFIRMED
 Git             CLEAN
-Supabase State  UNKNOWN
+Supabase State  notifications = Case B CONFIRMED (live 42P01: table absent)
+                payment settings = pending full inspect output
 Live Verify     REQUIRED
 Phase 10        OPEN
 ```
+
+First live evidence (2026-08-31): running `PHASE10_INSPECT_DATABASE_STATE.sql`
+failed with `42P01: relation "public.notifications" does not exist` at the
+trigger check — proving the notifications table is absent on the live database,
+i.e. **Case B**: the original 20260904 script rolled back entirely when its
+`public.users`-referencing policy failed to create. The inspect script's hard
+`::regclass` cast aborted the run; it now uses `to_regclass()` so every check
+returns YES/NO instead of erroring when the table is missing.
 
 Root cause of the `42P01: relation "public.users" does not exist` error: the
 original `20260904_add_notifications.sql` references `public.users`, a table this

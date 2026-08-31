@@ -59,9 +59,9 @@ SELECT 'member update policy scopes via hotel_users',
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
 SELECT 'immutable content trigger active',
-  CASE WHEN EXISTS (
+  CASE WHEN to_regclass('public.notifications') IS NOT NULL AND EXISTS (
     SELECT 1 FROM pg_trigger
-    WHERE tgrelid = 'public.notifications'::regclass
+    WHERE tgrelid = to_regclass('public.notifications')
       AND tgname = 'notifications_content_immutable'
       AND tgenabled <> 'D'
   ) THEN 'PASS' ELSE 'FAIL' END

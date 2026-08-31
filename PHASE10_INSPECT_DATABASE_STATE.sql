@@ -43,9 +43,9 @@ SELECT 'any policy referencing public.users anywhere (must be NO)',
   ) THEN 'YES - PROBLEM' ELSE 'NO' END
 UNION ALL
 SELECT 'notifications immutable-content trigger exists',
-  CASE WHEN EXISTS (
+  CASE WHEN to_regclass('public.notifications') IS NOT NULL AND EXISTS (
     SELECT 1 FROM pg_trigger
-    WHERE tgrelid = 'public.notifications'::regclass
+    WHERE tgrelid = to_regclass('public.notifications')
       AND tgname = 'notifications_content_immutable'
       AND tgenabled <> 'D'
   ) THEN 'YES' ELSE 'NO' END
