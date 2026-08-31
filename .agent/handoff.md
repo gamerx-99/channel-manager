@@ -1,5 +1,67 @@
 # Handoff log
 
+## [2026-08-31] Phase 10 Production & Security Closure — BLOCKED
+- **Source audit**: Reviewed the latest payment-settings and notification migrations plus hotel-scoped application paths. Added `20260905_harden_notifications_rls.sql` to remove the historical broad notification policy, add member-scoped SELECT/UPDATE policies, and prevent browser sessions from changing notification ownership/content. Added `PHASE10_PRODUCTION_SECURITY_REPORT.md` and verification coverage.
+- **Live database status**: Not verifiable in this environment. `node server/verifySupabaseMigration.mjs` failed with `SUPABASE_POOLER_DB_URL or SUPABASE_DB_URL is required.` No migration is claimed as applied or verified.
+- **Verification**: `pnpm test` — 63 files passed, 344 tests passed, 2 files / 3 tests skipped. `pnpm check` passed. `pnpm build` passed before the SQL-only Phase 10 additions.
+- **Human action required**: Apply and verify `20260904_add_hotel_payment_settings.sql`, `20260904_add_notifications.sql`, then `20260905_harden_notifications_rls.sql`; paste all-PASS results and cross-hotel isolation evidence here. Do not start Phase 11 until live RLS isolation is confirmed.
+
+## [2026-08-31] SlipOK / RLS / Mobile UI / Language review & polish — DONE ✅
+- **Ticket scope**: Independent code review of previous session's work (SlipOK hotel ID fix, payment-settings RLS migration, mobile responsive CSS, language switcher), plus small polish fixes.
+- **Review findings**: All four areas were genuinely implemented and passing tests. One issue found: `NotificationBell.tsx` used a raw inline-style dropdown instead of the project's `.menu-surface` CSS contract (z-index, backdrop, mobile-width). Pre-existing `notifications` RLS over-broad `FOR ALL` policy logged as a separate follow-up item.
+- **Fixes made**:
+  1. `client/src/components/NotificationBell.tsx` — replaced `dropdown-menu` + inline `style={}` with `menu-surface menu-surface--topbar` + semantic `.notif-*` CSS classes.
+  2. `client/src/index.css` — added 16 lines of `.notif-*` semantic classes to back the new markup.
+  3. `specs/01-payments-slipok.md` — status changed from `READY` to `PARTIAL`; acceptance criteria checkboxes updated to reflect what IS on disk (MFA gate ✅, encrypted key save/read ✅, super_admin bypass ✅) vs. what is NOT (verifySlip ❌, booking payment status ❌).
+  4. `.agent/handoff.md` — this entry.
+- **Verification**: `pnpm test` — 63 files, 344 tests passed, 3 skipped (CSS-only change, no logic regressions). `pnpm check` — 0 TypeScript errors.
+- **Remaining before Phase 01 is fully DONE**:
+  1. Human must apply `20260904_add_hotel_payment_settings.sql` in Supabase SQL editor and confirm `verify_20260904_add_hotel_payment_settings.sql` all-PASS.
+  2. Human must apply `20260904_add_notifications.sql` and confirm `verify_20260904_add_notifications.sql` all-PASS.
+  3. Implement `verifySlip` tRPC mutation + booking `payment_status` field (Phase 01 AC #3-4, separate ticket).
+  4. Page-level body copy translation beyond navigation shell (separate ticket).
+  5. No push performed (Hard Rule 3).
+
+## [2026-08-31] SlipOK scope fix, responsive shell, and language switcher — IN PROGRESS
+- **What happened**: Replaced the SlipOK UI's placeholder hotel UUID with the selected workspace hotel (falling back to the first RLS-visible hotel), persisted workspace selection, and aligned the pending payment-settings migration RLS policies with the existing `public.is_hotel_member()` platform/member gate. Added migration verification checks for the select and write policies.
+- **UI changes**: Added persisted Thai/English language state, `document.documentElement.lang`, and a compact `ไทย`/`EN` switcher in the top-right navigation. Added responsive notification-menu sizing and mobile-safe language control.
+- **Files touched**: `client/src/contexts/LanguageContext.tsx`, `client/src/components/LanguageSwitcher.tsx`, `client/src/components/NotificationBell.tsx`, `client/src/components/WorkspaceMenu.tsx`, `client/src/pages/Financials.tsx`, `client/src/App.tsx`, `client/src/index.css`, `20260904_add_hotel_payment_settings.sql`, `verify_20260904_add_hotel_payment_settings.sql`.
+- **Verification**: `pnpm test` — 63 files passed, 344 tests passed, 2 files / 3 tests skipped. `pnpm check` passed. `pnpm build` passed with the existing large-client-bundle warning.
+- **Remaining before completion**: Apply `20260904_add_hotel_payment_settings.sql` in the live Supabase project and confirm the verify script; complete SlipOK slip verification/payment-status flow; translate page-level copy beyond the navigation shell; perform authenticated mobile browser verification.
+
+## [2026-08-31 06:10] Phase 08 Cross-Cutting Platform Hardening — DONE ✅
+- **`pnpm test` evidence**: Test Files 63 passed | 2 skipped (65) · Tests 344 passed | 3 skipped (347)
+- **What happened**: Completed all approved Phase 08 items incrementally.
+- **Actions taken**:
+  1. **Rate Limiting** (`rateLimitedProcedure`): All public TRPC endpoints now throttled to 20 req/min via `server/_core/trpc.ts`. Contract tests updated to assert `rateLimitedProcedure` (not `publicProcedure`) across `PublicHotel`, `HotelOwnerSignup` contract tests.
+  2. **Super Admin In-App Notifications**: Scoped strictly to `super_admin` role only. `NotificationBell` renders only when `isSuperAdmin`. Added `listAllNotifications` + `markSystemNotificationsRead` to `server/db.ts`. Router allows Super Admin global fetch (no `hotelId` required). Notification triggers: new booking, signup link redeemed, OTA sync failure.
+  3. **Code Splitting**: Reverted — `React.lazy`/`Suspense` removed from `App.tsx` per user instruction; deferred to a later phase.
+  4. **Database Migrations**: Kept manual. Decision documented in `DECISIONS.md`.
+  5. **Test fixes**: Corrected `hotelMedia.test.ts` — `revenue_manager` correctly has `property.view`, so list is allowed; fixed hero-promotion mock sequence (1 call to `listHotelMedia` after delete, not 2).
+- **Files touched**: `server/_core/trpc.ts`, `server/db.ts`, `server/routers.ts`, `server/otaSync.ts`, `client/src/App.tsx`, `client/src/components/NotificationBell.tsx`, `server/hotelMedia.test.ts`, `client/src/pages/PublicHotel.contract.test.ts`, `client/src/pages/HotelOwnerSignup.contract.test.ts`, `DECISIONS.md`, `specs/08-cross-cutting-hardening.md`.
+- **Verdict**: PASS — All tests green.
+- **Next ticket**: Phase 09 (Authenticator MFA) — awaiting human instruction to proceed.
+
+## [2026-08-31 05:19] Phase 07 Live OTA API Integrations — DEFERRED
+- What happened: User explicitly requested to skip Phase 07 due to the external blocker (no partner API credentials).
+- Action taken:
+  1. Updated `specs/07-ota-live-integrations.md` status to DEFERRED.
+  2. Left existing Phase 01/02 OTA iCal sync (Calendar sync) intact per user request, only deferring the Live ARI/Booking API integrations from Phase 07.
+- Verdict: PASS — Phase is deferred per human instruction.
+- Next ticket / status: Move to Phase 08 (Cross-Cutting Hardening).
+
+
+## [2026-08-31 05:16] Phase 06 Website Builder — DONE
+- What happened: Phase 06 Website Builder verified and completed:
+  1. Backend: Verified `hotel_media` write path (`uploadHotelMedia`, `deleteHotelMedia`, `setHotelMediaHero` using `storagePut` for Supabase Storage) and `hotel_site_config` (`getHotelSiteConfigByHotelId`, `saveHotelSiteConfig`) exist in `server/db.ts` and `server/routers.ts` with correct `property.manage_profile` permission boundaries.
+  2. Custom domains (`hotel_domains`) were correctly recorded as deferred in `.agent/DECISIONS.md` (2026-08-30 entry).
+  3. Tests: Created `server/hotelMedia.test.ts` (CRUD, storage mock, permission gates, hero auto-promotion) and `client/src/pages/WebsiteBuilder.contract.test.ts` (checking tRPC hooks, permission logic, UI limits, fallback behavior).
+  4. Updated `specs/06-website-builder.md` checklist to DONE.
+- Files touched: `specs/06-website-builder.md`, `server/hotelMedia.test.ts`, `client/src/pages/WebsiteBuilder.contract.test.ts`.
+- Verdict: PASS — Acceptance criteria are fully met.
+- Next ticket / status: Next phase is Phase 08 (Cross-Cutting Hardening).
+
+
 ## [2026-08-31 04:27] test fix — publicBooking.test.ts mock mismatch — DONE
 - What happened: `pnpm test` had 1 failing test:
   `server/publicBooking.test.ts > maps Postgres exclusion constraint prevent_double_booking into friendly BAD_REQUEST`

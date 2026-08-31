@@ -45,9 +45,20 @@ import {
   createHotelMedia,
   deleteHotelMedia,
   setHotelMediaHero,
+  listNotifications,
+  listAllNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  markSystemNotificationsRead,
+  insertNotification,
+  getSlipOkSettings,
+  saveSlipOkSettings,
+  removeSlipOkKey,
 } from './db';
+import { requireRecentMfaVerification } from './mfa';
+import { encryptSlipOkKey, hashSlipOkKey } from './slipokCrypto';
 import { systemRouter } from './_core/systemRouter';
-import { protectedProcedure, publicProcedure, router } from './_core/trpc';
+import { protectedProcedure, publicProcedure, rateLimitedProcedure, router } from './_core/trpc';
 import {
   createRlsSupabaseClient,
   createSupabaseAdminClient,
@@ -339,6 +350,54 @@ function rethrowDomainError(error: unknown): never {
 
 export const appRouter = router({
   system: systemRouter,
+  notifications: router({
+    list: protectedProcedure
+      .input(z.object({ hotelId: z.string().uuid().optional() }))
+      .query(async ({ ctx, input }) => {
+        try {
+          if (!input.hotelId) {
+            if (ctx.user.role !== 'super_admin') {
+              throw new TRPCError({ code: 'FORBIDDEN', message: 'Only Super Admins can fetch all notifications globally.' });
+            }
+            return await listAllNotifications(createSupabaseAdminClient());
+          }
+          await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
+          return await listNotifications(rlsClient(ctx.user.accessToken), input.hotelId);
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+    markRead: protectedProcedure
+      .input(z.object({ hotelId: z.string().uuid().optional(), notificationId: z.string().uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          if (!input.hotelId) {
+            if (ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
+            return await markNotificationRead(createSupabaseAdminClient(), input.notificationId);
+          }
+          await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
+          return await markNotificationRead(rlsClient(ctx.user.accessToken), input.notificationId);
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+    markAllRead: protectedProcedure
+      .input(z.object({ hotelId: z.string().uuid().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          if (!input.hotelId) {
+            if (ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
+            await markSystemNotificationsRead(createSupabaseAdminClient());
+            return { success: true };
+          }
+          await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
+          await markAllNotificationsRead(rlsClient(ctx.user.accessToken), input.hotelId);
+          return { success: true };
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+  }),
   auth: router({
     me: publicProcedure.query(({ ctx }) => ctx.user),
     logout: publicProcedure.mutation(() => ({ success: true as const })),
@@ -594,12 +653,12 @@ export const appRouter = router({
         return rethrowDomainError(error);
       }
     }),
-    validateSignupLink: publicProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ input }) => {
+    validateSignupLink: rateLimitedProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ input }) => {
       const link = await getValidSignupLink(input.token);
       if (!link) return { valid: false as const };
       return { valid: true as const, hotelName: link.hotelName };
     }),
-    completeHotelOwnerSignup: publicProcedure.input(z.object({
+    completeHotelOwnerSignup: rateLimitedProcedure.input(z.object({
       token: z.string().min(1),
       userId: z.string().uuid(),
     })).mutation(async ({ input }) => {
@@ -1337,28 +1396,28 @@ export const appRouter = router({
         return rethrowDomainError(error);
       }
     }),
-    publicHotel: publicProcedure.input(z.string().trim().min(1).max(100)).query(async ({ input }) => {
+    publicHotel: rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ input }) => {
       try {
         return await getPublicHotel(rlsClient(), input);
       } catch (error) {
         return rethrowDomainError(error);
       }
     }),
-    publicHotelAvailability: publicProcedure.input(publicHotelAvailabilitySchema).query(async ({ input }) => {
+    publicHotelAvailability: rateLimitedProcedure.input(publicHotelAvailabilitySchema).query(async ({ input }) => {
       try {
         return await getPublicHotelAvailability(rlsClient(), input.slug, input.check_in, input.check_out);
       } catch (error) {
         return rethrowDomainError(error);
       }
     }),
-    createPublicBooking: publicProcedure.input(createPublicBookingSchema).mutation(async ({ input }) => {
+    createPublicBooking: rateLimitedProcedure.input(createPublicBookingSchema).mutation(async ({ input }) => {
       try {
         return await createPublicBooking(createSupabaseAdminClient(), input);
       } catch (error) {
         return rethrowDomainError(error);
       }
     }),
-    getHotelSiteConfig: publicProcedure.input(z.string().trim().min(1).max(100)).query(async ({ input }) => {
+    getHotelSiteConfig: rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ input }) => {
       try {
         const result = await getHotelSiteConfigBySlug(rlsClient(), input);
         // Gracefully return null when table missing or no config row
@@ -1432,15 +1491,15 @@ export const appRouter = router({
         } else {
           buffer = Buffer.from(input.base64, 'base64');
         }
-        
+
         const relKey = `hotel-media/${input.hotel_id}/${input.filename}`;
         const { url } = await storagePut(relKey, buffer, contentType);
-        
+
         // Find if this is the first image to automatically set it as hero
         const existingMedia = await listHotelMedia(client, input.hotel_id);
         const is_hero = existingMedia.length === 0;
         const display_order = existingMedia.length;
-        
+
         return await createHotelMedia(client, {
           hotel_id: input.hotel_id,
           url,
@@ -1464,13 +1523,13 @@ export const appRouter = router({
         if (!deleted) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'This media item could not be deleted.' });
         }
-        
+
         // If we deleted the hero, we should promote the first remaining one
         const remaining = await listHotelMedia(client, input.hotel_id);
         if (remaining.length > 0 && !remaining.some(m => m.is_hero)) {
           await setHotelMediaHero(client, input.hotel_id, remaining[0].id);
         }
-        
+
         return deleted;
       } catch (error) {
         return rethrowDomainError(error);
@@ -1556,6 +1615,71 @@ export const appRouter = router({
           }
         }),
     }),
+  }),
+
+  // ── Phase 01: SlipOK per-hotel payment settings ───────────────────────────
+  slipok: router({
+    /**
+     * Get SlipOK integration status for a hotel.
+     * Returns only { configured, enabled } — never the raw key.
+     * Requires MFA step-up (AAL2 within 10 min) before revealing status.
+     */
+    getSettings: protectedProcedure
+      .input(z.object({ hotel_id: hotelIdSchema }))
+      .query(async ({ ctx, input }) => {
+        requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+        requireRecentMfaVerification(ctx.user);
+        const client = rlsClient(ctx.user.accessToken);
+        try {
+          return await getSlipOkSettings(client, input.hotel_id);
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+
+    /**
+     * Save a SlipOK API key for the hotel.
+     * Key is AES-256-GCM encrypted before storage; only its hash is queryable.
+     * Requires property.manage_profile + MFA step-up.
+     */
+    saveKey: protectedProcedure
+      .input(
+        z.object({
+          hotel_id: hotelIdSchema,
+          api_key: z.string().trim().min(8, 'SlipOK API key is too short.').max(512),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+        requireRecentMfaVerification(ctx.user);
+        const client = rlsClient(ctx.user.accessToken);
+        try {
+          const encryptedKey = encryptSlipOkKey(input.api_key);
+          const keyHash = hashSlipOkKey(input.api_key);
+          await saveSlipOkSettings(client, input.hotel_id, encryptedKey, keyHash);
+          return { success: true as const };
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+
+    /**
+     * Remove the SlipOK key for a hotel (sets to NULL, disables).
+     * Requires property.manage_profile + MFA step-up.
+     */
+    removeKey: protectedProcedure
+      .input(z.object({ hotel_id: hotelIdSchema }))
+      .mutation(async ({ ctx, input }) => {
+        requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+        requireRecentMfaVerification(ctx.user);
+        const client = rlsClient(ctx.user.accessToken);
+        try {
+          await removeSlipOkKey(client, input.hotel_id);
+          return { success: true as const };
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
   }),
 });
 

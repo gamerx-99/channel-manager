@@ -47,10 +47,10 @@ const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visible_sections"] = {
 
 const SECTION_LABELS: Record<keyof SiteConfig["visible_sections"], { label: string; hint: string }> = {
   hero: { label: "Hero banner", hint: "Top image + headline" },
-  story: { label: "Story / The hotel", hint: "Intro section" },
-  rooms: { label: "Rooms", hint: "Room grid" },
-  booking: { label: "Your stay / Booking", hint: "Dates CTA" },
-  location: { label: "Location", hint: "Address card" },
+  'story': { label: "Story / The hotel", hint: "Intro section" },
+  'rooms': { label: "Rooms", hint: "Room grid" },
+  'booking': { label: "Your stay / Booking", hint: "Dates CTA" },
+  'location': { label: "Location", hint: "Address card" },
 };
 
 function defaultConfig(hotelId: string): SiteConfig {

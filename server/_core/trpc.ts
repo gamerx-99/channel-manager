@@ -10,6 +10,41 @@ const t = initTRPC.context<TrpcContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+// Basic in-memory rate limiter for TRPC public endpoints
+const rlStore: Record<string, { count: number; resetTime: number }> = {};
+setInterval(() => {
+  const now = Date.now();
+  for (const ip in rlStore) {
+    if (rlStore[ip].resetTime < now) delete rlStore[ip];
+  }
+}, 5 * 60 * 1000).unref();
+
+const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
+  const ip = ctx.req.ip || ctx.req.socket?.remoteAddress || "unknown";
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute
+  const max = 20; // 20 requests per minute
+
+  if (!rlStore[ip]) {
+    rlStore[ip] = { count: 0, resetTime: now + windowMs };
+  }
+  const record = rlStore[ip];
+  if (now > record.resetTime) {
+    record.count = 0;
+    record.resetTime = now + windowMs;
+  }
+  record.count++;
+  if (record.count > max) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests from this IP, please try again later.",
+    });
+  }
+  return next({ ctx });
+});
+
+export const rateLimitedProcedure = t.procedure.use(rateLimitMiddleware);
+
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 

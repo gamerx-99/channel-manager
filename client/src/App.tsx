@@ -49,6 +49,9 @@ import NotFound from "./pages/NotFound";
 import { trpc } from "./lib/trpc";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import ProfileMenu from "./components/ProfileMenu";
+import NotificationBell from "./components/NotificationBell";
+import LanguageSwitcher from "./components/LanguageSwitcher";
+import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { getRouteScopeDecision } from "./lib/routeScope";
 import { hasAnyPermission, isPlatformRole, ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
 
@@ -67,6 +70,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const { data: visibleHotels } = trpc.channelManager.hotels.useQuery();
+  const { language } = useLanguage();
   const can = (permission: Permission) => hasAnyPermission(roles, permission);
   const routeHotelId = /^\/hotels\/([0-9a-f-]{36})(?:\/|$)/i.exec(location)?.[1];
   const selectedHotelId = visibleHotels?.some(hotel => hotel.id === routeHotelId)
@@ -87,10 +91,10 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
   // so global-access affordances key off this while create/manage actions stay on `can()`.
   const isPlatformAdmin = roles.some(role => isPlatformRole(role));
   const navItems = [
-    { href: "/dashboard", label: "Overview", Thai: isPlatformAdmin ? "ภาพรวมระบบ" : "ภาพรวมโรงแรม", icon: LayoutDashboard },
-    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: "Channel analytics", Thai: "สถิติช่องทาง", icon: BarChart3 }] : []),
-    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: "Hotels Management", Thai: "จัดการโรงแรมทั้งหมด", icon: Hotel }] : []),
-    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: "Admin Users", Thai: "จัดการสิทธิ์ผู้ใช้", icon: ShieldCheck }] : []),
+    { href: "/dashboard", label: language === "th" ? (isPlatformAdmin ? "ภาพรวมระบบ" : "ภาพรวมโรงแรม") : "Overview", Thai: "ภาพรวมโรงแรม", icon: LayoutDashboard },
+    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: language === "th" ? "สถิติช่องทาง" : "Channel analytics", Thai: "สถิติช่องทาง", icon: BarChart3 }] : []),
+    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: language === "th" ? "จัดการโรงแรมทั้งหมด" : "Hotels Management", Thai: "จัดการโรงแรมทั้งหมด", icon: Hotel }] : []),
+    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: language === "th" ? "จัดการสิทธิ์ผู้ใช้" : "Admin Users", Thai: "จัดการสิทธิ์ผู้ใช้", icon: ShieldCheck }] : []),
     ...hotelNavItems,
   ];
   const initials = userName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "U";
@@ -132,7 +136,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
         />
 
         <nav className="nav-list" aria-label="เมนูหลัก">
-          <p className="nav-label">Workspace</p>
+          <p className="nav-label">{language === "th" ? "พื้นที่ทำงาน" : "Workspace"}</p>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = Boolean(item.href && activePath === item.href);
@@ -210,7 +214,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             type="button"
             className="nav-link w-full text-left bg-transparent border-0 cursor-pointer"
             onClick={() => {
-              const hotel = visibleHotels.find(h => h.id === selectedHotelId) || visibleHotels[0];
+              const hotel = visibleHotels?.find(h => h.id === selectedHotelId) || visibleHotels?.[0];
               if (hotel?.slug) {
                 window.open(`/${hotel.slug}#book`, '_blank');
               } else {
@@ -299,7 +303,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             <label className="topbar-search">
               <Search size={15} aria-hidden="true" />
               <span className="sr-only">ค้นหาในระบบ</span>
-              <input placeholder="Search system..." aria-label="ค้นหาในระบบ" />
+              <input placeholder={language === "th" ? "ค้นหาในระบบ..." : "Search system..."} aria-label={language === "th" ? "ค้นหาในระบบ" : "Search system"} />
             </label>
             {isSuperAdmin && (
               <div className="dropdown-anchor">
@@ -308,7 +312,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
                   onClick={() => { setAddMenuOpen(prev => !prev); setUserMenuOpen(false); setWorkspaceMenuOpen(false); }}
                   aria-expanded={addMenuOpen}
                 >
-                  <Plus size={15} /> <span>Add new</span> <ChevronDown size={14} />
+                   <Plus size={15} /> <span>{language === "th" ? "เพิ่มข้อมูล" : "Add new"}</span> <ChevronDown size={14} />
                 </button>
                 {addMenuOpen && (
                   <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label="เมนูเพิ่มข้อมูล">
@@ -322,11 +326,9 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
                 )}
               </div>
             )}
-            <button className="icon-button bordered topbar-notifications" aria-label="การแจ้งเตือน">
-              <Bell size={16} />
-              <i aria-hidden="true" />
-            </button>
-            <span className="sync-status"><i /> Synced 2 min ago</span>
+             {isSuperAdmin && <NotificationBell hotelId={selectedHotelId} />}
+             <LanguageSwitcher />
+             <span className="sync-status"><i /> Synced 2 min ago</span>
             <div className="topbar-divider" />
             <div className="dropdown-anchor">
               <button 
@@ -476,10 +478,12 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -50,7 +50,7 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   });
 
   it('server/routers.ts exposes public getHotelSiteConfig (for PublicHotel) and protected saveHotelSiteConfig', () => {
-    expect(routerSource).toContain('getHotelSiteConfig: publicProcedure.input');
+    expect(routerSource).toContain('getHotelSiteConfig: rateLimitedProcedure.input');
     expect(routerSource).toContain('getHotelSiteConfigBySlug');
     expect(routerSource).toContain('saveHotelSiteConfig: protectedProcedure.input');
     expect(routerSource).toContain('hotelSiteConfigSaveSchema');
@@ -98,7 +98,7 @@ describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
   });
 
   it('server/routers.ts exposes public procedures for availability and booking', () => {
-    expect(routerSource).toContain('publicHotelAvailability: publicProcedure.input');
-    expect(routerSource).toContain('createPublicBooking: publicProcedure.input');
+    expect(routerSource).toContain('publicHotelAvailability: rateLimitedProcedure.input');
+    expect(routerSource).toContain('createPublicBooking: rateLimitedProcedure.input');
   });
 });

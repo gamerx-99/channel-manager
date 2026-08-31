@@ -67,7 +67,7 @@ export function WorkspaceMenu({
               href={`/hotels/${hotel.id}`}
               className="workspace-dropdown-item workspace-dropdown-hotel"
               role="menuitem"
-              onClick={onClose}
+              onClick={() => { localStorage.setItem("selected-hotel-id", hotel.id); onClose(); }}
             >
               <Hotel size={14} aria-hidden="true" />
               <span>

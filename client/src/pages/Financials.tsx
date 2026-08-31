@@ -1,4 +1,4 @@
-import { BarChart3, CircleDollarSign, Clock3, Download, Percent, TrendingUp } from "lucide-react";
+import { BarChart3, CircleDollarSign, Clock3, Download, KeyRound, Percent, ShieldCheck, TrendingUp, Trash2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -14,6 +14,8 @@ import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import type { FinancialsRoomTypeBreakdown } from "@/../../server/financials";
+import { useState } from "react";
+import { useMfaStepUp } from "@/lib/mfa";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -78,6 +80,9 @@ function LoadingDashboard() {
 }
 
 export default function Financials() {
+  const { data: hotels = [] } = trpc.channelManager.hotels.useQuery();
+  const [storedHotelId] = useState(() => localStorage.getItem("selected-hotel-id"));
+  const hotelId = hotels.some(hotel => hotel.id === storedHotelId) ? storedHotelId : hotels[0]?.id;
   const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery();
 
   if (isLoading) return <LoadingDashboard />;
@@ -106,7 +111,7 @@ export default function Financials() {
         </div>
         <div className="flex items-center gap-2 text-xs text-[#70837a]">
           <Clock3 size={14} aria-hidden="true" />
-          <span>Last 30 days · {formatDateLabel(data.periodStart)} – {formatDateLabel(data.periodEnd)}</span>
+          <span>Last 30 days &middot; {formatDateLabel(data.periodStart)} &ndash; {formatDateLabel(data.periodEnd)}</span>
           {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label="กำลังอัปเดตข้อมูล" />}
         </div>
       </section>
@@ -176,6 +181,8 @@ export default function Financials() {
           </CardContent>
         </Card>
       </section>
+
+      {hotelId && <SlipOkSettings hotelId={hotelId} />}
     </div>
   );
 }
@@ -197,5 +204,206 @@ function MetricCard({ label, value, detail, icon: Icon, tone }: { label: string;
         <p className="mt-1 text-xs text-[#778a80]">{detail}</p>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Phase 01: SlipOK Payment Settings (per-hotel, MFA-gated) ────────────────
+
+function SlipOkSettings({ hotelId }: { hotelId: string }) {
+  const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
+  const [apiKey, setApiKey] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // We can't fetch settings until MFA is verified (server enforces it too)
+  const settingsQuery = trpc.slipok.getSettings.useQuery(
+    { hotel_id: hotelId },
+    { enabled: mfaState.status === "verified", retry: false },
+  );
+  const saveKey = trpc.slipok.saveKey.useMutation();
+  const removeKey = trpc.slipok.removeKey.useMutation();
+
+  async function handleOpenSettings() {
+    setSaveError(null);
+    const result = await triggerStepUp();
+    if (result === "needs_enroll") {
+      window.location.href = "/mfa/enroll";
+    }
+  }
+
+  async function handleSaveKey(hotelId: string) {
+    setSaveError(null);
+    try {
+      await saveKey.mutateAsync({ hotel_id: hotelId, api_key: apiKey });
+      setApiKey("");
+      void settingsQuery.refetch();
+      reset();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Failed to save key.");
+    }
+  }
+
+  async function handleRemoveKey(hotelId: string) {
+    setSaveError(null);
+    const result = await triggerStepUp();
+    if (result === "needs_enroll") { window.location.href = "/mfa/enroll"; return; }
+    if (result === "verified" || mfaState.status === "verified") {
+      try {
+        await removeKey.mutateAsync({ hotel_id: hotelId });
+        void settingsQuery.refetch();
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : "Failed to remove key.");
+      }
+    }
+  }
+
+  return (
+    <section aria-label="Payment Settings" className="border-t border-[#dce4df] pt-7">
+      <div className="mb-4">
+        <p className="eyebrow">Payment Integration</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-tight text-[#1b2c25]">SlipOK Settings</h2>
+        <p className="mt-1 text-sm text-[#6c7e75]">
+          Connect your hotel's SlipOK API key to enable bank-transfer slip verification for guest payments.
+          Your key is encrypted and never visible after saving.
+        </p>
+      </div>
+
+      <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+        <CardContent className="p-6">
+          {/* Idle / prompt to unlock */}
+          {(mfaState.status === "idle" || mfaState.status === "error") && (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="rounded-xl bg-[#edf7f1] p-2 text-[#1d6b56]"><ShieldCheck size={18} aria-hidden="true" /></span>
+                <div>
+                  <p className="text-sm font-medium text-[#263b31]">MFA verification required</p>
+                  <p className="text-xs text-[#6c7e75]">Verify your authenticator code to access payment settings.</p>
+                </div>
+              </div>
+              <button
+                id="slipok-unlock-btn"
+                type="button"
+                onClick={handleOpenSettings}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] transition-colors"
+              >
+                <KeyRound size={15} aria-hidden="true" /> Unlock settings
+              </button>
+              {mfaState.status === "error" && (
+                <p className="text-xs text-red-600">{mfaState.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* TOTP challenge input */}
+          {mfaState.status === "needs_challenge" && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm font-medium text-[#263b31]">Enter your 6-digit authenticator code</p>
+              <div className="flex gap-2">
+                <input
+                  id="slipok-totp-input"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                  className="w-32 rounded-lg border border-[#dce4df] px-3 py-2 text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+                />
+                <button
+                  id="slipok-totp-submit"
+                  type="button"
+                  onClick={async () => {
+                    const ok = await submitTotp(totpCode);
+                    if (ok) setTotpCode("");
+                  }}
+                  disabled={totpCode.length !== 6}
+                  className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+                >
+                  Verify
+                </button>
+                <button type="button" onClick={() => { reset(); setTotpCode(""); }} className="rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-[#f6faf7]">Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {mfaState.status === "pending" && (
+            <div className="flex items-center gap-2 text-sm text-[#6c7e75]">
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-hidden="true" />
+              Verifying&hellip;
+            </div>
+          )}
+
+          {mfaState.status === "needs_enroll" && (
+            <div className="text-sm text-[#6c7e75]">
+              No MFA factor enrolled. <a href="/mfa/enroll" className="text-[#1d6b56] underline">Set up authenticator app</a> first.
+            </div>
+          )}
+
+          {/* Verified — show settings */}
+          {mfaState.status === "verified" && settingsQuery.data !== undefined && (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-3">
+                <span className={cn("rounded-xl p-2", settingsQuery.data.configured ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-[#f5f7f6] text-[#789087]")}>
+                  <KeyRound size={18} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-[#263b31]">
+                    {settingsQuery.data.configured ? "SlipOK key configured" : "No SlipOK key configured"}
+                  </p>
+                  <p className="text-xs text-[#6c7e75]">
+                    {settingsQuery.data.configured
+                      ? "Your API key is stored encrypted. It cannot be retrieved or displayed."
+                      : "Enter your SlipOK API key below to enable slip verification."}
+                  </p>
+                </div>
+              </div>
+
+              {!settingsQuery.data.configured && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <label htmlFor="slipok-api-key" className="mb-1 block text-xs font-medium text-[#456156]">
+                      SlipOK API Key
+                    </label>
+                    <input
+                      id="slipok-api-key"
+                      type="password"
+                      autoComplete="off"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="sk-…"
+                      className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+                    />
+                  </div>
+                  <button
+                    id="slipok-save-btn"
+                    type="button"
+                    disabled={apiKey.length < 8 || saveKey.isPending}
+                    onClick={() => void handleSaveKey(hotelId)}
+                    className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+                  >
+                    {saveKey.isPending ? "Saving…" : "Save key"}
+                  </button>
+                </div>
+              )}
+
+              {settingsQuery.data.configured && (
+                <button
+                  id="slipok-remove-btn"
+                  type="button"
+                  onClick={() => void handleRemoveKey(hotelId)}
+                  disabled={removeKey.isPending}
+                  className="inline-flex w-max items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                >
+                  <Trash2 size={14} aria-hidden="true" />
+                  {removeKey.isPending ? "Removing…" : "Remove SlipOK key"}
+                </button>
+              )}
+
+              {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }

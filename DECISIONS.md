@@ -4,6 +4,11 @@ Format: `## <date> — <short title>` then **Decision**, **Why**, **Status** (op
 Newest first. Log the reasoning, not just the outcome — the reasoning is what keeps a
 future ticket from accidentally reversing a decision that was actually deliberate.
 
+## 2026-08-31 — Keep Database Migrations Manual (Phase 08)
+**Decision**: Do not automate SQL migrations as part of the startup/build process. Continue requiring the human developer to manually run `YYYYMMDD_description.sql` in the Supabase SQL editor.
+**Why**: Applying migrations programmatically requires exposing a highly privileged `DATABASE_URL` / `SUPABASE_POOLER_DB_URL` to the runtime environment. Since this project runs in a restricted sandboxed environment without these secrets (using only anonymous and service_role Supabase API keys which don't have DDL privileges), injecting SQL directly into the DB is both insecure and physically impossible without expanding the surface area for credentials. Manual execution is safer and guarantees human oversight over schema changes.
+**Status**: Closed.
+
 ## 2026-08-30 — MFA: blocking enforcement for super_admin/admin (T09-01 recon)
 **Decision**: `super_admin` and `admin` (platform roles per `shared/authorization.ts` `PLATFORM_ROLES`) must have TOTP MFA enrolled before any authenticated access is granted — **blocking at first login**, not a grace-period nag. Hotel-level roles (`hotel_owner`, `revenue_manager`, `front_desk`, `housekeeping`) are opt-in only in this phase; required step-up MFA for SlipOK settings (Phase 01 tie-in) will prompt enrollment at point of use rather than silently deny.
 **Why — blocking vs grace-period**: spec `specs/09-authenticator-mfa.md` explicitly prefers blocking ("blocking is safer and simpler, prefer it unless told otherwise"). Recon confirms grace-period adds non-trivial state: expiry tracking, nag UI, bypass window, and audit surface for the two most privileged roles. Blocking keeps the auth gate stateless (Supabase Auth factor state is the source of truth) and matches the product's trust model where `super_admin` already bypasses most hotel-scoped RLS — MFA is the only compensating control for that breadth.
@@ -13,14 +18,13 @@ future ticket from accidentally reversing a decision that was actually deliberat
 **Status**: open — recon only, no production code touched. Implementation follows in 09 tickets. See `.agent/recon/REPORT.md` 2026-08-30 T09-01 section for full code evidence.
 **References**: `specs/09-authenticator-mfa.md`, `client/src/pages/Login.tsx:17`, `client/src/_core/hooks/useAuth.ts`, `client/src/lib/supabase.ts`, `shared/authorization.ts:PLATFORM_ROLES`, `node_modules/@supabase/supabase-js/dist/umd/supabase.js` (`GoTrueClient._enroll/_challenge/_verify/_getAuthenticatorAssuranceLevel`, `supabase.auth.mfa`).
 
-## 2026-08-30 — Payments: per-hotel SlipOK key, not a central gateway
-**Decision**: Phase A does not integrate a platform-wide payment processor. Each
-hotel brings its own SlipOK (bank-transfer/PromptPay slip verification) API key,
-stored and used per-hotel, mirroring the existing per-hotel iCal URL pattern in OTA
-Sync. The platform never touches real money or card data.
-**Why**: KBank's own corporate API requires ≥300 verified slips/month, which no
-hotel on this platform clears yet. SlipOK's BYO-key model has no such volume floor.
-**Status**: open — schema/encryption approach not yet decided (see OPEN_QUESTIONS.md).
+## 2026-08-31 — Payments: per-hotel SlipOK key confirmed (BYO key model)
+**Decision**: Phase 01 uses a BYO (Bring Your Own) key model — each hotel supplies its own SlipOK API key, stored and used per-hotel, mirroring the existing per-hotel iCal URL pattern in OTA Sync (`ota_connections.ical_import_url`). The platform never touches real money, card data, or a central payment gateway.
+**Why**: KBank's own corporate API requires ≥300 verified slips/month which no hotel on this platform clears yet. SlipOK's BYO-key model has no such volume floor. The pattern is already well-established in this codebase (iCal per hotel, per provider).
+**Resolved sub-decisions (confirmed by human 2026-08-31)**:
+1. **Encryption**: Store SlipOK API key encrypted (AES-256) in Postgres with a DEK; store only a hash for dedup checks. Never return raw key to client.
+2. **Permission gate**: `property.manage_profile` — reuses the existing permission already in `shared/authorization.ts`, consistent with other hotel settings (site config, media). No new permission needed.
+**Status**: Closed — unblocks Phase 01 implementation.
 
 ## 2026-08-29 — Financials: withhold from super_admin by design
 **Decision**: `property.view_financials` is granted to `hotel_owner` only — not

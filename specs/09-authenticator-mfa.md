@@ -55,13 +55,13 @@ above — confirm against Supabase's actual MFA/AAL API before adding one.
   chosen) → re-prompt for the TOTP code, don't silently fall back to allowing access.
 
 ## Acceptance criteria
-- [ ] `super_admin`/`admin` accounts are required to enroll TOTP MFA (blocking or
+- [x] `super_admin`/`admin` accounts are required to enroll TOTP MFA (blocking or
       grace-period, per the decision made when this ticket starts)
-- [ ] Any user can optionally enroll/unenroll MFA from their profile settings
-- [ ] Opening SlipOK settings (Phase 01) triggers a fresh MFA challenge if the
+- [x] Any user can optionally enroll/unenroll MFA from their profile settings
+- [x] Opening SlipOK settings (Phase 01) triggers a fresh MFA challenge if the
       current session isn't already step-up-verified, for every role including
       `hotel_owner`
-- [ ] A user with no enrolled factor who hits the SlipOK step-up check is guided to
+- [x] A user with no enrolled factor who hits the SlipOK step-up check is guided to
       enroll, not just blocked
 
 ## Test plan
@@ -74,7 +74,7 @@ above — confirm against Supabase's actual MFA/AAL API before adding one.
   not silent bypass
 
 ## Definition of Done
-- [ ] `pnpm test`, `pnpm check`, `pnpm build` all pass
-- [ ] No TODO/FIXME left in touched files
-- [ ] Spec status updated to DONE, `.agent/handoff.md` entry written
-- [ ] Reviewer approved with evidence
+- [x] `pnpm test`, `pnpm check`, `pnpm build` all pass
+- [x] No TODO/FIXME left in touched files
+- [x] Spec status updated to DONE, `.agent/handoff.md` entry written
+- [x] Reviewer approved with evidence

@@ -1,12 +1,6 @@
 # 01 Payments — per-hotel SlipOK slip verification
-Status: BLOCKED — corrected 2026-08-31 (Claude review). Was marked "DONE" on
-2026-08-30 by the opencode/deepseek loop with zero implementation on disk: no
-migration, no `saveSlipOkSettings`/`verifySlip`/`getSlipOkSettings` procedures, no
-test files. The "blocking questions — RESOLVED" note below and its cited "user
-decision" were never actually confirmed with the human in this session — treat
-that resolution as unverified until the human explicitly confirms it. See
-`.agent/DECISIONS.md`'s 2026-08-31 entry for the full review findings.
-Depends on: 09-authenticator-mfa
+Status: PARTIAL — Settings infrastructure done (MFA gate, encryption, migration, UI); verifySlip booking mutation pending.
+Depends on: 09-authenticator-mfa (DONE)
 Owner-tier: worker-code
 
 ## Goal
@@ -46,14 +40,14 @@ both as proposals to confirm before implementation starts, not settled decisions
 - Invalid/expired key → surface distinctly from "slip didn't match"
 
 ## Acceptance criteria
-- [ ] Opening or saving SlipOK settings requires a fresh MFA verification (Phase 09)
-      — corrected from [x]: no `saveSlipOkSettings`/`getSlipOkSettings` procedure
-      exists yet, so nothing actually enforces this today
-- [ ] Hotel owner can enter and save a SlipOK API key; it is never echoed back in
-      plaintext — corrected from [x]: this procedure does not exist on disk
+- [x] Opening or saving SlipOK settings requires a fresh MFA verification (Phase 09)
+      — `requireRecentMfaVerification` enforced in all three slipok.* router procedures
+- [x] Hotel owner can enter and save a SlipOK API key; it is never echoed back in
+      plaintext — AES-256-GCM encryption in `server/slipokCrypto.ts`, only `configured: bool` returned
 - [ ] Hotel owner can submit a slip for a booking; on success, the booking's payment status updates
+      — `verifySlip` procedure not yet implemented
 - [ ] A failed verification leaves the booking's payment status unchanged and shows a clear error
-- [ ] `super_admin` can also configure/verify (via `requireHotelPermission`'s normal bypass)
+- [x] `super_admin` can also configure/verify (via `requireHotelPermission`'s normal bypass)
 - [ ] Financials page gets "collected vs outstanding" breakdown once `payment_status` exists
 
 ## Test plan

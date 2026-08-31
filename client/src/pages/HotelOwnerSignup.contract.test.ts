@@ -21,8 +21,8 @@ describe("Hotel owner signup link contract", () => {
   });
 
   it("exposes the public validate/complete procedures and the super_admin-only generation procedure", () => {
-    expect(router).toContain("validateSignupLink: publicProcedure");
-    expect(router).toContain("completeHotelOwnerSignup: publicProcedure");
+    expect(router).toContain("validateSignupLink: rateLimitedProcedure");
+    expect(router).toContain("completeHotelOwnerSignup: rateLimitedProcedure");
     expect(router).toContain("createSignupLink: protectedProcedure");
     expect(router).toContain("requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links')");
     expect(router).toContain("assertSingleHotelAdmin(assignments, input.hotel_id)");

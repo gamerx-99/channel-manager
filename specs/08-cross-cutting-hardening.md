@@ -1,5 +1,5 @@
 # 08 Cross-cutting Platform Hardening
-Status: TODO
+Status: DONE — 2026-08-31
 Depends on: —
 Owner-tier: mixed (see each item)
 

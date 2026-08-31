@@ -133,12 +133,12 @@ describe('hotel media CRUD — permission boundaries (Phase 06)', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
-  it('revenue_manager cannot list, upload, delete, or set hero (no property.view)', async () => {
+  it('revenue_manager can list (has property.view) but cannot upload/delete/set hero (no property.manage_profile)', async () => {
     const app = await caller('revenue_manager');
 
-    await expect(
-      app.channelManager.listHotelMedia({ hotel_id: HOME_HOTEL }),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    // revenue_manager has property.view → list is allowed
+    const list = await app.channelManager.listHotelMedia({ hotel_id: HOME_HOTEL });
+    expect(list).toHaveLength(1);
 
     await expect(
       app.channelManager.uploadHotelMedia({
@@ -165,11 +165,10 @@ describe('hotel media CRUD — permission boundaries (Phase 06)', () => {
 
   it('deleteHotelMedia promotes first remaining item as hero when deleted item was hero', async () => {
     const secondMedia = { ...SAMPLE_MEDIA, id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', is_hero: false };
-    // After delete, 1 item remains but none is hero — router should call setHotelMediaHero
+    // After delete, listHotelMedia returns 1 item with is_hero: false → router should promote it
     dbMocks.deleteHotelMedia.mockResolvedValueOnce({ id: MEDIA_ID });
-    dbMocks.listHotelMedia
-      .mockResolvedValueOnce([SAMPLE_MEDIA]) // initial getManagedHotel check list
-      .mockResolvedValueOnce([secondMedia]);  // remaining after delete, is_hero: false
+    // Override: only 1 call to listHotelMedia happens inside deleteHotelMedia (after the delete)
+    dbMocks.listHotelMedia.mockResolvedValueOnce([secondMedia]);
 
     const app = await caller('hotel_owner');
     await app.channelManager.deleteHotelMedia({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID });

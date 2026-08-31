@@ -1,5 +1,5 @@
 # 07 Live OTA API Integrations (ARI push / booking push)
-Status: TODO (external blocker)
+Status: DEFERRED PERMANENTLY — 2026-08-31 (human decision: not building OTA Live API integrations; iCal/calendar sync in Phase 01-02 is sufficient for current scope)
 Depends on: —
 Owner-tier: worker-code
 

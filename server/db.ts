@@ -26,7 +26,7 @@ export type CreateHotelInput = Pick<HotelRecord, 'name' | 'slug' | 'address' | '
 
 export type CreateRoomTypeInput = Pick<RoomTypeRecord, 'hotel_id' | 'name' | 'capacity' | 'base_price'> & { quantity: number };
 
-export type UpdateRoomTypeInput = CreateRoomTypeInput & { room_type_id: string };
+export type UpdateRoomTypeInput = Omit<CreateRoomTypeInput, 'quantity'> & { room_type_id: string };
 export type DeleteRoomTypeInput = Pick<UpdateRoomTypeInput, 'hotel_id' | 'room_type_id'>;
 
 export type GuestRecord = {
@@ -1487,4 +1487,151 @@ export async function updateHotelUserAssignmentRole(
     ...data,
     hotels: Array.isArray(data.hotels) ? data.hotels[0] ?? null : data.hotels,
   } as unknown as HotelUserAssignmentRecord;
+}
+
+export type NotificationRecord = {
+  id: string;
+  hotel_id: string;
+  type: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+export async function listNotifications(client: SupabaseClient, hotelId: string) {
+  const { data, error } = await client
+    .from('notifications')
+    .select('*')
+    .eq('hotel_id', hotelId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  throwOnError(error);
+  return (data || []) as NotificationRecord[];
+}
+
+export async function listAllNotifications(client: SupabaseClient) {
+  const { data, error } = await client
+    .from('notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  throwOnError(error);
+  return (data || []) as NotificationRecord[];
+}
+
+export async function markNotificationRead(client: SupabaseClient, notificationId: string) {
+  const { data, error } = await client
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', notificationId)
+    .select()
+    .maybeSingle();
+  throwOnError(error);
+  return data as NotificationRecord | null;
+}
+
+export async function markAllNotificationsRead(client: SupabaseClient, hotelId: string) {
+  const { error } = await client
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('hotel_id', hotelId)
+    .eq('is_read', false);
+  throwOnError(error);
+}
+
+export async function markSystemNotificationsRead(client: SupabaseClient) {
+  const { error } = await client
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('is_read', false);
+  throwOnError(error);
+}
+
+export async function insertNotification(client: SupabaseClient, input: { hotel_id: string; type: string; message: string }) {
+  const { error } = await client
+    .from('notifications')
+    .insert([{
+      hotel_id: input.hotel_id,
+      type: input.type,
+      message: input.message
+    }]);
+  throwOnError(error);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 01 — SlipOK per-hotel payment settings
+// Keys are stored AES-256-GCM encrypted (see server/slipokCrypto.ts).
+// These functions never return the raw or encrypted key to callers —
+// only `configured: boolean` and `enabled: boolean`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SlipOkSettingsRow = {
+  id: string;
+  hotel_id: string;
+  slipok_key_enc: string | null;
+  slipok_key_hash: string | null;
+  slipok_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Returns whether a SlipOK key is configured + enabled for the hotel. Never returns the key. */
+export async function getSlipOkSettings(
+  client: SupabaseClient,
+  hotelId: string,
+): Promise<{ configured: boolean; enabled: boolean }> {
+  const { data, error } = await client
+    .from('hotel_payment_settings')
+    .select('slipok_key_hash, slipok_enabled')
+    .eq('hotel_id', hotelId)
+    .maybeSingle();
+  throwOnError(error);
+  if (!data) return { configured: false, enabled: false };
+  return {
+    configured: Boolean(data.slipok_key_hash),
+    enabled: Boolean(data.slipok_enabled),
+  };
+}
+
+/**
+ * Upsert a SlipOK key for the hotel.
+ * Callers must pass the already-encrypted key (enc) and its hash.
+ * Encryption is done in the router, not here, to keep DB layer pure.
+ */
+export async function saveSlipOkSettings(
+  client: SupabaseClient,
+  hotelId: string,
+  encryptedKey: string,
+  keyHash: string,
+): Promise<void> {
+  const { error } = await client
+    .from('hotel_payment_settings')
+    .upsert(
+      {
+        hotel_id: hotelId,
+        slipok_key_enc: encryptedKey,
+        slipok_key_hash: keyHash,
+        slipok_enabled: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'hotel_id' },
+    );
+  throwOnError(error);
+}
+
+/** Remove the SlipOK key (sets enc/hash to NULL, disabled). Does not delete the row. */
+export async function removeSlipOkKey(client: SupabaseClient, hotelId: string): Promise<void> {
+  const { error } = await client
+    .from('hotel_payment_settings')
+    .upsert(
+      {
+        hotel_id: hotelId,
+        slipok_key_enc: null,
+        slipok_key_hash: null,
+        slipok_enabled: false,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'hotel_id' },
+    );
+  throwOnError(error);
 }
