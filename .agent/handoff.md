@@ -1,5 +1,26 @@
 # Handoff log
 
+## [2026-09-01] MFA Factor Lifecycle & Stale Factor Cleanup Fix — DONE ✅
+- **Commit**: `fix(mfa): handle stale TOTP enrollment factors`
+- **What was fixed**:
+  1. **`client/src/lib/mfa.ts`**:
+     - `cleanupUnverifiedFactors()`: Surfaces explicit errors on `listFactors()` or `unenroll()` failure instead of silently swallowing them.
+     - `prepareTotpEnrollment()`: Checks if an authenticator is already verified, unenrolls unverified factors, re-checks factor state, and returns actionable errors if a stale factor remains.
+     - `enrollTotpFactor()`: Centralized enrollment logic used across all MFA UI pages.
+  2. **`client/src/components/MfaSettings.tsx` & `client/src/pages/MfaEnroll.tsx`**:
+     - Refactored to use `enrollTotpFactor()`, eliminating duplicated cleanup/retry loops and ensuring single-source-of-truth handling.
+     - Added Enter key submit and graceful fallback navigation for already verified users.
+  3. **Tests in `client/src/lib/mfa.test.ts` & `client/src/components/MfaSettings.test.tsx`**:
+     - Stale unverified factor successfully removed before enrollment
+     - Unenroll failure handled and surfaces error without calling enroll
+     - Existing verified factor prevents duplicate enrollment
+     - Stale factor still present after cleanup surfaces actionable error
+     - Successful clean enrollment lifecycle
+- **Verification**:
+  - `pnpm check`: 0 TypeScript errors ✅
+  - `pnpm test`: 391 passed | 3 skipped (70 files) ✅
+  - `pnpm build`: vite + esbuild successful ✅
+
 ## [2026-09-01] Phase 12B — Payment & Booking Completion — DONE ✅
 - **Commit**: `48425c2` `feat(payments): Phase 12B — PromptPay QR + SlipOK verification`
 - **What was built**:

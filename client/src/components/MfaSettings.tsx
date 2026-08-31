@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { cleanupUnverifiedFactors } from "@/lib/mfa";
+import { enrollTotpFactor } from "@/lib/mfa";
 
 type MfaFactor = {
   id: string;
@@ -55,30 +55,17 @@ export default function MfaSettings() {
     setSuccess(null);
     setBusy("enroll");
     try {
-      // Clean up any unverified factors from previous failed attempts to avoid "already exists" errors
-      await cleanupUnverifiedFactors();
-
-      let enrollRes = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-      });
-
-      // If duplicate/existing error still occurs, retry once after force cleanup
-      if (enrollRes.error && enrollRes.error.message.toLowerCase().includes("already exists")) {
-        await cleanupUnverifiedFactors();
-        enrollRes = await supabase.auth.mfa.enroll({ factorType: "totp" });
-      }
-
-      if (enrollRes.error) {
-        setError(enrollRes.error.message);
+      const res = await enrollTotpFactor();
+      if (!res.ok) {
+        if (res.alreadyVerified) {
+          await refreshFactors();
+        } else {
+          setError(res.error);
+        }
         return;
       }
-      if (!enrollRes.data) {
-        setError("Enrollment failed: no data returned");
-        return;
-      }
-      const typed = enrollRes.data as unknown as EnrollData;
-      setEnrollData(typed);
-      setActiveFactorId(typed.id);
+      setEnrollData(res.data);
+      setActiveFactorId(res.data.id);
       setChallengeId(null);
       setCode("");
     } catch (e) {

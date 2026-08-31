@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { shouldEnforceMfaForRoles, cleanupUnverifiedFactors, hasVerifiedTotpFactor } from "@/lib/mfa";
+import { shouldEnforceMfaForRoles, hasVerifiedTotpFactor, enrollTotpFactor } from "@/lib/mfa";
 import { PLATFORM_ROLES } from "@shared/authorization";
 
 export default function MfaEnroll() {
@@ -53,29 +53,22 @@ export default function MfaEnroll() {
     setStep("enrolling");
 
     try {
-      // 1. Clean up stale unverified factors to prevent "already exists" errors
-      await cleanupUnverifiedFactors();
-
-      let enrollRes = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-      });
-
-      // If duplicate factor error occurs, retry once after forced cleanup
-      if (enrollRes.error && enrollRes.error.message.toLowerCase().includes("already exists")) {
-        await cleanupUnverifiedFactors();
-        enrollRes = await supabase.auth.mfa.enroll({ factorType: "totp" });
-      }
-
+      const res = await enrollTotpFactor();
       setSubmitting(false);
-      if (enrollRes.error || !enrollRes.data) {
-        setError(enrollRes.error?.message ?? "Unable to start MFA enrollment.");
+
+      if (!res.ok) {
+        if (res.alreadyVerified) {
+          navigate("/dashboard");
+          return;
+        }
+        setError(res.error);
         setStep("intro");
         return;
       }
 
-      setFactorId(enrollRes.data.id);
-      setQrCode((enrollRes.data as unknown as { totp: { qr_code: string; secret: string } }).totp.qr_code);
-      setSecret((enrollRes.data as unknown as { totp: { qr_code: string; secret: string } }).totp.secret);
+      setFactorId(res.data.id);
+      setQrCode(res.data.totp.qr_code);
+      setSecret(res.data.totp.secret);
       setStep("verifying");
     } catch (e) {
       setSubmitting(false);

@@ -47,26 +47,162 @@ export function shouldRedirectToMfaEnroll(roles: readonly string[] | null | unde
   return !hasVerifiedTotpFactor(factorData);
 }
 
+export type CleanupFactorsResult = {
+  success: boolean;
+  error?: string;
+  removedCount: number;
+};
+
 /**
- * Unenrolls all unverified TOTP factors for the current user.
- * This prevents the Supabase MFA error:
- * "A factor with the friendly name '...' for this user already exists"
- * when a previous enrollment was not completed.
+ * Removes all unverified TOTP factors for the current user.
+ * Surfaces explicit errors if listing or unenrolling fails.
  */
-export async function cleanupUnverifiedFactors(): Promise<void> {
-  try {
-    const { data, error } = await supabase.auth.mfa.listFactors();
-    if (error || !data) return;
-    const factors = ((data.all?.length ? data.all : data.totp) ?? []) as Array<{ id?: string; status?: string; factor_type?: string }>;
-    const unverified = factors.filter(f => f.status === "unverified");
+export async function cleanupUnverifiedFactors(): Promise<CleanupFactorsResult> {
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) {
+    return {
+      success: false,
+      error: `Failed to list MFA factors: ${error.message}`,
+      removedCount: 0,
+    };
+  }
+
+  const factors = ((data?.all?.length ? data.all : data?.totp) ?? []) as Array<{
+    id?: string;
+    status?: string;
+    factor_type?: string;
+  }>;
+  const unverified = factors.filter(
+    f => f.status === "unverified" || (f.factor_type === "totp" && f.status !== "verified")
+  );
+
+  let removedCount = 0;
+  for (const factor of unverified) {
+    if (!factor.id) continue;
+    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+    if (unenrollError) {
+      return {
+        success: false,
+        error: `Failed to remove stale unverified factor (${factor.id}): ${unenrollError.message}`,
+        removedCount,
+      };
+    }
+    removedCount++;
+  }
+
+  return { success: true, removedCount };
+}
+
+export type PrepareEnrollmentResult =
+  | { ok: true }
+  | { ok: false; alreadyVerified?: boolean; error: string };
+
+/**
+ * Prepares the user's account for TOTP enrollment:
+ * 1. Checks if a verified TOTP factor already exists (blocks enrollment if so).
+ * 2. Unenrolls all unverified TOTP factors and surfaces errors if unenroll fails.
+ * 3. Re-fetches factors and explicitly verifies that no unverified or verified factor blocks new enrollment.
+ * 4. If a stale unverified factor remains, returns an actionable error.
+ */
+export async function prepareTotpEnrollment(): Promise<PrepareEnrollmentResult> {
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) {
+    return { ok: false, error: `Failed to check existing MFA factors: ${error.message}` };
+  }
+
+  // Prevent enrollment if a verified authenticator already exists
+  if (hasVerifiedTotpFactor(data)) {
+    return {
+      ok: false,
+      alreadyVerified: true,
+      error: "An authenticator is already active and verified for this account.",
+    };
+  }
+
+  const factors = ((data?.all?.length ? data.all : data?.totp) ?? []) as Array<{
+    id?: string;
+    status?: string;
+    factor_type?: string;
+  }>;
+  const unverified = factors.filter(
+    f => f.status === "unverified" || (f.factor_type === "totp" && f.status !== "verified")
+  );
+
+  if (unverified.length > 0) {
     for (const factor of unverified) {
-      if (factor.id) {
-        await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      if (!factor.id) continue;
+      const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      if (unenrollError) {
+        return {
+          ok: false,
+          error: `Failed to remove stale unverified factor (${factor.id}): ${unenrollError.message}`,
+        };
       }
     }
-  } catch {
-    // Non-blocking cleanup
+
+    // Re-fetch factors and explicitly verify that stale unverified factors were removed
+    const { data: recheckData, error: recheckError } = await supabase.auth.mfa.listFactors();
+    if (recheckError) {
+      return { ok: false, error: `Failed to verify MFA factors after cleanup: ${recheckError.message}` };
+    }
+
+    if (hasVerifiedTotpFactor(recheckData)) {
+      return {
+        ok: false,
+        alreadyVerified: true,
+        error: "An authenticator is already active and verified for this account.",
+      };
+    }
+
+    const remaining = ((recheckData?.all?.length ? recheckData.all : recheckData?.totp) ?? []) as Array<{
+      id?: string;
+      status?: string;
+      factor_type?: string;
+    }>;
+    const remainingUnverified = remaining.filter(
+      f => f.status === "unverified" || (f.factor_type === "totp" && f.status !== "verified")
+    );
+    if (remainingUnverified.length > 0) {
+      return {
+        ok: false,
+        error: "A stale unverified authenticator is still present. Please refresh or remove it before enrolling.",
+      };
+    }
   }
+
+  return { ok: true };
+}
+
+export type EnrollTotpResult =
+  | { ok: true; data: { id: string; totp: { qr_code: string; secret: string; uri: string } } }
+  | { ok: false; alreadyVerified?: boolean; error: string };
+
+/**
+ * High-level helper for TOTP enrollment:
+ * Performs preparation (checking verified status, cleaning up stale unverified factors, re-verifying cleanup),
+ * and then calls supabase.auth.mfa.enroll({ factorType: "totp" }).
+ */
+export async function enrollTotpFactor(): Promise<EnrollTotpResult> {
+  const prep = await prepareTotpEnrollment();
+  if (!prep.ok) {
+    return prep;
+  }
+
+  const { data, error } = await supabase.auth.mfa.enroll({
+    factorType: "totp",
+  });
+
+  if (error || !data) {
+    return {
+      ok: false,
+      error: error?.message ?? "Unable to start MFA enrollment.",
+    };
+  }
+
+  return {
+    ok: true,
+    data: data as unknown as { id: string; totp: { qr_code: string; secret: string; uri: string } },
+  };
 }
 
 export type MfaStepUpState =
