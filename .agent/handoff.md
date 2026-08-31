@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-08-31] Phase 10 STEP 0 — inspection script + Case A/B migration — BLOCKED (awaiting live state)
+- **What happened**: Added a read-only `PHASE10_INSPECT_DATABASE_STATE.sql` (STEP 0) so the live notifications/payment-settings state is inspected before anything else is applied — no more guessing. Added `20260906_notifications_recreate_policies.sql` + `verify_20260906_notifications_recreate_policies.sql`: an idempotent, transactional migration that converges both Case A (table exists, policies broken) and Case B (table missing) onto the correct final state — `hotel_users`-scoped SELECT, `is_read`-only UPDATE with an immutable-content trigger, and NO INSERT/DELETE policy for clients. It supersedes the 20260904+20260905 notifications sequence.
+- **Code fact confirmed**: `insertNotification` (server/db.ts) has zero call sites — nothing inserts notifications through a user RLS client, so omitting a client INSERT policy is correct, not an oversight. Wiring the actual notification triggers (new booking / signup redeemed / OTA failure) remains a separate follow-up ticket, deliberately not done under Phase 10's no-new-features rule.
+- **Verification**: `pnpm test` — 63 files passed, 344 tests passed, 2 files / 3 tests skipped. `pnpm check` passed. Build unchanged (SQL/docs only — no server/client/deploy config touched this pass).
+- **Human action required**: Run STEP 0 inspect script, paste output; then run `20260906_notifications_recreate_policies.sql` and both notification verify scripts + payment-settings verify; paste all-PASS results and cross-hotel isolation evidence. Phase 10 stays open until then.
+
 ## [2026-08-31] Phase 10 Production & Security Closure — BLOCKED
 - **Source audit**: Reviewed the latest payment-settings and notification migrations plus hotel-scoped application paths. Added `20260905_harden_notifications_rls.sql` to remove the historical broad notification policy, add member-scoped SELECT/UPDATE policies, and prevent browser sessions from changing notification ownership/content. Added `PHASE10_PRODUCTION_SECURITY_REPORT.md` and verification coverage.
 - **Live database status**: Not verifiable in this environment. `node server/verifySupabaseMigration.mjs` failed with `SUPABASE_POOLER_DB_URL or SUPABASE_DB_URL is required.` No migration is claimed as applied or verified.
