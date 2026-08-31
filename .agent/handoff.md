@@ -1,5 +1,89 @@
 # Handoff log
 
+## [2026-09-01] MFA enroll fix — "friendly name already exists" on the live site — DONE ✅
+- **Reported by human**: on the deployed Vercel site, scanning the QR and entering
+  the 6-digit code kept failing; the real underlying error (surfaced after asking
+  the human to check) was Supabase's `"A factor with the friendly name
+  \"Authenticator\" for this user already exists"` — thrown by `enroll()`, not a
+  code-mismatch.
+- **Root cause**: `enrollTotpFactor()` (`client/src/lib/mfa.ts`) called
+  `supabase.auth.mfa.enroll({ factorType: "totp" })` with no `friendlyName`, so
+  supabase-js always defaults it to the literal string `"Authenticator"`. Supabase's
+  GoTrue backend requires `friendly_name` to be unique per user across *all*
+  factors, verified or not. Any leftover factor still sitting server-side under
+  that exact name — e.g. one from before yesterday's stale-factor cleanup fix
+  (`d76af07`/`3f1bd65`) even existed — collides on every retry, regardless of how
+  well the client-side cleanup logic works, because the cleanup only removes
+  factors it can currently see via `listFactors()`.
+- **Fix**: pass a unique `friendlyName` per enrollment attempt
+  (`Authenticator-${Date.now().toString(36)}`) instead of relying on the default.
+  This sidesteps the whole failure class — a new attempt can never collide with an
+  old leftover factor again, without needing to hunt down and manually delete
+  whatever is stuck server-side. `friendly_name` isn't rendered anywhere in the UI
+  (checked `MfaSettings.tsx`), so the changed format is invisible to users.
+- **Files touched**: `client/src/lib/mfa.ts`, `client/src/lib/mfa.test.ts` (2
+  assertions updated to match the new call shape), `client/src/components/
+  MfaSettings.test.tsx` (1 assertion updated).
+- **Verdict**: PASS — `pnpm test`: 391 passed | 3 skipped (70 files). `pnpm check`:
+  0 errors. `pnpm build`: OK.
+- **Human action required**: this only takes effect once deployed — push to `main`
+  (Hard Rule 3, awaiting explicit approval) and let Vercel redeploy, then retry
+  "Start enrollment" on the live site. No Supabase-dashboard manual cleanup should
+  be needed after this deploys, since the new attempt won't reuse the stuck name.
+
+## [2026-09-01] Review through Phase 12B — found & fixed a critical payment-flow RLS bug — DONE ✅
+- **Scope**: Independent review of everything landed since the last Claude session
+  (ChatGPT-5.6-Luna's SlipOK/RLS/mobile/language pass, then Phases 10, 11A/11B, 12A,
+  12B — all already committed and pushed to `main` by the time this review started).
+  Re-ran `pnpm test`/`check`/`build` from scratch rather than trusting prior verdicts.
+- **Confirmed correct** (independently verified, not just re-reading claims):
+  `NotificationBell` uses `.menu-surface`; `hotel_payment_settings` RLS uses
+  `is_hotel_member()`; OTA phase correctly `DEFERRED PERMANENTLY`; signup-links
+  feature fully wired; `pnpm test` 391 passed / 3 skipped, `pnpm check` 0 errors,
+  `pnpm build` OK.
+- **Found and fixed — real security hole (migration not yet applied to prod)**:
+  `20260904_add_notifications.sql`'s `"Service role full access on notifications"`
+  policy was `FOR ALL USING (true)` with no `TO service_role` — in Postgres RLS an
+  unscoped policy applies to *every* role, not just service_role, and policies OR
+  together, so this alone would have let any authenticated user read/write/delete
+  any other hotel's notifications regardless of the member-scoped policies above
+  it. Added `TO service_role`, added a verify-script check for it.
+- **Found and fixed — critical functional bug in Phase 12B (payments)**:
+  `payment.createSession`/`checkStatus`/`verifySlip` (added in commit `48425c2`)
+  used the anonymous RLS client (`rlsClient()`), but every table they touch
+  (`payment_sessions`, `hotel_payment_settings`, `bookings`) gates its RLS policies
+  on `is_hotel_member()`/`can_manage_bookings()`. An anonymous public-booking guest
+  satisfies neither — every read/write in the payment flow would have been
+  silently blocked by RLS in production. This was invisible to `pnpm test` because
+  no test exercised the real Postgres RLS boundary (the existing tests mock the
+  Supabase client). The correct pattern already exists in this same codebase —
+  `createPublicBooking` uses `createSupabaseAdminClient()` for exactly this
+  "anonymous caller, no membership" case — so switched all three procedures to
+  match it. Also found these three used plain `publicProcedure` instead of
+  `rateLimitedProcedure`, contradicting Phase 08's "every public endpoint is
+  rate-limited" policy; `verifySlip` calls a paid external SlipOK API per request,
+  so this was a real cost-abuse vector, not just a style gap. Fixed both issues in
+  `server/routers.ts`, re-ran `pnpm test`/`check`/`build` clean after each edit.
+- **Files touched**: `server/routers.ts` (3 procedures: client + procedure type),
+  `20260904_add_notifications.sql`, `verify_20260904_add_notifications.sql`,
+  `specs/00-OVERVIEW.md`, `specs/01-payments-slipok.md`.
+- **Verdict**: PASS — `pnpm test`: 391 passed | 3 skipped (70 files, re-run after
+  every edit). `pnpm check`: 0 errors. `pnpm build`: OK (`dist/index.js` 181.5kb).
+- **Human action still required (unchanged/carried forward)**:
+  1. Apply `20260904_add_hotel_payment_settings.sql` + `20260904_add_notifications.sql`
+     (with this session's `TO service_role` fix) if not already applied via the
+     `PHASE10_ONESHOT_APPLY_AND_VERIFY.sql` closure — confirm live state.
+  2. Apply `20260908_add_payment_flow.sql`, run `verify_20260908_add_payment_flow.sql`,
+     confirm all-PASS.
+  3. Set `promptpay_id` per hotel (Financials → PromptPay Settings) and `SLIP_APIKEY`
+     per hotel wanting slip verification; confirm `SLIPOK_ENCRYPTION_SECRET` is set
+     in the live environment.
+  4. **No push performed by this session** (Hard Rule 3) — the notifications-RLS and
+     payment-flow-client fixes are commit-ready, awaiting explicit push approval.
+- **Next**: Financials "collected vs outstanding" breakdown (depends on
+  `payment_status`, now real). Retroactively spec-documenting Phases 10/11/12 is
+  optional cleanup, not blocking.
+
 ## [2026-09-01] MFA Factor Lifecycle & Stale Factor Cleanup Fix — DONE ✅
 - **Commit**: `fix(mfa): handle stale TOTP enrollment factors`
 - **What was fixed**:

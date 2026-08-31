@@ -40,7 +40,7 @@ partner API access), not sequencing within this repo.
 || Spec | Phase | Status | Owner-tier | Depends on |
 ||---|---|---|---|---|
 || `09-authenticator-mfa.md` | I | DONE (2026-08-30 opencode/deepseek-v4-pro) | worker-code | — |
-|| `01-payments-slipok.md` | A | PARTIAL — settings infra done (MFA gate, encryption, migration, UI); `verifySlip` booking mutation still pending | worker-code | 09 |
+|| `01-payments-slipok.md` | A | DONE — 2026-09-01 (Claude review found+fixed a critical RLS-client bug in Phase 12B's `verifySlip`; see spec for detail) | worker-code | 09 |
 || `02-advanced-pricing.md` | B | DONE (2026-08-30 opencode/deepseek-v4-pro) | worker-code | — |
 || `03-housekeeping-board.md` | C | DONE (2026-08-30) | worker-code | — |
 || `04-communications.md` | D | DONE (2026-08-30) | worker-code | — |
@@ -48,6 +48,13 @@ partner API access), not sequencing within this repo.
 || `06-website-builder.md` | F | DONE (2026-08-31) | worker-code | — |
 || `07-ota-live-integrations.md` | G | DEFERRED PERMANENTLY (human decision 2026-08-31) | worker-code | — |
 || `08-cross-cutting-hardening.md` | H | DONE (2026-08-31) | worker-bulk / worker-code (mixed, see spec) | — |
+
+Note (2026-09-01): Phases 10 (production security closure), 11A/11B (hotel-context
+refactor), and 12A/12B (booking flow + payments) all landed via `.agent/handoff.md`
+entries and are already committed to `main`, but were built outside this
+spec-per-phase workflow — no `specs/10-*.md` etc. exist. Treat `.agent/handoff.md`
+as the source of truth for those phases until/unless someone backfills spec files;
+don't assume "no spec file" means "not built."
 
 Numbering note: `09` was added after `01`–`08` already existed (the human asked for
 MFA once the first roadmap pass was already written), so it sorts after them

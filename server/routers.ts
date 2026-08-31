@@ -1743,14 +1743,18 @@ export const appRouter = router({
      * Returns QR image URL, amount, expiresAt, and sessionId.
      * Only works if the hotel has a promptpay_id configured.
      */
-    createSession: publicProcedure
+    createSession: rateLimitedProcedure
       .input(z.object({
         booking_id: z.string().uuid(),
         hotel_id: z.string().uuid(),
       }))
       .mutation(async ({ input }) => {
-        // Use anon RLS client (public booking — no auth token needed)
-        const client = rlsClient();
+        // Anonymous guest, no membership — must use the service-role admin
+        // client (same pattern as createPublicBooking), never the RLS client:
+        // payment_sessions/hotel_payment_settings/bookings all gate on
+        // is_hotel_member()/can_manage_bookings(), which an anonymous caller
+        // never satisfies.
+        const client = createSupabaseAdminClient();
         try {
           const config = await getHotelPaymentConfig(client, input.hotel_id);
           if (!config?.promptpay_id) {
@@ -1821,13 +1825,13 @@ export const appRouter = router({
       }),
 
     /** Get the current status of a payment session. */
-    checkStatus: publicProcedure
+    checkStatus: rateLimitedProcedure
       .input(z.object({
         booking_id: z.string().uuid(),
         session_id: z.string().uuid(),
       }))
       .query(async ({ input }) => {
-        const client = rlsClient();
+        const client = createSupabaseAdminClient();
         try {
           const session = await getLatestPaymentSession(client, input.booking_id);
           if (!session || session.id !== input.session_id) {
@@ -1859,7 +1863,7 @@ export const appRouter = router({
      * On failure: session → failed, booking unchanged.
      * API key never reaches client.
      */
-    verifySlip: publicProcedure
+    verifySlip: rateLimitedProcedure
       .input(z.object({
         booking_id: z.string().uuid(),
         hotel_id: z.string().uuid(),
@@ -1868,7 +1872,7 @@ export const appRouter = router({
         slip_data: z.string().min(1).max(5_000_000), // ~3.7MB image limit
       }))
       .mutation(async ({ input }) => {
-        const client = rlsClient();
+        const client = createSupabaseAdminClient();
         try {
           // Verify session is still pending
           const session = await getLatestPaymentSession(client, input.booking_id);

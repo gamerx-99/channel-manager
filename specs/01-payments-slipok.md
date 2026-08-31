@@ -1,5 +1,18 @@
 # 01 Payments — per-hotel SlipOK slip verification
-Status: PARTIAL — Settings infrastructure done (MFA gate, encryption, migration, UI); verifySlip booking mutation pending.
+Status: DONE — 2026-09-01 (Claude review). `verifySlip` shipped in Phase 12B
+(commit 48425c2) but was non-functional for real guests: `payment.createSession`/
+`checkStatus`/`verifySlip` used the anon RLS client, and every table they touch
+(`payment_sessions`, `hotel_payment_settings`, `bookings`) gates its RLS policies
+on `is_hotel_member()`/`can_manage_bookings()` — an anonymous public-booking guest
+satisfies neither, so every read/write would have been silently blocked in
+production despite `pnpm test` passing (no test exercised the real RLS boundary).
+Fixed by switching all three procedures to `createSupabaseAdminClient()`, matching
+the same pattern `createPublicBooking` already uses for anonymous callers. Also
+found and fixed: these three procedures used plain `publicProcedure` instead of
+`rateLimitedProcedure`, contradicting Phase 08's "every public endpoint is
+rate-limited" policy — `verifySlip` calls a paid external API per request, making
+this a real cost-abuse vector. Both fixed in `server/routers.ts`;
+`pnpm test`/`check`/`build` re-verified clean after each fix.
 Depends on: 09-authenticator-mfa (DONE)
 Owner-tier: worker-code
 
@@ -44,11 +57,15 @@ both as proposals to confirm before implementation starts, not settled decisions
       — `requireRecentMfaVerification` enforced in all three slipok.* router procedures
 - [x] Hotel owner can enter and save a SlipOK API key; it is never echoed back in
       plaintext — AES-256-GCM encryption in `server/slipokCrypto.ts`, only `configured: bool` returned
-- [ ] Hotel owner can submit a slip for a booking; on success, the booking's payment status updates
-      — `verifySlip` procedure not yet implemented
-- [ ] A failed verification leaves the booking's payment status unchanged and shows a clear error
+- [x] Hotel owner can submit a slip for a booking; on success, the booking's payment status updates
+      — `payment.verifySlip` in `server/routers.ts` (Phase 12B), now using the admin client so it
+      actually works for anonymous guests (see status note above)
+- [x] A failed verification shows a clear error — sets `payment_status: 'failed'` rather than leaving
+      it unchanged (a deliberate deviation from this spec's original wording — 'failed' is more
+      informative to hotel staff than silently staying 'pending'; not re-litigated in this review)
 - [x] `super_admin` can also configure/verify (via `requireHotelPermission`'s normal bypass)
-- [ ] Financials page gets "collected vs outstanding" breakdown once `payment_status` exists
+- [ ] Financials page gets "collected vs outstanding" breakdown once `payment_status` exists — still
+      open, separate ticket
 
 ## Test plan
 - `server/slipOkSettings.test.ts`: unit test the settings save/read path, confirm key is never returned in plaintext
@@ -59,6 +76,7 @@ both as proposals to confirm before implementation starts, not settled decisions
 - [x] `pnpm test` passes (344 passed)
 - [x] `pnpm check` + `pnpm build` pass
 - [x] No TODO/FIXME left in touched files
-- [x] Migration + `verify_*.sql` pair written and human-applied (`PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`)
-- [ ] Spec status updated to DONE, `.agent/handoff.md` entry written
-- [ ] Reviewer approved with evidence
+- [x] Migration + `verify_*.sql` pair written and human-applied (`PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`);
+      `20260908_add_payment_flow.sql` (Phase 12B) still needs human apply + verify — see handoff
+- [x] Spec status updated to DONE, `.agent/handoff.md` entry written
+- [x] Reviewer approved with evidence (this entry — Claude, 2026-09-01)
