@@ -1,6 +1,6 @@
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
 import { Route, Switch, Link, useLocation } from "wouter";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart3,
   Bell,
@@ -47,6 +47,8 @@ import OtaSync from "./pages/OtaSync";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { trpc } from "./lib/trpc";
+import { supabase } from "@/lib/supabase";
+import { shouldRedirectToMfaEnroll, MFA_ENROLL_PATH } from "@/lib/mfa";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import ProfileMenu from "./components/ProfileMenu";
 import NotificationBell from "./components/NotificationBell";
@@ -346,9 +348,9 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
   );
 }
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
   const {
@@ -357,10 +359,44 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     isError: hotelsError,
   } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user) });
 
-  if (loading || roleLoading || hotelsLoading) return <main className="auth-loading">Checking your secure session…</main>;
+  // T09-04's blocking MFA gate previously only ran once, inline in Login.tsx's
+  // submit handler — an already-open tab, a refreshed page, or Supabase silently
+  // restoring a persisted session never re-ran it, so a platform admin without a
+  // verified factor was never redirected or signed out. Re-check on every mount
+  // of a protected route instead, so the gate actually holds for the life of the
+  // session, not just the moment of sign-in.
+  const authRolesKey = authRoles.join(",");
+  const [mfaChecked, setMfaChecked] = useState(false);
+  const [needsMfaEnroll, setNeedsMfaEnroll] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user || roleLoading) return;
+    let cancelled = false;
+    setMfaChecked(false);
+    (async () => {
+      try {
+        const { data: factorData } = await supabase.auth.mfa.listFactors();
+        if (cancelled) return;
+        setNeedsMfaEnroll(shouldRedirectToMfaEnroll(authRolesKey ? authRolesKey.split(",") : [], factorData));
+      } catch {
+        // Fail open, matching Login.tsx's existing behavior — a transient MFA
+        // check failure shouldn't lock a user out of their own dashboard.
+        if (!cancelled) setNeedsMfaEnroll(false);
+      } finally {
+        if (!cancelled) setMfaChecked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, user, roleLoading, authRolesKey]);
+
+  if (loading || roleLoading || hotelsLoading || !mfaChecked) return <main className="auth-loading">Checking your secure session…</main>;
   if (!isAuthenticated || !user) return null;
   if (roleError || hotelsError) {
     return <main className="auth-loading">Unable to verify your property access. Please try again.</main>;
+  }
+  if (needsMfaEnroll) {
+    navigate(MFA_ENROLL_PATH);
+    return null;
   }
 
   const decision = getRouteScopeDecision({

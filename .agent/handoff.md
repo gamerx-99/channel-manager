@@ -1,5 +1,45 @@
 # Handoff log
 
+## [2026-09-01] MFA gate wasn't enforced after login — only checked once, at sign-in — DONE ✅
+- **Reported by human**: after failing to enroll (see the friendly-name entry
+  below), the human noted they were never signed out / redirected even without a
+  verified authenticator ("ไม่มีการดีดออกจากระบบเลย" — no kick-out from the system
+  at all).
+- **Root cause**: `Login.tsx`'s T09-04 MFA gate (`shouldRedirectToMfaEnroll`) only
+  ran once, inline inside the password-form's `handleSubmit`. `PrivateRoute`
+  (`client/src/App.tsx`), which wraps every protected page, never checked MFA
+  status at all. Consequences: an already-open browser tab, a page refresh, direct
+  navigation to `/dashboard` by URL, or Supabase silently restoring a persisted
+  session all bypass the gate entirely — a platform admin (`super_admin`/`admin`)
+  without a verified TOTP factor keeps full dashboard access indefinitely as long
+  as they don't go through the login form again. The `Login.mfa.test.tsx` suite
+  (5 passing tests) only ever exercised the sign-in-moment check, so this gap was
+  invisible to the existing test suite.
+- **Fix**: moved the check into `PrivateRoute` itself, re-run on every mount of a
+  protected route (not cached indefinitely — a fresh `supabase.auth.mfa.
+  listFactors()` call per navigation). Rendering is held on a loading state until
+  the check resolves, so protected content never flashes before a redirect.
+  Fails open on a transient check error (matches `Login.tsx`'s existing behavior —
+  a network blip shouldn't lock an admin out of their own dashboard).
+- **Test coverage added**: `client/src/App.privateRoute.mfa.test.tsx` (new, 3
+  tests) — exported `PrivateRoute` for direct testing rather than standing up the
+  full `AppShell`/`LanguageProvider`/nav tree, which is unrelated to this gate.
+  Also discovered `App.tsx` never explicitly imported `React`, which every other
+  DOM-rendered `.tsx` file in this codebase does (works fine under Vite's
+  `plugin-react` automatic JSX runtime in the real app, but breaks under classic
+  transform the moment a test actually renders JSX from the file) — added
+  `import React from "react"` to fix it; this is the first test to render
+  anything from `App.tsx` directly.
+- **Files touched**: `client/src/App.tsx`,
+  `client/src/App.privateRoute.mfa.test.tsx` (new).
+- **Verdict**: PASS — `pnpm test`: 394 passed | 3 skipped (71 files, +1 file/+3
+  tests). `pnpm check`: 0 errors. `pnpm build`: OK.
+- **Human action required**: push to `main` (Hard Rule 3) and let Vercel
+  redeploy — this only protects sessions once live. Recommend the human also
+  manually verify: log in as a platform-role test account without MFA enrolled
+  in a separate tab, confirm the dashboard now redirects to `/mfa/enroll` even
+  without touching the login form again.
+
 ## [2026-09-01] MFA enroll fix — "friendly name already exists" on the live site — DONE ✅
 - **Reported by human**: on the deployed Vercel site, scanning the QR and entering
   the 6-digit code kept failing; the real underlying error (surfaced after asking
