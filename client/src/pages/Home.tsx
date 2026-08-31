@@ -8,12 +8,14 @@ import { useState } from 'react';
 import { formatIsoToDisplayDate } from '@shared/dateUtils';
 import { isPlatformRole, ROLE_LABELS } from '@shared/authorization';
 import PageState from '@/components/PageState';
+import { useHotel } from '@/contexts/HotelContext';
 
 const statusLabel = { confirmed: 'Confirmed', checked_in: 'Checked in', checked_out: 'Checked out', cancelled: 'Cancelled' };
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
 
 export default function Home() {
-  const { data, isLoading, error, refetch: refetchDashboard } = trpc.channelManager.dashboard.useQuery();
+  const { selectedHotelId } = useHotel();
+  const { data, isLoading, error, refetch: refetchDashboard } = trpc.channelManager.dashboard.useQuery(selectedHotelId ? { hotelId: selectedHotelId } : undefined);
   const { data: otaSummary, isLoading: otaLoading, error: otaError, refetch: refetchOta } = trpc.channelManager.ota.summary.useQuery();
   const { data: authMe } = trpc.auth.me.useQuery();
   const triggerSync = trpc.channelManager.ota.triggerSync.useMutation();

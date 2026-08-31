@@ -1,5 +1,35 @@
 # Handoff log
 
+## [2026-08-31] Phase 11B — Application Integration — DONE ✅
+- **What happened**: Completed Phase 11B by migrating all remaining application consumers and backend routes to use the new `HotelContext` as the single source of truth for the active property.
+- **Key Features Implemented**:
+  1. **WorkspaceMenu Cleanup**: Removed the `localStorage.setItem` bypass; the menu now purely dispatches state up to context.
+  2. **Backend Routers Updated**: Modified `channelManager.dashboard` and `channelManager.dashboardCalendar` in `server/routers.ts` to accept an optional `hotelId` for filtering (falling back safely if missing).
+  3. **Frontend Integration**: Updated `Home.tsx` (Overview), `Bookings.tsx`, and `Calendar.tsx` to stop relying on URL parameters or internal state and instead consume `selectedHotelId` natively via `useHotel()`.
+  4. **Component Cleanup**: Removed the redundant property dropdown inside `DashboardCalendarView.tsx` since `WorkspaceMenu` now universally handles property selection.
+- **Test coverage**:
+  1. Fixed `ChannelPerformance.contract.test.ts` and `dashboardCalendar.contract.test.ts` to reflect the new router inputs and the removal of the local select input.
+  2. Created `server/channelManager.dashboard.test.ts` (5 tests) proving tenant isolation, `hotelId` filtering, and 0-data leak protection when requesting unauthorized hotel UUIDs.
+- **Verification**:
+  - `pnpm test`: 65 passed | 2 skipped (67 files), 358 passed | 3 skipped (361 tests).
+  - `pnpm check`: 0 TypeScript errors.
+- **Next ticket**: Both Phase 11A and Phase 11B are now complete. Awaiting human for next phase selection. No push performed (Hard Rule 3).
+## [2026-08-31] Phase 11A — Selected Hotel Context Architecture (Context Foundation) — DONE ✅
+- **What happened**: Built a single source of truth for the active selected hotel (`HotelContext` / `HotelProvider` / `useHotel`) in `client/src/contexts/HotelContext.tsx`.
+- **Key Features Implemented**:
+  1. Validates selected hotel against RLS-allowed hotels from `trpc.channelManager.hotels.useQuery()`.
+  2. Restores previous selection from `localStorage` (`selected-hotel-id`) with automatic fallback to `hotels[0]` if the stored ID is invalid or membership was revoked.
+  3. Synchronizes automatically with the active route if the path is `/hotels/:id/...` and `:id` belongs to allowed hotels.
+  4. Keeps `localStorage` strictly as a client-side convenience layer while RLS remains the server-side security boundary.
+  5. Integrated `HotelProvider` in `client/src/App.tsx` (wrapped in `PrivateRoute`), replaced manual hotel lookups in `AppShell` with `useHotel()`, wired `WorkspaceMenu` with `onSelectHotelId`, and updated `Financials.tsx` and `NotificationBell.tsx`.
+- **Test coverage**: Created `client/src/contexts/HotelContext.test.tsx` (9 tests covering initial load, restore from localStorage, invalid ID fallback, valid selection persistence, unauthorized rejection, route synchronization, zero-hotel handling, and reset to default).
+- **Verification**:
+  - `pnpm test`: 64 passed | 2 skipped (66 files), 353 passed | 3 skipped (356 tests).
+  - `pnpm check`: 0 TypeScript errors.
+  - `pnpm build`: passed (`dist/index.js` 165.2kb).
+- **Next ticket**: Phase 11B (Application Integration — connecting Overview, Bookings, Calendar, Financials, Payment Settings, Notifications to Selected Hotel Context).
+
+
 ## [2026-08-31] Phase 10 STEP 0 — inspection script + Case A/B migration — BLOCKED (awaiting live state)
 - **What happened**: Added a read-only `PHASE10_INSPECT_DATABASE_STATE.sql` (STEP 0) so the live notifications/payment-settings state is inspected before anything else is applied — no more guessing. Added `20260906_notifications_recreate_policies.sql` + `verify_20260906_notifications_recreate_policies.sql`: an idempotent, transactional migration that converges both Case A (table exists, policies broken) and Case B (table missing) onto the correct final state — `hotel_users`-scoped SELECT, `is_read`-only UPDATE with an immutable-content trigger, and NO INSERT/DELETE policy for clients. It supersedes the 20260904+20260905 notifications sequence.
 - **Code fact confirmed**: `insertNotification` (server/db.ts) has zero call sites — nothing inserts notifications through a user RLS client, so omitting a client INSERT policy is correct, not an oversight. Wiring the actual notification triggers (new booking / signup redeemed / OTA failure) remains a separate follow-up ticket, deliberately not done under Phase 10's no-new-features rule.

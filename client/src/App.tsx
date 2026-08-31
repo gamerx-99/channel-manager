@@ -52,6 +52,7 @@ import ProfileMenu from "./components/ProfileMenu";
 import NotificationBell from "./components/NotificationBell";
 import LanguageSwitcher from "./components/LanguageSwitcher";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
+import { HotelProvider, useHotel } from "./contexts/HotelContext";
 import { getRouteScopeDecision } from "./lib/routeScope";
 import { hasAnyPermission, isPlatformRole, ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
 
@@ -69,14 +70,10 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const { data: visibleHotels } = trpc.channelManager.hotels.useQuery();
+  const { hotels: visibleHotels, selectedHotelId, selectedHotel, setSelectedHotelId } = useHotel();
   const { language } = useLanguage();
   const can = (permission: Permission) => hasAnyPermission(roles, permission);
-  const routeHotelId = /^\/hotels\/([0-9a-f-]{36})(?:\/|$)/i.exec(location)?.[1];
-  const selectedHotelId = visibleHotels?.some(hotel => hotel.id === routeHotelId)
-    ? routeHotelId
-    : visibleHotels?.[0]?.id;
-  const selectedHotelName = visibleHotels?.find(hotel => hotel.id === selectedHotelId)?.name;
+  const selectedHotelName = selectedHotel?.name;
   const hotelNavItems = selectedHotelId
     ? [
         ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: "Room operations", Thai: "จัดการห้องพัก", icon: BedDouble }] : []),
@@ -87,8 +84,6 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
       ]
     : [];
   const isSuperAdmin = roles.includes("super_admin");
-  // `admin` shares super_admin's cross-hotel visibility but none of its write surfaces,
-  // so global-access affordances key off this while create/manage actions stay on `can()`.
   const isPlatformAdmin = roles.some(role => isPlatformRole(role));
   const navItems = [
     { href: "/dashboard", label: language === "th" ? (isPlatformAdmin ? "ภาพรวมระบบ" : "ภาพรวมโรงแรม") : "Overview", Thai: "ภาพรวมโรงแรม", icon: LayoutDashboard },
@@ -133,6 +128,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           onClose={() => setWorkspaceMenuOpen(false)}
           isPlatformAdmin={isPlatformAdmin}
           activeHotelName={selectedHotelName}
+          onSelectHotelId={setSelectedHotelId}
         />
 
         <nav className="nav-list" aria-label="เมนูหลัก">
@@ -401,8 +397,15 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <AppShell userName={user.name ?? user.email ?? "Supabase user"} userEmail={user.email} roles={authRoles} onLogout={() => void logout()}>{children}</AppShell>;
+  return (
+    <HotelProvider hotels={visibleHotels} isLoading={hotelsLoading} isError={hotelsError}>
+      <AppShell userName={user.name ?? user.email ?? "Supabase user"} userEmail={user.email} roles={authRoles} onLogout={() => void logout()}>
+        {children}
+      </AppShell>
+    </HotelProvider>
+  );
 }
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -440,10 +443,10 @@ function Router() {
         <PrivateRoute><SecuritySettings /></PrivateRoute>
       </Route>
       <Route path="/hotels/:id/bookings">
-        {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}
+        <PrivateRoute><Bookings /></PrivateRoute>
       </Route>
       <Route path="/hotels/:id/calendar">
-        {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
+        <PrivateRoute><Calendar /></PrivateRoute>
       </Route>
       <Route path="/hotels/:id/ota">
         {(params) => <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute>}

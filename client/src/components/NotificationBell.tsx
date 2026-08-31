@@ -5,28 +5,29 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 interface NotificationBellProps {
-  hotelId?: string;
+  hotelId?: string | null;
 }
 
 export default function NotificationBell({ hotelId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const effectiveHotelId = hotelId ?? undefined;
   const utils = trpc.useUtils();
   const { data: notifications = [], isLoading } = trpc.notifications.list.useQuery(
-    { hotelId },
+    { hotelId: effectiveHotelId },
     { refetchInterval: 30000 }
   );
 
   const markRead = trpc.notifications.markRead.useMutation({
     onSuccess: () => {
-      utils.notifications.list.invalidate({ hotelId });
+      utils.notifications.list.invalidate({ hotelId: effectiveHotelId });
     }
   });
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
     onSuccess: () => {
-      utils.notifications.list.invalidate({ hotelId });
+      utils.notifications.list.invalidate({ hotelId: effectiveHotelId });
       toast.success("All notifications marked as read");
     }
   });
@@ -62,7 +63,7 @@ export default function NotificationBell({ hotelId }: NotificationBellProps) {
               <button
                 type="button"
                 className="notif-mark-all"
-                onClick={() => markAllRead.mutate({ hotelId })}
+                onClick={() => markAllRead.mutate({ hotelId: effectiveHotelId })}
                 disabled={markAllRead.isPending}
               >
                 Mark all as read
@@ -96,7 +97,7 @@ export default function NotificationBell({ hotelId }: NotificationBellProps) {
                       className="icon-button"
                       title="Mark as read"
                       aria-label="Mark as read"
-                      onClick={() => markRead.mutate({ hotelId, notificationId: n.id })}
+                      onClick={() => markRead.mutate({ hotelId: effectiveHotelId, notificationId: n.id })}
                       disabled={markRead.isPending}
                     >
                       <Check size={14} />

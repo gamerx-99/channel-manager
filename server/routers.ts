@@ -142,6 +142,7 @@ const hotelAdminAuditLogListSchema = z.object({
   limit: z.number().int().min(1).max(100).default(50),
 });
 const dashboardCalendarSchema = z.object({
+  hotelId: z.string().uuid().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
   days: z.number().int().min(7).max(31),
 }).optional();
@@ -403,9 +404,14 @@ export const appRouter = router({
     logout: publicProcedure.mutation(() => ({ success: true as const })),
   }),
   channelManager: router({
-    dashboard: protectedProcedure.query(async ({ ctx }) => {
+    dashboard: protectedProcedure
+      .input(z.object({ hotelId: z.string().uuid().optional() }).optional())
+      .query(async ({ ctx, input }) => {
       try {
-        const hotels = await listManagedHotels(rlsClient(ctx.user.accessToken));
+        let hotels = await listManagedHotels(rlsClient(ctx.user.accessToken));
+        if (input?.hotelId) {
+          hotels = hotels.filter(h => h.id === input?.hotelId);
+        }
         const today = new Date().toISOString().slice(0, 10);
         const confirmedBookings = hotels.flatMap(hotel => hotel.bookings).filter(booking => booking.status === 'confirmed');
         return {
@@ -425,13 +431,19 @@ export const appRouter = router({
         return rethrowDomainError(error);
       }
     }),
-    channelPerformance: protectedProcedure.query(async ({ ctx }) => {
+    channelPerformance: protectedProcedure
+      .input(z.object({ hotelId: z.string().uuid().optional() }).optional())
+      .query(async ({ ctx, input }) => {
       try {
         const client = rlsClient(ctx.user.accessToken);
-        const [hotels, otaSummary] = await Promise.all([
+        let [hotels, otaSummary] = await Promise.all([
           listManagedHotels(client),
           getGlobalOtaSummary(ctx.user.accessToken),
         ]);
+        if (input?.hotelId) {
+          hotels = hotels.filter(h => h.id === input?.hotelId);
+          otaSummary = otaSummary.filter(o => o.hotel_id === input?.hotelId);
+        }
         return buildChannelPerformanceSummary(hotels, otaSummary);
       } catch (error) {
         return rethrowDomainError(error);
@@ -455,10 +467,14 @@ export const appRouter = router({
         const dayCount = input?.days ?? 14;
         const dates = Array.from({ length: dayCount }, (_, index) => addIsoDays(startDate, index));
         const client = rlsClient(ctx.user.accessToken);
-        const [hotels, otaSummary] = await Promise.all([
+        let [hotels, otaSummary] = await Promise.all([
           listManagedHotels(client),
           getGlobalOtaSummary(ctx.user.accessToken),
         ]);
+        if (input?.hotelId) {
+          hotels = hotels.filter(h => h.id === input?.hotelId);
+          otaSummary = otaSummary.filter(o => o.hotel_id === input?.hotelId);
+        }
 
         const hotelCalendars = await Promise.all(hotels.map(async (hotel) => {
           const [hotelDetail, availability] = await Promise.all([

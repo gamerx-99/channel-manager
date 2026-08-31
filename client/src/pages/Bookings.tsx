@@ -39,7 +39,11 @@ function downloadBase64Xlsx(base64: string, filename: string, contentType: strin
   URL.revokeObjectURL(url);
 }
 
-export default function Bookings({ id }: { id: string }) {
+import { useHotel } from '@/contexts/HotelContext';
+
+export default function Bookings() {
+  const { selectedHotelId } = useHotel();
+  const id = selectedHotelId ?? '';
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id, { enabled: Boolean(id) });
   const bookingsQuery = trpc.channelManager.bookings.useQuery(id, { enabled: Boolean(id) });

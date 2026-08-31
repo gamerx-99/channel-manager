@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import type { FinancialsRoomTypeBreakdown } from "@/../../server/financials";
 import { useState } from "react";
 import { useMfaStepUp } from "@/lib/mfa";
+import { useHotel } from "@/contexts/HotelContext";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -80,9 +81,8 @@ function LoadingDashboard() {
 }
 
 export default function Financials() {
-  const { data: hotels = [] } = trpc.channelManager.hotels.useQuery();
-  const [storedHotelId] = useState(() => localStorage.getItem("selected-hotel-id"));
-  const hotelId = hotels.some(hotel => hotel.id === storedHotelId) ? storedHotelId : hotels[0]?.id;
+  const { hotels, selectedHotelId } = useHotel();
+  const hotelId = selectedHotelId ?? hotels[0]?.id;
   const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery();
 
   if (isLoading) return <LoadingDashboard />;

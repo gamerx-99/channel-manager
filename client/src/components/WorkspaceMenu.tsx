@@ -6,6 +6,7 @@ type VisibleHotel = {
   id: string;
   name: string;
   slug: string;
+  [key: string]: any;
 };
 
 type WorkspaceMenuProps = {
@@ -15,6 +16,8 @@ type WorkspaceMenuProps = {
   onClose: () => void;
   isPlatformAdmin?: boolean;
   activeHotelName?: string;
+  onSelectHotel?: (hotel: VisibleHotel) => void;
+  onSelectHotelId?: (hotelId: string) => void;
 };
 
 export function WorkspaceMenu({
@@ -24,6 +27,8 @@ export function WorkspaceMenu({
   onClose,
   isPlatformAdmin = false,
   activeHotelName,
+  onSelectHotel,
+  onSelectHotelId,
 }: WorkspaceMenuProps) {
   const workspaceName = isPlatformAdmin ? "Support console" : activeHotelName ?? hotels?.[0]?.name ?? "Hotel workspace";
   const workspaceLabel = isPlatformAdmin ? "Workspace" : "Property workspace";
@@ -67,7 +72,14 @@ export function WorkspaceMenu({
               href={`/hotels/${hotel.id}`}
               className="workspace-dropdown-item workspace-dropdown-hotel"
               role="menuitem"
-              onClick={() => { localStorage.setItem("selected-hotel-id", hotel.id); onClose(); }}
+              onClick={() => {
+                if (onSelectHotel) {
+                  onSelectHotel(hotel);
+                } else if (onSelectHotelId) {
+                  onSelectHotelId(hotel.id);
+                }
+                onClose();
+              }}
             >
               <Hotel size={14} aria-hidden="true" />
               <span>
