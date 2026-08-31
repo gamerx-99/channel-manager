@@ -11,7 +11,8 @@
 --   * table present (created if missing, untouched if present)
 --   * RLS enabled
 --   * legacy policy names (including any that reference public.users) dropped
---   * member-scoped SELECT + is_read-only UPDATE policies via hotel_users
+--   * member-scoped SELECT + is_read-only UPDATE policies via the standard
+--     public.is_hotel_member() gatekeeper
 --   * immutable-content trigger so browser sessions cannot rewrite events
 --   * no INSERT policy: authenticated clients can never create notifications;
 --     only the server's service-role admin client writes them (verified in
@@ -41,51 +42,20 @@ DROP POLICY IF EXISTS notifications_select_member ON public.notifications;
 DROP POLICY IF EXISTS notifications_mark_read_member ON public.notifications;
 
 -- Hotel members read their own hotel's notifications. Platform roles
--- (super_admin, admin) read across hotels, matching requireHotelPermission's
--- platform bypass in the tRPC layer.
+-- (super_admin, admin) read across hotels — is_hotel_member() short-circuits
+-- on them, matching requireHotelPermission's platform bypass in the tRPC layer.
+-- This is the same SECURITY DEFINER gatekeeper every other hotel-scoped table
+-- uses, so the policy subquery is not subject to hotel_users' own RLS.
 CREATE POLICY notifications_select_member
   ON public.notifications FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.hotel_users hu
-      WHERE hu.hotel_id = notifications.hotel_id
-        AND hu.user_id = auth.uid()
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.hotel_users hu
-      WHERE hu.user_id = auth.uid()
-        AND hu.role IN ('super_admin', 'admin')
-    )
-  );
+  USING (public.is_hotel_member(hotel_id));
 
 -- Members may only flip is_read. The trigger below makes every other column
 -- immutable for authenticated sessions (service role has no auth.uid()).
 CREATE POLICY notifications_mark_read_member
   ON public.notifications FOR UPDATE TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.hotel_users hu
-      WHERE hu.hotel_id = notifications.hotel_id
-        AND hu.user_id = auth.uid()
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.hotel_users hu
-      WHERE hu.user_id = auth.uid()
-        AND hu.role IN ('super_admin', 'admin')
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.hotel_users hu
-      WHERE hu.hotel_id = notifications.hotel_id
-        AND hu.user_id = auth.uid()
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.hotel_users hu
-      WHERE hu.user_id = auth.uid()
-        AND hu.role IN ('super_admin', 'admin')
-    )
-  );
+  USING (public.is_hotel_member(hotel_id))
+  WITH CHECK (public.is_hotel_member(hotel_id));
 
 CREATE OR REPLACE FUNCTION public.prevent_notification_content_changes()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER

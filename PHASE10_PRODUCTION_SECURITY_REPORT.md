@@ -59,18 +59,28 @@ It supersedes the `20260904_add_notifications.sql` +
 `20260905_harden_notifications_rls.sql` sequence for the notifications concern.
 Run it once regardless of which case the inspection shows, then verify.
 
-## Run order (after STEP 0)
+## Run order — ONE run, one file
 
-1. `20260906_notifications_recreate_policies.sql`
-2. `verify_20260906_notifications_recreate_policies.sql` — every row must be PASS
-3. `verify_20260904_add_notifications.sql` — every check must be PASS
-4. `20260904_add_hotel_payment_settings.sql` — only if STEP 0 shows the table or
-   its policies are missing; otherwise skip
-5. `verify_20260904_add_hotel_payment_settings.sql` — every row must be PASS
-6. Cross-hotel isolation test: Hotel A user must fail SELECT/UPDATE/DELETE on
-   Hotel B notifications; marking only `is_read` must succeed
-7. Confirm SlipOK endpoints return only `configured`/`enabled` — never key
-   material — and that MFA step-up is enforced
+STEP 0 (separate inspect) is superseded: `PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`
+does the conditional apply, all 18 static checks, and the live RLS behaviour
+tests in a single all-or-nothing transaction:
+
+1. Run `PHASE10_ONESHOT_APPLY_AND_VERIFY.sql` once in the Supabase SQL Editor
+   (safe in Case A, Case B, or already-applied states — fully idempotent).
+2. Expected Messages output: every line `PASS ...` ending with
+   `PHASE 10 ONESHOT: ALL CHECKS PASSED`.
+3. Any failure raises an exception naming the failed checks and rolls the whole
+   run back — the database is left untouched; paste the output either way.
+
+The behaviour tests simulate real users (member, non-member, cross-hotel
+member, super_admin, platform admin) and prove: non-member sees 0 rows, members
+see only their hotel, cross-hotel reads are denied, `is_read` updates succeed,
+and INSERT / DELETE / content edits are all blocked. Test rows are deleted
+before commit.
+
+After the one-shot passes, the remaining Phase 10 item is the app-level
+confirmation: SlipOK endpoints return only `configured`/`enabled` — never key
+material — and MFA step-up is enforced.
 
 ## Final checklist
 

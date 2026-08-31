@@ -35,26 +35,26 @@ SELECT 'no INSERT or DELETE policy for clients',
       AND cmd IN ('INSERT', 'DELETE')
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
-SELECT 'member select policy scopes via hotel_users',
+SELECT 'member select policy scopes via is_hotel_member',
   CASE WHEN EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'notifications'
       AND policyname = 'notifications_select_member'
       AND cmd = 'SELECT'
       AND roles = '{authenticated}'
-      AND qual LIKE '%hotel_users%'
+      AND qual LIKE '%is_hotel_member%'
       AND qual NOT LIKE '%public.users%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
-SELECT 'member update policy scopes via hotel_users',
+SELECT 'member update policy scopes via is_hotel_member',
   CASE WHEN EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'notifications'
       AND policyname = 'notifications_mark_read_member'
       AND cmd = 'UPDATE'
       AND roles = '{authenticated}'
-      AND qual LIKE '%hotel_users%'
-      AND with_check LIKE '%hotel_users%'
+      AND qual LIKE '%is_hotel_member%'
+      AND with_check LIKE '%is_hotel_member%'
       AND qual NOT LIKE '%public.users%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
