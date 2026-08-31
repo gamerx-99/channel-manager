@@ -11,12 +11,45 @@ DROP POLICY IF EXISTS "Users can mark notifications as read" ON public.notificat
 
 CREATE POLICY notifications_select_member
   ON public.notifications FOR SELECT TO authenticated
-  USING (public.is_hotel_member(hotel_id));
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.hotel_users hu
+      WHERE hu.hotel_id = notifications.hotel_id
+        AND hu.user_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.hotel_users hu
+      WHERE hu.user_id = auth.uid()
+        AND hu.role IN ('super_admin', 'admin')
+    )
+  );
 
 CREATE POLICY notifications_mark_read_member
   ON public.notifications FOR UPDATE TO authenticated
-  USING (public.is_hotel_member(hotel_id))
-  WITH CHECK (public.is_hotel_member(hotel_id));
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.hotel_users hu
+      WHERE hu.hotel_id = notifications.hotel_id
+        AND hu.user_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.hotel_users hu
+      WHERE hu.user_id = auth.uid()
+        AND hu.role IN ('super_admin', 'admin')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.hotel_users hu
+      WHERE hu.hotel_id = notifications.hotel_id
+        AND hu.user_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.hotel_users hu
+      WHERE hu.user_id = auth.uid()
+        AND hu.role IN ('super_admin', 'admin')
+    )
+  );
 
 CREATE OR REPLACE FUNCTION public.prevent_notification_content_changes()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER

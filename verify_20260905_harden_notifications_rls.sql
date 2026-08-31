@@ -13,7 +13,7 @@ SELECT 'member select policy exists',
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'notifications'
       AND policyname = 'notifications_select_member'
-      AND qual LIKE '%is_hotel_member%'
+      AND qual LIKE '%hotel_users%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
 SELECT 'member update policy exists',
@@ -21,8 +21,8 @@ SELECT 'member update policy exists',
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'notifications'
       AND policyname = 'notifications_mark_read_member'
-      AND qual LIKE '%is_hotel_member%'
-      AND with_check LIKE '%is_hotel_member%'
+      AND qual LIKE '%hotel_users%'
+      AND with_check LIKE '%hotel_users%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
 SELECT 'immutable content trigger exists',
