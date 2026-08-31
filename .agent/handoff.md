@@ -1,5 +1,30 @@
 # Handoff log
 
+## [2026-09-01] MFA QR label missing issuer prefix — indistinguishable entries across multiple accounts — DONE ✅
+- **Reported by human**: after re-enrolling successfully, entries in their phone's
+  authenticator app only showed the app name/domain with no email after it —
+  with several accounts enrolled, impossible to tell which entry belongs to which.
+- **Root cause**: `enrollTotpFactor()` didn't pass an `issuer` param to
+  `supabase.auth.mfa.enroll()`. Per the otpauth Key URI format (and
+  [Supabase's own TOTP docs](https://supabase.com/docs/guides/auth/auth-mfa/totp),
+  which document the label as `otpauth://totp/supabase:alice@supabase.com?...`),
+  the QR label is meant to be `issuer:accountName`. Without an explicit issuer,
+  GoTrue emits a bare label with no issuer prefix, and several authenticator apps
+  then render that single string as the entry's whole title with no separate
+  account/email line — indistinguishable once one person has enrolled more than
+  one account.
+- **Fix**: pass `issuer: "ChannelManager"` explicitly on enroll, forcing the
+  standard `issuer:email` label format so authenticator apps can render the two
+  as separate fields again.
+- **Files touched**: `client/src/lib/mfa.ts`, `client/src/lib/mfa.test.ts` (2
+  assertions), `client/src/components/MfaSettings.test.tsx` (1 assertion).
+- **Verdict**: PASS — `pnpm test`: 394 passed | 3 skipped (71 files). `pnpm
+  check`: 0 errors. `pnpm build`: OK.
+- **Human action required**: push + Vercel redeploy, then re-verify by enrolling
+  a fresh factor and checking the authenticator app shows both the issuer and
+  the account email. Existing already-enrolled factors keep their original label
+  (this only affects new enrollments going forward — not retroactive).
+
 ## [2026-09-01] MFA gate wasn't enforced after login — only checked once, at sign-in — DONE ✅
 - **Reported by human**: after failing to enroll (see the friendly-name entry
   below), the human noted they were never signed out / redirected even without a

@@ -195,9 +195,17 @@ export async function enrollTotpFactor(): Promise<EnrollTotpResult> {
   // cleanup existed, or a timing/consistency gap between listFactors() and
   // enroll() — causes a hard "friendly name already exists" failure on every
   // retry. A unique name per attempt sidesteps the whole failure class.
+  //
+  // `issuer` must be set explicitly: per the otpauth Key URI format, the QR
+  // label is "issuer:accountName" (accountName = the user's email, filled in
+  // server-side). Without an explicit issuer, GoTrue emits a bare label with
+  // no issuer prefix, and several authenticator apps then show only that
+  // single string as the entry's title with no separate account/email line —
+  // indistinguishable when one person has enrolled multiple accounts.
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
     friendlyName: `Authenticator-${Date.now().toString(36)}`,
+    issuer: "ChannelManager",
   });
 
   if (error || !data) {

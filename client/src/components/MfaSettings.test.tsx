@@ -73,6 +73,7 @@ describe("MfaSettings", () => {
     expect(mocks.enroll).toHaveBeenCalledWith({
       factorType: "totp",
       friendlyName: expect.stringMatching(/^Authenticator-/),
+      issuer: "ChannelManager",
     });
 
     await waitFor(() => expect(screen.getByTestId("mfa-enroll-panel")).toBeTruthy());
