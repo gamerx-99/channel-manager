@@ -4,6 +4,7 @@ import { formatIsoToDisplayDate, parseDisplayDateToIso } from '@shared/dateUtils
 import { Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import PageState from '@/components/PageState';
+import BookingWizard from '@/components/BookingWizard';
 
 type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
 
@@ -39,11 +40,7 @@ function downloadBase64Xlsx(base64: string, filename: string, contentType: strin
   URL.revokeObjectURL(url);
 }
 
-import { useHotel } from '@/contexts/HotelContext';
-
-export default function Bookings() {
-  const { selectedHotelId } = useHotel();
-  const id = selectedHotelId ?? '';
+export default function Bookings({ id }: { id: string }) {
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id, { enabled: Boolean(id) });
   const bookingsQuery = trpc.channelManager.bookings.useQuery(id, { enabled: Boolean(id) });
@@ -75,13 +72,8 @@ export default function Bookings() {
       await utils.channelManager.bookings.invalidate(id);
       await utils.channelManager.dashboard.invalidate();
       setShowAdd(false);
-      setFormError(null);
-      setBookingForm({
-        room_id: '', guest_name: '', check_in: displayDay(1), check_out: displayDay(2), price: '', source: 'manual',
-        first_name: '', last_name: '', passport_no: '', nationality_code: '', gender: '', birth_date: '', phone_no: '',
-      });
     },
-    onError: error => setFormError(error.message),
+    onError: error => console.error(error.message),
   });
 
   const exportTm30 = trpc.channelManager.exportTm30.useMutation({
@@ -175,36 +167,6 @@ export default function Bookings() {
 
   function submitBooking(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFormError(null);
-    const hasGuestDetails = Boolean(
-      bookingForm.first_name || bookingForm.last_name || bookingForm.passport_no || bookingForm.nationality_code || bookingForm.gender || bookingForm.birth_date,
-    );
-    const requiredGuestFields = [bookingForm.first_name, bookingForm.last_name, bookingForm.passport_no, bookingForm.nationality_code, bookingForm.gender, bookingForm.birth_date];
-    if (hasGuestDetails && requiredGuestFields.some(value => !value.trim())) {
-      setFormError('Enter all TM.30 identity fields, or leave the entire guest identity section blank for now.');
-      return;
-    }
-    createBooking.mutate({
-      hotel_id: id,
-      room_id: bookingForm.room_id || null,
-      guest_name: bookingForm.guest_name,
-      check_in: parseDisplayDateToIso(bookingForm.check_in),
-      check_out: parseDisplayDateToIso(bookingForm.check_out),
-      price: Number(bookingForm.price),
-      source: bookingForm.source,
-      status: 'confirmed',
-      guests: hasGuestDetails
-        ? [{
-            first_name: bookingForm.first_name,
-            last_name: bookingForm.last_name,
-            passport_no: bookingForm.passport_no,
-            nationality_code: bookingForm.nationality_code,
-            gender: bookingForm.gender as 'M' | 'F',
-            birth_date: parseDisplayDateToIso(bookingForm.birth_date),
-            phone_no: bookingForm.phone_no || null,
-          }]
-        : [],
-    });
   }
 
   return (
@@ -228,7 +190,11 @@ export default function Bookings() {
         }) : <tr><td colSpan={8} className="empty-cell">{bookings.length ? 'No bookings match this filter.' : 'ยังไม่มีรายการจองในโรงแรมนี้'}</td></tr>}</tbody></table></div>
         <div className="table-footer"><span>Showing {filtered.length} of {bookings.length} live booking records</span></div>
       </section>
-      {showAdd && <div className="modal-backdrop" onMouseDown={() => setShowAdd(false)}><form className="modal-card" onSubmit={submitBooking} onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">Manual entry / Stored in Supabase</div><h2>Add a booking</h2></div><button className="icon-button" type="button" onClick={() => setShowAdd(false)}><X size={17} /></button></div>{formError && <p className="form-error" role="alert">{formError}</p>}<div className="form-grid"><label>Guest name<input required value={bookingForm.guest_name} onChange={event => setBookingForm({ ...bookingForm, guest_name: event.target.value })} placeholder="Full name" /></label><label>Room<select value={bookingForm.room_id} onChange={event => setBookingForm({ ...bookingForm, room_id: event.target.value })}><option value="">No room assigned</option>{hotel.rooms.filter(room => room.status !== 'out_of_service').map(room => <option key={room.id} value={room.id}>{room.room_number} · {roomTypeName(room.room_type_id)}</option>)}</select></label><label>Check-in (DD/MM/YYYY)<span className="field-hint" title="รูปแบบมาตรฐาน สตม.: วัน/เดือน/ปี ค.ศ. (เช่น 19/08/2026)">📅 วัน/เดือน/ปี ค.ศ. (DD/MM/YYYY)</span><input required placeholder="DD/MM/YYYY" value={bookingForm.check_in} onChange={event => setBookingForm({ ...bookingForm, check_in: event.target.value })} /></label><label>Check-out (DD/MM/YYYY)<span className="field-hint" title="รูปแบบมาตรฐาน สตม.: วัน/เดือน/ปี ค.ศ. (เช่น 20/08/2026)">📅 วัน/เดือน/ปี ค.ศ. (DD/MM/YYYY)</span><input required placeholder="DD/MM/YYYY" value={bookingForm.check_out} onChange={event => setBookingForm({ ...bookingForm, check_out: event.target.value })} /></label><label>Price (THB)<input required min="0" type="number" value={bookingForm.price} onChange={event => setBookingForm({ ...bookingForm, price: event.target.value })} /></label><label>Source<select value={bookingForm.source} onChange={event => setBookingForm({ ...bookingForm, source: event.target.value as typeof bookingForm.source })}><option value="manual">Manual</option><option value="walk-in">Walk-in</option><option value="phone">Phone</option></select></label></div><div className="guest-form-divider"><UserRoundPlus size={16} /><span>Guest identity for TM.30</span><small>Optional now · required before export</small></div><div className="form-grid"><label>First name<input value={bookingForm.first_name} onChange={event => setBookingForm({ ...bookingForm, first_name: event.target.value })} placeholder="Given name" /></label><label>Last name<input value={bookingForm.last_name} onChange={event => setBookingForm({ ...bookingForm, last_name: event.target.value })} placeholder="Surname" /></label><label>Passport no.<input value={bookingForm.passport_no} onChange={event => setBookingForm({ ...bookingForm, passport_no: event.target.value })} placeholder="Passport number" /></label><label>Nationality code<input value={bookingForm.nationality_code} onChange={event => setBookingForm({ ...bookingForm, nationality_code: event.target.value.toUpperCase() })} placeholder="ISO country code" maxLength={3} /></label><label>Birth date (DD/MM/YYYY)<span className="field-hint" title="รูปแบบมาตรฐาน สตม.: วัน/เดือน/ปี ค.ศ. (เช่น 17/05/1992)">📅 วัน/เดือน/ปี ค.ศ. (DD/MM/YYYY)</span><input placeholder="DD/MM/YYYY" value={bookingForm.birth_date} onChange={event => setBookingForm({ ...bookingForm, birth_date: event.target.value })} /></label><label>Phone no.<input value={bookingForm.phone_no} onChange={event => setBookingForm({ ...bookingForm, phone_no: event.target.value })} placeholder="Optional" /></label></div><div className="modal-actions"><button className="button button-quiet" type="button" onClick={() => setShowAdd(false)}>Cancel</button><button className="button button-primary" type="submit" disabled={createBooking.isPending}>{createBooking.isPending ? 'Saving…' : 'Save booking'}</button></div></form></div>}
+      {showAdd && <BookingWizard hotel={{ ...hotel, bookings }} onClose={() => setShowAdd(false)} onSuccess={() => {
+        utils.channelManager.bookings.invalidate(id);
+        utils.channelManager.dashboard.invalidate();
+        setShowAdd(false);
+      }} />}
       {showExport && <div className="modal-backdrop" onMouseDown={() => setShowExport(false)}><div className="modal-card export-modal" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">TM.30 / Server export preflight</div><h2>Prepare guest file</h2></div><button className="icon-button" onClick={() => setShowExport(false)}><X size={17} /></button></div><p className="modal-lede">The server reads the current hotel&apos;s persisted booking and guest records under RLS, validates them, and writes the official Immigration template.</p>{exportTm30.error && <p className="form-error" role="alert">{exportTm30.error.message}</p>}<div className="preflight-list"><div className="preflight-item done"><i>✓</i><div><strong>Booking scope selected</strong><span>{bookings.length} stored booking records in this hotel</span></div></div><div className="preflight-item done"><i>✓</i><div><strong>Template mapping enforced server-side</strong><span>ICAO nationality codes and required guest fields are validated before the file is created</span></div></div><div className="preflight-item warning"><i>!</i><div><strong>Upload manually after download</strong><span>TM.30 portal connection remains intentionally out of scope</span></div></div></div><div className="template-note"><FileSpreadsheet size={17} /><span><strong>Template-InformAccom-ImportExcel.xls</strong><small>Official template supplied for this project</small></span><span className="template-tag">Mapped</span></div><div className="modal-actions"><button className="button button-quiet" onClick={() => setShowExport(false)}>Cancel</button><button className="button button-primary" disabled={exportTm30.isPending || !bookings.length} onClick={() => exportTm30.mutate(id)}><Download size={15} /> {exportTm30.isPending ? 'Preparing…' : 'Download .xlsx'}</button></div></div></div>}
       {showPreview && <div className="modal-backdrop" onMouseDown={() => setShowPreview(false)}><div className="modal-card preview-modal" style={{ maxWidth: '960px', width: '95vw' }} onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">TM.30 / Immigration Bureau standard format</div><h2>TM.30 Export Preview</h2></div><button className="icon-button" onClick={() => setShowPreview(false)}><X size={17} /></button></div><p className="modal-lede">Review the exact tabular structure, DD/MM/YYYY dates, and guest fields prior to downloading the official Excel/CSV template.</p>{previewQuery.isLoading ? <div className="panel page-state">Loading preview data…</div> : previewQuery.error ? <p className="form-error">Failed to load preview: {previewQuery.error.message}</p> : <div className="table-wrap" style={{ maxHeight: '420px', overflowY: 'auto', marginTop: '1rem' }}><table className="data-table"><thead><tr>{previewQuery.data?.headers.map((h, i) => <th key={i} style={{ whiteSpace: 'pre-line', fontSize: '0.8rem' }}>{h}</th>)}</tr></thead><tbody>{previewQuery.data?.rows.length ? previewQuery.data.rows.map((row, rIdx) => <tr key={rIdx}>{row.map((cell, cIdx) => <td key={cIdx}>{cell}</td>)}</tr>) : <tr><td colSpan={9} className="empty-cell">No valid guest records found for TM.30 preview. Ensure guests have full name, passport, nationality code, and birth date.</td></tr>}</tbody></table></div>}<div className="modal-actions" style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '0.5rem' }}><button className="button button-quiet" onClick={downloadCsvPreview} disabled={!previewQuery.data || !previewQuery.data.rows.length}><Download size={15} /> Download CSV</button><button className="button button-quiet" onClick={downloadPdfPreview} disabled={!previewQuery.data || !previewQuery.data.rows.length}><Download size={15} /> Export PDF / Print</button></div><div style={{ display: 'flex', gap: '0.5rem' }}><button className="button button-quiet" onClick={() => setShowPreview(false)}>Close</button><button className="button button-primary" onClick={() => { setShowPreview(false); setShowExport(true); }}><Download size={15} /> Official Excel (.xlsx)</button></div></div></div></div>}
     </div>

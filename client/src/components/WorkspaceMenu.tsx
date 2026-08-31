@@ -77,6 +77,8 @@ export function WorkspaceMenu({
                   onSelectHotel(hotel);
                 } else if (onSelectHotelId) {
                   onSelectHotelId(hotel.id);
+                } else {
+                  localStorage.setItem("selected-hotel-id", hotel.id);
                 }
                 onClose();
               }}

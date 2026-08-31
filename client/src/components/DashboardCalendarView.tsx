@@ -67,16 +67,14 @@ function statusColorName(status: CalendarDay['roomTypes'][number]['status']) {
   return 'green';
 }
 
-import { useHotel } from '@/contexts/HotelContext';
-
 export default function DashboardCalendarView({ defaultDays = 14, canEditAvailability = false }: CalendarViewProps) {
   const [startDate, setStartDate] = useState(isoToday);
-  const { selectedHotelId } = useHotel();
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(isoToday);
   const [draftAvailability, setDraftAvailability] = useState<Record<string, number>>({});
   const [savedRoomTypeId, setSavedRoomTypeId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const calendarQuery = trpc.channelManager.dashboardCalendar.useQuery(selectedHotelId ? { hotelId: selectedHotelId, startDate, days: defaultDays } : { startDate, days: defaultDays });
+  const calendarQuery = trpc.channelManager.dashboardCalendar.useQuery({ startDate, days: defaultDays });
   const updateAvailability = trpc.channelManager.updateAvailability.useMutation({
     onSuccess: async () => {
       await calendarQuery.refetch();
@@ -196,6 +194,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           <button className="icon-button bordered" type="button" onClick={() => moveWindow(defaultDays)} aria-label="Next calendar window"><ChevronRight size={16} /></button>
           <button className="button button-quiet small-button" type="button" onClick={() => { setStartDate(isoToday()); setSelectedDate(isoToday()); }}>Today</button>
         </div>
+        {hotels.length > 1 && <label className="calendar-property-filter"><span>Property</span><select value={activeHotel.hotel.id} onChange={event => { setSelectedHotelId(event.target.value); setSelectedDate(startDate); }} aria-label="Select property for calendar"><option value="">Select property</option>{hotels.map(hotel => <option value={hotel.hotel.id} key={hotel.hotel.id}>{hotel.hotel.name}</option>)}</select></label>}
       </div>
 
       <div className="calendar-legend dashboard-calendar-legend" aria-label="Calendar status legend">

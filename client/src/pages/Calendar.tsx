@@ -28,19 +28,15 @@ function weekLabel(days: Date[]) {
     : `${first.getDate()} ${month.format(first)}–${last.getDate()} ${month.format(last)} ${last.getFullYear()}`;
 }
 
-import { useHotel } from '@/contexts/HotelContext';
-
-export default function Calendar() {
-  const { selectedHotelId } = useHotel();
-  const id = selectedHotelId ?? '';
+export default function Calendar({ id }: { id: string }) {
   const [weekStart, setWeekStart] = useState(() => new Date());
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [draft, setDraft] = useState<CalendarDraft>({});
   const utils = trpc.useUtils();
-  const hotelQuery = trpc.channelManager.hotel.useQuery(id, { enabled: Boolean(id) });
-  const availabilityQuery = trpc.channelManager.availability.useQuery(id, { enabled: Boolean(id) });
+  const hotelQuery = trpc.channelManager.hotel.useQuery(id);
+  const availabilityQuery = trpc.channelManager.availability.useQuery(id);
   const updateAvailability = trpc.channelManager.updateAvailability.useMutation({
     onSuccess: async () => {
       await utils.channelManager.availability.invalidate(id);

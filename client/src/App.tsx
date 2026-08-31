@@ -76,12 +76,12 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
   const selectedHotelName = selectedHotel?.name;
   const hotelNavItems = selectedHotelId
     ? [
-        ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: "Room operations", Thai: "จัดการห้องพัก", icon: BedDouble }] : []),
-        ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: "Bookings", Thai: "การจอง", icon: Users }] : []),
-        ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: "Availability", Thai: "ปฏิทินห้องว่าง", icon: CalendarDays }] : []),
-        ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: "OTA Sync", Thai: "ซิงก์ OTA", icon: Globe }] : []),
-        ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: "Hotel Staff", Thai: "จัดการพนักงาน", icon: ShieldCheck }] : []),
-      ]
+      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: "Room operations", Thai: "จัดการห้องพัก", icon: BedDouble }] : []),
+      ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: "Bookings", Thai: "การจอง", icon: Users }] : []),
+      ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: "Availability", Thai: "ปฏิทินห้องว่าง", icon: CalendarDays }] : []),
+      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: "OTA Sync", Thai: "ซิงก์ OTA", icon: Globe }] : []),
+      ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: "Hotel Staff", Thai: "จัดการพนักงาน", icon: ShieldCheck }] : []),
+    ]
     : [];
   const isSuperAdmin = roles.includes("super_admin");
   const isPlatformAdmin = roles.some(role => isPlatformRole(role));
@@ -293,7 +293,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           <div className="breadcrumbs">
             <span>Operating ledger</span>
             <span className="crumb-slash">/</span>
-              <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.startsWith("/dashboard/pricing") ? "Advanced Pricing" : location.startsWith("/dashboard/financials") ? "Financials" : location.startsWith("/housekeeping") ? "Housekeeping" : location.startsWith("/communications") ? "Communications" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
+            <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.startsWith("/dashboard/pricing") ? "Advanced Pricing" : location.startsWith("/dashboard/financials") ? "Financials" : location.startsWith("/housekeeping") ? "Housekeeping" : location.startsWith("/communications") ? "Communications" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
           </div>
           <div className="topbar-actions">
             <label className="topbar-search">
@@ -303,12 +303,12 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
             </label>
             {isSuperAdmin && (
               <div className="dropdown-anchor">
-                <button 
-                  className="button button-primary topbar-add" 
+                <button
+                  className="button button-primary topbar-add"
                   onClick={() => { setAddMenuOpen(prev => !prev); setUserMenuOpen(false); setWorkspaceMenuOpen(false); }}
                   aria-expanded={addMenuOpen}
                 >
-                   <Plus size={15} /> <span>{language === "th" ? "เพิ่มข้อมูล" : "Add new"}</span> <ChevronDown size={14} />
+                  <Plus size={15} /> <span>{language === "th" ? "เพิ่มข้อมูล" : "Add new"}</span> <ChevronDown size={14} />
                 </button>
                 {addMenuOpen && (
                   <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label="เมนูเพิ่มข้อมูล">
@@ -322,13 +322,13 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
                 )}
               </div>
             )}
-             {isSuperAdmin && <NotificationBell hotelId={selectedHotelId} />}
-             <LanguageSwitcher />
-             <span className="sync-status"><i /> Synced 2 min ago</span>
+            {isSuperAdmin && <NotificationBell hotelId={selectedHotelId} />}
+            <LanguageSwitcher />
+            <span className="sync-status"><i /> Synced 2 min ago</span>
             <div className="topbar-divider" />
             <div className="dropdown-anchor">
-              <button 
-                className="user-mini" 
+              <button
+                className="user-mini"
                 onClick={() => { setUserMenuOpen(prev => !prev); setAddMenuOpen(false); setWorkspaceMenuOpen(false); }}
                 aria-expanded={userMenuOpen}
                 aria-label="บัญชีผู้ใช้"
@@ -443,10 +443,10 @@ function Router() {
         <PrivateRoute><SecuritySettings /></PrivateRoute>
       </Route>
       <Route path="/hotels/:id/bookings">
-        <PrivateRoute><Bookings /></PrivateRoute>
+        {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/calendar">
-        <PrivateRoute><Calendar /></PrivateRoute>
+        {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/ota">
         {(params) => <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute>}

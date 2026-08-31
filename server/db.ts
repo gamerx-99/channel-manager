@@ -42,6 +42,17 @@ export type GuestRecord = {
   phone_no: string | null;
 };
 
+export type BookingServiceRecord = {
+  id: string;
+  booking_id: string;
+  service_name: string;
+  pricing_model: 'PER_PERSON_PER_NIGHT' | 'PER_NIGHT' | 'ONE_TIME';
+  unit_price: number | string;
+  quantity: number;
+  total_price: number | string;
+  created_at: string;
+};
+
 export type BookingRecord = {
   id: string;
   hotel_id: string;
@@ -55,6 +66,7 @@ export type BookingRecord = {
   created_at: string;
   rooms: { room_number: string; room_types: { name: string } | null } | null;
   guests: GuestRecord[];
+  services?: BookingServiceRecord[];
 };
 
 export type AvailabilityRecord = {
@@ -593,8 +605,9 @@ export async function assertBookingMinStay(
 
 export async function createBookingWithGuests(
   client: SupabaseClient,
-  booking: Omit<BookingRecord, 'id' | 'created_at' | 'rooms' | 'guests'>,
+  booking: Omit<BookingRecord, 'id' | 'created_at' | 'rooms' | 'guests' | 'services'>,
   guests: Omit<GuestRecord, 'id' | 'booking_id'>[],
+  services: Omit<BookingServiceRecord, 'id' | 'booking_id' | 'created_at'>[] = [],
 ) {
   // Defensive enforcement at the DB layer as well as the router pre-check.
   await assertBookingMinStay(client, booking.room_id, booking.check_in, booking.check_out);
@@ -613,6 +626,14 @@ export async function createBookingWithGuests(
     );
     throwOnError(guestError);
   }
+
+  if (services.length) {
+    const { error: serviceError } = await client.from('booking_services').insert(
+      services.map(service => ({ ...service, booking_id: createdBooking.id })),
+    );
+    throwOnError(serviceError);
+  }
+
   return createdBooking;
 }
 

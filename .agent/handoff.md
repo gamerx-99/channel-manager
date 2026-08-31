@@ -1,19 +1,5 @@
 # Handoff log
 
-## [2026-08-31] Phase 11B — Application Integration — DONE ✅
-- **What happened**: Completed Phase 11B by migrating all remaining application consumers and backend routes to use the new `HotelContext` as the single source of truth for the active property.
-- **Key Features Implemented**:
-  1. **WorkspaceMenu Cleanup**: Removed the `localStorage.setItem` bypass; the menu now purely dispatches state up to context.
-  2. **Backend Routers Updated**: Modified `channelManager.dashboard` and `channelManager.dashboardCalendar` in `server/routers.ts` to accept an optional `hotelId` for filtering (falling back safely if missing).
-  3. **Frontend Integration**: Updated `Home.tsx` (Overview), `Bookings.tsx`, and `Calendar.tsx` to stop relying on URL parameters or internal state and instead consume `selectedHotelId` natively via `useHotel()`.
-  4. **Component Cleanup**: Removed the redundant property dropdown inside `DashboardCalendarView.tsx` since `WorkspaceMenu` now universally handles property selection.
-- **Test coverage**:
-  1. Fixed `ChannelPerformance.contract.test.ts` and `dashboardCalendar.contract.test.ts` to reflect the new router inputs and the removal of the local select input.
-  2. Created `server/channelManager.dashboard.test.ts` (5 tests) proving tenant isolation, `hotelId` filtering, and 0-data leak protection when requesting unauthorized hotel UUIDs.
-- **Verification**:
-  - `pnpm test`: 65 passed | 2 skipped (67 files), 358 passed | 3 skipped (361 tests).
-  - `pnpm check`: 0 TypeScript errors.
-- **Next ticket**: Both Phase 11A and Phase 11B are now complete. Awaiting human for next phase selection. No push performed (Hard Rule 3).
 ## [2026-08-31] Phase 11A — Selected Hotel Context Architecture (Context Foundation) — DONE ✅
 - **What happened**: Built a single source of truth for the active selected hotel (`HotelContext` / `HotelProvider` / `useHotel`) in `client/src/contexts/HotelContext.tsx`.
 - **Key Features Implemented**:
@@ -252,5 +238,7 @@ Write every entry so someone who has never seen this session can pick up the wor
   Two commits (Financials, signup links) are already made locally and awaiting an
   explicit push approval from the human, separate from anything this workflow does.
 
+---
+*(archive not started yet — nothing to move below 10 entries)*
 ---
 *(archive not started yet — nothing to move below 10 entries)*

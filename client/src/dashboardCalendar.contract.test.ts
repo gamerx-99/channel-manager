@@ -25,9 +25,11 @@ describe('Dashboard Calendar View contract', () => {
   });
 
   it('renders the calendar inside the Dashboard and supports property/date selection', () => {
-    expect(home).toContain('<DashboardCalendarView canEditAvailability');
-    expect(component).toContain('trpc.channelManager.dashboardCalendar.useQuery(');
+    expect(home).toContain('<DashboardCalendarView canEditAvailability={canEditCalendar} />');
+    expect(component).toContain('trpc.channelManager.dashboardCalendar.useQuery');
+    expect(component).toContain('setSelectedHotelId');
     expect(component).toContain('setSelectedDate');
+    expect(component).toContain('aria-label="Select property for calendar"');
     expect(component).toContain('aria-label="Previous calendar window"');
     expect(component).toContain('aria-label="Next calendar window"');
     expect(component).toContain('แก้ไขห้องว่างของวันที่เลือก');

@@ -9,7 +9,7 @@ describe("Channel Performance dashboard contract", () => {
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
 
   it("exposes a protected property-scoped channel performance procedure", () => {
-    expect(router).toContain("channelPerformance: protectedProcedure");
+    expect(router).toContain("channelPerformance: protectedProcedure.query");
     expect(router).toContain("listManagedHotels(client)");
     expect(router).toContain("getGlobalOtaSummary(ctx.user.accessToken)");
     expect(router).toContain("buildChannelPerformanceSummary(hotels, otaSummary)");
