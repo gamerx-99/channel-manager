@@ -8,7 +8,7 @@ describe("Topbar menu surface contract", () => {
   it("uses a shared anchor and opaque surface for the Add menu", () => {
     expect(app).toContain('className="dropdown-anchor"');
     expect(app).toContain('className="menu-surface menu-surface--compact menu-surface--topbar"');
-    expect(app).toContain('aria-label="เมนูเพิ่มข้อมูล"');
+    expect(app).toContain('aria-label="Add new menu"');
   });
 
   it("closes competing menus before opening the Add or Profile menu", () => {

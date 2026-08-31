@@ -11,7 +11,7 @@ describe("Responsive operations layout contract", () => {
   it("keeps the live AppShell sidebar closed by default on small screens and exposes an accessible open state", () => {
     expect(app).toContain('className={`sidebar ${open ? "is-open" : ""}`}');
     expect(app).toContain('className="mobile-scrim"');
-    expect(app).toContain('aria-label="เปิดเมนู"');
+    expect(app).toContain('aria-label="Open menu"');
     expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*?\.sidebar\{[^}]*transform:translateX\(-105%\)/);
     expect(css).toMatch(/\.sidebar\.is-open\{[^}]*transform:translateX\(0\)/);
   });

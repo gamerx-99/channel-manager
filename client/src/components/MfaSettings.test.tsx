@@ -92,7 +92,8 @@ describe("MfaSettings", () => {
 
     await waitFor(() => expect(mocks.challenge).toHaveBeenCalledWith({ factorId: "factor-new" }));
     expect(mocks.verify).toHaveBeenCalledWith({ factorId: "factor-new", challengeId: "challenge-1", code: "123456" });
-    await waitFor(() => expect(mocks.listFactors).toHaveBeenCalledTimes(2));
+    // Mount (1) + pre-enroll cleanup (2) + post-verify refresh (3)
+    await waitFor(() => expect(mocks.listFactors).toHaveBeenCalledTimes(3));
     // success message clears enroll panel
     await waitFor(() => expect(screen.getByText("Authenticator enrolled and verified")).toBeTruthy());
   });
@@ -111,12 +112,15 @@ describe("MfaSettings", () => {
     expect(await screen.findByText("Enabled")).toBeTruthy();
     expect(screen.getByTestId("mfa-verified")).toBeTruthy();
 
+    // First challenge — from handleChallenge (shows the verify panel)
     await user.click(screen.getByRole("button", { name: "Verify with code" }));
     expect(mocks.challenge).toHaveBeenCalledWith({ factorId: "factor-verified-1" });
     await waitFor(() => expect(screen.getByTestId("mfa-verify-panel")).toBeTruthy());
 
     await user.type(screen.getByLabelText("Verification code"), "654321");
     await user.click(screen.getByRole("button", { name: "Verify code" }));
+    // handleVerify always creates a fresh challenge before calling verify
+    expect(mocks.challenge).toHaveBeenCalledTimes(2);
     expect(mocks.verify).toHaveBeenCalledWith({ factorId: "factor-verified-1", challengeId: "challenge-1", code: "654321" });
     await waitFor(() => expect(screen.getByText("Code verified successfully")).toBeTruthy());
   });
@@ -160,7 +164,8 @@ describe("MfaSettings", () => {
     await user.type(screen.getByLabelText("Verification code"), "000000");
     mocks.verify.mockResolvedValue({ data: null, error: { message: "Invalid code" } } as never);
     await user.click(screen.getByRole("button", { name: "Verify and activate" }));
-    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("Invalid code"));
+    // The component wraps Supabase's "invalid" errors with a friendlier message
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("Incorrect code"));
   });
 
   it("shows empty error state when listFactors fails", async () => {

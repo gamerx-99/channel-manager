@@ -1,5 +1,31 @@
 # Handoff log
 
+## [2026-09-01] Phase 12B — Payment & Booking Completion — DONE ✅
+- **Commit**: `48425c2` `feat(payments): Phase 12B — PromptPay QR + SlipOK verification`
+- **What was built**:
+  1. **Migration**: `20260908_add_payment_flow.sql` — adds `payment_sessions` table (QR state machine), `payment_status` column on `bookings` (default `'unpaid'`), and `promptpay_id` + `payment_timeout_minutes` on `hotel_payment_settings`. Verification script included.
+  2. **`server/promptpay.ts`**: EMVCo QR string generator with CRC-16/CCITT-FALSE. `generatePromptPayQR()` validates ID (10 or 13 digits), normalises mobile to `0066` prefix, formats amount, and appends correct checksum. `buildQrImageUrl()` uses `api.qrserver.com` (no extra dep).
+  3. **`server/slipVerification.ts`**: SlipOK REST client. Decrypts per-hotel API key at runtime, POSTs slip image (base64), validates amount match with ±0.01 tolerance, raises typed `SlipOkError` with `code` (`NO_KEY | INVALID_KEY | API_ERROR`).
+  4. **`server/db.ts`**: Added `PaymentSessionRecord` type, `payment_status` optional (DB default), CRUD helpers (`createPaymentSession`, `getPaymentSession`, `updatePaymentSession`, `updateBookingPaymentStatus`). Also: `createPublicBooking` now returns `hotel_id` + `has_promptpay` (checks `hotel_payment_settings.promptpay_id`).
+  5. **`server/routers.ts`**: `payment.createSession`, `payment.checkStatus` (auto-expire), `payment.verifySlip` (server-side SlipOK call), `slipok.savePromptPayId`.
+  6. **`client/components/PaymentQR.tsx`**: QR image + countdown timer + 10s status poll + slip upload tab.
+  7. **`client/pages/Financials.tsx`**: Added `PromptPaySettings` card (save PromptPay ID + timeout).
+  8. **`client/pages/PublicHotel.tsx`**: After booking confirmed, shows `PaymentQR` if hotel has PromptPay configured; otherwise shows "contact hotel" message.
+  9. **`client/index.css`**: Payment QR component styles added.
+  10. **Tests**: `promptpay.test.ts` (16 tests — CRC, amount, normalisation, errors), `slipVerification.test.ts` (8 tests — success, mismatch, tolerance, error codes).
+- **Verification**:
+  - `pnpm check`: 0 TypeScript errors ✅
+  - `pnpm test`: **68 files passed | 2 skipped | 385 tests | 3 skipped** ✅
+  - `pnpm build`: vite ✓ + esbuild ✓ ✅
+- **Human action required (BLOCKING)**:
+  - Apply `20260908_add_payment_flow.sql` in Supabase SQL editor
+  - Run `verify_20260908_add_payment_flow.sql` — paste results (all rows must read PASS)
+  - Set `promptpay_id` via **Financials → PromptPay Settings** for each hotel
+  - Set `SLIP_APIKEY` (per hotel, save encrypted) via **Financials → SlipOK Settings** if slip verification needed
+  - Verify `.env` has `SLIPOK_ENCRYPTION_SECRET` (32+ char random string)
+- **Platform policy reminder**: Platform does not hold or touch guest funds. QR points directly to hotel's PromptPay account.
+- **Next ticket**: Phase 12C or any outstanding specs in `specs/00-OVERVIEW.md`.
+
 ## [2026-08-31] Phase 11A — Selected Hotel Context Architecture (Context Foundation) — DONE ✅
 - **What happened**: Built a single source of truth for the active selected hotel (`HotelContext` / `HotelProvider` / `useHotel`) in `client/src/contexts/HotelContext.tsx`.
 - **Key Features Implemented**:

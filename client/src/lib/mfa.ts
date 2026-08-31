@@ -47,6 +47,28 @@ export function shouldRedirectToMfaEnroll(roles: readonly string[] | null | unde
   return !hasVerifiedTotpFactor(factorData);
 }
 
+/**
+ * Unenrolls all unverified TOTP factors for the current user.
+ * This prevents the Supabase MFA error:
+ * "A factor with the friendly name '...' for this user already exists"
+ * when a previous enrollment was not completed.
+ */
+export async function cleanupUnverifiedFactors(): Promise<void> {
+  try {
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error || !data) return;
+    const factors = ((data.all?.length ? data.all : data.totp) ?? []) as Array<{ id?: string; status?: string; factor_type?: string }>;
+    const unverified = factors.filter(f => f.status === "unverified");
+    for (const factor of unverified) {
+      if (factor.id) {
+        await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      }
+    }
+  } catch {
+    // Non-blocking cleanup
+  }
+}
+
 export type MfaStepUpState =
   | { status: "idle" }
   | { status: "pending" }

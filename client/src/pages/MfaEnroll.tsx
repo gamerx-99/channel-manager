@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { shouldEnforceMfaForRoles } from "@/lib/mfa";
+import { shouldEnforceMfaForRoles, cleanupUnverifiedFactors, hasVerifiedTotpFactor } from "@/lib/mfa";
 import { PLATFORM_ROLES } from "@shared/authorization";
 
 export default function MfaEnroll() {
@@ -22,6 +22,14 @@ export default function MfaEnroll() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { if (!cancelled) setCanSkip(true); return; }
+
+        // If already has verified MFA factor, no need to enroll again
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        if (hasVerifiedTotpFactor(factors)) {
+          if (!cancelled) navigate("/dashboard");
+          return;
+        }
+
         // Resolve platform roles same as Login.tsx: metadata + is_super_admin RPC + hotel_users fallback
         const metaRole = (user.app_metadata as Record<string, unknown>)?.role as string | undefined;
         const roles: string[] = [];
@@ -37,51 +45,88 @@ export default function MfaEnroll() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [navigate]);
 
   async function handleEnroll() {
     setError(null);
     setSubmitting(true);
     setStep("enrolling");
-    const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-      factorType: "totp",
-      friendlyName: "Authenticator",
-    });
-    setSubmitting(false);
-    if (enrollError || !data) {
-      setError(enrollError?.message ?? "Unable to start MFA enrollment.");
+
+    try {
+      // 1. Clean up stale unverified factors to prevent "already exists" errors
+      await cleanupUnverifiedFactors();
+
+      let enrollRes = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+      });
+
+      // If duplicate factor error occurs, retry once after forced cleanup
+      if (enrollRes.error && enrollRes.error.message.toLowerCase().includes("already exists")) {
+        await cleanupUnverifiedFactors();
+        enrollRes = await supabase.auth.mfa.enroll({ factorType: "totp" });
+      }
+
+      setSubmitting(false);
+      if (enrollRes.error || !enrollRes.data) {
+        setError(enrollRes.error?.message ?? "Unable to start MFA enrollment.");
+        setStep("intro");
+        return;
+      }
+
+      setFactorId(enrollRes.data.id);
+      setQrCode((enrollRes.data as unknown as { totp: { qr_code: string; secret: string } }).totp.qr_code);
+      setSecret((enrollRes.data as unknown as { totp: { qr_code: string; secret: string } }).totp.secret);
+      setStep("verifying");
+    } catch (e) {
+      setSubmitting(false);
+      setError(e instanceof Error ? e.message : "Enrollment failed");
       setStep("intro");
-      return;
     }
-    setFactorId(data.id);
-    setQrCode((data as unknown as { totp: { qr_code: string; secret: string } }).totp.qr_code);
-    setSecret((data as unknown as { totp: { qr_code: string; secret: string } }).totp.secret);
-    setStep("verifying");
   }
 
   async function handleVerify() {
-    if (!factorId || !code) return;
+    if (!factorId || !code.trim()) return;
     setError(null);
     setSubmitting(true);
-    // challenge + verify (supabase requires a challenge first)
-    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
-    if (challengeError || !challengeData) {
-      setError(challengeError?.message ?? "Unable to create MFA challenge.");
+
+    try {
+      // Create fresh challenge (single-use)
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+      if (challengeError || !challengeData) {
+        setError(challengeError?.message ?? "Unable to create MFA challenge.");
+        setSubmitting(false);
+        return;
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challengeData.id,
+        code: code.trim(),
+      });
+
       setSubmitting(false);
-      return;
+      if (verifyError) {
+        const msg = verifyError.message.toLowerCase().includes("invalid")
+          ? "Incorrect code — please check your authenticator app and enter the current 6-digit code."
+          : verifyError.message;
+        setError(msg);
+        return;
+      }
+      setStep("done");
+      navigate("/dashboard");
+    } catch (e) {
+      setSubmitting(false);
+      setError(e instanceof Error ? e.message : "Verification failed");
     }
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challengeData.id,
-      code: code.trim(),
-    });
-    setSubmitting(false);
-    if (verifyError) {
-      setError(verifyError.message);
-      return;
-    }
-    setStep("done");
-    navigate("/dashboard");
+  }
+
+  function handleReset() {
+    setStep("intro");
+    setFactorId(null);
+    setQrCode(null);
+    setSecret(null);
+    setCode("");
+    setError(null);
   }
 
   async function handleSkipToDashboard() {
@@ -130,11 +175,25 @@ export default function MfaEnroll() {
               </div>
               {secret && <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8, wordBreak: "break-all" }}>Secret: {secret}</p>}
               <label style={{ display: "block", marginTop: 16 }}>6-digit code from your authenticator app
-                <input type="text" inputMode="numeric" value={code} onChange={e => setCode(e.target.value)} placeholder="123456" maxLength={6} style={{ marginTop: 4 }} />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={code}
+                  onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onKeyDown={e => { if (e.key === "Enter" && code.trim().length === 6 && !submitting) void handleVerify(); }}
+                  placeholder="123456"
+                  maxLength={6}
+                  style={{ marginTop: 4 }}
+                />
               </label>
-              <button className="button button-primary login-button" type="button" onClick={() => void handleVerify()} disabled={submitting || code.trim().length < 6}>
-                {submitting ? <><Loader2 size={16} className="animate-spin" /> Verifying…</> : "Verify and continue"}
-              </button>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button className="button button-primary login-button" type="button" onClick={() => void handleVerify()} disabled={submitting || code.trim().length < 6} style={{ flex: 1 }}>
+                  {submitting ? <><Loader2 size={16} className="animate-spin" /> Verifying…</> : "Verify and continue"}
+                </button>
+                <button className="button" type="button" onClick={handleReset} disabled={submitting}>
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 

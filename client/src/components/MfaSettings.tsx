@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { cleanupUnverifiedFactors } from "@/lib/mfa";
 
 type MfaFactor = {
   id: string;
@@ -54,18 +55,28 @@ export default function MfaSettings() {
     setSuccess(null);
     setBusy("enroll");
     try {
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
+      // Clean up any unverified factors from previous failed attempts to avoid "already exists" errors
+      await cleanupUnverifiedFactors();
+
+      let enrollRes = await supabase.auth.mfa.enroll({
         factorType: "totp",
       });
-      if (enrollError) {
-        setError(enrollError.message);
+
+      // If duplicate/existing error still occurs, retry once after force cleanup
+      if (enrollRes.error && enrollRes.error.message.toLowerCase().includes("already exists")) {
+        await cleanupUnverifiedFactors();
+        enrollRes = await supabase.auth.mfa.enroll({ factorType: "totp" });
+      }
+
+      if (enrollRes.error) {
+        setError(enrollRes.error.message);
         return;
       }
-      if (!data) {
+      if (!enrollRes.data) {
         setError("Enrollment failed: no data returned");
         return;
       }
-      const typed = data as unknown as EnrollData;
+      const typed = enrollRes.data as unknown as EnrollData;
       setEnrollData(typed);
       setActiveFactorId(typed.id);
       setChallengeId(null);
@@ -111,33 +122,38 @@ export default function MfaSettings() {
     setSuccess(null);
     setBusy("verify");
 
-    let cid = challengeId;
-    // For TOTP enrollment the challenge is required; create one if not present
-    if (!cid && activeFactorId) {
-      try {
-        const { data: chData, error: chErr } = await supabase.auth.mfa.challenge({ factorId: activeFactorId });
-        if (chErr) {
-          setError(chErr.message);
-          setBusy(null);
-          return;
-        }
-        cid = (chData as { id: string }).id;
-        setChallengeId(cid);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Challenge failed");
+    // Always create a fresh challenge — Supabase treats each challenge as single-use
+    // (even a failed verify consumes it, so we must re-challenge on every attempt)
+    let cid: string | null = null;
+    try {
+      const { data: chData, error: chErr } = await supabase.auth.mfa.challenge({ factorId: activeFactorId });
+      if (chErr) {
+        setError(chErr.message);
         setBusy(null);
         return;
       }
+      cid = (chData as { id: string }).id;
+      setChallengeId(cid);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Challenge failed");
+      setBusy(null);
+      return;
     }
 
     try {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId: activeFactorId,
-        challengeId: cid!,
+        challengeId: cid,
         code: code.trim(),
       });
       if (verifyError) {
-        setError(verifyError.message);
+        // Reset challengeId so the next attempt will create a fresh challenge
+        setChallengeId(null);
+        // Provide friendlier message for the common wrong-code case
+        const msg = verifyError.message.toLowerCase().includes("invalid")
+          ? "Incorrect code — please wait for the next 6-digit code and try again"
+          : verifyError.message;
+        setError(msg);
         return;
       }
       setSuccess(enrollData ? "Authenticator enrolled and verified" : "Code verified successfully");
@@ -147,6 +163,7 @@ export default function MfaSettings() {
       setCode("");
       await refreshFactors();
     } catch (e) {
+      setChallengeId(null);
       setError(e instanceof Error ? e.message : "Verification failed");
     } finally {
       setBusy(null);
@@ -260,9 +277,11 @@ export default function MfaSettings() {
                       aria-label="Verification code"
                       placeholder="123456"
                       value={code}
-                      onChange={(e) => setCode(e.target.value)}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onKeyDown={(e) => { if (e.key === "Enter" && code.trim().length === 6) void handleVerify(); }}
                       inputMode="numeric"
                       autoComplete="one-time-code"
+                      maxLength={6}
                     />
                   </label>
                   <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -329,9 +348,11 @@ export default function MfaSettings() {
                       aria-label="Verification code"
                       placeholder="123456"
                       value={code}
-                      onChange={(e) => setCode(e.target.value)}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onKeyDown={(e) => { if (e.key === "Enter" && code.trim().length === 6) void handleVerify(); }}
                       inputMode="numeric"
                       autoComplete="one-time-code"
+                      maxLength={6}
                     />
                   </label>
                   <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
