@@ -2,6 +2,7 @@ import { ArrowRight, Calendar, CheckCircle2, ChevronDown, Clock, MapPin, Menu, P
 import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { PaymentQR } from "@/components/PaymentQR";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_ACCENT_COLOR = "#954831";
@@ -30,6 +31,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<{
     booking_id: string;
+    hotel_id: string;
     hotel_name: string;
     room_type_name: string;
     room_number?: string;
@@ -38,6 +40,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
     nights: number;
     total_price: number;
     guest_name: string;
+    has_promptpay: boolean;
     guest_phone?: string | null;
   } | null>(null);
 
@@ -236,11 +239,31 @@ export default function PublicHotel({ slug }: { slug: string }) {
                     Total Stay Amount: ฿{Number(confirmedBooking.total_price).toLocaleString()}
                   </div>
                 </div>
+
+                {/* Phase 12B: Payment QR Step */}
+                {confirmedBooking.has_promptpay ? (
+                  <PaymentQR
+                    bookingId={confirmedBooking.booking_id}
+                    hotelId={confirmedBooking.hotel_id}
+                    onSuccess={() => {
+                      // Payment verified — show thank you and reset
+                      setTimeout(handleResetBooking, 4000);
+                    }}
+                    onExpired={() => {
+                      // Session expired — still allow booking another
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: "13px", color: "#789087", marginBottom: "16px" }}>
+                    กรุณาติดต่อที่พักโดยตรงเพื่อชำระเงิน
+                  </p>
+                )}
+
                 <button
                   type="button"
                   className="button public-button"
                   onClick={handleResetBooking}
-                  style={{ backgroundColor: accentColor, color: "#fff", borderColor: accentColor, width: "100%" }}
+                  style={{ backgroundColor: accentColor, color: "#fff", borderColor: accentColor, width: "100%", marginTop: "12px" }}
                 >
                   Book another stay
                 </button>

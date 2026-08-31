@@ -53,6 +53,9 @@ export type BookingServiceRecord = {
   created_at: string;
 };
 
+export type PaymentStatus = 'unpaid' | 'pending' | 'verified' | 'failed';
+export type PaymentSessionStatus = 'pending' | 'paid' | 'expired' | 'failed';
+
 export type BookingRecord = {
   id: string;
   hotel_id: string;
@@ -63,10 +66,27 @@ export type BookingRecord = {
   price: number | string;
   source: 'manual' | 'walk-in' | 'phone';
   status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
+  /** DB default 'unpaid' — omit on insert, present on reads */
+  payment_status?: PaymentStatus;
   created_at: string;
   rooms: { room_number: string; room_types: { name: string } | null } | null;
   guests: GuestRecord[];
   services?: BookingServiceRecord[];
+};
+
+
+export type PaymentSessionRecord = {
+  id: string;
+  booking_id: string;
+  hotel_id: string;
+  amount: number | string;
+  status: PaymentSessionStatus;
+  qr_reference: string;
+  qr_string: string | null;
+  expires_at: string;
+  verified_at: string | null;
+  slip_url: string | null;
+  created_at: string;
 };
 
 export type AvailabilityRecord = {
@@ -500,9 +520,18 @@ export async function createPublicBooking(
       ],
     );
 
+    // Check if hotel has PromptPay configured (for client to decide whether to show QR)
+    const { data: paymentConfig } = await adminClient
+      .from('hotel_payment_settings')
+      .select('promptpay_id')
+      .eq('hotel_id', hotel.id)
+      .maybeSingle();
+    const has_promptpay = !!(paymentConfig?.promptpay_id);
+
     return {
       success: true,
       booking_id: createdBooking.id,
+      hotel_id: hotel.id,
       hotel_name: hotel.name,
       hotel_address: hotel.address,
       room_type_name: roomType.name,
@@ -514,6 +543,7 @@ export async function createPublicBooking(
       guest_name: trimmedName,
       guest_email: input.guest_email || null,
       guest_phone: input.guest_phone || null,
+      has_promptpay,
     };
   } catch (err: any) {
     const msg = err?.message || '';
@@ -527,6 +557,7 @@ export async function createPublicBooking(
     throw err;
   }
 }
+
 
 export type RateOverrideRecord = {
   id: string;
@@ -1654,5 +1685,115 @@ export async function removeSlipOkKey(client: SupabaseClient, hotelId: string): 
       },
       { onConflict: 'hotel_id' },
     );
+  throwOnError(error);
+}
+
+// ── Phase 12B: Payment flow ───────────────────────────────────────────────
+
+/** Save PromptPay ID and optional timeout to hotel_payment_settings. */
+export async function savePromptPaySettings(
+  client: SupabaseClient,
+  hotelId: string,
+  promptPayId: string,
+  timeoutMinutes: number,
+): Promise<void> {
+  const { error } = await client
+    .from('hotel_payment_settings')
+    .upsert(
+      {
+        hotel_id: hotelId,
+        promptpay_id: promptPayId,
+        payment_timeout_minutes: timeoutMinutes,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'hotel_id' },
+    );
+  throwOnError(error);
+}
+
+/** Get PromptPay ID and SlipOK key (encrypted) for a hotel. Returns null if not configured. */
+export async function getHotelPaymentConfig(
+  client: SupabaseClient,
+  hotelId: string,
+): Promise<{
+  promptpay_id: string | null;
+  slipok_key_enc: string | null;
+  slipok_enabled: boolean;
+  payment_timeout_minutes: number;
+} | null> {
+  const { data, error } = await client
+    .from('hotel_payment_settings')
+    .select('promptpay_id,slipok_key_enc,slipok_enabled,payment_timeout_minutes')
+    .eq('hotel_id', hotelId)
+    .maybeSingle();
+  throwOnError(error);
+  return data ?? null;
+}
+
+export type CreatePaymentSessionInput = {
+  booking_id: string;
+  hotel_id: string;
+  amount: number;
+  qr_reference: string;
+  qr_string: string;
+  expires_at: string;
+};
+
+/** Create a new payment session. Returns the created session. */
+export async function createPaymentSession(
+  client: SupabaseClient,
+  input: CreatePaymentSessionInput,
+): Promise<PaymentSessionRecord> {
+  const { data, error } = await client
+    .from('payment_sessions')
+    .insert(input)
+    .select('id,booking_id,hotel_id,amount,status,qr_reference,qr_string,expires_at,verified_at,slip_url,created_at')
+    .single();
+  throwOnError(error);
+  return data as PaymentSessionRecord;
+}
+
+/** Get the latest payment session for a booking. */
+export async function getLatestPaymentSession(
+  client: SupabaseClient,
+  bookingId: string,
+): Promise<PaymentSessionRecord | null> {
+  const { data, error } = await client
+    .from('payment_sessions')
+    .select('id,booking_id,hotel_id,amount,status,qr_reference,qr_string,expires_at,verified_at,slip_url,created_at')
+    .eq('booking_id', bookingId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  throwOnError(error);
+  return data ?? null;
+}
+
+/** Update payment session status. Optionally set verified_at. */
+export async function updatePaymentSessionStatus(
+  client: SupabaseClient,
+  sessionId: string,
+  status: PaymentSessionStatus,
+  verifiedAt?: string,
+): Promise<void> {
+  const patch: Record<string, unknown> = { status };
+  if (verifiedAt) patch.verified_at = verifiedAt;
+  const { error } = await client
+    .from('payment_sessions')
+    .update(patch)
+    .eq('id', sessionId);
+  throwOnError(error);
+}
+
+/** Update booking payment_status. */
+export async function updateBookingPaymentStatus(
+  client: SupabaseClient,
+  bookingId: string,
+  paymentStatus: PaymentStatus,
+): Promise<void> {
+  const { error } = await client
+    .from('bookings')
+    .update({ payment_status: paymentStatus })
+    .eq('id', bookingId);
   throwOnError(error);
 }

@@ -1,4 +1,4 @@
-import { BarChart3, CircleDollarSign, Clock3, Download, KeyRound, Percent, ShieldCheck, TrendingUp, Trash2 } from "lucide-react";
+import { BarChart3, CircleDollarSign, Clock3, Download, KeyRound, Percent, QrCode, ShieldCheck, TrendingUp, Trash2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -183,6 +183,7 @@ export default function Financials() {
       </section>
 
       {hotelId && <SlipOkSettings hotelId={hotelId} />}
+      {hotelId && <PromptPaySettings hotelId={hotelId} />}
     </div>
   );
 }
@@ -402,6 +403,111 @@ function SlipOkSettings({ hotelId }: { hotelId: string }) {
               {saveError && <p className="text-xs text-red-600">{saveError}</p>}
             </div>
           )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+// ─── Phase 12B: PromptPay QR Settings (per-hotel) ────────────────────────────
+
+function PromptPaySettings({ hotelId }: { hotelId: string }) {
+  const [promptPayId, setPromptPayId] = useState("");
+  const [timeoutMin, setTimeoutMin] = useState(15);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
+    onSuccess() {
+      setSaved(true);
+      setSaveError(null);
+      setPromptPayId("");
+      setTimeout(() => setSaved(false), 3000);
+    },
+    onError(err) {
+      setSaveError(err.message);
+    },
+  });
+
+  function handleSave() {
+    setSaveError(null);
+    setSaved(false);
+    savePromptPay.mutate({
+      hotel_id: hotelId,
+      promptpay_id: promptPayId.replace(/\D/g, ""),
+      payment_timeout_minutes: timeoutMin,
+    });
+  }
+
+  return (
+    <section aria-labelledby="promptpay-settings-heading">
+      <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <span className="rounded-xl bg-[#edf7f1] p-2 text-[#1d6b56]">
+              <QrCode size={18} aria-hidden="true" />
+            </span>
+            <div>
+              <CardTitle id="promptpay-settings-heading" className="text-base font-semibold text-[#1b2c25]">
+                PromptPay Settings
+              </CardTitle>
+              <CardDescription className="text-xs text-[#6c7e75]">
+                ตั้งค่า PromptPay ID เพื่อสร้าง QR Code สำหรับรับชำระเงินจากลูกค้าโดยตรง
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="promptpay-id-input" className="mb-1 block text-xs font-medium text-[#456156]">
+                PromptPay ID (เบอร์โทร 10 หลัก หรือ บัตรประชาชน/Tax ID 13 หลัก)
+              </label>
+              <input
+                id="promptpay-id-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={promptPayId}
+                onChange={(e) => setPromptPayId(e.target.value.replace(/\D/g, ""))}
+                placeholder="0812345678"
+                maxLength={13}
+                className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+              />
+            </div>
+            <div className="w-44">
+              <label htmlFor="promptpay-timeout" className="mb-1 block text-xs font-medium text-[#456156]">
+                หมดเวลาใน (นาที)
+              </label>
+              <select
+                id="promptpay-timeout"
+                value={timeoutMin}
+                onChange={(e) => setTimeoutMin(Number(e.target.value))}
+                className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+              >
+                {[5, 10, 15, 20, 30, 60].map((m) => (
+                  <option key={m} value={m}>{m} นาที</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {saveError && <p className="text-xs text-red-600" role="alert">{saveError}</p>}
+          {saved && <p className="text-xs text-[#1d6b56]" role="status">บันทึกสำเร็จ ✓</p>}
+
+          <button
+            id="promptpay-save-btn"
+            type="button"
+            disabled={promptPayId.replace(/\D/g, "").length < 10 || savePromptPay.isPending}
+            onClick={handleSave}
+            className="w-max rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+          >
+            {savePromptPay.isPending ? "กำลังบันทึก…" : "บันทึก PromptPay ID"}
+          </button>
+
+          <p className="text-xs text-[#789087]">
+            PromptPay ID ใช้สำหรับสร้าง QR Code เท่านั้น ลูกค้าจ่ายตรงเข้าบัญชีของที่พัก แพลตฟอร์มไม่รับหรือถือเงิน
+          </p>
         </CardContent>
       </Card>
     </section>

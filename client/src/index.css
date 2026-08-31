@@ -494,3 +494,38 @@ body { background: var(--paper); color: var(--ink); }
   .dashboard-calendar-status-dot{width:5px;height:5px}
   .dashboard-calendar-legend{font-size:9px}
 }
+
+/* -- Phase 12B: PaymentQR component --------------------------------------- */
+.payment-qr{display:flex;flex-direction:column;gap:16px;max-width:420px;margin:0 auto;padding:20px}
+.payment-qr--loading,.payment-qr--error{align-items:center;text-align:center;padding:40px 20px;gap:12px}
+.payment-spinner{width:40px;height:40px;border-radius:50%;border:3px solid #dce4df;border-top-color:#1d6b56;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.payment-error-msg{color:#a63d31;font-weight:600;font-size:0.95rem}
+.payment-error-sub{color:#789087;font-size:0.8rem}
+.payment-qr-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#f6faf7;border-radius:12px;border:1px solid #dce4df}
+.payment-amount{display:flex;flex-direction:column;gap:2px}
+.payment-amount-label{font-size:0.7rem;color:#789087;text-transform:uppercase;letter-spacing:0.08em}
+.payment-amount-value{font-size:1.4rem;font-weight:700;color:#1b2c25;font-variant-numeric:tabular-nums}
+.payment-countdown{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.payment-countdown-label{font-size:0.7rem;color:#789087;text-transform:uppercase;letter-spacing:0.08em}
+.payment-countdown-value{font-size:1.4rem;font-weight:700;color:#1d6b56;font-variant-numeric:tabular-nums;font-family:monospace}
+.payment-countdown--urgent .payment-countdown-value{color:#a63d31;animation:pulse-red 1s ease-in-out infinite}
+@keyframes pulse-red{0%,100%{opacity:1}50%{opacity:0.6}}
+.payment-expired-label{font-size:0.9rem;color:#a63d31;font-weight:600}
+.payment-qr-expired{text-align:center;padding:24px;background:#fff1ef;border-radius:12px;border:1px solid #f0c5bf;color:#a63d31}
+.payment-tabs{display:flex;gap:4px;background:#f0f4f2;border-radius:10px;padding:4px}
+.payment-tab{flex:1;padding:8px 12px;border:none;background:transparent;border-radius:7px;font-size:0.82rem;font-weight:500;color:#789087;cursor:pointer;transition:all 0.15s ease}
+.payment-tab--active{background:#fff;color:#1b2c25;box-shadow:0 1px 3px rgba(0,0,0,0.08);font-weight:600}
+.payment-qr-panel{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0}
+.payment-qr-image{width:300px;height:300px;border-radius:12px;border:2px solid #dce4df;object-fit:contain}
+.payment-qr-hint{font-size:0.8rem;color:#789087;text-align:center}
+.payment-qr-hint--sub{color:#aab8b2;font-size:0.72rem}
+.payment-slip-panel{display:flex;flex-direction:column;gap:12px;padding:8px 0}
+.payment-slip-instruction{font-size:0.85rem;color:#456156}
+.payment-slip-upload-label{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #c4d5cc;border-radius:12px;padding:24px 16px;cursor:pointer;background:#f9fbf9;transition:border-color 0.15s ease}
+.payment-slip-upload-label:hover{border-color:#1d6b56}
+.payment-slip-file-input{display:none}
+.payment-slip-filename{font-size:0.85rem;color:#1b2c25;font-weight:500;word-break:break-all;text-align:center}
+.payment-slip-placeholder{font-size:0.85rem;color:#789087}
+.payment-slip-error{font-size:0.82rem;color:#a63d31}
+.payment-slip-submit{width:100%;justify-content:center}

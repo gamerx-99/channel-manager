@@ -55,9 +55,17 @@ import {
   getSlipOkSettings,
   saveSlipOkSettings,
   removeSlipOkKey,
+  savePromptPaySettings,
+  getHotelPaymentConfig,
+  createPaymentSession,
+  getLatestPaymentSession,
+  updatePaymentSessionStatus,
+  updateBookingPaymentStatus,
 } from './db';
 import { requireRecentMfaVerification } from './mfa';
-import { encryptSlipOkKey, hashSlipOkKey } from './slipokCrypto';
+import { encryptSlipOkKey, hashSlipOkKey, decryptSlipOkKey } from './slipokCrypto';
+import { generatePromptPayQR, buildQrImageUrl } from './promptpay';
+import { verifySlipWithSlipOk, SlipOkError } from './slipVerification';
 import { systemRouter } from './_core/systemRouter';
 import { protectedProcedure, publicProcedure, rateLimitedProcedure, router } from './_core/trpc';
 import {
@@ -1705,6 +1713,216 @@ export const appRouter = router({
           await removeSlipOkKey(client, input.hotel_id);
           return { success: true as const };
         } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+
+    /** Save PromptPay ID and payment timeout for a hotel. */
+    savePromptPayId: protectedProcedure
+      .input(z.object({
+        hotel_id: z.string().uuid(),
+        promptpay_id: z.string().trim().min(10).max(13).regex(/^\d+$/, 'PromptPay ID must be digits only'),
+        payment_timeout_minutes: z.number().int().min(5).max(60).default(15),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+        const client = rlsClient(ctx.user.accessToken);
+        try {
+          await savePromptPaySettings(client, input.hotel_id, input.promptpay_id, input.payment_timeout_minutes);
+          return { success: true as const };
+        } catch (error) {
+          return rethrowDomainError(error);
+        }
+      }),
+  }),
+
+  // ── Phase 12B: Public booking payment flow ─────────────────────────────
+  payment: router({
+    /**
+     * Create a PromptPay QR payment session for a public booking.
+     * Returns QR image URL, amount, expiresAt, and sessionId.
+     * Only works if the hotel has a promptpay_id configured.
+     */
+    createSession: publicProcedure
+      .input(z.object({
+        booking_id: z.string().uuid(),
+        hotel_id: z.string().uuid(),
+      }))
+      .mutation(async ({ input }) => {
+        // Use anon RLS client (public booking — no auth token needed)
+        const client = rlsClient();
+        try {
+          const config = await getHotelPaymentConfig(client, input.hotel_id);
+          if (!config?.promptpay_id) {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: 'This hotel has not configured PromptPay. Please contact the hotel directly.',
+            });
+          }
+
+          // Get booking amount from latest session or re-fetch
+          const existingSession = await getLatestPaymentSession(client, input.booking_id);
+          if (existingSession && existingSession.status === 'pending') {
+            // Return existing session if still pending
+            return {
+              sessionId: existingSession.id,
+              qrImageUrl: buildQrImageUrl(existingSession.qr_string ?? ''),
+              qrString: existingSession.qr_string,
+              amount: Number(existingSession.amount),
+              expiresAt: existingSession.expires_at,
+            };
+          }
+
+          // Fetch booking price
+          const { data: booking, error: bookingError } = await client
+            .from('bookings')
+            .select('price')
+            .eq('id', input.booking_id)
+            .eq('hotel_id', input.hotel_id)
+            .single();
+          if (bookingError || !booking) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+          }
+
+          const amount = Number(booking.price);
+          const ref = `BK-${input.booking_id.slice(0, 8).toUpperCase()}`;
+          const timeoutMs = (config.payment_timeout_minutes ?? 15) * 60 * 1000;
+          const expiresAt = new Date(Date.now() + timeoutMs).toISOString();
+
+          const qrString = generatePromptPayQR({
+            promptPayId: config.promptpay_id,
+            amount,
+            ref,
+          });
+
+          const session = await createPaymentSession(client, {
+            booking_id: input.booking_id,
+            hotel_id: input.hotel_id,
+            amount,
+            qr_reference: ref,
+            qr_string: qrString,
+            expires_at: expiresAt,
+          });
+
+          // Mark booking as pending
+          await updateBookingPaymentStatus(client, input.booking_id, 'pending');
+
+          return {
+            sessionId: session.id,
+            qrImageUrl: buildQrImageUrl(qrString),
+            qrString,
+            amount,
+            expiresAt,
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          return rethrowDomainError(error);
+        }
+      }),
+
+    /** Get the current status of a payment session. */
+    checkStatus: publicProcedure
+      .input(z.object({
+        booking_id: z.string().uuid(),
+        session_id: z.string().uuid(),
+      }))
+      .query(async ({ input }) => {
+        const client = rlsClient();
+        try {
+          const session = await getLatestPaymentSession(client, input.booking_id);
+          if (!session || session.id !== input.session_id) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
+          }
+
+          // Auto-expire if past expiry time and still pending
+          const now = new Date();
+          const expired = now > new Date(session.expires_at);
+          if (session.status === 'pending' && expired) {
+            await updatePaymentSessionStatus(client, session.id, 'expired');
+            await updateBookingPaymentStatus(client, session.booking_id, 'failed');
+            return { status: 'expired' as const, verifiedAt: null };
+          }
+
+          return {
+            status: session.status,
+            verifiedAt: session.verified_at,
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          return rethrowDomainError(error);
+        }
+      }),
+
+    /**
+     * Verify a payment slip via SlipOK.
+     * On success: session → paid, booking → verified.
+     * On failure: session → failed, booking unchanged.
+     * API key never reaches client.
+     */
+    verifySlip: publicProcedure
+      .input(z.object({
+        booking_id: z.string().uuid(),
+        hotel_id: z.string().uuid(),
+        session_id: z.string().uuid(),
+        /** Base64 encoded slip image */
+        slip_data: z.string().min(1).max(5_000_000), // ~3.7MB image limit
+      }))
+      .mutation(async ({ input }) => {
+        const client = rlsClient();
+        try {
+          // Verify session is still pending
+          const session = await getLatestPaymentSession(client, input.booking_id);
+          if (!session || session.id !== input.session_id) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
+          }
+          if (session.status !== 'pending') {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: `Payment session is already ${session.status}.`,
+            });
+          }
+          if (new Date() > new Date(session.expires_at)) {
+            await updatePaymentSessionStatus(client, session.id, 'expired');
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
+          }
+
+          // Get hotel SlipOK key
+          const config = await getHotelPaymentConfig(client, input.hotel_id);
+          if (!config?.slipok_key_enc || !config.slipok_enabled) {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: 'Slip verification is not available for this hotel. Please contact the hotel directly.',
+            });
+          }
+
+          const apiKey = decryptSlipOkKey(config.slipok_key_enc);
+
+          const result = await verifySlipWithSlipOk(apiKey, {
+            slipData: input.slip_data,
+            expectedAmount: Number(session.amount),
+            ref: session.qr_reference,
+          });
+
+          if (result.matched) {
+            const now = new Date().toISOString();
+            await updatePaymentSessionStatus(client, session.id, 'paid', now);
+            await updateBookingPaymentStatus(client, session.booking_id, 'verified');
+            return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
+          } else {
+            await updatePaymentSessionStatus(client, session.id, 'failed');
+            await updateBookingPaymentStatus(client, session.booking_id, 'failed');
+            return { verified: false as const, message: 'ไม่พบการชำระเงินที่ตรงกัน กรุณาติดต่อที่พัก' };
+          }
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          if (error instanceof SlipOkError) {
+            throw new TRPCError({
+              code: error.code === 'INVALID_KEY' ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST',
+              message: error.code === 'INVALID_KEY'
+                ? 'ระบบตรวจสลิปขัดข้อง กรุณาติดต่อที่พัก'
+                : error.message,
+            });
+          }
           return rethrowDomainError(error);
         }
       }),
