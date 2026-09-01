@@ -3,13 +3,15 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('Dashboard Calendar View contract', () => {
-  const router = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const dashboardRouterText = readFileSync(resolve(process.cwd(), 'server/routers/dashboardRouter.ts'), 'utf8');
+  const router = routerText + dashboardRouterText;
   const component = readFileSync(resolve(process.cwd(), 'client/src/components/DashboardCalendarView.tsx'), 'utf8');
   const home = readFileSync(resolve(process.cwd(), 'client/src/pages/Home.tsx'), 'utf8');
   const css = readFileSync(resolve(process.cwd(), 'client/src/index.css'), 'utf8');
 
   it('exposes a protected calendar procedure with an ISO date window and RLS-scoped sources', () => {
-    expect(router).toContain('dashboardCalendar: protectedProcedure.input(dashboardCalendarSchema)');
+    expect(router).toContain('export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchema)');
     expect(router).toContain("listManagedHotels(client)");
     expect(router).toContain("getGlobalOtaSummary(ctx.user.accessToken)");
     expect(router).toContain("listAvailabilityForHotel(client, hotel.id)");

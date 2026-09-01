@@ -1,5 +1,25 @@
 # Handoff log
 
+## [2026-09-01] Phase 3J — Extract OTA Router — DONE ✅
+- **Context**: Continued REFACTOR_PLAN_FINAL.md Phase 3 router extraction.
+- **Changes**:
+  1. `server/routers/otaRouter.ts` extracted.
+  2. Unused `otaSync` imports removed from `server/routers.ts`.
+  3. Integrated `otaRouter` into `server/routers.ts`.
+- **Verdict**: PASS — `pnpm check` and `pnpm test` succeed.
+- **Commit**: `refactor(router): extract ota router`
+- **Next**: Phase 3K (dashboardRouter).
+
+## [2026-09-01] Phase 3I — Extract SlipOK Router — DONE ✅
+- **Context**: Continued REFACTOR_PLAN_FINAL.md Phase 3 router extraction.
+- **Changes**:
+  1. `server/routers/slipokRouter.ts` extracted.
+  2. Imported `requireRecentMfaVerification` from `server/mfa.ts` to resolve circular dependency.
+  3. Integrated `slipokRouter` into `server/routers.ts`.
+- **Verdict**: PASS — `pnpm check` and `pnpm test` succeed.
+- **Commit**: `refactor(router): extract slipok router`
+- **Next**: Phase 3J (otaRouter).
+
 ## [2026-09-01] Phase 2E — Extract Hotel & Room Type Queries — DONE ✅
 - **Context**: Continued REFACTOR_PLAN_VERIFIED.md Phase 2 extraction.
 - **Changes**:

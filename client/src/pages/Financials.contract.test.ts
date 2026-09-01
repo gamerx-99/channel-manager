@@ -3,14 +3,16 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Financials dashboard contract", () => {
-  const router = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8");
+  const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const dashboardRouterText = readFileSync(resolve(process.cwd(), 'server/routers/dashboardRouter.ts'), 'utf8');
+  const router = routerText + dashboardRouterText;
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Financials.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
   it("exposes a protected financials procedure gated by requirePermission, not requireHotelPermission", () => {
-    expect(router).toContain("financials: protectedProcedure.query");
+    expect(router).toContain("export const financials = protectedProcedure.query");
     expect(router).toContain("requirePermission(ctx.user, 'property.view_financials')");
     expect(router).toContain("listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken))");
     expect(router).toContain("buildFinancialsSummary(hotels)");

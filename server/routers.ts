@@ -7,6 +7,7 @@ import { TRPCError } from '@trpc/server';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
 import { otaRouter } from './routers/otaRouter';
+import { dashboard, channelPerformance, financials, dashboardCalendar } from './routers/dashboardRouter';
 import {
   createManagedHotel,
   createManagedRoomType,
@@ -322,126 +323,10 @@ export const appRouter = router({
     logout: publicProcedure.mutation(() => ({ success: true as const })),
   }),
   channelManager: router({
-    dashboard: protectedProcedure.query(async ({ ctx }) => {
-      try {
-        const hotels = await listManagedHotels(rlsClient(ctx.user.accessToken));
-        const today = new Date().toISOString().slice(0, 10);
-        const confirmedBookings = hotels.flatMap(hotel => hotel.bookings).filter(booking => booking.status === 'confirmed');
-        return {
-          hotels,
-          summary: {
-            hotelCount: hotels.length,
-            roomCount: hotels.reduce((total, hotel) => total + hotel.rooms.length, 0),
-            availableRoomCount: hotels.reduce(
-              (total, hotel) => total + hotel.rooms.filter(room => room.status === 'available').length,
-              0,
-            ),
-            arrivalsToday: confirmedBookings.filter(booking => booking.check_in === today).length,
-            recentBookings: confirmedBookings.sort((a, b) => b.check_in.localeCompare(a.check_in)).slice(0, 6),
-          },
-        };
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
-    channelPerformance: protectedProcedure.query(async ({ ctx }) => {
-      try {
-        const client = rlsClient(ctx.user.accessToken);
-        const [hotels, otaSummary] = await Promise.all([
-          listManagedHotels(client),
-          getGlobalOtaSummary(ctx.user.accessToken),
-        ]);
-        return buildChannelPerformanceSummary(hotels, otaSummary);
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
-    financials: protectedProcedure.query(async ({ ctx }) => {
-      // Deliberately requirePermission (not requireHotelPermission): the latter
-      // unconditionally bypasses for super_admin, which would defeat the point of
-      // property.view_financials being withheld from platform roles by default.
-      requirePermission(ctx.user, 'property.view_financials');
-      try {
-        const hotels = await listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken));
-        return buildFinancialsSummary(hotels);
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
-    dashboardCalendar: protectedProcedure.input(dashboardCalendarSchema).query(async ({ ctx, input }) => {
-      try {
-        const startDate = input?.startDate ?? todayIso();
-        const dayCount = input?.days ?? 14;
-        const dates = Array.from({ length: dayCount }, (_, index) => addIsoDays(startDate, index));
-        const client = rlsClient(ctx.user.accessToken);
-        const [hotels, otaSummary] = await Promise.all([
-          listManagedHotels(client),
-          getGlobalOtaSummary(ctx.user.accessToken),
-        ]);
-
-        const hotelCalendars = await Promise.all(hotels.map(async (hotel) => {
-          const [hotelDetail, availability] = await Promise.all([
-            getManagedHotel(client, hotel.id),
-            listAvailabilityForHotel(client, hotel.id),
-          ]);
-          if (!hotelDetail) return null;
-
-          const roomCountByType = hotelDetail.rooms.reduce<Record<string, number>>((counts, room) => {
-            counts[room.room_type_id] = (counts[room.room_type_id] ?? 0) + 1;
-            return counts;
-          }, {});
-          const availabilityByKey = new Map(availability.map(row => [`${row.room_type_id}:${row.date}`, row]));
-          const hotelOtaEvents = otaSummary
-            .filter((connection: any) => connection.hotel_id === hotel.id)
-            .flatMap((connection: any) => (connection.logs ?? []).map((log: any) => ({
-              provider: connection.provider,
-              status: log.status,
-              createdAt: log.created_at ?? connection.last_sync_at ?? null,
-              updatedItemCount: getUpdatedItemCount(log),
-              message: log.error_message ?? log.response?.message ?? 'Calendar sync completed',
-            })))
-            .filter((event: any) => event.createdAt);
-
-          return {
-            hotel: { id: hotelDetail.id, name: hotelDetail.name },
-            roomTypes: hotelDetail.room_types.map(roomType => ({
-              id: roomType.id,
-              name: roomType.name,
-              totalRooms: roomCountByType[roomType.id] ?? 0,
-            })),
-            days: dates.map(date => ({
-              date,
-              bookings: hotel.bookings.filter(booking => booking.status !== 'cancelled' && booking.check_in <= date && booking.check_out > date).length,
-              roomTypes: hotelDetail.room_types.map(roomType => {
-                const saved = availabilityByKey.get(`${roomType.id}:${date}`);
-                const totalRooms = roomCountByType[roomType.id] ?? 0;
-                const available = saved?.rooms_available ?? (date === todayIso()
-                  ? hotelDetail.rooms.filter(room => room.room_type_id === roomType.id && room.status === 'available').length
-                  : totalRooms);
-                return {
-                  roomTypeId: roomType.id,
-                  available,
-                  totalRooms,
-                  price: Number(saved?.price ?? roomType.base_price),
-                  status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy') as 'healthy' | 'low' | 'closed',
-                };
-              }),
-              syncEvents: hotelOtaEvents.filter((event: any) => event.createdAt.slice(0, 10) === date),
-            })),
-          };
-        }));
-
-        const visibleHotelCalendars = hotelCalendars.filter((hotel): hotel is NonNullable<typeof hotel> => Boolean(hotel));
-        return {
-          startDate,
-          endDate: dates[dates.length - 1],
-          generatedAt: new Date().toISOString(),
-          hotels: visibleHotelCalendars,
-        };
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
+    dashboard,
+    channelPerformance,
+    financials,
+    dashboardCalendar,
     hotels: protectedProcedure.query(async ({ ctx }) => {
       try {
         return await listManagedHotels(rlsClient(ctx.user.accessToken));

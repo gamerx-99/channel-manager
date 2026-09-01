@@ -3,13 +3,15 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Channel Performance dashboard contract", () => {
-  const router = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8");
+  const routerText = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8");
+  const dashboardRouterText = readFileSync(resolve(process.cwd(), "server/routers/dashboardRouter.ts"), "utf8");
+  const router = routerText + dashboardRouterText;
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/ChannelPerformance.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
 
   it("exposes a protected property-scoped channel performance procedure", () => {
-    expect(router).toContain("channelPerformance: protectedProcedure.query");
+    expect(router).toContain("export const channelPerformance = protectedProcedure.query");
     expect(router).toContain("listManagedHotels(client)");
     expect(router).toContain("getGlobalOtaSummary(ctx.user.accessToken)");
     expect(router).toContain("buildChannelPerformanceSummary(hotels, otaSummary)");
