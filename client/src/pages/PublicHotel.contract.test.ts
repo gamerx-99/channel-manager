@@ -67,7 +67,9 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
 describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
   const dbSource = readFileSync(resolve(process.cwd(), 'server/db/booking.ts'), 'utf8');
-  const routerSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const bookingRouterText = readFileSync(resolve(process.cwd(), 'server/routers/bookingRouter.ts'), 'utf8');
+  const routerSource = routerText + bookingRouterText;
 
   it('PublicHotel hooks into tRPC public availability and booking procedures', () => {
     expect(publicHotelSource).toContain('trpc.channelManager.publicHotelAvailability.useQuery');
@@ -97,7 +99,7 @@ describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
   });
 
   it('server/routers.ts exposes public procedures for availability and booking', () => {
-    expect(routerSource).toContain('publicHotelAvailability: rateLimitedProcedure.input');
-    expect(routerSource).toContain('createPublicBooking: rateLimitedProcedure.input');
+    expect(routerSource).toMatch(/publicHotelAvailability\s*[:=]\s*rateLimitedProcedure\.input/);
+    expect(routerSource).toMatch(/createPublicBooking\s*[:=]\s*rateLimitedProcedure\.input/);
   });
 });
