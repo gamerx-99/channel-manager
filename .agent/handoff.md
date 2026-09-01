@@ -36,11 +36,10 @@
   `client/src/pages/Financials.tsx`, `specs/01-payments-slipok.md`.
 - **Verdict**: PASS — `pnpm test`: 400 passed | 3 skipped (72 files, +1 file/+6
   tests). `pnpm check`: 0 errors. `pnpm build`: OK.
-- **Human action required**: apply `20260909_add_slipok_branch_id.sql` + run
-  its verify script (2 checks, both PASS) in the Supabase SQL editor before
-  this works live. Any hotel that already "configured" a SlipOK key before
-  this fix has a key with no branch ID — click "Remove SlipOK key" and re-enter
-  both values once the migration is applied and this deploys.
+- **Human action**: migration applied and verified live 2026-09-01 — both
+  checks PASS. Remaining: any hotel that already "configured" a SlipOK key
+  before this fix has a key with no branch ID — click "Remove SlipOK key" and
+  re-enter both values once this deploys.
 
 ## [2026-09-01] Phase 12B migration applied and verified live — DONE ✅
 - **What happened**: Human applied `20260908_add_payment_flow.sql` in the
