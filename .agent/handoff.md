@@ -1,5 +1,40 @@
 # Handoff log
 
+## [2026-09-01] rethrowDomainError silently downgraded TRPCErrors to 500s — Phase 1A of REFACTOR_PLAN — DONE ✅
+- **Context**: user supplied a multi-phase incremental refactor plan
+  (REFACTOR_PLAN.md, not checked in) targeting `server/routers.ts` /
+  `server/db.ts` bloat. Instructed to execute Phase 1A only, verify, commit,
+  then stop before Phase 1B.
+- **Verified finding**: `rethrowDomainError()` (`server/routers.ts:334`) had no
+  passthrough for `TRPCError`. It always re-derived the error from
+  `error.message` string matching. 44 of 68 `catch (error) { return
+  rethrowDomainError(error); }` call sites had no `instanceof TRPCError` guard
+  before calling it, so any `TRPCError` thrown inside those try blocks (e.g.
+  from `requireHotelPermission`, `assertSingleHotelAdmin`, or a direct `throw
+  new TRPCError(...)` for an unmatched-message case) got its code discarded
+  and downgraded to `INTERNAL_SERVER_ERROR` unless the message happened to
+  match one of the hardcoded Postgres-error prefixes.
+- **Fix**: added `if (error instanceof TRPCError) throw error;` as the first
+  line of `rethrowDomainError`'s body — minimal one-line change, no call-site
+  churn (kept the `return rethrowDomainError(error);` style everywhere, since
+  `return` on a `never`-returning function is valid TS and rewriting 68 call
+  sites for no behavioral effect would have bloated the diff and review).
+- **Regression proof**: added `server/routers.rethrowDomainError.test.ts`,
+  targeting `notifications.list` with no `hotelId` + non-`super_admin` caller
+  (an existing unguarded call site that throws `FORBIDDEN` before touching the
+  db). Confirmed by temporarily reverting the fix that the test fails
+  (`INTERNAL_SERVER_ERROR` instead of `FORBIDDEN`) without it, and passes with
+  it.
+- **Files touched**: `server/routers.ts` (1 line), new
+  `server/routers.rethrowDomainError.test.ts`.
+- **Verdict**: PASS — `pnpm test`: 401 passed | 3 skipped (73 files, +1 test
+  vs baseline). `pnpm check`: 0 errors. `pnpm build`: OK (routers.ts is in the
+  esbuild bundle).
+- **Not done / explicitly out of scope this ticket**: removing the now-redundant
+  24 `instanceof TRPCError` guards at other call sites (optional per plan,
+  left as-is); Phase 1B (centralize hotel-existence guard) and later phases —
+  plan says stop after 1A and wait for go-ahead.
+
 ## [2026-09-01] Financials SlipOK settings card silently blank on query error/loading — DONE ✅
 - **Reported by human**: after the branch-ID fix deployed, the SlipOK Settings
   card on Financials rendered completely empty — no prompt, no form, nothing.

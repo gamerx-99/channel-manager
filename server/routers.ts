@@ -332,6 +332,9 @@ function assertSingleHotelAdmin(
 }
 
 function rethrowDomainError(error: unknown): never {
+  if (error instanceof TRPCError) {
+    throw error;
+  }
   const message = error instanceof Error ? error.message : 'Unexpected database error';
   if (message.includes('prevent_rate_override_overlap') || (message.includes('overlapping') && message.includes('rate override'))) {
     throw new TRPCError({ code: 'CONFLICT', message: 'This room type already has a rate override overlapping the selected dates.' });
