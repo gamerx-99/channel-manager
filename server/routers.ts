@@ -11,6 +11,7 @@ import { dashboard, channelPerformance, financials, dashboardCalendar } from './
 import { createHousekeepingTask, listHousekeepingTasks, updateHousekeepingTaskStatus } from './routers/housekeepingRouter';
 import { listThreads, createThread, listMessages, sendMessage } from './routers/messagingRouter';
 import { notificationsRouter } from './routers/notificationsRouter';
+import { authRouter } from './routers/authRouter';
 import {
   createManagedHotel,
   createManagedRoomType,
@@ -226,10 +227,7 @@ import { addIsoDays, todayIso, rlsClient, getIdentityRoles, requirePermission, r
 export const appRouter = router({
   system: systemRouter,
   notifications: notificationsRouter,
-  auth: router({
-    me: publicProcedure.query(({ ctx }) => ctx.user),
-    logout: publicProcedure.mutation(() => ({ success: true as const })),
-  }),
+  auth: authRouter,
   channelManager: router({
     dashboard,
     channelPerformance,
