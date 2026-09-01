@@ -10,6 +10,7 @@ import { otaRouter } from './routers/otaRouter';
 import { dashboard, channelPerformance, financials, dashboardCalendar } from './routers/dashboardRouter';
 import { createHousekeepingTask, listHousekeepingTasks, updateHousekeepingTaskStatus } from './routers/housekeepingRouter';
 import { listThreads, createThread, listMessages, sendMessage } from './routers/messagingRouter';
+import { notificationsRouter } from './routers/notificationsRouter';
 import {
   createManagedHotel,
   createManagedRoomType,
@@ -45,12 +46,6 @@ import {
   createHotelMedia,
   deleteHotelMedia,
   setHotelMediaHero,
-  listNotifications,
-  listAllNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-  markSystemNotificationsRead,
-  insertNotification,
   getSlipOkSettings,
   saveSlipOkSettings,
   removeSlipOkKey,
@@ -230,54 +225,7 @@ import { addIsoDays, todayIso, rlsClient, getIdentityRoles, requirePermission, r
 
 export const appRouter = router({
   system: systemRouter,
-  notifications: router({
-    list: protectedProcedure
-      .input(z.object({ hotelId: z.string().uuid().optional() }))
-      .query(async ({ ctx, input }) => {
-        try {
-          if (!input.hotelId) {
-            if (ctx.user.role !== 'super_admin') {
-              throw new TRPCError({ code: 'FORBIDDEN', message: 'Only Super Admins can fetch all notifications globally.' });
-            }
-            return await listAllNotifications(createSupabaseAdminClient());
-          }
-          await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-          return await listNotifications(rlsClient(ctx.user.accessToken), input.hotelId);
-        } catch (error) {
-          return rethrowDomainError(error);
-        }
-      }),
-    markRead: protectedProcedure
-      .input(z.object({ hotelId: z.string().uuid().optional(), notificationId: z.string().uuid() }))
-      .mutation(async ({ ctx, input }) => {
-        try {
-          if (!input.hotelId) {
-            if (ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
-            return await markNotificationRead(createSupabaseAdminClient(), input.notificationId);
-          }
-          await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-          return await markNotificationRead(rlsClient(ctx.user.accessToken), input.notificationId);
-        } catch (error) {
-          return rethrowDomainError(error);
-        }
-      }),
-    markAllRead: protectedProcedure
-      .input(z.object({ hotelId: z.string().uuid().optional() }))
-      .mutation(async ({ ctx, input }) => {
-        try {
-          if (!input.hotelId) {
-            if (ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
-            await markSystemNotificationsRead(createSupabaseAdminClient());
-            return { success: true };
-          }
-          await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-          await markAllNotificationsRead(rlsClient(ctx.user.accessToken), input.hotelId);
-          return { success: true };
-        } catch (error) {
-          return rethrowDomainError(error);
-        }
-      }),
-  }),
+  notifications: notificationsRouter,
   auth: router({
     me: publicProcedure.query(({ ctx }) => ctx.user),
     logout: publicProcedure.mutation(() => ({ success: true as const })),
