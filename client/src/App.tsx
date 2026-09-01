@@ -1,5 +1,5 @@
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
-import { Route, Switch, Link, useLocation } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,7 +27,6 @@ import OtaSync from "./pages/OtaSync";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { LanguageProvider } from "./contexts/LanguageContext";
-import { AppShell } from "./components/layout/AppShell";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
