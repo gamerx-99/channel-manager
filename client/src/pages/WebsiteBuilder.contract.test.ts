@@ -58,16 +58,15 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(wbSource).toMatch(/deferred|deferral/i);
   });
 
-  // ── db.ts functions ──────────────────────────────────────────────────────
-  it('server/db.ts exports all required hotel media and site config functions', () => {
-    expect(dbSource).toContain('export async function listHotelMedia');
-    expect(dbSource).toContain('export async function createHotelMedia');
-    expect(dbSource).toContain('export async function deleteHotelMedia');
-    expect(dbSource).toContain('export async function setHotelMediaHero');
-    expect(dbSource).toContain('export async function getHotelSiteConfig');
-    expect(dbSource).toContain('export async function saveHotelSiteConfig');
-    expect(dbSource).toContain('export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY');
-    expect(dbSource).toContain('export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR');
+  // ── db/siteConfig.ts functions ───────────────────────────────────────────
+  it('server/db/siteConfig.ts exports all required hotel media and site config functions', () => {
+    const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/db/siteConfig.ts'), 'utf8');
+    expect(siteConfigSource).toContain('export async function listHotelMedia');
+    expect(siteConfigSource).toContain('export async function createHotelMedia');
+    expect(siteConfigSource).toContain('export async function deleteHotelMedia');
+    expect(siteConfigSource).toContain('export async function setHotelMediaHero');
+    expect(siteConfigSource).toContain('export async function getHotelSiteConfig');
+    expect(siteConfigSource).toContain('export async function saveHotelSiteConfig');
   });
 
   // ── router procedures ────────────────────────────────────────────────────

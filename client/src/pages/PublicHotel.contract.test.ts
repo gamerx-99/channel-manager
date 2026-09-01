@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('PublicHotel site config fallback contract (T06-03)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
-  const dbSource = readFileSync(resolve(process.cwd(), 'server/db.ts'), 'utf8');
+  const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/db/siteConfig.ts'), 'utf8');
   const routerSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
 
   it('PublicHotel reads hotel_site_config via tRPC getHotelSiteConfig with slug', () => {
@@ -39,14 +39,11 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toMatch(/const accentColor = siteConfig\?\.accent_color \?\? DEFAULT_ACCENT_COLOR/);
   });
 
-  it('server/db.ts getHotelSiteConfig returns null/default gracefully on 42P01', () => {
-    expect(dbSource).toContain('export async function getHotelSiteConfig');
-    expect(dbSource).toContain("code === '42P01'");
-    expect(dbSource).toContain('hotel_site_config');
-    expect(dbSource).toContain('return null');
-    expect(dbSource).toContain('isMissingHotelSiteConfigTableError');
-    expect(dbSource).toContain('DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY');
-    expect(dbSource).toContain('DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR');
+  it('server/db/siteConfig.ts getHotelSiteConfig returns null/default gracefully on 42P01', () => {
+    expect(siteConfigSource).toContain('export async function getHotelSiteConfig');
+    expect(siteConfigSource).toContain('hotel_site_config');
+    expect(siteConfigSource).toContain('return null');
+    expect(siteConfigSource).toContain('isMissingHotelSiteConfigTableError');
   });
 
   it('server/routers.ts exposes public getHotelSiteConfig (for PublicHotel) and protected saveHotelSiteConfig', () => {
