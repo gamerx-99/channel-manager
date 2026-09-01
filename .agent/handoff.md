@@ -1,5 +1,29 @@
 # Handoff log
 
+## [2026-09-01] Financials SlipOK settings card silently blank on query error/loading — DONE ✅
+- **Reported by human**: after the branch-ID fix deployed, the SlipOK Settings
+  card on Financials rendered completely empty — no prompt, no form, nothing.
+- **Root cause**: `SlipOkSettings` in `client/src/pages/Financials.tsx` only
+  ever rendered the "verified" branch when `mfaState.status === "verified" &&
+  settingsQuery.data !== undefined` — there was no branch at all for "still
+  loading" or "query errored," so both looked identical to the user: a blank
+  card with no explanation. The most likely trigger here is Supabase/PostgREST's
+  schema cache not yet reflecting the just-applied `slipok_branch_id` column
+  (a well-known lag after `ALTER TABLE` — usually seconds, but not always
+  instant), which would make `getSettings` fail right after the migration.
+- **Fix**: added explicit loading and error states with a retry button, so a
+  query failure is visible and actionable instead of a silent blank box —
+  useful for this specific cause and any future one.
+- **Files touched**: `client/src/pages/Financials.tsx`.
+- **Verdict**: PASS — `pnpm test`: 400 passed | 3 skipped (72 files, unchanged
+  count — no new tests, this is a pure UI defensive-rendering fix). `pnpm
+  check`: 0 errors. `pnpm build`: OK.
+- **Immediate thing to try** (before waiting for this deploy): in the Supabase
+  SQL editor, run `NOTIFY pgrst, 'reload schema';` to force an immediate
+  PostgREST schema-cache refresh, then reload the Financials page. If the card
+  was blank purely because of cache lag, this alone fixes it without needing
+  this UI patch to deploy first.
+
 ## [2026-09-01] SlipOK integration was missing branch ID — real verification would have failed for every hotel — DONE ✅
 - **Reported by human**: after clicking through to save a real SlipOK key, noted
   SlipOK's own dashboard gives two separate values ("API" and "API Key"), but

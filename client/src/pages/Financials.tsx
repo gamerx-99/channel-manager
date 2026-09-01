@@ -342,6 +342,29 @@ function SlipOkSettings({ hotelId }: { hotelId: string }) {
             </div>
           )}
 
+          {/* Verified but settings query still in flight or failed — previously rendered
+              nothing at all in both cases, which looked identical to a broken page. */}
+          {mfaState.status === "verified" && settingsQuery.isLoading && (
+            <div className="flex items-center gap-2 text-sm text-[#6c7e75]">
+              <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-hidden="true" />
+              Loading settings&hellip;
+            </div>
+          )}
+          {mfaState.status === "verified" && settingsQuery.isError && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-red-600">
+                Couldn&apos;t load payment settings: {settingsQuery.error instanceof Error ? settingsQuery.error.message : "Unknown error"}
+              </p>
+              <button
+                type="button"
+                onClick={() => void settingsQuery.refetch()}
+                className="w-max rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#456156] hover:bg-[#f6faf7]"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {/* Verified — show settings */}
           {mfaState.status === "verified" && settingsQuery.data !== undefined && (
             <div className="flex flex-col gap-5">
