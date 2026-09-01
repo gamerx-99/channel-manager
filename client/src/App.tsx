@@ -495,9 +495,9 @@ function Router() {
 
 function RedirectToDashboard() {
   const [, navigate] = useLocation();
-  useState(() => {
+  useEffect(() => {
     navigate("/dashboard");
-  });
+  }, [navigate]);
   return null;
 }
 
