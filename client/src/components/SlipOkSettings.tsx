@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { KeyRound, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { KeyRound, Trash2, Edit2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useMfaStepUp } from "@/lib/mfa";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
   const [branchId, setBranchId] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   // We can't fetch settings until MFA is verified (server enforces it too)
   const settingsQuery = trpc.slipok.getSettings.useQuery(
@@ -19,6 +20,17 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
   );
   const saveKey = trpc.slipok.saveKey.useMutation();
   const removeKey = trpc.slipok.removeKey.useMutation();
+
+  // Clear form when navigating away (cleanup stale form state)
+  useEffect(() => {
+    return () => {
+      setApiKey("");
+      setBranchId("");
+      setTotpCode("");
+      setSaveError(null);
+      setIsEditing(false);
+    };
+  }, []);
 
   async function handleOpenSettings() {
     setSaveError(null);
@@ -32,9 +44,12 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
     setSaveError(null);
     try {
       await saveKey.mutateAsync({ hotel_id: hotelId, api_key: apiKey, branch_id: branchId });
+      // Clear form and reset edit mode after successful save
       setApiKey("");
       setBranchId("");
-      void settingsQuery.refetch();
+      setIsEditing(false);
+      // Refetch to get updated settings from server
+      await settingsQuery.refetch();
       reset();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Failed to save key.");
@@ -43,16 +58,36 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
 
   async function handleRemoveKey(hotelId: string) {
     setSaveError(null);
+    if (!window.confirm("Are you sure you want to remove the SlipOK key? You'll need to add it again to verify payments.")) {
+      return;
+    }
     const result = await triggerStepUp();
     if (result === "needs_enroll") { window.location.href = "/mfa/enroll"; return; }
     if (result === "verified" || mfaState.status === "verified") {
       try {
         await removeKey.mutateAsync({ hotel_id: hotelId });
-        void settingsQuery.refetch();
+        // Clear form after successful removal
+        setApiKey("");
+        setBranchId("");
+        setIsEditing(false);
+        // Refetch to get updated settings from server
+        await settingsQuery.refetch();
       } catch (e) {
         setSaveError(e instanceof Error ? e.message : "Failed to remove key.");
       }
     }
+  }
+
+  function handleEdit() {
+    setIsEditing(true);
+    setSaveError(null);
+  }
+
+  function handleCancel() {
+    setApiKey("");
+    setBranchId("");
+    setSaveError(null);
+    setIsEditing(false);
   }
 
   return (
@@ -62,7 +97,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
         <h2 className="mt-1 text-xl font-semibold tracking-tight text-[#1b2c25]">SlipOK Settings</h2>
         <p className="mt-1 text-sm text-[#6c7e75]">
           Connect your hotel's SlipOK API key to enable bank-transfer slip verification for guest payments.
-          Your key is encrypted and never visible after saving.
+          Your credentials are encrypted and never visible after saving.
         </p>
       </div>
 
@@ -158,34 +193,52 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
             </div>
           )}
 
-          {/* Verified — show settings */}
+          {/* Verified — show settings (list-style like Vercel env vars) */}
           {mfaState.status === "verified" && settingsQuery.data !== undefined && (
             <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-3">
-                <span className={cn("rounded-xl p-2", settingsQuery.data.configured ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-[#f5f7f6] text-[#789087]")}>
-                  <KeyRound size={18} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-[#263b31]">
-                    {settingsQuery.data.configured ? "SlipOK key configured" : "No SlipOK key configured"}
-                  </p>
-                  <p className="text-xs text-[#6c7e75]">
-                    {settingsQuery.data.configured
-                      ? "Your API key is stored encrypted. It cannot be retrieved or displayed."
-                      : "Enter your SlipOK API key below to enable slip verification."}
-                  </p>
-                </div>
-              </div>
+              {settingsQuery.data.configured && !isEditing ? (
+                <>
+                  <div className="flex items-center justify-between rounded-lg border border-[#dce4df] bg-[#f6faf7] p-4">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-[#456156]">SlipOK Credential</p>
+                      <p className="mt-2 font-mono text-sm text-[#263b31]">
+                        Branch: <span className="text-[#1d6b56]">{settingsQuery.data.branchId}</span> • Key: <span className="text-[#789087]">••••••••</span>
+                      </p>
+                      <p className="mt-1 text-xs text-[#6c7e75]">Added and encrypted • Never displayed again</p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        id="slipok-edit-btn"
+                        type="button"
+                        onClick={handleEdit}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#dce4df] bg-white px-3 py-2 text-sm font-medium text-[#456156] hover:bg-[#edf2ee] transition-colors"
+                      >
+                        <Edit2 size={14} aria-hidden="true" /> Edit
+                      </button>
+                      <button
+                        id="slipok-remove-btn"
+                        type="button"
+                        onClick={() => void handleRemoveKey(hotelId)}
+                        disabled={removeKey.isPending}
+                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                      >
+                        <Trash2 size={14} aria-hidden="true" /> {removeKey.isPending ? "Removing…" : "Remove"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : null}
 
-              {!settingsQuery.data.configured && (
+              {!settingsQuery.data.configured || isEditing ? (
                 <div className="flex flex-col gap-3">
+                  <p className="text-xs font-medium text-[#456156]">{isEditing ? "Edit SlipOK Credential" : "Add SlipOK Credential"}</p>
                   <p className="text-xs text-[#6c7e75]">
                     SlipOK gives you two separate values from your dashboard — both are required.
                   </p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="flex-1">
                       <label htmlFor="slipok-branch-id" className="mb-1 block text-xs font-medium text-[#456156]">
-                        SlipOK Branch ID
+                        Branch ID
                       </label>
                       <input
                         id="slipok-branch-id"
@@ -199,7 +252,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                     </div>
                     <div className="flex-1">
                       <label htmlFor="slipok-api-key" className="mb-1 block text-xs font-medium text-[#456156]">
-                        SlipOK API Key
+                        API Key
                       </label>
                       <input
                         id="slipok-api-key"
@@ -211,6 +264,8 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                         className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
                       />
                     </div>
+                  </div>
+                  <div className="flex gap-2">
                     <button
                       id="slipok-save-btn"
                       type="button"
@@ -218,26 +273,21 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                       onClick={() => void handleSaveKey(hotelId)}
                       className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
                     >
-                      {saveKey.isPending ? "Saving…" : "Save key"}
+                      {saveKey.isPending ? "Saving…" : `${isEditing ? "Update" : "Add"} Credential`}
                     </button>
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="rounded-lg border border-[#dce4df] px-4 py-2 text-sm font-medium text-[#6c7e75] hover:bg-[#f6faf7] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </div>
+                  {saveError && <p className="text-xs text-red-600">{saveError}</p>}
                 </div>
-              )}
-
-              {settingsQuery.data.configured && (
-                <button
-                  id="slipok-remove-btn"
-                  type="button"
-                  onClick={() => void handleRemoveKey(hotelId)}
-                  disabled={removeKey.isPending}
-                  className="inline-flex w-max items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 transition-colors"
-                >
-                  <Trash2 size={14} aria-hidden="true" />
-                  {removeKey.isPending ? "Removing…" : "Remove SlipOK key"}
-                </button>
-              )}
-
-              {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+              ) : null}
             </div>
           )}
         </CardContent>
