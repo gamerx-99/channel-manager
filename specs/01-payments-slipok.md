@@ -77,6 +77,6 @@ both as proposals to confirm before implementation starts, not settled decisions
 - [x] `pnpm check` + `pnpm build` pass
 - [x] No TODO/FIXME left in touched files
 - [x] Migration + `verify_*.sql` pair written and human-applied (`PHASE10_ONESHOT_APPLY_AND_VERIFY.sql`);
-      `20260908_add_payment_flow.sql` (Phase 12B) still needs human apply + verify — see handoff
+      `20260908_add_payment_flow.sql` (Phase 12B) applied and verified 2026-09-01 — all 8 checks PASS
 - [x] Spec status updated to DONE, `.agent/handoff.md` entry written
 - [x] Reviewer approved with evidence (this entry — Claude, 2026-09-01)

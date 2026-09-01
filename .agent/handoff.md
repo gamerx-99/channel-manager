@@ -1,5 +1,28 @@
 # Handoff log
 
+## [2026-09-01] Phase 12B migration applied and verified live — DONE ✅
+- **What happened**: Human applied `20260908_add_payment_flow.sql` in the
+  Supabase SQL editor, then ran `verify_20260908_add_payment_flow.sql` — all 8
+  checks returned `PASS` (bookings.payment_status, hotel_payment_settings.
+  payment_timeout_minutes, hotel_payment_settings.promptpay_id, payment_sessions
+  table/columns/RLS-enabled/3-policies/indexes). Human also re-enrolled MFA for
+  their other accounts after the issuer fix, confirming distinct entries now.
+- **Note**: this session couldn't reach the live Supabase DB directly (tested a
+  read-only connection from the sandbox — `ECONNREFUSED`, confirming CLAUDE.md's
+  "no live DB access" is a real network restriction, not just missing
+  credentials), so the human applied both scripts by hand via the SQL editor as
+  the project's Migrations section requires.
+- **Status**: Phase 12B (payments) is now fully live — schema applied, RLS
+  client bug fixed (see the "Review through Phase 12B" entry below), rate
+  limiting fixed, MFA gate hardened. Remaining before Financials' "collected vs
+  outstanding" breakdown: none blocking — `payment_status` now exists on
+  `bookings` and is being written by `payment.verifySlip`/`checkStatus`; that
+  breakdown is just a new query/UI, not blocked on anything else.
+- **Next**: hotels wanting to accept PromptPay need `promptpay_id` set per-hotel
+  via Financials → PromptPay Settings; hotels wanting slip auto-verification
+  need their own SlipOK API key saved via the same settings area (MFA step-up
+  required, per Phase 01/09).
+
 ## [2026-09-01] MFA QR label missing issuer prefix — indistinguishable entries across multiple accounts — DONE ✅
 - **Reported by human**: after re-enrolling successfully, entries in their phone's
   authenticator app only showed the app name/domain with no email after it —
