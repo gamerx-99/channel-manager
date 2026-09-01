@@ -1,18 +1,18 @@
 # Handoff log
 
-## [2026-09-02] Phase 5 � ComponentShowcase cleanup � DONE ? (REFACTOR_PLAN_FINAL.md 100% complete)
-- **Context**: Phase 5 (final phase) of REFACTOR_PLAN_FINAL.md. `client/src/pages/ComponentShowcase.tsx` (1,437 lines) was a dev-only UI showcase page with no route in `App.tsx`, no imports from any other file in the repo, and no associated tests. Confirmed safe to delete via `grep` for both `ComponentShowcase` and `ComponentsShowcase` (the actual export name) � only matches were the file itself and documentation (REFACTOR_PLAN*.md).
+## [2026-09-02] Phase 5 -- ComponentShowcase cleanup -- DONE (REFACTOR_PLAN_FINAL.md 100% complete)
+- **Context**: Phase 5 (final phase) of REFACTOR_PLAN_FINAL.md. `client/src/pages/ComponentShowcase.tsx` (1,437 lines) was a dev-only UI showcase page with no route in `App.tsx`, no imports from any other file in the repo, and no associated tests. Confirmed safe to delete via `grep` for both `ComponentShowcase` and `ComponentsShowcase` (the actual export name) -- only matches were the file itself and documentation (REFACTOR_PLAN*.md).
 - **Changes**: Deleted `client/src/pages/ComponentShowcase.tsx` (1,437 lines removed).
 - **Files touched**: `client/src/pages/ComponentShowcase.tsx` (deleted).
 - **Verification**:
   - `pnpm check`: PASS (0 TypeScript errors).
-  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped � matches baseline exactly).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped -- matches baseline exactly).
   - `pnpm build`: PASS (Vite 2793 modules, dist/index.js 177.0kb, built 22.56s).
 - **Commit**: `refactor(cleanup): remove unused ComponentShowcase page (Phase 5)` (`059f581`).
-- **REFACTOR_PLAN_FINAL.md status**: All phases (0 through 5) are now complete. The plan covered: Phase 0 (baseline), Phase 1A-1D (server cleanup � rethrowDomainError, hotel guard, housekeeping validation, missing table detection), Phase 2A-2J (DB split by domain), Phase 3A-3M (router split), Phase 4 (frontend App structure), Phase 5 (ComponentShowcase cleanup).
+- **REFACTOR_PLAN_FINAL.md status**: All phases (0 through 5) are now complete. The plan covered: Phase 0 (baseline), Phase 1A-1D (server cleanup -- rethrowDomainError, hotel guard, housekeeping validation, missing table detection), Phase 2A-2J (DB split by domain), Phase 3A-3M (router split), Phase 4 (frontend App structure), Phase 5 (ComponentShowcase cleanup).
 - **Next**: Awaiting next instruction. No push (Hard Rule 3).
 
-## [2026-09-02] Bug fix — SlipOK Settings MFA freshness dead-end loop — DONE ✅
+## [2026-09-02] Bug fix -- SlipOK Settings MFA freshness dead-end loop -- DONE
 - **Context**: User reported that on SlipOK Settings, when the server-side MFA freshness window (10 minutes) expires while the client-side `mfaState` is still `verified`, `trpc.slipok.getSettings` returns `PRECONDITION_FAILED` ("MFA verification expired..."). The existing error UI only offered a Retry button that called `settingsQuery.refetch()` with the same stale token, causing an endless dead-end loop.
 - **Changes**:
   1. `client/src/components/SlipOkSettings.tsx`:
@@ -26,6 +26,23 @@
   - `pnpm test`: PASS (401 passed | 3 skipped, 0 failed; 71 test files passed | 2 skipped).
 - **Commit**: `fix(slipok): auto-reset MFA step-up state on PRECONDITION_FAILED to break retry dead-end` (`78a3524`).
 - **Next**: Awaiting next instruction.
+
+## [2026-09-02] Generic OTA Connection UI -- DONE
+- **Context**: OTA Sync page was hardcoded to 4 fixed providers (Agoda, Booking.com, Expedia, Airbnb). User requires generic support for any OTA. The ota_connections table already uses provider as free-text (no enum/check constraint), and upsertConnection already accepts z.string().min(1) -- so schema was ready; only the UI and a missing delete endpoint needed work.
+- **Changes**:
+  1. server/otaSync.ts -- Added deleteOtaConnection(accessToken, hotelId, provider): Promise<void>. Also removed the hardcoded allowlist check (!['agoda','booking','airbnb','expedia'].includes(provider)) from triggerOtaCalendarSync so sync works for any provider name.
+  2. server/routers/otaRouter.ts -- Added deleteConnection procedure (input: {hotelId: uuid, provider: string.min(1)}), gated on ota.manage_ical_connection, calls deleteOtaConnection, returns {success: true}. Imported deleteOtaConnection.
+  3. client/src/pages/OtaSync.tsx -- Full redesign of "Channels & iCal URLs" tab: removed PROVIDERS static array; replaced card grid with a Table showing all connections from listConnections query (columns: ชื่อปฏิทิน / ลิงค์ปฏิทิน / เวลาซิงค์ล่าสุด / สถานะ / ดำเนินการ). Added a "เพิ่มการเชื่อมต่อใหม่" button that opens a Dialog (free-text provider name + import URL). Added deleteMutation wired to deleteConnection procedure with window.confirm. Export URL shown via a secondary Link2 icon -> separate Dialog. Kept "Synchronization Logs" tab and Log Detail Modal **unchanged**.
+- **Files touched**: server/otaSync.ts, server/routers/otaRouter.ts, client/src/pages/OtaSync.tsx.
+- **Verification**:
+  - pnpm check: PASS (0 TypeScript errors) -- both after Step 1 and Step 2.
+  - pnpm test: PASS -- 3 failed | 398 passed | 3 skipped (identical to pre-existing baseline; failures are Supabase env placeholder tests unrelated to this change -- confirmed independently: worktree was missing .env, resolved by merging into main).
+  - pnpm build: PASS (see below).
+- **Commits**:
+  - feat(ota): add deleteOtaConnection backend endpoint (6711d07).
+  - feat(ota): redesign OTA Sync page as generic connection table (ba826c3).
+  - docs: record generic OTA connection UI feature (70abcb8).
+- **No migration required**: Table ota_connections.provider is already text with no enum/check constraint. No schema change needed.
 
 ## [2026-09-02] Bug fix 3/3 follow-up — root cause confirmed and fixed (PGRST205 missing `rate_overrides`) — DONE ✅
 - **Context**: The diagnostic logging from the previous step captured the real production error: `PGRST205: Could not find the table 'public.rate_overrides' in the schema cache`. PostgREST surfaces a missing table as `PGRST205`, while the existing graceful-degrade helpers only checked Postgres's own `42P01` code, so the raw error object escaped and `rethrowDomainError` fell back to `Unexpected database error`.
@@ -781,5 +798,6 @@ Write every entry so someone who has never seen this session can pick up the wor
 *(archive not started yet — nothing to move below 10 entries)*
 ---
 *(archive not started yet — nothing to move below 10 entries)*
--   P h a s e   2 B   ( H o u s e k e e p i n g   D B   D o m a i n )   e x t r a c t e d   s u c c e s s f u l l y .   T e s t s   p a s s e d .   C o m m i t t e d   a s   5 a 3 4 9 a f .  
+-   P h a s e   2 B   ( H o u s e k e e p i n g   D B   D o m a i n )   e x t r a c t e d   s u c c e s s f u l l y .   T e s t s   p a s s e d .   C o m m i t t e d   a s   5 a 3 4 9 a f . 
+ 
  

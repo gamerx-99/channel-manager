@@ -9,6 +9,7 @@ import {
   getOtaConnections,
   getGlobalOtaSummary,
   upsertOtaConnection,
+  deleteOtaConnection,
   getOtaSyncLogs,
   triggerOtaCalendarSync,
 } from '../otaSync';
@@ -63,6 +64,22 @@ export const otaRouter = router({
       return rethrowDomainError(error);
     }
   }),
+  deleteConnection: protectedProcedure
+    .input(
+      z.object({
+        hotelId: z.string().uuid(),
+        provider: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotelId, 'ota.manage_ical_connection');
+      try {
+        await deleteOtaConnection(ctx.user.accessToken, input.hotelId, input.provider);
+        return { success: true };
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
   triggerSync: protectedProcedure
     .input(
       z.object({
