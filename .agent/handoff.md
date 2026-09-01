@@ -1,5 +1,17 @@
 # Handoff log
 
+## [2026-09-02] Phase 5 — ComponentShowcase cleanup — DONE ? (REFACTOR_PLAN_FINAL.md 100% complete)
+- **Context**: Phase 5 (final phase) of REFACTOR_PLAN_FINAL.md. `client/src/pages/ComponentShowcase.tsx` (1,437 lines) was a dev-only UI showcase page with no route in `App.tsx`, no imports from any other file in the repo, and no associated tests. Confirmed safe to delete via `grep` for both `ComponentShowcase` and `ComponentsShowcase` (the actual export name) — only matches were the file itself and documentation (REFACTOR_PLAN*.md).
+- **Changes**: Deleted `client/src/pages/ComponentShowcase.tsx` (1,437 lines removed).
+- **Files touched**: `client/src/pages/ComponentShowcase.tsx` (deleted).
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped — matches baseline exactly).
+  - `pnpm build`: PASS (Vite 2793 modules, dist/index.js 177.0kb, built 22.56s).
+- **Commit**: `refactor(cleanup): remove unused ComponentShowcase page (Phase 5)` (`059f581`).
+- **REFACTOR_PLAN_FINAL.md status**: All phases (0 through 5) are now complete. The plan covered: Phase 0 (baseline), Phase 1A-1D (server cleanup — rethrowDomainError, hotel guard, housekeeping validation, missing table detection), Phase 2A-2J (DB split by domain), Phase 3A-3M (router split), Phase 4 (frontend App structure), Phase 5 (ComponentShowcase cleanup).
+- **Next**: Awaiting next instruction. No push (Hard Rule 3).
+
 ## [2026-09-02] Bug fix â€” SlipOK Settings MFA freshness dead-end loop â€” DONE âœ…
 - **Context**: User reported that on SlipOK Settings, when the server-side MFA freshness window (10 minutes) expires while the client-side `mfaState` is still `verified`, `trpc.slipok.getSettings` returns `PRECONDITION_FAILED` ("MFA verification expired..."). The existing error UI only offered a Retry button that called `settingsQuery.refetch()` with the same stale token, causing an endless dead-end loop.
 - **Changes**:
