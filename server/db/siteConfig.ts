@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { HotelSiteConfigRecord, HotelMediaRecord } from './types';
 import { isMissingTableError, throwOnError } from './utils';
+export { DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY, DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR } from './types';
 
 
 function isMissingHotelSiteConfigTableError(error: unknown): boolean {
