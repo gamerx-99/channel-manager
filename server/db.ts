@@ -889,12 +889,23 @@ export type HousekeepingTaskRecord = {
   created_at: string;
 };
 
-function isMissingHousekeepingTableError(error: unknown): boolean {
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function isMissingTableError(tablePattern: string | RegExp, error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = (error as { code?: string }).code;
   if (code === '42P01') return true;
   const message = (error as { message?: string }).message ?? '';
-  return /housekeeping_tasks.*does not exist/i.test(message);
+  const re = typeof tablePattern === 'string'
+    ? new RegExp(`${escapeRegExp(tablePattern)}.*does not exist`, 'i')
+    : tablePattern;
+  return re.test(message);
+}
+
+function isMissingHousekeepingTableError(error: unknown): boolean {
+  return isMissingTableError('housekeeping_tasks', error);
 }
 
 async function assertHousekeepingAssigneeIsMember(
@@ -1162,11 +1173,7 @@ export type MessageRecord = {
 };
 
 function isMissingMessagingTableError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const code = (error as { code?: string }).code;
-  if (code === '42P01') return true;
-  const message = (error as { message?: string }).message ?? '';
-  return /message_threads|messages.*does not exist/i.test(message);
+  return isMissingTableError(/message_threads|messages.*does not exist/i, error);
 }
 
 export async function createMessageThread(
@@ -1327,11 +1334,7 @@ export type HotelSiteConfigRecord = {
 };
 
 function isMissingHotelSiteConfigTableError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const code = (error as { code?: string }).code;
-  if (code === '42P01') return true;
-  const message = (error as { message?: string }).message ?? '';
-  return /hotel_site_config.*does not exist/i.test(message);
+  return isMissingTableError('hotel_site_config', error);
 }
 
 /** Returns the site config for a hotel, or null if none / table not yet migrated. Gracefully handles 42P01. */
