@@ -1,16 +1,15 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, CheckCircle2, AlertCircle, Link2, Globe } from "lucide-react";
+import { Loader2, RefreshCw, Globe, PlusCircle, Trash2, Link2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { PageState } from "@/components/PageState";
 
 function formatSyncTimestamp(value: string | null | undefined): string {
   if (!value) return "—";
@@ -27,35 +26,44 @@ function formatSyncTimestamp(value: string | null | undefined): string {
   }).format(date);
 }
 
-const PROVIDERS = [
-  { id: 'agoda', name: 'Agoda (iCal Calendar Sync)', desc: 'Sync availability and calendar events via iCal import/export with Agoda' },
-  { id: 'booking', name: 'Booking.com (iCal Calendar Sync)', desc: 'Sync availability and calendar events via iCal import/export with Booking.com' },
-  { id: 'expedia', name: 'Expedia (iCal Calendar Sync)', desc: 'Sync availability and calendar events via iCal import/export with Expedia' },
-  { id: 'airbnb', name: 'Airbnb (iCal Calendar Sync)', desc: 'Sync availability and calendar events via iCal import/export with Airbnb' },
-];
-
 export default function OtaSync({ hotelId }: { hotelId: string }) {
   const utils = trpc.useUtils();
   const { data: connections, isLoading: loadingConn, error: connectionError, refetch: refetchConnections } = trpc.channelManager.ota.listConnections.useQuery({ hotelId });
   const { data: logs, isLoading: loadingLogs, error: logsError, refetch: refetchLogs } = trpc.channelManager.ota.listLogs.useQuery({ hotelId });
 
-  const [icalUrls, setIcalUrls] = useState<Record<string, { importUrl: string; exportUrl: string }>>({});
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [exportUrlDialogConn, setExportUrlDialogConn] = useState<any | null>(null);
+  const [newProvider, setNewProvider] = useState("");
+  const [newImportUrl, setNewImportUrl] = useState("");
 
   const upsertMutation = trpc.channelManager.ota.upsertConnection.useMutation({
     onSuccess: () => {
-      toast.success("OTA connection updated successfully");
+      toast.success("OTA connection saved successfully");
       utils.channelManager.ota.listConnections.invalidate({ hotelId });
       utils.channelManager.ota.listLogs.invalidate({ hotelId });
+      setAddDialogOpen(false);
+      setNewProvider("");
+      setNewImportUrl("");
     },
     onError: (err) => {
-      toast.error("Failed to update OTA connection: " + err.message);
+      toast.error("Failed to save OTA connection: " + err.message);
+    }
+  });
+
+  const deleteMutation = trpc.channelManager.ota.deleteConnection.useMutation({
+    onSuccess: () => {
+      toast.success("OTA connection deleted");
+      utils.channelManager.ota.listConnections.invalidate({ hotelId });
+    },
+    onError: (err) => {
+      toast.error("Failed to delete OTA connection: " + err.message);
     }
   });
 
   const syncMutation = trpc.channelManager.ota.triggerSync.useMutation({
     onSuccess: (res, variables: any) => {
-      toast.success(`Successfully synchronized ${variables.provider.toUpperCase()} (${(res as any).importedCount ?? 0} bookings imported)`);
+      toast.success(`Successfully synchronized ${variables.provider.toUpperCase()} (${(res as any).updatedItemCount ?? 0} items updated)`);
       utils.channelManager.ota.listConnections.invalidate({ hotelId });
       utils.channelManager.ota.listLogs.invalidate({ hotelId });
     },
@@ -69,15 +77,22 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
     }
   });
 
-  const handleSave = (provider: string) => {
-    const data = icalUrls[provider];
+  const handleAddConnection = () => {
+    if (!newProvider.trim()) {
+      toast.error("Please enter a channel/OTA name");
+      return;
+    }
     upsertMutation.mutate({
       hotelId,
-      provider,
+      provider: newProvider.trim(),
       status: 'active',
-      icalImportUrl: data?.importUrl || '',
-      icalExportUrl: data?.exportUrl || '',
+      icalImportUrl: newImportUrl.trim() || undefined,
     });
+  };
+
+  const handleDelete = (provider: string) => {
+    if (!window.confirm(`Are you sure you want to remove the connection for "${provider}"? This cannot be undone.`)) return;
+    deleteMutation.mutate({ hotelId, provider });
   };
 
   const isLoading = loadingConn || loadingLogs;
@@ -102,97 +117,126 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">OTA iCal Synchronization</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage iCal calendar import and export connections to keep availability synchronized across OTA channels.
+              Manage iCal calendar import connections to keep availability synchronized across OTA channels.
             </p>
           </div>
         </div>
 
         <Tabs defaultValue="connections" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="connections">Channels & iCal URLs</TabsTrigger>
+            <TabsTrigger value="connections">Channels &amp; iCal URLs</TabsTrigger>
             <TabsTrigger value="logs">Synchronization Logs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="connections" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {PROVIDERS.map((provider) => {
-                const conn = connections?.find((c: any) => c.provider === provider.id);
-                const isSyncing = syncMutation.isPending && syncMutation.variables?.provider === provider.id;
-                const currentUrls = icalUrls[provider.id] || {
-                  importUrl: (conn as any)?.import_url || '',
-                  exportUrl: (conn as any)?.export_url || '',
-                };
-
-                return (
-                  <Card key={provider.id} className="flex flex-col justify-between">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg flex items-center space-x-2">
-                          <Globe className="h-5 w-5 text-primary" />
-                          <span>{provider.name}</span>
-                        </CardTitle>
-                        <Badge variant={(conn as any)?.is_active && conn?.status === 'success' ? 'default' : conn?.status === 'error' ? 'destructive' : 'secondary'}>
-                          {(conn as any)?.is_active ? (conn?.status || 'Active') : 'Inactive'}
-                        </Badge>
-                      </div>
-                      <CardDescription className="text-xs">{provider.desc}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">iCal Import URL (From OTA to Property)</Label>
-                        <Input
-                          placeholder="https://www.ota.com/calendar/export/..."
-                          value={currentUrls.importUrl}
-                          onChange={(e) => setIcalUrls({
-                            ...icalUrls,
-                            [provider.id]: { ...currentUrls, importUrl: e.target.value }
-                          })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">iCal Export URL (Property to OTA)</Label>
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            readOnly
-                            value={currentUrls.exportUrl || `https://api.channelmanager.local/ical/${hotelId}/${provider.id}.ics`}
-                            className="bg-muted text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-                      {conn?.last_sync_at && (
-                        <p className="text-xs text-muted-foreground">
-                          Last Synced: {formatSyncTimestamp((conn as any).last_sync_at)} • Bookings Imported: {(conn as any).imported_count || 0}
-                        </p>
-                      )}
-                      {(conn as any)?.last_error_message && (
-                        <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-                          Error: {(conn as any)?.last_error_message}
-                        </p>
-                      )}
-                    </CardContent>
-                    <CardFooter className="flex justify-between border-t pt-4 bg-muted/20">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        disabled={isSyncing}
-                        onClick={() => syncMutation.mutate({ hotelId, provider: provider.id })}
-                      >
-                        {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
-                        Sync Now
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSave(provider.id)}
-                        disabled={upsertMutation.isPending}
-                      >
-                        Save Configuration
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
-            </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Connected OTA Channels</CardTitle>
+                    <CardDescription className="text-xs mt-1">
+                      Each row is an iCal calendar connection. The channel name is free-text — enter any OTA name (e.g. Agoda, Booking.com, Airbnb, TripAdvisor).
+                    </CardDescription>
+                  </div>
+                  <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-1.5" />
+                    เพิ่มการเชื่อมต่อใหม่
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!connections || connections.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground text-sm">
+                    <Globe className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p>ยังไม่มีการเชื่อมต่อ OTA</p>
+                    <p className="text-xs mt-1">คลิก "เพิ่มการเชื่อมต่อใหม่" เพื่อเชื่อมต่อกับ OTA ที่ต้องการ</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ชื่อปฏิทิน</TableHead>
+                        <TableHead>ลิงค์ปฏิทิน (Import URL)</TableHead>
+                        <TableHead className="whitespace-nowrap">เวลาซิงค์ล่าสุด</TableHead>
+                        <TableHead>สถานะ</TableHead>
+                        <TableHead className="text-right">ดำเนินการ</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {connections.map((conn: any) => {
+                        const isSyncing = syncMutation.isPending && syncMutation.variables?.provider === conn.provider;
+                        const isDeleting = deleteMutation.isPending && deleteMutation.variables?.provider === conn.provider;
+                        return (
+                          <TableRow key={conn.id ?? conn.provider}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-1.5">
+                                <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                {conn.provider}
+                              </div>
+                            </TableCell>
+                            <TableCell className="max-w-xs">
+                              {conn.ical_import_url ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px]" title={conn.ical_import_url}>
+                                    {conn.ical_import_url}
+                                  </span>
+                                  {conn.ical_export_url && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 px-1.5 text-[10px] shrink-0"
+                                      onClick={() => setExportUrlDialogConn(conn)}
+                                      title="View export URL"
+                                    >
+                                      <Link2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">ยังไม่ได้ตั้งค่า</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                              {formatSyncTimestamp(conn.last_sync_at)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={conn.status === 'connected' || conn.status === 'active' ? 'default' : conn.status === 'error' ? 'destructive' : 'secondary'} className="text-[10px]">
+                                {conn.status || 'inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 text-xs"
+                                  disabled={isSyncing || !conn.ical_import_url}
+                                  onClick={() => syncMutation.mutate({ hotelId, provider: conn.provider })}
+                                  title={!conn.ical_import_url ? "Set an import URL first" : "Sync now"}
+                                >
+                                  {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                                  <span className="ml-1">ซิงค์</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  disabled={isDeleting}
+                                  onClick={() => handleDelete(conn.provider)}
+                                >
+                                  {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                  <span className="ml-1">ลบ</span>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="logs" className="space-y-4">
@@ -246,6 +290,79 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Add Connection Dialog */}
+        <Dialog open={addDialogOpen} onOpenChange={(open) => { if (!open) { setAddDialogOpen(false); setNewProvider(""); setNewImportUrl(""); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>เพิ่มการเชื่อมต่อ OTA ใหม่</DialogTitle>
+              <DialogDescription>
+                ตั้งชื่อ OTA หรือ Channel ที่ต้องการเชื่อมต่อ แล้วกรอก iCal Import URL จาก OTA นั้น
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-provider">ชื่อ Channel / OTA</Label>
+                <Input
+                  id="new-provider"
+                  placeholder="เช่น Agoda, Booking.com, Airbnb, TripAdvisor..."
+                  value={newProvider}
+                  onChange={(e) => setNewProvider(e.target.value)}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">พิมพ์ชื่อได้อิสระ ไม่จำกัดเฉพาะ OTA ที่กำหนดไว้</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-import-url">iCal Import URL (จาก OTA มาหา Property)</Label>
+                <Input
+                  id="new-import-url"
+                  placeholder="https://www.ota.com/calendar/export/..."
+                  value={newImportUrl}
+                  onChange={(e) => setNewImportUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">คัดลอก URL ปฏิทินจากหน้า Channel Manager ของ OTA</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setAddDialogOpen(false); setNewProvider(""); setNewImportUrl(""); }}>
+                ยกเลิก
+              </Button>
+              <Button onClick={handleAddConnection} disabled={upsertMutation.isPending || !newProvider.trim()}>
+                {upsertMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
+                บันทึก
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Export URL Dialog */}
+        {exportUrlDialogConn && (
+          <Dialog open={Boolean(exportUrlDialogConn)} onOpenChange={(open) => !open && setExportUrlDialogConn(null)}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Export URL — {exportUrlDialogConn.provider}</DialogTitle>
+                <DialogDescription>
+                  URL ปฏิทินนี้ใช้ส่งข้อมูลจาก Property ไปยัง OTA (iCal Export)
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-2">
+                <Label className="text-xs font-medium">iCal Export URL (Property → OTA)</Label>
+                <Input
+                  readOnly
+                  value={exportUrlDialogConn.ical_export_url || ''}
+                  className="mt-2 bg-muted text-xs font-mono"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <p className="text-xs text-muted-foreground mt-2">คลิกที่ช่องด้านบนเพื่อเลือกและคัดลอก URL</p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setExportUrlDialogConn(null)}>
+                  ปิด
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Log Detail Modal */}
         {selectedLog && (
