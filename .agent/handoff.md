@@ -1,5 +1,15 @@
 # Handoff log
 
+## [2026-09-01] Phase 2A — Create modular db foundation (server/db/types.ts and server/db/utils.ts) — DONE ✅
+- **Context**: Executed Phase 2A of REFACTOR_PLAN_FINAL.md. Created foundation types and utilities for DB modularization without moving any domain functions.
+- **Changes**:
+  1. `server/db/types.ts` — Created with all database record interfaces, payload types, and site config defaults.
+  2. `server/db/utils.ts` — Created with `throwOnError`, `escapeRegExp`, and `isMissingTableError`.
+  3. `server/db.ts` — Updated to import from `./db/types` and `./db/utils`, and re-export them for complete backward compatibility. Retained all domain functions and legacy SDK functions intact.
+- **Verdict**: PASS — `pnpm check`: 0 errors. `pnpm test`: 401 passed | 3 skipped (71 passed | 2 skipped files, exactly matching baseline). `pnpm build`: OK.
+- **Commit**: `refactor(db): create modular db foundation`
+- **Next**: STOP — Ready for Phase 2B.
+
 ## [2026-09-01] rethrowDomainError silently downgraded TRPCErrors to 500s — Phase 1A of REFACTOR_PLAN — DONE ✅
 - **Context**: user supplied a multi-phase incremental refactor plan
   (REFACTOR_PLAN.md, not checked in) targeting `server/routers.ts` /
