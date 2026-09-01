@@ -127,7 +127,6 @@ export function Topbar({
         )}
         {isSuperAdmin && <NotificationBell hotelId={selectedHotelId} />}
         <LanguageSwitcher />
-        <span className="sync-status"><i /> Synced 2 min ago</span>
         <div className="topbar-divider" />
         <div className="dropdown-anchor">
           <button
