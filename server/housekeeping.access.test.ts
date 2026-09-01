@@ -144,20 +144,12 @@ describe('housekeeping tasks access — housekeeping.view/update_room_status', (
     expect(dbMocks.updateHousekeepingTaskStatus).not.toHaveBeenCalled();
   });
 
-  it('handles due_date default from booking check_out when booking_id given without due_date', async () => {
-    // Mock bookings lookup inside router (via RLS client) — the db helper also handles fallback,
-    // but router-level fallback is exercised by mocking the RLS client response.
+  it('passes booking_id to db layer and returns derived due_date from the db result', async () => {
+    // Due_date derivation from booking.check_out was moved from the router to createHousekeepingTask
+    // in db.ts (Phase 1C refactor). The router now passes due_date: null and relies on db.ts to
+    // derive it from the booking. This test verifies the router passes the right args to the db
+    // function and returns whatever the db function resolves with (including derived due_date).
     const checkOutDate = '2026-09-15';
-    const rlsClientWithBooking = {
-      mocked: true,
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: { check_out: checkOutDate }, error: null }),
-      })),
-    } as any;
-    // Override createRlsSupabaseClient to return client that also supports .from for the router fallback
-    supabaseMocks.createRlsSupabaseClient.mockReturnValue(rlsClientWithBooking);
     dbMocks.createHousekeepingTask.mockResolvedValueOnce({
       id: TASK_ID,
       room_id: ROOM_ID,
@@ -174,13 +166,14 @@ describe('housekeeping tasks access — housekeeping.view/update_room_status', (
         hotel_id: HOME_HOTEL,
         room_id: ROOM_ID,
         booking_id: BOOKING_ID,
-        // due_date intentionally omitted
+        // due_date intentionally omitted — db.ts derives it from booking.check_out
       }),
     ).resolves.toMatchObject({ due_date: checkOutDate });
 
+    // Router passes due_date: null; derivation is the db layer's responsibility
     expect(dbMocks.createHousekeepingTask).toHaveBeenCalledWith(
-      rlsClientWithBooking,
-      expect.objectContaining({ room_id: ROOM_ID, booking_id: BOOKING_ID, due_date: checkOutDate }),
+      expect.objectContaining({ mocked: true }),
+      expect.objectContaining({ room_id: ROOM_ID, booking_id: BOOKING_ID, due_date: null }),
     );
   });
 

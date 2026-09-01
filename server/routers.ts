@@ -1137,82 +1137,31 @@ export const appRouter = router({
     }),
     createHousekeepingTask: protectedProcedure.input(createHousekeepingTaskSchema).mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.update_room_status');
+      // due_date required when no booking — db helper derives it from booking.check_out when booking_id provided
+      if (!input.due_date && !input.booking_id) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'due_date is required when no booking is linked.' });
+      }
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await assertHotelExists(client, input.hotel_id);
-        // Validate assigned_to membership via rooms->hotel_id + hotel_users lookup
-        if (input.assigned_to) {
-          const { data: room, error: roomError } = await (client as any).from('rooms').select('hotel_id').eq('id', input.room_id).maybeSingle();
-          if (roomError) throw roomError;
-          const hotelIdForRoom = (room as { hotel_id?: string } | null)?.hotel_id;
-          if (hotelIdForRoom !== input.hotel_id) {
-            // Ensure room belongs to the requested hotel; if mismatch, treat as not found via membership check
-            // Still verify membership against the room's actual hotel
-            if (!hotelIdForRoom) {
-              throw new TRPCError({ code: 'NOT_FOUND', message: 'Room not found for housekeeping task.' });
-            }
-          }
-          const { data: membership, error: membershipError } = await (client as any)
-            .from('hotel_users')
-            .select('id')
-            .eq('hotel_id', hotelIdForRoom)
-            .eq('user_id', input.assigned_to)
-            .maybeSingle();
-          if (membershipError) throw membershipError;
-          if (!(membership as { id?: string } | null)?.id) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: `Assignee ${input.assigned_to} is not a member of this hotel` });
-          }
-        }
-        // due_date defaults to booking check_out when booking_id given; db helper also handles this fallback
-        // Explicit due_date is never overridden
-        let dueDate: string | null | undefined = input.due_date ?? null;
-        if (!dueDate && input.booking_id) {
-          const { data: booking, error: bookingError } = await (client as any)
-            .from('bookings')
-            .select('check_out')
-            .eq('id', input.booking_id)
-            .maybeSingle();
-          if (bookingError) throw bookingError;
-          dueDate = (booking as { check_out?: string } | null)?.check_out ?? null;
-        }
-        if (!dueDate) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'due_date is required when no booking is linked.' });
-        }
+        await assertHotelExists(client, input.hotel_id);
+        // Assignee membership validation and booking due_date derivation are handled by createHousekeepingTask in db.ts
         return await createHousekeepingTask(client, {
           room_id: input.room_id,
           booking_id: input.booking_id ?? null,
           assigned_to: input.assigned_to ?? null,
-          due_date: dueDate,
+          due_date: input.due_date ?? null,
           status: input.status,
         });
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        // Gracefully handle missing housekeeping_tasks table (42P01)
-        const code = (error as { code?: string })?.code;
-        const msg = error instanceof Error ? error.message : '';
-        if (code === '42P01' || /housekeeping_tasks.*does not exist/i.test(msg)) {
-          // Return synthetic success so callers don't crash when migration hasn't been applied
-          return {
-            id: '00000000-0000-4000-a000-000000000000',
-            room_id: input.room_id,
-            booking_id: input.booking_id ?? null,
-            assigned_to: input.assigned_to ?? null,
-            due_date: (input.due_date as string) ?? '',
-            status: input.status ?? 'pending',
-            created_at: new Date().toISOString(),
-          } as unknown as Awaited<ReturnType<typeof createHousekeepingTask>>;
-        }
         return rethrowDomainError(error);
       }
     }),
     listHousekeepingTasks: protectedProcedure.input(listHousekeepingTasksSchema).query(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.view_room_status');
       try {
+        // 42P01 graceful handling (missing migration) is done inside listHousekeepingTasks in db.ts
         return await listHousekeepingTasks(rlsClient(ctx.user.accessToken), { hotel_id: input.hotel_id });
       } catch (error) {
-        const code = (error as { code?: string })?.code;
-        const msg = error instanceof Error ? error.message : '';
-        if (code === '42P01' || /housekeeping_tasks.*does not exist/i.test(msg)) return [];
         return rethrowDomainError(error);
       }
     }),
@@ -1220,95 +1169,20 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.update_room_status');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await assertHotelExists(client, input.hotel_id);
-        // When assigned_to is being updated, verify membership via rooms->hotel_id + hotel_users
-        if (input.assigned_to !== undefined && input.assigned_to !== null) {
-          // Need room_id to resolve hotel. If not supplied directly, fetch from existing task
-          let roomIdForCheck: string | null = null;
-          if ((input as { room_id?: string }).room_id) {
-            roomIdForCheck = (input as { room_id?: string }).room_id as string;
-          } else {
-            // Try to fetch existing task's room_id; if table missing, skip validation gracefully
-            try {
-              const { data: existingTask, error: existingError } = await (client as any)
-                .from('housekeeping_tasks')
-                .select('room_id')
-                .eq('id', input.task_id)
-                .maybeSingle();
-              if (existingError) {
-                const code = (existingError as { code?: string }).code;
-                const msg = (existingError as { message?: string }).message ?? '';
-                if (!(code === '42P01' || /housekeeping_tasks.*does not exist/i.test(msg))) throw existingError;
-              } else {
-                roomIdForCheck = (existingTask as { room_id?: string } | null)?.room_id ?? null;
-              }
-            } catch (err) {
-              const code = (err as { code?: string })?.code;
-              const msg = err instanceof Error ? err.message : '';
-              if (!(code === '42P01' || /housekeeping_tasks.*does not exist/i.test(msg))) throw err;
-            }
-          }
-          if (roomIdForCheck) {
-            const { data: room, error: roomError } = await (client as any).from('rooms').select('hotel_id').eq('id', roomIdForCheck).maybeSingle();
-            if (roomError) throw roomError;
-            const hotelIdForRoom = (room as { hotel_id?: string } | null)?.hotel_id;
-            if (hotelIdForRoom) {
-              const { data: membership, error: membershipError } = await (client as any)
-                .from('hotel_users')
-                .select('id')
-                .eq('hotel_id', hotelIdForRoom)
-                .eq('user_id', input.assigned_to)
-                .maybeSingle();
-              if (membershipError) throw membershipError;
-              if (!(membership as { id?: string } | null)?.id) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: `Assignee ${input.assigned_to} is not a member of this hotel` });
-              }
-            }
-          }
-        }
-
-        // Resolve due_date from booking when booking_id provided without due_date (explicit due_date never overridden)
-        let resolvedDueDate: string | null | undefined = input.due_date;
-        if (input.booking_id && (input.due_date === undefined || input.due_date === null)) {
-          const { data: booking, error: bookingError } = await (client as any)
-            .from('bookings')
-            .select('check_out')
-            .eq('id', input.booking_id)
-            .maybeSingle();
-          if (bookingError) throw bookingError;
-          const checkOut = (booking as { check_out?: string } | null)?.check_out;
-          if (checkOut) resolvedDueDate = checkOut;
-        }
-
+        await assertHotelExists(client, input.hotel_id);
+        // Assignee membership validation, booking due_date derivation, and 42P01 handling are all in updateHousekeepingTaskStatus in db.ts
         const updated = await updateHousekeepingTaskStatus(client, {
           task_id: input.task_id,
           status: input.status,
           assigned_to: input.assigned_to,
           booking_id: input.booking_id ?? undefined,
-          due_date: resolvedDueDate,
-        } as unknown as Parameters<typeof updateHousekeepingTaskStatus>[1]);
+          due_date: input.due_date,
+        });
         if (!updated) {
-          // Gracefully handle missing table -> return synthetic record
-          const isMissingTable = false; // handled inside db helper
           throw new TRPCError({ code: 'NOT_FOUND', message: 'This housekeeping task was not found.' });
         }
         return updated;
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        const code = (error as { code?: string })?.code;
-        const msg = error instanceof Error ? error.message : '';
-        if (code === '42P01' || /housekeeping_tasks.*does not exist/i.test(msg)) {
-          // Gracefully handle missing table — return a synthetic null-like success for update
-          return {
-            id: input.task_id,
-            room_id: '',
-            booking_id: input.booking_id ?? null,
-            assigned_to: input.assigned_to ?? null,
-            due_date: (input.due_date as string) ?? '',
-            status: input.status,
-            created_at: new Date().toISOString(),
-          } as unknown as Awaited<ReturnType<typeof updateHousekeepingTaskStatus>>;
-        }
         return rethrowDomainError(error);
       }
     }),
