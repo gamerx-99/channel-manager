@@ -14,12 +14,15 @@ describe("Hotel owner signup link contract", () => {
   it("registers /signup/:token outside PrivateRoute, alongside /login", () => {
     const loginIndex = app.indexOf('path="/login"');
     const signupIndex = app.indexOf('path="/signup/:token"');
-    const privateRouteIndex = app.indexOf("function PrivateRoute");
+    // PrivateRoute's definition site is no longer in App.tsx after Phase 4's
+    // extraction, so this contract checks the registration order in the Switch
+    // by looking for the first usage of <PrivateRoute> instead.
+    const firstPrivateRouteUsage = app.indexOf("<PrivateRoute>");
     expect(loginIndex).toBeGreaterThan(-1);
     expect(signupIndex).toBeGreaterThan(-1);
     // Both public routes are declared before the PrivateRoute-wrapped routes further down the Switch.
     expect(signupIndex).toBeGreaterThan(loginIndex);
-    expect(privateRouteIndex).toBeGreaterThan(-1);
+    expect(signupIndex).toBeLessThan(firstPrivateRouteUsage);
   });
 
   it("exposes the public validate/complete procedures and the super_admin-only generation procedure", () => {

@@ -52,7 +52,7 @@ vi.mock("./lib/routeScope", () => ({
   getRouteScopeDecision: () => ({ allowed: false, reason: "permission_required" as const }),
 }));
 
-import { PrivateRoute } from "./App";
+import { PrivateRoute } from "./components/auth/PrivateRoute";
 
 afterEach(() => cleanup());
 
