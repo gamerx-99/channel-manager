@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("Housekeeping board contract", () => {
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Housekeeping.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
-  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
+  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
 
   it("registers the page route and gates sidebar link with housekeeping.view_room_status", () => {

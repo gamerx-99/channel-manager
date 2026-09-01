@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("Communications contract", () => {
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Communications.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
-  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
+  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const bookings = readFileSync(resolve(process.cwd(), "client/src/pages/Bookings.tsx"), "utf8");
 

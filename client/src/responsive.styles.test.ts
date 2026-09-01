@@ -5,11 +5,12 @@ import { describe, expect, it } from "vitest";
 describe("Responsive operations layout contract", () => {
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
+  const sidebar = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const home = readFileSync(resolve(process.cwd(), "client/src/pages/Home.tsx"), "utf8");
   const staff = readFileSync(resolve(process.cwd(), "client/src/pages/HotelStaff.tsx"), "utf8");
 
   it("keeps the live AppShell sidebar closed by default on small screens and exposes an accessible open state", () => {
-    expect(app).toContain('className={`sidebar ${open ? "is-open" : ""}`}');
+    expect(sidebar).toContain('className={`sidebar ${open ? "is-open" : ""}`}');
     expect(app).toContain('className="mobile-scrim"');
     expect(app).toContain('aria-label="Open menu"');
     expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*?\.sidebar\{[^}]*transform:translateX\(-105%\)/);

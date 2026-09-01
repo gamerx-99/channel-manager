@@ -8,7 +8,7 @@ describe("Financials dashboard contract", () => {
   const router = routerText + dashboardRouterText;
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Financials.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
-  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
+  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
