@@ -1,5 +1,26 @@
 # Handoff log
 
+## [2026-09-02] Bug fix 3/3 follow-up — root cause confirmed and fixed (PGRST205 missing `rate_overrides`) — DONE ✅
+- **Context**: The diagnostic logging from the previous step captured the real production error: `PGRST205: Could not find the table 'public.rate_overrides' in the schema cache`. PostgREST surfaces a missing table as `PGRST205`, while the existing graceful-degrade helpers only checked Postgres's own `42P01` code, so the raw error object escaped and `rethrowDomainError` fell back to `Unexpected database error`.
+- **Changes**:
+  1. `server/db/utils.ts` — `isMissingTableError` now treats both `42P01` and `PGRST205` as missing-table signals.
+  2. `server/db/availability.ts` — `listRateOverridesForRoomType` now delegates to `isMissingTableError('rate_overrides', ...)` instead of duplicating the `42P01` check (also removes the now-redundant regex fallback).
+  3. Audited `server/` for every other inline `code === '42P01'` check and added `PGRST205` to each:
+     - `server/messaging.ts` local `isMissingTableError`.
+     - `server/housekeeping.ts` local `isMissingTableError`.
+     - `server/routers/hotelRouter.ts` (`getHotelSiteConfig`, `getHotelSiteConfigByHotelId`, `saveHotelSiteConfig`).
+     - `server/routers/messagingRouter.ts` (`listMessages`, `sendMessage`).
+- **Files touched**: `server/db/utils.ts`, `server/db/availability.ts`, `server/messaging.ts`, `server/housekeeping.ts`, `server/routers/hotelRouter.ts`, `server/routers/messagingRouter.ts`, `.agent/OPEN_QUESTIONS.md`.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Commits**:
+  - `fix(db): also treat PGRST205 as missing-table error alongside 42P01` (`25f9b93`).
+  - `docs: log PGRST205/rate_overrides migration gap discovered from production logs` (`0ee35d3`).
+- **Human action still required**: Apply the `rate_overrides` migration (and its verify script) by hand in the Supabase SQL editor. Until then the code gracefully degrades but the feature cannot actually read or write overrides.
+- **Next**: Awaiting next instruction.
+
 ## [2026-09-02] Bug fix 3/3 — "Unexpected database error" on booking save — INVESTIGATED, diagnostic logging added ✅
 - **Context**: User reported `Unexpected database error` when saving a booking with guest details in `BookingWizard`. That exact string only originates in `server/routerUtils.ts` `rethrowDomainError`, in the branch where the caught value is not an `Error` instance. The task was to find any non-`Error` throw in the booking creation path or, if none found, add logging so the real value is visible in Vercel logs on recurrence.
 - **Investigation**:
