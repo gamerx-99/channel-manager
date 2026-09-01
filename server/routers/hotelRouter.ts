@@ -198,7 +198,7 @@ export const getHotelSiteConfig = rateLimitedProcedure.input(z.string().trim().m
   } catch (error) {
     const code = (error as { code?: string })?.code;
     const msg = error instanceof Error ? error.message : '';
-    if (code === '42P01' || /hotel_site_config.*does not exist/i.test(msg)) return null;
+    if (code === '42P01' || code === 'PGRST205' || /hotel_site_config.*does not exist/i.test(msg)) return null;
     return rethrowDomainError(error);
   }
 });
@@ -210,7 +210,7 @@ export const getHotelSiteConfigByHotelId = protectedProcedure.input(z.object({ h
   } catch (error) {
     const code = (error as { code?: string })?.code;
     const msg = error instanceof Error ? error.message : '';
-    if (code === '42P01' || /hotel_site_config.*does not exist/i.test(msg)) return null;
+    if (code === '42P01' || code === 'PGRST205' || /hotel_site_config.*does not exist/i.test(msg)) return null;
     return rethrowDomainError(error);
   }
 });
@@ -225,7 +225,7 @@ export const saveHotelSiteConfig = protectedProcedure.input(hotelSiteConfigSaveS
     if (error instanceof TRPCError) throw error;
     const code = (error as { code?: string })?.code;
     const msg = error instanceof Error ? error.message : '';
-    if (code === '42P01' || /hotel_site_config.*does not exist/i.test(msg)) {
+    if (code === '42P01' || code === 'PGRST205' || /hotel_site_config.*does not exist/i.test(msg)) {
       return {
         hotel_id: input.hotel_id,
         hero_copy: input.hero_copy ?? null,

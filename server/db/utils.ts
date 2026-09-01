@@ -9,7 +9,7 @@ export function escapeRegExp(s: string) {
 export function isMissingTableError(tablePattern: string | RegExp, error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = (error as { code?: string }).code;
-  if (code === '42P01') return true;
+  if (code === '42P01' || code === 'PGRST205') return true;
   const message = (error as { message?: string }).message ?? '';
   const re = typeof tablePattern === 'string'
     ? new RegExp(`${escapeRegExp(tablePattern)}.*does not exist`, 'i')

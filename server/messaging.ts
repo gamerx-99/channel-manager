@@ -93,7 +93,8 @@ export function getTemplatedMessageForBooking(
 function isMissingTableError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = (error as { code?: string }).code;
-  if (code === '42P01') return true;
+  // 42P01 = undefined_table (Postgres), PGRST205 = schema-cache miss (PostgREST).
+  if (code === '42P01' || code === 'PGRST205') return true;
   const message = (error as { message?: string }).message ?? '';
   return /(message_threads|messages|bookings).*(does not exist)/i.test(message);
 }

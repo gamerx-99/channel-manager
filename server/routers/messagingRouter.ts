@@ -95,7 +95,7 @@ export const listMessages = protectedProcedure
       if (error instanceof TRPCError) throw error;
       const code = (error as { code?: string })?.code;
       const msg = error instanceof Error ? error.message : '';
-      if (code === '42P01' || /message_threads|messages.*does not exist/i.test(msg)) return [];
+      if (code === '42P01' || code === 'PGRST205' || /message_threads|messages.*does not exist/i.test(msg)) return [];
       return rethrowDomainError(error);
     }
   });
@@ -138,7 +138,7 @@ export const sendMessage = protectedProcedure
       if (error instanceof TRPCError) throw error;
       const code = (error as { code?: string })?.code;
       const msg = error instanceof Error ? error.message : '';
-      if (code === '42P01' || /message_threads|messages.*does not exist/i.test(msg)) {
+      if (code === '42P01' || code === 'PGRST205' || /message_threads|messages.*does not exist/i.test(msg)) {
         return {
           id: '00000000-0000-4000-a000-000000000001',
           thread_id: input.thread_id,

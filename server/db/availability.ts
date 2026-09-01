@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { throwOnError } from './utils';
+import { isMissingTableError, throwOnError } from './utils';
 import type { AvailabilityRecord, RateOverrideRecord } from './types';
 
 export async function listAvailabilityForHotel(client: SupabaseClient, hotelId: string) {
@@ -40,16 +40,14 @@ export async function listRateOverridesForRoomType(
       .eq('room_type_id', roomTypeId)
       .order('start_date', { ascending: true });
     if (error) {
-      // 42P01 = undefined_table (migration not yet applied) — treat as no overrides.
-      if ((error as { code?: string }).code === '42P01') return [];
+      // 42P01 = undefined_table (Postgres), PGRST205 = schema-cache miss (PostgREST).
+      // Either means the rate_overrides migration hasn't been applied yet — treat as no overrides.
+      if (isMissingTableError('rate_overrides', error)) return [];
       throw error;
     }
     return (data ?? []) as RateOverrideRecord[];
   } catch (err) {
-    const code = (err as { code?: string })?.code;
-    if (code === '42P01') return [];
-    // Some PostgREST shims surface missing-table as message without code
-    if (err instanceof Error && /rate_overrides.*does not exist/i.test(err.message)) return [];
+    if (isMissingTableError('rate_overrides', err)) return [];
     throw err;
   }
 }
