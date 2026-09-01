@@ -1,5 +1,23 @@
 # Handoff log
 
+## [2026-09-02] Generic OTA Connection UI — DONE ?
+- **Context**: OTA Sync page was hardcoded to 4 fixed providers (Agoda, Booking.com, Expedia, Airbnb). User requires generic support for any OTA. The ota_connections table already uses provider as free-text (no enum/check constraint), and upsertConnection already accepts z.string().min(1) — so schema was ready; only the UI and a missing delete endpoint needed work.
+- **Changes**:
+  1. server/otaSync.ts — Added deleteOtaConnection(accessToken, hotelId, provider): Promise<void>. Also removed the hardcoded allowlist check (!['agoda','booking','airbnb','expedia'].includes(provider)) from 	riggerOtaCalendarSync so sync works for any provider name.
+  2. server/routers/otaRouter.ts — Added deleteConnection procedure (input: {hotelId: uuid, provider: string.min(1)}), gated on ota.manage_ical_connection, calls deleteOtaConnection, returns {success: true}. Imported deleteOtaConnection.
+  3. client/src/pages/OtaSync.tsx — Full redesign of "Channels & iCal URLs" tab: removed PROVIDERS static array; replaced card grid with a Table showing all connections from listConnections query (columns: ?????????? / ??????????? / ??????????????? / ????? / ?????????). Added "?????????????????????" button that opens a Dialog (free-text provider name + import URL). Added deleteMutation wired to deleteConnection procedure with window.confirm. Export URL shown via a secondary Link2 icon ? separate Dialog. Kept "Synchronization Logs" tab and Log Detail Modal **unchanged**.
+- **Files touched**: server/otaSync.ts, server/routers/otaRouter.ts, client/src/pages/OtaSync.tsx.
+- **Verification**:
+  - pnpm check: PASS (0 TypeScript errors) — both after Step 1 and Step 2.
+  - pnpm test: PASS — 3 failed | 398 passed | 3 skipped (identical to pre-existing baseline; failures are Supabase env placeholder tests unrelated to this change).
+  - pnpm build: PASS (see below).
+- **Commits**:
+  - eat(ota): add deleteOtaConnection backend endpoint (6711d07).
+  - eat(ota): redesign OTA Sync page as generic connection table (a826c3).
+  - docs: record generic OTA connection UI feature (handoff entry commit).
+- **No migration required**: Table ota_connections.provider is already 	ext with no enum/check constraint. No schema change needed.
+- **Next**: Awaiting next instruction. Branch eature/ota-sync-generic is ready for human review and merge to main (no push per Hard Rule 3).
+
 ## [2026-09-02] Bug fix 3/3 follow-up â€” root cause confirmed and fixed (PGRST205 missing `rate_overrides`) â€” DONE âœ…
 - **Context**: The diagnostic logging from the previous step captured the real production error: `PGRST205: Could not find the table 'public.rate_overrides' in the schema cache`. PostgREST surfaces a missing table as `PGRST205`, while the existing graceful-degrade helpers only checked Postgres's own `42P01` code, so the raw error object escaped and `rethrowDomainError` fell back to `Unexpected database error`.
 - **Changes**:
