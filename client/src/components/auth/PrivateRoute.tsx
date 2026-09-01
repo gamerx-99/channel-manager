@@ -7,7 +7,7 @@ import { shouldRedirectToMfaEnroll, MFA_ENROLL_PATH } from "@/lib/mfa";
 import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
 import { type AppRole } from "@shared/authorization";
-import { AppShell } from "../../App";
+import { AppShell } from "../layout/AppShell";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });

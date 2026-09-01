@@ -5,14 +5,15 @@ import { describe, expect, it } from "vitest";
 describe("AdvancedPricing dashboard contract", () => {
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/AdvancedPricing.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
+  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
   it("registers the page route and gates sidebar link with revenue.manage_pricing_rules", () => {
     expect(app).toContain('path="/dashboard/pricing"');
     expect(app).toContain("AdvancedPricing");
-    expect(app).toContain('can("revenue.manage_pricing_rules")');
-    expect(app).toContain('href="/dashboard/pricing"');
+    expect(appShell).toContain('can("revenue.manage_pricing_rules")');
+    expect(appShell).toContain('href="/dashboard/pricing"');
     expect(routeScope).toContain('pathname.startsWith("/dashboard/pricing")');
     expect(routeScope).toContain('return "revenue.manage_pricing_rules"');
   });

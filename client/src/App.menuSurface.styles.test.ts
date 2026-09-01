@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Topbar menu surface contract", () => {
-  const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
+  const app = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
 
   it("uses a shared anchor and opaque surface for the Add menu", () => {
     expect(app).toContain('className="dropdown-anchor"');

@@ -5,14 +5,15 @@ import { describe, expect, it } from "vitest";
 describe("Communications contract", () => {
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Communications.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
+  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const bookings = readFileSync(resolve(process.cwd(), "client/src/pages/Bookings.tsx"), "utf8");
 
   it("registers the page route and gates sidebar link with operations.view_bookings", () => {
     expect(app).toContain('path="/communications"');
     expect(app).toContain("Communications");
-    expect(app).toContain('can("operations.view_bookings")');
-    expect(app).toContain('href="/communications"');
+    expect(appShell).toContain('can("operations.view_bookings")');
+    expect(appShell).toContain('href="/communications"');
     expect(routeScope).toContain('"/communications"');
     expect(routeScope).toContain('return "operations.view_bookings"');
   });

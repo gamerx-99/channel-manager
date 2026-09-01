@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 describe("Responsive operations layout contract", () => {
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
-  const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
+  const app = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
   const home = readFileSync(resolve(process.cwd(), "client/src/pages/Home.tsx"), "utf8");
   const staff = readFileSync(resolve(process.cwd(), "client/src/pages/HotelStaff.tsx"), "utf8");
 

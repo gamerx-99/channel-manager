@@ -8,6 +8,7 @@ describe("Financials dashboard contract", () => {
   const router = routerText + dashboardRouterText;
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Financials.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
+  const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/AppShell.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
@@ -20,7 +21,7 @@ describe("Financials dashboard contract", () => {
 
   it("registers the page and gates it with the financials-only permission", () => {
     expect(app).toContain('path="/dashboard/financials"');
-    expect(app).toContain('can("property.view_financials")');
+    expect(appShell).toContain('can("property.view_financials")');
     expect(routeScope).toContain('pathname.startsWith("/dashboard/financials")');
     expect(routeScope).toContain('return "property.view_financials"');
   });
