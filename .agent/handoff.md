@@ -1,5 +1,40 @@
 # Handoff log
 
+## [2026-09-02] Bug fix 3/3 — "Unexpected database error" on booking save — INVESTIGATED, diagnostic logging added ✅
+- **Context**: User reported `Unexpected database error` when saving a booking with guest details in `BookingWizard`. That exact string only originates in `server/routerUtils.ts` `rethrowDomainError`, in the branch where the caught value is not an `Error` instance. The task was to find any non-`Error` throw in the booking creation path or, if none found, add logging so the real value is visible in Vercel logs on recurrence.
+- **Investigation**:
+  1. Staff booking path traced: `BookingWizard.tsx` → `bookingRouter.createBooking` → `assertBookingMinStay` → `createBookingWithGuests`.
+  2. Public booking path traced: `createPublicBooking` → `getPublicHotelAvailability` / `createBookingWithGuests`.
+  3. Every `throw` in these paths is already `new Error(...)`, `new TRPCError(...)`, or a re-throw of a Supabase `PostgrestError` (which is an `Error` subclass) via `throwOnError`.
+  4. Searched for `throw {`, `throw \{`, and non-Error re-throws across `server/`. No production plain-object throws found.
+  5. Checked all `.single()` / `.maybeSingle()` calls in the booking path; each is followed by `throwOnError`.
+  6. Compared `BookingWizard.tsx` payload with the Zod schema in `bookingRouter.ts`. `nationality_code` is upper-cased on input and matched by `^[A-Z]{3}$`; `birth_date` is converted by `parseDisplayDateToIso` which returns `YYYY-MM-DD` or throws an `Error` in the component (not a malformed server payload). No schema mismatch that would surface as `Unexpected database error`.
+- **Root cause**: Not found in code. The non-`Error` value must be observed from live logs.
+- **Change**: Added a non-invasive `console.error` in `rethrowDomainError` that logs `typeof error` and the raw value whenever a caught value is neither `TRPCError` nor `Error` before falling back to `Unexpected database error`.
+- **Files touched**: `server/routerUtils.ts`.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped).
+  - `pnpm build`: not required (no server/client/deploy config change; logging-only change in existing util).
+- **Commit**: `fix(booking): add diagnostic logging for non-Error throws in booking creation path`.
+- **Next**: Wait for the bug to recur in production/Vercel logs, capture the logged `{ errorType, errorValue }`, then fix the actual source. Do not guess-patch without that evidence.
+
+## [2026-09-02] Bug fix 2/3 — WebsiteBuilder white screen / crash from infinite re-render loop — DONE ✅
+- **Context**: User reported WebsiteBuilder crashes immediately with a white screen. Root cause confirmed: draft-sync logic was running directly in the render body of `client/src/pages/WebsiteBuilder.tsx` and called `setState` on every render. `defaultConfig()` returns a fresh object every call, and while `serverConfig` was still `undefined` the `JSON.stringify(serverConfig) !== JSON.stringify(draft)` comparison was always true, triggering `setDraft(newObjectReference)` repeatedly and causing React to throw "Too many re-renders".
+- **Changes**:
+  1. Added `useEffect` to the React import in `client/src/pages/WebsiteBuilder.tsx`.
+  2. Removed the render-body `if (...) { setInitializedFor(...); setDraft(...); ... }` block.
+  3. Replaced it with a `useEffect` that syncs `draft` only when the active hotel changes (`initializedFor !== effectiveHotelId`), using `effectiveHotelId` and `serverConfig` as dependencies. This preserves the original intent of not overwriting in-flight user edits on a background `serverConfig` refetch.
+  4. Wrapped `config` in `useMemo` so the fallback default object is stable when `serverConfig` and `effectiveHotelId` don't change, removing another source of per-render object churn.
+  5. Added a type assertion (`as SiteConfig`) when setting draft from `serverConfig` to satisfy `HotelSiteConfigRecord` nullable-field differences — matching the original code's cast.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped), including `client/src/pages/WebsiteBuilder.contract.test.ts`.
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+  - Live browser test: attempted `pnpm run dev`; server binds to `http://localhost:3000/` but OAuth initialization fails because `OAUTH_SERVER_URL` is not configured, so full live verification was skipped per the task instructions.
+- **Commit**: `fix(website-builder): move draft-sync logic into useEffect to stop infinite re-render loop` (`3b818c4`).
+- **Next**: Bug fix 3/3 (awaiting user instruction).
+
 ## [2026-09-02] Phase 4 — Final cleanup of App.tsx unused imports — DONE ✅
 - **Context**: Phase 4 frontend AppShell decomposition final cleanup. Removed leftover unused imports from `client/src/App.tsx` now that `AppShell`, `Sidebar`, `BrandMark`, and `Topbar` live in `components/layout/` and `PrivateRoute` lives in `components/auth/`.
 - **Changes**:
