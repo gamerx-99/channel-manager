@@ -1,5 +1,20 @@
 # Handoff log
 
+## [2026-09-02] Bug fix — SlipOK Settings MFA freshness dead-end loop — DONE ✅
+- **Context**: User reported that on SlipOK Settings, when the server-side MFA freshness window (10 minutes) expires while the client-side `mfaState` is still `verified`, `trpc.slipok.getSettings` returns `PRECONDITION_FAILED` ("MFA verification expired..."). The existing error UI only offered a Retry button that called `settingsQuery.refetch()` with the same stale token, causing an endless dead-end loop.
+- **Changes**:
+  1. `client/src/components/SlipOkSettings.tsx`:
+     - Imported `TRPCClientError` from `@trpc/client`.
+     - Added a `useEffect` that watches `settingsQuery.error`. When `mfaState.status === "verified"`, `settingsQuery.isError` is true, and the tRPC error code is `PRECONDITION_FAILED`, it calls `reset()` from `useMfaStepUp()` to return the user to the idle/step-up prompt.
+     - Non-MFA errors (network, permission, etc.) are left untouched so the Retry button still works for recoverable failures.
+     - Dependencies (`mfaState.status`, `settingsQuery.isError`, `settingsQuery.error`, `reset`) prevent the effect from running again after reset moves state out of `verified`.
+- **Files touched**: `client/src/components/SlipOkSettings.tsx`.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 0 failed; 71 test files passed | 2 skipped).
+- **Commit**: `fix(slipok): auto-reset MFA step-up state on PRECONDITION_FAILED to break retry dead-end` (`78a3524`).
+- **Next**: Awaiting next instruction.
+
 ## [2026-09-02] Bug fix 3/3 follow-up — root cause confirmed and fixed (PGRST205 missing `rate_overrides`) — DONE ✅
 - **Context**: The diagnostic logging from the previous step captured the real production error: `PGRST205: Could not find the table 'public.rate_overrides' in the schema cache`. PostgREST surfaces a missing table as `PGRST205`, while the existing graceful-degrade helpers only checked Postgres's own `42P01` code, so the raw error object escaped and `rethrowDomainError` fell back to `Unexpected database error`.
 - **Changes**:

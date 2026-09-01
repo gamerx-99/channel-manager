@@ -1,5 +1,5 @@
 # 01 Payments — per-hotel SlipOK slip verification
-Status: DONE — 2026-09-01 (Claude review). `verifySlip` shipped in Phase 12B
+Status: DONE — 2026-09-01 (Claude review), bug-fix 2026-09-02 (MFA freshness dead-end loop in SlipOK Settings UI). `verifySlip` shipped in Phase 12B
 (commit 48425c2) but was non-functional for real guests: `payment.createSession`/
 `checkStatus`/`verifySlip` used the anon RLS client, and every table they touch
 (`payment_sessions`, `hotel_payment_settings`, `bookings`) gates its RLS policies
