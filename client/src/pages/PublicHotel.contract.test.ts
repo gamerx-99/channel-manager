@@ -64,7 +64,7 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
 
 describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
-  const dbSource = readFileSync(resolve(process.cwd(), 'server/db.ts'), 'utf8');
+  const dbSource = readFileSync(resolve(process.cwd(), 'server/db/booking.ts'), 'utf8');
   const routerSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
 
   it('PublicHotel hooks into tRPC public availability and booking procedures', () => {
@@ -87,7 +87,7 @@ describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
     expect(publicHotelSource).toContain('Book another stay');
   });
 
-  it('server/db.ts exposes getPublicHotelAvailability and createPublicBooking with double-booking prevention', () => {
+  it('server/db/booking.ts exposes getPublicHotelAvailability and createPublicBooking with double-booking prevention', () => {
     expect(dbSource).toContain('export async function getPublicHotelAvailability');
     expect(dbSource).toContain('export async function createPublicBooking');
     expect(dbSource).toContain('prevent_double_booking');

@@ -1,5 +1,26 @@
 # Handoff log
 
+## [2026-09-01] Phase 2E — Extract Hotel & Room Type Queries — DONE ✅
+- **Context**: Continued REFACTOR_PLAN_VERIFIED.md Phase 2 extraction.
+- **Changes**:
+  1. `server/db/hotel.ts` extracted with `listManagedHotels`, `getManagedHotel`, `createManagedHotel`, `createManagedRoomType`, etc.
+  2. Replaced original functions in `server/db.ts` with re-exports.
+- **Verdict**: PASS — `pnpm check`, `pnpm test` and `pnpm build` succeed.
+- **Commit**: `refactor(db): extract hotel and room type queries to db/hotel.ts`.
+- **Next**: STOP — Ready for Phase 2F.
+
+## [2026-09-01] Phase 2B, 2C, 2D — Extract Housekeeping, Messaging, SiteConfig & Media — DONE ✅
+- **Context**: Continued REFACTOR_PLAN_FINAL.md Phase 2 extraction.
+- **Changes**:
+  1. `server/db/housekeeping.ts` extracted.
+  2. `server/db/messaging.ts` extracted.
+  3. `server/db/siteConfig.ts` extracted.
+  4. Replaced all original functions in `server/db.ts` with re-exports.
+  5. Updated contract tests to check the new paths.
+- **Verdict**: PASS — `pnpm check`, `pnpm test` and `pnpm build` succeed.
+- **Commit**: Completed up to `refactor(db): extract site config and media to db/siteConfig.ts`.
+- **Next**: STOP — Ready for Phase 2E.
+
 ## [2026-09-01] Phase 2A — Create modular db foundation (server/db/types.ts and server/db/utils.ts) — DONE ✅
 - **Context**: Executed Phase 2A of REFACTOR_PLAN_FINAL.md. Created foundation types and utilities for DB modularization without moving any domain functions.
 - **Changes**:
