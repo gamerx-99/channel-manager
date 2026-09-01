@@ -58,6 +58,49 @@ import { HotelProvider, useHotel } from "./contexts/HotelContext";
 import { getRouteScopeDecision } from "./lib/routeScope";
 import { hasAnyPermission, isPlatformRole, ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
 
+const BREADCRUMB_EXACT_LABELS: Record<string, string> = {
+  "/dashboard": "Overview",
+};
+
+const BREADCRUMB_PREFIX_LABELS: Array<[string, string]> = [
+  ["/dashboard/channels", "Channel analytics"],
+  ["/dashboard/pricing", "Advanced Pricing"],
+  ["/dashboard/financials", "Financials"],
+  ["/housekeeping", "Housekeeping"],
+  ["/communications", "Communications"],
+];
+
+const BREADCRUMB_INCLUDES_LABELS: Array<[string, string]> = [
+  ["admin-users", "Admin users"],
+  ["staff", "Hotel staff"],
+  ["bookings", "Bookings"],
+  ["calendar", "Availability"],
+  ["ota", "OTA Sync"],
+];
+
+function getBreadcrumbLabel(location: string): string {
+  if (BREADCRUMB_EXACT_LABELS[location]) return BREADCRUMB_EXACT_LABELS[location];
+  for (const [prefix, label] of BREADCRUMB_PREFIX_LABELS) {
+    if (location.startsWith(prefix)) return label;
+  }
+  for (const [substring, label] of BREADCRUMB_INCLUDES_LABELS) {
+    if (location.includes(substring)) return label;
+  }
+  return "Hotels";
+}
+
+function getActivePath(location: string, selectedHotelId?: string | null) {
+  if (!selectedHotelId) return location;
+  const hotelSubPaths = ["bookings", "calendar", "ota", "staff"];
+  for (const subPath of hotelSubPaths) {
+    const prefix = `/hotels/${selectedHotelId}/${subPath}`;
+    if (location.startsWith(prefix)) return prefix;
+  }
+  const hotelRoot = `/hotels/${selectedHotelId}`;
+  if (location.startsWith(hotelRoot)) return hotelRoot;
+  return location;
+}
+
 function BrandMark() {
   return (
     <span className="brand-mark" aria-hidden="true">
@@ -94,17 +137,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
     ...hotelNavItems,
   ];
   const initials = userName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "U";
-  const activePath = selectedHotelId && location.startsWith(`/hotels/${selectedHotelId}/bookings`)
-    ? `/hotels/${selectedHotelId}/bookings`
-    : selectedHotelId && location.startsWith(`/hotels/${selectedHotelId}/calendar`)
-      ? `/hotels/${selectedHotelId}/calendar`
-      : selectedHotelId && location.startsWith(`/hotels/${selectedHotelId}/ota`)
-        ? `/hotels/${selectedHotelId}/ota`
-        : selectedHotelId && location.startsWith(`/hotels/${selectedHotelId}/staff`)
-          ? `/hotels/${selectedHotelId}/staff`
-          : selectedHotelId && location.startsWith(`/hotels/${selectedHotelId}`)
-            ? `/hotels/${selectedHotelId}`
-            : location;
+  const activePath = getActivePath(location, selectedHotelId);
 
   return (
     <div className="app-shell">
@@ -283,7 +316,7 @@ function AppShell({ children, userName, userEmail, onLogout, roles }: { children
           <div className="breadcrumbs">
             <span>Operating ledger</span>
             <span className="crumb-slash">/</span>
-            <span className="current-crumb">{location === "/dashboard" ? "Overview" : location.startsWith("/dashboard/channels") ? "Channel analytics" : location.startsWith("/dashboard/pricing") ? "Advanced Pricing" : location.startsWith("/dashboard/financials") ? "Financials" : location.startsWith("/housekeeping") ? "Housekeeping" : location.startsWith("/communications") ? "Communications" : location.includes("admin-users") ? "Admin users" : location.includes("staff") ? "Hotel staff" : location.includes("bookings") ? "Bookings" : location.includes("calendar") ? "Availability" : location.includes("ota") ? "OTA Sync" : "Hotels"}</span>
+            <span className="current-crumb">{getBreadcrumbLabel(location)}</span>
           </div>
           <div className="topbar-actions">
             <label className="topbar-search">
