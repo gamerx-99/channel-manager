@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { TRPCClientError } from "@trpc/client";
 import { KeyRound, Trash2, Edit2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useMfaStepUp } from "@/lib/mfa";
@@ -31,6 +32,22 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
       setIsEditing(false);
     };
   }, []);
+
+  // If the server-side MFA freshness window expires while the client still thinks
+  // it is verified, getSettings returns PRECONDITION_FAILED. Reset the local MFA
+  // state so the user is prompted to step-up again instead of getting stuck in a
+  // Retry loop that re-uses the stale token.
+  useEffect(() => {
+    if (mfaState.status !== "verified") return;
+    if (!settingsQuery.isError || !settingsQuery.error) return;
+    const err = settingsQuery.error;
+    if (
+      err instanceof TRPCClientError &&
+      (err.data as { code?: string } | undefined)?.code === "PRECONDITION_FAILED"
+    ) {
+      reset();
+    }
+  }, [mfaState.status, settingsQuery.isError, settingsQuery.error, reset]);
 
   async function handleOpenSettings() {
     setSaveError(null);
