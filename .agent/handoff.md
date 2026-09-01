@@ -1,6 +1,14 @@
 # Handoff log
 
-## [2026-09-01] Phase 3K — Extract Dashboard Router — DONE ✅
+## [2026-09-01] Phase 3 Wave 1 (Low-Risk Routers) — DONE ✅
+- **Context**: Executed Phase 3 Wave 1 router extractions per refined architecture plan.
+- **Completed Modules**:
+  1. **Housekeeping Router** (`8bd8ab4`): Extracted `createHousekeepingTask`, `listHousekeepingTasks`, `updateHousekeepingTaskStatus` and schemas to `server/routers/housekeepingRouter.ts`.
+  2. **Messaging Router** (`3aece4f`): Extracted `listThreads`, `createThread`, `listMessages`, `sendMessage` and schemas to `server/routers/messagingRouter.ts`.
+  3. **Notifications Router** (`99d2842`): Extracted `list`, `markRead`, `markAllRead` to `server/routers/notificationsRouter.ts`.
+  4. **Auth Router** (`ba91c8b`): Extracted `me`, `logout` to `server/routers/authRouter.ts`.
+- **Verdict**: PASS — `pnpm check` and `vitest` pass cleanly on each step with zero API contract breakages.
+- **Next**: Wave 2 (Staff, Availability/Rates, Hotel & SiteConfig Routers).
 - **Context**: Completed REFACTOR_PLAN_FINAL.md Phase 3 router extraction.
 - **Changes**:
   1. `server/routers/dashboardRouter.ts` extracted.
