@@ -3,7 +3,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Hotel owner signup link contract", () => {
-  const router = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8");
+  const routerText = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8");
+  const staffRouterText = readFileSync(resolve(process.cwd(), "server/routers/staffRouter.ts"), "utf8");
+  const router = routerText + staffRouterText;
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/HotelOwnerSignup.tsx"), "utf8");
   const hotelStaff = readFileSync(resolve(process.cwd(), "client/src/pages/HotelStaff.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
@@ -21,9 +23,9 @@ describe("Hotel owner signup link contract", () => {
   });
 
   it("exposes the public validate/complete procedures and the super_admin-only generation procedure", () => {
-    expect(router).toContain("validateSignupLink: rateLimitedProcedure");
-    expect(router).toContain("completeHotelOwnerSignup: rateLimitedProcedure");
-    expect(router).toContain("createSignupLink: protectedProcedure");
+    expect(router).toMatch(/validateSignupLink\s*[:=]\s*rateLimitedProcedure/);
+    expect(router).toMatch(/completeHotelOwnerSignup\s*[:=]\s*rateLimitedProcedure/);
+    expect(router).toMatch(/createSignupLink\s*[:=]\s*protectedProcedure/);
     expect(router).toContain("requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links')");
     expect(router).toContain("assertSingleHotelAdmin(assignments, input.hotel_id)");
   });

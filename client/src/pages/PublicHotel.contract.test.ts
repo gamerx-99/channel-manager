@@ -5,7 +5,9 @@ import { describe, it, expect } from 'vitest';
 describe('PublicHotel site config fallback contract (T06-03)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
   const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/db/siteConfig.ts'), 'utf8');
-  const routerSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
+  const routerSource = routerText + hotelRouterText;
 
   it('PublicHotel reads hotel_site_config via tRPC getHotelSiteConfig with slug', () => {
     expect(publicHotelSource).toContain('trpc.channelManager.getHotelSiteConfig.useQuery');
@@ -47,9 +49,9 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   });
 
   it('server/routers.ts exposes public getHotelSiteConfig (for PublicHotel) and protected saveHotelSiteConfig', () => {
-    expect(routerSource).toContain('getHotelSiteConfig: rateLimitedProcedure.input');
+    expect(routerSource).toMatch(/getHotelSiteConfig\s*[:=]\s*rateLimitedProcedure\.input/);
     expect(routerSource).toContain('getHotelSiteConfigBySlug');
-    expect(routerSource).toContain('saveHotelSiteConfig: protectedProcedure.input');
+    expect(routerSource).toMatch(/saveHotelSiteConfig\s*[:=]\s*protectedProcedure\.input/);
     expect(routerSource).toContain('hotelSiteConfigSaveSchema');
     expect(routerSource).toContain("requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile')");
     // Public getHotelSiteConfig returns null gracefully on 42P01

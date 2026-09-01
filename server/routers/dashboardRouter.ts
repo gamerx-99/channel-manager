@@ -11,10 +11,10 @@ import { getGlobalOtaSummary, getUpdatedItemCount } from '../otaSync';
 import { buildChannelPerformanceSummary } from '../channelPerformance';
 import { buildFinancialsSummary } from '../financials';
 
-const dashboardCalendarSchema = z.object({
-  startDate: z.string().optional(),
-  days: z.number().int().min(1).max(31).optional(),
-});
+export const dashboardCalendarSchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
+  days: z.number().int().min(7).max(31),
+}).optional();
 
 export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   try {

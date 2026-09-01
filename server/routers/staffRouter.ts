@@ -9,11 +9,11 @@ import {
 import {
   listHotelUserAssignments,
   listHotelStaff,
-  listHotelAdminAuditLogs,
+  listHotelAdminAuditLogs as dbListHotelAdminAuditLogs,
   createHotelUserAssignment,
   deleteHotelUserAssignment,
   updateHotelUserAssignmentRole,
-  transferHotelAdmin,
+  transferHotelAdmin as dbTransferHotelAdmin,
   getManagedHotel,
 } from '../db';
 import {
@@ -118,12 +118,12 @@ export const hotelStaff = protectedProcedure.input(hotelStaffListSchema).query(a
   }
 });
 
-export const listHotelAdminAuditLogsProcedure = protectedProcedure.input(hotelAdminAuditLogListSchema).query(async ({ ctx, input }) => {
+export const listHotelAdminAuditLogs = protectedProcedure.input(hotelAdminAuditLogListSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
   const client = rlsClient(ctx.user.accessToken);
   try {
     const hotel = await assertHotelExists(client, input.hotel_id);
-    return await listHotelAdminAuditLogs(client, input.hotel_id, input.limit);
+    return await dbListHotelAdminAuditLogs(client, input.hotel_id, input.limit);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -168,7 +168,7 @@ export const inviteHotelStaff = protectedProcedure.input(hotelStaffInviteSchema)
   }
 });
 
-export const createSignupLinkProcedure = protectedProcedure.input(z.object({
+export const createSignupLink = protectedProcedure.input(z.object({
   hotel_id: hotelIdSchema,
   expiresInHours: z.number().int().min(1).max(720),
 })).mutation(async ({ ctx, input }) => {
@@ -187,7 +187,7 @@ export const createSignupLinkProcedure = protectedProcedure.input(z.object({
   }
 });
 
-export const listSignupLinksProcedure = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
+export const listSignupLinks = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
   try {
     const links = await listSignupLinksForHotel(input.hotel_id);
@@ -197,13 +197,13 @@ export const listSignupLinksProcedure = protectedProcedure.input(z.object({ hote
   }
 });
 
-export const validateSignupLinkProcedure = rateLimitedProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ input }) => {
+export const validateSignupLink = rateLimitedProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ input }) => {
   const link = await getValidSignupLink(input.token);
   if (!link) return { valid: false as const };
   return { valid: true as const, hotelName: link.hotelName };
 });
 
-export const completeHotelOwnerSignupProcedure = rateLimitedProcedure.input(z.object({
+export const completeHotelOwnerSignup = rateLimitedProcedure.input(z.object({
   token: z.string().min(1),
   userId: z.string().uuid(),
 })).mutation(async ({ input }) => {
@@ -219,7 +219,7 @@ export const completeHotelOwnerSignupProcedure = rateLimitedProcedure.input(z.ob
   return { success: true as const };
 });
 
-export const updateHotelStaffRoleProcedure = protectedProcedure.input(hotelStaffRoleSchema).mutation(async ({ ctx, input }) => {
+export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
   const client = rlsClient(ctx.user.accessToken);
   try {
@@ -255,7 +255,7 @@ export const updateHotelStaffRoleProcedure = protectedProcedure.input(hotelStaff
   }
 });
 
-export const transferHotelAdminProcedure = protectedProcedure.input(hotelStaffTransferSchema).mutation(async ({ ctx, input }) => {
+export const transferHotelAdmin = protectedProcedure.input(hotelStaffTransferSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
   const client = rlsClient(ctx.user.accessToken);
   try {
@@ -275,7 +275,7 @@ export const transferHotelAdminProcedure = protectedProcedure.input(hotelStaffTr
     if (isPlatformRole(targetRole) || targetRole === 'api_service') {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only a human hotel staff member can receive Hotel Admin access.' });
     }
-    const transferred = await transferHotelAdmin(client, {
+    const transferred = await dbTransferHotelAdmin(client, {
       hotel_id: input.hotel_id,
       target_membership_id: input.target_membership_id,
     });
@@ -289,7 +289,7 @@ export const transferHotelAdminProcedure = protectedProcedure.input(hotelStaffTr
   }
 });
 
-export const removeHotelStaffProcedure = protectedProcedure.input(hotelStaffRemoveSchema).mutation(async ({ ctx, input }) => {
+export const removeHotelStaff = protectedProcedure.input(hotelStaffRemoveSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
   const client = rlsClient(ctx.user.accessToken);
   try {
@@ -318,7 +318,7 @@ export const removeHotelStaffProcedure = protectedProcedure.input(hotelStaffRemo
   }
 });
 
-export const inviteAdminUserProcedure = protectedProcedure.input(inviteUserSchema).mutation(async ({ ctx, input }) => {
+export const inviteAdminUser = protectedProcedure.input(inviteUserSchema).mutation(async ({ ctx, input }) => {
   requirePermission(ctx.user, 'platform.manage_users');
   const client = await requireSuperAdmin(ctx.user.accessToken);
   try {
@@ -345,7 +345,7 @@ export const inviteAdminUserProcedure = protectedProcedure.input(inviteUserSchem
   }
 });
 
-export const assignAdminUserProcedure = protectedProcedure.input(assignUserSchema).mutation(async ({ ctx, input }) => {
+export const assignAdminUser = protectedProcedure.input(assignUserSchema).mutation(async ({ ctx, input }) => {
   requirePermission(ctx.user, 'platform.manage_users');
   const client = await requireSuperAdmin(ctx.user.accessToken);
   try {
@@ -369,7 +369,7 @@ export const assignAdminUserProcedure = protectedProcedure.input(assignUserSchem
   }
 });
 
-export const removeAdminMembershipProcedure = protectedProcedure.input(removeMembershipSchema).mutation(async ({ ctx, input }) => {
+export const removeAdminMembership = protectedProcedure.input(removeMembershipSchema).mutation(async ({ ctx, input }) => {
   requirePermission(ctx.user, 'platform.manage_users');
   const client = await requireSuperAdmin(ctx.user.accessToken);
   try {
@@ -398,16 +398,16 @@ export const removeAdminMembershipProcedure = protectedProcedure.input(removeMem
 export const staffRouter = router({
   adminUsers,
   hotelStaff,
-  listHotelAdminAuditLogs: listHotelAdminAuditLogsProcedure,
+  listHotelAdminAuditLogs,
   inviteHotelStaff,
-  createSignupLink: createSignupLinkProcedure,
-  listSignupLinks: listSignupLinksProcedure,
-  validateSignupLink: validateSignupLinkProcedure,
-  completeHotelOwnerSignup: completeHotelOwnerSignupProcedure,
-  updateHotelStaffRole: updateHotelStaffRoleProcedure,
-  transferHotelAdmin: transferHotelAdminProcedure,
-  removeHotelStaff: removeHotelStaffProcedure,
-  inviteAdminUser: inviteAdminUserProcedure,
-  assignAdminUser: assignAdminUserProcedure,
-  removeAdminMembership: removeAdminMembershipProcedure,
+  createSignupLink,
+  listSignupLinks,
+  validateSignupLink,
+  completeHotelOwnerSignup,
+  updateHotelStaffRole,
+  transferHotelAdmin,
+  removeHotelStaff,
+  inviteAdminUser,
+  assignAdminUser,
+  removeAdminMembership,
 });

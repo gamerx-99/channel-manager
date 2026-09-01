@@ -5,7 +5,9 @@ import { describe, it, expect } from 'vitest';
 describe('WebsiteBuilder contract — Phase 06', () => {
   const wbSource = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8');
   const dbSource = readFileSync(resolve(process.cwd(), 'server/db.ts'), 'utf8');
-  const routerSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
+  const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
+  const routerSource = routerText + hotelRouterText;
 
   // ── tRPC hookup ─────────────────────────────────────────────────────────
   it('WebsiteBuilder hooks into all required tRPC procedures', () => {
@@ -72,20 +74,20 @@ describe('WebsiteBuilder contract — Phase 06', () => {
   // ── router procedures ────────────────────────────────────────────────────
   it('server/routers.ts exposes all hotel media procedures with correct permission gates', () => {
     // listHotelMedia — property.view
-    expect(routerSource).toContain("listHotelMedia: protectedProcedure.input");
+    expect(routerSource).toMatch(/listHotelMedia\s*[:=]\s*protectedProcedure\.input/);
     expect(routerSource).toMatch(/listHotelMedia.*property\.view|property\.view.*listHotelMedia/s);
     // uploadHotelMedia — property.manage_profile
-    expect(routerSource).toContain("uploadHotelMedia: protectedProcedure.input");
+    expect(routerSource).toMatch(/uploadHotelMedia\s*[:=]\s*protectedProcedure\.input/);
     expect(routerSource).toMatch(/uploadHotelMedia[\s\S]{0,200}property\.manage_profile/);
     // deleteHotelMedia — property.manage_profile
-    expect(routerSource).toContain("deleteHotelMedia: protectedProcedure.input");
+    expect(routerSource).toMatch(/deleteHotelMedia\s*[:=]\s*protectedProcedure\.input/);
     // setHotelMediaHero — property.manage_profile
-    expect(routerSource).toContain("setHotelMediaHero: protectedProcedure.input");
+    expect(routerSource).toMatch(/setHotelMediaHero\s*[:=]\s*protectedProcedure\.input/);
   });
 
   it('server/routers.ts exposes getHotelSiteConfigByHotelId (protected) and saveHotelSiteConfig', () => {
-    expect(routerSource).toContain('getHotelSiteConfigByHotelId: protectedProcedure.input');
-    expect(routerSource).toContain('saveHotelSiteConfig: protectedProcedure.input');
+    expect(routerSource).toMatch(/getHotelSiteConfigByHotelId\s*[:=]\s*protectedProcedure\.input/);
+    expect(routerSource).toMatch(/saveHotelSiteConfig\s*[:=]\s*protectedProcedure\.input/);
     expect(routerSource).toContain("requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile')");
   });
 
