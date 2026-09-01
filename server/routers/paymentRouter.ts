@@ -1,0 +1,210 @@
+import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import { rateLimitedProcedure, router } from '../_core/trpc';
+import { createSupabaseAdminClient } from '../supabase';
+import {
+  getHotelPaymentConfig,
+  getLatestPaymentSession,
+  createPaymentSession,
+  updateBookingPaymentStatus,
+  updatePaymentSessionStatus,
+} from '../db';
+import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
+import { decryptSlipOkKey } from '../slipokCrypto';
+import { verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
+import { rethrowDomainError } from '../routerUtils';
+
+export const paymentRouter = router({
+  /**
+   * Create a PromptPay QR payment session for a public booking.
+   * Returns QR image URL, amount, expiresAt, and sessionId.
+   * Only works if the hotel has a promptpay_id configured.
+   */
+  createSession: rateLimitedProcedure
+    .input(z.object({
+      booking_id: z.string().uuid(),
+      hotel_id: z.string().uuid(),
+    }))
+    .mutation(async ({ input }) => {
+      // Anonymous guest, no membership — must use the service-role admin
+      // client (same pattern as createPublicBooking), never the RLS client:
+      // payment_sessions/hotel_payment_settings/bookings all gate on
+      // is_hotel_member()/can_manage_bookings(), which an anonymous caller
+      // never satisfies.
+      const client = createSupabaseAdminClient();
+      try {
+        const config = await getHotelPaymentConfig(client, input.hotel_id);
+        if (!config?.promptpay_id) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'This hotel has not configured PromptPay. Please contact the hotel directly.',
+          });
+        }
+
+        // Get booking amount from latest session or re-fetch
+        const existingSession = await getLatestPaymentSession(client, input.booking_id);
+        if (existingSession && existingSession.status === 'pending') {
+          // Return existing session if still pending
+          return {
+            sessionId: existingSession.id,
+            qrImageUrl: buildQrImageUrl(existingSession.qr_string ?? ''),
+            qrString: existingSession.qr_string,
+            amount: Number(existingSession.amount),
+            expiresAt: existingSession.expires_at,
+          };
+        }
+
+        // Fetch booking price
+        const { data: booking, error: bookingError } = await client
+          .from('bookings')
+          .select('price')
+          .eq('id', input.booking_id)
+          .eq('hotel_id', input.hotel_id)
+          .single();
+        if (bookingError || !booking) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+        }
+
+        const amount = Number(booking.price);
+        const ref = `BK-${input.booking_id.slice(0, 8).toUpperCase()}`;
+        const timeoutMs = (config.payment_timeout_minutes ?? 15) * 60 * 1000;
+        const expiresAt = new Date(Date.now() + timeoutMs).toISOString();
+
+        const qrString = generatePromptPayQR({
+          promptPayId: config.promptpay_id,
+          amount,
+          ref,
+        });
+
+        const session = await createPaymentSession(client, {
+          booking_id: input.booking_id,
+          hotel_id: input.hotel_id,
+          amount,
+          qr_reference: ref,
+          qr_string: qrString,
+          expires_at: expiresAt,
+        });
+
+        // Mark booking as pending
+        await updateBookingPaymentStatus(client, input.booking_id, 'pending');
+
+        return {
+          sessionId: session.id,
+          qrImageUrl: buildQrImageUrl(qrString),
+          qrString,
+          amount,
+          expiresAt,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        return rethrowDomainError(error);
+      }
+    }),
+
+  /** Get the current status of a payment session. */
+  checkStatus: rateLimitedProcedure
+    .input(z.object({
+      booking_id: z.string().uuid(),
+      session_id: z.string().uuid(),
+    }))
+    .query(async ({ input }) => {
+      const client = createSupabaseAdminClient();
+      try {
+        const session = await getLatestPaymentSession(client, input.booking_id);
+        if (!session || session.id !== input.session_id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
+        }
+
+        // Auto-expire if past expiry time and still pending
+        const now = new Date();
+        const expired = now > new Date(session.expires_at);
+        if (session.status === 'pending' && expired) {
+          await updatePaymentSessionStatus(client, session.id, 'expired');
+          await updateBookingPaymentStatus(client, session.booking_id, 'failed');
+          return { status: 'expired' as const, verifiedAt: null };
+        }
+
+        return {
+          status: session.status,
+          verifiedAt: session.verified_at,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        return rethrowDomainError(error);
+      }
+    }),
+
+  /**
+   * Verify a payment slip via SlipOK.
+   * On success: session → paid, booking → verified.
+   * On failure: session → failed, booking unchanged.
+   * API key never reaches client.
+   */
+  verifySlip: rateLimitedProcedure
+    .input(z.object({
+      booking_id: z.string().uuid(),
+      hotel_id: z.string().uuid(),
+      session_id: z.string().uuid(),
+      /** Base64 encoded slip image */
+      slip_data: z.string().min(1).max(5_000_000), // ~3.7MB image limit
+    }))
+    .mutation(async ({ input }) => {
+      const client = createSupabaseAdminClient();
+      try {
+        // Verify session is still pending
+        const session = await getLatestPaymentSession(client, input.booking_id);
+        if (!session || session.id !== input.session_id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
+        }
+        if (session.status !== 'pending') {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: `Payment session is already ${session.status}.`,
+          });
+        }
+        if (new Date() > new Date(session.expires_at)) {
+          await updatePaymentSessionStatus(client, session.id, 'expired');
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
+        }
+
+        // Get hotel SlipOK key + branch ID (both required — see slipVerification.ts)
+        const config = await getHotelPaymentConfig(client, input.hotel_id);
+        if (!config?.slipok_key_enc || !config.slipok_branch_id || !config.slipok_enabled) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Slip verification is not available for this hotel. Please contact the hotel directly.',
+          });
+        }
+
+        const apiKey = decryptSlipOkKey(config.slipok_key_enc);
+
+        const result = await verifySlipWithSlipOk(apiKey, config.slipok_branch_id, {
+          slipData: input.slip_data,
+          expectedAmount: Number(session.amount),
+          ref: session.qr_reference,
+        });
+
+        if (result.matched) {
+          const now = new Date().toISOString();
+          await updatePaymentSessionStatus(client, session.id, 'paid', now);
+          await updateBookingPaymentStatus(client, session.booking_id, 'verified');
+          return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
+        } else {
+          await updatePaymentSessionStatus(client, session.id, 'failed');
+          await updateBookingPaymentStatus(client, session.booking_id, 'failed');
+          return { verified: false as const, message: 'ไม่พบการชำระเงินที่ตรงกัน กรุณาติดต่อที่พัก' };
+        }
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof SlipOkError) {
+          throw new TRPCError({
+            code: error.code === 'INVALID_KEY' ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST',
+            message: error.code === 'INVALID_KEY'
+              ? 'ระบบตรวจสลิปขัดข้อง กรุณาติดต่อที่พัก'
+              : error.message,
+          });
+        }
+        return rethrowDomainError(error);
+      }
+    }),
+});
