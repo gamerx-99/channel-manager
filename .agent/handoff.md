@@ -1,5 +1,16 @@
 # Handoff log
 
+## [2026-09-01] Phase 3K — Extract Dashboard Router — DONE ✅
+- **Context**: Completed REFACTOR_PLAN_FINAL.md Phase 3 router extraction.
+- **Changes**:
+  1. `server/routers/dashboardRouter.ts` extracted.
+  2. Re-mapped `dashboard`, `channelPerformance`, `financials`, and `dashboardCalendar` to use `dashboardRouter.ts`.
+  3. Updated contract tests to point to `dashboardRouter.ts`.
+  4. Integrated `dashboardRouter` into `server/routers.ts`.
+- **Verdict**: PASS — `pnpm check` and `pnpm test` succeed.
+- **Commit**: `refactor(router): extract dashboard router`
+- **Next**: Phase 3 is fully completed. Ready for Phase 4 or whatever is next.
+
 ## [2026-09-01] Phase 3J — Extract OTA Router — DONE ✅
 - **Context**: Continued REFACTOR_PLAN_FINAL.md Phase 3 router extraction.
 - **Changes**:
