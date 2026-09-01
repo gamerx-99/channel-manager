@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, Eye, Globe, Image as ImageIcon, Palette, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,21 +136,26 @@ export default function WebsiteBuilder() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const media = serverMedia;
-  const config = serverConfig ?? defaultConfig(effectiveHotelId);
+  const config = useMemo(() => serverConfig ?? defaultConfig(effectiveHotelId), [serverConfig, effectiveHotelId]);
 
   // Initialize draft form from config when hotel or config changes
   const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
   const [initializedFor, setInitializedFor] = useState<string>("");
-  
-  if (effectiveHotelId && (initializedFor !== effectiveHotelId || JSON.stringify(serverConfig) !== JSON.stringify(draft) && saveNote === null)) {
-    // Only auto-sync if we haven't modified the draft or just switched hotels
-    if (initializedFor !== effectiveHotelId || !saveNote) {
+
+  useEffect(() => {
+    if (!effectiveHotelId) return;
+    // ASSUMPTION: only auto-sync when the active hotel changes so an in-flight
+    // user edit is not overwritten by a background refetch of serverConfig.
+    // (The previous render-body sync created a new default object every render
+    // and compared it with JSON.stringify, causing an infinite re-render loop
+    // while serverConfig was still loading.)
+    if (initializedFor !== effectiveHotelId) {
       setInitializedFor(effectiveHotelId);
-      setDraft(config as SiteConfig);
+      setDraft((serverConfig ?? defaultConfig(effectiveHotelId)) as SiteConfig);
       setFormError(null);
-      if (initializedFor !== effectiveHotelId) setSaveNote(null);
+      setSaveNote(null);
     }
-  }
+  }, [effectiveHotelId, serverConfig, initializedFor]);
 
   const heroImage = useMemo(() => media.find(m => m.is_hero)?.url ?? media[0]?.url ?? null, [media]);
 
