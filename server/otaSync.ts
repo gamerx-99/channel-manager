@@ -282,10 +282,6 @@ export async function triggerOtaCalendarSync(
   let responsePayload: any;
 
   try {
-    if (!['agoda', 'booking', 'airbnb', 'expedia'].includes(provider)) {
-      throw new Error(`Unsupported OTA provider: ${provider}`);
-    }
-
     const connection = (await getOtaConnections(accessToken, hotelId))
       .find((candidate) => candidate.provider === provider);
     if (!connection?.ical_import_url) {
@@ -334,5 +330,22 @@ export async function triggerOtaCalendarSync(
       error_message: errorMessage
     });
     throw err;
+  }
+}
+
+export async function deleteOtaConnection(
+  accessToken: string,
+  hotelId: string,
+  provider: string
+): Promise<void> {
+  const client = createRlsSupabaseClient(accessToken);
+  const { error } = await client
+    .from('ota_connections')
+    .delete()
+    .eq('hotel_id', hotelId)
+    .eq('provider', provider);
+
+  if (error) {
+    throw new Error(`Failed to delete OTA connection: ${error.message}`);
   }
 }
