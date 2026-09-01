@@ -1,5 +1,49 @@
 # Handoff log
 
+## [2026-09-02] Phase 4 — Final cleanup of App.tsx unused imports — DONE ✅
+- **Context**: Phase 4 frontend AppShell decomposition final cleanup. Removed leftover unused imports from `client/src/App.tsx` now that `AppShell`, `Sidebar`, `BrandMark`, and `Topbar` live in `components/layout/` and `PrivateRoute` lives in `components/auth/`.
+- **Changes**:
+  1. Removed `import { AppShell } from "./components/layout/AppShell";` from `client/src/App.tsx` — `AppShell` is imported and used directly by `PrivateRoute.tsx`; `App.tsx` no longer references it.
+  2. Removed `Link` from `import { Route, Switch, Link, useLocation } from "wouter";` in `client/src/App.tsx` — verified via grep that no `<Link` or standalone `Link ` usage remains in `App.tsx`. `Router()` and `RedirectToDashboard()` only need `Route`, `Switch`, and `useLocation`.
+  3. Left any `useLanguage` concern untouched per prior agreement (it is not imported in `App.tsx` anyway; no action needed).
+- **Verdict & Evidence**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Commit**: `refactor(app): remove unused imports left over from Phase 4 layout extraction`.
+- **Next**: Phase 4 is fully complete. Awaiting next ticket/phase.
+
+## [2026-09-02] Phase 4 — Extract Topbar from AppShell — DONE ✅
+- **Context**: Continued Phase 4 frontend AppShell decomposition. Extracted the topbar (`<header className="topbar">...</header>`) and its associated logic into a standalone layout component, leaving `AppShell.tsx` as the shell composer.
+- **Changes**:
+  1. Created `client/src/components/layout/Topbar.tsx` — accepts `onOpenMenu`, `can`, `isSuperAdmin`, `isPlatformAdmin`, `userName`, `userEmail`, `initials`, `onLogout`, `roles`, `addMenuOpen`, `onToggleAddMenu`, `onCloseAddMenu`, `userMenuOpen`, `onToggleUserMenu`, `onCloseUserMenu`. Owns breadcrumb label computation, topbar brand lockup, search input, the "Add new" menu, `NotificationBell`, `LanguageSwitcher`, sync status, and `ProfileMenu`.
+  2. Updated `client/src/components/layout/AppShell.tsx` — removed topbar-only imports, breadcrumb helpers, and `<header>` markup; renders `<Topbar ... />` and keeps the sidebar, mobile scrim, and `page-wrap` intact.
+  3. Updated `client/src/App.menuSurface.styles.test.ts` — Add/Profile menu surface assertions now read `Topbar.tsx`; mutual-exclusion assertions still read `AppShell.tsx`.
+  4. Updated `client/src/responsive.styles.test.ts` — hamburger open-menu assertion now reads `Topbar.tsx`; sidebar/scrim assertions still read `AppShell.tsx`/`Sidebar.tsx`.
+- **Verdict & Evidence**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped).
+  - `pnpm build`: not required for this client-only refactor (no server/deploy config touched).
+  - No markup/className/behavior changes — pure component extraction.
+- **Commit**: `refactor(app): extract Topbar into components/layout/Topbar.tsx` (`b4685b6`).
+- **Next**: Final cleanup of `client/src/App.tsx` unused imports.
+
+## [2026-09-02] Phase 4 — Extract Sidebar and BrandMark from AppShell — DONE ✅
+- **Context**: Continued Phase 4 frontend AppShell decomposition. This step extracted the sidebar (`<aside className="sidebar">...</aside>`) and the `BrandMark` lockup into standalone layout components, leaving the topbar in `AppShell.tsx` for a later step.
+- **Changes**:
+  1. Created `client/src/components/layout/BrandMark.tsx` — named export `BrandMark()` used by both the sidebar brand lockup and the topbar brand.
+  2. Created `client/src/components/layout/Sidebar.tsx` — accepts `open`, `onClose`, `can`, `isSuperAdmin`, `isPlatformAdmin`, `userName`, `userEmail`, `initials`, `onLogout`, `workspaceMenuOpen`, `onToggleWorkspaceMenu`, `onCloseWorkspaceMenu`. Owns `useHotel()`, `useLocation()`, `getActivePath`, nav item computation, workspace menu, and sidebar footer markup.
+  3. Updated `client/src/components/layout/AppShell.tsx` — removed `BrandMark`, `getActivePath`, sidebar-only imports, and the `<aside>` markup; renders `<Sidebar ... />` and keeps the mobile scrim and topbar intact. Topbar still imports `BrandMark` for its own brand lockup.
+  4. Updated contract tests (`AdvancedPricing`, `ChannelPerformance`, `Communications`, `Financials`, `Housekeeping`) to read sidebar permission/href assertions from `Sidebar.tsx` while route registration assertions still read `App.tsx`.
+  5. Updated `client/src/responsive.styles.test.ts` — sidebar open-state assertion now reads `Sidebar.tsx`; mobile-scrim assertion still reads `AppShell.tsx`.
+- **Verdict & Evidence**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (401 passed | 3 skipped, 71 test files passed | 2 skipped).
+  - `pnpm build`: not required for this client-only refactor (no server/deploy config touched).
+  - No markup/className/behavior changes — pure component extraction.
+- **Commit**: `refactor(app): extract Sidebar and BrandMark into components/layout/` (`63dbb84`).
+- **Next**: Continue Phase 4 by extracting the topbar from `AppShell.tsx` into `client/src/components/layout/Topbar.tsx`.
+
 ## [2026-09-01] Phase 3 Complete — Modular tRPC Domain Routers — DONE ✅
 - **Context**: Completed all waves of Phase 3 (Split tRPC Routers) per `REFACTOR_PLAN_FINAL.md` on branch `refactor/phase3-gemini`.
 - **Completed Modules (12 Domain Routers)**:
