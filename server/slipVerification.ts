@@ -42,31 +42,38 @@ export class SlipOkError extends Error {
 /**
  * Verify a payment slip against the SlipOK API.
  *
- * @param apiKey - Decrypted per-hotel SlipOK API key
- * @param input  - Slip data, expected amount, optional ref
+ * SlipOK requires two separate credentials, not one: the branch ID goes in
+ * the URL path, and the API key goes in the `x-authorization` header. An
+ * earlier version of this function conflated them into a single value and
+ * put it in the URL with no auth header at all — every real verification
+ * call would have failed with 401.
+ *
+ * @param apiKey   - Decrypted per-hotel SlipOK API key (sent as x-authorization)
+ * @param branchId - Per-hotel SlipOK branch ID (sent as the URL path segment)
+ * @param input    - Slip data, expected amount, optional ref
  * @returns SlipVerificationResult with matched flag
  * @throws SlipOkError on API or key errors
  */
 export async function verifySlipWithSlipOk(
   apiKey: string,
+  branchId: string,
   input: SlipVerificationInput,
 ): Promise<SlipVerificationResult> {
-  if (!apiKey || apiKey.trim().length === 0) {
-    throw new SlipOkError('No SlipOK API key configured for this hotel.', 'NO_KEY');
+  if (!apiKey || apiKey.trim().length === 0 || !branchId || branchId.trim().length === 0) {
+    throw new SlipOkError('No SlipOK API key/branch ID configured for this hotel.', 'NO_KEY');
   }
 
   const baseUrl = process.env.SLIP_OK_API ?? SLIPOK_DEFAULT_BASE_URL;
-
-  // SlipOK expects a multipart/form-data POST with the slip image
-  // or a JSON body with a base64 image field, depending on version.
-  // Using JSON body (v2 endpoint) with the hotel's line apikey in the URL.
-  const url = baseUrl.endsWith(apiKey) ? baseUrl : `${baseUrl}/${apiKey}`;
+  const url = baseUrl.endsWith(`/${branchId}`) ? baseUrl : `${baseUrl}/${branchId}`;
 
   let response: Response;
   try {
     response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-authorization': apiKey,
+      },
       body: JSON.stringify({ data: input.slipData }),
     });
   } catch (err) {

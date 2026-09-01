@@ -1,5 +1,47 @@
 # Handoff log
 
+## [2026-09-01] SlipOK integration was missing branch ID — real verification would have failed for every hotel — DONE ✅
+- **Reported by human**: after clicking through to save a real SlipOK key, noted
+  SlipOK's own dashboard gives two separate values ("API" and "API Key"), but
+  the settings UI only had one input field.
+- **Root cause**: SlipOK's REST API requires two credentials, not one — a
+  branch ID sent as a URL path segment, and an API key sent in the
+  `x-authorization` header (confirmed against SlipOK's own API docs). The
+  schema (`hotel_payment_settings`) and `server/slipVerification.ts` only ever
+  stored/used a single value, putting it in the URL and never sending any auth
+  header at all. Every real slip verification call would have returned 401 —
+  invisible until someone tried a real key, since all existing tests mocked
+  `fetch` and never asserted on the URL/headers being sent.
+- **Fix**:
+  1. New migration `20260909_add_slipok_branch_id.sql` — adds
+     `hotel_payment_settings.slipok_branch_id` (plaintext; it's an identifier,
+     not a secret, unlike the encrypted API key).
+  2. `server/db.ts` — `getSlipOkSettings`/`saveSlipOkSettings`/`removeSlipOkKey`/
+     `getHotelPaymentConfig` now read/write `slipok_branch_id` alongside the key.
+  3. `server/slipVerification.ts` — `verifySlipWithSlipOk` now takes `branchId`
+     as a required second parameter, uses it in the URL, and sends `apiKey` in
+     the `x-authorization` header (previously sent no auth header at all).
+  4. `server/routers.ts` — `slipok.saveKey` now requires `branch_id` in its
+     input; `payment.verifySlip` passes it through.
+  5. `client/src/pages/Financials.tsx` — SlipOK settings card now has two
+     input fields (Branch ID + API Key), both required to save.
+  6. New tests: `server/slipOkSettings.test.ts` (router-level — branch_id
+     required, key never echoed back, remove clears both) and rewrote
+     `server/slipVerification.test.ts` for the new signature, plus one new test
+     asserting the URL and `x-authorization` header are actually correct.
+- **Files touched**: `20260909_add_slipok_branch_id.sql`,
+  `verify_20260909_add_slipok_branch_id.sql`, `server/db.ts`,
+  `server/slipVerification.ts`, `server/slipVerification.test.ts`,
+  `server/slipOkSettings.test.ts` (new), `server/routers.ts`,
+  `client/src/pages/Financials.tsx`, `specs/01-payments-slipok.md`.
+- **Verdict**: PASS — `pnpm test`: 400 passed | 3 skipped (72 files, +1 file/+6
+  tests). `pnpm check`: 0 errors. `pnpm build`: OK.
+- **Human action required**: apply `20260909_add_slipok_branch_id.sql` + run
+  its verify script (2 checks, both PASS) in the Supabase SQL editor before
+  this works live. Any hotel that already "configured" a SlipOK key before
+  this fix has a key with no branch ID — click "Remove SlipOK key" and re-enter
+  both values once the migration is applied and this deploys.
+
 ## [2026-09-01] Phase 12B migration applied and verified live — DONE ✅
 - **What happened**: Human applied `20260908_add_payment_flow.sql` in the
   Supabase SQL editor, then ran `verify_20260908_add_payment_flow.sql` — all 8

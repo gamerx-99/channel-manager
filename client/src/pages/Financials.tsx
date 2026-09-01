@@ -213,6 +213,7 @@ function MetricCard({ label, value, detail, icon: Icon, tone }: { label: string;
 function SlipOkSettings({ hotelId }: { hotelId: string }) {
   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
   const [apiKey, setApiKey] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -235,8 +236,9 @@ function SlipOkSettings({ hotelId }: { hotelId: string }) {
   async function handleSaveKey(hotelId: string) {
     setSaveError(null);
     try {
-      await saveKey.mutateAsync({ hotel_id: hotelId, api_key: apiKey });
+      await saveKey.mutateAsync({ hotel_id: hotelId, api_key: apiKey, branch_id: branchId });
       setApiKey("");
+      setBranchId("");
       void settingsQuery.refetch();
       reset();
     } catch (e) {
@@ -360,30 +362,49 @@ function SlipOkSettings({ hotelId }: { hotelId: string }) {
               </div>
 
               {!settingsQuery.data.configured && (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                  <div className="flex-1">
-                    <label htmlFor="slipok-api-key" className="mb-1 block text-xs font-medium text-[#456156]">
-                      SlipOK API Key
-                    </label>
-                    <input
-                      id="slipok-api-key"
-                      type="password"
-                      autoComplete="off"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="sk-…"
-                      className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
-                    />
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs text-[#6c7e75]">
+                    SlipOK gives you two separate values from your dashboard — both are required.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                      <label htmlFor="slipok-branch-id" className="mb-1 block text-xs font-medium text-[#456156]">
+                        SlipOK Branch ID
+                      </label>
+                      <input
+                        id="slipok-branch-id"
+                        type="text"
+                        autoComplete="off"
+                        value={branchId}
+                        onChange={(e) => setBranchId(e.target.value)}
+                        placeholder="e.g. 123456"
+                        className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label htmlFor="slipok-api-key" className="mb-1 block text-xs font-medium text-[#456156]">
+                        SlipOK API Key
+                      </label>
+                      <input
+                        id="slipok-api-key"
+                        type="password"
+                        autoComplete="off"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="sk-…"
+                        className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+                      />
+                    </div>
+                    <button
+                      id="slipok-save-btn"
+                      type="button"
+                      disabled={apiKey.length < 8 || branchId.trim().length < 1 || saveKey.isPending}
+                      onClick={() => void handleSaveKey(hotelId)}
+                      className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+                    >
+                      {saveKey.isPending ? "Saving…" : "Save key"}
+                    </button>
                   </div>
-                  <button
-                    id="slipok-save-btn"
-                    type="button"
-                    disabled={apiKey.length < 8 || saveKey.isPending}
-                    onClick={() => void handleSaveKey(hotelId)}
-                    className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
-                  >
-                    {saveKey.isPending ? "Saving…" : "Save key"}
-                  </button>
                 </div>
               )}
 

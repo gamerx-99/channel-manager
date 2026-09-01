@@ -13,6 +13,16 @@ found and fixed: these three procedures used plain `publicProcedure` instead of
 rate-limited" policy — `verifySlip` calls a paid external API per request, making
 this a real cost-abuse vector. Both fixed in `server/routers.ts`;
 `pnpm test`/`check`/`build` re-verified clean after each fix.
+Also found and fixed (2026-09-01, reported by the human after trying to save a
+real SlipOK key): the settings UI and DB schema only ever stored one secret
+("API key"), but SlipOK's real API requires two separate credentials — a
+branch ID (sent as a URL path segment) and an API key (sent as the
+`x-authorization` header). The old code put the single stored value in the URL
+and never sent an auth header at all, so real slip verification would have
+failed with 401 for every hotel. Added `slipok_branch_id` (migration
+`20260909_add_slipok_branch_id.sql`, plaintext — not secret), a second input
+field in the Financials settings UI, and fixed `server/slipVerification.ts` to
+send both correctly.
 Depends on: 09-authenticator-mfa (DONE)
 Owner-tier: worker-code
 

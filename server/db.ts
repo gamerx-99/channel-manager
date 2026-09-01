@@ -1622,31 +1622,37 @@ export type SlipOkSettingsRow = {
   hotel_id: string;
   slipok_key_enc: string | null;
   slipok_key_hash: string | null;
+  slipok_branch_id: string | null;
   slipok_enabled: boolean;
   created_at: string;
   updated_at: string;
 };
 
-/** Returns whether a SlipOK key is configured + enabled for the hotel. Never returns the key. */
+/**
+ * Returns whether a SlipOK key is configured + enabled for the hotel, plus
+ * the branch ID. branch_id is an identifier, not a secret (unlike the API
+ * key), so it's safe to return in full for the settings UI to display/edit.
+ */
 export async function getSlipOkSettings(
   client: SupabaseClient,
   hotelId: string,
-): Promise<{ configured: boolean; enabled: boolean }> {
+): Promise<{ configured: boolean; enabled: boolean; branchId: string | null }> {
   const { data, error } = await client
     .from('hotel_payment_settings')
-    .select('slipok_key_hash, slipok_enabled')
+    .select('slipok_key_hash, slipok_enabled, slipok_branch_id')
     .eq('hotel_id', hotelId)
     .maybeSingle();
   throwOnError(error);
-  if (!data) return { configured: false, enabled: false };
+  if (!data) return { configured: false, enabled: false, branchId: null };
   return {
     configured: Boolean(data.slipok_key_hash),
     enabled: Boolean(data.slipok_enabled),
+    branchId: data.slipok_branch_id ?? null,
   };
 }
 
 /**
- * Upsert a SlipOK key for the hotel.
+ * Upsert a SlipOK key + branch ID for the hotel.
  * Callers must pass the already-encrypted key (enc) and its hash.
  * Encryption is done in the router, not here, to keep DB layer pure.
  */
@@ -1655,6 +1661,7 @@ export async function saveSlipOkSettings(
   hotelId: string,
   encryptedKey: string,
   keyHash: string,
+  branchId: string,
 ): Promise<void> {
   const { error } = await client
     .from('hotel_payment_settings')
@@ -1663,6 +1670,7 @@ export async function saveSlipOkSettings(
         hotel_id: hotelId,
         slipok_key_enc: encryptedKey,
         slipok_key_hash: keyHash,
+        slipok_branch_id: branchId,
         slipok_enabled: true,
         updated_at: new Date().toISOString(),
       },
@@ -1671,7 +1679,7 @@ export async function saveSlipOkSettings(
   throwOnError(error);
 }
 
-/** Remove the SlipOK key (sets enc/hash to NULL, disabled). Does not delete the row. */
+/** Remove the SlipOK key + branch ID (sets to NULL, disabled). Does not delete the row. */
 export async function removeSlipOkKey(client: SupabaseClient, hotelId: string): Promise<void> {
   const { error } = await client
     .from('hotel_payment_settings')
@@ -1680,6 +1688,7 @@ export async function removeSlipOkKey(client: SupabaseClient, hotelId: string): 
         hotel_id: hotelId,
         slipok_key_enc: null,
         slipok_key_hash: null,
+        slipok_branch_id: null,
         slipok_enabled: false,
         updated_at: new Date().toISOString(),
       },
@@ -1718,12 +1727,13 @@ export async function getHotelPaymentConfig(
 ): Promise<{
   promptpay_id: string | null;
   slipok_key_enc: string | null;
+  slipok_branch_id: string | null;
   slipok_enabled: boolean;
   payment_timeout_minutes: number;
 } | null> {
   const { data, error } = await client
     .from('hotel_payment_settings')
-    .select('promptpay_id,slipok_key_enc,slipok_enabled,payment_timeout_minutes')
+    .select('promptpay_id,slipok_key_enc,slipok_branch_id,slipok_enabled,payment_timeout_minutes')
     .eq('hotel_id', hotelId)
     .maybeSingle();
   throwOnError(error);

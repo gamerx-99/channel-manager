@@ -1674,8 +1674,11 @@ export const appRouter = router({
       }),
 
     /**
-     * Save a SlipOK API key for the hotel.
-     * Key is AES-256-GCM encrypted before storage; only its hash is queryable.
+     * Save a SlipOK API key + branch ID for the hotel.
+     * SlipOK requires both — branch ID is sent as a URL path segment, the
+     * key as the x-authorization header (see server/slipVerification.ts).
+     * The key is AES-256-GCM encrypted before storage; only its hash is
+     * queryable. Branch ID is not secret, stored in plaintext.
      * Requires property.manage_profile + MFA step-up.
      */
     saveKey: protectedProcedure
@@ -1683,6 +1686,7 @@ export const appRouter = router({
         z.object({
           hotel_id: hotelIdSchema,
           api_key: z.string().trim().min(8, 'SlipOK API key is too short.').max(512),
+          branch_id: z.string().trim().min(1, 'SlipOK branch ID is required.').max(128),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1692,7 +1696,7 @@ export const appRouter = router({
         try {
           const encryptedKey = encryptSlipOkKey(input.api_key);
           const keyHash = hashSlipOkKey(input.api_key);
-          await saveSlipOkSettings(client, input.hotel_id, encryptedKey, keyHash);
+          await saveSlipOkSettings(client, input.hotel_id, encryptedKey, keyHash, input.branch_id);
           return { success: true as const };
         } catch (error) {
           return rethrowDomainError(error);
@@ -1890,9 +1894,9 @@ export const appRouter = router({
             throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
           }
 
-          // Get hotel SlipOK key
+          // Get hotel SlipOK key + branch ID (both required — see slipVerification.ts)
           const config = await getHotelPaymentConfig(client, input.hotel_id);
-          if (!config?.slipok_key_enc || !config.slipok_enabled) {
+          if (!config?.slipok_key_enc || !config.slipok_branch_id || !config.slipok_enabled) {
             throw new TRPCError({
               code: 'PRECONDITION_FAILED',
               message: 'Slip verification is not available for this hotel. Please contact the hotel directly.',
@@ -1901,7 +1905,7 @@ export const appRouter = router({
 
           const apiKey = decryptSlipOkKey(config.slipok_key_enc);
 
-          const result = await verifySlipWithSlipOk(apiKey, {
+          const result = await verifySlipWithSlipOk(apiKey, config.slipok_branch_id, {
             slipData: input.slip_data,
             expectedAmount: Number(session.amount),
             ref: session.qr_reference,
