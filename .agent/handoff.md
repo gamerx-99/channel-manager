@@ -1,5 +1,29 @@
 # Handoff log
 
+## [2026-09-01] Phase 3 Complete — Modular tRPC Domain Routers — DONE ✅
+- **Context**: Completed all waves of Phase 3 (Split tRPC Routers) per `REFACTOR_PLAN_FINAL.md` on branch `refactor/phase3-gemini`.
+- **Completed Modules (12 Domain Routers)**:
+  1. **Phase 3A**: Shared utilities extracted to `server/routerUtils.ts` (`edc6ac9`).
+  2. **Phase 3H (Payment Router)**: Extracted to `server/routers/paymentRouter.ts` (`a09caf0`).
+  3. **Phase 3I (SlipOK Router)**: Extracted to `server/routers/slipokRouter.ts` (`ed11214`).
+  4. **Phase 3J (OTA Router)**: Extracted to `server/routers/otaRouter.ts` (`1fec529`).
+  5. **Phase 3K (Dashboard Router)**: Extracted to `server/routers/dashboardRouter.ts` (`52df115`).
+  6. **Wave 1.1 (Housekeeping Router)**: Extracted to `server/routers/housekeepingRouter.ts` (`8bd8ab4`).
+  7. **Wave 1.2 (Messaging Router)**: Extracted to `server/routers/messagingRouter.ts` (`3aece4f`).
+  8. **Wave 1.3 (Notifications Router)**: Extracted to `server/routers/notificationsRouter.ts` (`99d2842`).
+  9. **Wave 1.4 (Auth Router)**: Extracted to `server/routers/authRouter.ts` (`ba91c8b`).
+  10. **Wave 2.1 (Staff Router)**: Extracted to `server/routers/staffRouter.ts` (`5b09911`).
+  11. **Wave 2.2 (Availability & Rates Router)**: Extracted to `server/routers/availabilityRouter.ts` (`aced521`).
+  12. **Wave 2.3 (Hotel & SiteConfig Router)**: Extracted to `server/routers/hotelRouter.ts` (`f7ba490`).
+  13. **Wave 3 (Booking Router & Clean Composition)**: Extracted to `server/routers/bookingRouter.ts` and assembled final `appRouter` in `server/routers.ts` (`65494aa`).
+- **Verdict & Evidence**:
+  - `pnpm check`: PASS (0 errors, full TypeScript type check).
+  - `pnpm test`: PASS (71 test files passed, 401 tests passed, 0 failures).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+  - Lines in `server/routers.ts`: reduced from **1,941 lines** down to **130 lines**.
+  - Client API Contract: 100% preserved.
+- **Next**: Phase 4 (Frontend App.tsx Decomposition: AppShell, PrivateRoute, Sidebar, Topbar).
+
 ## [2026-09-01] Phase 3 Wave 1 (Low-Risk Routers) — DONE ✅
 - **Context**: Executed Phase 3 Wave 1 router extractions per refined architecture plan.
 - **Completed Modules**:
@@ -8,7 +32,6 @@
   3. **Notifications Router** (`99d2842`): Extracted `list`, `markRead`, `markAllRead` to `server/routers/notificationsRouter.ts`.
   4. **Auth Router** (`ba91c8b`): Extracted `me`, `logout` to `server/routers/authRouter.ts`.
 - **Verdict**: PASS — `pnpm check` and `vitest` pass cleanly on each step with zero API contract breakages.
-- **Next**: Wave 2 (Staff, Availability/Rates, Hotel & SiteConfig Routers).
 - **Context**: Completed REFACTOR_PLAN_FINAL.md Phase 3 router extraction.
 - **Changes**:
   1. `server/routers/dashboardRouter.ts` extracted.
