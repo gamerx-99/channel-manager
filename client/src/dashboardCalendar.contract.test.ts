@@ -45,7 +45,8 @@ describe('Dashboard Calendar View contract', () => {
     expect(router).toContain('hotel_id: hotelIdSchema.optional()');
     expect(router).toContain("revenue.manage_allotment");
     expect(router).toContain("revenue.manage_stop_sell");
-    expect(router).toContain("hotel.room_types.some(roomType => roomType.id === input.room_type_id)");
+    // Guard moved to assertHotelAndRoomTypeExist helper (Phase 1B refactor); verify helper is called at this call site
+    expect(router).toContain("assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id)");
   });
 
   it('keeps sync markers and details readable on narrow screens', () => {

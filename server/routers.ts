@@ -360,6 +360,22 @@ function rethrowDomainError(error: unknown): never {
   throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
 }
 
+async function assertHotelExists(client: ReturnType<typeof rlsClient>, hotelId: string) {
+  const hotel = await getManagedHotel(client, hotelId);
+  if (!hotel) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
+  }
+  return hotel;
+}
+
+async function assertHotelAndRoomTypeExist(client: ReturnType<typeof rlsClient>, hotelId: string, roomTypeId: string) {
+  const hotel = await getManagedHotel(client, hotelId);
+  if (!hotel || !hotel.room_types.some(rt => rt.id === roomTypeId)) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
+  }
+  return hotel;
+}
+
 export const appRouter = router({
   system: systemRouter,
   notifications: router({
@@ -567,10 +583,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         const users = await listAuthUsers();
         return {
           hotel: { id: hotel.id, name: hotel.name },
@@ -585,10 +598,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         return await listHotelAdminAuditLogs(client, input.hotel_id, input.limit);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -599,10 +609,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         const assignments = await listHotelUserAssignments(client);
         if (input.role === 'hotel_owner') {
           assertSingleHotelAdmin(assignments, input.hotel_id);
@@ -642,10 +649,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         const assignments = await listHotelUserAssignments(client);
         assertSingleHotelAdmin(assignments, input.hotel_id);
         const token = generateSignupToken();
@@ -795,10 +799,7 @@ export const appRouter = router({
       requirePermission(ctx.user, 'platform.manage_users');
       const client = await requireSuperAdmin(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         const invitedUser = await inviteAuthUser(input.email);
         try {
           const membership = await createHotelUserAssignment(client, {
@@ -898,10 +899,7 @@ export const appRouter = router({
       const client = rlsClient(ctx.user.accessToken);
       try {
         // A readable hotel is a database-enforced membership check; its INSERT policy remains the final authorization gate.
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         return await createManagedRoomType(client, input);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -912,10 +910,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel || !hotel.room_types.some(roomType => roomType.id === input.room_type_id)) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
-        }
+        const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
         const updated = await updateManagedRoomType(client, input);
         if (!updated) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type could not be updated.' });
@@ -930,10 +925,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel || !hotel.room_types.some(roomType => roomType.id === input.room_type_id)) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
-        }
+        const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
         const removed = await deleteManagedRoomType(client, input);
         if (!removed) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type could not be deleted.' });
@@ -1085,10 +1077,7 @@ export const appRouter = router({
         if (input.hotel_id) {
           requireHotelPermission(ctx.user, input.hotel_id, permission);
           try {
-            const hotel = await getManagedHotel(client, input.hotel_id);
-            if (!hotel || !hotel.room_types.some(roomType => roomType.id === input.room_type_id)) {
-              throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
-            }
+            const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
             const totalRooms = hotel.rooms.filter(room => room.room_type_id === input.room_type_id).length;
             if (input.rooms_available > totalRooms) {
               throw new TRPCError({ code: 'BAD_REQUEST', message: `Available rooms cannot exceed the ${totalRooms} rooms configured for this room type.` });
@@ -1111,10 +1100,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_pricing_rules');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel || !hotel.room_types.some(roomType => roomType.id === input.room_type_id)) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
-        }
+        const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
         return await createRateOverride(client, {
           room_type_id: input.room_type_id,
           start_date: input.start_date,
@@ -1153,10 +1139,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.update_room_status');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         // Validate assigned_to membership via rooms->hotel_id + hotel_users lookup
         if (input.assigned_to) {
           const { data: room, error: roomError } = await (client as any).from('rooms').select('hotel_id').eq('id', input.room_id).maybeSingle();
@@ -1237,10 +1220,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.update_room_status');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         // When assigned_to is being updated, verify membership via rooms->hotel_id + hotel_users
         if (input.assigned_to !== undefined && input.assigned_to !== null) {
           // Need room_id to resolve hotel. If not supplied directly, fetch from existing task
@@ -1483,10 +1463,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         return await saveHotelSiteConfig(client, input);
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -1516,10 +1493,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         // Extract content type and base64 string
         const match = input.base64.match(/^data:([^;]+);base64,(.+)$/);
         let buffer: Buffer;
@@ -1554,10 +1528,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         const deleted = await deleteHotelMedia(client, input.media_id);
         if (!deleted) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'This media item could not be deleted.' });
@@ -1578,10 +1549,7 @@ export const appRouter = router({
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const hotel = await getManagedHotel(client, input.hotel_id);
-        if (!hotel) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-        }
+        const hotel = await assertHotelExists(client, input.hotel_id);
         await setHotelMediaHero(client, input.hotel_id, input.media_id);
         return { success: true as const };
       } catch (error) {
