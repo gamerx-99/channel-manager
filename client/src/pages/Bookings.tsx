@@ -5,15 +5,9 @@ import { Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import PageState from '@/components/PageState';
 import BookingWizard from '@/components/BookingWizard';
+import { useTranslation } from '@/lib/i18n';
 
 type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
-
-const statusLabel: Record<BookingStatus, string> = {
-  confirmed: 'Confirmed',
-  checked_in: 'Checked in',
-  checked_out: 'Checked out',
-  cancelled: 'Cancelled',
-};
 
 const formatCurrency = (value: number | string) =>
   new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
@@ -41,6 +35,7 @@ function downloadBase64Xlsx(base64: string, filename: string, contentType: strin
 }
 
 export default function Bookings({ id }: { id: string }) {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id, { enabled: Boolean(id) });
   const bookingsQuery = trpc.channelManager.bookings.useQuery(id, { enabled: Boolean(id) });
@@ -51,21 +46,13 @@ export default function Bookings({ id }: { id: string }) {
   const [showPreview, setShowPreview] = useState(false);
   const previewQuery = trpc.channelManager.previewTm30.useQuery(id, { enabled: showPreview && Boolean(id) });
   const [formError, setFormError] = useState<string | null>(null);
-  const [bookingForm, setBookingForm] = useState({
-    room_id: '',
-    guest_name: '',
-    check_in: displayDay(1),
-    check_out: displayDay(2),
-    price: '',
-    source: 'manual' as 'manual' | 'walk-in' | 'phone',
-    first_name: '',
-    last_name: '',
-    passport_no: '',
-    nationality_code: '',
-    gender: '' as '' | 'M' | 'F',
-    birth_date: '',
-    phone_no: '',
-  });
+
+  const statusLabel: Record<BookingStatus, string> = {
+    confirmed: t('bookings.statusConfirmed'),
+    checked_in: t('bookings.statusCheckedIn'),
+    checked_out: t('bookings.statusCheckedOut'),
+    cancelled: t('bookings.statusCancelled'),
+  };
 
   const createBooking = trpc.channelManager.createBooking.useMutation({
     onSuccess: async () => {
@@ -156,47 +143,43 @@ export default function Bookings({ id }: { id: string }) {
   };
 
   if (hotelQuery.isLoading || bookingsQuery.isLoading) {
-    return <div className="page-content"><PageState tone="loading" title="กำลังโหลดการจอง" description="กำลังอ่านข้อมูลการจองจริงจาก Supabase…" /></div>;
+    return <div className="page-content"><PageState tone="loading" title={t('bookings.loadingTitle')} description={t('bookings.loadingDesc')} /></div>;
   }
   if (hotelQuery.error || bookingsQuery.error || !hotel) {
     const error = hotelQuery.error ?? bookingsQuery.error;
-    return <div className="page-content"><PageState tone="error" title="โหลดข้อมูลการจองไม่สำเร็จ" description={error?.message ?? 'ไม่พบโรงแรมหรือไม่มีสิทธิ์เข้าถึงข้อมูลนี้'} actionLabel="ลองใหม่" onAction={retryBookings} actionPending={hotelQuery.isFetching || bookingsQuery.isFetching} /></div>;
+    return <div className="page-content"><PageState tone="error" title={t('bookings.errorTitle')} description={error?.message ?? t('bookings.errorDescFallback')} actionLabel={t('bookings.retryButton')} onAction={retryBookings} actionPending={hotelQuery.isFetching || bookingsQuery.isFetching} /></div>;
   }
 
-  const roomTypeName = (roomTypeId: string) => hotel.room_types.find(roomType => roomType.id === roomTypeId)?.name ?? 'Unassigned room type';
-
-  function submitBooking(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-  }
+  const roomTypeName = (roomTypeId: string) => hotel.room_types.find(roomType => roomType.id === roomTypeId)?.name ?? t('bookings.unassignedRoomType');
 
   return (
     <div className="page-content bookings-page">
-      <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>Bookings</strong></div>
+      <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>{t('bookings.title')}</strong></div>
       <section className="page-intro intro-split">
-        <div><div className="eyebrow">Operations / Live Supabase data</div><h1>Bookings<span className="title-mark">.</span></h1><p className="lede">Manual stays, arrivals, departures, and guest records in one place.</p></div>
+        <div><div className="eyebrow">{t('bookings.eyebrow')}</div><h1>{t('bookings.title')}<span className="title-mark">.</span></h1><p className="lede">{t('bookings.lede')}</p></div>
         <div className="intro-actions">
-          <button className="button button-quiet" onClick={() => setShowPreview(true)} disabled={!bookings.length}><FileSpreadsheet size={15} /> Preview TM.30</button>
-          <button className="button button-quiet" onClick={() => setShowExport(true)} disabled={!bookings.length}><Download size={15} /> Export TM.30</button>
-          <button className="button button-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Add booking</button>
+          <button className="button button-quiet" onClick={() => setShowPreview(true)} disabled={!bookings.length}><FileSpreadsheet size={15} /> {t('bookings.previewTm30')}</button>
+          <button className="button button-quiet" onClick={() => setShowExport(true)} disabled={!bookings.length}><Download size={15} /> {t('bookings.exportTm30')}</button>
+          <button className="button button-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> {t('bookings.addBooking')}</button>
         </div>
       </section>
-      <div className="tm30-callout"><div className="callout-icon"><FileSpreadsheet size={17} /></div><div><strong>TM.30 export uses persisted records</strong><span>The server validates guest details and writes the supplied Immigration template before download. The hotel uploads it manually.</span></div><button className="text-link" onClick={() => setShowExport(true)} disabled={!bookings.length}>Review export <Download size={14} /></button></div>
+      <div className="tm30-callout"><div className="callout-icon"><FileSpreadsheet size={17} /></div><div><strong>{t('bookings.tm30CalloutTitle')}</strong><span>{t('bookings.tm30CalloutDesc')}</span></div><button className="text-link" onClick={() => setShowExport(true)} disabled={!bookings.length}>{t('bookings.reviewExport')} <Download size={14} /></button></div>
       <section className="panel table-panel">
-        <div className="list-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search guest name" aria-label="ค้นหาการจอง" /></div><div className="toolbar-actions"><select className="select-control" value={status} onChange={event => setStatus(event.target.value as 'all' | BookingStatus)} aria-label="กรองตามสถานะ"><option value="all">All statuses</option><option value="confirmed">Confirmed</option><option value="checked_in">Checked in</option><option value="checked_out">Checked out</option><option value="cancelled">Cancelled</option></select><button className="filter-button" type="button" disabled><Filter size={14} /> More filters</button></div></div>
-        <p className="mobile-scroll-hint" role="note">เลื่อนตารางในแนวนอนเพื่อดูห้อง สถานะ และมูลค่าการจอง</p>
-        <div className="table-wrap"><table className="data-table bookings-table"><thead><tr><th>Booking</th><th>Guest</th><th>Stay dates</th><th>Room</th><th>Source</th><th>Status</th><th className="align-right">Value</th><th /></tr></thead><tbody>{filtered.length ? filtered.map(booking => {
+        <div className="list-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('bookings.searchPlaceholder')} aria-label={t('bookings.searchAriaLabel')} /></div><div className="toolbar-actions"><select className="select-control" value={status} onChange={event => setStatus(event.target.value as 'all' | BookingStatus)} aria-label={t('bookings.filterStatusAriaLabel')}><option value="all">{t('bookings.allStatuses')}</option><option value="confirmed">{t('bookings.statusConfirmed')}</option><option value="checked_in">{t('bookings.statusCheckedIn')}</option><option value="checked_out">{t('bookings.statusCheckedOut')}</option><option value="cancelled">{t('bookings.statusCancelled')}</option></select><button className="filter-button" type="button" disabled><Filter size={14} /> {t('bookings.moreFilters')}</button></div></div>
+        <p className="mobile-scroll-hint" role="note">{t('bookings.mobileScrollHint')}</p>
+        <div className="table-wrap"><table className="data-table bookings-table"><thead><tr><th>{t('bookings.bookingCol')}</th><th>{t('bookings.guestCol')}</th><th>{t('bookings.stayDatesCol')}</th><th>{t('bookings.roomCol')}</th><th>{t('bookings.sourceCol')}</th><th>{t('bookings.statusCol')}</th><th className="align-right">{t('bookings.valueCol')}</th><th /></tr></thead><tbody>{filtered.length ? filtered.map(booking => {
           const tm30Ready = booking.guests.length > 0 && booking.guests.every(guest => Boolean(guest.passport_no && guest.nationality_code && guest.birth_date));
-          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>Created {formatIsoToDisplayDate(booking.created_at?.slice(0, 10))}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? 'TM.30 data complete' : 'TM.30 data needed'}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>to {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? 'Unassigned'}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status]}</span></td><td className="align-right"><strong>{formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1"><Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={`Messages for booking ${booking.id}`} title="Messages — thread attached to booking"><MessageCircle size={16} /></Link><button className="icon-button" type="button" aria-label={`More actions for booking ${booking.id}`} disabled><MoreHorizontal size={16} /></button></div></td></tr>;
-        }) : <tr><td colSpan={8} className="empty-cell">{bookings.length ? 'No bookings match this filter.' : 'ยังไม่มีรายการจองในโรงแรมนี้'}</td></tr>}</tbody></table></div>
-        <div className="table-footer"><span>Showing {filtered.length} of {bookings.length} live booking records</span></div>
+          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status]}</span></td><td className="align-right"><strong>{formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1"><Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link><button className="icon-button" type="button" aria-label={t('bookings.moreActionsAria', { id: booking.id })} disabled><MoreHorizontal size={16} /></button></div></td></tr>;
+        }) : <tr><td colSpan={8} className="empty-cell">{bookings.length ? t('bookings.noMatch') : t('bookings.emptyBookings')}</td></tr>}</tbody></table></div>
+        <div className="table-footer"><span>{t('bookings.showingCount', { filtered: filtered.length, total: bookings.length })}</span></div>
       </section>
       {showAdd && <BookingWizard hotel={{ ...hotel, bookings }} onClose={() => setShowAdd(false)} onSuccess={() => {
         utils.channelManager.bookings.invalidate(id);
         utils.channelManager.dashboard.invalidate();
         setShowAdd(false);
       }} />}
-      {showExport && <div className="modal-backdrop" onMouseDown={() => setShowExport(false)}><div className="modal-card export-modal" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">TM.30 / Server export preflight</div><h2>Prepare guest file</h2></div><button className="icon-button" onClick={() => setShowExport(false)}><X size={17} /></button></div><p className="modal-lede">The server reads the current hotel&apos;s persisted booking and guest records under RLS, validates them, and writes the official Immigration template.</p>{exportTm30.error && <p className="form-error" role="alert">{exportTm30.error.message}</p>}<div className="preflight-list"><div className="preflight-item done"><i>✓</i><div><strong>Booking scope selected</strong><span>{bookings.length} stored booking records in this hotel</span></div></div><div className="preflight-item done"><i>✓</i><div><strong>Template mapping enforced server-side</strong><span>ICAO nationality codes and required guest fields are validated before the file is created</span></div></div><div className="preflight-item warning"><i>!</i><div><strong>Upload manually after download</strong><span>TM.30 portal connection remains intentionally out of scope</span></div></div></div><div className="template-note"><FileSpreadsheet size={17} /><span><strong>Template-InformAccom-ImportExcel.xls</strong><small>Official template supplied for this project</small></span><span className="template-tag">Mapped</span></div><div className="modal-actions"><button className="button button-quiet" onClick={() => setShowExport(false)}>Cancel</button><button className="button button-primary" disabled={exportTm30.isPending || !bookings.length} onClick={() => exportTm30.mutate(id)}><Download size={15} /> {exportTm30.isPending ? 'Preparing…' : 'Download .xlsx'}</button></div></div></div>}
-      {showPreview && <div className="modal-backdrop" onMouseDown={() => setShowPreview(false)}><div className="modal-card preview-modal" style={{ maxWidth: '960px', width: '95vw' }} onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">TM.30 / Immigration Bureau standard format</div><h2>TM.30 Export Preview</h2></div><button className="icon-button" onClick={() => setShowPreview(false)}><X size={17} /></button></div><p className="modal-lede">Review the exact tabular structure, DD/MM/YYYY dates, and guest fields prior to downloading the official Excel/CSV template.</p>{previewQuery.isLoading ? <div className="panel page-state">Loading preview data…</div> : previewQuery.error ? <p className="form-error">Failed to load preview: {previewQuery.error.message}</p> : <div className="table-wrap" style={{ maxHeight: '420px', overflowY: 'auto', marginTop: '1rem' }}><table className="data-table"><thead><tr>{previewQuery.data?.headers.map((h, i) => <th key={i} style={{ whiteSpace: 'pre-line', fontSize: '0.8rem' }}>{h}</th>)}</tr></thead><tbody>{previewQuery.data?.rows.length ? previewQuery.data.rows.map((row, rIdx) => <tr key={rIdx}>{row.map((cell, cIdx) => <td key={cIdx}>{cell}</td>)}</tr>) : <tr><td colSpan={9} className="empty-cell">No valid guest records found for TM.30 preview. Ensure guests have full name, passport, nationality code, and birth date.</td></tr>}</tbody></table></div>}<div className="modal-actions" style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '0.5rem' }}><button className="button button-quiet" onClick={downloadCsvPreview} disabled={!previewQuery.data || !previewQuery.data.rows.length}><Download size={15} /> Download CSV</button><button className="button button-quiet" onClick={downloadPdfPreview} disabled={!previewQuery.data || !previewQuery.data.rows.length}><Download size={15} /> Export PDF / Print</button></div><div style={{ display: 'flex', gap: '0.5rem' }}><button className="button button-quiet" onClick={() => setShowPreview(false)}>Close</button><button className="button button-primary" onClick={() => { setShowPreview(false); setShowExport(true); }}><Download size={15} /> Official Excel (.xlsx)</button></div></div></div></div>}
+      {showExport && <div className="modal-backdrop" onMouseDown={() => setShowExport(false)}><div className="modal-card export-modal" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">{t('bookings.modalPreflightEyebrow')}</div><h2>{t('bookings.prepareGuestFile')}</h2></div><button className="icon-button" onClick={() => setShowExport(false)}><X size={17} /></button></div><p className="modal-lede">{t('bookings.modalLede')}</p>{exportTm30.error && <p className="form-error" role="alert">{exportTm30.error.message}</p>}<div className="preflight-list"><div className="preflight-item done"><i>✓</i><div><strong>{t('bookings.scopeSelected')}</strong><span>{t('bookings.scopeSelectedDesc', { count: bookings.length })}</span></div></div><div className="preflight-item done"><i>✓</i><div><strong>{t('bookings.templateEnforced')}</strong><span>{t('bookings.templateEnforcedDesc')}</span></div></div><div className="preflight-item warning"><i>!</i><div><strong>{t('bookings.uploadManually')}</strong><span>{t('bookings.uploadManuallyDesc')}</span></div></div></div><div className="template-note"><FileSpreadsheet size={17} /><span><strong>{t('bookings.templateOfficial')}</strong><small>{t('bookings.templateSupplied')}</small></span><span className="template-tag">{t('bookings.templateMapped')}</span></div><div className="modal-actions"><button className="button button-quiet" onClick={() => setShowExport(false)}>{t('bookings.cancel')}</button><button className="button button-primary" disabled={exportTm30.isPending || !bookings.length} onClick={() => exportTm30.mutate(id)}><Download size={15} /> {exportTm30.isPending ? t('bookings.preparing') : t('bookings.downloadXlsx')}</button></div></div></div>}
+      {showPreview && <div className="modal-backdrop" onMouseDown={() => setShowPreview(false)}><div className="modal-card preview-modal" style={{ maxWidth: '960px', width: '95vw' }} onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">{t('bookings.previewEyebrow')}</div><h2>{t('bookings.previewTitle')}</h2></div><button className="icon-button" onClick={() => setShowPreview(false)}><X size={17} /></button></div><p className="modal-lede">{t('bookings.previewLede')}</p>{previewQuery.isLoading ? <div className="panel page-state">{t('bookings.loadingPreview')}</div> : previewQuery.error ? <p className="form-error">{t('bookings.failedPreview', { error: previewQuery.error.message })}</p> : <div className="table-wrap" style={{ maxHeight: '420px', overflowY: 'auto', marginTop: '1rem' }}><table className="data-table"><thead><tr>{previewQuery.data?.headers.map((h, i) => <th key={i} style={{ whiteSpace: 'pre-line', fontSize: '0.8rem' }}>{h}</th>)}</tr></thead><tbody>{previewQuery.data?.rows.length ? previewQuery.data.rows.map((row, rIdx) => <tr key={rIdx}>{row.map((cell, cIdx) => <td key={cIdx}>{cell}</td>)}</tr>) : <tr><td colSpan={9} className="empty-cell">{t('bookings.noRecordsPreview')}</td></tr>}</tbody></table></div>}<div className="modal-actions" style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ display: 'flex', gap: '0.5rem' }}><button className="button button-quiet" onClick={downloadCsvPreview} disabled={!previewQuery.data || !previewQuery.data.rows.length}><Download size={15} /> {t('bookings.downloadCsv')}</button><button className="button button-quiet" onClick={downloadPdfPreview} disabled={!previewQuery.data || !previewQuery.data.rows.length}><Download size={15} /> {t('bookings.exportPdf')}</button></div><div style={{ display: 'flex', gap: '0.5rem' }}><button className="button button-quiet" onClick={() => setShowPreview(false)}>{t('bookings.close')}</button><button className="button button-primary" onClick={() => { setShowPreview(false); setShowExport(true); }}><Download size={15} /> {t('bookings.officialExcel')}</button></div></div></div></div>}
     </div>
   );
 }
