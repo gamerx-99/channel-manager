@@ -899,6 +899,11 @@ const th: TranslationDictionary = {
     errorSelectHotel: "กรุณาเลือกโรงแรมสำหรับผู้ใช้นี้",
     errorSelectUserAndHotel: "กรุณาเลือกผู้ใช้และโรงแรม",
   },
+  securitySettings: {
+    eyebrow: "การตั้งค่า / ความปลอดภัย",
+    title: "ความปลอดภัย",
+    lede: "จัดการแอปตรวจสอบสิทธิ์ การเชื่อมต่อการชำระเงิน และการยืนยันตัวตนขั้นสูงสำหรับการดำเนินการที่ละเอียดอ่อน",
+  },
 };
 
 export default th;

@@ -897,6 +897,11 @@ const en = {
     errorSelectHotel: "Select a hotel for this user.",
     errorSelectUserAndHotel: "Select a user and a hotel.",
   },
+  securitySettings: {
+    eyebrow: "Settings / Security",
+    title: "Security",
+    lede: "Manage your authenticator app, payment integration, and step-up verification for sensitive actions.",
+  },
 } as const;
 
 type DeepStringDictionary<T> = {
