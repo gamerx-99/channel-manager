@@ -1,5 +1,35 @@
 # Handoff log
 
+## [2026-09-02] i18n Phase 2: Translate Remaining Pages Step-by-Step — DONE ✅
+- **Context**: In Phase 1, the internationalization system (`client/src/lib/i18n/`) was established with support for EN/TH switching and connected to the chrome components (Sidebar, Topbar, Login, AcceptInvite). In Phase 2, all remaining application content pages and public customer-facing screens were systematically translated, key-parity verified against both language dictionaries, and wired to the translation dictionary.
+- **Pages Wired & Commits**:
+  - **Page 0**: `client/src/pages/Calendar.tsx` (`df74333`)
+  - **Page 1**: `client/src/pages/Home.tsx` (`845583c`)
+  - **Page 2**: `client/src/pages/Bookings.tsx` (`75db9df`)
+  - **Page 3**: `client/src/pages/HotelDetail.tsx` (`7edefc3`)
+  - **Page 4**: `client/src/pages/Hotels.tsx` (`ed9c856`)
+  - **Page 5**: `client/src/pages/Financials.tsx` (`94b5cac`)
+  - **Page 6**: `client/src/pages/Housekeeping.tsx` (`bd6b970`)
+  - **Page 7**: `client/src/pages/Communications.tsx` (`9cc42b8`)
+  - **Page 8**: `client/src/pages/OtaSync.tsx` (`69903de`)
+  - **Page 9**: `client/src/pages/AdvancedPricing.tsx` (`0457d2d`)
+  - **Page 10**: `client/src/pages/HotelStaff.tsx` (`c90ed6e`)
+  - **Page 11**: `client/src/pages/AdminUsers.tsx` (`7cfa1c0`)
+  - **Page 12**: `client/src/pages/SecuritySettings.tsx` (`98113d8`)
+  - **Page 13**: `client/src/pages/WebsiteBuilder.tsx` (`a538096`)
+  - **Page 14**: `client/src/pages/ChannelPerformance.tsx` (`c402e2a`)
+  - **Page 15**: `client/src/pages/MfaEnroll.tsx` (`f5d54e0`)
+  - **Page 16**: `client/src/pages/NotFound.tsx` (`3b91795`)
+  - **Page 17**: `client/src/pages/PublicHotel.tsx` (`02aa5a9`)
+- **Infrastructure & Tests**:
+  - `client/src/lib/i18n/index.ts`: Extended interpolation engine to support both `{{param}}` and `{param}` tokens.
+  - `client/src/lib/i18n/en.ts` & `client/src/lib/i18n/th.ts`: Added over 700 new translation keys across 18 namespaces with 100% key parity enforced by `i18n.test.ts`.
+  - Updated contract tests asserting on translated strings per Rule 6 (`AdvancedPricing.contract.test.ts`, `WebsiteBuilder.contract.test.ts`, `ChannelPerformance.contract.test.ts`, `PublicHotel.contract.test.ts`).
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (422 passed | 3 skipped across 76 test files).
+  - `pnpm build`: PASS (Vite transformed 2797 modules, dist/index.js 177.8kb).
+
 ## [2026-09-02] Availability Month View Feature — DONE ✅
 - **Context**: The Availability page (`client/src/pages/Calendar.tsx`) previously only offered a 7-day week view. While excellent for fine-grained editing of daily room allotment and pricing, viewing an entire month across multiple room types in a horizontal table would be too wide and difficult to use. A standard 7-column calendar Month View was introduced as a complementary overview mode.
 - **Design & Behavior**:

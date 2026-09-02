@@ -6,7 +6,6 @@ answer noted.
 
 ## Open
 
-- [ ] Phase 1 of i18n covers only the chrome structure (Sidebar, Topbar, Login) and translation dictionary infrastructure (`client/src/lib/i18n/`). Other application pages (Bookings, Hotels, Financials, Housekeeping, Communications, WebsiteBuilder, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, OtaSync, etc.) remain in English for now. ASSUMPTION: individual page content, modals, and data tables will be wired to the translation dictionary in subsequent dedicated phases. Raised 2026-09-02.
 - [ ] `DATABASE_URL`/`SUPABASE_POOLER_DB_URL` in `.env` are placeholder values, not a
       real pooler connection string — so `server/runPostgresMigration.mjs` and
       `server/verifySupabaseMigration.mjs` can't run against the live project from
@@ -41,4 +40,5 @@ answer noted.
       2026-08-30.
 
 ## Resolved
-*(none yet)*
+- [x] Phase 1 of i18n covers only the chrome structure (Sidebar, Topbar, Login) and translation dictionary infrastructure (`client/src/lib/i18n/`). Other application pages remain in English for now. RESOLVED 2026-09-02: Phase 2 wired all 18 content pages (Calendar, Home, Bookings, HotelDetail, Hotels, Financials, Housekeeping, Communications, OtaSync, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, WebsiteBuilder, ChannelPerformance, MfaEnroll, NotFound, PublicHotel) to the translation system with complete EN/TH dictionary parity and test suites passing.
+
