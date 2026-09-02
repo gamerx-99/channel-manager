@@ -26,18 +26,20 @@ describe("Channel Performance dashboard contract", () => {
   });
 
   it("includes loading, retry, search, filter, chart, and empty-state contracts", () => {
-    expect(component).toContain("Loading channel performance data");
+    // Note: Updated per Rule 6 to match translation dictionary keys used in ChannelPerformance.tsx
+    expect(component).toContain("channelPerformance.loadingData");
     expect(component).toContain('role="status"');
-    expect(component).toContain('placeholder="Search channels…"');
+    expect(component).toContain('placeholder={t("channelPerformance.searchChannelsPlaceholder")}');
     expect(component).toContain('aria-pressed={filter === option.value}');
     expect(component).toContain("<AreaChart data={data.trend}");
     expect(component).toContain("<BarChart data={bookingChannels}");
     expect(component).toContain("<Pie data={bookingPieData}");
-    expect(component).toContain("No channels match");
-    expect(component).toContain('actionLabel="Try again"');
+    expect(component).toContain("channelPerformance.noChannelsMatch");
+    expect(component).toContain('actionLabel={t("channelPerformance.tryAgain")}');
   });
 
   it("does not infer OTA booking revenue before a real booking API is enabled", () => {
-    expect(component).toContain("OTA booking revenue is not inferred until a live booking API integration is enabled.");
+    // Note: Updated per Rule 6 to match translation dictionary key
+    expect(component).toContain("channelPerformance.otaBookingNote");
   });
 });
