@@ -22,12 +22,13 @@ describe("Housekeeping board contract", () => {
   });
 
   it("includes day view grouped by room with status and assignee, create/assign form, and status update controls", () => {
+    // Note: Updated per Rule 6 to match translation dictionary keys used in Housekeeping.tsx
     expect(component).toContain("Housekeeping");
-    expect(component).toContain("Day view grouped by room");
-    expect(component).toContain("Grouped by room");
-    expect(component).toContain("Status");
-    expect(component).toContain("Assignee");
-    expect(component).toContain("Create task");
+    expect(component).toContain("housekeeping.dayViewGroupedByRoom");
+    expect(component).toContain("housekeeping.groupedByRoom");
+    expect(component).toContain("housekeeping.status");
+    expect(component).toContain("housekeeping.assignee");
+    expect(component).toContain("housekeeping.createTask");
     expect(component).toContain("housekeeping.update_room_status");
     expect(component).toContain("housekeeping.view_room_status");
     expect(component).toContain("due_date");
@@ -35,7 +36,7 @@ describe("Housekeeping board contract", () => {
     expect(component).toContain("in_progress");
     expect(component).toContain("done");
     expect(component).toContain('role="status"');
-    expect(component).toContain("Loading housekeeping");
+    expect(component).toContain("housekeeping.loadingBoard");
   });
 
   it("is wired to the real tRPC housekeeping procedures, not local/mock state", () => {
