@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
+import { useTranslation } from "@/lib/i18n";
 
 type RateOverride = {
   id: string;
@@ -64,11 +65,12 @@ function formatCurrency(value: number) {
 }
 
 function LoadingPricing() {
+  const { t } = useTranslation();
   return (
-    <div className="space-y-6" role="status" aria-live="polite" aria-label="กำลังโหลดข้อมูลราคาขั้นสูง">
+    <div className="space-y-6" role="status" aria-live="polite" aria-label={t("advancedPricing.loadingAriaLabel")}>
       <div className="flex items-center gap-3 rounded-xl border border-[#dce4df] bg-[#f6faf7] px-4 py-3 text-sm text-[#456156]">
         <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-[#9bbcae] border-t-[#1d6b56]" aria-hidden="true" />
-        <span>Loading pricing data…</span>
+        <span>{t("advancedPricing.loadingPricingData")}</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[1, 2, 3].map((i) => (
@@ -81,6 +83,7 @@ function LoadingPricing() {
 }
 
 export default function AdvancedPricing() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
   const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string>("");
@@ -162,7 +165,7 @@ export default function AdvancedPricing() {
   function handleCreate() {
     setFormError(null);
     if (!selectedRoomType) {
-      setFormError("Select a room type first.");
+      setFormError(t("advancedPricing.errorSelectRoomType"));
       return;
     }
     const start_date = form.start_date.trim();
@@ -172,19 +175,19 @@ export default function AdvancedPricing() {
     const min_stay_nights = minStayRaw === "" ? null : Number(minStayRaw);
 
     if (!start_date || !end_date || !form.override_price.trim()) {
-      setFormError("Enter start date, end date, and override price.");
+      setFormError(t("advancedPricing.errorMissingFields"));
       return;
     }
     if (start_date > end_date) {
-      setFormError("Start date must be on or before end date.");
+      setFormError(t("advancedPricing.errorDateOrder"));
       return;
     }
     if (!Number.isFinite(override_price) || override_price <= 0) {
-      setFormError("Override price must be a positive number.");
+      setFormError(t("advancedPricing.errorPricePositive"));
       return;
     }
     if (min_stay_nights !== null && (!Number.isInteger(min_stay_nights) || min_stay_nights < 1)) {
-      setFormError("Minimum stay must be a whole number of nights (≥ 1) or left empty.");
+      setFormError(t("advancedPricing.errorMinStayInvalid"));
       return;
     }
     // reject overlapping ranges for same room type client-side for immediate feedback;
@@ -192,7 +195,7 @@ export default function AdvancedPricing() {
     // EXCLUDE constraint and returns CONFLICT if this check is somehow bypassed.
     const hasOverlap = overridesForRoom.some((o) => overlaps(start_date, end_date, o.start_date, o.end_date));
     if (hasOverlap) {
-      setFormError("An overlapping rate override already exists for this room type and date range.");
+      setFormError(t("advancedPricing.errorOverlapExists"));
       return;
     }
 
@@ -217,9 +220,9 @@ export default function AdvancedPricing() {
     return (
       <PageState
         tone="error"
-        title="Unable to load pricing"
-        description="The pricing workspace could not be loaded for the properties visible to your account."
-        actionLabel="Try again"
+        title={t("advancedPricing.unableToLoadTitle")}
+        description={t("advancedPricing.unableToLoadDesc")}
+        actionLabel={t("advancedPricing.tryAgain")}
         onAction={() => void refetch()}
       />
     );
@@ -229,8 +232,8 @@ export default function AdvancedPricing() {
     return (
       <PageState
         tone="empty"
-        title="No room types configured"
-        description="Create a room type inside a hotel before managing seasonal rate overrides."
+        title={t("advancedPricing.noRoomTypesTitle")}
+        description={t("advancedPricing.noRoomTypesDesc")}
       />
     );
   }
@@ -239,54 +242,53 @@ export default function AdvancedPricing() {
     <div className="space-y-7 pb-8">
       <section className="flex flex-col gap-5 border-b border-[#dce4df] pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="eyebrow">Revenue / Rate overrides</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">Advanced Pricing</h1>
+          <p className="eyebrow">{t("advancedPricing.eyebrow")}</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">{t("advancedPricing.title")}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6c7e75]">
-            Calendar-style editor for seasonal rate overrides and minimum-stay rules per room type. Overrides resolve by
-            narrowest matching date range.
+            {t("advancedPricing.lede")}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-[#70837a]">
           <Clock3 size={14} aria-hidden="true" />
-          <span>Thailand time · {formatMonthLabel(monthCursor)}</span>
-          {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label="กำลังอัปเดตข้อมูล" />}
+          <span>{t("advancedPricing.thailandTime", { month: formatMonthLabel(monthCursor) })}</span>
+          {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("advancedPricing.updatingDataAriaLabel")} />}
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3" aria-label="Pricing summary">
+      <section className="grid gap-4 sm:grid-cols-3" aria-label={t("advancedPricing.pricingSummaryAria")}>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">Base price</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("advancedPricing.basePrice")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">
               {selectedRoomType ? formatCurrency(Number(selectedRoomType.base_price)) : "—"}
             </p>
-            <p className="mt-1 text-xs text-[#778a80]">{selectedRoomType?.name ?? "Select a room type"}</p>
+            <p className="mt-1 text-xs text-[#778a80]">{selectedRoomType?.name ?? t("advancedPricing.selectRoomTypeFirst")}</p>
           </CardContent>
         </Card>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">Rate overrides</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("advancedPricing.rateOverrides")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{overridesForRoom.length}</p>
-            <p className="mt-1 text-xs text-[#778a80]">Active rules for this room type</p>
+            <p className="mt-1 text-xs text-[#778a80]">{t("advancedPricing.activeRulesForRoomType")}</p>
           </CardContent>
         </Card>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">Min stay enforcement</p>
-            <p className="mt-3 text-sm font-semibold text-[#263b31]">Checked at booking creation</p>
-            <p className="mt-1 text-xs text-[#778a80]">min_stay_nights is enforced server-side</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("advancedPricing.minStayEnforcement")}</p>
+            <p className="mt-3 text-sm font-semibold text-[#263b31]">{t("advancedPricing.checkedAtBooking")}</p>
+            <p className="mt-1 text-xs text-[#778a80]">{t("advancedPricing.minStayServerSide")}</p>
           </CardContent>
         </Card>
       </section>
 
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Room type selector">
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label={t("advancedPricing.roomTypeSelectorAria")}>
         <div className="flex items-center gap-2 text-sm font-semibold text-[#263b31]">
-          <Tag size={16} aria-hidden="true" /> Room type
+          <Tag size={16} aria-hidden="true" /> {t("advancedPricing.roomType")}
         </div>
         <div className="w-full sm:max-w-sm">
           <Select value={effectiveRoomTypeId} onValueChange={setSelectedRoomTypeId}>
             <SelectTrigger className="border-[#dce4df] bg-white">
-              <SelectValue placeholder="Select room type" />
+              <SelectValue placeholder={t("advancedPricing.selectRoomTypePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {roomTypes.map((rt) => (
@@ -304,30 +306,30 @@ export default function AdvancedPricing() {
           <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-[#edf2ee] pb-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
-                <CalendarDays size={18} aria-hidden="true" /> Pricing calendar
+                <CalendarDays size={18} aria-hidden="true" /> {t("advancedPricing.pricingCalendar")}
               </CardTitle>
-              <CardDescription>Effective rate per night — base_price or matching override.</CardDescription>
+              <CardDescription>{t("advancedPricing.pricingCalendarDesc")}</CardDescription>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8 border-[#dce4df]" onClick={() => setMonthCursor((d) => addMonths(d, -1))} aria-label="Previous month">
+              <Button variant="outline" size="icon" className="h-8 w-8 border-[#dce4df]" onClick={() => setMonthCursor((d) => addMonths(d, -1))} aria-label={t("advancedPricing.prevMonthAria")}>
                 <ChevronLeft size={16} />
               </Button>
               <span className="min-w-[140px] text-center text-sm font-semibold text-[#263b31]">{formatMonthLabel(monthCursor)}</span>
-              <Button variant="outline" size="icon" className="h-8 w-8 border-[#dce4df]" onClick={() => setMonthCursor((d) => addMonths(d, 1))} aria-label="Next month">
+              <Button variant="outline" size="icon" className="h-8 w-8 border-[#dce4df]" onClick={() => setMonthCursor((d) => addMonths(d, 1))} aria-label={t("advancedPricing.nextMonthAria")}>
                 <ChevronRight size={16} />
               </Button>
               <Button variant="ghost" size="sm" className="ml-1 text-[#6c7e75]" onClick={() => setMonthCursor(startOfMonth(new Date()))}>
-                Today
+                {t("advancedPricing.today")}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="pt-5">
             <div className="mb-3 flex flex-wrap gap-3 text-xs text-[#6c7e75]">
-              <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#1d6b56]" aria-hidden="true" /> Override active</span>
-              <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#dce4df]" aria-hidden="true" /> Base price</span>
+              <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#1d6b56]" aria-hidden="true" /> {t("advancedPricing.overrideActive")}</span>
+              <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#dce4df]" aria-hidden="true" /> {t("advancedPricing.basePriceLegend")}</span>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium uppercase tracking-[0.08em] text-[#789087]">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+              {[t("advancedPricing.mon"), t("advancedPricing.tue"), t("advancedPricing.wed"), t("advancedPricing.thu"), t("advancedPricing.fri"), t("advancedPricing.sat"), t("advancedPricing.sun")].map((d) => (
                 <div key={d} className="py-1">
                   {d}
                 </div>
@@ -350,21 +352,21 @@ export default function AdvancedPricing() {
                     <span className="mt-1 text-[11px] text-[#6c7e75]">{formatDayLabel(day)}</span>
                     <span className={`mt-auto text-xs font-semibold ${isOverride ? "text-[#1d6b56]" : "text-[#4a6359]"}`}>{formatCurrency(resolved.price)}</span>
                     {isOverride && matchingOverride?.min_stay_nights ? (
-                      <span className="text-[10px] text-[#6c7e75]">min {matchingOverride.min_stay_nights} nights</span>
+                      <span className="text-[10px] text-[#6c7e75]">{t("advancedPricing.minNights", { count: matchingOverride.min_stay_nights })}</span>
                     ) : null}
                   </div>
                 );
               })}
             </div>
-            <p className="mt-4 text-xs leading-5 text-[#667a70]">Precedence: narrowest matching date range wins. Overlapping create requests are rejected.</p>
+            <p className="mt-4 text-xs leading-5 text-[#667a70]">{t("advancedPricing.precedenceHint")}</p>
           </CardContent>
         </Card>
 
         <div className="space-y-5">
           <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
-              <CardTitle className="text-lg text-[#263b31]">Create rate override</CardTitle>
-              <CardDescription>Date-range override for the selected room type.</CardDescription>
+              <CardTitle className="text-lg text-[#263b31]">{t("advancedPricing.createRateOverride")}</CardTitle>
+              <CardDescription>{t("advancedPricing.createRateOverrideDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
               {formError && (
@@ -375,26 +377,26 @@ export default function AdvancedPricing() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="override-start" className="text-xs text-[#52655b]">
-                    Start date
+                    {t("advancedPricing.startDate")}
                   </Label>
                   <Input id="override-start" type="date" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} className="border-[#dce4df]" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="override-end" className="text-xs text-[#52655b]">
-                    End date
+                    {t("advancedPricing.endDate")}
                   </Label>
                   <Input id="override-end" type="date" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} className="border-[#dce4df]" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="override-price" className="text-xs text-[#52655b]">
-                  Override price (THB)
+                  {t("advancedPricing.overridePriceLabel")}
                 </Label>
                 <Input
                   id="override-price"
                   type="number"
                   min="0"
-                  placeholder="e.g. 3500"
+                  placeholder={t("advancedPricing.overridePricePlaceholder")}
                   value={form.override_price}
                   onChange={(e) => setForm((p) => ({ ...p, override_price: e.target.value }))}
                   className="border-[#dce4df]"
@@ -402,30 +404,36 @@ export default function AdvancedPricing() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="override-minstay" className="text-xs text-[#52655b]">
-                  Min stay nights (optional)
+                  {t("advancedPricing.minStayNightsLabel")}
                 </Label>
                 <Input
                   id="override-minstay"
                   type="number"
                   min="1"
                   step="1"
-                  placeholder="e.g. 2"
+                  placeholder={t("advancedPricing.minStayNightsPlaceholder")}
                   value={form.min_stay_nights}
                   onChange={(e) => setForm((p) => ({ ...p, min_stay_nights: e.target.value }))}
                   className="border-[#dce4df]"
                 />
               </div>
               <Button type="button" onClick={handleCreate} disabled={createMutation.isPending} className="w-full bg-[#1d6b56] hover:bg-[#155442]">
-                <Plus size={15} /> {createMutation.isPending ? "Adding…" : "Add override"}
+                <Plus size={15} /> {createMutation.isPending ? t("advancedPricing.adding") : t("advancedPricing.addOverride")}
               </Button>
-              <p className="text-xs leading-5 text-[#778a80]">Fields: room_type_id, start_date, end_date, override_price, min_stay_nights. Overlapping ranges are rejected with CONFLICT.</p>
+              <p className="text-xs leading-5 text-[#778a80]">{t("advancedPricing.fieldsFootnote")}</p>
             </CardContent>
           </Card>
 
           <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
-              <CardTitle className="text-lg text-[#263b31]">Rate overrides</CardTitle>
-              <CardDescription>{overridesForRoom.length ? `${overridesForRoom.length} rule${overridesForRoom.length === 1 ? "" : "s"} for ${selectedRoomType?.name}` : "No overrides yet"}</CardDescription>
+              <CardTitle className="text-lg text-[#263b31]">{t("advancedPricing.rateOverrides")}</CardTitle>
+              <CardDescription>
+                {overridesForRoom.length
+                  ? (overridesForRoom.length === 1
+                      ? t("advancedPricing.rulesCount", { count: overridesForRoom.length, name: selectedRoomType?.name })
+                      : t("advancedPricing.rulesCountPlural", { count: overridesForRoom.length, name: selectedRoomType?.name }))
+                  : t("advancedPricing.noOverridesYet")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-5">
               {overridesForRoom.length ? (
@@ -433,15 +441,15 @@ export default function AdvancedPricing() {
                   <div key={o.id} className="flex items-start justify-between gap-3 rounded-xl border border-[#e6eee9] bg-[#fbfdfb] p-3">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-[#2a4035]">{formatCurrency(o.override_price)} · {o.start_date} → {o.end_date}</p>
-                      <p className="mt-1 text-xs text-[#7a8c83]">{o.min_stay_nights ? `min_stay_nights: ${o.min_stay_nights} nights` : "No minimum stay"} · id {o.id.slice(0, 8)}</p>
+                      <p className="mt-1 text-xs text-[#778a80]">{o.min_stay_nights ? t("advancedPricing.minStayDetail", { count: o.min_stay_nights }) : t("advancedPricing.noMinimumStay")} · id {o.id.slice(0, 8)}</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-[#8a9a93] hover:text-red-600" disabled={deleteMutation.isPending} onClick={() => handleDelete(o.id)} aria-label={`Delete override ${o.start_date} to ${o.end_date}`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-[#8a9a93] hover:text-red-600" disabled={deleteMutation.isPending} onClick={() => handleDelete(o.id)} aria-label={t("advancedPricing.deleteOverrideAria", { start: o.start_date, end: o.end_date })}>
                       <Trash2 size={14} />
                     </Button>
                   </div>
                 ))
               ) : (
-                <PageState tone="empty" title="No rate overrides" description="Add a date-range rule to override the base price for this room type." />
+                <PageState tone="empty" title={t("advancedPricing.noRateOverridesTitle")} description={t("advancedPricing.noRateOverridesDesc")} />
               )}
             </CardContent>
           </Card>

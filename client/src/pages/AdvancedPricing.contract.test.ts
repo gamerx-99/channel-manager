@@ -29,17 +29,18 @@ describe("AdvancedPricing dashboard contract", () => {
   });
 
   it("includes calendar-style editor, override CRUD, and pricing-specific markers", () => {
-    expect(component).toContain("Advanced Pricing");
-    expect(component).toContain("Pricing calendar");
-    expect(component).toContain("Rate overrides");
-    expect(component).toContain("Create rate override");
+    // Note: Updated per Rule 6 to match translation dictionary keys used in AdvancedPricing.tsx
+    expect(component).toContain("advancedPricing.title");
+    expect(component).toContain("advancedPricing.pricingCalendar");
+    expect(component).toContain("advancedPricing.rateOverrides");
+    expect(component).toContain("advancedPricing.createRateOverride");
     expect(component).toContain("override_price");
     expect(component).toContain("min_stay_nights");
     expect(component).toContain("start_date");
     expect(component).toContain("end_date");
     expect(component).toContain("room_type_id");
     expect(component).toContain('role="status"');
-    expect(component).toContain("Loading pricing data");
+    expect(component).toContain("advancedPricing.loadingPricingData");
     expect(component).toContain("resolveEffectiveRate");
     expect(component).toContain("overlaps");
   });
