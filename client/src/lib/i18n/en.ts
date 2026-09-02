@@ -84,6 +84,26 @@ const en = {
     privateWorkspace: "Private workspace",
     needHelp: "Need help? Contact support",
   },
+  acceptInvite: {
+    eyebrowAside: "Team onboard / Invitation",
+    headlineAside1: "Welcome to the team.",
+    headlineAside2: "Set your password.",
+    descAside: "Join your hotel management workspace and start collaborating with your team.",
+    eyebrowCard: "Accept invitation",
+    titleCard: "Set your password",
+    descCard: "Please choose a secure password to activate your account",
+    passwordLabel: "New password",
+    confirmPasswordLabel: "Confirm new password",
+    setPassword: "Set password & enter",
+    savingPassword: "Saving password…",
+    verifyingInvite: "Verifying your invitation…",
+    verifyingDesc: "Connecting your session from the invite link. Please wait.",
+    invalidTitle: "Invitation link is invalid or expired",
+    invalidDesc: "This invite link may have already been used or has expired. Please contact your property administrator for a new invite.",
+    backToLogin: "Back to sign in",
+    passwordTooShort: "Choose a password with at least 8 characters.",
+    passwordMismatch: "Passwords do not match.",
+  },
 } as const;
 
 type DeepStringDictionary<T> = {

@@ -15,6 +15,7 @@ import Communications from "./pages/Communications";
 import Login from "./pages/Login";
 import MfaEnroll from "./pages/MfaEnroll";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
+import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
 import Bookings from "./pages/Bookings";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/signup/:token">
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
+      <Route path="/accept-invite" component={AcceptInvite} />
       <Route path="/dashboard/channels">
         <PrivateRoute><ChannelPerformance /></PrivateRoute>
       </Route>
