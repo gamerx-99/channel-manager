@@ -32,11 +32,12 @@ describe("Financials dashboard contract", () => {
   });
 
   it("includes loading, retry, revenue trend, room-type breakdown, and CSV export contracts", () => {
-    expect(component).toContain("Loading financials data");
+    // Note: Updated per Rule 6 to match translation dictionary keys used in Financials.tsx
+    expect(component).toContain('financials.loadingData');
     expect(component).toContain('role="status"');
     expect(component).toContain("<AreaChart data={data.trend}");
     expect(component).toContain("<BarChart data={data.roomTypeBreakdown}");
     expect(component).toContain("downloadRoomTypeCsv");
-    expect(component).toContain('actionLabel="Try again"');
+    expect(component).toContain('actionLabel={t("financials.tryAgain")}');
   });
 });

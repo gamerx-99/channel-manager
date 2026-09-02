@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import type { FinancialsRoomTypeBreakdown } from "@/../../server/financials";
 import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
+import { useTranslation } from "@/lib/i18n";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -48,7 +49,7 @@ function downloadRoomTypeCsv(rows: FinancialsRoomTypeBreakdown[]) {
     headers.map(escapeCsv).join(","),
     ...rows.map(row => [row.name, String(row.bookings), row.revenue.toFixed(2), row.averageBookingValue.toFixed(2)].map(escapeCsv).join(",")),
   ].join("\n");
-  const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -60,11 +61,12 @@ function downloadRoomTypeCsv(rows: FinancialsRoomTypeBreakdown[]) {
 }
 
 function LoadingDashboard() {
+  const { t } = useTranslation();
   return (
-    <div className="space-y-6" role="status" aria-live="polite" aria-label="กำลังโหลดข้อมูลรายได้">
+    <div className="space-y-6" role="status" aria-live="polite" aria-label={t("financials.loadingAriaLabel")}>
       <div className="flex items-center gap-3 rounded-xl border border-[#dce4df] bg-[#f6faf7] px-4 py-3 text-sm text-[#456156]">
         <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-[#9bbcae] border-t-[#1d6b56]" aria-hidden="true" />
-        <span>Loading financials data…</span>
+        <span>{t("financials.loadingData")}</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {["revenue", "average", "occupancy", "properties"].map((item) => (
@@ -80,6 +82,7 @@ function LoadingDashboard() {
 }
 
 export default function Financials() {
+  const { t } = useTranslation();
   const { hotels, selectedHotelId } = useHotel();
   const hotelId = selectedHotelId ?? hotels[0]?.id;
   const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery();
@@ -90,9 +93,9 @@ export default function Financials() {
     return (
       <PageState
         tone="error"
-        title="Unable to load financials"
-        description="The revenue report could not be retrieved for the properties visible to your account."
-        actionLabel="Try again"
+        title={t("financials.unableToLoadTitle")}
+        description={t("financials.unableToLoadDesc")}
+        actionLabel={t("financials.tryAgain")}
         onAction={() => void refetch()}
       />
     );
@@ -102,31 +105,31 @@ export default function Financials() {
     <div className="space-y-7 pb-8">
       <section className="flex flex-col gap-5 border-b border-[#dce4df] pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="eyebrow">Financials / Revenue</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">Financials</h1>
+          <p className="eyebrow">{t("financials.eyebrow")}</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">{t("financials.title")}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6c7e75]">
-            Revenue collected from bookings across the properties you own, private to your account.
+            {t("financials.lede")}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-[#70837a]">
           <Clock3 size={14} aria-hidden="true" />
-          <span>Last 30 days &middot; {formatDateLabel(data.periodStart)} &ndash; {formatDateLabel(data.periodEnd)}</span>
-          {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label="กำลังอัปเดตข้อมูล" />}
+          <span>{t("financials.last30Days", { start: formatDateLabel(data.periodStart), end: formatDateLabel(data.periodEnd) })}</span>
+          {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("financials.updatingDataAriaLabel")} />}
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Financials summary">
-        <MetricCard label="Total revenue" value={formatCurrency(data.totals.revenue)} detail={`${data.totals.cancelledBookings} cancelled`} icon={CircleDollarSign} tone="amber" />
-        <MetricCard label="Avg. booking value" value={formatCurrency(data.totals.averageBookingValue)} detail={`${data.totals.bookings} active bookings`} icon={TrendingUp} tone="pine" />
-        <MetricCard label="Occupied nights" value={formatCompactNumber(data.totals.occupancyNights)} detail="Last 30 days" icon={Percent} tone="slate" />
-        <MetricCard label="Properties" value={formatCompactNumber(data.totals.hotelCount)} detail="Included in this report" icon={BarChart3} tone="pine" />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("financials.summaryAria")}>
+        <MetricCard label={t("financials.totalRevenue")} value={formatCurrency(data.totals.revenue)} detail={t("financials.cancelledCount", { count: data.totals.cancelledBookings })} icon={CircleDollarSign} tone="amber" />
+        <MetricCard label={t("financials.avgBookingValue")} value={formatCurrency(data.totals.averageBookingValue)} detail={t("financials.activeBookingsCount", { count: data.totals.bookings })} icon={TrendingUp} tone="pine" />
+        <MetricCard label={t("financials.occupiedNights")} value={formatCompactNumber(data.totals.occupancyNights)} detail={t("financials.last30DaysDetail")} icon={Percent} tone="slate" />
+        <MetricCard label={t("financials.properties")} value={formatCompactNumber(data.totals.hotelCount)} detail={t("financials.includedInReport")} icon={BarChart3} tone="pine" />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardHeader className="border-b border-[#edf2ee] pb-4">
-            <CardTitle className="text-lg text-[#263b31]">Revenue trend</CardTitle>
-            <CardDescription>Revenue collected by check-in date.</CardDescription>
+            <CardTitle className="text-lg text-[#263b31]">{t("financials.revenueTrendTitle")}</CardTitle>
+            <CardDescription>{t("financials.revenueTrendDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-5">
             <ChartContainer config={chartConfig} className="h-[300px] w-full aspect-auto">
@@ -140,7 +143,7 @@ export default function Financials() {
                 <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e8efea" />
                 <XAxis dataKey="date" tickFormatter={formatDateLabel} tickLine={false} axisLine={false} minTickGap={24} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={44} />
-                <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => formatDateLabel(String(value))} formatter={(value) => <><span className="text-muted-foreground">Revenue</span><span className="font-mono font-medium">{formatCurrency(Number(value))}</span></>} />} />
+                <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => formatDateLabel(String(value))} formatter={(value) => <><span className="text-muted-foreground">{t("financials.revenue")}</span><span className="font-mono font-medium">{formatCurrency(Number(value))}</span></>} />} />
                 <Area type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2.5} fill="url(#financialsRevenueFill)" activeDot={{ r: 5 }} />
               </AreaChart>
             </ChartContainer>
@@ -150,8 +153,8 @@ export default function Financials() {
         <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-[#edf2ee] pb-4">
             <div>
-              <CardTitle className="text-lg text-[#263b31]">Revenue by room type</CardTitle>
-              <CardDescription>Which room types earned the most.</CardDescription>
+              <CardTitle className="text-lg text-[#263b31]">{t("financials.revenueByRoomTypeTitle")}</CardTitle>
+              <CardDescription>{t("financials.revenueByRoomTypeDesc")}</CardDescription>
             </div>
             {data.roomTypeBreakdown.length > 0 && (
               <button
@@ -159,7 +162,7 @@ export default function Financials() {
                 onClick={() => downloadRoomTypeCsv(data.roomTypeBreakdown)}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#cfe0d6] bg-[#f6faf7] px-2.5 py-1.5 text-xs font-medium text-[#39715c] hover:bg-[#edf7f1]"
               >
-                <Download size={13} aria-hidden="true" /> CSV
+                <Download size={13} aria-hidden="true" /> {t("financials.downloadCsv")}
               </button>
             )}
           </CardHeader>
@@ -170,12 +173,12 @@ export default function Financials() {
                   <CartesianGrid horizontal={false} strokeDasharray="4 4" stroke="#e8efea" />
                   <XAxis type="number" allowDecimals={false} hide />
                   <YAxis type="category" dataKey="name" width={104} tickLine={false} axisLine={false} tick={{ fill: "#62766b", fontSize: 12 }} />
-                  <ChartTooltip content={<ChartTooltipContent hideLabel formatter={(value) => <><span className="text-muted-foreground">Revenue</span><span className="font-mono font-medium">{formatCurrency(Number(value))}</span></>} />} />
+                  <ChartTooltip content={<ChartTooltipContent hideLabel formatter={(value) => <><span className="text-muted-foreground">{t("financials.revenue")}</span><span className="font-mono font-medium">{formatCurrency(Number(value))}</span></>} />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 5, 5, 0]} barSize={24} />
                 </BarChart>
               </ChartContainer>
             ) : (
-              <PageState tone="empty" title="No room type revenue yet" description="Bookings will appear here once check-ins fall within the last 30 days." />
+              <PageState tone="empty" title={t("financials.noRoomTypeRevenueTitle")} description={t("financials.noRoomTypeRevenueDesc")} />
             )}
           </CardContent>
         </Card>
@@ -209,6 +212,7 @@ function MetricCard({ label, value, detail, icon: Icon, tone }: { label: string;
 // ─── Phase 12B: PromptPay QR Settings (per-hotel) ────────────────────────────
 
 function PromptPaySettings({ hotelId }: { hotelId: string }) {
+  const { t } = useTranslation();
   const [promptPayId, setPromptPayId] = useState("");
   const [timeoutMin, setTimeoutMin] = useState(15);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -246,10 +250,10 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
             </span>
             <div>
               <CardTitle id="promptpay-settings-heading" className="text-base font-semibold text-[#1b2c25]">
-                PromptPay Settings
+                {t("financials.promptPayTitle")}
               </CardTitle>
               <CardDescription className="text-xs text-[#6c7e75]">
-                ตั้งค่า PromptPay ID เพื่อสร้าง QR Code สำหรับรับชำระเงินจากลูกค้าโดยตรง
+                {t("financials.promptPayDesc")}
               </CardDescription>
             </div>
           </div>
@@ -258,7 +262,7 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1">
               <label htmlFor="promptpay-id-input" className="mb-1 block text-xs font-medium text-[#456156]">
-                PromptPay ID (เบอร์โทร 10 หลัก หรือ บัตรประชาชน/Tax ID 13 หลัก)
+                {t("financials.promptPayIdLabel")}
               </label>
               <input
                 id="promptpay-id-input"
@@ -274,7 +278,7 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
             </div>
             <div className="w-44">
               <label htmlFor="promptpay-timeout" className="mb-1 block text-xs font-medium text-[#456156]">
-                หมดเวลาใน (นาที)
+                {t("financials.timeoutLabel")}
               </label>
               <select
                 id="promptpay-timeout"
@@ -283,14 +287,14 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
                 className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
               >
                 {[5, 10, 15, 20, 30, 60].map((m) => (
-                  <option key={m} value={m}>{m} นาที</option>
+                  <option key={m} value={m}>{t("financials.minutes", { count: m })}</option>
                 ))}
               </select>
             </div>
           </div>
 
           {saveError && <p className="text-xs text-red-600" role="alert">{saveError}</p>}
-          {saved && <p className="text-xs text-[#1d6b56]" role="status">บันทึกสำเร็จ ✓</p>}
+          {saved && <p className="text-xs text-[#1d6b56]" role="status">{t("financials.savedSuccess")}</p>}
 
           <button
             id="promptpay-save-btn"
@@ -299,11 +303,11 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
             onClick={handleSave}
             className="w-max rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
           >
-            {savePromptPay.isPending ? "กำลังบันทึก…" : "บันทึก PromptPay ID"}
+            {savePromptPay.isPending ? t("financials.saving") : t("financials.savePromptPayId")}
           </button>
 
           <p className="text-xs text-[#789087]">
-            PromptPay ID ใช้สำหรับสร้าง QR Code เท่านั้น ลูกค้าจ่ายตรงเข้าบัญชีของที่พัก แพลตฟอร์มไม่รับหรือถือเงิน
+            {t("financials.promptPayDisclaimer")}
           </p>
         </CardContent>
       </Card>
