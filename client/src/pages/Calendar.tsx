@@ -73,7 +73,7 @@ function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: bo
   return days;
 }
 
-const MONTH_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_WEEKDAY_KEYS = ["weekdaySun", "weekdayMon", "weekdayTue", "weekdayWed", "weekdayThu", "weekdayFri", "weekdaySat"];
 
 export default function Calendar({ id }: { id: string }) {
   const { t } = useTranslation();
@@ -365,16 +365,17 @@ export default function Calendar({ id }: { id: string }) {
         ) : (
           <div className="calendar-month-scroll">
             <div className="calendar-month-grid">
-              {MONTH_WEEKDAYS.map(weekday => (
-                <div className="calendar-month-header" key={weekday}>
-                  {weekday}
+              {MONTH_WEEKDAY_KEYS.map(weekdayKey => (
+                <div className="calendar-month-header" key={weekdayKey}>
+                  {t(`availability.${weekdayKey}`)}
                 </div>
               ))}
               {monthDays.map(cell => {
                 const agg = getDayAggregate(cell.date);
                 const isToday = agg.dateStr === todayIso;
                 const statusDotClass = agg.status === "closed" ? "slate" : agg.status === "low" ? "amber" : "pine";
-                const statusLabelText = agg.status === "closed" ? "Closed / Full" : agg.status === "low" ? "Low inventory" : "Healthy";
+                const statusLabelText = agg.status === "closed" ? t("availability.statusClosed") : agg.status === "low" ? t("availability.statusLow") : t("availability.statusHealthy");
+                const priceSuffix = agg.minPrice !== null ? t("availability.startingFromPrice", { price: "฿" + agg.minPrice.toLocaleString() }) : "";
 
                 return (
                   <button
@@ -382,8 +383,8 @@ export default function Calendar({ id }: { id: string }) {
                     type="button"
                     className={`calendar-month-cell ${cell.isCurrentMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`}
                     onClick={() => handleMonthDayClick(cell.date)}
-                    aria-label={`${agg.dateStr}: ${agg.totalAvailable} of ${agg.totalRooms} rooms available, ${statusLabelText}${agg.minPrice !== null ? `, starting from ฿${agg.minPrice.toLocaleString()}` : ""}. Click to edit in week view.`}
-                    title={`${agg.dateStr} · ${statusLabelText} · ${agg.totalAvailable}/${agg.totalRooms} rooms available · Click to edit`}
+                    aria-label={t("availability.monthCellAriaLabel", { date: agg.dateStr, available: String(agg.totalAvailable), total: String(agg.totalRooms), status: statusLabelText }) + priceSuffix}
+                    title={t("availability.monthCellTitle", { date: agg.dateStr, status: statusLabelText, available: String(agg.totalAvailable), total: String(agg.totalRooms) })}
                   >
                     <div className="month-cell-top">
                       <span className="month-cell-day">{cell.date.getDate()}</span>
