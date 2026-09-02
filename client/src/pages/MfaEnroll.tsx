@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { shouldEnforceMfaForRoles, hasVerifiedTotpFactor, enrollTotpFactor } from "@/lib/mfa";
 import { PLATFORM_ROLES } from "@shared/authorization";
+import { useTranslation } from "@/lib/i18n";
 
 export default function MfaEnroll() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [step, setStep] = useState<"intro" | "enrolling" | "verifying" | "done">("intro");
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export default function MfaEnroll() {
       setStep("verifying");
     } catch (e) {
       setSubmitting(false);
-      setError(e instanceof Error ? e.message : "Enrollment failed");
+      setError(e instanceof Error ? e.message : t("mfaEnroll.errorEnrollFailed"));
       setStep("intro");
     }
   }
@@ -86,7 +88,7 @@ export default function MfaEnroll() {
       // Create fresh challenge (single-use)
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
       if (challengeError || !challengeData) {
-        setError(challengeError?.message ?? "Unable to create MFA challenge.");
+        setError(challengeError?.message ?? t("mfaEnroll.errorChallengeFailed"));
         setSubmitting(false);
         return;
       }
@@ -100,7 +102,7 @@ export default function MfaEnroll() {
       setSubmitting(false);
       if (verifyError) {
         const msg = verifyError.message.toLowerCase().includes("invalid")
-          ? "Incorrect code — please check your authenticator app and enter the current 6-digit code."
+          ? t("mfaEnroll.errorIncorrectCode")
           : verifyError.message;
         setError(msg);
         return;
@@ -109,7 +111,7 @@ export default function MfaEnroll() {
       navigate("/dashboard");
     } catch (e) {
       setSubmitting(false);
-      setError(e instanceof Error ? e.message : "Verification failed");
+      setError(e instanceof Error ? e.message : t("mfaEnroll.errorVerifyFailed"));
     }
   }
 
@@ -134,27 +136,27 @@ export default function MfaEnroll() {
           <span className="brand-mark"><span /></span><strong>channel<em>manager</em></strong>
         </div>
         <div className="login-aside-copy">
-          <div className="eyebrow">Multi-factor authentication</div>
-          <h1>Secure your<br /><i>platform access.</i></h1>
-          <p>Platform administrators must enroll an authenticator app before accessing the workspace.</p>
+          <div className="eyebrow">{t("mfaEnroll.asideEyebrow")}</div>
+          <h1>{t("mfaEnroll.asideTitle")}<br /><i>{t("mfaEnroll.asideTitleHighlight")}</i></h1>
+          <p>{t("mfaEnroll.asideDesc")}</p>
         </div>
-        <div className="login-aside-foot"><span>Private hotel operations</span><span className="signal-text"><i /> Secure workspace</span></div>
+        <div className="login-aside-foot"><span>{t("mfaEnroll.asidePrivateHotel")}</span><span className="signal-text"><i /> {t("mfaEnroll.asideSecureWorkspace")}</span></div>
       </div>
       <main className="login-main">
         <div className="login-card">
-          <div className="eyebrow">MFA required</div>
-          <h2>Enroll authenticator</h2>
-          <p>Use an authenticator app (Google Authenticator, Authy, 1Password) to scan the QR code and enter the 6-digit code.</p>
+          <div className="eyebrow">{t("mfaEnroll.eyebrow")}</div>
+          <h2>{t("mfaEnroll.title")}</h2>
+          <p>{t("mfaEnroll.lede")}</p>
 
           {step === "intro" && (
             <>
-              <div className="login-security"><ShieldCheck size={15} /><span>Blocking enrollment — you cannot access the dashboard until MFA is enrolled.</span></div>
+              <div className="login-security"><ShieldCheck size={15} /><span>{t("mfaEnroll.blockingNotice")}</span></div>
               <button className="button button-primary login-button" type="button" onClick={() => void handleEnroll()} disabled={submitting}>
-                {submitting ? <><Loader2 size={16} className="animate-spin" /> Starting…</> : "Start enrollment"}
+                {submitting ? <><Loader2 size={16} className="animate-spin" /> {t("mfaEnroll.starting")}</> : t("mfaEnroll.startEnrollment")}
               </button>
               {canSkip !== false && (
                 <button className="button" type="button" onClick={() => void handleSkipToDashboard()} style={{ marginTop: 8 }}>
-                  Continue without MFA (hotel roles only)
+                  {t("mfaEnroll.continueWithoutMfa")}
                 </button>
               )}
             </>
@@ -164,33 +166,33 @@ export default function MfaEnroll() {
             <div style={{ marginTop: 16 }}>
               <div style={{ background: "#fff", padding: 12, borderRadius: 8, display: "inline-block", border: "1px solid #e5e7eb" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrCode} alt="MFA QR code" style={{ width: 180, height: 180 }} />
+                <img src={qrCode} alt={t("mfaEnroll.qrAlt")} style={{ width: 180, height: 180 }} />
               </div>
-              {secret && <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8, wordBreak: "break-all" }}>Secret: {secret}</p>}
-              <label style={{ display: "block", marginTop: 16 }}>6-digit code from your authenticator app
+              {secret && <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8, wordBreak: "break-all" }}>{t("mfaEnroll.secretLabel", { secret })}</p>}
+              <label style={{ display: "block", marginTop: 16 }}>{t("mfaEnroll.codeInputLabel")}
                 <input
                   type="text"
                   inputMode="numeric"
                   value={code}
                   onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   onKeyDown={e => { if (e.key === "Enter" && code.trim().length === 6 && !submitting) void handleVerify(); }}
-                  placeholder="123456"
+                  placeholder={t("mfaEnroll.codePlaceholder")}
                   maxLength={6}
                   style={{ marginTop: 4 }}
                 />
               </label>
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button className="button button-primary login-button" type="button" onClick={() => void handleVerify()} disabled={submitting || code.trim().length < 6} style={{ flex: 1 }}>
-                  {submitting ? <><Loader2 size={16} className="animate-spin" /> Verifying…</> : "Verify and continue"}
+                  {submitting ? <><Loader2 size={16} className="animate-spin" /> {t("mfaEnroll.verifying")}</> : t("mfaEnroll.verifyAndContinue")}
                 </button>
                 <button className="button" type="button" onClick={handleReset} disabled={submitting}>
-                  Cancel
+                  {t("mfaEnroll.cancel")}
                 </button>
               </div>
             </div>
           )}
 
-          {step === "enrolling" && !qrCode && submitting && <p style={{ marginTop: 16 }}><Loader2 size={16} className="animate-spin" /> Preparing secure enrollment…</p>}
+          {step === "enrolling" && !qrCode && submitting && <p style={{ marginTop: 16 }}><Loader2 size={16} className="animate-spin" /> {t("mfaEnroll.preparing")}</p>}
 
           {error && <p className="form-error" role="alert">{error}</p>}
         </div>
