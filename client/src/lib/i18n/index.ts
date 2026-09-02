@@ -50,7 +50,7 @@ export function translate(
   if (params) {
     return Object.entries(params).reduce(
       (acc, [paramKey, paramValue]) =>
-        acc.replace(new RegExp(`\\{${paramKey}\\}`, "g"), String(paramValue)),
+        acc.replace(new RegExp(`\\{\\{${paramKey}\\}\\}|\\{${paramKey}\\}`, "g"), String(paramValue)),
       text
     );
   }
