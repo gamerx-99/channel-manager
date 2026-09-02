@@ -113,11 +113,11 @@ export default function Calendar({ id }: { id: string }) {
   };
 
   if (hotelQuery.isLoading || availabilityQuery.isLoading) {
-    return <div className="page-content"><PageState tone="loading" title="กำลังโหลดปฏิทินห้องพัก" description="กำลังอ่าน availability และราคาแบบ live จาก Supabase…" /></div>;
+    return <div className="page-content"><PageState tone="loading" title={t("availability.loadingTitle")} description={t("availability.loadingDesc")} /></div>;
   }
 
   if (hotelQuery.error || availabilityQuery.error || !hotelQuery.data) {
-    return <div className="page-content"><PageState tone="error" title="โหลดปฏิทินไม่สำเร็จ" description={hotelQuery.error?.message ?? availabilityQuery.error?.message ?? "ไม่พบโรงแรมหรือไม่มีสิทธิ์เข้าถึงข้อมูลนี้"} actionLabel="ลองใหม่" onAction={retryAvailability} actionPending={hotelQuery.isFetching || availabilityQuery.isFetching} /></div>;
+    return <div className="page-content"><PageState tone="error" title={t("availability.errorTitle")} description={hotelQuery.error?.message ?? availabilityQuery.error?.message ?? t("availability.errorDescFallback")} actionLabel={t("availability.retryButton")} onAction={retryAvailability} actionPending={hotelQuery.isFetching || availabilityQuery.isFetching} /></div>;
   }
 
   const hotel = hotelQuery.data;
@@ -153,7 +153,7 @@ export default function Calendar({ id }: { id: string }) {
       setEditing(false);
       setSaved(true);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Unable to save availability changes.");
+      setSaveError(error instanceof Error ? error.message : t("availability.saveErrorFallback"));
     }
   }
 
@@ -223,14 +223,14 @@ export default function Calendar({ id }: { id: string }) {
 
   return (
     <div className="page-content calendar-page">
-      <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>Availability</strong></div>
+      <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>{t("availability.title")}</strong></div>
       <section className="page-intro intro-split">
-        <div><div className="eyebrow">Operations / Daily controls</div><h1>Availability<span className="title-mark">.</span></h1><p className="lede">Rooms available and public rates, one day at a time.</p></div>
+        <div><div className="eyebrow">{t("availability.eyebrow")}</div><h1>{t("availability.title")}<span className="title-mark">.</span></h1><p className="lede">{t("availability.lede")}</p></div>
         <div className="intro-actions">
-          <button className="button button-quiet" type="button" disabled title="Availability settings will be added with the room operations workflow"><SlidersHorizontal size={15} /> View settings</button>
+          <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>
           {editing ? (
             <button className="button button-primary" type="button" disabled={updateAvailability.isPending} onClick={() => void saveCalendar()}>
-              <Save size={15} /> {updateAvailability.isPending ? "Saving…" : "Save changes"}
+              <Save size={15} /> {updateAvailability.isPending ? t("availability.saving") : t("availability.saveChanges")}
             </button>
           ) : (
             <button
@@ -243,13 +243,13 @@ export default function Calendar({ id }: { id: string }) {
                 setSaveError(null);
               }}
             >
-              <Edit3 size={15} /> Edit calendar
+              <Edit3 size={15} /> {t("availability.editCalendar")}
             </button>
           )}
         </div>
       </section>
-      {saved && <div className="save-toast"><span className="check-circle">✓</span> Availability changes saved to Supabase.</div>}
-      {(saveError || updateAvailability.error) && <div className="save-toast error-state" role="alert">{saveError || updateAvailability.error?.message}<button className="text-link" type="button" onClick={() => void saveCalendar()}>ลองบันทึกอีกครั้ง</button></div>}
+      {saved && <div className="save-toast"><span className="check-circle">✓</span> {t("availability.savedToast")}</div>}
+      {(saveError || updateAvailability.error) && <div className="save-toast error-state" role="alert">{saveError || updateAvailability.error?.message}<button className="text-link" type="button" onClick={() => void saveCalendar()}>{t("availability.retrySave")}</button></div>}
 
       <section className="calendar-toolbar">
         <div className="calendar-nav-group">
@@ -311,7 +311,7 @@ export default function Calendar({ id }: { id: string }) {
 
         {viewMode === "week" ? (
           <>
-            <p className="mobile-scroll-hint" role="note">เลื่อนตารางในแนวนอนเพื่อดูวันถัดไปและอัตราของห้องทุกประเภท</p>
+            <p className="mobile-scroll-hint" role="note">{t("availability.mobileScrollHint")}</p>
             <div className="calendar-scroll">
               <table className="availability-table">
                 <thead>
@@ -406,30 +406,31 @@ export default function Calendar({ id }: { id: string }) {
         )}
 
         <div className="calendar-footer">
-          <span>Inventory is loaded under your Supabase hotel membership.</span>
-          <span className="signal-text"><i /> RLS protected</span>
+          <span>{t("availability.inventoryFooter")}</span>
+          <span className="signal-text"><i /> {t("availability.rlsProtected")}</span>
         </div>
       </section>
 
       <section className="calendar-notes">
         <div>
-          <div className="eyebrow">How it works</div>
+          <div className="eyebrow">{t("availability.howItWorks")}</div>
           <p>
             {viewMode === "week"
-              ? "Availability changes are saved to Supabase and can be surfaced on the public hotel page without exposing hotel-owner contact data."
-              : "Month view provides a monthly overview of total property availability and starting rates. Click any date to jump directly into weekly view for room-level edits."}
+              ? t("availability.howItWorksWeek")
+              : t("availability.howItWorksMonth")}
           </p>
         </div>
-        <Link href={`/hotels/${hotel.id}/bookings`} className="text-link">Go to bookings <ChevronRight size={14} /></Link>
+        <Link href={`/hotels/${hotel.id}/bookings`} className="text-link">{t("availability.goToBookings")} <ChevronRight size={14} /></Link>
       </section>
     </div>
   );
 }
 
 function AvailabilityCell({ available, price, editing, onChange }: { available: number; price: number; editing: boolean; onChange: (update: Partial<{ available: number; price: number }>) => void }) {
+  const { t } = useTranslation();
   const isLow = available <= 2;
   if (editing) {
-    return <div className={`availability-cell ${isLow ? "low" : ""}`}><input className="cell-input" value={available} min="0" type="number" aria-label="จำนวนห้องว่าง" onChange={event => onChange({ available: Math.max(0, Number(event.target.value)) })} /><input className="cell-price-input" value={price} min="0" type="number" aria-label="ราคา" onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></div>;
+    return <div className={`availability-cell ${isLow ? "low" : ""}`}><input className="cell-input" value={available} min="0" type="number" aria-label={t("availability.availableInputAria")} onChange={event => onChange({ available: Math.max(0, Number(event.target.value)) })} /><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></div>;
   }
-  return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "pine"}`} />{available} rooms</span><strong>฿{price.toLocaleString()}</strong></div>;
+  return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "pine"}`} />{t("availability.roomsCount", { count: available })}</span><strong>฿{price.toLocaleString()}</strong></div>;
 }
