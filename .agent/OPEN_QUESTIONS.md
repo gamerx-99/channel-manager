@@ -6,7 +6,7 @@ answer noted.
 
 ## Open
 
-- [ ] `public.rate_overrides` has not yet been created in the production Supabase project, confirmed by live Vercel logs on 2026-09-02 (`PGRST205: Could not find the table 'public.rate_overrides' in the schema cache`). ASSUMPTION: the code change in this ticket only makes the failure graceful (treat PGRST205 like 42P01 as a missing-table signal), but the actual `rate_overrides` feature will not persist or read real data until a human applies the corresponding migration by hand in the Supabase SQL editor and confirms the verify script passes. Raised 2026-09-02.
+- [ ] Phase 1 of i18n covers only the chrome structure (Sidebar, Topbar, Login) and translation dictionary infrastructure (`client/src/lib/i18n/`). Other application pages (Bookings, Hotels, Financials, Housekeeping, Communications, WebsiteBuilder, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, OtaSync, etc.) remain in English for now. ASSUMPTION: individual page content, modals, and data tables will be wired to the translation dictionary in subsequent dedicated phases. Raised 2026-09-02.
 - [ ] `DATABASE_URL`/`SUPABASE_POOLER_DB_URL` in `.env` are placeholder values, not a
       real pooler connection string — so `server/runPostgresMigration.mjs` and
       `server/verifySupabaseMigration.mjs` can't run against the live project from

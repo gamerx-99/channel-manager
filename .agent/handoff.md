@@ -1,5 +1,40 @@
 # Handoff log
 
+## [2026-09-02] Phase 1 i18n — Translation Infrastructure & Chrome Translation (EN/TH) — DONE ✅
+- **Context**: The application had an EN/TH toggle switch in the topbar (`LanguageSwitcher.tsx` + `LanguageContext.tsx`), but static strings across the app were hardcoded in English with no translation system connected. Phase 1 establishes the translation infrastructure and connects the application "chrome" (Sidebar, Topbar, and Login page).
+- **Changes**:
+  1. `client/src/lib/i18n/` (new module):
+     - `en.ts` — English translation dictionary with namespaces (`common`, `sidebar`, `topbar`, `breadcrumb`, `login`).
+     - `th.ts` — Thai translation dictionary strictly matching `TranslationDictionary` type.
+     - `index.ts` — `useTranslation()` hook providing `t(key, params)` with type-safe dot paths, graceful fallback to English and key name if missing, and safe operation outside context in isolated tests.
+     - `i18n.test.ts` — Comprehensive unit test verifying English/Thai translations, key parity, parameter interpolation, and missing-key fallback.
+  2. `client/src/components/layout/Sidebar.tsx` — Replaced all hardcoded navigation labels, headers, button actions, toasts, and support text with `t("sidebar.xxx")`.
+  3. `client/src/components/layout/Topbar.tsx` — Replaced search placeholder, add-menu labels, account menu accessibility attributes, and dynamic breadcrumb labels with `t("topbar.xxx")` and `t(getBreadcrumbKey(location))`.
+  4. `client/src/pages/Login.tsx` — Replaced login branding, headlines, form labels, submit button text, and security notes with `t("login.xxx")`.
+  5. `client/src/responsive.styles.test.ts` — Updated string assertion for Topbar hamburger button `aria-label` to match the translation key `t("topbar.openMenu")`.
+- **Files touched**:
+  - `client/src/lib/i18n/en.ts` (created)
+  - `client/src/lib/i18n/th.ts` (created)
+  - `client/src/lib/i18n/index.ts` (created)
+  - `client/src/lib/i18n/i18n.test.ts` (created)
+  - `client/src/components/layout/Sidebar.tsx`
+  - `client/src/components/layout/Topbar.tsx`
+  - `client/src/pages/Login.tsx`
+  - `client/src/responsive.styles.test.ts`
+  - `.agent/OPEN_QUESTIONS.md`
+  - `.agent/handoff.md`
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (407 passed | 3 skipped, 72 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite 2796 modules, dist/index.js 177.6kb, built in 17.90s).
+- **Commits**:
+  - `feat(i18n): add translation dictionary infrastructure (en/th)` (`003c24e`)
+  - `feat(i18n): wire Sidebar navigation labels to translation system` (`5b955bc`)
+  - `feat(i18n): wire Topbar labels and breadcrumbs to translation system` (`5bb8391`)
+  - `feat(i18n): wire Login page to translation system` (`92b3d42`)
+  - `docs: record i18n Phase 1 scope and remaining pages` (this commit)
+- **Next**: Subsequent phases will connect individual page contents (Bookings, Hotels, Financials, Housekeeping, Communications, WebsiteBuilder, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, OtaSync, etc.) to the translation dictionary. Awaiting next instruction. No push (Hard Rule 3).
+
 ## [2026-09-02] Phase 5 -- ComponentShowcase cleanup -- DONE (REFACTOR_PLAN_FINAL.md 100% complete)
 - **Context**: Phase 5 (final phase) of REFACTOR_PLAN_FINAL.md. `client/src/pages/ComponentShowcase.tsx` (1,437 lines) was a dev-only UI showcase page with no route in `App.tsx`, no imports from any other file in the repo, and no associated tests. Confirmed safe to delete via `grep` for both `ComponentShowcase` and `ComponentsShowcase` (the actual export name) -- only matches were the file itself and documentation (REFACTOR_PLAN*.md).
 - **Changes**: Deleted `client/src/pages/ComponentShowcase.tsx` (1,437 lines removed).
