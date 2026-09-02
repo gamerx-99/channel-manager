@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { rateLimitedProcedure, router } from '../_core/trpc';
+import { rateLimitedProcedure, protectedProcedure, router } from '../_core/trpc';
 import { createSupabaseAdminClient } from '../supabase';
 import {
   getHotelPaymentConfig,
@@ -8,11 +8,16 @@ import {
   createPaymentSession,
   updateBookingPaymentStatus,
   updatePaymentSessionStatus,
+  throwOnError,
+  finalizePaymentSession,
+  logBookingStatusChange,
+  expireBookingIfPast,
 } from '../db';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
 import { decryptSlipOkKey } from '../slipokCrypto';
 import { verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
-import { rethrowDomainError } from '../routerUtils';
+import { rethrowDomainError, requireHotelPermission, rlsClient } from '../routerUtils';
+import { assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 
 export const paymentRouter = router({
   /**
@@ -136,8 +141,9 @@ export const paymentRouter = router({
 
   /**
    * Verify a payment slip via SlipOK.
-   * On success: session → paid, booking → verified.
-   * On failure: session → failed, booking unchanged.
+   * On a definitive match: session → paid, booking → confirmed.
+   * On a definitive mismatch: session → failed, booking → payment_rejected.
+   * On SlipOK API failure: booking stays in pending_verification for manual review.
    * API key never reaches client.
    */
   verifySlip: rateLimitedProcedure
@@ -151,23 +157,59 @@ export const paymentRouter = router({
     .mutation(async ({ input }) => {
       const client = createSupabaseAdminClient();
       try {
-        // Verify session is still pending
+        // 1. Verify session exists
         const session = await getLatestPaymentSession(client, input.booking_id);
         if (!session || session.id !== input.session_id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
         }
-        if (session.status !== 'pending') {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: `Payment session is already ${session.status}.`,
-          });
+
+        // 2. Lazy-expire the underlying booking first
+        const expiredBooking = await expireBookingIfPast(client, session.booking_id);
+        if (expiredBooking?.status === 'expired') {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This payment window has expired.' });
         }
+
+        // 3. Payment-session-level expiry check
         if (new Date() > new Date(session.expires_at)) {
           await updatePaymentSessionStatus(client, session.id, 'expired');
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
         }
 
-        // Get hotel SlipOK key + branch ID (both required — see slipVerification.ts)
+        // 4. Fetch the booking's current lifecycle status
+        const { data: booking, error: bookingError } = await client
+          .from('bookings')
+          .select('id,status')
+          .eq('id', session.booking_id)
+          .maybeSingle();
+        if (bookingError) throw bookingError;
+        if (!booking) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+        }
+        const bookingStatus = booking.status as BookingStatus;
+
+        // 5. Only bookings awaiting payment may attempt verification
+        if (bookingStatus !== 'pending_payment' && bookingStatus !== 'payment_rejected') {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'This booking is not awaiting payment verification.',
+          });
+        }
+
+        // 6. Move the booking into pending_verification
+        assertValidTransition(bookingStatus, 'pending_verification');
+        const { error: toVerificationError } = await client
+          .from('bookings')
+          .update({ status: 'pending_verification' })
+          .eq('id', session.booking_id);
+        if (toVerificationError) throw toVerificationError;
+        await logBookingStatusChange(client, {
+          booking_id: session.booking_id,
+          from_status: bookingStatus,
+          to_status: 'pending_verification',
+          reason: 'slip_submitted',
+        });
+
+        // 7. Hotel SlipOK config
         const config = await getHotelPaymentConfig(client, input.hotel_id);
         if (!config?.slipok_key_enc || !config.slipok_branch_id || !config.slipok_enabled) {
           throw new TRPCError({
@@ -178,32 +220,153 @@ export const paymentRouter = router({
 
         const apiKey = decryptSlipOkKey(config.slipok_key_enc);
 
-        const result = await verifySlipWithSlipOk(apiKey, config.slipok_branch_id, {
-          slipData: input.slip_data,
-          expectedAmount: Number(session.amount),
-          ref: session.qr_reference,
-        });
+        // 8. Call SlipOK
+        try {
+          const result = await verifySlipWithSlipOk(apiKey, config.slipok_branch_id, {
+            slipData: input.slip_data,
+            expectedAmount: Number(session.amount),
+            ref: session.qr_reference,
+          });
 
-        if (result.matched) {
-          const now = new Date().toISOString();
-          await updatePaymentSessionStatus(client, session.id, 'paid', now);
-          await updateBookingPaymentStatus(client, session.booking_id, 'verified');
-          return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
-        } else {
-          await updatePaymentSessionStatus(client, session.id, 'failed');
+          if (result.matched) {
+            const { duplicateRef } = await finalizePaymentSession(client, session.id, {
+              status: 'paid',
+              verifiedAt: new Date().toISOString(),
+              rawResponse: result.raw,
+              verifiedTransactionRef: result.transactionRef,
+            });
+
+            if (duplicateRef) {
+              await logBookingStatusChange(client, {
+                booking_id: session.booking_id,
+                from_status: 'pending_verification',
+                to_status: 'pending_verification',
+                reason: 'duplicate_slip_ref',
+              });
+              throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'This slip has already been used to verify a different payment. Please contact the hotel.',
+              });
+            }
+
+            assertValidTransition('pending_verification', 'confirmed');
+            const { error: confirmError } = await client
+              .from('bookings')
+              .update({ status: 'confirmed' })
+              .eq('id', session.booking_id);
+            if (confirmError) throw confirmError;
+            await updateBookingPaymentStatus(client, session.booking_id, 'verified');
+            await logBookingStatusChange(client, {
+              booking_id: session.booking_id,
+              from_status: 'pending_verification',
+              to_status: 'confirmed',
+              reason: 'slipok_auto_verified',
+            });
+            return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
+          }
+
+          // Definitive mismatch
+          await finalizePaymentSession(client, session.id, {
+            status: 'failed',
+            rawResponse: result.raw,
+          });
+          assertValidTransition('pending_verification', 'payment_rejected');
+          const { error: rejectError } = await client
+            .from('bookings')
+            .update({ status: 'payment_rejected' })
+            .eq('id', session.booking_id);
+          if (rejectError) throw rejectError;
           await updateBookingPaymentStatus(client, session.booking_id, 'failed');
+          await logBookingStatusChange(client, {
+            booking_id: session.booking_id,
+            from_status: 'pending_verification',
+            to_status: 'payment_rejected',
+            reason: 'slipok_amount_or_ref_mismatch',
+          });
           return { verified: false as const, message: 'ไม่พบการชำระเงินที่ตรงกัน กรุณาติดต่อที่พัก' };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          if (error instanceof SlipOkError) {
+            if (error.code === 'API_ERROR') {
+              await logBookingStatusChange(client, {
+                booking_id: session.booking_id,
+                from_status: 'pending_verification',
+                to_status: 'pending_verification',
+                reason: 'slipok_api_unavailable_manual_review_required',
+              });
+              return {
+                verified: false as const,
+                pendingManualReview: true as const,
+                message: 'ระบบกำลังตรวจสอบสลิปของคุณ กรุณารอการยืนยันจากเจ้าหน้าที่',
+              };
+            }
+            if (error.code === 'INVALID_KEY') {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'ระบบตรวจสลิปขัดข้อง กรุณาติดต่อที่พัก',
+              });
+            }
+          }
+          throw error;
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        if (error instanceof SlipOkError) {
+        return rethrowDomainError(error);
+      }
+    }),
+
+  /** Staff-only manual review of a slip that is awaiting verification. */
+  manualVerify: protectedProcedure
+    .input(z.object({
+      booking_id: z.string().uuid(),
+      hotel_id: z.string().uuid(),
+      approved: z.boolean(),
+      note: z.string().trim().max(500).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
+      const client = rlsClient(ctx.user.accessToken);
+      try {
+        const { data: booking, error } = await client
+          .from('bookings')
+          .select('id,hotel_id,status')
+          .eq('id', input.booking_id)
+          .eq('hotel_id', input.hotel_id)
+          .maybeSingle();
+        if (error) throw error;
+        if (!booking) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+        }
+
+        const currentStatus = booking.status as BookingStatus;
+        if (currentStatus !== 'pending_verification') {
           throw new TRPCError({
-            code: error.code === 'INVALID_KEY' ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST',
-            message: error.code === 'INVALID_KEY'
-              ? 'ระบบตรวจสลิปขัดข้อง กรุณาติดต่อที่พัก'
-              : error.message,
+            code: 'PRECONDITION_FAILED',
+            message: 'This booking is not awaiting manual verification.',
           });
         }
+
+        const nextStatus: BookingStatus = input.approved ? 'confirmed' : 'payment_rejected';
+        assertValidTransition('pending_verification', nextStatus);
+
+        const { error: updateError } = await client
+          .from('bookings')
+          .update({ status: nextStatus })
+          .eq('id', input.booking_id);
+        if (updateError) throw updateError;
+
+        await updateBookingPaymentStatus(client, input.booking_id, input.approved ? 'verified' : 'failed');
+        await logBookingStatusChange(client, {
+          booking_id: input.booking_id,
+          from_status: 'pending_verification',
+          to_status: nextStatus,
+          changed_by: ctx.user.id,
+          reason: input.note?.trim() || (input.approved ? 'manual_approve' : 'manual_reject'),
+        });
+
+        return { booking_id: input.booking_id, status: nextStatus };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
         return rethrowDomainError(error);
       }
     }),

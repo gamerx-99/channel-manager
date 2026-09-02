@@ -7,7 +7,7 @@ import PageState from '@/components/PageState';
 import BookingWizard from '@/components/BookingWizard';
 import { useTranslation } from '@/lib/i18n';
 
-type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
+type BookingStatus = 'held' | 'pending_payment' | 'pending_verification' | 'confirmed' | 'expired' | 'payment_rejected' | 'cancelled' | 'refund_pending' | 'refunded' | 'checked_in' | 'checked_out';
 
 const formatCurrency = (value: number | string) =>
   new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
@@ -48,7 +48,14 @@ export default function Bookings({ id }: { id: string }) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const statusLabel: Record<BookingStatus, string> = {
+    held: t('bookings.statusHeld'),
+    pending_payment: t('bookings.statusPendingPayment'),
+    pending_verification: t('bookings.statusPendingVerification'),
     confirmed: t('bookings.statusConfirmed'),
+    expired: t('bookings.statusExpired'),
+    payment_rejected: t('bookings.statusPaymentRejected'),
+    refund_pending: t('bookings.statusRefundPending'),
+    refunded: t('bookings.statusRefunded'),
     checked_in: t('bookings.statusCheckedIn'),
     checked_out: t('bookings.statusCheckedOut'),
     cancelled: t('bookings.statusCancelled'),
@@ -59,6 +66,14 @@ export default function Bookings({ id }: { id: string }) {
       await utils.channelManager.bookings.invalidate(id);
       await utils.channelManager.dashboard.invalidate();
       setShowAdd(false);
+    },
+    onError: error => console.error(error.message),
+  });
+
+  const manualVerify = trpc.payment.manualVerify.useMutation({
+    onSuccess: async () => {
+      await utils.channelManager.bookings.invalidate(id);
+      await utils.channelManager.dashboard.invalidate();
     },
     onError: error => console.error(error.message),
   });
@@ -165,11 +180,11 @@ export default function Bookings({ id }: { id: string }) {
       </section>
       <div className="tm30-callout"><div className="callout-icon"><FileSpreadsheet size={17} /></div><div><strong>{t('bookings.tm30CalloutTitle')}</strong><span>{t('bookings.tm30CalloutDesc')}</span></div><button className="text-link" onClick={() => setShowExport(true)} disabled={!bookings.length}>{t('bookings.reviewExport')} <Download size={14} /></button></div>
       <section className="panel table-panel">
-        <div className="list-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('bookings.searchPlaceholder')} aria-label={t('bookings.searchAriaLabel')} /></div><div className="toolbar-actions"><select className="select-control" value={status} onChange={event => setStatus(event.target.value as 'all' | BookingStatus)} aria-label={t('bookings.filterStatusAriaLabel')}><option value="all">{t('bookings.allStatuses')}</option><option value="confirmed">{t('bookings.statusConfirmed')}</option><option value="checked_in">{t('bookings.statusCheckedIn')}</option><option value="checked_out">{t('bookings.statusCheckedOut')}</option><option value="cancelled">{t('bookings.statusCancelled')}</option></select><button className="filter-button" type="button" disabled><Filter size={14} /> {t('bookings.moreFilters')}</button></div></div>
+        <div className="list-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('bookings.searchPlaceholder')} aria-label={t('bookings.searchAriaLabel')} /></div><div className="toolbar-actions"><select className="select-control" value={status} onChange={event => setStatus(event.target.value as 'all' | BookingStatus)} aria-label={t('bookings.filterStatusAriaLabel')}><option value="all">{t('bookings.allStatuses')}</option><option value="held">{t('bookings.statusHeld')}</option><option value="pending_payment">{t('bookings.statusPendingPayment')}</option><option value="pending_verification">{t('bookings.statusPendingVerification')}</option><option value="confirmed">{t('bookings.statusConfirmed')}</option><option value="checked_in">{t('bookings.statusCheckedIn')}</option><option value="checked_out">{t('bookings.statusCheckedOut')}</option><option value="cancelled">{t('bookings.statusCancelled')}</option><option value="expired">{t('bookings.statusExpired')}</option><option value="payment_rejected">{t('bookings.statusPaymentRejected')}</option><option value="refund_pending">{t('bookings.statusRefundPending')}</option><option value="refunded">{t('bookings.statusRefunded')}</option></select><button className="filter-button" type="button" disabled><Filter size={14} /> {t('bookings.moreFilters')}</button></div></div>
         <p className="mobile-scroll-hint" role="note">{t('bookings.mobileScrollHint')}</p>
         <div className="table-wrap"><table className="data-table bookings-table"><thead><tr><th>{t('bookings.bookingCol')}</th><th>{t('bookings.guestCol')}</th><th>{t('bookings.stayDatesCol')}</th><th>{t('bookings.roomCol')}</th><th>{t('bookings.sourceCol')}</th><th>{t('bookings.statusCol')}</th><th className="align-right">{t('bookings.valueCol')}</th><th /></tr></thead><tbody>{filtered.length ? filtered.map(booking => {
           const tm30Ready = booking.guests.length > 0 && booking.guests.every(guest => Boolean(guest.passport_no && guest.nationality_code && guest.birth_date));
-          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status]}</span></td><td className="align-right"><strong>{formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1"><Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link><button className="icon-button" type="button" aria-label={t('bookings.moreActionsAria', { id: booking.id })} disabled><MoreHorizontal size={16} /></button></div></td></tr>;
+          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status]}</span></td><td className="align-right"><strong>{formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1"><Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link>{booking.status === 'pending_verification' ? (<><button className="button button-primary" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: true })}>{t('bookings.approveVerification')}</button><button className="button button-quiet" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: false })}>{t('bookings.rejectVerification')}</button></>) : (<button className="icon-button" type="button" aria-label={t('bookings.moreActionsAria', { id: booking.id })} disabled><MoreHorizontal size={16} /></button>)}</div></td></tr>;
         }) : <tr><td colSpan={8} className="empty-cell">{bookings.length ? t('bookings.noMatch') : t('bookings.emptyBookings')}</td></tr>}</tbody></table></div>
         <div className="table-footer"><span>{t('bookings.showingCount', { filtered: filtered.length, total: bookings.length })}</span></div>
       </section>

@@ -1,5 +1,40 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase C: slip verification hardening + manual review — DONE ✅
+- **Context**: `payment.verifySlip` previously threw SlipOK API/network failures straight to the
+guest (looking like a definitive rejection), never persisted SlipOK's raw response, never guarded
+against the same transaction ref being reused across bookings, and ignored the new
+`bookings.status` lifecycle field added in sub-phase B.
+- **Changes**:
+  1. `server/db/payment.ts` — new `finalizePaymentSession()` persists `raw_response` and
+     `verified_transaction_ref`; surfaces `{ duplicateRef: true }` when the partial unique index
+     rejects a reused ref.
+  2. `server/routers/paymentRouter.ts`:
+     - Rewrote `verifySlip` to lazy-expire the booking first, transition the booking to
+       `pending_verification` before calling SlipOK, and drive the full lifecycle on every outcome:
+       auto-confirm on match, `payment_rejected` on definitive mismatch, and
+       `pending_verification` + `pendingManualReview: true` (no thrown error) on SlipOK API_ERROR.
+       INVALID_KEY still throws `INTERNAL_SERVER_ERROR`. Duplicate refs are rejected with
+       `CONFLICT` and do not advance the booking.
+     - New `payment.manualVerify` staff mutation gated on `operations.manage_bookings`, using the
+       RLS client and `assertValidTransition`.
+  3. `server/db/types.ts` / `server/tm30.ts` — widened `BookingRecord.status` to the full
+     `BookingStatus` union and propagated the type through `Tm30Booking`.
+  4. `client/src/pages/Bookings.tsx` — widened local `BookingStatus`, added labels/filters for all
+     lifecycle states, added `manualVerify` mutation, and rendered approve/reject inline actions
+     for `pending_verification` rows.
+  5. `client/src/lib/i18n/en.ts` & `th.ts` — added status and approve/reject keys in the
+     `bookings` namespace.
+  6. `specs/11-booking-lifecycle-v1.md` — updated status and sub-phase checklist.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (432 passed | 3 skipped, 77 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Migration note**: `20260910_booking_lifecycle_v1.sql` (already merged) adds
+  `payment_sessions.raw_response` and `payment_sessions.verified_transaction_ref` with the partial
+  unique index; it still needs to be applied by hand in Supabase before these new columns are live.
+- **Next**: Sub-phase D (payment session integration for held bookings) per the spec.
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase B: core state machine + lazy expiry — DONE ✅
 - **Context**: Public bookings were created as `status='confirmed'` immediately by
   `createPublicBooking`, before any payment. If the customer abandoned the page,

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
+import type { BookingStatus } from "@shared/bookingLifecycle";
 import * as XLSX from "xlsx";
 
 const configuredTemplatePath = process.env.TM30_TEMPLATE_PATH?.trim();
@@ -45,7 +46,7 @@ export type Tm30Guest = {
 export type Tm30Booking = {
   id: string;
   check_out: string;
-  status: "confirmed" | "checked_in" | "checked_out" | "cancelled";
+  status: BookingStatus;
   guests: Tm30Guest[];
 };
 

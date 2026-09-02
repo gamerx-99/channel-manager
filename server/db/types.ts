@@ -1,4 +1,5 @@
 import type { HumanRole } from '@shared/authorization';
+import type { BookingStatus } from '@shared/bookingLifecycle';
 
 export type HotelRecord = {
   id: string;
@@ -62,7 +63,7 @@ export type BookingRecord = {
   check_out: string;
   price: number | string;
   source: 'manual' | 'walk-in' | 'phone';
-  status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
+  status: BookingStatus;
   /** DB default 'unpaid' — omit on insert, present on reads */
   payment_status?: PaymentStatus;
   created_at: string;

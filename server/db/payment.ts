@@ -163,6 +163,32 @@ export async function updatePaymentSessionStatus(
   throwOnError(error);
 }
 
+/**
+ * Finalize a payment session, persisting the SlipOK raw response and the
+ * verified transaction reference. Returns `{ duplicateRef: true }` when the
+ * unique partial index on `verified_transaction_ref` rejects a duplicate.
+ */
+export async function finalizePaymentSession(
+  client: SupabaseClient,
+  sessionId: string,
+  input: {
+    status: PaymentSessionStatus;
+    verifiedAt?: string;
+    rawResponse: Record<string, unknown>;
+    verifiedTransactionRef?: string | null;
+  },
+): Promise<{ duplicateRef: boolean }> {
+  const patch: Record<string, unknown> = { status: input.status, raw_response: input.rawResponse };
+  if (input.verifiedAt) patch.verified_at = input.verifiedAt;
+  if (input.verifiedTransactionRef) patch.verified_transaction_ref = input.verifiedTransactionRef;
+  const { error } = await client.from('payment_sessions').update(patch).eq('id', sessionId);
+  if (error) {
+    if ((error as any).code === '23505') return { duplicateRef: true };
+    throwOnError(error);
+  }
+  return { duplicateRef: false };
+}
+
 /** Update booking payment_status. */
 export async function updateBookingPaymentStatus(
   client: SupabaseClient,

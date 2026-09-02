@@ -1,5 +1,5 @@
 # 11 Booking Lifecycle v1 — held / pending_payment state machine
-Status: IN PROGRESS (sub-phase B complete)
+Status: IN PROGRESS (sub-phase C — slip verification hardening + manual review — complete)
 Depends on: 05-direct-booking-engine, 01-payments-slipok
 
 ## Goal
@@ -52,18 +52,23 @@ without relying on a cron job.
   available" message.
 
 ## Sub-phases
+(Lettering matches the master plan at `C:\Users\GAMER\.claude\plans\bubbly-foraging-deer.md` — G, the
+i18n sweep, was done first and tracked separately in `.agent/handoff.md`.)
 - [ ] A — schema migration (`20260910_booking_lifecycle_v1.sql` written and pushed; NOT YET applied — human must run it + its verify script in the Supabase SQL editor)
 - [x] B — core state machine + lazy expiry + `holdRoomType` + `confirmBookingDetails`
-- [ ] C — wire public client to use `holdRoomType` / `confirmBookingDetails`
-- [ ] D — payment session integration for held bookings
-- [ ] E — retire `createPublicBooking` in favour of the hold flow
-- [ ] F — staff-facing status management + audit log UI
+- [x] C — slip verification hardening + manual review (`verifySlip` never auto-fails on SlipOK API failure, duplicate transaction ref guard, raw response audit, `payment.manualVerify` staff procedure)
+- [ ] D — `hotel_services` catalog table + admin CRUD page
+- [ ] E — retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with the 3-click calendar and a services step
+- [ ] F — walk-in flow: `payment_method` field on staff-created bookings
 
 ## Acceptance criteria
 - [x] `shared/bookingLifecycle.test.ts` covers transitions, expiry, and inventory rules.
 - [x] `getPublicHotelAvailability` no longer counts expired holds as occupied.
 - [x] `createPublicBooking`'s own availability check uses the same occupancy rule.
 - [x] New tRPC procedures are rate-limited public mutations with full input validation.
+- [x] `payment.verifySlip` falls through to manual review on SlipOK API failures, persists raw response + transaction ref, and guards against duplicate refs.
+- [x] `payment.manualVerify` is a staff-only mutation gated on `operations.manage_bookings`.
+- [x] Staff bookings table surfaces all lifecycle statuses and offers approve/reject actions for `pending_verification`.
 
 ## Test plan
 - `shared/bookingLifecycle.test.ts` — pure state-machine tests.
