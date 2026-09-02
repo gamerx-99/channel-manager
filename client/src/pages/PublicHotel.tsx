@@ -1,8 +1,9 @@
-import { ArrowRight, Calendar, CheckCircle2, ChevronDown, Clock, MapPin, Menu, Phone, ShieldCheck, User, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, CheckCircle2, MapPin, Menu, X } from "lucide-react";
+import React, { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { PaymentQR } from "@/components/PaymentQR";
+import { useTranslation } from "@/lib/i18n";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_ACCENT_COLOR = "#954831";
@@ -20,6 +21,7 @@ function getDayAfterTomorrowDateString(): string {
 }
 
 export default function PublicHotel({ slug }: { slug: string }) {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [checkIn, setCheckIn] = useState<string>(getTomorrowDateString());
   const [checkOut, setCheckOut] = useState<string>(getDayAfterTomorrowDateString());
@@ -65,16 +67,16 @@ export default function PublicHotel({ slug }: { slug: string }) {
       setBookingError(null);
     },
     onError: (err) => {
-      setBookingError(err.message || "Unable to complete booking. Please try again.");
+      setBookingError(err.message || t("publicHotel.errorBookingFailed"));
     },
   });
 
   if (publicHotel.isLoading) {
-    return <div className="public-page"><main className="public-loading">Loading hotel details…</main></div>;
+    return <div className="public-page"><main className="public-loading">{t("publicHotel.loadingHotelDetails")}</main></div>;
   }
 
   if (publicHotel.error || !publicHotel.data) {
-    return <div className="public-page"><main className="public-loading"><h1>Hotel unavailable</h1><p>This property is not currently published or could not be found.</p><Link className="button public-button" href="/login">Hotel sign in</Link></main></div>;
+    return <div className="public-page"><main className="public-loading"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><Link className="button public-button" href="/login">{t("publicHotel.hotelSignIn")}</Link></main></div>;
   }
 
   const { hotel, roomTypes, media } = publicHotel.data;
@@ -103,15 +105,15 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRoomTypeId) {
-      setBookingError("Please select a room type to book.");
+      setBookingError(t("publicHotel.errorSelectRoomType"));
       return;
     }
     if (!guestName.trim()) {
-      setBookingError("Please enter your full name.");
+      setBookingError(t("publicHotel.errorEnterFullName"));
       return;
     }
     if (!isDatesValid) {
-      setBookingError("Please select valid check-in and check-out dates.");
+      setBookingError(t("publicHotel.errorSelectDates"));
       return;
     }
 
@@ -143,31 +145,31 @@ export default function PublicHotel({ slug }: { slug: string }) {
       <header className="public-nav">
         <Link href={`/${hotel.slug}`} className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></Link>
         <nav className={menuOpen ? "is-open" : ""}>
-          <a href="#stay">Rooms</a>
-          <a href="#location">Location</a>
-          <a href="#book" className="public-nav-cta" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>Check dates <ArrowRight size={14} /></a>
+          <a href="#stay">{t("publicHotel.navRooms")}</a>
+          <a href="#location">{t("publicHotel.navLocation")}</a>
+          <a href="#book" className="public-nav-cta" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>{t("publicHotel.navCheckDates")} <ArrowRight size={14} /></a>
         </nav>
-        <button className="public-menu" type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label="เปิดเมนู">{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>
+        <button className="public-menu" type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={t("publicHotel.menuToggleAria")}>{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>
       </header>
       <main>
         <section className="public-hero">
           {heroImage ? <img src={heroImage} alt={hotel.name} /> : <div className="public-hero-image-fallback" aria-hidden="true" />}
           <div className="public-hero-overlay" />
           <div className="public-hero-content">
-            <div className="eyebrow light">Independent hotel</div>
+            <div className="eyebrow light">{t("publicHotel.heroEyebrow")}</div>
             <h1>{hotel.name}</h1>
             <p>{heroCopy}</p>
-            <a className="button public-button" href="#stay" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>View rooms <ArrowRight size={15} /></a>
+            <a className="button public-button" href="#stay" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>{t("publicHotel.heroViewRooms")} <ArrowRight size={15} /></a>
           </div>
-          <div className="public-hero-caption"><span>Thailand</span><span>{hotel.address}</span></div>
+          <div className="public-hero-caption"><span>{t("publicHotel.heroCountry")}</span><span>{hotel.address}</span></div>
         </section>
 
         {isVisible("story") ? (
           <section className="public-intro" id="story">
-            <div className="eyebrow">The hotel</div>
+            <div className="eyebrow">{t("publicHotel.storyEyebrow")}</div>
             <div>
-              <h2>Stay at<br /><i>{hotel.name}.</i></h2>
-              <p>Current property information is published directly by the hotel through its secure Channel Manager dashboard.</p>
+              <h2>{t("publicHotel.storyStayAt")}<br /><i>{hotel.name}.</i></h2>
+              <p>{t("publicHotel.storyDesc")}</p>
             </div>
           </section>
         ) : null}
@@ -175,10 +177,10 @@ export default function PublicHotel({ slug }: { slug: string }) {
         <section className="public-rooms" id="stay">
           <div className="public-section-heading">
             <div>
-              <div className="eyebrow">Rooms</div>
-              <h2>Find your<br /><i>right room.</i></h2>
+              <div className="eyebrow">{t("publicHotel.roomsEyebrow")}</div>
+              <h2>{t("publicHotel.roomsTitle")}<br /><i>{t("publicHotel.roomsTitleHighlight")}</i></h2>
             </div>
-            <p>Live room types and starting rates are managed by this property.</p>
+            <p>{t("publicHotel.roomsDesc")}</p>
           </div>
           {roomTypes.length ? (
             <div className="public-room-grid">
@@ -201,7 +203,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   <div className="public-room-copy">
                     <div>
                       <h3>{room.name}</h3>
-                      <span>Up to {room.capacity} guests · From ฿{Number(room.base_price).toLocaleString()}</span>
+                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.base_price).toLocaleString() })}</span>
                     </div>
                     <ArrowRight size={17} />
                   </div>
@@ -209,34 +211,34 @@ export default function PublicHotel({ slug }: { slug: string }) {
               ))}
             </div>
           ) : (
-            <div className="public-empty-state">Room details have not been published yet.</div>
+            <div className="public-empty-state">{t("publicHotel.noRoomsPublished")}</div>
           )}
         </section>
 
         {isVisible("booking") ? (
           <section className="public-booking" id="book" style={{ background: "var(--pine)" }}>
             <div>
-              <div className="eyebrow">Your stay</div>
-              <h2>Plan your<br /><i>next visit.</i></h2>
-              <p>Direct guest reservation engine with real-time rate & availability calculation.</p>
+              <div className="eyebrow">{t("publicHotel.bookingEyebrow")}</div>
+              <h2>{t("publicHotel.bookingTitle")}<br /><i>{t("publicHotel.bookingTitleHighlight")}</i></h2>
+              <p>{t("publicHotel.bookingDesc")}</p>
             </div>
 
             {confirmedBooking ? (
               <div style={{ background: "#ffffff", color: "var(--ink)", padding: "28px", borderRadius: "10px", boxShadow: "0 12px 30px rgba(0,0,0,0.15)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--pine)", marginBottom: "14px" }}>
                   <CheckCircle2 size={28} />
-                  <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>Booking Confirmed!</h3>
+                  <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>{t("publicHotel.bookingConfirmedTitle")}</h3>
                 </div>
                 <p style={{ margin: "0 0 18px", color: "#5a6660", fontSize: "13px" }}>
-                  Thank you, <strong>{confirmedBooking.guest_name}</strong>. Your reservation reference is <strong style={{ color: "var(--pine)" }}>#{confirmedBooking.booking_id.slice(0, 8).toUpperCase()}</strong>.
+                  {t("publicHotel.bookingConfirmedNotice", { name: confirmedBooking.guest_name, reference: confirmedBooking.booking_id.slice(0, 8).toUpperCase() })}
                 </p>
                 <div style={{ background: "#f6f4ee", padding: "16px", borderRadius: "8px", fontSize: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
-                  <div><strong>Property:</strong> {confirmedBooking.hotel_name}</div>
-                  <div><strong>Room Type:</strong> {confirmedBooking.room_type_name} {confirmedBooking.room_number ? `(${confirmedBooking.room_number})` : ''}</div>
-                  <div><strong>Check-in:</strong> {confirmedBooking.check_in}</div>
-                  <div><strong>Check-out:</strong> {confirmedBooking.check_out} ({confirmedBooking.nights} night{confirmedBooking.nights > 1 ? 's' : ''})</div>
+                  <div><strong>{t("publicHotel.confirmedProperty")}</strong> {confirmedBooking.hotel_name}</div>
+                  <div><strong>{t("publicHotel.confirmedRoomType")}</strong> {confirmedBooking.room_type_name} {confirmedBooking.room_number ? `(${confirmedBooking.room_number})` : ''}</div>
+                  <div><strong>{t("publicHotel.confirmedCheckIn")}</strong> {confirmedBooking.check_in}</div>
+                  <div><strong>{t("publicHotel.confirmedCheckOut")}</strong> {confirmedBooking.check_out} ({confirmedBooking.nights > 1 ? t("publicHotel.confirmedNightsPlural", { count: confirmedBooking.nights }) : t("publicHotel.confirmedNights", { count: confirmedBooking.nights })})</div>
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2ddd0", paddingTop: "10px", fontSize: "14px", fontWeight: 700, color: "var(--pine)" }}>
-                    Total Stay Amount: ฿{Number(confirmedBooking.total_price).toLocaleString()}
+                    {t("publicHotel.confirmedTotalStay", { amount: Number(confirmedBooking.total_price).toLocaleString() })}
                   </div>
                 </div>
 
@@ -255,7 +257,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   />
                 ) : (
                   <p style={{ fontSize: "13px", color: "#789087", marginBottom: "16px" }}>
-                    กรุณาติดต่อที่พักโดยตรงเพื่อชำระเงิน
+                    {t("publicHotel.contactDirectlyToPay")}
                   </p>
                 )}
 
@@ -265,7 +267,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   onClick={handleResetBooking}
                   style={{ backgroundColor: accentColor, color: "#fff", borderColor: accentColor, width: "100%", marginTop: "12px" }}
                 >
-                  Book another stay
+                  {t("publicHotel.bookAnotherStay")}
                 </button>
               </div>
             ) : (
@@ -278,7 +280,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
                 <div className="booking-form" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
                   <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600 }}>
-                    Check-in Date
+                    {t("publicHotel.checkInDate")}
                     <input
                       type="date"
                       value={checkIn}
@@ -289,7 +291,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                     />
                   </label>
                   <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600 }}>
-                    Check-out Date
+                    {t("publicHotel.checkOutDate")}
                     <input
                       type="date"
                       value={checkOut}
@@ -303,11 +305,11 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
                 <div style={{ marginBottom: "18px" }}>
                   <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600, marginBottom: "8px" }}>
-                    Select Room Type
+                    {t("publicHotel.selectRoomType")}
                   </label>
                   {availabilityQuery.isLoading ? (
                     <div style={{ color: "#d2e8de", fontSize: "12px", padding: "12px", background: "rgba(0,0,0,0.15)", borderRadius: "6px" }}>
-                      Checking live rates & availability...
+                      {t("publicHotel.checkingLiveRates")}
                     </div>
                   ) : availableRoomTypes.length > 0 ? (
                     <div style={{ display: "grid", gap: "8px" }}>
@@ -334,8 +336,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
                             <div>
                               <strong style={{ fontSize: "13px", display: "block" }}>{rt.name}</strong>
                               <small style={{ color: "#6a7670", fontSize: "10px" }}>
-                                Up to {rt.capacity} guests · {rt.rooms_available} room{rt.rooms_available !== 1 ? 's' : ''} left
-                                {rt.min_stay_violated ? ` · Min stay ${rt.min_stay_nights} nights` : ''}
+                                {rt.rooms_available !== 1 ? t("publicHotel.roomsLeftPlural", { capacity: rt.capacity, count: rt.rooms_available }) : t("publicHotel.roomsLeft", { capacity: rt.capacity, count: rt.rooms_available })}
+                                {rt.min_stay_violated ? t("publicHotel.minStayNote", { count: rt.min_stay_nights ?? 1 }) : ''}
                               </small>
                             </div>
                             <div style={{ textAlign: "right" }}>
@@ -343,7 +345,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                                 ฿{Number(rt.total_price).toLocaleString()}
                               </strong>
                               <small style={{ display: "block", color: "#6a7670", fontSize: "9px" }}>
-                                {rt.nights} night{rt.nights > 1 ? 's' : ''} (฿{Number(rt.avg_nightly_price).toLocaleString()}/nt)
+                                {rt.nights > 1 ? t("publicHotel.nightPriceDetailPlural", { count: rt.nights, price: Number(rt.avg_nightly_price).toLocaleString() }) : t("publicHotel.nightPriceDetail", { count: rt.nights, price: Number(rt.avg_nightly_price).toLocaleString() })}
                               </small>
                             </div>
                           </div>
@@ -370,7 +372,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                         >
                           <div>
                             <strong style={{ fontSize: "13px" }}>{rt.name}</strong>
-                            <small style={{ display: "block", color: "#6a7670", fontSize: "10px" }}>Capacity: {rt.capacity} guests</small>
+                            <small style={{ display: "block", color: "#6a7670", fontSize: "10px" }}>{t("publicHotel.fallbackCapacity", { capacity: rt.capacity })}</small>
                           </div>
                           <strong style={{ color: "var(--pine)" }}>฿{Number(rt.base_price).toLocaleString()}</strong>
                         </div>
@@ -382,16 +384,16 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 {selectedRoomTypeId && (
                   <div style={{ background: "#fbfaf6", color: "var(--ink)", padding: "16px", borderRadius: "8px", marginBottom: "16px" }}>
                     <h4 style={{ margin: "0 0 12px", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--pine)" }}>
-                      Guest Information
+                      {t("publicHotel.guestInformation")}
                     </h4>
                     <div style={{ display: "grid", gap: "10px" }}>
                       <div>
                         <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#3a4642" }}>
-                          Full Name *
+                          {t("publicHotel.fullName")}
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. Somchai Prasert"
+                          placeholder={t("publicHotel.fullNamePlaceholder")}
                           value={guestName}
                           onChange={(e) => setGuestName(e.target.value)}
                           required
@@ -401,11 +403,11 @@ export default function PublicHotel({ slug }: { slug: string }) {
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                         <div>
                           <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#3a4642" }}>
-                            Phone Number
+                            {t("publicHotel.phoneNumber")}
                           </label>
                           <input
                             type="tel"
-                            placeholder="081-xxx-xxxx"
+                            placeholder={t("publicHotel.phonePlaceholder")}
                             value={guestPhone}
                             onChange={(e) => setGuestPhone(e.target.value)}
                             style={{ display: "block", width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "5px", border: "1px solid #ccc", fontSize: "12px" }}
@@ -413,11 +415,11 @@ export default function PublicHotel({ slug }: { slug: string }) {
                         </div>
                         <div>
                           <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "#3a4642" }}>
-                            Email Address
+                            {t("publicHotel.emailAddress")}
                           </label>
                           <input
                             type="email"
-                            placeholder="guest@example.com"
+                            placeholder={t("publicHotel.emailPlaceholder")}
                             value={guestEmail}
                             onChange={(e) => setGuestEmail(e.target.value)}
                             style={{ display: "block", width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "5px", border: "1px solid #ccc", fontSize: "12px" }}
@@ -444,10 +446,10 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   }}
                 >
                   {createBookingMutation.isPending
-                    ? "Confirming Reservation..."
+                    ? t("publicHotel.confirmingReservation")
                     : selectedRoomType
-                    ? `Confirm Booking · ฿${Number((selectedRoomType as any).total_price ?? (selectedRoomType as any).base_price).toLocaleString()}`
-                    : "Select a room to proceed"}
+                    ? t("publicHotel.confirmBookingWithPrice", { amount: Number((selectedRoomType as any).total_price ?? (selectedRoomType as any).base_price).toLocaleString() })
+                    : t("publicHotel.selectRoomToProceed")}
                 </button>
               </form>
             )}
@@ -456,8 +458,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
         <section className="public-details" id="location">
           <div>
-            <div className="eyebrow">Location</div>
-            <h2>Find<br /><i>the hotel.</i></h2>
+            <div className="eyebrow">{t("publicHotel.locationEyebrow")}</div>
+            <h2>{t("publicHotel.locationTitle")}<br /><i>{t("publicHotel.locationTitleHighlight")}</i></h2>
           </div>
           <div className="location-card">
             <MapPin size={16} />
@@ -471,7 +473,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
       <footer className="public-footer">
         <div className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></div>
         <span>© {new Date().getFullYear()} {hotel.name}</span>
-        <span>Property information is managed securely.</span>
+        <span>{t("publicHotel.footerManagedSecurely")}</span>
       </footer>
     </div>
   );

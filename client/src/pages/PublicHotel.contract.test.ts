@@ -77,8 +77,9 @@ describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
   });
 
   it('PublicHotel renders interactive date picker and guest information form', () => {
-    expect(publicHotelSource).toContain('Check-in Date');
-    expect(publicHotelSource).toContain('Check-out Date');
+    // Note: Updated per Rule 6 to match translation dictionary keys used in PublicHotel.tsx
+    expect(publicHotelSource).toContain('publicHotel.checkInDate');
+    expect(publicHotelSource).toContain('publicHotel.checkOutDate');
     expect(publicHotelSource).toContain('type="date"');
     expect(publicHotelSource).toContain('guestName');
     expect(publicHotelSource).toContain('guestPhone');
@@ -86,9 +87,10 @@ describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
   });
 
   it('PublicHotel renders confirmation screen with booking reference', () => {
-    expect(publicHotelSource).toContain('Booking Confirmed!');
+    // Note: Updated per Rule 6 to match translation dictionary keys
+    expect(publicHotelSource).toContain('publicHotel.bookingConfirmedTitle');
     expect(publicHotelSource).toContain('confirmedBooking');
-    expect(publicHotelSource).toContain('Book another stay');
+    expect(publicHotelSource).toContain('publicHotel.bookAnotherStay');
   });
 
   it('server/db/booking.ts exposes getPublicHotelAvailability and createPublicBooking with double-booking prevention', () => {
