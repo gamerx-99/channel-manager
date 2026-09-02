@@ -38,6 +38,17 @@ answer noted.
       (Phase G's OTA partner-API work, most likely), that's a manual switch the human
       needs to make, not something a ticket can request automatically. Raised
       2026-08-30.
+- [ ] The staff "Availability" page (`client/src/pages/Calendar.tsx`, backed by
+      `listAvailabilityForHotel`/an `availability` snapshot table staff edit by hand
+      via "Save changes") is **not connected** to live `bookings` data at all — even a
+      `confirmed` booking today doesn't decrement the room count shown there. This is
+      pre-existing, not introduced by Booking Lifecycle v1. Found while checking
+      whether the new HELD/PENDING_PAYMENT states would show stale "full" cells after
+      expiry — they won't, but only because the whole page is already disconnected
+      from live booking state, which is its own separate UX gap (staff-entered numbers
+      can drift from what customers can actually book). Left out of Booking Lifecycle
+      v1 Phase 1 scope — flagging as a candidate for its own ticket if the human wants
+      the two systems reconciled. Raised 2026-09-03.
 
 ## Resolved
 - [x] Phase 1 of i18n covers only the chrome structure (Sidebar, Topbar, Login) and translation dictionary infrastructure (`client/src/lib/i18n/`). Other application pages remain in English for now. RESOLVED 2026-09-02: Phase 2 wired all 18 content pages (Calendar, Home, Bookings, HotelDetail, Hotels, Financials, Housekeeping, Communications, OtaSync, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, WebsiteBuilder, ChannelPerformance, MfaEnroll, NotFound, PublicHotel) to the translation system with complete EN/TH dictionary parity and test suites passing.
