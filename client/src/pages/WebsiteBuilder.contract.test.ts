@@ -28,10 +28,11 @@ describe('WebsiteBuilder contract — Phase 06', () => {
 
   // ── Media upload client-side validation ──────────────────────────────────
   it('WebsiteBuilder validates file size (5 MB) and type before uploading', () => {
+    // Note: Updated per Rule 6 to match translation dictionary keys used in WebsiteBuilder.tsx
     expect(wbSource).toContain('5 * 1024 * 1024');
     expect(wbSource).toContain("startsWith(\"image/\")");
-    expect(wbSource).toContain('Image too large');
-    expect(wbSource).toContain('Only image files');
+    expect(wbSource).toContain('websiteBuilder.errorFileTooLarge');
+    expect(wbSource).toContain('websiteBuilder.errorOnlyImages');
   });
 
   // ── Site config form ─────────────────────────────────────────────────────
@@ -47,7 +48,8 @@ describe('WebsiteBuilder contract — Phase 06', () => {
   });
 
   it('WebsiteBuilder includes live public preview section reflecting draft config', () => {
-    expect(wbSource).toContain('Public preview');
+    // Note: Updated per Rule 6 to match translation dictionary key
+    expect(wbSource).toContain('websiteBuilder.publicPreviewTitle');
     expect(wbSource).toContain('heroImage');
     expect(wbSource).toContain('draft.accent_color');
     expect(wbSource).toContain('draft.hero_copy');

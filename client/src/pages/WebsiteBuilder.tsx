@@ -11,10 +11,11 @@ import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 // Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path
 // (uploadHotelMedia / deleteHotelMedia / listHotelMedia / setHotelMediaHero).
-// Hotel_domains custom-domain flow is intentionally deferred (see DECISIONS.md) and not wired here.
+// hotel_domains custom-domain flow is intentionally deferred (see DECISIONS.md) and not wired here.
 
 type MediaItem = {
   id: string;
@@ -45,14 +46,6 @@ const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visible_sections"] = {
   location: true,
 };
 
-const SECTION_LABELS: Record<keyof SiteConfig["visible_sections"], { label: string; hint: string }> = {
-  hero: { label: "Hero banner", hint: "Top image + headline" },
-  'story': { label: "Story / The hotel", hint: "Intro section" },
-  'rooms': { label: "Rooms", hint: "Room grid" },
-  'booking': { label: "Your stay / Booking", hint: "Dates CTA" },
-  'location': { label: "Location", hint: "Address card" },
-};
-
 function defaultConfig(hotelId: string): SiteConfig {
   return {
     hotel_id: hotelId,
@@ -67,11 +60,12 @@ function isValidHexColor(value: string) {
 }
 
 function LoadingWebsiteBuilder() {
+  const { t } = useTranslation();
   return (
-    <div className="space-y-6" role="status" aria-live="polite" aria-label="กำลังโหลดเว็บไซต์โรงแรม">
+    <div className="space-y-6" role="status" aria-live="polite" aria-label={t("websiteBuilder.loadingAriaLabel")}>
       <div className="flex items-center gap-3 rounded-xl border border-[#dce4df] bg-[#f6faf7] px-4 py-3 text-sm text-[#456156]">
         <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-[#9bbcae] border-t-[#1d6b56]" aria-hidden="true" />
-        <span>Loading website builder…</span>
+        <span>{t("websiteBuilder.loadingBuilder")}</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         {[1, 2, 3].map(i => (
@@ -83,14 +77,8 @@ function LoadingWebsiteBuilder() {
   );
 }
 
-function seedMediaForHotel(hotelName: string): MediaItem[] {
-  // Placeholder preview images as data URIs are not needed — use empty seed and let the user upload.
-  // Keep a deterministic empty array so the contract test for preview rendering stays stable.
-  void hotelName;
-  return [];
-}
-
 export default function WebsiteBuilder() {
+  const { t } = useTranslation();
   const { data: hotels, isLoading, isError, refetch, isFetching } = trpc.channelManager.hotels.useQuery();
   const { data: authMe } = trpc.auth.me.useQuery();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
@@ -112,22 +100,22 @@ export default function WebsiteBuilder() {
   );
 
   const uploadMediaMut = trpc.channelManager.uploadHotelMedia.useMutation({
-    onSuccess: () => { toast.success("Image uploaded"); refetchMedia(); },
+    onSuccess: () => { toast.success(t("websiteBuilder.toastImageUploaded")); refetchMedia(); },
     onError: (e) => setFormError(e.message)
   });
 
   const deleteMediaMut = trpc.channelManager.deleteHotelMedia.useMutation({
-    onSuccess: () => { toast.success("Image deleted"); refetchMedia(); },
+    onSuccess: () => { toast.success(t("websiteBuilder.toastImageDeleted")); refetchMedia(); },
     onError: (e) => setFormError(e.message)
   });
 
   const setHeroMut = trpc.channelManager.setHotelMediaHero.useMutation({
-    onSuccess: () => { toast.success("Hero image updated"); refetchMedia(); },
+    onSuccess: () => { toast.success(t("websiteBuilder.toastHeroUpdated")); refetchMedia(); },
     onError: (e) => setFormError(e.message)
   });
 
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({
-    onSuccess: () => { toast.success("Site config saved"); refetchConfig(); setSaveNote("Saved via saveHotelSiteConfig"); },
+    onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); },
     onError: (e) => setFormError(e.message)
   });
 
@@ -144,11 +132,6 @@ export default function WebsiteBuilder() {
 
   useEffect(() => {
     if (!effectiveHotelId) return;
-    // ASSUMPTION: only auto-sync when the active hotel changes so an in-flight
-    // user edit is not overwritten by a background refetch of serverConfig.
-    // (The previous render-body sync created a new default object every render
-    // and compared it with JSON.stringify, causing an infinite re-render loop
-    // while serverConfig was still loading.)
     if (initializedFor !== effectiveHotelId) {
       setInitializedFor(effectiveHotelId);
       setDraft((serverConfig ?? defaultConfig(effectiveHotelId)) as SiteConfig);
@@ -159,22 +142,30 @@ export default function WebsiteBuilder() {
 
   const heroImage = useMemo(() => media.find(m => m.is_hero)?.url ?? media[0]?.url ?? null, [media]);
 
+  const sectionLabels: Record<keyof SiteConfig["visible_sections"], { label: string; hint: string }> = useMemo(() => ({
+    hero: { label: t("websiteBuilder.sectionHeroLabel"), hint: t("websiteBuilder.sectionHeroHint") },
+    'story': { label: t("websiteBuilder.sectionStoryLabel"), hint: t("websiteBuilder.sectionStoryHint") },
+    'rooms': { label: t("websiteBuilder.sectionRoomsLabel"), hint: t("websiteBuilder.sectionRoomsHint") },
+    'booking': { label: t("websiteBuilder.sectionBookingLabel"), hint: t("websiteBuilder.sectionBookingHint") },
+    'location': { label: t("websiteBuilder.sectionLocationLabel"), hint: t("websiteBuilder.sectionLocationHint") },
+  }), [t]);
+
   function handleUploadFile(file: File) {
     setFormError(null);
     const maxBytes = 5 * 1024 * 1024;
     if (file.size > maxBytes) {
-      setFormError("Image too large — limit is 5 MB.");
+      setFormError(t("websiteBuilder.errorFileTooLarge"));
       return;
     }
     if (!file.type.startsWith("image/")) {
-      setFormError("Only image files are supported.");
+      setFormError(t("websiteBuilder.errorOnlyImages"));
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
       const url = String(reader.result ?? "");
       if (!url) {
-        setFormError("Could not read image file.");
+        setFormError(t("websiteBuilder.errorReadImage"));
         return;
       }
       const next = {
@@ -183,15 +174,15 @@ export default function WebsiteBuilder() {
         filename: file.name,
       };
       uploadMediaMut.mutate(next);
-      toast.success("Image upload started...");
+      toast.success(t("websiteBuilder.toastUploadStarted"));
     };
-    reader.onerror = () => setFormError("Could not read image file.");
+    reader.onerror = () => setFormError(t("websiteBuilder.errorReadImage"));
     reader.readAsDataURL(file);
   }
 
   function handleDeleteMedia(id: string) {
     if (!canManage) {
-      setFormError("You do not have permission to delete media (requires property.manage_profile).");
+      setFormError(t("websiteBuilder.errorNoPermissionDelete"));
       return;
     }
     deleteMediaMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
@@ -206,23 +197,23 @@ export default function WebsiteBuilder() {
     setFormError(null);
     setSaveNote(null);
     if (!canManage) {
-      setFormError("You do not have permission to save site config (requires property.manage_profile).");
+      setFormError(t("websiteBuilder.errorNoPermissionSave"));
       return;
     }
     if (!effectiveHotelId) {
-      setFormError("Select a hotel first.");
+      setFormError(t("websiteBuilder.errorSelectHotelFirst"));
       return;
     }
     if (!isValidHexColor(draft.accent_color)) {
-      setFormError("Accent color must be a hex color like #1d6b56.");
+      setFormError(t("websiteBuilder.errorInvalidHex"));
       return;
     }
     if (draft.hero_copy.trim().length === 0) {
-      setFormError("Hero copy cannot be empty.");
+      setFormError(t("websiteBuilder.errorHeroCopyEmpty"));
       return;
     }
     if (draft.hero_copy.length > 500) {
-      setFormError("Hero copy must be 500 characters or fewer.");
+      setFormError(t("websiteBuilder.errorHeroCopyTooLong"));
       return;
     }
     saveConfigMut.mutate({
@@ -239,9 +230,9 @@ export default function WebsiteBuilder() {
     return (
       <PageState
         tone="error"
-        title="Unable to load website builder"
-        description="The website builder workspace could not be loaded for the properties visible to your account."
-        actionLabel="Try again"
+        title={t("websiteBuilder.unableToLoadTitle")}
+        description={t("websiteBuilder.unableToLoadDesc")}
+        actionLabel={t("websiteBuilder.tryAgain")}
         onAction={() => void refetch()}
       />
     );
@@ -251,8 +242,8 @@ export default function WebsiteBuilder() {
     return (
       <PageState
         tone="error"
-        title="Access restricted"
-        description="Your current role does not have permission to view the website builder (requires property.view or property.manage_profile)."
+        title={t("websiteBuilder.accessRestrictedTitle")}
+        description={t("websiteBuilder.accessRestrictedDesc")}
       />
     );
   }
@@ -261,8 +252,8 @@ export default function WebsiteBuilder() {
     return (
       <PageState
         tone="empty"
-        title="No hotels available"
-        description="Create a hotel first before customizing its public site."
+        title={t("websiteBuilder.noHotelsTitle")}
+        description={t("websiteBuilder.noHotelsDesc")}
       />
     );
   }
@@ -271,27 +262,27 @@ export default function WebsiteBuilder() {
     <div className="space-y-7 pb-8">
       <section className="flex flex-col gap-5 border-b border-[#dce4df] pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="eyebrow">Property / Website Builder</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">Website Builder</h1>
+          <p className="eyebrow">{t("websiteBuilder.eyebrow")}</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">{t("websiteBuilder.title")}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6c7e75]">
-            Upload media with preview, and customize hero_copy, accent_color, and visible_sections for your public hotel page. Saved config is applied to the public preview and will persist via saveHotelSiteConfig / getHotelSiteConfig.
+            {t("websiteBuilder.lede")}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-[#70837a]">
           <Clock3 size={14} aria-hidden="true" />
-          <span>Per-hotel site config</span>
-          {isFetching || isFetchingMedia || isFetchingConfig || uploadMediaMut.isPending || saveConfigMut.isPending || deleteMediaMut.isPending || setHeroMut.isPending ? <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label="กำลังอัปเดตข้อมูล" /> : null}
+          <span>{t("websiteBuilder.perHotelConfig")}</span>
+          {isFetching || isFetchingMedia || isFetchingConfig || uploadMediaMut.isPending || saveConfigMut.isPending || deleteMediaMut.isPending || setHeroMut.isPending ? <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("websiteBuilder.updatingDataAriaLabel")} /> : null}
         </div>
       </section>
 
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Hotel selector">
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label={t("websiteBuilder.hotelSelectorAria")}>
         <div className="flex items-center gap-2 text-sm font-semibold text-[#263b31]">
-          <Globe size={16} aria-hidden="true" /> Hotel
+          <Globe size={16} aria-hidden="true" /> {t("websiteBuilder.hotelLabel")}
         </div>
         <div className="w-full sm:max-w-sm">
           <Select value={effectiveHotelId} onValueChange={setSelectedHotelId}>
             <SelectTrigger className="border-[#dce4df] bg-white">
-              <SelectValue placeholder="Select hotel" />
+              <SelectValue placeholder={t("websiteBuilder.selectHotelPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {(hotels as any[]).map(h => (
@@ -304,29 +295,29 @@ export default function WebsiteBuilder() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3" aria-label="Website builder summary">
+      <section className="grid gap-4 sm:grid-cols-3" aria-label={t("websiteBuilder.summaryAria")}>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">Media items</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryMediaItems")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{media.length}</p>
-            <p className="mt-1 text-xs text-[#778a80]">Upload/delete with preview</p>
+            <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryMediaHint")}</p>
           </CardContent>
         </Card>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">Accent color</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryAccentColor")}</p>
             <div className="mt-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full border border-[#dce4df]" style={{ background: draft.accent_color }} aria-hidden="true" />
               <span className="text-sm font-mono font-semibold text-[#263b31]">{draft.accent_color}</span>
             </div>
-            <p className="mt-1 text-xs text-[#778a80]">accent_color</p>
+            <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryAccentHint")}</p>
           </CardContent>
         </Card>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">Visible sections</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryVisibleSections")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{Object.values(draft.visible_sections).filter(Boolean).length} / 5</p>
-            <p className="mt-1 text-xs text-[#778a80]">visible_sections toggles</p>
+            <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryVisibleHint")}</p>
           </CardContent>
         </Card>
       </section>
@@ -336,14 +327,14 @@ export default function WebsiteBuilder() {
           <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
               <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
-                <ImageIcon size={18} aria-hidden="true" /> Media — upload / preview / delete
+                <ImageIcon size={18} aria-hidden="true" /> {t("websiteBuilder.mediaSectionTitle")}
               </CardTitle>
-              <CardDescription>Upload images for this hotel, preview them, and delete or mark one as hero. Validates size/type before upload.</CardDescription>
+              <CardDescription>{t("websiteBuilder.mediaSectionDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
               {!canManage && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="note">
-                  View-only — upload and delete require property.manage_profile.
+                  {t("websiteBuilder.viewOnlyManageProfile")}
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-3">
@@ -357,12 +348,12 @@ export default function WebsiteBuilder() {
                     if (file) handleUploadFile(file);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
-                  aria-label="Upload media"
+                  aria-label={t("websiteBuilder.uploadMediaAria")}
                 />
                 <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canManage} className="bg-[#1d6b56] hover:bg-[#155442] disabled:opacity-50">
-                  <Upload size={15} /> Upload image
+                  <Upload size={15} /> {t("websiteBuilder.uploadImage")}
                 </Button>
-                <span className="text-xs text-[#778a80]">PNG/JPG/WebP, max 5 MB. Preview updates immediately.</span>
+                <span className="text-xs text-[#778a80]">{t("websiteBuilder.uploadHint")}</span>
               </div>
 
               {media.length ? (
@@ -373,13 +364,13 @@ export default function WebsiteBuilder() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.url} alt={item.caption ?? "Hotel media preview"} className="h-full w-full object-cover" />
                         {item.is_hero && (
-                          <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">Hero</span>
+                          <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">{t("websiteBuilder.heroBadge")}</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2 p-3">
                         <div className="min-w-0">
                           <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>
-                          <p className="text-[11px] text-[#778a80]">{item.is_hero ? "Hero image" : "Gallery"} · display_order {item.display_order}</p>
+                          <p className="text-[11px] text-[#778a80]">{item.is_hero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")} · {t("websiteBuilder.displayOrderLabel", { order: item.display_order })}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
                           <Button
@@ -389,9 +380,9 @@ export default function WebsiteBuilder() {
                             className={`h-7 border-[#dce4df] px-2 text-xs ${item.is_hero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
                             onClick={() => handleSetHero(item.id)}
                             disabled={!canManage || item.is_hero}
-                            aria-label={`Set hero ${item.id}`}
+                            aria-label={t("websiteBuilder.setHeroAria", { id: item.id })}
                           >
-                            Hero
+                            {t("websiteBuilder.setHeroButton")}
                           </Button>
                           <Button
                             type="button"
@@ -400,7 +391,7 @@ export default function WebsiteBuilder() {
                             className="h-7 w-7 text-[#8a9a93] hover:text-red-600"
                             onClick={() => handleDeleteMedia(item.id)}
                             disabled={!canManage}
-                            aria-label={`Delete media ${item.id}`}
+                            aria-label={t("websiteBuilder.deleteMediaAria", { id: item.id })}
                           >
                             <Trash2 size={14} />
                           </Button>
@@ -410,10 +401,10 @@ export default function WebsiteBuilder() {
                   ))}
                 </div>
               ) : (
-                <PageState tone="empty" title="No media yet" description="Upload an image to see the preview grid. The first upload becomes the hero image." />
+                <PageState tone="empty" title={t("websiteBuilder.noMediaTitle")} description={t("websiteBuilder.noMediaDesc")} />
               )}
               <p className="text-xs leading-5 text-[#778a80]">
-                Media is managed via hotel_media upload/delete. hero_copy / accent_color / visible_sections live in hotel_site_config.
+                {t("websiteBuilder.mediaFooterHint")}
               </p>
             </CardContent>
           </Card>
@@ -421,9 +412,9 @@ export default function WebsiteBuilder() {
           <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
               <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
-                <Eye size={18} aria-hidden="true" /> Public preview
+                <Eye size={18} aria-hidden="true" /> {t("websiteBuilder.publicPreviewTitle")}
               </CardTitle>
-              <CardDescription>Reflects hero_copy, accent_color, and visible_sections as they will appear on PublicHotel.</CardDescription>
+              <CardDescription>{t("websiteBuilder.publicPreviewDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="pt-5">
               <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
@@ -433,7 +424,7 @@ export default function WebsiteBuilder() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={heroImage} alt={`Preview for ${selectedHotel?.name ?? "hotel"}`} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-[#7a8c83]">No hero image — upload one above</div>
+                      <div className="flex h-full w-full items-center justify-center text-xs text-[#7a8c83]">{t("websiteBuilder.noHeroImagePreview")}</div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" aria-hidden="true" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -443,49 +434,49 @@ export default function WebsiteBuilder() {
                         className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white"
                         style={{ background: draft.accent_color }}
                       >
-                        View rooms
+                        {t("websiteBuilder.viewRooms")}
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="px-4 py-3 text-xs text-[#7a8c83]">Hero section hidden (visible_sections.hero is off)</div>
+                  <div className="px-4 py-3 text-xs text-[#7a8c83]">{t("websiteBuilder.heroSectionHidden")}</div>
                 )}
 
                 <div className="grid gap-3 p-4 sm:grid-cols-2">
                   {config?.visible_sections?.story ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">The hotel</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">Stay at {selectedHotel?.name ?? "this hotel"}.</p>
+                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.theHotel")}</p>
+                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.stayAt", { hotelName: selectedHotel?.name ?? "this hotel" })}</p>
                     </div>
                   ) : null}
                   {config?.visible_sections?.rooms ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">Rooms</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{selectedHotel?.room_types?.length ?? 0} room type(s) from hotel data · preview grid would appear here</p>
+                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.rooms")}</p>
+                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.roomsPreviewHint", { count: selectedHotel?.room_types?.length ?? 0 })}</p>
                     </div>
                   ) : null}
                   {config?.visible_sections?.booking ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">Your stay</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">Booking card preview — accent button uses accent_color</p>
+                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
+                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
                       <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold text-white" style={{ background: draft.accent_color }}>
-                        Plan visit
+                        {t("websiteBuilder.planVisit")}
                       </span>
                     </div>
                   ) : null}
                   {config?.visible_sections?.location ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">Location</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{selectedHotel?.address ?? "Address from hotel profile"}</p>
+                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.location")}</p>
+                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{selectedHotel?.address ?? t("websiteBuilder.addressFallback")}</p>
                     </div>
                   ) : null}
                   {!Object.values(draft.visible_sections).some(Boolean) && (
-                    <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">All sections hidden — toggle at least one visible section.</div>
+                    <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{t("websiteBuilder.allSectionsHidden")}</div>
                   )}
                 </div>
               </div>
               <p className="mt-3 text-xs leading-5 text-[#667a70]">
-                PublicHotel.tsx should read hotel_site_config (falling back to defaults when a hotel has no config). This preview mirrors that fallback.
+                {t("websiteBuilder.publicHotelFallbackNote")}
               </p>
             </CardContent>
           </Card>
@@ -495,9 +486,9 @@ export default function WebsiteBuilder() {
           <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
               <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
-                <Palette size={18} aria-hidden="true" /> Site config
+                <Palette size={18} aria-hidden="true" /> {t("websiteBuilder.siteConfigTitle")}
               </CardTitle>
-              <CardDescription>hero_copy, accent_color, visible_sections — gated by property.manage_profile. Save via saveHotelSiteConfig.</CardDescription>
+              <CardDescription>{t("websiteBuilder.siteConfigDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
               {formError && (
@@ -511,12 +502,12 @@ export default function WebsiteBuilder() {
                 </div>
               )}
               {!canManage && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">Requires property.manage_profile to save.</div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{t("websiteBuilder.requiresManageProfile")}</div>
               )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="wb-hero-copy" className="text-xs text-[#52655b]">
-                  hero_copy
+                  {t("websiteBuilder.heroCopyLabel")}
                 </Label>
                 <Textarea
                   id="wb-hero-copy"
@@ -524,7 +515,7 @@ export default function WebsiteBuilder() {
                   onChange={e => setDraft(p => ({ ...p, hero_copy: e.target.value }))}
                   disabled={!canManage}
                   className="min-h-[96px] border-[#dce4df]"
-                  placeholder="Explore room types, rates, and availability directly from this hotel."
+                  placeholder={t("websiteBuilder.heroCopyPlaceholder")}
                   maxLength={500}
                   aria-label="hero_copy"
                 />
@@ -533,7 +524,7 @@ export default function WebsiteBuilder() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="wb-accent-color" className="text-xs text-[#52655b]">
-                  accent_color
+                  {t("websiteBuilder.accentColorLabel")}
                 </Label>
                 <div className="flex items-center gap-2">
                   <Input
@@ -554,17 +545,17 @@ export default function WebsiteBuilder() {
                     aria-label="accent_color"
                   />
                 </div>
-                <p className="text-[11px] text-[#778a80]">Hex color, e.g. #1d6b56. Used for hero CTA and accent buttons.</p>
+                <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.accentColorHint")}</p>
               </div>
 
               <div className="space-y-3">
-                <Label className="text-xs text-[#52655b]">visible_sections</Label>
+                <Label className="text-xs text-[#52655b]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
                 <div className="space-y-2 rounded-xl border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                  {(Object.keys(SECTION_LABELS) as Array<keyof SiteConfig["visible_sections"]>).map(key => (
+                  {(Object.keys(sectionLabels) as Array<keyof SiteConfig["visible_sections"]>).map(key => (
                     <label key={key} className="flex items-center justify-between gap-3 rounded-lg border border-[#e5ebe7] bg-white px-3 py-2.5">
                       <span>
-                        <span className="text-sm font-medium text-[#263b31]">{SECTION_LABELS[key].label}</span>
-                        <span className="ml-2 text-xs text-[#7a8c83]">{SECTION_LABELS[key].hint}</span>
+                        <span className="text-sm font-medium text-[#263b31]">{sectionLabels[key].label}</span>
+                        <span className="ml-2 text-xs text-[#7a8c83]">{sectionLabels[key].hint}</span>
                       </span>
                       <Switch
                         checked={draft.visible_sections[key]}
@@ -575,26 +566,26 @@ export default function WebsiteBuilder() {
                     </label>
                   ))}
                 </div>
-                <p className="text-[11px] text-[#778a80]">Toggles map to visible_sections json for PublicHotel. At least one section should remain visible.</p>
+                <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.visibleSectionsHint")}</p>
               </div>
 
               <Button type="button" onClick={handleSave} disabled={!canManage} className="w-full bg-[#1d6b56] hover:bg-[#155442] disabled:opacity-50">
-                <Save size={15} /> Save site config
+                <Save size={15} /> {t("websiteBuilder.saveSiteConfig")}
               </Button>
               <p className="text-xs leading-5 text-[#778a80]">
-                Persists via saveHotelSiteConfig / getHotelSiteConfig per hotel_id. hotel_domains custom-domain flow is deferred (see DECISIONS.md).
+                {t("websiteBuilder.saveConfigFooter")}
               </p>
             </CardContent>
           </Card>
 
           <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
-              <CardTitle className="text-sm text-[#263b31]">About hotel_domains</CardTitle>
-              <CardDescription>Custom domains are deferred in this iteration — media + site config ship first.</CardDescription>
+              <CardTitle className="text-sm text-[#263b31]">{t("websiteBuilder.aboutDomainsTitle")}</CardTitle>
+              <CardDescription>{t("websiteBuilder.aboutDomainsDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
               <p className="text-xs leading-5 text-[#6c7e75]">
-                See DECISIONS.md for the hotel_domains deferral note. Provisioning / Vercel verification will be a follow-up spec; this page does not accept domain input today.
+                {t("websiteBuilder.aboutDomainsBody")}
               </p>
             </CardContent>
           </Card>
