@@ -23,17 +23,18 @@ describe("Communications contract", () => {
   });
 
   it("includes thread list attached to booking, view/post gated by operations.* and message markers", () => {
+    // Note: Updated per Rule 6 to match translation dictionary keys used in Communications.tsx
     expect(component).toContain("Communications");
-    expect(component).toContain("Thread list");
-    expect(component).toContain("attached to booking");
+    expect(component).toContain("communications.threadList");
+    expect(component).toContain("communications.attachedToBooking");
     expect(component).toContain("operations.view_bookings");
     expect(component).toContain("operations.manage_bookings");
     expect(component).toContain("listMessages");
     expect(component).toContain("sendMessage");
     expect(component).toContain("booking_id");
-    expect(component).toContain("Send message");
+    expect(component).toContain("communications.sendMessage");
     expect(component).toContain('role="status"');
-    expect(component).toContain("Loading communications");
+    expect(component).toContain("communications.loadingCommunications");
   });
 
   it("is wired to the real tRPC messaging procedures, not local/mock state", () => {
