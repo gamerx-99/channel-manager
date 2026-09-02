@@ -70,6 +70,8 @@ import {
   createBooking,
   publicHotelAvailability,
   createPublicBooking,
+  holdRoomType,
+  confirmBookingDetails,
 } from './routers/bookingRouter';
 
 export const appRouter = router({
@@ -122,6 +124,8 @@ export const appRouter = router({
     publicHotel,
     publicHotelAvailability,
     createPublicBooking,
+    holdRoomType,
+    confirmBookingDetails,
     getHotelSiteConfig,
     getHotelSiteConfigByHotelId,
     saveHotelSiteConfig,
