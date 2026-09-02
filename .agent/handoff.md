@@ -1,5 +1,36 @@
 # Handoff log
 
+## [2026-09-02] Availability Month View Feature — DONE ✅
+- **Context**: The Availability page (`client/src/pages/Calendar.tsx`) previously only offered a 7-day week view. While excellent for fine-grained editing of daily room allotment and pricing, viewing an entire month across multiple room types in a horizontal table would be too wide and difficult to use. A standard 7-column calendar Month View was introduced as a complementary overview mode.
+- **Design & Behavior**:
+  - **Week view** (unchanged): Detailed editing mode where hotel staff and managers adjust daily room inventory and rates.
+  - **Month view** (new overview): Standard 7-column calendar (Sunday–Saturday).
+    - Each day cell displays:
+      - Date number (with leading/trailing days muted as `.is-outside`).
+      - Total aggregate available rooms across all room types for that date (`available / totalRooms`).
+      - Status dot matching the system threshold (`closed` when available <= 0 [slate dot], `low` when available <= 25% of total [amber dot], and `healthy` otherwise [pine dot]).
+      - Minimum starting rate for that date (e.g. `฿1,500`).
+    - Interactive navigation: Clicking any day cell in Month View calculates the Monday of that week, sets `weekStart`, and smoothly switches back to Week View for instant editing.
+  - **View Mode Toggle**: Segmented control (`Week` | `Month`) placed in `calendar-toolbar` with accessible ARIA states (`aria-pressed`).
+  - **Toolbar Navigation**:
+    - `ChevronLeft` / `ChevronRight`: Navigates by 7 days in Week mode, and by 1 month in Month mode.
+    - Window title: Displays week date span in Week mode (`weekLabel`) and full month name/year in Month mode (`monthLabel`).
+    - `Today`: Snaps to the current week in Week mode and current month in Month mode.
+- **Files touched**:
+  - `client/src/pages/Calendar.tsx` (added month view, view toggle, navigation handlers, date helpers)
+  - `client/src/pages/Calendar.test.tsx` (created: 5 unit and behavior tests)
+  - `client/src/index.css` (added `.view-mode-toggle`, `.view-mode-option`, and `.calendar-month-*` grid styles)
+  - `client/src/lib/i18n/en.ts` & `client/src/lib/i18n/th.ts` (added `availability` translation namespace)
+  - `.agent/handoff.md` (this file)
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (422 passed | 3 skipped, 76 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite 2797 modules transformed, dist/index.js 177.8kb).
+- **Commits**:
+  - `feat(availability): add month view toggle alongside existing week view` (`c5b2a48`)
+  - `feat(i18n): wire availability calendar view mode and notes to translation dictionary` (`7438e31`)
+  - `docs: record availability month view feature` (this commit)
+
 ## [2026-09-02] Staff Invite & Set Password Page Bugfix — DONE ✅
 - **Context**: When inviting staff members via email from the Hotel Staff interface, employees received the invitation email from Supabase, but clicking the link failed to provide a screen to set their password.
   - **Root cause 1**: `server/supabase.ts` `inviteAuthUser()` called `auth.admin.inviteUserByEmail(email)` without any `options.redirectTo`, so Supabase redirected users to the project default URL.
