@@ -227,7 +227,15 @@ export async function listAuthUsers() {
 }
 
 export async function inviteAuthUser(email: string) {
-  const { data, error } = await createSupabaseAdminClient().auth.admin.inviteUserByEmail(email);
+  const appUrl =
+    process.env.PUBLIC_APP_URL ||
+    (process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : 'https://channel-manager-seven-blue.vercel.app');
+
+  const { data, error } = await createSupabaseAdminClient().auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${appUrl}/accept-invite`,
+  });
   if (error || !data.user) {
     throw new Error(`${error?.code ?? 'AUTH_INVITE_ERROR'}: ${error?.message ?? 'Invitation did not return a user.'}`);
   }
