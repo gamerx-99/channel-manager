@@ -19,6 +19,7 @@ import { WorkspaceMenu } from "../WorkspaceMenu";
 import { useHotel } from "../../contexts/HotelContext";
 import { type Permission } from "@shared/authorization";
 import { BrandMark } from "./BrandMark";
+import { useTranslation } from "@/lib/i18n";
 
 type SidebarProps = {
   open: boolean;
@@ -62,22 +63,23 @@ export function Sidebar({
   onCloseWorkspaceMenu,
 }: SidebarProps) {
   const [location] = useLocation();
+  const { t } = useTranslation();
   const { hotels: visibleHotels, selectedHotelId, selectedHotel, setSelectedHotelId } = useHotel();
   const selectedHotelName = selectedHotel?.name;
   const hotelNavItems = selectedHotelId
     ? [
-      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: "Room operations", icon: BedDouble }] : []),
-      ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: "Bookings", icon: Users }] : []),
-      ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: "Availability", icon: CalendarDays }] : []),
-      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: "OTA Sync", icon: Globe }] : []),
-      ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: "Hotel Staff", icon: ShieldCheck }] : []),
+      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomOperations"), icon: BedDouble }] : []),
+      ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
+      ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
+      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
+      ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: ShieldCheck }] : []),
     ]
     : [];
   const navItems = [
-    { href: "/dashboard", label: isPlatformAdmin ? "Overview" : "Overview", icon: LayoutDashboard },
-    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: "Channel analytics", icon: BarChart3 }] : []),
-    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: "Hotels Management", icon: Hotel }] : []),
-    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: "Admin Users", icon: ShieldCheck }] : []),
+    { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
+    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: t("sidebar.channelAnalytics"), icon: BarChart3 }] : []),
+    ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: t("sidebar.hotelsManagement"), icon: Hotel }] : []),
+    ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: t("sidebar.adminUsers"), icon: ShieldCheck }] : []),
     ...hotelNavItems,
   ];
   const activePath = getActivePath(location, selectedHotelId);
@@ -92,7 +94,7 @@ export function Sidebar({
             <em>manager</em>
           </span>
         </Link>
-        <button className="icon-button sidebar-close" onClick={() => onClose()} aria-label="Close menu">
+        <button className="icon-button sidebar-close" onClick={() => onClose()} aria-label={t("sidebar.closeMenu")}>
           <X size={17} />
         </button>
       </div>
@@ -108,13 +110,13 @@ export function Sidebar({
       />
 
       <nav className="nav-list" aria-label="Main navigation">
-        <p className="nav-label">Workspace</p>
+        <p className="nav-label">{t("sidebar.workspace")}</p>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = Boolean(item.href && activePath === item.href);
           if (!item.href) {
             return (
-              <span key={item.label} className="nav-link" aria-disabled="true" title="Select a hotel from Hotels page first" style={{ opacity: 0.48, cursor: "not-allowed" }}>
+              <span key={item.label} className="nav-link" aria-disabled="true" title={t("sidebar.selectHotelFirst")} style={{ opacity: 0.48, cursor: "not-allowed" }}>
                 <Icon size={17} strokeWidth={1.8} />
                 <span>{item.label}</span>
               </span>
@@ -132,7 +134,7 @@ export function Sidebar({
             </Link>
           );
         })}
-        <p className="nav-label nav-label-spaced">Operations & Modules</p>
+        <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>
         {can("property.view_financials") && (
           <Link
             href="/dashboard/financials"
@@ -140,12 +142,12 @@ export function Sidebar({
             onClick={() => onClose()}
           >
             <BarChart3 size={17} strokeWidth={location === "/dashboard/financials" ? 2.3 : 1.8} />
-            <span>Financials</span>
+            <span>{t("sidebar.financials")}</span>
           </Link>
         )}
-        {isSuperAdmin && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info("Payments & Gateway module is coming soon in future releases.")}>
+        {isSuperAdmin && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info(t("sidebar.paymentsComingSoon"))}>
           <FileSpreadsheet size={17} strokeWidth={1.8} />
-          <span>Payments</span>
+          <span>{t("sidebar.payments")}</span>
         </button>}
         {can("operations.view_bookings") && (
           <Link
@@ -154,7 +156,7 @@ export function Sidebar({
             onClick={() => onClose()}
           >
             <Bell size={17} strokeWidth={location.startsWith("/communications") ? 2.3 : 1.8} />
-            <span>Communications</span>
+            <span>{t("sidebar.communications")}</span>
           </Link>
         )}
         {can("housekeeping.view_room_status") && (
@@ -164,7 +166,7 @@ export function Sidebar({
             onClick={() => onClose()}
           >
             <Users size={17} strokeWidth={location === "/housekeeping" ? 2.3 : 1.8} />
-            <span>Housekeeping</span>
+            <span>{t("sidebar.housekeeping")}</span>
           </Link>
         )}
         <Link
@@ -173,7 +175,7 @@ export function Sidebar({
           onClick={() => onClose()}
         >
           <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
-          <span>Website Builder</span>
+          <span>{t("sidebar.websiteBuilder")}</span>
         </Link>
         <button
           type="button"
@@ -183,12 +185,12 @@ export function Sidebar({
             if (hotel?.slug) {
               window.open(`/${hotel.slug}#book`, '_blank');
             } else {
-              toast.info("Select or add a hotel first to open its live booking engine.");
+              toast.info(t("sidebar.bookingEnginesSelectPrompt"));
             }
           }}
         >
           <CalendarDays size={17} strokeWidth={1.8} />
-          <span>Booking Engines</span>
+          <span>{t("sidebar.bookingEngines")}</span>
         </button>
         {can("revenue.manage_pricing_rules") && (
           <Link
@@ -197,13 +199,13 @@ export function Sidebar({
             onClick={() => onClose()}
           >
             <BarChart3 size={17} strokeWidth={location === "/dashboard/pricing" ? 2.3 : 1.8} />
-            <span>Advanced Pricing</span>
+            <span>{t("sidebar.advancedPricing")}</span>
           </Link>
         )}
-        <p className="nav-label nav-label-spaced">System</p>
-        {can("operations.export_tm30") && <a className="nav-link" href="#" onClick={(event) => { event.preventDefault(); toast.info("TM.30 and report exports are available directly inside each hotel's Bookings workspace."); }}>
+        <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>
+        {can("operations.export_tm30") && <a className="nav-link" href="#" onClick={(event) => { event.preventDefault(); toast.info(t("sidebar.exportsPrompt")); }}>
           <FileSpreadsheet size={17} strokeWidth={1.8} />
-          <span>Exports</span>
+          <span>{t("sidebar.exports")}</span>
         </a>}
         {can("platform.manage_users") && (
           <Link
@@ -212,7 +214,7 @@ export function Sidebar({
             onClick={() => onClose()}
           >
             <Settings2 size={17} strokeWidth={1.8} />
-            <span>Settings</span>
+            <span>{t("sidebar.settings")}</span>
           </Link>
         )}
       </nav>
@@ -221,21 +223,21 @@ export function Sidebar({
         <div className="support-note">
           <ShieldCheck size={16} />
           <div>
-            <strong>Support mode</strong>
-            <span>Read, guide, resolve</span>
+            <strong>{t("sidebar.supportMode")}</strong>
+            <span>{t("sidebar.supportModeDesc")}</span>
           </div>
         </div>
         <div className="user-chip">
           <div className="user-avatar">{initials}</div>
           <div>
             <strong>{userName}</strong>
-            <span>{userEmail ?? "Supabase user"}</span>
+            <span>{userEmail ?? t("sidebar.supabaseUser")}</span>
           </div>
           <button
             className="icon-button"
             onClick={onLogout}
-            title="Sign out"
-            aria-label="Sign out"
+            title={t("sidebar.signOut")}
+            aria-label={t("sidebar.signOut")}
           >
             <LogOut size={14} />
           </button>
