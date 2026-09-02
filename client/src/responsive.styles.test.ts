@@ -13,8 +13,8 @@ describe("Responsive operations layout contract", () => {
   it("keeps the live AppShell sidebar closed by default on small screens and exposes an accessible open state", () => {
     expect(sidebar).toContain('className={`sidebar ${open ? "is-open" : ""}`}');
     expect(app).toContain('className="mobile-scrim"');
-    // The hamburger button moved into Topbar during the Phase 4 shell refactor.
-    expect(topbar).toContain('aria-label="Open menu"');
+    // The hamburger button moved into Topbar during the Phase 4 shell refactor and uses i18n key topbar.openMenu.
+    expect(topbar).toContain('aria-label={t("topbar.openMenu")}');
     expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*?\.sidebar\{[^}]*transform:translateX\(-105%\)/);
     expect(css).toMatch(/\.sidebar\.is-open\{[^}]*transform:translateX\(0\)/);
   });

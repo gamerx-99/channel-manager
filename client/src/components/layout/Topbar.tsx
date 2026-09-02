@@ -12,36 +12,37 @@ import LanguageSwitcher from "../LanguageSwitcher";
 import { useHotel } from "../../contexts/HotelContext";
 import { ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
 import { BrandMark } from "./BrandMark";
+import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
-const BREADCRUMB_EXACT_LABELS: Record<string, string> = {
-  "/dashboard": "Overview",
+const BREADCRUMB_EXACT_KEYS: Record<string, TranslationKey> = {
+  "/dashboard": "breadcrumb.overview",
 };
 
-const BREADCRUMB_PREFIX_LABELS: Array<[string, string]> = [
-  ["/dashboard/channels", "Channel analytics"],
-  ["/dashboard/pricing", "Advanced Pricing"],
-  ["/dashboard/financials", "Financials"],
-  ["/housekeeping", "Housekeeping"],
-  ["/communications", "Communications"],
+const BREADCRUMB_PREFIX_KEYS: Array<[string, TranslationKey]> = [
+  ["/dashboard/channels", "breadcrumb.channelAnalytics"],
+  ["/dashboard/pricing", "breadcrumb.advancedPricing"],
+  ["/dashboard/financials", "breadcrumb.financials"],
+  ["/housekeeping", "breadcrumb.housekeeping"],
+  ["/communications", "breadcrumb.communications"],
 ];
 
-const BREADCRUMB_INCLUDES_LABELS: Array<[string, string]> = [
-  ["admin-users", "Admin users"],
-  ["staff", "Hotel staff"],
-  ["bookings", "Bookings"],
-  ["calendar", "Availability"],
-  ["ota", "OTA Sync"],
+const BREADCRUMB_INCLUDES_KEYS: Array<[string, TranslationKey]> = [
+  ["admin-users", "breadcrumb.adminUsers"],
+  ["staff", "breadcrumb.hotelStaff"],
+  ["bookings", "breadcrumb.bookings"],
+  ["calendar", "breadcrumb.availability"],
+  ["ota", "breadcrumb.otaSync"],
 ];
 
-function getBreadcrumbLabel(location: string): string {
-  if (BREADCRUMB_EXACT_LABELS[location]) return BREADCRUMB_EXACT_LABELS[location];
-  for (const [prefix, label] of BREADCRUMB_PREFIX_LABELS) {
-    if (location.startsWith(prefix)) return label;
+function getBreadcrumbKey(location: string): TranslationKey {
+  if (BREADCRUMB_EXACT_KEYS[location]) return BREADCRUMB_EXACT_KEYS[location];
+  for (const [prefix, key] of BREADCRUMB_PREFIX_KEYS) {
+    if (location.startsWith(prefix)) return key;
   }
-  for (const [substring, label] of BREADCRUMB_INCLUDES_LABELS) {
-    if (location.includes(substring)) return label;
+  for (const [substring, key] of BREADCRUMB_INCLUDES_KEYS) {
+    if (location.includes(substring)) return key;
   }
-  return "Hotels";
+  return "breadcrumb.hotels";
 }
 
 type TopbarProps = {
@@ -80,12 +81,13 @@ export function Topbar({
   onCloseUserMenu,
 }: TopbarProps) {
   const [location] = useLocation();
+  const { t } = useTranslation();
   const { selectedHotelId, selectedHotel } = useHotel();
   const selectedHotelName = selectedHotel?.name;
 
   return (
     <header className="topbar">
-      <button className="icon-button menu-button" onClick={onOpenMenu} aria-label="Open menu">
+      <button className="icon-button menu-button" onClick={onOpenMenu} aria-label={t("topbar.openMenu")}>
         <Menu size={19} />
       </button>
       <Link href="/dashboard" className="topbar-brand">
@@ -94,15 +96,15 @@ export function Topbar({
       </Link>
       <div className="topbar-rule" />
       <div className="breadcrumbs">
-        <span>Operating ledger</span>
+        <span>{t("topbar.operatingLedger")}</span>
         <span className="crumb-slash">/</span>
-        <span className="current-crumb">{getBreadcrumbLabel(location)}</span>
+        <span className="current-crumb">{t(getBreadcrumbKey(location))}</span>
       </div>
       <div className="topbar-actions">
         <label className="topbar-search">
           <Search size={15} aria-hidden="true" />
-          <span className="sr-only">Search system</span>
-          <input placeholder="Search system..." aria-label="Search system" />
+          <span className="sr-only">{t("topbar.searchSystemSr")}</span>
+          <input placeholder={t("topbar.searchSystem")} aria-label={t("topbar.searchSystemSr")} />
         </label>
         {isSuperAdmin && (
           <div className="dropdown-anchor">
@@ -111,15 +113,15 @@ export function Topbar({
               onClick={onToggleAddMenu}
               aria-expanded={addMenuOpen}
             >
-              <Plus size={15} /> <span>Add new</span> <ChevronDown size={14} />
+              <Plus size={15} /> <span>{t("topbar.addNew")}</span> <ChevronDown size={14} />
             </button>
             {addMenuOpen && (
               <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label="Add new menu">
                 <Link href="/hotels" className="menu-surface-item" onClick={onCloseAddMenu}>
-                  Add new hotel / property
+                  {t("topbar.addNewHotel")}
                 </Link>
                 <Link href="/settings/admin-users" className="menu-surface-item" onClick={onCloseAddMenu}>
-                  Invite team member
+                  {t("topbar.inviteTeamMember")}
                 </Link>
               </div>
             )}
@@ -133,7 +135,7 @@ export function Topbar({
             className="user-mini"
             onClick={onToggleUserMenu}
             aria-expanded={userMenuOpen}
-            aria-label="Account menu"
+            aria-label={t("topbar.accountMenu")}
           >
             <span className="user-avatar small">{initials}</span>
             <ChevronDown size={14} />
@@ -142,7 +144,7 @@ export function Topbar({
             <ProfileMenu
               isPlatformAdmin={isPlatformAdmin}
               canManageUsers={can("platform.manage_users")}
-              roleLabel={roles[0] ? ROLE_LABELS[roles[0]] : "Authorized user"}
+              roleLabel={roles[0] ? ROLE_LABELS[roles[0]] : t("topbar.authorizedUser")}
               userEmail={userEmail}
               userName={userName}
               propertyName={selectedHotelName}
