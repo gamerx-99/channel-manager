@@ -1,0 +1,98 @@
+const en = {
+  common: {
+    loading: "Loading...",
+    save: "Save",
+    cancel: "Cancel",
+    close: "Close",
+    delete: "Delete",
+    edit: "Edit",
+    confirm: "Confirm",
+    back: "Back",
+  },
+  sidebar: {
+    overview: "Overview",
+    channelAnalytics: "Channel analytics",
+    hotelsManagement: "Hotels Management",
+    adminUsers: "Admin Users",
+    roomOperations: "Room operations",
+    bookings: "Bookings",
+    availability: "Availability",
+    otaSync: "OTA Sync",
+    hotelStaff: "Hotel Staff",
+    workspace: "Workspace",
+    operationsModules: "Operations & Modules",
+    financials: "Financials",
+    payments: "Payments",
+    paymentsComingSoon: "Payments & Gateway module is coming soon in future releases.",
+    communications: "Communications",
+    housekeeping: "Housekeeping",
+    websiteBuilder: "Website Builder",
+    bookingEngines: "Booking Engines",
+    bookingEnginesSelectPrompt: "Select or add a hotel first to open its live booking engine.",
+    advancedPricing: "Advanced Pricing",
+    system: "System",
+    exports: "Exports",
+    exportsPrompt: "TM.30 and report exports are available directly inside each hotel's Bookings workspace.",
+    settings: "Settings",
+    supportMode: "Support mode",
+    supportModeDesc: "Read, guide, resolve",
+    signOut: "Sign out",
+    supabaseUser: "Supabase user",
+    selectHotelFirst: "Select a hotel from Hotels page first",
+    closeMenu: "Close menu",
+  },
+  topbar: {
+    searchSystem: "Search system...",
+    searchSystemSr: "Search system",
+    operatingLedger: "Operating ledger",
+    addNew: "Add new",
+    addNewHotel: "Add new hotel / property",
+    inviteTeamMember: "Invite team member",
+    openMenu: "Open menu",
+    accountMenu: "Account menu",
+    authorizedUser: "Authorized user",
+  },
+  breadcrumb: {
+    overview: "Overview",
+    channelAnalytics: "Channel analytics",
+    advancedPricing: "Advanced Pricing",
+    financials: "Financials",
+    housekeeping: "Housekeeping",
+    communications: "Communications",
+    adminUsers: "Admin users",
+    hotelStaff: "Hotel staff",
+    bookings: "Bookings",
+    availability: "Availability",
+    otaSync: "OTA Sync",
+    hotels: "Hotels",
+  },
+  login: {
+    eyebrowAside: "Hotel operations / Central console",
+    headlineAside1: "Keep every stay",
+    headlineAside2: "in good order.",
+    descAside: "A focused workspace for hotel owners and the people who support them.",
+    privateOperations: "Private hotel operations",
+    secureWorkspace: "Secure workspace",
+    eyebrowCard: "Secure sign in",
+    titleCard: "Welcome back",
+    descCard: "Sign in with your Supabase account to access your hotel workspace.",
+    emailLabel: "Email address",
+    passwordLabel: "Password",
+    signingIn: "Signing in…",
+    continue: "Continue",
+    securityNote: "Your hotel data is scoped by Supabase Row Level Security.",
+    privateWorkspace: "Private workspace",
+    needHelp: "Need help? Contact support",
+  },
+} as const;
+
+type DeepStringDictionary<T> = {
+  [K in keyof T]: T[K] extends string
+    ? string
+    : T[K] extends object
+    ? DeepStringDictionary<T[K]>
+    : never;
+};
+
+export type TranslationDictionary = DeepStringDictionary<typeof en>;
+export default en;
