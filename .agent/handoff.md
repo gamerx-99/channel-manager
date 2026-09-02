@@ -1,5 +1,60 @@
 # Handoff log
 
+## [2026-09-02] Staff Invite & Set Password Page Bugfix — DONE ✅
+- **Context**: When inviting staff members via email from the Hotel Staff interface, employees received the invitation email from Supabase, but clicking the link failed to provide a screen to set their password.
+  - **Root cause 1**: `server/supabase.ts` `inviteAuthUser()` called `auth.admin.inviteUserByEmail(email)` without any `options.redirectTo`, so Supabase redirected users to the project default URL.
+  - **Root cause 2**: No route, page, or handler existed anywhere in the app for accepting invitations or setting a new user password.
+- **Changes**:
+  1. `client/src/pages/AcceptInvite.tsx` (new page):
+     - Created public route component outside `PrivateRoute` with bilingual support (`t("acceptInvite.xxx")`).
+     - Checks URL query & hash fragments for Supabase auth error states (e.g. expired or reused links).
+     - Subscribes to `supabase.auth.onAuthStateChange` and checks `supabase.auth.getSession()` (with 4s timeout fallback to unauthenticated state).
+     - Validates password length (>= 8 characters) and matching confirmation.
+     - Calls `supabase.auth.updateUser({ password })` and navigates to `/dashboard` upon success.
+  2. `client/src/pages/AcceptInvite.contract.test.ts` & `AcceptInvite.test.tsx` (new tests):
+     - Verifies route placement outside `PrivateRoute`, form validation, password submission, and state transitions.
+  3. `client/src/App.tsx`:
+     - Registered `<Route path="/accept-invite" component={AcceptInvite} />`.
+  4. `client/src/lib/i18n/en.ts` & `client/src/lib/i18n/th.ts`:
+     - Added `acceptInvite` namespace with complete English and Thai translations.
+  5. `server/supabase.ts` `inviteAuthUser()`:
+     - Configured `options.redirectTo: ${appUrl}/accept-invite` where `appUrl` reads `process.env.PUBLIC_APP_URL`, falling back to `https://channel-manager-seven-blue.vercel.app` (custom domain without Vercel SSO blocking), or `http://localhost:3000` in development.
+  6. `server/inviteAuthUser.test.ts` (new unit test):
+     - Tests `redirectTo` behavior with `PUBLIC_APP_URL`, production fallback, and dev fallback.
+  7. `.env.example`:
+     - Documented `PUBLIC_APP_URL`.
+- **Testing & Post-Deploy Verification Warning**:
+  > **IMPORTANT — Manual Human Verification Required After Deployment**:
+  > The local sandbox cannot send real outbound emails or handle external Supabase authentication callback redirects.
+  > After deployment to Vercel, a human administrator must perform an end-to-end verification:
+  > 1. Log into the deployed app as Hotel Owner or Hotel Admin.
+  > 2. Go to **Hotel Staff** and invite a new staff email address.
+  > 3. Open the invitation email received at that address.
+  > 4. Click the confirmation/invite link.
+  > 5. Confirm it lands on `https://channel-manager-seven-blue.vercel.app/accept-invite`.
+  > 6. Enter a new password (>= 8 chars), confirm it, and submit.
+  > 7. Verify the account is updated and redirected to `/dashboard`.
+- **Files touched**:
+  - `client/src/pages/AcceptInvite.tsx` (created)
+  - `client/src/pages/AcceptInvite.contract.test.ts` (created)
+  - `client/src/pages/AcceptInvite.test.tsx` (created)
+  - `client/src/App.tsx`
+  - `client/src/lib/i18n/en.ts`
+  - `client/src/lib/i18n/th.ts`
+  - `server/supabase.ts`
+  - `server/inviteAuthUser.test.ts` (created)
+  - `.env.example`
+  - `.agent/handoff.md`
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (417 passed | 3 skipped, 75 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite 2797 modules transformed, dist/index.js 177.8kb).
+- **Commits**:
+  - `feat(auth): add accept-invite page for staff to set their password` (`0ef262c`)
+  - `fix(auth): set redirectTo on staff invite emails so they land on the set-password page` (`994cda8`)
+  - `docs(env): document PUBLIC_APP_URL for invite redirect` (`420b185`)
+  - `docs(handoff): document staff invite set-password bugfix` (this commit)
+
 ## [2026-09-02] Phase 1 i18n — Translation Infrastructure & Chrome Translation (EN/TH) — DONE ✅
 - **Context**: The application had an EN/TH toggle switch in the topbar (`LanguageSwitcher.tsx` + `LanguageContext.tsx`), but static strings across the app were hardcoded in English with no translation system connected. Phase 1 establishes the translation infrastructure and connects the application "chrome" (Sidebar, Topbar, and Login page).
 - **Changes**:
