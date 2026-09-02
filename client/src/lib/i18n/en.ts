@@ -104,6 +104,23 @@ const en = {
     passwordTooShort: "Choose a password with at least 8 characters.",
     passwordMismatch: "Passwords do not match.",
   },
+  availability: {
+    weekView: "Week",
+    monthView: "Month",
+    today: "Today",
+    liveInventoryNote: "Live inventory · Thailand time",
+    monthOverviewNote: "Monthly overview · Click day to edit",
+    healthyInventory: "Healthy inventory",
+    lowInventory: "Low inventory",
+    closedInventory: "Closed / unavailable",
+    pricesInThb: "Prices shown in THB",
+    roomTypeHeading: "Room type",
+    monthViewHint: "Edit →",
+    statusHealthy: "Healthy",
+    statusLow: "Low inventory",
+    statusClosed: "Closed / Full",
+    viewModeAria: "Calendar view mode",
+  },
 } as const;
 
 type DeepStringDictionary<T> = {

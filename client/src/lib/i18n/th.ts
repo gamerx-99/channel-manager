@@ -106,6 +106,23 @@ const th: TranslationDictionary = {
     passwordTooShort: "กรุณาตั้งรหัสผ่านอย่างน้อย 8 ตัวอักษร",
     passwordMismatch: "รหัสผ่านไม่ตรงกัน",
   },
+  availability: {
+    weekView: "สัปดาห์",
+    monthView: "เดือน",
+    today: "วันนี้",
+    liveInventoryNote: "ข้อมูลห้องว่างแบบเรียลไทม์ · เวลาประเทศไทย",
+    monthOverviewNote: "ภาพรวมรายเดือน · แตะวันที่เพื่อแก้ไข",
+    healthyInventory: "ห้องว่างปกติ",
+    lowInventory: "ห้องว่างเหลือน้อย",
+    closedInventory: "ปิดการขาย / เต็ม",
+    pricesInThb: "ราคาแสดงเป็นสกุลเงินบาท (THB)",
+    roomTypeHeading: "ประเภทห้อง",
+    monthViewHint: "แก้ไข →",
+    statusHealthy: "ปกติ",
+    statusLow: "เหลือน้อย",
+    statusClosed: "ปิดขาย / เต็ม",
+    viewModeAria: "มุมมองปฏิทิน",
+  },
 };
 
 export default th;

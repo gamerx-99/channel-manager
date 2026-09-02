@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
+import { useTranslation } from "@/lib/i18n";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 type CalendarViewMode = "week" | "month";
@@ -75,6 +76,7 @@ function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: bo
 const MONTH_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function Calendar({ id }: { id: string }) {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [weekStart, setWeekStart] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => {
@@ -262,7 +264,7 @@ export default function Calendar({ id }: { id: string }) {
           </button>
           <div>
             <strong>{viewMode === "week" ? weekLabel(days) : monthLabel(monthAnchor)}</strong>
-            <span>{viewMode === "week" ? "Live inventory · Thailand time" : "Monthly overview · Click day to edit"}</span>
+            <span>{viewMode === "week" ? t("availability.liveInventoryNote") : t("availability.monthOverviewNote")}</span>
           </div>
           <button
             className="icon-button bordered"
@@ -274,18 +276,18 @@ export default function Calendar({ id }: { id: string }) {
             <ChevronRight size={16} />
           </button>
           <button className="button button-quiet small-button" type="button" onClick={handleToday}>
-            Today
+            {t("availability.today")}
           </button>
         </div>
 
-        <div className="view-mode-toggle" role="group" aria-label="Calendar view mode">
+        <div className="view-mode-toggle" role="group" aria-label={t("availability.viewModeAria")}>
           <button
             type="button"
             className={`view-mode-option ${viewMode === "week" ? "view-mode-option--active" : ""}`}
             onClick={() => setViewMode("week")}
             aria-pressed={viewMode === "week"}
           >
-            Week
+            {t("availability.weekView")}
           </button>
           <span className="view-mode-divider" aria-hidden="true" />
           <button
@@ -294,17 +296,17 @@ export default function Calendar({ id }: { id: string }) {
             onClick={() => setViewMode("month")}
             aria-pressed={viewMode === "month"}
           >
-            Month
+            {t("availability.monthView")}
           </button>
         </div>
       </section>
 
       <section className="panel calendar-panel">
         <div className="calendar-legend">
-          <span><i className="dot pine" /> Healthy inventory</span>
-          <span><i className="dot amber" /> Low inventory</span>
-          <span><i className="dot slate" /> Closed / unavailable</span>
-          <span className="calendar-info"><Info size={14} /> Prices shown in THB</span>
+          <span><i className="dot pine" /> {t("availability.healthyInventory")}</span>
+          <span><i className="dot amber" /> {t("availability.lowInventory")}</span>
+          <span><i className="dot slate" /> {t("availability.closedInventory")}</span>
+          <span className="calendar-info"><Info size={14} /> {t("availability.pricesInThb")}</span>
         </div>
 
         {viewMode === "week" ? (
@@ -314,7 +316,7 @@ export default function Calendar({ id }: { id: string }) {
               <table className="availability-table">
                 <thead>
                   <tr>
-                    <th className="room-type-heading">Room type</th>
+                    <th className="room-type-heading">{t("availability.roomTypeHeading")}</th>
                     {days.map(day => (
                       <th key={toIsoDate(day)}>
                         <span>{day.getDate()}</span>
@@ -385,7 +387,7 @@ export default function Calendar({ id }: { id: string }) {
                   >
                     <div className="month-cell-top">
                       <span className="month-cell-day">{cell.date.getDate()}</span>
-                      <span className="month-cell-hint">Edit →</span>
+                      <span className="month-cell-hint">{t("availability.monthViewHint")}</span>
                     </div>
                     <span className="month-cell-status">
                       <i className={`dot ${statusDotClass}`} aria-hidden="true" />
