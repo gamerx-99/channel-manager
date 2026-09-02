@@ -1,10 +1,11 @@
 import { ChevronLeft, ChevronRight, Edit3, Info, Save, SlidersHorizontal } from "lucide-react";
 import { Link } from "wouter";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
+type CalendarViewMode = "week" | "month";
 
 function toIsoDate(date: Date) {
   const year = date.getFullYear();
@@ -28,8 +29,58 @@ function weekLabel(days: Date[]) {
     : `${first.getDate()} ${month.format(first)}–${last.getDate()} ${month.format(last)} ${last.getFullYear()}`;
 }
 
+function monthLabel(date: Date) {
+  return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(date);
+}
+
+function getMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: boolean }> {
+  const year = monthAnchor.getFullYear();
+  const month = monthAnchor.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const days: Array<{ date: Date; isCurrentMonth: boolean }> = [];
+
+  // Leading days from previous month (starting on Sunday)
+  const leadingCount = firstDay.getDay();
+  for (let i = leadingCount; i > 0; i--) {
+    days.push({ date: new Date(year, month, 1 - i), isCurrentMonth: false });
+  }
+
+  // Days of current month
+  const totalDaysInMonth = lastDay.getDate();
+  for (let d = 1; d <= totalDaysInMonth; d++) {
+    days.push({ date: new Date(year, month, d), isCurrentMonth: true });
+  }
+
+  // Trailing days from next month to complete the week row
+  const trailingCount = 6 - lastDay.getDay();
+  for (let i = 1; i <= trailingCount; i++) {
+    days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+  }
+
+  return days;
+}
+
+const MONTH_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export default function Calendar({ id }: { id: string }) {
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [weekStart, setWeekStart] = useState(() => new Date());
+  const [monthAnchor, setMonthAnchor] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -44,6 +95,9 @@ export default function Calendar({ id }: { id: string }) {
   });
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart]);
+  const monthDays = useMemo(() => getMonthDays(monthAnchor), [monthAnchor]);
+  const todayIso = useMemo(() => toIsoDate(new Date()), []);
+
   const availabilityByKey = useMemo(() => {
     const records = availabilityQuery.data ?? [];
     const lookup = new Map<string, (typeof records)[number]>();
@@ -101,6 +155,70 @@ export default function Calendar({ id }: { id: string }) {
     }
   }
 
+  const handlePrev = () => {
+    if (viewMode === "week") {
+      setWeekStart(current => addDays(current, -7));
+    } else {
+      setMonthAnchor(current => new Date(current.getFullYear(), current.getMonth() - 1, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMode === "week") {
+      setWeekStart(current => addDays(current, 7));
+    } else {
+      setMonthAnchor(current => new Date(current.getFullYear(), current.getMonth() + 1, 1));
+    }
+  };
+
+  const handleToday = () => {
+    const now = new Date();
+    setWeekStart(now);
+    setMonthAnchor(new Date(now.getFullYear(), now.getMonth(), 1));
+  };
+
+  const handleMonthDayClick = (dayDate: Date) => {
+    const monday = getMonday(dayDate);
+    setWeekStart(monday);
+    setViewMode("week");
+  };
+
+  const getDayAggregate = (dayDate: Date) => {
+    const dateStr = toIsoDate(dayDate);
+    let dayTotalAvailable = 0;
+    let dayTotalRooms = 0;
+    let dayMinPrice: number | null = null;
+
+    for (const roomType of hotel.room_types) {
+      const total = roomCountByType[roomType.id] ?? 0;
+      const savedCell = availabilityByKey.get(`${roomType.id}:${dateStr}`);
+      const fallbackAvailable = savedCell?.rooms_available ?? total;
+      const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
+      const cell = draftCell(roomType.id, dateStr, fallbackAvailable, fallbackPrice);
+
+      dayTotalRooms += total;
+      dayTotalAvailable += cell.available;
+      if (cell.price > 0 && (dayMinPrice === null || cell.price < dayMinPrice)) {
+        dayMinPrice = cell.price;
+      }
+    }
+
+    const status: "healthy" | "low" | "closed" =
+      dayTotalAvailable <= 0
+        ? "closed"
+        : dayTotalAvailable <= Math.max(1, Math.ceil(dayTotalRooms * 0.25))
+        ? "low"
+        : "healthy";
+
+    return {
+      dateStr,
+      totalAvailable: dayTotalAvailable,
+      totalRooms: dayTotalRooms,
+      minPrice: dayMinPrice,
+      status,
+    };
+  };
+
   return (
     <div className="page-content calendar-page">
       <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>Availability</strong></div>
@@ -108,41 +226,200 @@ export default function Calendar({ id }: { id: string }) {
         <div><div className="eyebrow">Operations / Daily controls</div><h1>Availability<span className="title-mark">.</span></h1><p className="lede">Rooms available and public rates, one day at a time.</p></div>
         <div className="intro-actions">
           <button className="button button-quiet" type="button" disabled title="Availability settings will be added with the room operations workflow"><SlidersHorizontal size={15} /> View settings</button>
-          {editing ? <button className="button button-primary" type="button" disabled={updateAvailability.isPending} onClick={() => void saveCalendar()}><Save size={15} /> {updateAvailability.isPending ? "Saving…" : "Save changes"}</button> : <button className="button button-primary" type="button" onClick={() => { setEditing(true); setSaved(false); setSaveError(null); }}><Edit3 size={15} /> Edit calendar</button>}
+          {editing ? (
+            <button className="button button-primary" type="button" disabled={updateAvailability.isPending} onClick={() => void saveCalendar()}>
+              <Save size={15} /> {updateAvailability.isPending ? "Saving…" : "Save changes"}
+            </button>
+          ) : (
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={() => {
+                if (viewMode === "month") setViewMode("week");
+                setEditing(true);
+                setSaved(false);
+                setSaveError(null);
+              }}
+            >
+              <Edit3 size={15} /> Edit calendar
+            </button>
+          )}
         </div>
       </section>
       {saved && <div className="save-toast"><span className="check-circle">✓</span> Availability changes saved to Supabase.</div>}
       {(saveError || updateAvailability.error) && <div className="save-toast error-state" role="alert">{saveError || updateAvailability.error?.message}<button className="text-link" type="button" onClick={() => void saveCalendar()}>ลองบันทึกอีกครั้ง</button></div>}
+
       <section className="calendar-toolbar">
-        <button className="icon-button bordered" type="button" onClick={() => setWeekStart(current => addDays(current, -7))} aria-label="Previous week"><ChevronLeft size={16} /></button>
-        <div><strong>{weekLabel(days)}</strong><span>Live inventory · Thailand time</span></div>
-        <button className="icon-button bordered" type="button" onClick={() => setWeekStart(current => addDays(current, 7))} aria-label="Next week"><ChevronRight size={16} /></button>
-        <button className="button button-quiet small-button" type="button" onClick={() => setWeekStart(new Date())}>Today</button>
-      </section>
-      <section className="panel calendar-panel">
-        <div className="calendar-legend"><span><i className="dot pine" /> Healthy inventory</span><span><i className="dot amber" /> Low inventory</span><span><i className="dot slate" /> Closed / unavailable</span><span className="calendar-info"><Info size={14} /> Prices shown in THB</span></div>
-        <p className="mobile-scroll-hint" role="note">เลื่อนตารางในแนวนอนเพื่อดูวันถัดไปและอัตราของห้องทุกประเภท</p>
-        <div className="calendar-scroll">
-          <table className="availability-table">
-            <thead><tr><th className="room-type-heading">Room type</th>{days.map(day => <th key={toIsoDate(day)}><span>{day.getDate()}</span><small>{new Intl.DateTimeFormat("en", { weekday: "short" }).format(day)}</small></th>)}</tr></thead>
-            <tbody>
-              {hotel.room_types.length ? hotel.room_types.map((roomType, index) => <tr className="sub-row" key={roomType.id}>
-                <td><div className="calendar-room-label"><span className={`room-type-bar ${index % 3 === 0 ? "pine" : index % 3 === 1 ? "slate" : "amber"}`} /><strong>{roomType.name}</strong><small>{roomCountByType[roomType.id] ?? 0} rooms</small></div></td>
-                {days.map(day => {
-                  const date = toIsoDate(day);
-                  const savedCell = availabilityByKey.get(`${roomType.id}:${date}`);
-                  const fallbackAvailable = savedCell?.rooms_available ?? roomCountByType[roomType.id] ?? 0;
-                  const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
-                  const cell = draftCell(roomType.id, date, fallbackAvailable, fallbackPrice);
-                  return <td key={date}><AvailabilityCell available={cell.available} price={cell.price} editing={editing} onChange={update => updateDraft(roomType.id, date, update, fallbackAvailable, fallbackPrice)} /></td>;
-                })}
-              </tr>) : <tr><td colSpan={8} className="empty-cell">No room types configured yet. Add a room type before editing availability.</td></tr>}
-            </tbody>
-          </table>
+        <div className="calendar-nav-group">
+          <button
+            className="icon-button bordered"
+            type="button"
+            onClick={handlePrev}
+            aria-label={viewMode === "week" ? "Previous week" : "Previous month"}
+            title={viewMode === "week" ? "Previous week" : "Previous month"}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <div>
+            <strong>{viewMode === "week" ? weekLabel(days) : monthLabel(monthAnchor)}</strong>
+            <span>{viewMode === "week" ? "Live inventory · Thailand time" : "Monthly overview · Click day to edit"}</span>
+          </div>
+          <button
+            className="icon-button bordered"
+            type="button"
+            onClick={handleNext}
+            aria-label={viewMode === "week" ? "Next week" : "Next month"}
+            title={viewMode === "week" ? "Next week" : "Next month"}
+          >
+            <ChevronRight size={16} />
+          </button>
+          <button className="button button-quiet small-button" type="button" onClick={handleToday}>
+            Today
+          </button>
         </div>
-        <div className="calendar-footer"><span>Inventory is loaded under your Supabase hotel membership.</span><span className="signal-text"><i /> RLS protected</span></div>
+
+        <div className="view-mode-toggle" role="group" aria-label="Calendar view mode">
+          <button
+            type="button"
+            className={`view-mode-option ${viewMode === "week" ? "view-mode-option--active" : ""}`}
+            onClick={() => setViewMode("week")}
+            aria-pressed={viewMode === "week"}
+          >
+            Week
+          </button>
+          <span className="view-mode-divider" aria-hidden="true" />
+          <button
+            type="button"
+            className={`view-mode-option ${viewMode === "month" ? "view-mode-option--active" : ""}`}
+            onClick={() => setViewMode("month")}
+            aria-pressed={viewMode === "month"}
+          >
+            Month
+          </button>
+        </div>
       </section>
-      <section className="calendar-notes"><div><div className="eyebrow">How it works</div><p>Availability changes are saved to Supabase and can be surfaced on the public hotel page without exposing hotel-owner contact data.</p></div><Link href={`/hotels/${hotel.id}/bookings`} className="text-link">Go to bookings <ChevronRight size={14} /></Link></section>
+
+      <section className="panel calendar-panel">
+        <div className="calendar-legend">
+          <span><i className="dot pine" /> Healthy inventory</span>
+          <span><i className="dot amber" /> Low inventory</span>
+          <span><i className="dot slate" /> Closed / unavailable</span>
+          <span className="calendar-info"><Info size={14} /> Prices shown in THB</span>
+        </div>
+
+        {viewMode === "week" ? (
+          <>
+            <p className="mobile-scroll-hint" role="note">เลื่อนตารางในแนวนอนเพื่อดูวันถัดไปและอัตราของห้องทุกประเภท</p>
+            <div className="calendar-scroll">
+              <table className="availability-table">
+                <thead>
+                  <tr>
+                    <th className="room-type-heading">Room type</th>
+                    {days.map(day => (
+                      <th key={toIsoDate(day)}>
+                        <span>{day.getDate()}</span>
+                        <small>{new Intl.DateTimeFormat("en", { weekday: "short" }).format(day)}</small>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {hotel.room_types.length ? hotel.room_types.map((roomType, index) => (
+                    <tr className="sub-row" key={roomType.id}>
+                      <td>
+                        <div className="calendar-room-label">
+                          <span className={`room-type-bar ${index % 3 === 0 ? "pine" : index % 3 === 1 ? "slate" : "amber"}`} />
+                          <strong>{roomType.name}</strong>
+                          <small>{roomCountByType[roomType.id] ?? 0} rooms</small>
+                        </div>
+                      </td>
+                      {days.map(day => {
+                        const date = toIsoDate(day);
+                        const savedCell = availabilityByKey.get(`${roomType.id}:${date}`);
+                        const fallbackAvailable = savedCell?.rooms_available ?? roomCountByType[roomType.id] ?? 0;
+                        const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
+                        const cell = draftCell(roomType.id, date, fallbackAvailable, fallbackPrice);
+                        return (
+                          <td key={date}>
+                            <AvailabilityCell
+                              available={cell.available}
+                              price={cell.price}
+                              editing={editing}
+                              onChange={update => updateDraft(roomType.id, date, update, fallbackAvailable, fallbackPrice)}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={8} className="empty-cell">No room types configured yet. Add a room type before editing availability.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <div className="calendar-month-scroll">
+            <div className="calendar-month-grid">
+              {MONTH_WEEKDAYS.map(weekday => (
+                <div className="calendar-month-header" key={weekday}>
+                  {weekday}
+                </div>
+              ))}
+              {monthDays.map(cell => {
+                const agg = getDayAggregate(cell.date);
+                const isToday = agg.dateStr === todayIso;
+                const statusDotClass = agg.status === "closed" ? "slate" : agg.status === "low" ? "amber" : "pine";
+                const statusLabelText = agg.status === "closed" ? "Closed / Full" : agg.status === "low" ? "Low inventory" : "Healthy";
+
+                return (
+                  <button
+                    key={agg.dateStr}
+                    type="button"
+                    className={`calendar-month-cell ${cell.isCurrentMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`}
+                    onClick={() => handleMonthDayClick(cell.date)}
+                    aria-label={`${agg.dateStr}: ${agg.totalAvailable} of ${agg.totalRooms} rooms available, ${statusLabelText}${agg.minPrice !== null ? `, starting from ฿${agg.minPrice.toLocaleString()}` : ""}. Click to edit in week view.`}
+                    title={`${agg.dateStr} · ${statusLabelText} · ${agg.totalAvailable}/${agg.totalRooms} rooms available · Click to edit`}
+                  >
+                    <div className="month-cell-top">
+                      <span className="month-cell-day">{cell.date.getDate()}</span>
+                      <span className="month-cell-hint">Edit →</span>
+                    </div>
+                    <span className="month-cell-status">
+                      <i className={`dot ${statusDotClass}`} aria-hidden="true" />
+                      <strong>{agg.totalAvailable}</strong>/{agg.totalRooms}
+                    </span>
+                    {agg.minPrice !== null ? (
+                      <strong className="month-cell-price">฿{agg.minPrice.toLocaleString()}</strong>
+                    ) : (
+                      <span className="month-cell-empty">—</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="calendar-footer">
+          <span>Inventory is loaded under your Supabase hotel membership.</span>
+          <span className="signal-text"><i /> RLS protected</span>
+        </div>
+      </section>
+
+      <section className="calendar-notes">
+        <div>
+          <div className="eyebrow">How it works</div>
+          <p>
+            {viewMode === "week"
+              ? "Availability changes are saved to Supabase and can be surfaced on the public hotel page without exposing hotel-owner contact data."
+              : "Month view provides a monthly overview of total property availability and starting rates. Click any date to jump directly into weekly view for room-level edits."}
+          </p>
+        </div>
+        <Link href={`/hotels/${hotel.id}/bookings`} className="text-link">Go to bookings <ChevronRight size={14} /></Link>
+      </section>
     </div>
   );
 }

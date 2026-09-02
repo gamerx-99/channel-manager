@@ -536,3 +536,28 @@ body { background: var(--paper); color: var(--ink); }
 .payment-slip-placeholder{font-size:0.85rem;color:#789087}
 .payment-slip-error{font-size:0.82rem;color:#a63d31}
 .payment-slip-submit{width:100%;justify-content:center}
+
+/* -- Availability: Month View & View Mode Switcher ------------------------ */
+.calendar-nav-group{display:flex;align-items:center;gap:8px}
+.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:-4px 0 13px}
+.view-mode-toggle{display:inline-flex;align-items:center;height:32px;padding:2px;border:1px solid var(--rule);border-radius:8px;background:var(--white)}
+.view-mode-option{display:inline-flex;align-items:center;justify-content:center;min-width:60px;height:26px;padding:0 10px;border:0;background:transparent;border-radius:6px;font-size:11px;font-weight:700;color:var(--ink-soft);cursor:pointer;transition:background .15s ease,color .15s ease;user-select:none}
+.view-mode-option:hover{color:var(--ink)}
+.view-mode-option--active{background:var(--pine);color:#fff}
+.view-mode-option--active:hover{background:var(--pine);color:#fff}
+.view-mode-divider{width:1px;height:14px;background:var(--rule);margin:0 1px;flex-shrink:0}
+
+.calendar-month-scroll{overflow-x:auto}
+.calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(100px,1fr));background:var(--rule);gap:1px;border-bottom:1px solid var(--rule);min-width:700px}
+.calendar-month-header{background:#f9f8f4;padding:10px 8px;text-align:center;font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em}
+.calendar-month-cell{background:var(--white);min-height:96px;padding:10px 12px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:0;cursor:pointer;transition:background .16s ease,transform .16s ease;width:100%}
+.calendar-month-cell:hover{background:#fbfaf6}
+.calendar-month-cell.is-outside{opacity:.42;background:#fcfbfa}
+.calendar-month-cell.is-today .month-cell-day{background:var(--pine);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
+.month-cell-top{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:8px}
+.month-cell-day{font-size:13px;font-weight:700;color:var(--ink);line-height:1}
+.month-cell-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);margin-bottom:6px}
+.month-cell-price{margin-top:auto;font-size:12px;font-weight:700;color:var(--ink)}
+.month-cell-hint{font-size:9px;color:var(--ink-muted);opacity:0;transition:opacity .15s ease}
+.calendar-month-cell:hover .month-cell-hint{opacity:1}
+
