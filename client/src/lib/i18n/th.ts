@@ -1093,6 +1093,13 @@ const th: TranslationDictionary = {
     errorEnrollFailed: "การลงทะเบียนล้มเหลว",
     errorVerifyFailed: "การตรวจสอบล้มเหลว",
   },
+  notFound: {
+    title: "404",
+    subtitle: "ไม่พบหน้าที่ต้องการ",
+    message: "ขออภัย ไม่พบหน้าที่คุณกำลังค้นหา",
+    submessage: "หน้านี้อาจถูกย้ายหรือถูกลบไปแล้ว",
+    goHome: "กลับสู่หน้าหลัก",
+  },
 };
 
 export default th;

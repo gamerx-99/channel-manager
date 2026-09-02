@@ -1091,6 +1091,13 @@ const en = {
     errorEnrollFailed: "Enrollment failed",
     errorVerifyFailed: "Verification failed",
   },
+  notFound: {
+    title: "404",
+    subtitle: "Page Not Found",
+    message: "Sorry, the page you are looking for doesn't exist.",
+    submessage: "It may have been moved or deleted.",
+    goHome: "Go Home",
+  },
 } as const;
 
 type DeepStringDictionary<T> = {
