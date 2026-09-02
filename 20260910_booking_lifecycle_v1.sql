@@ -95,3 +95,21 @@ CREATE POLICY "booking_status_log_select"
 
 -- No INSERT/UPDATE/DELETE policy: writes go through the service-role (admin) client from server
 -- logic only, matching the pattern used elsewhere for system-managed audit data.
+
+-- 6. Extend the existing double-booking exclusion constraint to cover the new pre-confirmation
+--    states. It previously only protected 'confirmed'/'checked_in' — a held or pending_payment
+--    booking could race with another hold on the same room+dates at the DB level. Note this
+--    constraint only sees *current* status, not expires_at, so app-level code must lazily flip
+--    expired held/pending_payment/pending_verification rows to 'expired' before attempting a new
+--    hold on the same room (see sub-phase B's expireBookingIfPast) — this is defense-in-depth
+--    against concurrent requests, not a replacement for the lazy-expiry read path.
+ALTER TABLE public.bookings DROP CONSTRAINT IF EXISTS prevent_double_booking;
+ALTER TABLE public.bookings
+  ADD CONSTRAINT prevent_double_booking
+  EXCLUDE USING gist (
+    room_id WITH =,
+    daterange(check_in, check_out, '[)') WITH &&
+  )
+  WHERE (room_id IS NOT NULL AND status IN (
+    'held', 'pending_payment', 'pending_verification', 'confirmed', 'checked_in'
+  ));

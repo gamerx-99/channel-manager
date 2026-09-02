@@ -118,4 +118,16 @@ SELECT
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'booking_status_log' AND cmd IN ('INSERT', 'UPDATE', 'DELETE')
 
+UNION ALL
+
+-- 7. prevent_double_booking now also covers held/pending_payment/pending_verification
+SELECT
+  'prevent_double_booking covers held/pending states',
+  CASE WHEN pg_get_constraintdef(oid) LIKE '%held%'
+        AND pg_get_constraintdef(oid) LIKE '%pending_payment%'
+        AND pg_get_constraintdef(oid) LIKE '%pending_verification%'
+       THEN 'PASS' ELSE 'FAIL' END
+FROM pg_constraint
+WHERE conname = 'prevent_double_booking' AND conrelid = 'public.bookings'::regclass
+
 ORDER BY check_name;
