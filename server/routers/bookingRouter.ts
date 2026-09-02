@@ -9,6 +9,8 @@ import {
   getManagedHotel,
   getPublicHotelAvailability,
   createPublicBooking as dbCreatePublicBooking,
+  holdRoomType as dbHoldRoomType,
+  confirmBookingDetails as dbConfirmBookingDetails,
   listBookingsForHotel,
 } from '../db';
 import { createSupabaseAdminClient } from '../supabase';
@@ -43,6 +45,24 @@ export const createPublicBookingSchema = z.object({
 }).refine(data => data.check_out > data.check_in, {
   message: 'Check-out date must be later than check-in date.',
   path: ['check_out'],
+});
+
+export const holdRoomTypeSchema = z.object({
+  slug: z.string().trim().min(1).max(100),
+  room_type_id: z.string().uuid(),
+  check_in: z.string().date(),
+  check_out: z.string().date(),
+}).refine(data => data.check_out > data.check_in, {
+  message: 'Check-out date must be later than check-in date.',
+  path: ['check_out'],
+});
+
+export const confirmBookingDetailsSchema = z.object({
+  booking_id: z.string().uuid(),
+  guest_name: z.string().trim().min(1, 'Guest name is required.').max(180),
+  guest_email: z.string().trim().email('Invalid email address.').max(320).optional().or(z.literal('')),
+  guest_phone: z.string().trim().max(50).optional().or(z.literal('')),
+  special_requests: z.string().trim().max(500).optional().or(z.literal('')),
 });
 
 export const bookings = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
@@ -186,6 +206,22 @@ export const createPublicBooking = rateLimitedProcedure.input(createPublicBookin
   }
 });
 
+export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutation(async ({ input }) => {
+  try {
+    return await dbHoldRoomType(createSupabaseAdminClient(), input);
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
+
+export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDetailsSchema).mutation(async ({ input }) => {
+  try {
+    return await dbConfirmBookingDetails(createSupabaseAdminClient(), input);
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
+
 export const bookingRouter = router({
   bookings,
   exportTm30,
@@ -193,4 +229,6 @@ export const bookingRouter = router({
   createBooking,
   publicHotelAvailability,
   createPublicBooking,
+  holdRoomType,
+  confirmBookingDetails,
 });

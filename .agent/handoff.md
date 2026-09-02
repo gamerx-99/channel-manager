@@ -1,5 +1,39 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase B: core state machine + lazy expiry — DONE ✅
+- **Context**: Public bookings were created as `status='confirmed'` immediately by
+  `createPublicBooking`, before any payment. If the customer abandoned the page,
+  the room stayed occupied forever because `getPublicHotelAvailability` treated
+  every non-cancelled booking as blocking inventory. Sub-phase B adds the
+  `held` → `pending_payment` state machine pieces with lazy expiry at read/write
+  time.
+- **Changes**:
+  1. `shared/bookingLifecycle.ts` (new) — `BookingStatus` union,
+     `ALLOWED_TRANSITIONS`, `assertValidTransition`, `isExpired`,
+     `isBookingOccupyingInventory`.
+  2. `shared/bookingLifecycle.test.ts` (new) — covers transitions, invalid
+     rejections, same-state no-op, expiry, and occupancy rules.
+  3. `server/db/booking.ts`:
+     - `getPublicHotelAvailability` now fetches `expires_at` for all bookings and
+       filters overlapping bookings through `isBookingOccupyingInventory`, so
+       expired holds no longer block rooms.
+     - `createPublicBooking`'s availability check uses the same occupancy filter.
+     - New `logBookingStatusChange`, `expireBookingIfPast`, `holdRoomType`, and
+       `confirmBookingDetails` helpers.
+  4. `server/routers/bookingRouter.ts` — added public rate-limited mutations
+     `holdRoomType` and `confirmBookingDetails`; `createPublicBooking` remains
+     until sub-phase E.
+  5. `specs/11-booking-lifecycle-v1.md` (new) — records sub-phase progress and
+     remaining work.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (432 passed | 3 skipped, 77 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Migration note**: `20260910_booking_lifecycle_v1.sql` is the target schema but
+  has not been applied in this sandbox; the human must apply it (and run its
+  verify script) in the Supabase SQL editor before the new columns are live.
+- **Next**: Sub-phase C (wire `PublicHotel.tsx` to call `holdRoomType` / `confirmBookingDetails`).
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase G: i18n completeness sweep — DONE ✅
 - **Context**: While planning the Booking Lifecycle v1 feature (see plan at
   `C:\Users\GAMER\.claude\plans\bubbly-foraging-deer.md`), the user asked to double-check the

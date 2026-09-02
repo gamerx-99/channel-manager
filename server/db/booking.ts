@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveEffectiveRate, getRequiredMinStayNights } from '../pricing';
 import { throwOnError } from './utils';
 import { listRateOverridesForRoomType, assertBookingMinStay } from './availability';
+import { isBookingOccupyingInventory, isExpired, assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 import type {
   BookingRecord,
   GuestRecord,
@@ -71,7 +72,7 @@ export async function getPublicHotelAvailability(
   const [{ data: roomTypes, error: rtErr }, { data: rooms, error: roomsErr }, { data: bookings, error: bErr }] = await Promise.all([
     client.from('room_types').select('id,hotel_id,name,capacity,base_price').eq('hotel_id', hotel.id).order('base_price'),
     client.from('rooms').select('id,hotel_id,room_type_id,room_number,status').eq('hotel_id', hotel.id),
-    client.from('bookings').select('id,hotel_id,room_id,check_in,check_out,status').eq('hotel_id', hotel.id).neq('status', 'cancelled'),
+    client.from('bookings').select('id,hotel_id,room_id,check_in,check_out,status,expires_at').eq('hotel_id', hotel.id),
   ]);
   throwOnError(rtErr);
   throwOnError(roomsErr);
@@ -79,9 +80,11 @@ export async function getPublicHotelAvailability(
 
   const allRoomTypes = (roomTypes ?? []) as RoomTypeRecord[];
   const allRooms = (rooms ?? []) as Array<{ id: string; hotel_id: string; room_type_id: string; room_number: string; status: string }>;
-  const activeBookings = (bookings ?? []) as Array<{ id: string; room_id: string | null; check_in: string; check_out: string; status: string }>;
+  const activeBookings = (bookings ?? []) as Array<{ id: string; room_id: string | null; check_in: string; check_out: string; status: string; expires_at: string | null }>;
 
-  const overlappingBookings = activeBookings.filter(b => b.room_id && b.check_in < checkOut && b.check_out > checkIn);
+  const overlappingBookings = activeBookings.filter(
+    b => b.room_id && b.check_in < checkOut && b.check_out > checkIn && isBookingOccupyingInventory(b as { status: BookingStatus; expires_at: string | null }),
+  );
   const bookedRoomIds = new Set(overlappingBookings.map(b => b.room_id!));
 
   const resultRoomTypes: PublicRoomTypeAvailability[] = [];
@@ -173,14 +176,14 @@ export async function createPublicBooking(
 
   const [{ data: rooms, error: roomsErr }, { data: bookings, error: bErr }] = await Promise.all([
     adminClient.from('rooms').select('id,hotel_id,room_type_id,room_number,status').eq('hotel_id', hotel.id).eq('room_type_id', roomType.id),
-    adminClient.from('bookings').select('id,hotel_id,room_id,check_in,check_out,status').eq('hotel_id', hotel.id).neq('status', 'cancelled'),
+    adminClient.from('bookings').select('id,hotel_id,room_id,check_in,check_out,status,expires_at').eq('hotel_id', hotel.id),
   ]);
   throwOnError(roomsErr);
   throwOnError(bErr);
 
   const candidateRooms = (rooms ?? []).filter((r: any) => r.status !== 'maintenance');
   const overlappingBookings = (bookings ?? []).filter(
-    (b: any) => b.room_id && b.check_in < input.check_out && b.check_out > input.check_in,
+    (b: any) => b.room_id && b.check_in < input.check_out && b.check_out > input.check_in && isBookingOccupyingInventory(b as { status: BookingStatus; expires_at: string | null }),
   );
   const bookedRoomIds = new Set(overlappingBookings.map((b: any) => b.room_id));
   const availableRooms = candidateRooms.filter((r: any) => !bookedRoomIds.has(r.id));
@@ -262,6 +265,274 @@ export async function createPublicBooking(
     }
     throw err;
   }
+}
+
+export async function logBookingStatusChange(
+  client: SupabaseClient,
+  input: {
+    booking_id: string;
+    from_status: BookingStatus | null;
+    to_status: BookingStatus;
+    changed_by?: string | null;
+    reason?: string | null;
+  },
+): Promise<void> {
+  const { error } = await client.from('booking_status_log').insert({
+    booking_id: input.booking_id,
+    from_status: input.from_status ?? null,
+    to_status: input.to_status,
+    changed_by: input.changed_by ?? null,
+    reason: input.reason ?? null,
+  });
+  throwOnError(error);
+}
+
+export async function expireBookingIfPast(
+  client: SupabaseClient,
+  bookingId: string,
+): Promise<{ status: BookingStatus; expires_at: string | null } | null> {
+  const { data: booking, error } = await client
+    .from('bookings')
+    .select('id,status,expires_at')
+    .eq('id', bookingId)
+    .maybeSingle();
+  throwOnError(error);
+  if (!booking) return null;
+
+  const row = booking as { id: string; status: BookingStatus; expires_at: string | null };
+  if (
+    (row.status === 'held' || row.status === 'pending_payment' || row.status === 'pending_verification') &&
+    isExpired(row.expires_at)
+  ) {
+    assertValidTransition(row.status, 'expired');
+    const { error: updateError } = await client
+      .from('bookings')
+      .update({ status: 'expired' } as any)
+      .eq('id', bookingId);
+    throwOnError(updateError);
+    await logBookingStatusChange(client, {
+      booking_id: bookingId,
+      from_status: row.status,
+      to_status: 'expired',
+      reason: 'timer_expired',
+    });
+    return { status: 'expired', expires_at: row.expires_at };
+  }
+
+  return row;
+}
+
+export async function holdRoomType(
+  adminClient: SupabaseClient,
+  input: {
+    slug: string;
+    room_type_id: string;
+    check_in: string;
+    check_out: string;
+  },
+): Promise<{
+  booking_id: string;
+  hotel_id: string;
+  room_id: string;
+  expires_at: string;
+  room_type_name: string;
+  room_number: string;
+  total_price: number;
+  nights: number;
+}> {
+  const stayDates = getStayDates(input.check_in, input.check_out);
+  if (stayDates.length === 0) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Check-out date must be after check-in date.' });
+  }
+  const nights = stayDates.length;
+
+  const { data: hotelData, error: hotelError } = await adminClient
+    .rpc('get_public_hotel', { target_slug: input.slug })
+    .single();
+  throwOnError(hotelError);
+  if (!hotelData) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Hotel not found or not published.' });
+  }
+  const hotel = hotelData as Pick<HotelRecord, 'id' | 'name' | 'slug' | 'address'>;
+
+  const { data: roomTypeData, error: rtError } = await adminClient
+    .from('room_types')
+    .select('id,hotel_id,name,capacity,base_price')
+    .eq('id', input.room_type_id)
+    .eq('hotel_id', hotel.id)
+    .maybeSingle();
+  throwOnError(rtError);
+  if (!roomTypeData) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Selected room type does not exist for this hotel.' });
+  }
+  const roomType = roomTypeData as RoomTypeRecord;
+
+  const overrides = await listRateOverridesForRoomType(adminClient, roomType.id);
+  const minStay = getRequiredMinStayNights(input.check_in, input.check_out, overrides);
+  if (minStay != null && nights < minStay) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Booking must be at least ${minStay} night${minStay === 1 ? '' : 's'} (minimum stay for selected dates is ${minStay} night${minStay === 1 ? '' : 's'}).`,
+    });
+  }
+
+  let totalPrice = 0;
+  for (const date of stayDates) {
+    totalPrice += resolveEffectiveRate({ id: roomType.id, base_price: roomType.base_price }, date, overrides);
+  }
+
+  const [{ data: rooms, error: roomsErr }, { data: bookings, error: bErr }, { data: paymentSettings, error: psErr }] =
+    await Promise.all([
+      adminClient.from('rooms').select('id,hotel_id,room_type_id,room_number,status').eq('hotel_id', hotel.id).eq('room_type_id', roomType.id),
+      adminClient.from('bookings').select('id,hotel_id,room_id,check_in,check_out,status,expires_at').eq('hotel_id', hotel.id),
+      adminClient.from('hotel_payment_settings').select('hold_timeout_minutes').eq('hotel_id', hotel.id).maybeSingle(),
+    ]);
+  throwOnError(roomsErr);
+  throwOnError(bErr);
+  throwOnError(psErr);
+
+  const candidateRooms = (rooms ?? []).filter((r: any) => r.status !== 'maintenance');
+  const occupiedBookings = (bookings ?? []).filter(
+    (b: any) => b.room_id && b.check_in < input.check_out && b.check_out > input.check_in && isBookingOccupyingInventory(b as { status: BookingStatus; expires_at: string | null }),
+  );
+  const occupiedRoomIds = new Set(occupiedBookings.map((b: any) => b.room_id));
+  const availableRooms = candidateRooms.filter((r: any) => !occupiedRoomIds.has(r.id));
+
+  if (availableRooms.length === 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'The selected room type is no longer available for the requested dates. Please choose another date or room type.',
+    });
+  }
+
+  const assignedRoom = availableRooms[0];
+  const holdTimeoutMinutes = (paymentSettings?.hold_timeout_minutes as number | undefined) ?? 15;
+  const expiresAt = new Date(Date.now() + holdTimeoutMinutes * 60000).toISOString();
+
+  try {
+    const { data: created, error: insertError } = await adminClient
+      .from('bookings')
+      .insert({
+        hotel_id: hotel.id,
+        room_id: assignedRoom.id,
+        guest_name: '',
+        check_in: input.check_in,
+        check_out: input.check_out,
+        price: totalPrice,
+        source: 'manual',
+        status: 'held',
+        expires_at: expiresAt,
+      } as any)
+      .select('id,hotel_id,room_id,guest_name,check_in,check_out,price,source,status,expires_at,created_at')
+      .single();
+
+    if (insertError) {
+      const msg = insertError.message || '';
+      const code = (insertError as any).code || '';
+      if (code === '23P01' || msg.includes('prevent_double_booking') || msg.toLowerCase().includes('exclusion')) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'The selected room type is no longer available for the requested dates. Please choose another date or room type.',
+        });
+      }
+      throwOnError(insertError);
+    }
+    if (!created) throw new Error('Booking hold insert did not return a record.');
+
+    await logBookingStatusChange(adminClient, {
+      booking_id: created.id,
+      from_status: null,
+      to_status: 'held',
+      reason: 'public_hold_created',
+    });
+
+    return {
+      booking_id: created.id,
+      hotel_id: hotel.id,
+      room_id: assignedRoom.id,
+      expires_at: expiresAt,
+      room_type_name: roomType.name,
+      room_number: assignedRoom.room_number,
+      total_price: totalPrice,
+      nights,
+    };
+  } catch (err: any) {
+    const msg = err?.message || '';
+    const code = err?.code || '';
+    if (code === '23P01' || msg.includes('prevent_double_booking') || msg.toLowerCase().includes('exclusion')) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'The selected room type is no longer available for the requested dates. Please choose another date or room type.',
+      });
+    }
+    throw err;
+  }
+}
+
+export async function confirmBookingDetails(
+  adminClient: SupabaseClient,
+  input: {
+    booking_id: string;
+    guest_name: string;
+    guest_email?: string | null;
+    guest_phone?: string | null;
+    special_requests?: string | null;
+  },
+): Promise<{ booking_id: string; hotel_id: string; status: 'pending_payment'; expires_at: string; amount: number }> {
+  const { data: booking, error } = await adminClient
+    .from('bookings')
+    .select('id,hotel_id,status,expires_at,price')
+    .eq('id', input.booking_id)
+    .maybeSingle();
+  throwOnError(error);
+  if (!booking) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+  }
+
+  const current = await expireBookingIfPast(adminClient, input.booking_id);
+  if (!current || current.status !== 'held') {
+    throw new TRPCError({
+      code: 'PRECONDITION_FAILED',
+      message: 'This room hold has expired or is no longer available. Please start again.',
+    });
+  }
+
+  assertValidTransition('held', 'pending_payment');
+
+  const { data: paymentSettings, error: psErr } = await adminClient
+    .from('hotel_payment_settings')
+    .select('payment_timeout_minutes')
+    .eq('hotel_id', (booking as any).hotel_id)
+    .maybeSingle();
+  throwOnError(psErr);
+  const paymentTimeoutMinutes = (paymentSettings?.payment_timeout_minutes as number | undefined) ?? 15;
+  const newExpiresAt = new Date(Date.now() + paymentTimeoutMinutes * 60000).toISOString();
+
+  // TODO(sub-phase E): guest_email/phone/special_requests need a home — bookings table has no columns for them yet, only guest_name
+  const { error: updateError } = await adminClient
+    .from('bookings')
+    .update({
+      guest_name: input.guest_name.trim(),
+      status: 'pending_payment',
+      expires_at: newExpiresAt,
+    } as any)
+    .eq('id', input.booking_id);
+  throwOnError(updateError);
+
+  await logBookingStatusChange(adminClient, {
+    booking_id: input.booking_id,
+    from_status: 'held',
+    to_status: 'pending_payment',
+    reason: 'guest_details_confirmed',
+  });
+
+  return {
+    booking_id: input.booking_id,
+    hotel_id: (booking as any).hotel_id,
+    status: 'pending_payment',
+    expires_at: newExpiresAt,
+    amount: Number((booking as any).price),
+  };
 }
 
 export async function createBookingWithGuests(
