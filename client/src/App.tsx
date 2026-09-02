@@ -24,6 +24,7 @@ import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
 import HotelStaff from "./pages/HotelStaff";
+import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
@@ -77,6 +78,9 @@ function Router() {
       </Route>
       <Route path="/hotels/:id/staff">
         {(params) => <PrivateRoute><HotelStaff id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/hotels/:id/services">
+        {(params) => <PrivateRoute><HotelServices id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id">
         {(params) => <PrivateRoute><HotelDetail id={params.id} /></PrivateRoute>}

@@ -1,5 +1,5 @@
 # 11 Booking Lifecycle v1 — held / pending_payment state machine
-Status: IN PROGRESS (sub-phase C — slip verification hardening + manual review — complete)
+Status: IN PROGRESS (sub-phase D — hotel_services catalog + admin CRUD page — complete)
 Depends on: 05-direct-booking-engine, 01-payments-slipok
 
 ## Goal
@@ -57,7 +57,7 @@ i18n sweep, was done first and tracked separately in `.agent/handoff.md`.)
 - [ ] A — schema migration (`20260910_booking_lifecycle_v1.sql` written and pushed; NOT YET applied — human must run it + its verify script in the Supabase SQL editor)
 - [x] B — core state machine + lazy expiry + `holdRoomType` + `confirmBookingDetails`
 - [x] C — slip verification hardening + manual review (`verifySlip` never auto-fails on SlipOK API failure, duplicate transaction ref guard, raw response audit, `payment.manualVerify` staff procedure)
-- [ ] D — `hotel_services` catalog table + admin CRUD page
+- [x] D — `hotel_services` catalog table + admin CRUD page
 - [ ] E — retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with the 3-click calendar and a services step
 - [ ] F — walk-in flow: `payment_method` field on staff-created bookings
 

@@ -10,6 +10,11 @@ import {
   createManagedRoomType,
   updateManagedRoomType,
   deleteManagedRoomType,
+  createHotelService,
+  updateHotelService,
+  deleteHotelService,
+  listHotelServices,
+  listActiveHotelServicesBySlug,
   getPublicHotel,
   getHotelSiteConfigBySlug,
   getHotelSiteConfig as dbGetHotelSiteConfig,
@@ -59,6 +64,35 @@ export const updateRoomTypeSchema = z.object({
 export const deleteRoomTypeSchema = z.object({
   hotel_id: hotelIdSchema,
   room_type_id: z.string().uuid(),
+});
+
+const hotelServicePricingModelSchema = z.enum(['PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME']);
+
+export const createHotelServiceSchema = z.object({
+  hotel_id: hotelIdSchema,
+  name: z.string().trim().min(1, 'Service name is required.').max(120),
+  pricing_model: hotelServicePricingModelSchema,
+  unit_price: z.number().nonnegative('Price cannot be negative.'),
+});
+
+export const updateHotelServiceSchema = z.object({
+  hotel_id: hotelIdSchema,
+  service_id: z.string().uuid(),
+  name: z.string().trim().min(1, 'Service name is required.').max(120),
+  pricing_model: hotelServicePricingModelSchema,
+  unit_price: z.number().nonnegative('Price cannot be negative.'),
+  is_active: z.boolean(),
+});
+
+export const deleteHotelServiceSchema = z.object({
+  hotel_id: hotelIdSchema,
+  service_id: z.string().uuid(),
+});
+
+export const listHotelServicesSchema = hotelIdSchema;
+
+export const listPublicHotelServicesSchema = z.object({
+  slug: z.string().trim().min(1).max(100),
 });
 
 export const hotelSiteConfigSaveSchema = z.object({
@@ -179,6 +213,66 @@ export const deleteRoomType = protectedProcedure.input(deleteRoomTypeSchema).mut
     return { success: true as const, id: removed.id };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const createHotelServiceProcedure = protectedProcedure.input(createHotelServiceSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
+  const client = rlsClient(ctx.user.accessToken);
+  try {
+    await assertHotelExists(client, input.hotel_id);
+    return await createHotelService(client, input);
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const updateHotelServiceProcedure = protectedProcedure.input(updateHotelServiceSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
+  const client = rlsClient(ctx.user.accessToken);
+  try {
+    const updated = await updateHotelService(client, input);
+    if (!updated) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This service could not be updated.' });
+    }
+    return updated;
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const deleteHotelServiceProcedure = protectedProcedure.input(deleteHotelServiceSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
+  const client = rlsClient(ctx.user.accessToken);
+  try {
+    const removed = await deleteHotelService(client, input);
+    if (!removed) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This service could not be deleted.' });
+    }
+    return { success: true as const, id: removed.id };
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const listHotelServicesProcedure = protectedProcedure.input(listHotelServicesSchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input, 'property.manage_room_structure');
+  const client = rlsClient(ctx.user.accessToken);
+  try {
+    return await listHotelServices(client, input);
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
+
+export const listPublicHotelServices = rateLimitedProcedure.input(listPublicHotelServicesSchema).query(async ({ input }) => {
+  try {
+    return await listActiveHotelServicesBySlug(rlsClient(), input.slug);
+  } catch (error) {
     return rethrowDomainError(error);
   }
 });
@@ -323,6 +417,10 @@ export const hotelRouter = router({
   createRoomType,
   updateRoomType,
   deleteRoomType,
+  createHotelServiceProcedure,
+  updateHotelServiceProcedure,
+  deleteHotelServiceProcedure,
+  listHotelServicesProcedure,
   publicHotel,
   getHotelSiteConfig,
   getHotelSiteConfigByHotelId,

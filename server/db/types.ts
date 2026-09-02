@@ -27,6 +27,40 @@ export type CreateRoomTypeInput = Pick<RoomTypeRecord, 'hotel_id' | 'name' | 'ca
 export type UpdateRoomTypeInput = Omit<CreateRoomTypeInput, 'quantity'> & { room_type_id: string };
 export type DeleteRoomTypeInput = Pick<UpdateRoomTypeInput, 'hotel_id' | 'room_type_id'>;
 
+export type HotelServicePricingModel = 'PER_PERSON_PER_NIGHT' | 'PER_NIGHT' | 'ONE_TIME';
+
+export type HotelServiceRecord = {
+  id: string;
+  hotel_id: string;
+  name: string;
+  pricing_model: HotelServicePricingModel;
+  unit_price: number | string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateHotelServiceInput = {
+  hotel_id: string;
+  name: string;
+  pricing_model: HotelServicePricingModel;
+  unit_price: number;
+};
+
+export type UpdateHotelServiceInput = {
+  hotel_id: string;
+  service_id: string;
+  name: string;
+  pricing_model: HotelServicePricingModel;
+  unit_price: number;
+  is_active: boolean;
+};
+
+export type DeleteHotelServiceInput = {
+  hotel_id: string;
+  service_id: string;
+};
+
 export type GuestRecord = {
   id: string;
   booking_id: string;

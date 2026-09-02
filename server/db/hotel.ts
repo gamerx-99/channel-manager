@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { throwOnError } from "./utils";
-import type { HotelRecord, RoomTypeRecord, BookingRecord, CreateHotelInput, CreateRoomTypeInput, UpdateRoomTypeInput, DeleteRoomTypeInput } from "./types";
+import type { HotelRecord, RoomTypeRecord, BookingRecord, CreateHotelInput, CreateRoomTypeInput, UpdateRoomTypeInput, DeleteRoomTypeInput, HotelServiceRecord, CreateHotelServiceInput, UpdateHotelServiceInput, DeleteHotelServiceInput } from "./types";
 
 /** Lists only hotels visible to the authenticated caller under RLS. */
 export async function listManagedHotels(client: SupabaseClient) {
@@ -115,6 +115,67 @@ export async function deleteManagedRoomType(client: SupabaseClient, input: Delet
     .maybeSingle();
   throwOnError(error);
   return data?.id ? { id: data.id as string } : null;
+}
+
+export async function createHotelService(client: SupabaseClient, input: CreateHotelServiceInput) {
+  const { data, error } = await client
+    .from('hotel_services')
+    .insert(input)
+    .select('id,hotel_id,name,pricing_model,unit_price,is_active,created_at,updated_at')
+    .single();
+  throwOnError(error);
+  return data as HotelServiceRecord;
+}
+
+export async function updateHotelService(client: SupabaseClient, input: UpdateHotelServiceInput) {
+  const { data, error } = await client
+    .from('hotel_services')
+    .update({ name: input.name, pricing_model: input.pricing_model, unit_price: input.unit_price, is_active: input.is_active })
+    .eq('id', input.service_id)
+    .eq('hotel_id', input.hotel_id)
+    .select('id,hotel_id,name,pricing_model,unit_price,is_active,created_at,updated_at')
+    .maybeSingle();
+  throwOnError(error);
+  return (data ?? null) as HotelServiceRecord | null;
+}
+
+export async function deleteHotelService(client: SupabaseClient, input: DeleteHotelServiceInput) {
+  const { data, error } = await client
+    .from('hotel_services')
+    .delete()
+    .eq('id', input.service_id)
+    .eq('hotel_id', input.hotel_id)
+    .select('id')
+    .maybeSingle();
+  throwOnError(error);
+  return data?.id ? { id: data.id as string } : null;
+}
+
+/** All services for a hotel (active and inactive) — staff/admin view. */
+export async function listHotelServices(client: SupabaseClient, hotelId: string) {
+  const { data, error } = await client
+    .from('hotel_services')
+    .select('id,hotel_id,name,pricing_model,unit_price,is_active,created_at,updated_at')
+    .eq('hotel_id', hotelId)
+    .order('created_at');
+  throwOnError(error);
+  return (data ?? []) as HotelServiceRecord[];
+}
+
+/** Active-only services for a hotel, looked up by slug — public booking wizard view. */
+export async function listActiveHotelServicesBySlug(client: SupabaseClient, slug: string) {
+  const { data: hotelData, error: hotelError } = await client.rpc('get_public_hotel', { target_slug: slug }).single();
+  throwOnError(hotelError);
+  if (!hotelData) return [];
+  const hotel = hotelData as { id: string };
+  const { data, error } = await client
+    .from('hotel_services')
+    .select('id,hotel_id,name,pricing_model,unit_price,is_active,created_at,updated_at')
+    .eq('hotel_id', hotel.id)
+    .eq('is_active', true)
+    .order('created_at');
+  throwOnError(error);
+  return (data ?? []) as HotelServiceRecord[];
 }
 
 export async function getPublicHotel(client: SupabaseClient, slug: string) {

@@ -1,5 +1,24 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase D: hotel_services catalog + admin CRUD page — DONE ✅
+- **Context**: Add a reusable `hotel_services` catalog (predefined add-on services a hotel can set up once and reuse across bookings) plus an admin CRUD page. Migration `20260911_add_hotel_services_catalog.sql` is already pushed but NOT applied to production yet.
+- **Changes**:
+  1. `server/db/types.ts` — added `HotelServicePricingModel`, `HotelServiceRecord`, `CreateHotelServiceInput`, `UpdateHotelServiceInput`, `DeleteHotelServiceInput`.
+  2. `server/db/hotel.ts` — added `createHotelService`, `updateHotelService`, `deleteHotelService`, `listHotelServices`, `listActiveHotelServicesBySlug`, mirroring the `room_types` CRUD pattern minus the rooms table.
+  3. `server/routers/hotelRouter.ts` — added schemas and procedures `createHotelServiceProcedure`, `updateHotelServiceProcedure`, `deleteHotelServiceProcedure`, `listHotelServicesProcedure`, `listPublicHotelServices`; gated staff mutations on `property.manage_room_structure`; exported them from the local `hotelRouter`.
+  4. `server/routers.ts` — imported all five new procedures and added them to the real `channelManager` router object (the exact wiring step that was missed in sub-phase B).
+  5. `server/hotelServicesRouter.wiring.test.ts` (new) — regression test calling `createHotelServiceProcedure` (authenticated) and `listPublicHotelServices` (anonymous) through the real `appRouter` to prove they are reachable.
+  6. `client/src/pages/HotelServices.tsx` (new) — admin CRUD page mirroring `HotelDetail.tsx` patterns: hotel hero + `detail-tabs` nav, services data table, create/edit dialogs, delete confirmation, generic `RoomTypeActions` for row actions.
+  7. `client/src/App.tsx` — registered `/hotels/:id/services` route.
+  8. `client/src/pages/HotelDetail.tsx` — added "Services" tab link in `detail-tabs` nav (only page in the codebase with this nav block).
+  9. `client/src/lib/i18n/en.ts` & `th.ts` — added `hotelDetail.tabServices` and a full new `hotelServices` namespace with key parity.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (438 passed | 3 skipped, 80 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Migration note**: `20260911_add_hotel_services_catalog.sql` still needs to be applied by hand in the Supabase SQL editor (and its verify script run) before the new table/RLS policies are live.
+- **Next**: Sub-phase E (retire `createPublicBooking` in favour of the hold flow; restructure public booking page into the locked 6-step wizard with services step).
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase C: slip verification hardening + manual review — DONE ✅
 - **Context**: `payment.verifySlip` previously threw SlipOK API/network failures straight to the
 guest (looking like a definitive rejection), never persisted SlipOK's raw response, never guarded
