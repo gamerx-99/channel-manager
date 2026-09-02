@@ -1,5 +1,20 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase G: i18n completeness sweep — DONE ✅
+- **Context**: While planning the Booking Lifecycle v1 feature (see plan at
+  `C:\Users\GAMER\.claude\plans\bubbly-foraging-deer.md`), the user asked to double-check the
+  earlier i18n Phase 2 work. Found `client/src/pages/Calendar.tsx`'s month-view had 6 hardcoded
+  English strings that were never wired to `t()`, even though matching `availability.status*` keys
+  already existed unused in both `en.ts`/`th.ts` — a leftover gap from Phase 2.
+- **Fix**: Wired month-view weekday headers, status labels, and cell `aria-label`/`title` to
+  `t()`. Added `availability.weekday{Sun..Sat}`, `availability.monthCellAriaLabel`,
+  `availability.monthCellTitle`, `availability.startingFromPrice` keys to both `en.ts`/`th.ts`.
+  Commit `239fa7b`.
+- **Verification**: `pnpm check` PASS (0 errors). `pnpm test` PASS (422 passed | 3 skipped, 76
+  files, including `i18n.test.ts` key-parity check and `Calendar.test.tsx`).
+- **Next**: Sub-phase A+B of the Booking Lifecycle plan (the real inventory-hold bug — public
+  bookings currently lock rooms permanently even if never paid).
+
 ## [2026-09-02] i18n Phase 2: Translate Remaining Pages Step-by-Step — DONE ✅
 - **Context**: In Phase 1, the internationalization system (`client/src/lib/i18n/`) was established with support for EN/TH switching and connected to the chrome components (Sidebar, Topbar, Login, AcceptInvite). In Phase 2, all remaining application content pages and public customer-facing screens were systematically translated, key-parity verified against both language dictionaries, and wired to the translation dictionary.
 - **Pages Wired & Commits**:
