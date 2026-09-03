@@ -182,10 +182,26 @@ export async function createPublicBooking(
   throwOnError(bErr);
 
   const candidateRooms = (rooms ?? []).filter((r: any) => r.status !== 'maintenance');
-  const overlappingBookings = (bookings ?? []).filter(
-    (b: any) => b.room_id && b.check_in < input.check_out && b.check_out > input.check_in && isBookingOccupyingInventory(b as { status: BookingStatus; expires_at: string | null }),
+  const candidateRoomIds = new Set(candidateRooms.map((r: any) => r.id));
+  const allBookings = (bookings ?? []) as Array<{ id: string; room_id: string | null; check_in: string; check_out: string; status: BookingStatus; expires_at: string | null }>;
+  const overlapping = allBookings.filter(
+    b => b.room_id && candidateRoomIds.has(b.room_id) && b.check_in < input.check_out && b.check_out > input.check_in,
   );
-  const bookedRoomIds = new Set(overlappingBookings.map((b: any) => b.room_id));
+
+  // Same lazy-sweep as holdRoomType: a stale held/pending_payment row still sitting at its old
+  // status would otherwise make the exclusion constraint reject this INSERT even though
+  // isBookingOccupyingInventory (and thus the availability check above) already treats the room
+  // as free.
+  const stale = overlapping.filter(
+    b => (b.status === 'held' || b.status === 'pending_payment' || b.status === 'pending_verification') && isExpired(b.expires_at),
+  );
+  for (const staleBooking of stale) {
+    await expireBookingIfPast(adminClient, staleBooking.id);
+  }
+  const staleIds = new Set(stale.map(b => b.id));
+
+  const overlappingBookings = overlapping.filter(b => !staleIds.has(b.id) && isBookingOccupyingInventory(b));
+  const bookedRoomIds = new Set(overlappingBookings.map(b => b.room_id!));
   const availableRooms = candidateRooms.filter((r: any) => !bookedRoomIds.has(r.id));
 
   if (availableRooms.length === 0) {
@@ -392,10 +408,31 @@ export async function holdRoomType(
   throwOnError(psErr);
 
   const candidateRooms = (rooms ?? []).filter((r: any) => r.status !== 'maintenance');
-  const occupiedBookings = (bookings ?? []).filter(
-    (b: any) => b.room_id && b.check_in < input.check_out && b.check_out > input.check_in && isBookingOccupyingInventory(b as { status: BookingStatus; expires_at: string | null }),
+  const candidateRoomIds = new Set(candidateRooms.map((r: any) => r.id));
+  const allBookings = (bookings ?? []) as Array<{ id: string; room_id: string | null; check_in: string; check_out: string; status: BookingStatus; expires_at: string | null }>;
+  const overlapping = allBookings.filter(
+    b => b.room_id && candidateRoomIds.has(b.room_id) && b.check_in < input.check_out && b.check_out > input.check_in,
   );
-  const occupiedRoomIds = new Set(occupiedBookings.map((b: any) => b.room_id));
+
+  // Lazily flip any stale hold on a candidate room before deciding availability. Without this,
+  // an abandoned held/pending_payment row that nobody ever reads again (its booking_id lives
+  // only in a browser tab that's gone — the resume-by-link case is a documented follow-up, not
+  // built yet) sits in the DB forever: isBookingOccupyingInventory would correctly report the
+  // room free, but the prevent_double_booking exclusion constraint only looks at *current*
+  // status and would still reject the INSERT below with 23P01 — permanently bricking that
+  // room+date pair for the public flow.
+  const stale = overlapping.filter(
+    b => (b.status === 'held' || b.status === 'pending_payment' || b.status === 'pending_verification') && isExpired(b.expires_at),
+  );
+  for (const staleBooking of stale) {
+    await expireBookingIfPast(adminClient, staleBooking.id);
+  }
+  const staleIds = new Set(stale.map(b => b.id));
+
+  const occupiedBookings = overlapping.filter(
+    b => !staleIds.has(b.id) && isBookingOccupyingInventory(b),
+  );
+  const occupiedRoomIds = new Set(occupiedBookings.map(b => b.room_id!));
   const availableRooms = candidateRooms.filter((r: any) => !occupiedRoomIds.has(r.id));
 
   if (availableRooms.length === 0) {

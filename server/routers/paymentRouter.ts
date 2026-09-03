@@ -59,15 +59,30 @@ export const paymentRouter = router({
           };
         }
 
-        // Fetch booking price
+        // Fetch booking price + lifecycle status
         const { data: booking, error: bookingError } = await client
           .from('bookings')
-          .select('price')
+          .select('price,status')
           .eq('id', input.booking_id)
           .eq('hotel_id', input.hotel_id)
           .single();
         if (bookingError || !booking) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+        }
+
+        // Bookings created via the hold flow (sub-phase B) carry a lazy-expiry deadline on
+        // pending_payment/payment_rejected — re-check it here before minting a fresh QR, and
+        // never touch bookings.expires_at for the legacy createPublicBooking flow, where a
+        // booking is 'confirmed' immediately and has no lifecycle timer at all.
+        const bookingStatus = booking.status as BookingStatus;
+        const isHoldFlowBooking = bookingStatus === 'pending_payment' || bookingStatus === 'payment_rejected';
+        if (isHoldFlowBooking) {
+          const current = await expireBookingIfPast(client, input.booking_id);
+          if (current?.status === 'expired') {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This payment window has expired.' });
+          }
+        } else if (bookingStatus !== 'confirmed') {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This booking is not ready for payment.' });
         }
 
         const amount = Number(booking.price);
@@ -92,6 +107,18 @@ export const paymentRouter = router({
 
         // Mark booking as pending
         await updateBookingPaymentStatus(client, input.booking_id, 'pending');
+
+        // Re-anchor the booking's own lazy-expiry deadline to the moment the QR was actually
+        // generated (not when confirmBookingDetails ran, possibly minutes earlier while the
+        // guest sat on a summary/review step) so the countdown shown on screen matches what
+        // verifySlip's expireBookingIfPast will actually enforce.
+        if (isHoldFlowBooking) {
+          const { error: syncError } = await client
+            .from('bookings')
+            .update({ expires_at: expiresAt })
+            .eq('id', input.booking_id);
+          throwOnError(syncError);
+        }
 
         return {
           sessionId: session.id,
@@ -195,11 +222,20 @@ export const paymentRouter = router({
           });
         }
 
-        // 6. Move the booking into pending_verification
+        // 6. Move the booking into pending_verification. expires_at is cleared here —
+        // manual review has no timer (spec: automated failures fall through to a human,
+        // never auto-fail on a clock) and ALLOWED_TRANSITIONS has no
+        // pending_verification -> expired edge. If a stale expires_at were left in place,
+        // expireBookingIfPast's isExpired(pending_verification) check would still be true,
+        // so its assertValidTransition(status, 'expired') call would throw instead of
+        // no-op'ing on the next lazy-check — turning any later poll into a 500. It would
+        // also make isBookingOccupyingInventory release the room mid-review, letting someone
+        // else book it while a human is still looking at the slip. Setting expires_at to
+        // null makes isExpired() false, so expireBookingIfPast is a safe no-op here.
         assertValidTransition(bookingStatus, 'pending_verification');
         const { error: toVerificationError } = await client
           .from('bookings')
-          .update({ status: 'pending_verification' })
+          .update({ status: 'pending_verification', expires_at: null })
           .eq('id', session.booking_id);
         if (toVerificationError) throw toVerificationError;
         await logBookingStatusChange(client, {
