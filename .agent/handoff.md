@@ -1,5 +1,19 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase E1: standalone `BookingDateRangePicker` — DONE ✅
+- **Context**: Stage E1 of sub-phase E ("Booking Lifecycle v1") — build a self-contained, independently testable check-in/check-out date-range calendar for the public booking flow, using the locked 3-click interaction pattern. Stage E2 (wizard restructure) is a separate, later task.
+- **Changes**:
+  1. `client/src/components/BookingDateRangePicker.tsx` (new) — imports `DayPicker` directly from `react-day-picker` (not the shadcn wrapper) plus `react-day-picker/style.css`; implements the exact 3-click cycle in `onDayClick`; uses `mode="range"` only for visual range highlighting; converts ISO props to/from `Date` via the specified local-midnight boundary.
+  2. `client/src/index.css` — appended the verified `.booking-calendar` + `.rdp-*` CSS block using the app's own design tokens (`--pine`, `--paper`, `--ink`, etc.) and the inline `--booking-calendar-accent` custom property.
+  3. `client/src/components/BookingDateRangePicker.test.tsx` (new) — covers the full 3-click cycle and the "click 2 on/before check-in" restart case by clicking real rendered day buttons and asserting the `onChange` payload. Dates are computed relative to the current month so the test doesn't rot.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (445 passed | 3 skipped, 82 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Notes / follow-up**:
+  - Component is intentionally unwired — `PublicHotel.tsx` and the wizard restructure are out of scope for this ticket (E2).
+  - The calendar avoids the missing Tailwind/shadcn theme-token problem by styling react-day-picker's own `rdp-*` classes with the app's custom CSS tokens.
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase F: walk-in `payment_method` + `created_by` — DONE ✅
 - **Context**: Add a `payment_method` field to staff-created (walk-in/manual/phone) bookings and record which staff member created the booking. Migration `20260910_booking_lifecycle_v1.sql` already added `bookings.payment_method` and `bookings.created_by`; this ticket only wires them into the app.
 - **Changes**:

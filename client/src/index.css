@@ -561,3 +561,18 @@ body { background: var(--paper); color: var(--ink); }
 .month-cell-hint{font-size:9px;color:var(--ink-muted);opacity:0;transition:opacity .15s ease}
 .calendar-month-cell:hover .month-cell-hint{opacity:1}
 
+/* -- Public booking date-range picker (react-day-picker v9) --------------- */
+.booking-calendar{--booking-calendar-accent:var(--pine);background:var(--white);border-radius:var(--radius);padding:14px;color:var(--ink);}
+.booking-calendar .rdp-day_button{border-radius:8px;font-size:12px;color:var(--ink);}
+.booking-calendar .rdp-day_button:hover:not(:disabled){background:var(--paper-deep);}
+.booking-calendar .rdp-today .rdp-day_button{font-weight:700;color:var(--booking-calendar-accent);}
+.booking-calendar .rdp-disabled .rdp-day_button{color:var(--ink-muted);opacity:.4;}
+.booking-calendar .rdp-outside .rdp-day_button{color:var(--ink-muted);}
+.booking-calendar .rdp-range_start .rdp-day_button,.booking-calendar .rdp-range_end .rdp-day_button{background:var(--booking-calendar-accent);color:var(--white);}
+.booking-calendar .rdp-range_middle{background:var(--pine-soft);}
+.booking-calendar .rdp-range_middle .rdp-day_button{color:var(--pine-dark);border-radius:0;}
+.booking-calendar .rdp-weekday{font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;}
+.booking-calendar .rdp-button_previous,.booking-calendar .rdp-button_next{border:1px solid var(--rule);border-radius:6px;background:var(--white);color:var(--ink);}
+.booking-calendar .rdp-caption_label{font-weight:700;font-size:13px;color:var(--ink);}
+
+

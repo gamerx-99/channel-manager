@@ -1,5 +1,5 @@
 # 11 Booking Lifecycle v1 — held / pending_payment state machine
-Status: IN PROGRESS (sub-phase F — walk-in payment_method + created_by — complete)
+Status: IN PROGRESS (sub-phase E1 — standalone `BookingDateRangePicker` — complete; E2 wizard restructure pending)
 Depends on: 05-direct-booking-engine, 01-payments-slipok
 
 ## Goal
@@ -58,7 +58,7 @@ i18n sweep, was done first and tracked separately in `.agent/handoff.md`.)
 - [x] B — core state machine + lazy expiry + `holdRoomType` + `confirmBookingDetails`
 - [x] C — slip verification hardening + manual review (`verifySlip` never auto-fails on SlipOK API failure, duplicate transaction ref guard, raw response audit, `payment.manualVerify` staff procedure)
 - [x] D — `hotel_services` catalog table + admin CRUD page
-- [ ] E — retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with the 3-click calendar and a services step
+- [ ] E — retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with the 3-click calendar and a services step (E1 calendar component done; E2 wizard restructure pending)
 - [x] F — walk-in flow: `payment_method` field on staff-created bookings
 
 ## Acceptance criteria
