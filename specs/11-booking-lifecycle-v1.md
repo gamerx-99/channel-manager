@@ -1,11 +1,8 @@
 # 11 Booking Lifecycle v1 — held / pending_payment state machine
-Status: CODE COMPLETE, NOT YET LIVE (all of B–F done in code; sub-phase A's migrations —
-`20260910_booking_lifecycle_v1.sql` and `20260911_add_hotel_services_catalog.sql` — are written
-and pushed but NOT YET applied to production. Until a human runs both in the Supabase SQL editor
-and confirms their verify scripts pass, the new columns/tables this code depends on
-(`bookings.expires_at`/`payment_method`/`created_by`, `hotel_payment_settings.hold_timeout_minutes`,
-`payment_sessions.raw_response`/`verified_transaction_ref`, `booking_status_log`, `hotel_services`)
-do not exist live, and the public booking wizard will fail at runtime.)
+Status: COMPLETE AND LIVE. All sub-phases (A–F) done in code and both migrations
+(`20260910_booking_lifecycle_v1.sql`, `20260911_add_hotel_services_catalog.sql`) applied to
+production — human confirmed 2026-09-03, every row of both verify scripts (20 checks total)
+returned PASS. The public booking wizard is fully operational end to end.
 Depends on: 05-direct-booking-engine, 01-payments-slipok
 
 ## Goal
@@ -60,7 +57,7 @@ without relying on a cron job.
 ## Sub-phases
 (Lettering matches the master plan at `C:\Users\GAMER\.claude\plans\bubbly-foraging-deer.md` — G, the
 i18n sweep, was done first and tracked separately in `.agent/handoff.md`.)
-- [ ] A — schema migration (`20260910_booking_lifecycle_v1.sql` written and pushed; NOT YET applied — human must run it + its verify script in the Supabase SQL editor)
+- [x] A — schema migration (both `20260910_booking_lifecycle_v1.sql` and `20260911_add_hotel_services_catalog.sql` applied to production 2026-09-03; verify scripts confirmed all-PASS by the human)
 - [x] B — core state machine + lazy expiry + `holdRoomType` + `confirmBookingDetails`
 - [x] C — slip verification hardening + manual review (`verifySlip` never auto-fails on SlipOK API failure, duplicate transaction ref guard, raw response audit, `payment.manualVerify` staff procedure)
 - [x] D — `hotel_services` catalog table + admin CRUD page

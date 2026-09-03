@@ -1,5 +1,19 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 — both migrations applied to production — DONE ✅
+- **Context**: Sub-phase A's two migrations (`20260910_booking_lifecycle_v1.sql`,
+  `20260911_add_hotel_services_catalog.sql`) were written and pushed during earlier sub-phases but
+  required manual application via the Supabase SQL editor per this repo's migration convention.
+- **Confirmed by human**: both applied to production. `verify_20260910_booking_lifecycle_v1.sql`
+  — all 14 checks PASS. `verify_20260911_add_hotel_services_catalog.sql` — all 6 checks PASS.
+- **Result**: the entire Booking Lifecycle v1 epic (sub-phases G, A, B, C, D, E, F) is now complete
+  and live — the state machine, lazy expiry, slip-verification hardening, services catalog, and
+  the 6-step public booking wizard are all operational end to end on production.
+- **Next**: none — this epic is closed. Follow-ups logged separately in
+  `.agent/OPEN_QUESTIONS.md` (staff Availability page not connected to live booking data;
+  guest_email/phone/special_requests not yet persisted — needs its own migration) are out of scope
+  unless picked up as new tickets.
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase E2: public booking wizard restructure — DONE ✅
 - **Context**: Stage E2 of sub-phase E ("Booking Lifecycle v1") — retire the old single-form `createPublicBooking` client flow and restructure `PublicHotel.tsx` into the locked 6-step hold-based wizard with the 3-click calendar and a services step.
 - **Changes**:
