@@ -63,6 +63,12 @@ export const confirmBookingDetailsSchema = z.object({
   guest_email: z.string().trim().email('Invalid email address.').max(320).optional().or(z.literal('')),
   guest_phone: z.string().trim().max(50).optional().or(z.literal('')),
   special_requests: z.string().trim().max(500).optional().or(z.literal('')),
+  services: z.array(z.object({
+    service_name: z.string().trim().min(1),
+    pricing_model: z.enum(['PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME']),
+    unit_price: z.number().nonnegative(),
+    quantity: z.number().int().min(1).default(1),
+  })).default([]),
 });
 
 export const bookings = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {

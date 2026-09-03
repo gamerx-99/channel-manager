@@ -4,6 +4,7 @@ import { resolveEffectiveRate, getRequiredMinStayNights } from '../pricing';
 import { throwOnError } from './utils';
 import { listRateOverridesForRoomType, assertBookingMinStay } from './availability';
 import { isBookingOccupyingInventory, isExpired, assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
+import { calcNights, calculateServiceTotal } from '@shared/pricingModels';
 import type {
   BookingRecord,
   GuestRecord,
@@ -514,11 +515,17 @@ export async function confirmBookingDetails(
     guest_email?: string | null;
     guest_phone?: string | null;
     special_requests?: string | null;
+    services?: Array<{
+      service_name: string;
+      pricing_model: 'PER_PERSON_PER_NIGHT' | 'PER_NIGHT' | 'ONE_TIME';
+      unit_price: number;
+      quantity: number;
+    }>;
   },
 ): Promise<{ booking_id: string; hotel_id: string; status: 'pending_payment'; expires_at: string; amount: number }> {
   const { data: booking, error } = await adminClient
     .from('bookings')
-    .select('id,hotel_id,status,expires_at,price')
+    .select('id,hotel_id,status,expires_at,price,check_in,check_out')
     .eq('id', input.booking_id)
     .maybeSingle();
   throwOnError(error);
@@ -545,14 +552,37 @@ export async function confirmBookingDetails(
   const paymentTimeoutMinutes = (paymentSettings?.payment_timeout_minutes as number | undefined) ?? 15;
   const newExpiresAt = new Date(Date.now() + paymentTimeoutMinutes * 60000).toISOString();
 
-  // TODO(sub-phase E): guest_email/phone/special_requests need a home — bookings table has no columns for them yet, only guest_name
+  const services = input.services ?? [];
+  const nights = calcNights((booking as any).check_in, (booking as any).check_out);
+  let servicesTotal = 0;
+
+  // guest_email/phone/special_requests remain accepted-but-not-persisted pending a future migration.
+  const updatePayload: any = {
+    guest_name: input.guest_name.trim(),
+    status: 'pending_payment',
+    expires_at: newExpiresAt,
+  };
+
+  if (services.length > 0) {
+    servicesTotal = services.reduce((sum, s) => sum + calculateServiceTotal(s, nights), 0);
+    updatePayload.price = Number((booking as any).price) + servicesTotal;
+
+    const { error: serviceInsertError } = await adminClient.from('booking_services').insert(
+      services.map(s => ({
+        booking_id: input.booking_id,
+        service_name: s.service_name,
+        pricing_model: s.pricing_model,
+        unit_price: s.unit_price,
+        quantity: s.quantity,
+        total_price: calculateServiceTotal(s, nights),
+      })),
+    );
+    throwOnError(serviceInsertError);
+  }
+
   const { error: updateError } = await adminClient
     .from('bookings')
-    .update({
-      guest_name: input.guest_name.trim(),
-      status: 'pending_payment',
-      expires_at: newExpiresAt,
-    } as any)
+    .update(updatePayload)
     .eq('id', input.booking_id);
   throwOnError(updateError);
 
@@ -568,7 +598,7 @@ export async function confirmBookingDetails(
     hotel_id: (booking as any).hotel_id,
     status: 'pending_payment',
     expires_at: newExpiresAt,
-    amount: Number((booking as any).price),
+    amount: Number((booking as any).price) + servicesTotal,
   };
 }
 

@@ -1,5 +1,23 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase E2: public booking wizard restructure — DONE ✅
+- **Context**: Stage E2 of sub-phase E ("Booking Lifecycle v1") — retire the old single-form `createPublicBooking` client flow and restructure `PublicHotel.tsx` into the locked 6-step hold-based wizard with the 3-click calendar and a services step.
+- **Changes**:
+  1. `server/db/booking.ts` — extended `confirmBookingDetails` input type with an optional `services` array; selected `check_in`/`check_out` so nights can be computed; inserted rows into `booking_services` and added the services total to `bookings.price` in the same update; replaced the sub-phase E TODO with a note that guest_email/phone/special_requests remain accepted-but-not-persisted pending a future migration.
+  2. `server/routers/bookingRouter.ts` — added the same `services` array schema to `confirmBookingDetailsSchema` (mirroring `createBookingSchema`).
+  3. `client/src/pages/PublicHotel.tsx` — replaced the single booking form with a 6-step wizard: (1) `BookingDateRangePicker` date selection, (2) room availability grid calling `holdRoomType`, (3) optional services catalog, (4) guest info form, (5) booking summary, (6) `PaymentQR` + post-payment confirmation panel. Added a local hold-expiry countdown that resets the wizard if the hold expires before payment.
+  4. `client/src/lib/i18n/en.ts` & `th.ts` — added wizard-specific keys (`wizardStepOf`, `wizardBack`, `wizardNext`, `wizardSkip`, `holdingRoom`, `stepServicesTitle`, `holdExpiresIn`, `holdExpiredRestart`, `noServicesAvailable`, `serviceQtyLabel`, `summaryTitle`, `summaryProperty`, `summaryRoomType`, `summaryCheckIn`, `summaryCheckOut`, `summaryNights`, `summaryServices`, `summaryTotal`, `confirmAndPay`, `specialRequestsLabel`, `specialRequestsPlaceholder`) and removed dead keys from the old form flow.
+  5. `client/src/pages/PublicHotel.contract.test.ts` — rewrote the second `describe` block to assert the new wizard contract: `holdRoomType`/`confirmBookingDetails`/`listPublicHotelServices` hooks are present, `createPublicBooking` hook is absent, `BookingDateRangePicker` is imported/rendered, raw `type="date"` inputs are gone, guest state and `PaymentQR` survive, and the server exposes the required procedures.
+  6. `specs/11-booking-lifecycle-v1.md` — marked sub-phase E complete and updated spec status.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (445 passed | 3 skipped, 82 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Notes / follow-up**:
+  - `createPublicBooking`/`dbCreatePublicBooking` and its test remain in place server-side; the client no longer uses them.
+  - `guest_email`/`guest_phone`/`special_requests` are accepted by `confirmBookingDetails` but not yet persisted because the `bookings` table lacks those columns; that needs its own migration/ticket.
+  - No migrations were created or modified in this ticket.
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase E1: standalone `BookingDateRangePicker` — DONE ✅
 - **Context**: Stage E1 of sub-phase E ("Booking Lifecycle v1") — build a self-contained, independently testable check-in/check-out date-range calendar for the public booking flow, using the locked 3-click interaction pattern. Stage E2 (wizard restructure) is a separate, later task.
 - **Changes**:

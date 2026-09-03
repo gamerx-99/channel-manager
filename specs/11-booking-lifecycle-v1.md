@@ -1,5 +1,11 @@
 # 11 Booking Lifecycle v1 — held / pending_payment state machine
-Status: IN PROGRESS (sub-phase E1 — standalone `BookingDateRangePicker` — complete; E2 wizard restructure pending)
+Status: CODE COMPLETE, NOT YET LIVE (all of B–F done in code; sub-phase A's migrations —
+`20260910_booking_lifecycle_v1.sql` and `20260911_add_hotel_services_catalog.sql` — are written
+and pushed but NOT YET applied to production. Until a human runs both in the Supabase SQL editor
+and confirms their verify scripts pass, the new columns/tables this code depends on
+(`bookings.expires_at`/`payment_method`/`created_by`, `hotel_payment_settings.hold_timeout_minutes`,
+`payment_sessions.raw_response`/`verified_transaction_ref`, `booking_status_log`, `hotel_services`)
+do not exist live, and the public booking wizard will fail at runtime.)
 Depends on: 05-direct-booking-engine, 01-payments-slipok
 
 ## Goal
@@ -58,7 +64,7 @@ i18n sweep, was done first and tracked separately in `.agent/handoff.md`.)
 - [x] B — core state machine + lazy expiry + `holdRoomType` + `confirmBookingDetails`
 - [x] C — slip verification hardening + manual review (`verifySlip` never auto-fails on SlipOK API failure, duplicate transaction ref guard, raw response audit, `payment.manualVerify` staff procedure)
 - [x] D — `hotel_services` catalog table + admin CRUD page
-- [ ] E — retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with the 3-click calendar and a services step (E1 calendar component done; E2 wizard restructure pending)
+- [x] E — retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with the 3-click calendar and a services step (E1 calendar component done; E2 wizard restructure complete)
 - [x] F — walk-in flow: `payment_method` field on staff-created bookings
 
 ## Acceptance criteria

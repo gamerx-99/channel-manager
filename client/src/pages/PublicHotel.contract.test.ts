@@ -64,44 +64,48 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   });
 });
 
-describe('PublicHotel Direct Booking Engine contract (Phase 05)', () => {
+describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
   const dbSource = readFileSync(resolve(process.cwd(), 'server/db/booking.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const bookingRouterText = readFileSync(resolve(process.cwd(), 'server/routers/bookingRouter.ts'), 'utf8');
-  const routerSource = routerText + bookingRouterText;
+  const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
+  const routerSource = routerText + bookingRouterText + hotelRouterText;
 
-  it('PublicHotel hooks into tRPC public availability and booking procedures', () => {
-    expect(publicHotelSource).toContain('trpc.channelManager.publicHotelAvailability.useQuery');
-    expect(publicHotelSource).toContain('trpc.channelManager.createPublicBooking.useMutation');
+  it('PublicHotel hooks into hold-based booking procedures, not the retired createPublicBooking flow', () => {
+    expect(publicHotelSource).toContain('trpc.channelManager.holdRoomType.useMutation');
+    expect(publicHotelSource).toContain('trpc.channelManager.confirmBookingDetails.useMutation');
+    expect(publicHotelSource).toContain('trpc.channelManager.listPublicHotelServices.useQuery');
+    expect(publicHotelSource).not.toContain('trpc.channelManager.createPublicBooking.useMutation');
   });
 
-  it('PublicHotel renders interactive date picker and guest information form', () => {
-    // Note: Updated per Rule 6 to match translation dictionary keys used in PublicHotel.tsx
-    expect(publicHotelSource).toContain('publicHotel.checkInDate');
-    expect(publicHotelSource).toContain('publicHotel.checkOutDate');
-    expect(publicHotelSource).toContain('type="date"');
+  it('PublicHotel renders BookingDateRangePicker for date selection instead of raw date inputs', () => {
+    expect(publicHotelSource).toContain('BookingDateRangePicker');
+    expect(publicHotelSource).toMatch(/from ['"]@\/components\/BookingDateRangePicker['"]/);
+    // The old single-form date inputs are gone; the wizard now uses the calendar component.
+    expect(publicHotelSource).not.toContain('type="date"');
+  });
+
+  it('PublicHotel keeps guest information state and renders the payment flow via PaymentQR', () => {
     expect(publicHotelSource).toContain('guestName');
     expect(publicHotelSource).toContain('guestPhone');
     expect(publicHotelSource).toContain('guestEmail');
-  });
-
-  it('PublicHotel renders confirmation screen with booking reference', () => {
-    // Note: Updated per Rule 6 to match translation dictionary keys
+    expect(publicHotelSource).toContain('specialRequests');
+    expect(publicHotelSource).toContain('<PaymentQR');
     expect(publicHotelSource).toContain('publicHotel.bookingConfirmedTitle');
-    expect(publicHotelSource).toContain('confirmedBooking');
     expect(publicHotelSource).toContain('publicHotel.bookAnotherStay');
   });
 
-  it('server/db/booking.ts exposes getPublicHotelAvailability and createPublicBooking with double-booking prevention', () => {
-    expect(dbSource).toContain('export async function getPublicHotelAvailability');
-    expect(dbSource).toContain('export async function createPublicBooking');
-    expect(dbSource).toContain('prevent_double_booking');
-    expect(dbSource).toContain('resolveEffectiveRate');
+  it('server/db/booking.ts exposes holdRoomType and confirmBookingDetails with service persistence', () => {
+    expect(dbSource).toContain('export async function holdRoomType');
+    expect(dbSource).toContain('export async function confirmBookingDetails');
+    expect(dbSource).toContain('booking_services');
+    expect(dbSource).toContain('calculateServiceTotal');
   });
 
-  it('server/routers.ts exposes public procedures for availability and booking', () => {
-    expect(routerSource).toMatch(/publicHotelAvailability\s*[:=]\s*rateLimitedProcedure\.input/);
-    expect(routerSource).toMatch(/createPublicBooking\s*[:=]\s*rateLimitedProcedure\.input/);
+  it('server routers expose holdRoomType, confirmBookingDetails, and listPublicHotelServices as public procedures', () => {
+    expect(routerSource).toMatch(/holdRoomType\s*[:=]\s*rateLimitedProcedure\.input/);
+    expect(routerSource).toMatch(/confirmBookingDetails\s*[:=]\s*rateLimitedProcedure\.input/);
+    expect(routerSource).toMatch(/listPublicHotelServices\s*[:=]\s*rateLimitedProcedure\.input/);
   });
 });
