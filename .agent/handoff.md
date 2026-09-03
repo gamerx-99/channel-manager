@@ -1,5 +1,18 @@
 # Handoff log
 
+## [2026-09-03] Booking Lifecycle v1 Sub-phase F: walk-in `payment_method` + `created_by` — DONE ✅
+- **Context**: Add a `payment_method` field to staff-created (walk-in/manual/phone) bookings and record which staff member created the booking. Migration `20260910_booking_lifecycle_v1.sql` already added `bookings.payment_method` and `bookings.created_by`; this ticket only wires them into the app.
+- **Changes**:
+  1. `server/db/types.ts` — added `payment_method?: 'cash' | 'transfer' | 'promptpay' | null` and `created_by?: string | null` to `BookingRecord`.
+  2. `server/routers/bookingRouter.ts` — extracted `createBookingSchema` from the inline `.input(...)`, added `payment_method: z.enum(['cash', 'transfer', 'promptpay']).optional()`, and added a `.refine(...)` requiring it when `source === 'walk-in'`; in the procedure body, spread `created_by: ctx.user.id` into the payload passed to `createBookingWithGuests`.
+  3. `client/src/components/BookingWizard.tsx` — added `paymentMethod` state, client-side validation requiring it for walk-ins, passed `payment_method: paymentMethod || undefined` to the mutation, and rendered a conditional Payment Method `<select>` on step 1 when source is walk-in.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (438 passed | 3 skipped, 80 test files passed | 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Migration note**: `20260910_booking_lifecycle_v1.sql` is already pushed but still needs to be applied by hand in the Supabase SQL editor (and its verify script run) before `bookings.payment_method` and `bookings.created_by` are live.
+- **Next**: Sub-phase E (retire `createPublicBooking` in favour of the hold flow; restructure the public booking page into the locked 6-step wizard with services step) per the spec.
+
 ## [2026-09-03] Booking Lifecycle v1 Sub-phase D: hotel_services catalog + admin CRUD page — DONE ✅
 - **Context**: Add a reusable `hotel_services` catalog (predefined add-on services a hotel can set up once and reuse across bookings) plus an admin CRUD page. Migration `20260911_add_hotel_services_catalog.sql` is already pushed but NOT applied to production yet.
 - **Changes**:

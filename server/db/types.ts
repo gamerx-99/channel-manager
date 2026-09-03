@@ -100,6 +100,8 @@ export type BookingRecord = {
   status: BookingStatus;
   /** DB default 'unpaid' — omit on insert, present on reads */
   payment_status?: PaymentStatus;
+  payment_method?: 'cash' | 'transfer' | 'promptpay' | null;
+  created_by?: string | null;
   created_at: string;
   rooms: { room_number: string; room_types: { name: string } | null } | null;
   guests: GuestRecord[];

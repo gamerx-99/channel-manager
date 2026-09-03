@@ -41,6 +41,7 @@ export default function BookingWizard({
   const [roomId, setRoomId] = useState('');
   const [guestName, setGuestName] = useState('');
   const [source, setSource] = useState<'manual' | 'walk-in' | 'phone'>('manual');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'promptpay' | ''>('');
 
   const [services, setServices] = useState<BookingServiceInput[]>([]);
   const [newServiceName, setNewServiceName] = useState('');
@@ -117,7 +118,8 @@ export default function BookingWizard({
     setFormError(null);
     if (!roomId) { setFormError("Select a room first."); return; }
     if (!guestName.trim()) { setFormError("Enter primary guest name."); return; }
-    
+    if (source === 'walk-in' && !paymentMethod) { setFormError('Select a payment method for walk-in bookings.'); return; }
+
     const hasGuestDetails = Boolean(
       guest.first_name || guest.last_name || guest.passport_no || guest.nationality_code || guest.gender || guest.birth_date,
     );
@@ -135,6 +137,7 @@ export default function BookingWizard({
       check_out: checkOutIso,
       price: grandTotal,
       source: source,
+      payment_method: paymentMethod || undefined,
       status: 'confirmed',
       guests: hasGuestDetails ? [{
         ...guest,
@@ -175,6 +178,14 @@ export default function BookingWizard({
 
               <label>Primary Guest Name<input required value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Full name" /></label>
               <label>Booking Source<select value={source} onChange={e => setSource(e.target.value as any)}><option value="manual">Manual</option><option value="walk-in">Walk-in</option><option value="phone">Phone</option></select></label>
+              {source === 'walk-in' && (
+                <label>Payment Method<select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as any)}>
+                  <option value="">Select payment method</option>
+                  <option value="cash">Cash</option>
+                  <option value="transfer">Bank transfer</option>
+                  <option value="promptpay">PromptPay</option>
+                </select></label>
+              )}
 
               <label style={{ gridColumn: '1 / -1' }}>Room Assignment
                 <select value={roomId} onChange={e => setRoomId(e.target.value)}>

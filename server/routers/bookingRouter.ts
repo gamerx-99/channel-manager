@@ -112,33 +112,39 @@ export const previewTm30 = protectedProcedure.input(hotelIdSchema).query(async (
   }
 });
 
+export const createBookingSchema = z.object({
+  hotel_id: hotelIdSchema,
+  room_id: z.string().uuid().nullable(),
+  guest_name: z.string().trim().min(1).max(180),
+  check_in: z.string().date(),
+  check_out: z.string().date(),
+  price: z.number().nonnegative(),
+  source: bookingSourceSchema,
+  payment_method: z.enum(['cash', 'transfer', 'promptpay']).optional(),
+  status: bookingStatusSchema.default('confirmed'),
+  guests: z.array(z.object({
+    first_name: z.string().trim().min(1),
+    middle_name: z.string().trim().nullable().optional(),
+    last_name: z.string().trim().min(1),
+    gender: z.enum(['M', 'F']).nullable().optional(),
+    passport_no: z.string().trim().min(1),
+    nationality_code: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/),
+    birth_date: z.string().date(),
+    phone_no: z.string().trim().nullable().optional(),
+  })).default([]),
+  services: z.array(z.object({
+    service_name: z.string().trim().min(1),
+    pricing_model: z.enum(['PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME']),
+    unit_price: z.number().nonnegative(),
+    quantity: z.number().int().min(1).default(1),
+  })).default([]),
+}).refine(data => data.source !== 'walk-in' || Boolean(data.payment_method), {
+  message: 'Payment method is required for walk-in bookings.',
+  path: ['payment_method'],
+});
+
 export const createBooking = protectedProcedure
-  .input(z.object({
-    hotel_id: hotelIdSchema,
-    room_id: z.string().uuid().nullable(),
-    guest_name: z.string().trim().min(1).max(180),
-    check_in: z.string().date(),
-    check_out: z.string().date(),
-    price: z.number().nonnegative(),
-    source: bookingSourceSchema,
-    status: bookingStatusSchema.default('confirmed'),
-    guests: z.array(z.object({
-      first_name: z.string().trim().min(1),
-      middle_name: z.string().trim().nullable().optional(),
-      last_name: z.string().trim().min(1),
-      gender: z.enum(['M', 'F']).nullable().optional(),
-      passport_no: z.string().trim().min(1),
-      nationality_code: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/),
-      birth_date: z.string().date(),
-      phone_no: z.string().trim().nullable().optional(),
-    })).default([]),
-    services: z.array(z.object({
-      service_name: z.string().trim().min(1),
-      pricing_model: z.enum(['PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME']),
-      unit_price: z.number().nonnegative(),
-      quantity: z.number().int().min(1).default(1),
-    })).default([]),
-  }))
+  .input(createBookingSchema)
   .mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
     if (input.check_out <= input.check_in) {
@@ -173,7 +179,7 @@ export const createBooking = protectedProcedure
 
       return await createBookingWithGuests(
         client,
-        booking,
+        { ...booking, created_by: ctx.user.id },
         guests.map(guest => ({
           ...guest,
           middle_name: guest.middle_name ?? null,
