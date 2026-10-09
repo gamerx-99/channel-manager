@@ -60,8 +60,8 @@ describe('Public Booking Engine & Availability Logic', () => {
     it('uses the published-hotel inventory RPC and returns only room-type availability counts', async () => {
       const hotel = { id: 'hotel-1', name: 'Test Resort', slug: 'test-resort', address: 'Phuket' };
       const roomTypes = [
-        { id: 'rt-1', hotel_id: 'hotel-1', name: 'Deluxe', capacity: 2, base_price: 1500, base_occupancy: 2, max_occupancy: 2, extra_guest_mode: 'per_person', extra_guest_amount: 0, extra_guest_tier_percents: [], child_rule: 'age', child_rule_limit: 12, child_price_mode: 'free', child_price_value: 0, children_count_toward_max: true },
-        { id: 'rt-2', hotel_id: 'hotel-1', name: 'Standard', capacity: 2, base_price: 1000, base_occupancy: 2, max_occupancy: 2, extra_guest_mode: 'per_person', extra_guest_amount: 0, extra_guest_tier_percents: [], child_rule: 'age', child_rule_limit: 12, child_price_mode: 'free', child_price_value: 0, children_count_toward_max: true },
+        { id: 'rt-1', hotel_id: 'hotel-1', name: 'Deluxe', capacity: 2, base_price: 1500, base_occupancy: 2, max_occupancy: 2, occupancy_pricing: { '1': { enabled: false, mode: 'percent', value: 0 }, '2': { enabled: true, mode: 'percent', value: 0 } }, child_rule: 'age', child_rule_limit: null, child_rates: { infant: { mode: 'free', value: 0 }, age_groups: [], height: { mode: 'free', value: 0 } }, children_count_toward_max: true },
+        { id: 'rt-2', hotel_id: 'hotel-1', name: 'Standard', capacity: 2, base_price: 1000, base_occupancy: 2, max_occupancy: 2, occupancy_pricing: { '1': { enabled: false, mode: 'percent', value: 0 }, '2': { enabled: true, mode: 'percent', value: 0 } }, child_rule: 'age', child_rule_limit: null, child_rates: { infant: { mode: 'free', value: 0 }, age_groups: [], height: { mode: 'free', value: 0 } }, children_count_toward_max: true },
       ];
       const rpc = vi.fn((name: string) => name === 'get_public_hotel'
         ? { single: vi.fn().mockResolvedValue({ data: hotel, error: null }) }

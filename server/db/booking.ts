@@ -79,7 +79,7 @@ export async function getPublicHotelAvailability(
   const hotel = hotelData as Pick<HotelRecord, 'id' | 'name' | 'slug' | 'address'>;
 
   const { data: roomTypes, error: rtErr } = await client.from('room_types')
-    .select('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max')
+    .select('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,occupancy_pricing,child_rule,child_rule_limit,child_rates,children_count_toward_max')
     .eq('hotel_id', hotel.id).order('base_price');
   throwOnError(rtErr);
   const allRoomTypes = (roomTypes ?? []) as RoomTypeRecord[];
@@ -101,6 +101,7 @@ export async function getPublicHotelAvailability(
 
   for (const rt of allRoomTypes) {
     const guestClassification = classifyGuests(guests.children, {
+      ...rt,
       child_rule: rt.child_rule,
       child_rule_limit: rt.child_rule_limit == null ? null : Number(rt.child_rule_limit),
     });
@@ -111,8 +112,9 @@ export async function getPublicHotelAvailability(
     const pricing = calculateStayOccupancyPrice({
       nightlyRates: stayDates.map(date => resolveEffectiveRate({ id: rt.id, base_price: rt.base_price }, date, overrides)),
       rules: rt,
-      adults: guests.adults + guestClassification.adultEquivalentCount,
-      qualifyingChildren: guestClassification.qualifyingChildren,
+      totalGuestCount: guests.adults + guestClassification.adultEquivalentCount
+        + (rt.children_count_toward_max ? guestClassification.qualifyingChildren : 0),
+      childRateCounts: guestClassification.childRateCounts,
     });
     const totalPrice = pricing.totalPrice;
     const avgNightly = nights > 0 ? Math.round(totalPrice / nights) : Number(rt.base_price);
@@ -418,7 +420,7 @@ export async function holdRoomType(
 
   const { data: roomTypeData, error: rtError } = await adminClient
     .from('room_types')
-    .select('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max')
+    .select('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,occupancy_pricing,child_rule,child_rule_limit,child_rates,children_count_toward_max')
     .eq('id', input.room_type_id)
     .eq('hotel_id', hotel.id)
     .maybeSingle();
@@ -428,6 +430,7 @@ export async function holdRoomType(
   }
   const roomType = roomTypeData as RoomTypeRecord;
   const guestClassification = classifyGuests(input.children, {
+    ...roomType,
     child_rule: roomType.child_rule,
     child_rule_limit: roomType.child_rule_limit == null ? null : Number(roomType.child_rule_limit),
   });
@@ -447,8 +450,9 @@ export async function holdRoomType(
   const pricing = calculateStayOccupancyPrice({
     nightlyRates: stayDates.map(date => resolveEffectiveRate({ id: roomType.id, base_price: roomType.base_price }, date, overrides)),
     rules: roomType,
-    adults: input.adults + guestClassification.adultEquivalentCount,
-    qualifyingChildren: guestClassification.qualifyingChildren,
+    totalGuestCount: input.adults + guestClassification.adultEquivalentCount
+      + (roomType.children_count_toward_max ? guestClassification.qualifyingChildren : 0),
+    childRateCounts: guestClassification.childRateCounts,
   });
   const totalPrice = pricing.totalPrice;
 

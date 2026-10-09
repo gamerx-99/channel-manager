@@ -1,37 +1,54 @@
 -- Run after 20261009_room_type_occupancy_pricing.sql in the Supabase SQL editor.
--- Every result row must report PASS.
-SELECT 'room_type_occupancy_columns' AS check_name,
-  CASE WHEN COUNT(*) = 10 THEN 'PASS' ELSE 'FAIL' END AS result
+-- Every result row must report PASS. This script is read-only.
+SELECT 'room_type_pricing_columns' AS check_name,
+  CASE WHEN COUNT(*) = 7 THEN 'PASS' ELSE 'FAIL' END AS result
 FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'room_types'
   AND column_name IN (
-    'base_occupancy', 'max_occupancy', 'extra_guest_mode', 'extra_guest_amount',
-    'extra_guest_tier_percents', 'child_rule', 'child_rule_limit',
-    'child_price_mode', 'child_price_value', 'children_count_toward_max'
+    'base_occupancy', 'max_occupancy', 'occupancy_pricing', 'child_rule',
+    'child_rule_limit', 'child_rates', 'children_count_toward_max'
   )
 UNION ALL
-SELECT 'room_type_occupancy_defaults',
-  CASE WHEN COUNT(*) = 9 THEN 'PASS' ELSE 'FAIL' END
+SELECT 'pricing_defaults',
+  CASE WHEN COUNT(*) = 6 THEN 'PASS' ELSE 'FAIL' END
 FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'room_types'
   AND ((column_name = 'base_occupancy' AND column_default LIKE '%2%')
     OR (column_name = 'max_occupancy' AND column_default LIKE '%2%')
-    OR (column_name = 'extra_guest_mode' AND column_default LIKE '%per_person%')
-    OR (column_name = 'extra_guest_amount' AND column_default LIKE '%0%')
-    OR (column_name = 'extra_guest_tier_percents' AND column_default IS NOT NULL)
+    OR (column_name = 'occupancy_pricing' AND column_default LIKE '%{}%')
     OR (column_name = 'child_rule' AND column_default LIKE '%age%')
-    OR (column_name = 'child_price_mode' AND column_default LIKE '%free%')
-    OR (column_name = 'child_price_value' AND column_default LIKE '%0%')
+    OR (column_name = 'child_rates' AND column_default IS NOT NULL)
     OR (column_name = 'children_count_toward_max' AND column_default LIKE '%true%'))
 UNION ALL
-SELECT 'child_rule_limit_requires_owner_configuration',
+SELECT 'height_limit_requires_owner_configuration',
   CASE WHEN is_nullable = 'YES' AND column_default IS NULL THEN 'PASS' ELSE 'FAIL' END
 FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'room_types' AND column_name = 'child_rule_limit'
 UNION ALL
-SELECT 'existing_capacity_preserved_as_max',
-  CASE WHEN COUNT(*) FILTER (WHERE max_occupancy < capacity) = 0 THEN 'PASS' ELSE 'FAIL' END
-FROM public.room_types
+SELECT 'occupancy_pricing_constraint',
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.room_types'::regclass AND conname = 'room_types_occupancy_values_check'
+  ) THEN 'PASS' ELSE 'FAIL' END
+UNION ALL
+SELECT 'all_guest_levels_have_explicit_configuration',
+  CASE WHEN NOT EXISTS (
+    SELECT 1 FROM public.room_types rt
+    WHERE jsonb_typeof(rt.occupancy_pricing) IS DISTINCT FROM 'object'
+      OR jsonb_object_length(rt.occupancy_pricing) <> rt.max_occupancy
+      OR EXISTS (
+        SELECT 1 FROM generate_series(1, rt.max_occupancy) AS levels(guest_count)
+        WHERE NOT (rt.occupancy_pricing ? levels.guest_count::text)
+      )
+  ) THEN 'PASS' ELSE 'FAIL' END
+UNION ALL
+SELECT 'base_occupancy_uses_normal_rate',
+  CASE WHEN NOT EXISTS (
+    SELECT 1 FROM public.room_types rt
+    WHERE COALESCE((rt.occupancy_pricing->rt.base_occupancy::text->>'enabled')::boolean, false) IS DISTINCT FROM true
+      OR COALESCE(rt.occupancy_pricing->rt.base_occupancy::text->>'mode', '') <> 'percent'
+      OR COALESCE((rt.occupancy_pricing->rt.base_occupancy::text->>'value')::numeric, -1) <> 0
+  ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
 SELECT 'shared_child_measurement_rule',
   CASE WHEN COUNT(DISTINCT child_rule) <= 1 THEN 'PASS' ELSE 'FAIL' END
@@ -41,11 +58,14 @@ SELECT 'public_guest_availability_rpc',
   CASE WHEN to_regprocedure('public.get_public_room_type_availability_for_guests(uuid,date,date,integer,jsonb)') IS NOT NULL
     THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
-SELECT 'public_rpc_limits_hotel_to_public_properties',
+SELECT 'public_rpc_filters_published_capacity_and_off_levels',
   CASE WHEN EXISTS (
     SELECT 1 FROM pg_proc p
     WHERE p.oid = to_regprocedure('public.get_public_room_type_availability_for_guests(uuid,date,date,integer,jsonb)')
       AND p.prosrc LIKE '%h.public_enabled = true%'
+      AND p.prosrc LIKE '%rt.max_occupancy%'
+      AND p.prosrc LIKE '%occupancy_pricing%'
+      AND p.prosrc LIKE '%child_rates%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
 SELECT 'atomic_room_type_occupancy_update_rpc',

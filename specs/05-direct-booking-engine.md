@@ -84,19 +84,24 @@ procedure wiring existing pieces together.
 - [x] Spec status updated to DONE, `.agent/handoff.md` entry written
 - [x] Reviewer approved with evidence
 
-## Occupancy and pricing extension (2026-10-09)
-- Added configurable base/max occupancy, per-person or tiered extra-adult pricing,
-  shared child measurement type, per-room-type child limit and child pricing.
-- The child limit has no database default. Public child selection remains disabled
-  until every room type has an owner-configured limit. Changing age/height clears
-  all existing limits so thresholds are re-entered in the new unit. The atomic
-  `update_room_type_with_occupancy_config` RPC resets limits only when that shared
-  measurement rule actually changes and keeps the edited room type's submitted limit.
-- Public availability filters inventory by fit and booking overlap; prices are
-  recomputed per night and for the full stay, then recomputed again when holding
-  the selected single room.
-- `20261009_room_type_occupancy_pricing.sql` and its verify script are prepared.
-  They are pending human application and all-PASS confirmation in the production
-  SQL editor; no database changes have been applied by this task.
-- Verification run: `pnpm check`, `pnpm test`, and `pnpm build` passed. The build
-  reports the existing large-client-chunk warning.
+## Occupancy and pricing extension (2026-10-10; supersedes the 2026-10-09 tier model)
+- The owner sets a price adjustment for each relevant total occupancy level against
+  that night's normal rate at base occupancy. Percent and fixed-THB adjustments are
+  supported; fixed THB is a positive/negative difference applied to daily rate
+  overrides too. Enabled levels below base must reduce price, enabled levels above
+  base must increase it. Disabled levels cannot be booked. Net nightly prices floor
+  at zero.
+- The base occupancy level is enabled at the normal rate. Other levels default off;
+  owners must enable and price them before those guest counts can book.
+- Age mode gives infants a fixed 0–2 band and supports up to three owner-defined
+  groups beginning at age 3, contiguous without gaps, and ending no later than 17.
+  Ages after the final group count as adults. Height mode keeps a single shared
+  property threshold and a single child rate for children below it.
+- Age groups and child rates are stored per room type. The property-wide age/height
+  measurement choice is shared; switching it resets the height thresholds.
+- Availability filters by room inventory, occupancy capacity, enabled price level,
+  and guest classification. Prices are recomputed by night, including rate
+  overrides, and recalculated when a room is held.
+- `20261009_room_type_occupancy_pricing.sql` and its verify script remain unapplied
+  and must be run by the human in the production SQL editor. The migration backfills
+  a complete price-level map with only base occupancy enabled.

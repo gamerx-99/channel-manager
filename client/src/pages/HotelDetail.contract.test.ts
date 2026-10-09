@@ -12,12 +12,15 @@ describe('Hotel Detail calendar navigation', () => {
     expect(app).toContain('path="/hotels/:id/calendar"');
   });
 
-  it('exposes owner controls for occupancy, tiered extra guest pricing, and child policy', () => {
+  it('exposes per-occupancy prices, child age bands, and the alternate height rule', () => {
     expect(hotelDetail).toContain('hotelDetail.baseOccupancyLabel');
     expect(hotelDetail).toContain('hotelDetail.maxOccupancyLabel');
-    expect(hotelDetail).toContain('hotelDetail.extraGuestTiersLabel');
+    expect(hotelDetail).toContain('hotelDetail.occupancyLevelLabel');
+    expect(hotelDetail).toContain('hotelDetail.occupancyPricingHint');
     expect(hotelDetail).toContain('hotelDetail.childRuleLabel');
-    expect(hotelDetail).toContain('hotelDetail.childPriceModeLabel');
+    expect(hotelDetail).toContain('hotelDetail.infantAgeFixedRange');
+    expect(hotelDetail).toContain('hotelDetail.addChildAgeGroup');
+    expect(hotelDetail).toContain('hotelDetail.heightChildRateLabel');
     expect(hotelDetail).toContain('hotelDetail.childrenCountTowardMaxLabel');
   });
 });

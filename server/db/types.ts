@@ -1,5 +1,6 @@
 import type { HumanRole } from '@shared/authorization';
 import type { BookingStatus } from '@shared/bookingLifecycle';
+import type { ChildRateConfig, OccupancyPriceLevel } from '@shared/occupancyPricing';
 
 export type HotelRecord = {
   id: string;
@@ -18,13 +19,10 @@ export type RoomTypeRecord = {
   base_price: number | string;
   base_occupancy: number;
   max_occupancy: number;
-  extra_guest_mode: 'per_person' | 'tiered_percent';
-  extra_guest_amount: number | string;
-  extra_guest_tier_percents: number[];
+  occupancy_pricing: Record<string, OccupancyPriceLevel>;
   child_rule: 'age' | 'height';
   child_rule_limit: number | string | null;
-  child_price_mode: 'free' | 'fixed' | 'percent';
-  child_price_value: number | string;
+  child_rates: ChildRateConfig;
   children_count_toward_max: boolean;
 };
 
@@ -33,9 +31,8 @@ export type CreateHotelInput = Pick<HotelRecord, 'name' | 'slug' | 'address' | '
 };
 
 export type RoomTypeOccupancyPricingInput = Pick<RoomTypeRecord,
-  'base_occupancy' | 'max_occupancy' | 'extra_guest_mode' | 'extra_guest_amount' |
-  'extra_guest_tier_percents' | 'child_rule' | 'child_rule_limit' | 'child_price_mode' |
-  'child_price_value' | 'children_count_toward_max'>;
+  'base_occupancy' | 'max_occupancy' | 'occupancy_pricing' | 'child_rule' |
+  'child_rule_limit' | 'child_rates' | 'children_count_toward_max'>;
 export type CreateRoomTypeInput = Pick<RoomTypeRecord, 'hotel_id' | 'name' | 'capacity' | 'base_price'> & Partial<RoomTypeOccupancyPricingInput> & { quantity: number };
 
 export type UpdateRoomTypeInput = Omit<CreateRoomTypeInput, 'quantity'> & { room_type_id: string };

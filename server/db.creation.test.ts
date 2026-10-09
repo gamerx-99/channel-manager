@@ -62,8 +62,8 @@ describe('createManagedRoomType', () => {
 
     await expect(createManagedRoomType(client, input)).resolves.toMatchObject({ id: 'room-type-created' });
     expect(from).toHaveBeenCalledWith('room_types');
-    expect(insert).toHaveBeenCalledWith({ ...input, base_occupancy: 2, max_occupancy: 2, extra_guest_mode: 'per_person', extra_guest_amount: 0, extra_guest_tier_percents: [], child_rule: 'age', child_rule_limit: null, child_price_mode: 'free', child_price_value: 0, children_count_toward_max: true });
-    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max');
+    expect(insert).toHaveBeenCalledWith({ ...input, base_occupancy: 2, max_occupancy: 2, occupancy_pricing: { '1': { enabled: false, mode: 'percent', value: 0 }, '2': { enabled: true, mode: 'percent', value: 0 } }, child_rule: 'age', child_rule_limit: null, child_rates: { infant: { mode: 'free', value: 0 }, age_groups: [], height: { mode: 'free', value: 0 } }, children_count_toward_max: true });
+    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,occupancy_pricing,child_rule,child_rule_limit,child_rates,children_count_toward_max');
     expect(single).toHaveBeenCalledOnce();
   });
 });

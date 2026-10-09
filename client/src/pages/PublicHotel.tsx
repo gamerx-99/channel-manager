@@ -66,7 +66,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
   const isDatesValid = Boolean(checkIn && checkOut && checkOut > checkIn);
   const propertyChildRule = publicHotel.data?.roomTypes[0]?.child_rule ?? 'age';
-  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.child_rule_limit != null);
+  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.child_rule === 'age' || roomType.child_rule_limit != null);
   const childMeasurements = children.filter(value => value !== '').map(value => propertyChildRule === 'age' ? { age: Number(value) } : { height_cm: Number(value) });
   const guestsValid = adults >= 1 && children.every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
 

@@ -25,6 +25,7 @@ import {
   setHotelMediaHero as dbSetHotelMediaHero,
 } from '../db';
 import { storagePut } from '../storage';
+import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
   requirePermission,
   requireHotelPermission,
@@ -36,6 +37,48 @@ import {
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
+const priceAdjustmentSchema = z.object({
+  enabled: z.boolean(),
+  mode: z.enum(['percent', 'fixed']),
+  value: z.number(),
+});
+const childRateSchema = z.object({ mode: z.enum(['free', 'fixed', 'percent']), value: z.number().nonnegative() });
+const roomTypePricingFields = {
+  occupancy_pricing: z.record(z.string(), priceAdjustmentSchema).optional(),
+  child_rates: z.object({
+    infant: childRateSchema,
+    age_groups: z.array(childRateSchema.extend({ min_age: z.number().int(), max_age: z.number().int() })).max(3),
+    height: childRateSchema,
+  }).optional(),
+};
+
+function validateRoomTypePricing(data: {
+  base_occupancy?: number;
+  max_occupancy?: number;
+  capacity: number;
+  occupancy_pricing?: Record<string, OccupancyPriceLevel>;
+  child_rule?: 'age' | 'height';
+  child_rule_limit?: number | null;
+  child_rates?: ChildRateConfig;
+}, ctx: z.RefinementCtx) {
+  if (data.child_rule === 'height' && (data.child_rule_limit == null || !Number.isFinite(Number(data.child_rule_limit)))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'A child height limit is required.', path: ['child_rule_limit'] });
+  }
+  if (!data.occupancy_pricing && !data.child_rates) return;
+  if (!data.occupancy_pricing || !data.child_rates) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Occupancy pricing and child rates must be saved together.', path: ['occupancy_pricing'] });
+    return;
+  }
+  const message = getRoomTypePricingValidationError({
+    base_occupancy: data.base_occupancy ?? Math.min(2, data.capacity),
+    max_occupancy: data.max_occupancy ?? data.capacity,
+    occupancy_pricing: data.occupancy_pricing,
+    child_rule: data.child_rule ?? 'age',
+    child_rule_limit: data.child_rule_limit ?? null,
+    child_rates: data.child_rates,
+  });
+  if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ['occupancy_pricing'] });
+}
 
 export const createHotelSchema = z.object({
   name: z.string().trim().min(1, 'Hotel name is required.').max(160),
@@ -53,17 +96,15 @@ export const createRoomTypeSchema = z.object({
   quantity: z.number().int().positive('Number of rooms must be at least 1.'),
   base_occupancy: z.number().int().positive().optional(),
   max_occupancy: z.number().int().positive().optional(),
-  extra_guest_mode: z.enum(['per_person', 'tiered_percent']).optional(),
-  extra_guest_amount: z.number().nonnegative().optional(),
-  extra_guest_tier_percents: z.array(z.number().min(0).max(1000)).max(19).optional(),
+  ...roomTypePricingFields,
   child_rule: z.enum(['age', 'height']).optional(),
   child_rule_limit: z.number().nonnegative().nullable().optional(),
-  child_price_mode: z.enum(['free', 'fixed', 'percent']).optional(),
-  child_price_value: z.number().nonnegative().optional(),
   children_count_toward_max: z.boolean().optional(),
-}).refine(data => (data.max_occupancy ?? data.capacity) >= (data.base_occupancy ?? Math.min(2, data.capacity)), {
-  message: 'Maximum occupancy must be at least base occupancy.',
-  path: ['max_occupancy'],
+}).superRefine((data, ctx) => {
+  if ((data.max_occupancy ?? data.capacity) < (data.base_occupancy ?? Math.min(2, data.capacity))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must be at least base occupancy.', path: ['max_occupancy'] });
+  }
+  validateRoomTypePricing(data, ctx);
 });
 
 export const updateRoomTypeSchema = z.object({
@@ -74,17 +115,15 @@ export const updateRoomTypeSchema = z.object({
   base_price: z.number().positive('Base price must be greater than zero.'),
   base_occupancy: z.number().int().positive().optional(),
   max_occupancy: z.number().int().positive().optional(),
-  extra_guest_mode: z.enum(['per_person', 'tiered_percent']).optional(),
-  extra_guest_amount: z.number().nonnegative().optional(),
-  extra_guest_tier_percents: z.array(z.number().min(0).max(1000)).max(19).optional(),
+  ...roomTypePricingFields,
   child_rule: z.enum(['age', 'height']).optional(),
   child_rule_limit: z.number().nonnegative().nullable().optional(),
-  child_price_mode: z.enum(['free', 'fixed', 'percent']).optional(),
-  child_price_value: z.number().nonnegative().optional(),
   children_count_toward_max: z.boolean().optional(),
-}).refine(data => (data.max_occupancy ?? data.capacity) >= (data.base_occupancy ?? Math.min(2, data.capacity)), {
-  message: 'Maximum occupancy must be at least base occupancy.',
-  path: ['max_occupancy'],
+}).superRefine((data, ctx) => {
+  if ((data.max_occupancy ?? data.capacity) < (data.base_occupancy ?? Math.min(2, data.capacity))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must be at least base occupancy.', path: ['max_occupancy'] });
+  }
+  validateRoomTypePricing(data, ctx);
 });
 
 export const deleteRoomTypeSchema = z.object({

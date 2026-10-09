@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { defaultChildRateConfig, defaultOccupancyPricing } from "@shared/occupancyPricing";
 import { throwOnError } from "./utils";
 import type { HotelRecord, RoomTypeRecord, BookingRecord, CreateHotelInput, CreateRoomTypeInput, UpdateRoomTypeInput, DeleteRoomTypeInput, HotelServiceRecord, CreateHotelServiceInput, UpdateHotelServiceInput, DeleteHotelServiceInput } from "./types";
 
@@ -46,7 +47,7 @@ export async function listManagedHotelsForFinancials(client: SupabaseClient) {
 export async function getManagedHotel(client: SupabaseClient, hotelId: string) {
   const { data, error } = await client
     .from("hotels")
-    .select("id,name,slug,address,public_enabled,created_at,room_types(id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max),rooms(id,room_type_id,room_number,status)")
+    .select("id,name,slug,address,public_enabled,created_at,room_types(id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,occupancy_pricing,child_rule,child_rule_limit,child_rates,children_count_toward_max),rooms(id,room_type_id,room_number,status)")
     .eq("id", hotelId)
     .maybeSingle();
   throwOnError(error);
@@ -75,19 +76,16 @@ export async function createManagedRoomType(client: SupabaseClient, input: Creat
   const configuration = {
     base_occupancy: input.base_occupancy ?? Math.min(2, input.capacity),
     max_occupancy: input.max_occupancy ?? input.capacity,
-    extra_guest_mode: input.extra_guest_mode ?? 'per_person',
-    extra_guest_amount: input.extra_guest_amount ?? 0,
-    extra_guest_tier_percents: input.extra_guest_tier_percents ?? [],
+    occupancy_pricing: input.occupancy_pricing ?? defaultOccupancyPricing(input.base_occupancy ?? Math.min(2, input.capacity), input.max_occupancy ?? input.capacity),
     child_rule: input.child_rule ?? 'age',
     child_rule_limit: input.child_rule_limit ?? null,
-    child_price_mode: input.child_price_mode ?? 'free',
-    child_price_value: input.child_price_value ?? 0,
+    child_rates: input.child_rates ?? defaultChildRateConfig(),
     children_count_toward_max: input.children_count_toward_max ?? true,
   };
   const { data: roomType, error: typeError } = await client
     .from("room_types")
     .insert({ ...roomTypeInput, ...configuration, capacity: configuration.max_occupancy })
-    .select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max")
+    .select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,occupancy_pricing,child_rule,child_rule_limit,child_rates,children_count_toward_max")
     .single();
   throwOnError(typeError);
   if (!roomType) throw new Error("Room type insert did not return a record.");
@@ -106,7 +104,7 @@ export async function createManagedRoomType(client: SupabaseClient, input: Creat
 /** Updates only mutable room type fields while constraining the write to the selected hotel. */
 export async function updateManagedRoomType(client: SupabaseClient, input: UpdateRoomTypeInput) {
   const configurationPatch = Object.fromEntries(
-    (['base_occupancy', 'extra_guest_mode', 'extra_guest_amount', 'extra_guest_tier_percents', 'child_rule', 'child_rule_limit', 'child_price_mode', 'child_price_value', 'children_count_toward_max'] as const)
+    (['base_occupancy', 'occupancy_pricing', 'child_rule', 'child_rule_limit', 'child_rates', 'children_count_toward_max'] as const)
       .filter(key => input[key] !== undefined)
       .map(key => [key, input[key]]),
   );
@@ -202,7 +200,7 @@ export async function getPublicHotel(client: SupabaseClient, slug: string) {
 
   const hotel = data as Pick<HotelRecord, "id" | "name" | "slug" | "address" | "created_at">;
   const [{ data: roomTypes, error: roomTypeError }, { data: media, error: mediaError }] = await Promise.all([
-    client.from("room_types").select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max").eq("hotel_id", hotel.id).order("base_price"),
+    client.from("room_types").select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,occupancy_pricing,child_rule,child_rule_limit,child_rates,children_count_toward_max").eq("hotel_id", hotel.id).order("base_price"),
     client.from("hotel_media").select("id,url,caption,is_hero,display_order").eq("hotel_id", hotel.id).order("display_order"),
   ]);
   throwOnError(roomTypeError);
