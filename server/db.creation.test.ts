@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
 import { createManagedHotel, createManagedRoomType, updateManagedRoomType, deleteManagedRoomType } from './db';
@@ -67,7 +69,7 @@ describe('createManagedRoomType', () => {
 });
 
 describe('updateManagedRoomType', () => {
-  it('updates mutable fields with both room type and hotel filters', async () => {
+  it('updates mutable fields through the atomic occupancy-config RPC', async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: {
         id: 'room-type-updated',
@@ -78,12 +80,8 @@ describe('updateManagedRoomType', () => {
       },
       error: null,
     });
-    const select = vi.fn().mockReturnValue({ maybeSingle });
-    const hotelFilter = vi.fn().mockReturnValue({ select });
-    const roomFilter = vi.fn().mockReturnValue({ eq: hotelFilter });
-    const update = vi.fn().mockReturnValue({ eq: roomFilter });
-    const from = vi.fn().mockReturnValue({ update });
-    const client = { from } as unknown as SupabaseClient;
+    const rpc = vi.fn().mockReturnValue({ maybeSingle });
+    const client = { rpc } as unknown as SupabaseClient;
     const input = {
       hotel_id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4',
       room_type_id: 'f1a1b1c1-d1e1-41f1-81f1-111111111111',
@@ -93,12 +91,41 @@ describe('updateManagedRoomType', () => {
     };
 
     await expect(updateManagedRoomType(client, input)).resolves.toMatchObject({ id: 'room-type-updated' });
-    expect(from).toHaveBeenCalledWith('room_types');
-    expect(update).toHaveBeenCalledWith({ name: 'Suite', capacity: 3, base_price: 3200, max_occupancy: 3 });
-    expect(roomFilter).toHaveBeenCalledWith('id', input.room_type_id);
-    expect(hotelFilter).toHaveBeenCalledWith('hotel_id', input.hotel_id);
-    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max');
+    expect(rpc).toHaveBeenCalledWith('update_room_type_with_occupancy_config', {
+      target_hotel_id: input.hotel_id,
+      target_room_type_id: input.room_type_id,
+      target_name: input.name,
+      target_capacity: 3,
+      target_base_price: 3200,
+      target_occupancy_config: {},
+    });
     expect(maybeSingle).toHaveBeenCalledOnce();
+  });
+
+  it('sends the chosen child rule and the edited room type limit to the atomic RPC', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const rpc = vi.fn().mockReturnValue({ maybeSingle });
+    const client = { rpc } as unknown as SupabaseClient;
+    const input = {
+      hotel_id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4',
+      room_type_id: 'f1a1b1c1-d1e1-41f1-81f1-111111111111',
+      name: 'Suite',
+      capacity: 3,
+      base_price: 3200,
+      child_rule: 'height' as const,
+      child_rule_limit: 160,
+    };
+
+    await updateManagedRoomType(client, input);
+    expect(rpc).toHaveBeenCalledWith('update_room_type_with_occupancy_config', expect.objectContaining({
+      target_occupancy_config: { child_rule: 'height', child_rule_limit: 160 },
+    }));
+  });
+
+  it('resets hotel-wide child limits only when the measurement rule changes and preserves the submitted limit', () => {
+    const migration = readFileSync(resolve(process.cwd(), '20261009_room_type_occupancy_pricing.sql'), 'utf8');
+    expect(migration).toMatch(/IF next_child_rule IS DISTINCT FROM current_child_rule THEN[\s\S]*?child_rule_limit = NULL/);
+    expect(migration).toMatch(/WHEN target_occupancy_config \? 'child_rule_limit'[\s\S]*?THEN NULLIF\(target_occupancy_config->>'child_rule_limit', ''\)::numeric/);
   });
 });
 

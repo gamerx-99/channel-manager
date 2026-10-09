@@ -110,20 +110,14 @@ export async function updateManagedRoomType(client: SupabaseClient, input: Updat
       .filter(key => input[key] !== undefined)
       .map(key => [key, input[key]]),
   );
-  if (input.child_rule !== undefined) {
-    const { error: sharedRuleError } = await client.from('room_types')
-      .update({ child_rule: input.child_rule, child_rule_limit: null })
-      .eq('hotel_id', input.hotel_id);
-    throwOnError(sharedRuleError);
-    configurationPatch.child_rule_limit = null;
-  }
-  const { data, error } = await client
-    .from("room_types")
-    .update({ name: input.name, capacity: input.max_occupancy ?? input.capacity, base_price: input.base_price, max_occupancy: input.max_occupancy ?? input.capacity, ...configurationPatch })
-    .eq("id", input.room_type_id)
-    .eq("hotel_id", input.hotel_id)
-    .select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max")
-    .maybeSingle();
+  const { data, error } = await client.rpc('update_room_type_with_occupancy_config', {
+    target_hotel_id: input.hotel_id,
+    target_room_type_id: input.room_type_id,
+    target_name: input.name,
+    target_capacity: input.max_occupancy ?? input.capacity,
+    target_base_price: input.base_price,
+    target_occupancy_config: configurationPatch,
+  }).maybeSingle();
   throwOnError(error);
   return (data ?? null) as RoomTypeRecord | null;
 }

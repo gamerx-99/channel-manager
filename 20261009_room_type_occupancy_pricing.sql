@@ -29,6 +29,82 @@ ALTER TABLE public.room_types
     AND child_price_mode IN ('free', 'fixed', 'percent')
   );
 
+-- Update the selected room type and any hotel-wide child-rule reset in one RLS-scoped transaction.
+CREATE OR REPLACE FUNCTION public.update_room_type_with_occupancy_config(
+  target_hotel_id uuid,
+  target_room_type_id uuid,
+  target_name text,
+  target_capacity integer,
+  target_base_price numeric,
+  target_occupancy_config jsonb
+)
+RETURNS SETOF public.room_types
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  current_child_rule text;
+  next_child_rule text;
+BEGIN
+  IF jsonb_typeof(target_occupancy_config) IS DISTINCT FROM 'object' THEN
+    RAISE EXCEPTION 'Room type occupancy configuration is invalid.' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM 1
+  FROM public.room_types rt
+  WHERE rt.hotel_id = target_hotel_id
+  ORDER BY rt.id
+  FOR UPDATE;
+
+  SELECT rt.child_rule INTO current_child_rule
+  FROM public.room_types rt
+  WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Room type not found.' USING ERRCODE = 'P0002';
+  END IF;
+
+  next_child_rule := COALESCE(target_occupancy_config->>'child_rule', current_child_rule);
+  IF next_child_rule NOT IN ('age', 'height') THEN
+    RAISE EXCEPTION 'Child measurement rule is invalid.' USING ERRCODE = '22023';
+  END IF;
+
+  IF next_child_rule IS DISTINCT FROM current_child_rule THEN
+    UPDATE public.room_types rt
+    SET child_rule = next_child_rule,
+        child_rule_limit = NULL
+    WHERE rt.hotel_id = target_hotel_id;
+  END IF;
+
+  RETURN QUERY
+  UPDATE public.room_types rt
+  SET name = target_name,
+      capacity = target_capacity,
+      base_price = target_base_price,
+      base_occupancy = COALESCE((target_occupancy_config->>'base_occupancy')::integer, rt.base_occupancy),
+      max_occupancy = COALESCE((target_occupancy_config->>'max_occupancy')::integer, target_capacity),
+      extra_guest_mode = COALESCE(target_occupancy_config->>'extra_guest_mode', rt.extra_guest_mode),
+      extra_guest_amount = COALESCE((target_occupancy_config->>'extra_guest_amount')::numeric, rt.extra_guest_amount),
+      extra_guest_tier_percents = CASE WHEN target_occupancy_config ? 'extra_guest_tier_percents'
+        THEN ARRAY(SELECT item.value::numeric
+          FROM jsonb_array_elements_text(target_occupancy_config->'extra_guest_tier_percents') AS item(value))
+        ELSE rt.extra_guest_tier_percents END,
+      child_rule = next_child_rule,
+      child_rule_limit = CASE WHEN target_occupancy_config ? 'child_rule_limit'
+        THEN NULLIF(target_occupancy_config->>'child_rule_limit', '')::numeric
+        WHEN next_child_rule IS DISTINCT FROM current_child_rule THEN NULL
+        ELSE rt.child_rule_limit END,
+      child_price_mode = COALESCE(target_occupancy_config->>'child_price_mode', rt.child_price_mode),
+      child_price_value = COALESCE((target_occupancy_config->>'child_price_value')::numeric, rt.child_price_value),
+      children_count_toward_max = COALESCE((target_occupancy_config->>'children_count_toward_max')::boolean, rt.children_count_toward_max)
+  WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id
+  RETURNING rt.*;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.get_public_room_type_availability_for_guests(
   target_hotel_id uuid,
   target_check_in date,

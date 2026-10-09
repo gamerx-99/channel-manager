@@ -48,6 +48,25 @@ SELECT 'public_rpc_limits_hotel_to_public_properties',
       AND p.prosrc LIKE '%h.public_enabled = true%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
+SELECT 'atomic_room_type_occupancy_update_rpc',
+  CASE WHEN to_regprocedure('public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)') IS NOT NULL
+    AND EXISTS (
+      SELECT 1 FROM pg_proc p
+      WHERE p.oid = to_regprocedure('public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)')
+        AND p.prosecdef = false
+    )
+    THEN 'PASS' ELSE 'FAIL' END
+UNION ALL
+SELECT 'atomic_room_type_occupancy_update_rpc_grants',
+  CASE WHEN has_function_privilege('authenticated', 'public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)', 'EXECUTE')
+    AND NOT has_function_privilege('anon', 'public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)', 'EXECUTE')
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_proc p, LATERAL aclexplode(p.proacl) acl
+      WHERE p.oid = to_regprocedure('public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)')
+        AND acl.grantee = 0 AND acl.privilege_type = 'EXECUTE'
+    )
+    THEN 'PASS' ELSE 'FAIL' END
+UNION ALL
 SELECT 'public_guest_availability_rpc_grants',
   CASE WHEN has_function_privilege('anon', 'public.get_public_room_type_availability_for_guests(uuid,date,date,integer,jsonb)', 'EXECUTE')
     AND has_function_privilege('authenticated', 'public.get_public_room_type_availability_for_guests(uuid,date,date,integer,jsonb)', 'EXECUTE')

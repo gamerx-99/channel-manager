@@ -89,7 +89,9 @@ procedure wiring existing pieces together.
   shared child measurement type, per-room-type child limit and child pricing.
 - The child limit has no database default. Public child selection remains disabled
   until every room type has an owner-configured limit. Changing age/height clears
-  all existing limits so thresholds are re-entered in the new unit.
+  all existing limits so thresholds are re-entered in the new unit. The atomic
+  `update_room_type_with_occupancy_config` RPC resets limits only when that shared
+  measurement rule actually changes and keeps the edited room type's submitted limit.
 - Public availability filters inventory by fit and booking overlap; prices are
   recomputed per night and for the full stay, then recomputed again when holding
   the selected single room.
