@@ -22,7 +22,7 @@ SELECT
       SELECT 1 FROM pg_proc p
       WHERE p.oid = 'public.get_public_room_type_availability(uuid,date,date)'::regprocedure
         AND p.prosrc LIKE '%public_enabled%'
-        AND p.prosrc LIKE '%maintenance%'
+        AND p.prosrc LIKE '%IS DISTINCT FROM%maintenance%'
         AND p.prosrc LIKE '%checked_in%'
         AND p.prosrc LIKE '%pending_verification%'
         AND p.prosrc LIKE '%expires_at%'

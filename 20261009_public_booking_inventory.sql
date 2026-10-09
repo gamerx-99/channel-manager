@@ -35,7 +35,7 @@ BEGIN
     LEFT JOIN public.rooms r
       ON r.hotel_id = h.id
       AND r.room_type_id = rt.id
-      AND r.status <> 'maintenance'
+      AND r.status IS DISTINCT FROM 'maintenance'
   ),
   occupied_rooms AS (
     SELECT DISTINCT b.room_id
