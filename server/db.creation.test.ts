@@ -114,11 +114,12 @@ describe('updateManagedRoomType', () => {
       base_price: 3200,
       child_rule: 'height' as const,
       child_rule_limit: 160,
+      max_occupancy: 3,
     };
 
     await updateManagedRoomType(client, input);
     expect(rpc).toHaveBeenCalledWith('update_room_type_with_occupancy_config', expect.objectContaining({
-      target_occupancy_config: { child_rule: 'height', child_rule_limit: 160 },
+      target_occupancy_config: { max_occupancy: 3, child_rule: 'height', child_rule_limit: 160 },
     }));
   });
 

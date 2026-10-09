@@ -66,6 +66,9 @@ function validateRoomTypePricing(data: {
   }
   const occupancyChanged = data.base_occupancy !== undefined || data.max_occupancy !== undefined;
   if (!data.occupancy_pricing && !data.child_rates && !(requirePricingWhenOccupancyChanges && occupancyChanged)) return;
+  if (requirePricingWhenOccupancyChanges && data.occupancy_pricing && data.base_occupancy === undefined) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Base occupancy is required when saving an occupancy pricing schedule.', path: ['base_occupancy'] });
+  }
   if (!data.occupancy_pricing || !data.child_rates) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Occupancy pricing and child rates must be saved together.', path: ['occupancy_pricing'] });
     return;
@@ -102,6 +105,9 @@ export const createRoomTypeSchema = z.object({
   child_rule_limit: z.number().nonnegative().nullable().optional(),
   children_count_toward_max: z.boolean().optional(),
 }).superRefine((data, ctx) => {
+  if (data.max_occupancy !== undefined && data.max_occupancy !== data.capacity) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must match room capacity.', path: ['max_occupancy'] });
+  }
   if ((data.max_occupancy ?? data.capacity) < (data.base_occupancy ?? Math.min(2, data.capacity))) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must be at least base occupancy.', path: ['max_occupancy'] });
   }
@@ -121,6 +127,9 @@ export const updateRoomTypeSchema = z.object({
   child_rule_limit: z.number().nonnegative().nullable().optional(),
   children_count_toward_max: z.boolean().optional(),
 }).superRefine((data, ctx) => {
+  if (data.max_occupancy !== undefined && data.max_occupancy !== data.capacity) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must match room capacity.', path: ['max_occupancy'] });
+  }
   if ((data.max_occupancy ?? data.capacity) < (data.base_occupancy ?? Math.min(2, data.capacity))) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must be at least base occupancy.', path: ['max_occupancy'] });
   }

@@ -104,7 +104,7 @@ export async function createManagedRoomType(client: SupabaseClient, input: Creat
 /** Updates only mutable room type fields while constraining the write to the selected hotel. */
 export async function updateManagedRoomType(client: SupabaseClient, input: UpdateRoomTypeInput) {
   const configurationPatch = Object.fromEntries(
-    (['base_occupancy', 'occupancy_pricing', 'child_rule', 'child_rule_limit', 'child_rates', 'children_count_toward_max'] as const)
+    (['base_occupancy', 'max_occupancy', 'occupancy_pricing', 'child_rule', 'child_rule_limit', 'child_rates', 'children_count_toward_max'] as const)
       .filter(key => input[key] !== undefined)
       .map(key => [key, input[key]]),
   );

@@ -77,6 +77,14 @@ SELECT 'atomic_room_type_occupancy_update_rpc',
     )
     THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
+SELECT 'occupancy_update_requires_consistent_schedule',
+  CASE WHEN EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid = to_regprocedure('public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)')
+      AND p.prosrc LIKE '%Base occupancy is required when saving an occupancy pricing schedule.%'
+      AND p.prosrc LIKE '%Maximum occupancy must match room capacity.%'
+  ) THEN 'PASS' ELSE 'FAIL' END
+UNION ALL
 SELECT 'atomic_room_type_occupancy_update_rpc_grants',
   CASE WHEN has_function_privilege('authenticated', 'public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)', 'EXECUTE')

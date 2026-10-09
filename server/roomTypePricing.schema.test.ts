@@ -62,4 +62,10 @@ describe('room type pricing save validation', () => {
     };
     expect(updateRoomTypeSchema.safeParse(updateWithoutPricing).success).toBe(false);
   });
+
+  it('requires base occupancy with an updated occupancy schedule and keeps room capacity aligned', () => {
+    const update = { ...baseInput, room_type_id: 'f1a1b1c1-d1e1-41f1-81f1-111111111111' };
+    expect(updateRoomTypeSchema.safeParse({ ...update, base_occupancy: undefined }).success).toBe(false);
+    expect(updateRoomTypeSchema.safeParse({ ...update, max_occupancy: 3 }).success).toBe(false);
+  });
 });

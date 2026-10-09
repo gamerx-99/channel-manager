@@ -75,6 +75,16 @@ BEGIN
     RAISE EXCEPTION 'A capacity change requires a complete occupancy pricing schedule and child rates.' USING ERRCODE = '22023';
   END IF;
 
+  IF target_occupancy_config ? 'occupancy_pricing'
+    AND NOT (target_occupancy_config ? 'base_occupancy') THEN
+    RAISE EXCEPTION 'Base occupancy is required when saving an occupancy pricing schedule.' USING ERRCODE = '22023';
+  END IF;
+
+  IF target_occupancy_config ? 'max_occupancy'
+    AND (target_occupancy_config->>'max_occupancy')::integer IS DISTINCT FROM target_capacity THEN
+    RAISE EXCEPTION 'Maximum occupancy must match room capacity.' USING ERRCODE = '22023';
+  END IF;
+
   next_child_rule := COALESCE(target_occupancy_config->>'child_rule', current_child_rule);
   IF next_child_rule NOT IN ('age', 'height') THEN
     RAISE EXCEPTION 'Child measurement rule is invalid.' USING ERRCODE = '22023';
