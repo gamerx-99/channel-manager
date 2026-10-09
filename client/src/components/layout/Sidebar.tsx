@@ -20,6 +20,7 @@ import { useHotel } from "../../contexts/HotelContext";
 import { type Permission } from "@shared/authorization";
 import { BrandMark } from "./BrandMark";
 import { useTranslation } from "@/lib/i18n";
+import { communicationsEnabled } from "@/lib/featureFlags";
 
 type SidebarProps = {
   open: boolean;
@@ -149,7 +150,7 @@ export function Sidebar({
           <FileSpreadsheet size={17} strokeWidth={1.8} />
           <span>{t("sidebar.payments")}</span>
         </button>}
-        {can("operations.view_bookings") && (
+        {communicationsEnabled && can("operations.view_bookings") && (
           <Link
             href="/communications"
             className={`nav-link ${location === "/communications" || location.startsWith("/communications") ? "active" : ""}`}

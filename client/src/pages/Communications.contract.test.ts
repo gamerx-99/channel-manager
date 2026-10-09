@@ -8,11 +8,14 @@ describe("Communications contract", () => {
   const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const bookings = readFileSync(resolve(process.cwd(), "client/src/pages/Bookings.tsx"), "utf8");
+  const featureFlags = readFileSync(resolve(process.cwd(), "client/src/lib/featureFlags.ts"), "utf8");
 
-  it("registers the page route and gates sidebar link with operations.view_bookings", () => {
+  it("hides the route, sidebar entry, and booking shortcut unless the feature flag is enabled", () => {
+    expect(featureFlags).toContain('value === \'true\'');
+    expect(app).toContain('communicationsEnabled && <Route path="/communications">');
     expect(app).toContain('path="/communications"');
     expect(app).toContain("Communications");
-    expect(appShell).toContain('can("operations.view_bookings")');
+    expect(appShell).toContain('communicationsEnabled && can("operations.view_bookings")');
     expect(appShell).toContain('href="/communications"');
     expect(routeScope).toContain('"/communications"');
     expect(routeScope).toContain('return "operations.view_bookings"');
@@ -47,6 +50,7 @@ describe("Communications contract", () => {
   });
 
   it("provides entry from Bookings.tsx to communications", () => {
+    expect(bookings).toContain('communicationsEnabled && <Link href={`/communications?bookingId=${booking.id}`}');
     expect(bookings).toContain("/communications");
     expect(bookings).toContain("bookingId");
   });

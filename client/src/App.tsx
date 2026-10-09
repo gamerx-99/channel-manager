@@ -29,6 +29,7 @@ import OtaSync from "./pages/OtaSync";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { communicationsEnabled } from "./lib/featureFlags";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -52,9 +53,9 @@ function Router() {
       <Route path="/housekeeping">
         <PrivateRoute><Housekeeping /></PrivateRoute>
       </Route>
-      <Route path="/communications">
+      {communicationsEnabled && <Route path="/communications">
         <PrivateRoute><Communications /></PrivateRoute>
-      </Route>
+      </Route>}
       <Route path="/dashboard">
         <PrivateRoute><Dashboard /></PrivateRoute>
       </Route>
