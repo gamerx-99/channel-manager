@@ -91,15 +91,21 @@ export default function Calendar({ id }: { id: string }) {
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id);
   const availabilityQuery = trpc.channelManager.availability.useQuery(id);
-  const bookingOccupancyQuery = trpc.channelManager.bookingOccupancy.useQuery(id);
+  const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart]);
+  const monthDays = useMemo(() => getMonthDays(monthAnchor), [monthAnchor]);
+  const occupancyDates = viewMode === "week" ? days : monthDays.map(day => day.date);
+  const occupancyRange = {
+    hotel_id: id,
+    check_in: toIsoDate(occupancyDates[0]),
+    check_out: toIsoDate(addDays(occupancyDates[occupancyDates.length - 1], 1)),
+  };
+  const bookingOccupancyQuery = trpc.channelManager.bookingOccupancy.useQuery(occupancyRange);
   const updateAvailability = trpc.channelManager.updateAvailability.useMutation({
     onSuccess: async () => {
       await utils.channelManager.availability.invalidate(id);
     },
   });
 
-  const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart]);
-  const monthDays = useMemo(() => getMonthDays(monthAnchor), [monthAnchor]);
   const todayIso = useMemo(() => toIsoDate(new Date()), []);
 
   const availabilityByKey = useMemo(() => {

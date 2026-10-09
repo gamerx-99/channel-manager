@@ -74,7 +74,7 @@ export default function Bookings({ id }: { id: string }) {
     onSuccess: async () => {
       await utils.channelManager.bookings.invalidate(id);
       await utils.channelManager.dashboard.invalidate();
-      await utils.channelManager.bookingOccupancy.invalidate(id);
+      await utils.channelManager.bookingOccupancy.invalidate();
       setShowAdd(false);
     },
     onError: error => console.error(error.message),
@@ -94,7 +94,7 @@ export default function Bookings({ id }: { id: string }) {
       await Promise.all([
         utils.channelManager.bookings.invalidate(id),
         utils.channelManager.dashboard.invalidate(),
-        utils.channelManager.bookingOccupancy.invalidate(id),
+        utils.channelManager.bookingOccupancy.invalidate(),
       ]);
     },
     onError: error => setFormError(error.message),

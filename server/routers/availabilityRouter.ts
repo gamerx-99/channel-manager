@@ -60,10 +60,19 @@ export const availability = protectedProcedure.input(hotelIdSchema).query(async 
   }
 });
 
-export const bookingOccupancy = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
-  requireHotelPermission(ctx.user, input, 'property.view');
+export const bookingOccupancySchema = z.object({
+  hotel_id: hotelIdSchema,
+  check_in: z.string().date(),
+  check_out: z.string().date(),
+}).refine(input => input.check_out > input.check_in, {
+  message: 'Check-out date must be after check-in date.',
+  path: ['check_out'],
+});
+
+export const bookingOccupancy = protectedProcedure.input(bookingOccupancySchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.view');
   try {
-    return await listBookingOccupancyForHotel(rlsClient(ctx.user.accessToken), input);
+    return await listBookingOccupancyForHotel(rlsClient(ctx.user.accessToken), input.hotel_id, input.check_in, input.check_out);
   } catch (error) {
     return rethrowDomainError(error);
   }

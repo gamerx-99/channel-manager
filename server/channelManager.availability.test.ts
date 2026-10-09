@@ -149,7 +149,8 @@ describe('channelManager.updateAvailability quick actions', () => {
     dbMocks.listBookingOccupancyForHotel.mockResolvedValueOnce(occupancy);
     const app = await caller('revenue_manager');
 
-    await expect(app.channelManager.bookingOccupancy(hotelId)).resolves.toEqual(occupancy);
-    expect(dbMocks.listBookingOccupancyForHotel).toHaveBeenCalledWith(expect.anything(), hotelId);
+    const range = { hotel_id: hotelId, check_in: '2026-10-05', check_out: '2026-10-12' };
+    await expect(app.channelManager.bookingOccupancy(range)).resolves.toEqual(occupancy);
+    expect(dbMocks.listBookingOccupancyForHotel).toHaveBeenCalledWith(expect.anything(), hotelId, range.check_in, range.check_out);
   });
 });

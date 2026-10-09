@@ -3,11 +3,18 @@ import { isMissingTableError, throwOnError } from './utils';
 import type { AvailabilityRecord, RateOverrideRecord } from './types';
 import type { BookingStatus } from '@shared/bookingLifecycle';
 
-export async function listBookingOccupancyForHotel(client: SupabaseClient, hotelId: string) {
+export async function listBookingOccupancyForHotel(
+  client: SupabaseClient,
+  hotelId: string,
+  checkIn: string,
+  checkOut: string,
+) {
   const { data, error } = await client
     .from('bookings')
     .select('room_id,check_in,check_out,status,expires_at')
-    .eq('hotel_id', hotelId);
+    .eq('hotel_id', hotelId)
+    .lt('check_in', checkOut)
+    .gt('check_out', checkIn);
   throwOnError(error);
   return (data ?? []) as Array<{
     room_id: string | null;
