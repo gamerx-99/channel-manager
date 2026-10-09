@@ -16,13 +16,14 @@ export function getBookedRoomCountForDate(
   bookings: CalendarBooking[],
 ): number {
   const roomTypeById = new Map(rooms.map(room => [room.id, room.room_type_id]));
-  return bookings.filter(booking =>
+  const bookedRoomIds = new Set(bookings.filter(booking =>
     booking.room_id !== null &&
     roomTypeById.get(booking.room_id) === roomTypeId &&
     booking.check_in <= date &&
     booking.check_out > date &&
     isBookingOccupyingInventory(booking),
-  ).length;
+  ).map(booking => booking.room_id));
+  return bookedRoomIds.size;
 }
 
 export function getAvailableRoomCount(
