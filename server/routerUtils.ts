@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { hasAnyPermission, isPlatformRole, roleHasPermission, type AppRole, type Permission } from '@shared/authorization';
+import { hasAnyPermission, hasHotelPermission, type AppRole, type Permission } from '@shared/authorization';
 import { createRlsSupabaseClient } from './supabase';
 import { isSuperAdmin, getManagedHotel } from './db';
 
@@ -33,16 +33,7 @@ export function requireHotelPermission(
   permission: Permission,
 ) {
   const roles = getIdentityRoles(user);
-  const memberships = user.memberships ?? [];
-  // Platform roles are not property memberships, so they bypass the membership check.
-  // `super_admin` bypasses unconditionally; `admin` only for capabilities the matrix
-  // actually grants it, which is what keeps its cross-hotel access read-only.
-  const allowed = roles.includes('super_admin')
-    || roles.some(role => isPlatformRole(role) && roleHasPermission(role, permission))
-    || memberships.some(
-      membership => membership.hotelId === hotelId && roleHasPermission(membership.role, permission),
-    );
-  if (!allowed) {
+  if (!hasHotelPermission(roles, user.memberships ?? [], hotelId, permission)) {
     throw new TRPCError({ code: 'FORBIDDEN', message: `Missing permission for hotel: ${permission}` });
   }
 }
