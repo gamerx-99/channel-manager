@@ -1,5 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Clock3, Eye, Globe, Image as ImageIcon, Palette, Save, Trash2, Upload } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlignLeft,
+  ArrowDown,
+  ArrowUp,
+  BookOpen,
+  Clock3,
+  Eye,
+  Globe,
+  GripVertical,
+  Image as ImageIcon,
+  Layout,
+  MapPin,
+  Palette,
+  Save,
+  Star,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,18 +42,25 @@ type MediaItem = {
   display_order: number;
 };
 
+type SectionKey = 'hero' | 'story' | 'rooms' | 'booking' | 'location';
+
 type SiteConfig = {
   hotel_id: string;
   hero_copy: string;
   accent_color: string;
-  visible_sections: {
-    hero: boolean;
-    story: boolean;
-    rooms: boolean;
-    booking: boolean;
-    location: boolean;
-  };
+  visible_sections: Record<SectionKey, boolean>;
 };
+
+const SECTION_KEYS: SectionKey[] = ['hero', 'story', 'rooms', 'booking', 'location'];
+
+const GALLERY_SLOT_DEFS = [
+  { slot: 1, labelKey: "websiteBuilder.slot1Label" },
+  { slot: 2, labelKey: "websiteBuilder.slot2Label" },
+  { slot: 3, labelKey: "websiteBuilder.slot3Label" },
+  { slot: 4, labelKey: "websiteBuilder.slot4Label" },
+  { slot: 5, labelKey: "websiteBuilder.slot5Label" },
+  { slot: 6, labelKey: "websiteBuilder.slot6Label" },
+] as const;
 
 const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visible_sections"] = {
   hero: true,
@@ -50,7 +74,7 @@ function defaultConfig(hotelId: string): SiteConfig {
   return {
     hotel_id: hotelId,
     hero_copy: "Explore room types, rates, and availability directly from this hotel.",
-    accent_color: "#1d6b56",
+    accent_color: "#334155",
     visible_sections: { ...DEFAULT_VISIBLE_SECTIONS },
   };
 }
@@ -58,6 +82,31 @@ function defaultConfig(hotelId: string): SiteConfig {
 function isValidHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(value.trim());
 }
+
+// Section metadata — icons and preview colors per block
+const SECTION_ICONS: Record<SectionKey, React.ElementType> = {
+  hero: Star,
+  story: BookOpen,
+  rooms: Layout,
+  booking: AlignLeft,
+  location: MapPin,
+};
+
+const SECTION_PREVIEW_COLORS: Record<SectionKey, string> = {
+  hero: "#e8f4f0",
+  story: "#f0f4e8",
+  rooms: "#f4f0e8",
+  booking: "#e8f0f4",
+  location: "#f4e8f4",
+};
+
+const SECTION_PREVIEW_ACCENT: Record<SectionKey, string> = {
+  hero: "#1d6b56",
+  story: "#5a6b1d",
+  rooms: "#6b4f1d",
+  booking: "#1d4f6b",
+  location: "#6b1d5a",
+};
 
 function LoadingWebsiteBuilder() {
   const { t } = useTranslation();
@@ -73,6 +122,251 @@ function LoadingWebsiteBuilder() {
         ))}
       </div>
       <div className="h-[420px] animate-pulse rounded-2xl border border-[#e5ebe7] bg-white" />
+    </div>
+  );
+}
+
+// ─── Section Block Card ────────────────────────────────────────────────────────
+type SectionBlockCardProps = {
+  sectionKey: SectionKey;
+  label: string;
+  hint: string;
+  isEnabled: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  canManage: boolean;
+  accentColor: string;
+  onToggle: (key: SectionKey, value: boolean) => void;
+  onMoveUp: (key: SectionKey) => void;
+  onMoveDown: (key: SectionKey) => void;
+};
+
+function SectionBlockCard({
+  sectionKey,
+  label,
+  hint,
+  isEnabled,
+  isFirst,
+  isLast,
+  canManage,
+  accentColor,
+  onToggle,
+  onMoveUp,
+  onMoveDown,
+}: SectionBlockCardProps) {
+  const Icon = SECTION_ICONS[sectionKey];
+  const previewColor = SECTION_PREVIEW_COLORS[sectionKey];
+  const previewAccent = SECTION_PREVIEW_ACCENT[sectionKey];
+
+  return (
+    <div
+      className={`group relative flex items-stretch gap-0 overflow-hidden rounded-xl border transition-all duration-200 ${
+        isEnabled
+          ? "border-[#c8ddd5] bg-white shadow-[0_2px_12px_rgba(30,65,49,0.07)]"
+          : "border-[#e5ebe7] bg-[#f9fbfa] opacity-70"
+      }`}
+    >
+      {/* Left accent bar */}
+      <div
+        className="w-1 shrink-0 rounded-l-xl transition-colors duration-200"
+        style={{ background: isEnabled ? accentColor : "#d1dcd6" }}
+      />
+
+      {/* Mini visual preview icon */}
+      <div
+        className="flex w-14 shrink-0 items-center justify-center transition-colors duration-150"
+        style={{ background: isEnabled ? previewColor : "#f3f6f4" }}
+      >
+        <Icon
+          size={20}
+          aria-hidden="true"
+          style={{ color: isEnabled ? previewAccent : "#a0b4ab" }}
+        />
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 items-center gap-2 px-3 py-2.5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className={`text-sm font-semibold leading-tight ${isEnabled ? "text-[#1b2c25]" : "text-[#7a8c83]"}`}>
+              {label}
+            </p>
+            {isEnabled && (
+              <span className="inline-flex items-center rounded-full bg-[#edf7f1] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#1d6b56]">
+                ON
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs leading-4 text-[#7a8c83] line-clamp-1">{hint}</p>
+        </div>
+
+        {/* Order buttons */}
+        <div className="flex shrink-0 flex-col gap-0.5">
+          <button
+            type="button"
+            onClick={() => onMoveUp(sectionKey)}
+            disabled={isFirst || !canManage}
+            className="flex h-5 w-5 items-center justify-center rounded text-[#9aada5] hover:bg-[#f0f5f2] hover:text-[#1b2c25] disabled:cursor-not-allowed disabled:opacity-30 transition-colors"
+            aria-label={`Move ${label} up`}
+          >
+            <ArrowUp size={11} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMoveDown(sectionKey)}
+            disabled={isLast || !canManage}
+            className="flex h-5 w-5 items-center justify-center rounded text-[#9aada5] hover:bg-[#f0f5f2] hover:text-[#1b2c25] disabled:cursor-not-allowed disabled:opacity-30 transition-colors"
+            aria-label={`Move ${label} down`}
+          >
+            <ArrowDown size={11} />
+          </button>
+        </div>
+
+        {/* Toggle switch */}
+        <Switch
+          checked={isEnabled}
+          onCheckedChange={v => onToggle(sectionKey, v)}
+          disabled={!canManage}
+          aria-label={`visible_sections ${sectionKey}`}
+        />
+      </div>
+
+      {/* Drag handle (visual only) */}
+      <div className="flex shrink-0 items-center pr-2 text-[#c8d5cc]">
+        <GripVertical size={13} aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Public Preview (ordered) ─────────────────────────────────────────────────
+type PublicPreviewProps = {
+  draft: SiteConfig;
+  sectionOrder: SectionKey[];
+  selectedHotel: { name?: string; address?: string; room_types?: unknown[] } | undefined;
+  heroImage: string | null;
+  media?: MediaItem[];
+  t: (key: string, params?: Record<string, string | number>) => string;
+};
+
+function PublicPreview({ draft, sectionOrder, selectedHotel, heroImage, media, t }: PublicPreviewProps) {
+  const visibleOrdered = sectionOrder.filter(k => draft.visible_sections[k]);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
+      {/* Mock nav bar */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5"
+        style={{ background: draft.accent_color }}
+      >
+        <span className="text-xs font-semibold text-white/90 truncate">
+          {selectedHotel?.name ?? "Hotel name"}
+        </span>
+        <div className="flex items-center gap-3 text-[10px] text-white/70">
+          {draft.visible_sections.rooms && <span>Rooms</span>}
+          {draft.visible_sections.location && <span>Location</span>}
+          {draft.visible_sections.booking && (
+            <span className="rounded-full border border-white/40 px-2 py-0.5 text-white">Book</span>
+          )}
+        </div>
+      </div>
+
+      {/* Sections in user-defined order */}
+      {visibleOrdered.length === 0 ? (
+        <div className="px-4 py-6 text-center text-xs text-amber-700 bg-amber-50">
+          {t("websiteBuilder.allSectionsHidden")}
+        </div>
+      ) : (
+        <div className="divide-y divide-[#f0f4f1]">
+          {visibleOrdered.map(key => {
+            if (key === "hero") return (
+              <div key="hero" className="space-y-0">
+                <div className="relative h-[150px] overflow-hidden bg-[#f6faf7]">
+                  {heroImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={heroImage} alt="Hero preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-[#7a8c83]">
+                      {t("websiteBuilder.noHeroImagePreview")}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" aria-hidden="true" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-sm font-semibold text-white">{selectedHotel?.name ?? "Your hotel"}</p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-white/85 line-clamp-2">{draft.hero_copy}</p>
+                    <span
+                      className="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                      style={{ background: draft.accent_color }}
+                    >
+                      {t("websiteBuilder.viewRooms")}
+                    </span>
+                  </div>
+                </div>
+                {media && media.length > 0 && (
+                  <div className="bg-[#f8faf8] p-2 border-t border-[#edf2ee]">
+                    <div className="flex items-center justify-between mb-1 text-[9px] font-medium text-[#7a8c83]">
+                      <span>{t("websiteBuilder.galleryManagerTitle")}</span>
+                      <span>{Math.min(6, media.length)} / 6</span>
+                    </div>
+                    <div className="grid grid-cols-6 gap-1">
+                      {Array.from({ length: 6 }).map((_, i) => {
+                        const item = media[i];
+                        return item ? (
+                          <div key={item.id} className="relative aspect-square rounded overflow-hidden bg-neutral-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.url} alt="" className="w-full h-full object-cover" />
+                            {item.is_hero && (
+                              <span className="absolute bottom-0 inset-x-0 bg-[#1d6b56] text-[7px] text-white text-center font-bold">H</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div key={i} className="aspect-square rounded border border-dashed border-neutral-300 bg-white/60 flex items-center justify-center text-[8px] text-neutral-400">
+                            {i + 1}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+            if (key === "story") return (
+              <div key="story" className="px-4 py-3 bg-[#fbfdfb]">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#789087]">{t("websiteBuilder.theHotel")}</p>
+                <p className="mt-1 text-xs font-medium text-[#263b31]">{t("websiteBuilder.stayAt", { hotelName: selectedHotel?.name ?? "this hotel" })}</p>
+              </div>
+            );
+            if (key === "rooms") {
+              const count = (selectedHotel?.room_types as unknown[])?.length ?? 0;
+              return (
+                <div key="rooms" className="px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#789087]">{t("websiteBuilder.rooms")}</p>
+                  <p className="mt-1 text-xs text-[#6c7e75]">{t("websiteBuilder.roomsPreviewHint", { count })}</p>
+                </div>
+              );
+            }
+            if (key === "booking") return (
+              <div key="booking" className="px-4 py-3 bg-[#fbfdfb]">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#789087]">{t("websiteBuilder.yourStay")}</p>
+                <p className="mt-1 text-xs text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
+                <span
+                  className="mt-2 inline-flex rounded-md px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                  style={{ background: draft.accent_color }}
+                >
+                  {t("websiteBuilder.planVisit")}
+                </span>
+              </div>
+            );
+            if (key === "location") return (
+              <div key="location" className="px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#789087]">{t("websiteBuilder.location")}</p>
+                <p className="mt-1 text-xs text-[#6c7e75]">{selectedHotel?.address ?? t("websiteBuilder.addressFallback")}</p>
+              </div>
+            );
+            return null;
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -124,17 +418,22 @@ export default function WebsiteBuilder() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const media = serverMedia;
-  const config = useMemo(() => serverConfig ?? defaultConfig(effectiveHotelId), [serverConfig, effectiveHotelId]);
+  // ASSUMPTION: preview now uses draft directly via PublicPreview; config only used as fallback initializer
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _config = useMemo(() => serverConfig ?? defaultConfig(effectiveHotelId), [serverConfig, effectiveHotelId]);
 
   // Initialize draft form from config when hotel or config changes
   const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
   const [initializedFor, setInitializedFor] = useState<string>("");
+  // Section display ordering — local draft state, not persisted to DB
+  const [sectionOrder, setSectionOrder] = useState<SectionKey[]>([...SECTION_KEYS]);
 
   useEffect(() => {
     if (!effectiveHotelId) return;
     if (initializedFor !== effectiveHotelId) {
       setInitializedFor(effectiveHotelId);
       setDraft((serverConfig ?? defaultConfig(effectiveHotelId)) as SiteConfig);
+      setSectionOrder([...SECTION_KEYS]);
       setFormError(null);
       setSaveNote(null);
     }
@@ -142,12 +441,37 @@ export default function WebsiteBuilder() {
 
   const heroImage = useMemo(() => media.find(m => m.is_hero)?.url ?? media[0]?.url ?? null, [media]);
 
-  const sectionLabels: Record<keyof SiteConfig["visible_sections"], { label: string; hint: string }> = useMemo(() => ({
+  // Ordering handlers
+  const handleToggleSection = useCallback((key: SectionKey, value: boolean) => {
+    setDraft(p => ({ ...p, visible_sections: { ...p.visible_sections, [key]: value } }));
+  }, []);
+
+  const handleMoveUp = useCallback((key: SectionKey) => {
+    setSectionOrder(prev => {
+      const idx = prev.indexOf(key);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+      return next;
+    });
+  }, []);
+
+  const handleMoveDown = useCallback((key: SectionKey) => {
+    setSectionOrder(prev => {
+      const idx = prev.indexOf(key);
+      if (idx < 0 || idx >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+      return next;
+    });
+  }, []);
+
+  const sectionLabels: Record<SectionKey, { label: string; hint: string }> = useMemo(() => ({
     hero: { label: t("websiteBuilder.sectionHeroLabel"), hint: t("websiteBuilder.sectionHeroHint") },
-    'story': { label: t("websiteBuilder.sectionStoryLabel"), hint: t("websiteBuilder.sectionStoryHint") },
-    'rooms': { label: t("websiteBuilder.sectionRoomsLabel"), hint: t("websiteBuilder.sectionRoomsHint") },
-    'booking': { label: t("websiteBuilder.sectionBookingLabel"), hint: t("websiteBuilder.sectionBookingHint") },
-    'location': { label: t("websiteBuilder.sectionLocationLabel"), hint: t("websiteBuilder.sectionLocationHint") },
+    story: { label: t("websiteBuilder.sectionStoryLabel"), hint: t("websiteBuilder.sectionStoryHint") },
+    rooms: { label: t("websiteBuilder.sectionRoomsLabel"), hint: t("websiteBuilder.sectionRoomsHint") },
+    booking: { label: t("websiteBuilder.sectionBookingLabel"), hint: t("websiteBuilder.sectionBookingHint") },
+    location: { label: t("websiteBuilder.sectionLocationLabel"), hint: t("websiteBuilder.sectionLocationHint") },
   }), [t]);
 
   function handleUploadFile(file: File) {
@@ -316,8 +640,21 @@ export default function WebsiteBuilder() {
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryVisibleSections")}</p>
-            <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{Object.values(draft.visible_sections).filter(Boolean).length} / 5</p>
-            <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryVisibleHint")}</p>
+            <div className="mt-3 flex items-baseline gap-1">
+              <p className="text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{Object.values(draft.visible_sections).filter(Boolean).length}</p>
+              <p className="text-sm text-[#778a80]">/ 5</p>
+            </div>
+            {/* Mini section status dots in current order */}
+            <div className="mt-2 flex gap-1">
+              {sectionOrder.map(k => (
+                <span
+                  key={k}
+                  className="h-2 w-2 rounded-full transition-colors duration-150"
+                  style={{ background: draft.visible_sections[k] ? draft.accent_color : "#d4ddd8" }}
+                  title={sectionLabels[k].label}
+                />
+              ))}
+            </div>
           </CardContent>
         </Card>
       </section>
@@ -326,10 +663,17 @@ export default function WebsiteBuilder() {
         <div className="space-y-5">
           <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
-                <ImageIcon size={18} aria-hidden="true" /> {t("websiteBuilder.mediaSectionTitle")}
-              </CardTitle>
-              <CardDescription>{t("websiteBuilder.mediaSectionDesc")}</CardDescription>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
+                    <ImageIcon size={18} aria-hidden="true" /> {t("websiteBuilder.galleryManagerTitle")}
+                  </CardTitle>
+                  <CardDescription>{t("websiteBuilder.galleryManagerDesc")}</CardDescription>
+                </div>
+                <div className="rounded-full bg-[#edf7f1] px-3 py-1 text-xs font-semibold text-[#1d6b56]">
+                  {t("websiteBuilder.uploadedSlotsCount", { count: Math.min(6, media.length) })}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
               {!canManage && (
@@ -356,34 +700,92 @@ export default function WebsiteBuilder() {
                 <span className="text-xs text-[#778a80]">{t("websiteBuilder.uploadHint")}</span>
               </div>
 
-              {media.length ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {media.map(item => (
-                    <div key={item.id} className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
-                      <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.url} alt={item.caption ?? "Hotel media preview"} className="h-full w-full object-cover" />
-                        {item.is_hero && (
-                          <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">{t("websiteBuilder.heroBadge")}</span>
+              {/* 6-Slot Visual Atmosphere & Room Grid */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {GALLERY_SLOT_DEFS.map((slotDef, idx) => {
+                  const item = media[idx];
+                  return (
+                    <div key={slotDef.slot} className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white transition-all hover:border-[#1d6b56]/40">
+                      <div className="border-b border-[#f0f4f1] bg-[#fbfdfb] px-3 py-1.5 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-[#456156]">
+                          {t(slotDef.labelKey)}
+                        </span>
+                        {item?.is_hero && (
+                          <span className="rounded bg-[#1d6b56] px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
+                            {t("websiteBuilder.heroBadge")}
+                          </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-2 p-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>
-                          <p className="text-[11px] text-[#778a80]">{item.is_hero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")} · {t("websiteBuilder.displayOrderLabel", { order: item.display_order })}</p>
+                      {item ? (
+                        <div>
+                          <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.url} alt={item.caption ?? "Hotel media preview"} className="h-full w-full object-cover" />
+                          </div>
+                          <div className="flex items-center justify-between gap-2 p-2.5">
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>
+                              <p className="text-[10px] text-[#778a80]">{item.is_hero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")} · {t("websiteBuilder.displayOrderLabel", { order: item.display_order })}</p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className={`h-7 border-[#dce4df] px-2 text-xs ${item.is_hero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
+                                onClick={() => handleSetHero(item.id)}
+                                disabled={!canManage || item.is_hero}
+                                aria-label={t("websiteBuilder.setHeroAria", { id: item.id })}
+                              >
+                                {t("websiteBuilder.setHeroButton")}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-[#8a9a93] hover:text-red-600"
+                                onClick={() => handleDeleteMedia(item.id)}
+                                disabled={!canManage}
+                                aria-label={t("websiteBuilder.deleteMediaAria", { id: item.id })}
+                              >
+                                <Trash2 size={13} />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={`h-7 border-[#dce4df] px-2 text-xs ${item.is_hero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
-                            onClick={() => handleSetHero(item.id)}
-                            disabled={!canManage || item.is_hero}
-                            aria-label={t("websiteBuilder.setHeroAria", { id: item.id })}
-                          >
-                            {t("websiteBuilder.setHeroButton")}
-                          </Button>
+                      ) : (
+                        <div
+                          className="flex flex-col items-center justify-center p-6 text-center cursor-pointer aspect-[16/10] bg-[#fbfdfb] hover:bg-[#edf7f1]/40 border-2 border-dashed border-[#e0e8e3] m-2 rounded-lg transition-colors"
+                          onClick={() => canManage && fileInputRef.current?.click()}
+                        >
+                          <Upload size={18} className="text-[#8ba297] mb-1.5" />
+                          <span className="text-[11px] font-medium text-[#52655b]">{t("websiteBuilder.slotEmpty")}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {media.length === 0 && (
+                <PageState tone="empty" title={t("websiteBuilder.noMediaTitle")} description={t("websiteBuilder.noMediaDesc")} />
+              )}
+
+              {/* Extra media beyond 6 slots if any */}
+              {media.length > 6 && (
+                <div className="pt-3 border-t border-[#edf2ee]">
+                  <p className="text-xs font-semibold text-[#456156] mb-2">{t("websiteBuilder.mediaSectionTitle")}</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {media.slice(6).map(item => (
+                      <div key={item.id} className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
+                        <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item.url} alt={item.caption ?? "Hotel media preview"} className="h-full w-full object-cover" />
+                        </div>
+                        <div className="flex items-center justify-between gap-2 p-2.5">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>
+                          </div>
                           <Button
                             type="button"
                             variant="ghost"
@@ -393,16 +795,15 @@ export default function WebsiteBuilder() {
                             disabled={!canManage}
                             aria-label={t("websiteBuilder.deleteMediaAria", { id: item.id })}
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <PageState tone="empty" title={t("websiteBuilder.noMediaTitle")} description={t("websiteBuilder.noMediaDesc")} />
               )}
+
               <p className="text-xs leading-5 text-[#778a80]">
                 {t("websiteBuilder.mediaFooterHint")}
               </p>
@@ -417,64 +818,14 @@ export default function WebsiteBuilder() {
               <CardDescription>{t("websiteBuilder.publicPreviewDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="pt-5">
-              <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
-                {config?.visible_sections?.hero ? (
-                  <div className="relative h-[220px] overflow-hidden bg-[#f6faf7]">
-                    {heroImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={heroImage} alt={`Preview for ${selectedHotel?.name ?? "hotel"}`} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-[#7a8c83]">{t("websiteBuilder.noHeroImagePreview")}</div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" aria-hidden="true" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="text-lg font-semibold text-white">{selectedHotel?.name ?? "Your hotel preview"}</h3>
-                      <p className="mt-1 max-w-xl text-sm leading-6 text-white/90">{draft.hero_copy || config.hero_copy}</p>
-                      <span
-                        className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white"
-                        style={{ background: draft.accent_color }}
-                      >
-                        {t("websiteBuilder.viewRooms")}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="px-4 py-3 text-xs text-[#7a8c83]">{t("websiteBuilder.heroSectionHidden")}</div>
-                )}
-
-                <div className="grid gap-3 p-4 sm:grid-cols-2">
-                  {config?.visible_sections?.story ? (
-                    <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.theHotel")}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.stayAt", { hotelName: selectedHotel?.name ?? "this hotel" })}</p>
-                    </div>
-                  ) : null}
-                  {config?.visible_sections?.rooms ? (
-                    <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.rooms")}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.roomsPreviewHint", { count: selectedHotel?.room_types?.length ?? 0 })}</p>
-                    </div>
-                  ) : null}
-                  {config?.visible_sections?.booking ? (
-                    <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
-                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold text-white" style={{ background: draft.accent_color }}>
-                        {t("websiteBuilder.planVisit")}
-                      </span>
-                    </div>
-                  ) : null}
-                  {config?.visible_sections?.location ? (
-                    <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                      <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.location")}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{selectedHotel?.address ?? t("websiteBuilder.addressFallback")}</p>
-                    </div>
-                  ) : null}
-                  {!Object.values(draft.visible_sections).some(Boolean) && (
-                    <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{t("websiteBuilder.allSectionsHidden")}</div>
-                  )}
-                </div>
-              </div>
+              <PublicPreview
+                draft={draft}
+                sectionOrder={sectionOrder}
+                selectedHotel={selectedHotel}
+                heroImage={heroImage}
+                media={media}
+                t={t}
+              />
               <p className="mt-3 text-xs leading-5 text-[#667a70]">
                 {t("websiteBuilder.publicHotelFallbackNote")}
               </p>
@@ -530,7 +881,7 @@ export default function WebsiteBuilder() {
                   <Input
                     id="wb-accent-color"
                     type="color"
-                    value={isValidHexColor(draft.accent_color) ? draft.accent_color : "#1d6b56"}
+                    value={isValidHexColor(draft.accent_color) ? draft.accent_color : "#334155"}
                     onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
                     disabled={!canManage}
                     className="h-9 w-14 border-[#dce4df] p-1"
@@ -548,24 +899,40 @@ export default function WebsiteBuilder() {
                 <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.accentColorHint")}</p>
               </div>
 
-              <div className="space-y-3">
-                <Label className="text-xs text-[#52655b]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
-                <div className="space-y-2 rounded-xl border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                  {(Object.keys(sectionLabels) as Array<keyof SiteConfig["visible_sections"]>).map(key => (
-                    <label key={key} className="flex items-center justify-between gap-3 rounded-lg border border-[#e5ebe7] bg-white px-3 py-2.5">
-                      <span>
-                        <span className="text-sm font-medium text-[#263b31]">{sectionLabels[key].label}</span>
-                        <span className="ml-2 text-xs text-[#7a8c83]">{sectionLabels[key].hint}</span>
-                      </span>
-                      <Switch
-                        checked={draft.visible_sections[key]}
-                        onCheckedChange={v => setDraft(p => ({ ...p, visible_sections: { ...p.visible_sections, [key]: v } }))}
-                        disabled={!canManage}
-                        aria-label={`visible_sections ${key}`}
-                      />
-                    </label>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-[#52655b]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
+                  <span className="text-[11px] text-[#778a80]">
+                    {Object.values(draft.visible_sections).filter(Boolean).length} / 5
+                  </span>
+                </div>
+
+                {/* Block cards in user-defined order */}
+                <div className="space-y-1.5">
+                  {sectionOrder.map((key, index) => (
+                    <SectionBlockCard
+                      key={key}
+                      sectionKey={key}
+                      label={sectionLabels[key].label}
+                      hint={sectionLabels[key].hint}
+                      isEnabled={draft.visible_sections[key]}
+                      isFirst={index === 0}
+                      isLast={index === sectionOrder.length - 1}
+                      canManage={canManage}
+                      accentColor={draft.accent_color}
+                      onToggle={handleToggleSection}
+                      onMoveUp={handleMoveUp}
+                      onMoveDown={handleMoveDown}
+                    />
                   ))}
                 </div>
+
+                {!Object.values(draft.visible_sections).some(Boolean) && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    {t("websiteBuilder.allSectionsHidden")}
+                  </div>
+                )}
+
                 <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.visibleSectionsHint")}</p>
               </div>
 

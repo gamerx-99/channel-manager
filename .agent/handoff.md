@@ -1,21 +1,124 @@
 # Handoff log
+## 2026-10-10 · channel-manager-mvp-latest (booking guest counts)
+- **Project:** channel-manager-mvp-latest
+- **Current task:** Implement RONDMAP P1 item 1: persist adults, children, and each child’s age or height on bookings.
+- **Completed:** Added additive migration and read-only verify pair; defaults preserve existing records and backfill adults from linked room-type base occupancy. Public hold creation persists step ① counts and child measurements. Staff booking captures adults and per-child age/height using the selected room type rule. Booking list/check-in context reads and displays the saved party. TM.30 continues to export named guest identity rows because booking counts alone do not provide the required identity fields. No function was added.
+- **Remaining:** Owner applies `20261010_booking_guest_counts.sql` and confirms all rows in `verify_20261010_booking_guest_counts.sql` are PASS in the production SQL editor. No production SQL was run.
+- **Blockers:** Commit and `kb-review -by codex` could not run: sandbox denied `.git/index.lock` with `Permission denied`, and kb-review reviews commit ranges. KB candidate write is outside the writable workspace and was not attempted.
+- **Changed files:** `20261010_booking_guest_counts.sql`, `verify_20261010_booking_guest_counts.sql`, `server/db/types.ts`, `server/db/booking.ts`, `server/routers/bookingRouter.ts`, `client/src/components/BookingWizard.tsx`, `client/src/pages/Bookings.tsx`, `client/src/pages/PublicHotel.contract.test.ts`, `server/bookingFlow.test.ts`, `server/bookingRouter.wiring.test.ts`, `server/db/booking.test.ts`, `specs/11-booking-lifecycle-v1.md`.
+- **Verification:** `pnpm check` PASS (`--tsBuildInfoFile` redirected to temp because normal check attempted a forbidden write under `node_modules`); `pnpm test` PASS (89 files, 488 passed, 3 skipped); `pnpm build` PASS (existing large-client-chunk warning). Targeted `git diff --check` passes for task files. Broad diff check reports trailing whitespace in pre-existing owner edits to `.agent/handoff.md` and `client/src/index.css`. `kb-review -by codex` remains blocked because the Git index is read-only. No push or deploy.
+- **Next step:** Restore Git index write access, stage only this ticket’s hunks, commit one concern, run `kb-review -by codex`, then owner applies and verifies the migration before considering release.
+## 2026-10-10 01:34 · channel-manager-mvp-latest (anon execute privilege)
+- **Project:** channel-manager-mvp-latest
+- **Current task:** Explicitly remove anon EXECUTE access to the room type occupancy update RPC.
+- **Completed:** Added `REVOKE EXECUTE ... FROM anon` to `20261009_room_type_occupancy_pricing.sql` and a regression assertion that the migration revokes anon while the verify SQL checks effective anon access.
+- **Remaining:** User must inspect `routine_privileges`; if anon is listed, run the supplied revoke in the production SQL editor, then run the complete verify file and confirm every row is PASS. No production SQL was run.
+- **Blockers:** Production privilege state is unverified in this turn; do not push/deploy until the user confirms verification and separately approves.
+- **Changed files:** `20261009_room_type_occupancy_pricing.sql`, `server/db.creation.test.ts`.
+- **Verification:** `pnpm check` PASS (`--tsBuildInfoFile` redirected to temp because normal check attempted a forbidden write under `node_modules`); `pnpm test` PASS (89 files, 488 passed, 3 skipped); `pnpm build` PASS (existing large-client-chunk warning). Targeted `git diff --check` passes for task files. Broad diff check reports trailing whitespace in pre-existing owner edits to `.agent/handoff.md` and `client/src/index.css`. `kb-review -by codex` remains blocked because the Git index is read-only. No push or deploy.
+- **Next step:** User checks the live grant and reruns the full verify script after revoking anon if necessary.
 
-## [2026-10-09 09:52] Public inventory RPC follow-up
-- Project: D:\system make\channel-manager-mvp-latest.
-- Completed: public availability now reads room types under the published-hotel RLS policy and gets inventory through get_public_room_type_availability, which returns only room-type IDs and available counts. Anonymous users do not select from ooms or ookings. Calendar occupancy is scoped to its visible date range; check-in/out uses shared per-hotel permission logic.
-- Verification: pnpm check passed; pnpm test passed (87 files, 458 passed, 3 skipped); pnpm build passed with the existing chunk-size warning. No production SQL was executed.
-- Remaining: human review/apply 20261009_public_room_type_rls.sql, 20261009_public_booking_inventory.sql, and 20261009_booking_lifecycle_checkin_checkout.sql; run each matching verify script. Deployment must wait for all PASS results.
-- Blockers: none for local code; production migrations and final independent review are pending.
-- Changed files: committed in the latest local fix series; specs/05-direct-booking-engine.md and specs/11-booking-lifecycle-v1.md show pending production work.
-- Next step: final kb-review -by codex; after PASS, ask the user before push/deploy and wait for SQL verification.
-## [2026-10-09 09:46] Channel Manager UI remediation and migration handoff
-- Project: D:\system make\channel-manager-mvp-latest.
-- Completed: published-hotel-only room-type RLS migration; normalized booking room relations; corrected calendar availability for active bookings in the visible range; check-in/out transitions use the lifecycle RPC and per-hotel permission helper; Communications is off by default behind VITE_FEATURE_COMMUNICATIONS.
-- Verification: pnpm check passed; pnpm test passed (87 files, 457 passed, 3 skipped); pnpm build passed with a chunk-size warning. No production SQL was executed.
-- Remaining: apply 20261009_public_room_type_rls.sql and 20261009_booking_lifecycle_checkin_checkout.sql in the production SQL editor, then run both verify scripts. Wait for their PASS results before deployment.
-- Blockers: no local implementation blockers; production verification is pending.
-- Changed files: committed in the task's local commit series; specs/05-direct-booking-engine.md and specs/11-booking-lifecycle-v1.md document pending migrations.
-- Next step: final kb-review -by codex, then ask the user before push/deploy; wait for user-applied SQL verification first.
+
+## 2026-10-10 01:15 · channel-manager-mvp-latest (occupancy and child pricing)
+- **Project:** channel-manager-mvp-latest
+- **Current task:** Replace tiered pricing with per-total-occupancy adjustments and configurable child rates; use one shared child measurement rule per hotel.
+- **Completed:** Added per-level percent or signed fixed-THB nightly adjustments relative to base occupancy; fixed adjustments apply to nightly overrides and floor final nightly price at zero. Added infant rates, up to three contiguous age groups from 3, and height-based pricing; unmatched ages count as adults. Added guest-aware public availability and booking-time revalidation, settings UI/i18n, save validation, capacity consistency guards, and RPC validation for complete occupancy schedules. Existing room type backfill enables only the base guest level; owners must enable/pricing other levels before those counts can book.
+- **Remaining:** Owner must apply `20261009_room_type_occupancy_pricing.sql` in the production SQL editor and confirm every row of `verify_20261009_room_type_occupancy_pricing.sql` returns PASS. Do not deploy before that. No SQL was run against production; no push/deploy was performed.
+- **Blockers:** Awaiting manual migration apply and verify. Changing the hotel-wide child rule clears old thresholds; height thresholds must be configured again for each room type before child booking is available.
+- **Changed files:** `shared/occupancyPricing.ts`, `shared/occupancyPricing.test.ts`, `20261009_room_type_occupancy_pricing.sql`, `verify_20261009_room_type_occupancy_pricing.sql`, `server/routers/hotelRouter.ts`, `server/db/hotel.ts`, `server/db/booking.ts`, `server/db/types.ts`, `server/roomTypePricing.schema.test.ts`, `server/db.creation.test.ts`, `server/channelManager.creation.test.ts`, `server/channelManager.roomTypes.test.ts`, `server/publicBooking.test.ts`, `client/src/pages/HotelDetail.tsx`, `client/src/pages/HotelDetail.contract.test.ts`, `client/src/pages/PublicHotel.tsx`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `specs/05-direct-booking-engine.md`.
+- **Verification:** `pnpm check` PASS (`--tsBuildInfoFile` redirected to temp because normal check attempted a forbidden write under `node_modules`); `pnpm test` PASS (89 files, 488 passed, 3 skipped); `pnpm build` PASS (existing large-client-chunk warning). Targeted `git diff --check` passes for task files. Broad diff check reports trailing whitespace in pre-existing owner edits to `.agent/handoff.md` and `client/src/index.css`. `kb-review -by codex` remains blocked because the Git index is read-only. No push or deploy.
+- **Next step:** User applies migration and verify SQL; after all rows PASS, consider deploy only with explicit approval.
+
+## 2026-10-09 15:59:56 · production deployment
+- Current task: deploy the reviewed booking/public-availability changes after migration verification.
+- Completed: Vercel deployment dpl_9sSbEu8rihojH6vyJargUhsicc7m READY at https://channel-manager-seven-blue.vercel.app from clean HEAD 2ec3eda. No Git push.
+- Verification: remote build succeeded; `vercel inspect` reports production/Ready. Root HTTP status was 302 to SSO, so authenticated production UAT remains pending. Error log query returned no error lines. Three production SQL verification scripts are all PASS.
+- Remaining: authenticated UAT; isolated deployment worktree and its Vercel-generated ignored `.env.local` remain. Token was not read or printed.
+- Next step: user completes authenticated UAT; no Git push unless separately authorized.
+
+## 2026-10-09 15:48:47 · production SQL applied
+- Current task: apply three booking/public-availability migrations after user confirmed Supabase CLI login.
+- Completed: applied the public room-type RLS, public inventory RPC, and booking lifecycle transition SQL to production project roznxbvhflwrfvybmhtm. Each matching verify script returned PASS for every check.
+- Verification: RLS 3/3 PASS; inventory 3/3 PASS; lifecycle 3/3 PASS. Required base objects existed before application. No `supabase_migrations.schema_migrations` table exists and CLI migration list was empty; these SQL runs therefore have no recorded migration ledger entries.
+- Remaining: none for SQL; push/deploy requires separate user approval.
+- Blockers: none.
+- Changed files: production schema only; no repo source changed in this continuation.
+- Next step: await explicit push/deploy approval.
+
+## 2026-10-09 10:02 · booking UI remediation final state
+- Current task: complete the UI-experience findings from the 2026-10-09 review.
+- Completed: local commits through 2ec3eda; corrected public room-type access and safe public inventory counts, object/array room mapping, calendar occupancy, check-in/out actions through the lifecycle RPC, and Communications feature gating.
+- Verification: pnpm check passed; pnpm test passed (87 files, 459 passed, 3 skipped); pnpm build passed with a client chunk-size warning; kb-review -by codex PASS at 2ec3eda. Tests ran with unrelated pre-existing dirty files in the working tree; reviewer confirmed they do not overlap reviewed changes.
+- Remaining: production SQL is unapplied. Human must apply and verify all three migration pairs before deploy. No production database access/write, push, or deploy was performed.
+- Blockers: none for local source; migration verification and push/deploy authorization pending.
+- Changed files: source, tests, specs, and three migration/verify pairs in task commits.
+- Next step: apply and verify SQL manually; then decide on push/deploy approval.
+## [2026-10-09 09:45] Booking UI review follow-ups — READY FOR USER MIGRATION STEP
+- **Completed**: Public availability now retains the anonymous RLS path; room-type policy checks only published hotels; booking relations accept object/array shapes; calendar subtracts active bookings for the visible week/month range; Confirmed → checked_in → checked_out uses the lifecycle RPC; Communications route/menu/shortcut default off behind VITE_FEATURE_COMMUNICATIONS.
+- **Verification**: pnpm check PASS; pnpm test PASS (87 files, 457 passed, 3 skipped); pnpm build PASS (chunk-size warning remains). Final independent kb-review -by codex is pending.
+- **Commits**: 4978fad, 891093, 7cf6c7f, 58f3ee, 3b9d31, 3a32781, c5fb0c3,  5cffeb, c707815, 369ebda.
+- **Remaining**: Review/apply 20261009_public_room_type_rls.sql and 20261009_booking_lifecycle_checkin_checkout.sql in production SQL editor, then run both verify scripts. Nothing was run against production and no push/deploy was made.
+- **Blockers**: Deployment must wait for both migration verify scripts to pass.
+- **Changed files**: See commits above and specs/05-direct-booking-engine.md, specs/11-booking-lifecycle-v1.md. Pre-existing unrelated working-tree changes remain untouched.
+- **Next step**: Finish review gate; after PASS, ask the user before push/deploy. Wait for user-applied migration verification before release.
+## [2569-10-09 09:30] Public booking, calendar, front desk, and messaging fixes — READY FOR REVIEW
+- **Completed**: Added a published-hotel-only room-type policy predicate and server-side public availability lookup; normalized Supabase room relation object/array shapes; calendar now subtracts occupying bookings; confirmed the Hotel Detail availability links already resolve to the registered /calendar route and added a regression test; added permission-checked Confirmed → Checked-in → Checked-out RPC actions and atomic status log writes; gated Communications route/menu/shortcut behind VITE_FEATURE_COMMUNICATIONS (default off).
+- **Verification**: pnpm check PASS; pnpm test PASS (87 files, 456 passed, 3 skipped); pnpm build PASS (large-chunk warning remains). The two new SQL migration/verify pairs were authored only; production Supabase 
+oznxbvhflwrfvybmhtm was not queried or modified.
+- **Commits**: 4978fad, 891093, 7cf6c7f, 58f3ee, 3b9d31.
+- **Remaining**: Human must review/apply 20261009_public_room_type_rls.sql and 20261009_booking_lifecycle_checkin_checkout.sql in the production SQL editor, then run the matching verify scripts. No push/deploy until review PASS and explicit user approval.
+- **Blockers**: None for local implementation. Production behavior remains unverified until the human applies migrations.
+- **Changed files**: See these commits; also updated specs/11-booking-lifecycle-v1.md. Existing unrelated working-tree changes were preserved.
+- **Next step**: Run kb-review -by codex; if PASS, ask the user before push/deploy. Await human migration application and verification separately.
+## [2026-09-14] Customer-facing site single-section consolidation with centered large calendar & 6-photo gallery — DONE ✅
+- **Context**: Consolidated the guest-facing landing page into a cohesive, high-conversion single-flow experience ("เหลือช่วงเดียว ปฎิทินใหญ่กลางๆ") with a prominent centered calendar, 6-photo atmosphere/rooms gallery, and direct booking flow.
+- **Changes**:
+  - `client/src/pages/PublicHotel.tsx`:
+    - Reordered sections so the 6-photo atmosphere/rooms gallery and the booking section appear front and center right under the hero headline.
+    - Centered Step 1 date selection with high-contrast check-in/check-out indicator, large day targets, and prominent centered booking CTA button.
+    - Updated Step 4 (Guest Info) and Step 5 (Summary) styling to high-contrast legible text on elevated white surfaces.
+    - Preserved all required contract hooks and string assertions (`DEFAULT_HERO_COPY`, `DEFAULT_ACCENT_COLOR`, `isVisible("hero")`, `isVisible("rooms")`, `isVisible("booking")`, `isVisible("location")`, `public-room-action`, `PaymentQR`, `BookingDateRangePicker`, etc.).
+  - `client/src/index.css`:
+    - Removed old 2-column split (`grid-template-columns: 1fr 1.4fr`) and dark container in `.public-booking`.
+    - Styled `.public-booking` as a centered single-column layout with clean, luxury card aesthetics (`.public-booking-panel`).
+    - Scaled up the calendar day sizes to `--rdp-day-width: clamp(44px, 6vw, 64px)` and `--rdp-day-height: clamp(44px, 6vw, 64px)` for a large, centered, touch-friendly calendar.
+- **Verification**:
+  - `pnpm check` (`tsc --noEmit`): PASS (0 TypeScript errors).
+  - `pnpm test client/src/pages/PublicHotel.contract.test.ts client/src/pages/WebsiteBuilder.contract.test.ts`: PASS (24/24 tests passed).
+  - `pnpm test`: PASS (446 passed, 3 skipped; 82 test files passed, 2 skipped).
+  - `pnpm build`: PASS (Vite client + esbuild server production bundles built in 24.55s).
+
+## [2026-09-14] Website Builder block customization & reordering — DONE ✅
+- **Context**: Upgraded Website Builder to support block-level customization (visible_sections) with visual Section Block cards, ordering controls (move up / move down), and live interactive Public Preview reflecting the user-defined block layout.
+- **Changes**:
+  - `client/src/pages/WebsiteBuilder.tsx`: Implemented interactive `SectionBlockCard` components with toggle switches, block order reordering (Move Up / Move Down), per-section icons and visual styling, and enhanced `PublicPreview` displaying blocks in real time according to visibility and custom order.
+  - `client/src/lib/i18n/en.ts` & `th.ts`: Verified and ensured comprehensive bilingual translations for all website builder controls and feedback notices.
+  - `client/src/pages/WebsiteBuilder.contract.test.ts`: Preserved and validated all contract assertions.
+- **Verification**:
+  - `pnpm check` (`tsc --noEmit`): PASS (0 errors).
+  - `pnpm test`: PASS (82 test files passed, 446 tests passed).
+  - `pnpm build`: PASS (Vite client and esbuild server bundled cleanly).
+
+## [2026-09-12] Neutral public hotel template — DONE
+- **Context**: Reworked only the guest-facing `/:slug` hotel page into a neutral,
+  reusable platform baseline; admin screens and booking business logic remain unchanged.
+- **Changes**: Replaced the editorial overlay hero with a content-first responsive layout,
+  normalized typography/surfaces/cards/booking/location/footer, wired the per-hotel accent
+  color through a CSS custom property, respected every Website Builder visibility toggle,
+  and aligned all new-config defaults to `#334155`. Added localized navigation labels,
+  semantic landmarks, an accessible mobile menu, keyboard-operable room actions, progress
+  semantics, stable image dimensions, eager hero loading, and lazy room images.
+- **Verification**:
+  - `tsc --noEmit`: PASS (0 TypeScript errors).
+  - `vitest run --no-file-parallelism`: PASS (446 passed, 3 skipped; 82 files passed,
+    2 skipped). The first parallel run caused 3 unrelated 5-second timeouts; all 3 passed
+    when serialized, then the complete serialized suite passed.
+  - Production build: PASS (Vite client and esbuild server bundle).
+  - Browser QA: PASS on live hotel data at 320, 768, 1024, and 1440 px; no horizontal
+    overflow after the mobile calendar fix, mobile navigation works, and a fresh valid page
+    produced no console errors or warnings.
+- **Notes**: No commit, push, migration, database mutation, or deployment was performed.
+
 ## [2026-09-03] Booking Lifecycle v1 — both migrations applied to production — DONE ✅
 - **Context**: Sub-phase A's two migrations (`20260910_booking_lifecycle_v1.sql`,
   `20260911_add_hotel_services_catalog.sql`) were written and pushed during earlier sub-phases but
@@ -1130,3 +1233,21 @@ Write every entry so someone who has never seen this session can pick up the wor
 -   P h a s e   2 B   ( H o u s e k e e p i n g   D B   D o m a i n )   e x t r a c t e d   s u c c e s s f u l l y .   T e s t s   p a s s e d .   C o m m i t t e d   a s   5 a 3 4 9 a f . 
  
  
+
+
+## 2026-10-09 — Room occupancy and child pricing
+
+- **Project:** channel-manager-mvp-latest
+- **Current task:** Add owner-configurable occupancy and child pricing to the public booking flow.
+- **Completed:** Added per-room-type occupancy/pricing fields and public availability RPC migration + read-only verify SQL. Added EN/TH owner settings, six-step wizard guest counts and per-child measurement, occupancy filtering, per-night/stay total pricing, and server-side hold revalidation for a single room. Child thresholds are nullable with no default; public child selection stays disabled until every room type has a configured limit. Changing the shared age/height rule clears old limits.
+- **Remaining:** Human must apply `20261009_room_type_occupancy_pricing.sql` and confirm every check in `verify_20261009_room_type_occupancy_pricing.sql` passes in the production SQL editor. Then run the required independent review on the commit. Push/deploy requires explicit user approval.
+- **Blockers:** Production schema is not yet updated; the public flow needs the migration before its new query works. No production SQL was executed.
+- **Changed files:** `shared/occupancyPricing.ts`, `shared/occupancyPricing.test.ts`, `20261009_room_type_occupancy_pricing.sql`, `verify_20261009_room_type_occupancy_pricing.sql`, `server/db/booking.ts`, `server/db/hotel.ts`, `server/db/types.ts`, `server/routers/bookingRouter.ts`, `server/routers/hotelRouter.ts`, `server/publicBooking.test.ts`, `server/db.creation.test.ts`, `server/channelManager.creation.test.ts`, `client/src/pages/HotelDetail.tsx`, `client/src/pages/HotelDetail.contract.test.ts`, `client/src/pages/PublicHotel.tsx`, `client/src/pages/PublicHotel.contract.test.ts`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `specs/05-direct-booking-engine.md`.
+- **Verification:** `pnpm check` PASS (`--tsBuildInfoFile` redirected to temp because normal check attempted a forbidden write under `node_modules`); `pnpm test` PASS (89 files, 488 passed, 3 skipped); `pnpm build` PASS (existing large-client-chunk warning). Targeted `git diff --check` passes for task files. Broad diff check reports trailing whitespace in pre-existing owner edits to `.agent/handoff.md` and `client/src/index.css`. `kb-review -by codex` remains blocked because the Git index is read-only. No push or deploy.
+- **Next step:** Review and commit this feature, run `kb-review -by codex`, then ask before push.
+
+
+### Review completion addendum — 2026-10-09
+- `kb-review -by codex` PASS on clean HEAD `48043c62917c546cdabe644d1a6829a25e3e1c95`; clean-HEAD `pnpm check`, `pnpm test` (88 files passed, 2 skipped; 468 passed, 3 skipped), and `pnpm build` passed.
+- Migration pair remains unapplied; human SQL Editor apply + verify is required before deployment. No push/deploy performed.
+- The owner working-tree changes were restored after clean-HEAD verification and remain uncommitted.

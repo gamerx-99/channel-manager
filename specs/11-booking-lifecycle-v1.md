@@ -81,6 +81,14 @@ i18n sweep, was done first and tracked separately in `.agent/handoff.md`.)
 - [x] `payment.manualVerify` is a staff-only mutation gated on `operations.manage_bookings`.
 - [x] Staff bookings table surfaces all lifecycle statuses and offers approve/reject actions for `pending_verification`.
 
+## Booking party-size persistence (2026-10-10)
+- Staff-created bookings capture adult count and each child's age or height based on the selected room type rule.
+- Public step ① writes the adult count and each child's measurement to the held booking; booking list/check-in context reads and displays the persisted values.
+- TM.30 remains mapped from named guest identity records; party counts do not create anonymous export rows.
+- `20261010_booking_guest_counts.sql` and `verify_20261010_booking_guest_counts.sql` are prepared. Owner must apply the migration and confirm every verification row is PASS before this database change is considered live.
+- [x] `pnpm check`, `pnpm test`, and `pnpm build` pass for the local implementation.
+- [ ] Owner applies and verifies the guest-count migration in the production SQL editor.
+
 ## Test plan
 - `shared/bookingLifecycle.test.ts` — pure state-machine tests.
 - Existing `server/publicBooking.test.ts` — availability logic regression cover.

@@ -19,7 +19,7 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toContain('DEFAULT_HERO_COPY');
     expect(publicHotelSource).toContain('DEFAULT_ACCENT_COLOR');
     expect(publicHotelSource).toContain('Explore room types, rates, and availability directly from this hotel.');
-    expect(publicHotelSource).toContain('#954831');
+    expect(publicHotelSource).toContain('#334155');
     // Fallback via nullish coalescing
     expect(publicHotelSource).toMatch(/hero_copy.*\?\?.*DEFAULT_HERO_COPY|DEFAULT_HERO_COPY.*\?\?/s);
     expect(publicHotelSource).toMatch(/accent_color.*\?\?.*DEFAULT_ACCENT_COLOR|DEFAULT_ACCENT_COLOR.*\?\?/s);
@@ -61,6 +61,18 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   it('visible_sections fallback keeps sections visible when config absent', () => {
     expect(publicHotelSource).toContain('visible_sections');
     expect(publicHotelSource).toContain('isVisible');
+    expect(publicHotelSource).toContain('isVisible("hero")');
+    expect(publicHotelSource).toContain('isVisible("rooms")');
+    expect(publicHotelSource).toContain('isVisible("booking")');
+    expect(publicHotelSource).toContain('isVisible("location")');
+  });
+
+  it('uses semantic, keyboard-accessible controls and stable image dimensions', () => {
+    expect(publicHotelSource).toContain('className="public-skip-link"');
+    expect(publicHotelSource).toContain('aria-controls="public-navigation"');
+    expect(publicHotelSource).toContain('className="public-room-action"');
+    expect(publicHotelSource).toContain('fetchPriority="high"');
+    expect(publicHotelSource).toContain('loading="lazy"');
   });
 });
 
@@ -103,6 +115,13 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(dbSource).toContain('get_public_room_type_availability_for_guests');
     expect(publicHotelSource).not.toContain('roomTypes.map((rt) => (');
     expect(bookingRouterText).toContain('children: z.array(publicChildMeasurementSchema)');
+  });
+
+  it('persists the party size and child age or height from step one on the held booking', () => {
+    expect(publicHotelSource).toMatch(/adults,\s+children: childMeasurements/);
+    expect(dbSource).toContain('adults: input.adults');
+    expect(dbSource).toContain('children: input.children.length');
+    expect(dbSource).toContain('child_measurements: input.children');
   });
 
   it('server/db/booking.ts exposes holdRoomType and confirmBookingDetails with service persistence', () => {

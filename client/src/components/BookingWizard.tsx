@@ -20,7 +20,7 @@ const formatCurrency = (value: number | string) =>
 interface HotelData {
   id: string;
   rooms: { id: string; room_number: string; room_type_id: string; status: string }[];
-  room_types: { id: string; name: string; base_price: number | string }[];
+  room_types: { id: string; name: string; base_price: number | string; base_occupancy: number; child_rule: 'age' | 'height' }[];
   bookings: { id: string; check_in: string; check_out: string; status: string }[];
 }
 
@@ -40,6 +40,8 @@ export default function BookingWizard({
   const [checkOut, setCheckOut] = useState(displayDay(2));
   const [roomId, setRoomId] = useState('');
   const [guestName, setGuestName] = useState('');
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState<string[]>([]);
   const [source, setSource] = useState<'manual' | 'walk-in' | 'phone'>('manual');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'promptpay' | ''>('');
 
@@ -94,6 +96,7 @@ export default function BookingWizard({
   const selectedRoom = hotel.rooms.find(r => r.id === roomId);
   const roomType = selectedRoom ? hotel.room_types.find(rt => rt.id === selectedRoom.room_type_id) : null;
   const roomBasePrice = roomType ? Number(roomType.base_price) : 0;
+  const childMeasure = roomType?.child_rule === 'height' ? 'height (cm)' : 'age';
   
   const grandTotal = calculateGrandTotal(roomBasePrice, numberOfNights, services);
 
@@ -118,6 +121,11 @@ export default function BookingWizard({
     setFormError(null);
     if (!roomId) { setFormError("Select a room first."); return; }
     if (!guestName.trim()) { setFormError("Enter primary guest name."); return; }
+    const minChildMeasurement = roomType?.child_rule === 'height' ? 20 : 0;
+    const maxChildMeasurement = roomType?.child_rule === 'height' ? 250 : 17;
+    if (adults < 1 || adults > 20 || children.length > 20 || children.some(value => value === '' || !Number.isFinite(Number(value)) || Number(value) < minChildMeasurement || Number(value) > maxChildMeasurement || (roomType?.child_rule !== 'height' && !Number.isInteger(Number(value))))) {
+      setFormError('Enter a valid adult count and a measurement for every child.'); return;
+    }
     if (source === 'walk-in' && !paymentMethod) { setFormError('Select a payment method for walk-in bookings.'); return; }
 
     const hasGuestDetails = Boolean(
@@ -135,6 +143,8 @@ export default function BookingWizard({
       guest_name: guestName,
       check_in: checkInIso,
       check_out: checkOutIso,
+      adults,
+      children: children.map(value => roomType?.child_rule === 'height' ? { height_cm: Number(value) } : { age: Number(value) }),
       price: grandTotal,
       source: source,
       payment_method: paymentMethod || undefined,
@@ -178,6 +188,9 @@ export default function BookingWizard({
 
               <label>Primary Guest Name<input required value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Full name" /></label>
               <label>Booking Source<select value={source} onChange={e => setSource(e.target.value as any)}><option value="manual">Manual</option><option value="walk-in">Walk-in</option><option value="phone">Phone</option></select></label>
+              <label>Adults<input type="number" min="1" max="20" step="1" value={adults} onChange={e => setAdults(Math.max(1, Number(e.target.value) || 1))} /></label>
+              <label>Children<input type="number" min="0" max="20" step="1" value={children.length} onChange={e => setChildren(Array.from({ length: Math.max(0, Math.min(20, Number(e.target.value) || 0)) }, (_, index) => children[index] ?? ''))} /></label>
+              {children.map((value, index) => <label key={index}>Child {index + 1} {childMeasure}<input type="number" min={roomType?.child_rule === 'height' ? 20 : 0} max={roomType?.child_rule === 'height' ? 250 : 17} step={roomType?.child_rule === 'height' ? '0.5' : '1'} value={value} onChange={e => setChildren(current => current.map((child, childIndex) => childIndex === index ? e.target.value : child))} /></label>)}
               {source === 'walk-in' && (
                 <label>Payment Method<select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as any)}>
                   <option value="">Select payment method</option>
@@ -262,6 +275,7 @@ export default function BookingWizard({
                 <div><strong>Stay:</strong> {checkIn} - {checkOut} ({numberOfNights} Nights)</div>
                 <div><strong>Room:</strong> {selectedRoom?.room_number ?? 'Unassigned'} ({roomType?.name})</div>
                 <div><strong>Source:</strong> {source}</div>
+                <div><strong>Guests:</strong> {adults} adults, {children.length} children{children.length ? ` (${children.join(', ')} ${childMeasure})` : ''}</div>
               </div>
               
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>

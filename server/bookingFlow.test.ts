@@ -68,6 +68,8 @@ describe('createBooking flow', () => {
       guest_name: 'Test Guest',
       check_in: '2026-10-01',
       check_out: '2026-10-04', // 3 nights
+      adults: 3,
+      children: [{ age: 5 }, { age: 12 }],
       price: 0, // Should be ignored/overwritten by the server
       source: 'manual' as const,
       status: 'confirmed' as const,
@@ -113,6 +115,9 @@ describe('createBooking flow', () => {
       guest_name: 'Test Guest',
       check_in: '2026-10-01',
       check_out: '2026-10-04',
+      adults: 3,
+      children: 2,
+      child_measurements: [{ age: 5 }, { age: 12 }],
       price: 4700, // Calculated correctly by server!
     });
 

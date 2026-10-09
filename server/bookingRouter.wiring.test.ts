@@ -42,8 +42,14 @@ describe('channelManager.holdRoomType / confirmBookingDetails wiring', () => {
       room_type_id: 'f1a1b1c1-d1e1-41f1-81f1-111111111111',
       check_in: '2026-12-01',
       check_out: '2026-12-02',
+      adults: 3,
+      children: [{ height_cm: 96.5 }],
     })).resolves.toMatchObject({ booking_id: 'b1' });
     expect(dbMocks.holdRoomType).toHaveBeenCalledTimes(1);
+    expect(dbMocks.holdRoomType.mock.calls[0][1]).toMatchObject({
+      adults: 3,
+      children: [{ height_cm: 96.5 }],
+    });
 
     dbMocks.confirmBookingDetails.mockResolvedValueOnce({
       booking_id: 'b1',

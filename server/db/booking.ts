@@ -20,7 +20,7 @@ import type {
 export async function listBookingsForHotel(client: SupabaseClient, hotelId: string) {
   const { data, error } = await client
     .from('bookings')
-    .select('id,hotel_id,room_id,guest_name,check_in,check_out,price,source,status,created_at,rooms(room_number,room_types(name)),guests(id,booking_id,first_name,middle_name,last_name,gender,passport_no,nationality_code,birth_date,phone_no)')
+    .select('id,hotel_id,room_id,guest_name,check_in,check_out,adults,children,child_measurements,price,source,status,created_at,rooms(room_number,room_types(name)),guests(id,booking_id,first_name,middle_name,last_name,gender,passport_no,nationality_code,birth_date,phone_no)')
     .eq('hotel_id', hotelId)
     .order('check_in', { ascending: false });
   throwOnError(error);
@@ -169,7 +169,7 @@ export async function createPublicBooking(
 
   const { data: roomTypeData, error: rtError } = await adminClient
     .from('room_types')
-    .select('id,hotel_id,name,capacity,base_price')
+    .select('id,hotel_id,name,capacity,base_price,base_occupancy')
     .eq('id', input.room_type_id)
     .eq('hotel_id', hotel.id)
     .maybeSingle();
@@ -246,6 +246,9 @@ export async function createPublicBooking(
         guest_name: trimmedName,
         check_in: input.check_in,
         check_out: input.check_out,
+        adults: Number(roomType.base_occupancy) || 1,
+        children: 0,
+        child_measurements: [],
         price: totalPrice,
         source: 'walk-in',
         status: 'confirmed',
@@ -514,6 +517,9 @@ export async function holdRoomType(
         guest_name: '',
         check_in: input.check_in,
         check_out: input.check_out,
+        adults: input.adults,
+        children: input.children.length,
+        child_measurements: input.children,
         price: totalPrice,
         source: 'manual',
         status: 'held',
@@ -672,7 +678,7 @@ export async function createBookingWithGuests(
   const { data: createdBooking, error: bookingError } = await client
     .from('bookings')
     .insert(booking)
-    .select('id,hotel_id,room_id,guest_name,check_in,check_out,price,source,status,created_at')
+    .select('id,hotel_id,room_id,guest_name,check_in,check_out,adults,children,child_measurements,price,source,status,created_at')
     .single();
   throwOnError(bookingError);
   if (!createdBooking) throw new Error('Booking insert did not return a record.');

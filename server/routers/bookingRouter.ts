@@ -152,6 +152,8 @@ export const createBookingSchema = z.object({
   guest_name: z.string().trim().min(1).max(180),
   check_in: z.string().date(),
   check_out: z.string().date(),
+  adults: z.number().int().min(1).max(20).default(1),
+  children: z.array(publicChildMeasurementSchema).max(20).default([]),
   price: z.number().nonnegative(),
   source: bookingSourceSchema,
   payment_method: z.enum(['cash', 'transfer', 'promptpay']).optional(),
@@ -193,7 +195,12 @@ export const createBooking = protectedProcedure
       return rethrowDomainError(error);
     }
     try {
-      const { guests, services, ...booking } = input;
+      const { guests, services, children, ...bookingInput } = input;
+      const booking = {
+        ...bookingInput,
+        children: children.length,
+        child_measurements: children,
+      };
       const nights = calcNights(input.check_in, input.check_out);
       
       let roomBasePrice = 0;

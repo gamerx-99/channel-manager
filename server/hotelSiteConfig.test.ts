@@ -96,6 +96,6 @@ describe('hotel_site_config 42P01 graceful fallback', () => {
 
   it('defaults are exported and match PublicHotel fallback', () => {
     expect(DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY).toBe('Explore room types, rates, and availability directly from this hotel.');
-    expect(DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR).toBe('#954831');
+    expect(DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR).toBe('#334155');
   });
 });

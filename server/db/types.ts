@@ -106,6 +106,9 @@ export type BookingRecord = {
   guest_name: string;
   check_in: string;
   check_out: string;
+  adults: number;
+  children: number;
+  child_measurements: Array<{ age: number } | { height_cm: number }>;
   price: number | string;
   source: 'manual' | 'walk-in' | 'phone';
   status: BookingStatus;
@@ -277,7 +280,7 @@ export type MessageRecord = {
 
 export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY =
   'Explore room types, rates, and availability directly from this hotel.';
-export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = '#954831';
+export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = '#334155';
 
 export type HotelSiteConfigRecord = {
   hotel_id: string;

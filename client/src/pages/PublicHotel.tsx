@@ -1,5 +1,5 @@
-import { ArrowRight, CheckCircle2, MapPin, Menu, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, MapPin, Menu, X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { PaymentQR } from "@/components/PaymentQR";
@@ -8,7 +8,40 @@ import { useTranslation } from "@/lib/i18n";
 import { calculateServiceTotal } from "@shared/pricingModels";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
-export const DEFAULT_ACCENT_COLOR = "#954831";
+export const DEFAULT_ACCENT_COLOR = "#334155";
+
+const DEFAULT_ATMOSPHERE_PHOTOS = [
+  {
+    id: "default-1",
+    url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80",
+    caption: "Resort Pool & Architecture",
+  },
+  {
+    id: "default-2",
+    url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+    caption: "Deluxe Bedroom Suite",
+  },
+  {
+    id: "default-3",
+    url: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80",
+    caption: "Relaxation Poolside Lounge",
+  },
+  {
+    id: "default-4",
+    url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80",
+    caption: "Lobby & Scenic Garden",
+  },
+  {
+    id: "default-5",
+    url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80",
+    caption: "Modern Comfort Room",
+  },
+  {
+    id: "default-6",
+    url: "https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80",
+    caption: "Dining Terrace & Surroundings",
+  },
+];
 
 function getTomorrowDateString(): string {
   const d = new Date();
@@ -58,6 +91,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [wizardError, setWizardError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
+  const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
 
   const publicHotel = trpc.channelManager.publicHotel.useQuery(slug);
   const siteConfigQuery = trpc.channelManager.getHotelSiteConfig.useQuery(slug, {
@@ -136,6 +170,61 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const isVisible = (key: string) => visibleSections == null || visibleSections[key] !== false;
 
   const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
+
+  const galleryPhotos = useMemo(() => {
+    const slotBadges = [
+      t("websiteBuilder.slot1Label"),
+      t("websiteBuilder.slot2Label"),
+      t("websiteBuilder.slot3Label"),
+      t("websiteBuilder.slot4Label"),
+      t("websiteBuilder.slot5Label"),
+      t("websiteBuilder.slot6Label"),
+    ];
+    const items = [...(media ?? [])];
+    return Array.from({ length: 6 }).map((_, idx) => {
+      if (items[idx]) {
+        return {
+          id: items[idx].id,
+          url: items[idx].url,
+          caption: items[idx].caption || `${hotel.name} Photo ${idx + 1}`,
+          badge: slotBadges[idx] || `Photo ${idx + 1}`,
+        };
+      }
+      const def = DEFAULT_ATMOSPHERE_PHOTOS[idx];
+      return {
+        id: def.id,
+        url: def.url,
+        caption: `${hotel.name} — ${def.caption}`,
+        badge: slotBadges[idx],
+      };
+    });
+  }, [media, hotel?.name, t]);
+
+  const handleQuickBook = () => {
+    const bookElem = document.getElementById("book");
+    if (bookElem) {
+      bookElem.scrollIntoView({ behavior: "smooth" });
+    }
+    if (wizardStep === 1 && isDatesValid) {
+      setWizardStep(2);
+    }
+  };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (activeLightboxIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveLightboxIndex(null);
+      if (e.key === "ArrowRight") {
+        setActiveLightboxIndex(prev => (prev === null ? null : (prev + 1) % 6));
+      }
+      if (e.key === "ArrowLeft") {
+        setActiveLightboxIndex(prev => (prev === null ? null : (prev - 1 + 6) % 6));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeLightboxIndex]);
 
   const handleSelectRoom = (roomTypeId: string) => {
     setPreferredRoomTypeId(roomTypeId);
@@ -225,32 +314,84 @@ export default function PublicHotel({ slug }: { slug: string }) {
     switch (wizardStep) {
       case 1:
         return (
-          <div>
-            <BookingDateRangePicker
-              checkIn={checkIn}
-              checkOut={checkOut}
-              onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
-                setCheckIn(nextCheckIn);
-                setCheckOut(nextCheckOut);
-              }}
-              minDateIso={new Date().toISOString().slice(0, 10)}
-              accentColor={accentColor}
-            />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+            <div style={{ marginBottom: "20px", textAlign: "center", width: "100%" }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  background: "#f7faf8",
+                  border: "1px solid #dce4e0",
+                  padding: "10px 22px",
+                  borderRadius: "12px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
+                }}
+              >
+                <div style={{ textAlign: "left" }}>
+                  <small
+                    style={{
+                      display: "block",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "var(--public-muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {t("publicHotel.quickBookingCheckIn")}
+                  </small>
+                  <strong style={{ fontSize: "15px", fontWeight: 700, color: "var(--public-text)" }}>
+                    {checkIn ?? "—"}
+                  </strong>
+                </div>
+                <ArrowRight size={16} style={{ color: accentColor }} aria-hidden="true" />
+                <div style={{ textAlign: "left" }}>
+                  <small
+                    style={{
+                      display: "block",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "var(--public-muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {t("publicHotel.quickBookingCheckOut")}
+                  </small>
+                  <strong style={{ fontSize: "15px", fontWeight: 700, color: "var(--public-text)" }}>
+                    {checkOut ?? "—"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <BookingDateRangePicker
+                checkIn={checkIn}
+                checkOut={checkOut}
+                onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
+                  setCheckIn(nextCheckIn);
+                  setCheckOut(nextCheckOut);
+                }}
+                minDateIso={new Date().toISOString().slice(0, 10)}
+                accentColor={accentColor}
+              />
+            </div>
             <div style={{ width: "min(100%, 520px)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
               <label style={{ color: "var(--public-text)", fontSize: 12, fontWeight: 600 }}>{t("publicHotel.adultsLabel")}
-                <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} />
+                <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} style={{ display: "block", width: "100%", marginTop: 5, padding: 10, borderRadius: 6, border: "1px solid #d0c9ba", color: "var(--ink)", background: "#fff" }} />
               </label>
               <label style={{ color: "var(--public-text)", fontSize: 12, fontWeight: 600 }}>{t("publicHotel.childrenLabel")}
-                <select aria-label={t("publicHotel.childrenLabel")} value={children.length} disabled={!childRulesConfigured} onChange={event => setChildren(Array.from({ length: Number(event.target.value) }, (_, index) => children[index] ?? ""))}>
+                <select aria-label={t("publicHotel.childrenLabel")} value={children.length} disabled={!childRulesConfigured} onChange={event => setChildren(Array.from({ length: Number(event.target.value) }, (_, index) => children[index] ?? ""))} style={{ display: "block", width: "100%", marginTop: 5, padding: 10, borderRadius: 6, border: "1px solid #d0c9ba", color: "var(--ink)", background: childRulesConfigured ? "#fff" : "#e7e7e7" }}>
                   {Array.from({ length: 11 }, (_, count) => <option key={count} value={count}>{count}</option>)}
                 </select>
               </label>
-              {!childRulesConfigured && <p style={{ gridColumn: "1 / -1", margin: 0 }}>{t("publicHotel.childRuleNotConfigured")}</p>}
-              {children.map((value, index) => <label key={index} style={{ gridColumn: "1 / -1" }}>{t("publicHotel.childMeasurementLabel", { index: index + 1, measure: propertyChildRule === 'age' ? t("publicHotel.childAgeUnit") : t("publicHotel.childHeightUnit") })}
-                <input type="number" min="0" max={propertyChildRule === 'age' ? 17 : 250} step={propertyChildRule === 'age' ? 1 : 0.5} value={value} onChange={event => setChildren(current => current.map((child, childIndex) => childIndex === index ? event.target.value : child))} />
+              {!childRulesConfigured && <p style={{ gridColumn: "1 / -1", margin: 0, fontSize: 12, color: "var(--public-muted)" }}>{t("publicHotel.childRuleNotConfigured")}</p>}
+              {children.map((value, index) => <label key={index} style={{ gridColumn: "1 / -1", color: "var(--public-text)", fontSize: 12, fontWeight: 600 }}>{t("publicHotel.childMeasurementLabel", { index: index + 1, measure: propertyChildRule === 'age' ? t("publicHotel.childAgeUnit") : t("publicHotel.childHeightUnit") })}
+                <input type="number" min="0" max={propertyChildRule === 'age' ? 17 : 250} step={propertyChildRule === 'age' ? 1 : 0.5} value={value} onChange={event => setChildren(current => current.map((child, childIndex) => childIndex === index ? event.target.value : child))} style={{ display: "block", width: "100%", marginTop: 5, padding: 10, borderRadius: 6, border: "1px solid #d0c9ba", color: "var(--ink)", background: "#fff" }} />
               </label>)}
             </div>
-            <div style={{ marginTop: "18px", textAlign: "right" }}>
+            <div style={{ marginTop: "26px", width: "100%", display: "flex", justifyContent: "center" }}>
               <button
                 type="button"
                 className="button public-button"
@@ -260,11 +401,23 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   backgroundColor: accentColor,
                   borderColor: accentColor,
                   color: "#ffffff",
-                  opacity: !isDatesValid || !guestsValid ? 0.6 : 1,
-                  cursor: !isDatesValid || !guestsValid ? "not-allowed" : "pointer",
+                  opacity: !isDatesValid ? 0.6 : 1,
+                  cursor: !isDatesValid ? "not-allowed" : "pointer",
+                  width: "min(100%, 360px)",
+                  minHeight: "52px",
+                  padding: "14px 32px",
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
                 }}
               >
-                {t("publicHotel.wizardNext")} <ArrowRight size={14} />
+                <span>{t("publicHotel.wizardNext")}</span>
+                <ArrowRight size={18} />
               </button>
             </div>
           </div>
@@ -433,11 +586,11 @@ export default function PublicHotel({ slug }: { slug: string }) {
       case 4:
         return (
           <form onSubmit={handleConfirmDetails} style={{ display: "grid", gap: "12px" }}>
-            <h4 style={{ margin: "0 0 4px", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#e8eee8" }}>
+            <h4 style={{ margin: "0 0 4px", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--public-text)", fontWeight: 700 }}>
               {t("publicHotel.guestInformation")}
             </h4>
             <div>
-              <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600 }}>
+              <label style={{ display: "block", color: "var(--public-text)", fontSize: "11px", fontWeight: 600 }}>
                 {t("publicHotel.fullName")}
               </label>
               <input
@@ -451,7 +604,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600 }}>
+                <label style={{ display: "block", color: "var(--public-text)", fontSize: "11px", fontWeight: 600 }}>
                   {t("publicHotel.phoneNumber")}
                 </label>
                 <input
@@ -463,7 +616,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 />
               </div>
               <div>
-                <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600 }}>
+                <label style={{ display: "block", color: "var(--public-text)", fontSize: "11px", fontWeight: 600 }}>
                   {t("publicHotel.emailAddress")}
                 </label>
                 <input
@@ -476,7 +629,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
               </div>
             </div>
             <div>
-              <label style={{ display: "block", color: "#e8eee8", fontSize: "11px", fontWeight: 600 }}>
+              <label style={{ display: "block", color: "var(--public-text)", fontSize: "11px", fontWeight: 600 }}>
                 {t("publicHotel.specialRequestsLabel")}
               </label>
               <textarea
@@ -511,33 +664,33 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
       case 5:
         return (
-          <div style={{ background: "rgba(255,255,255,0.06)", padding: "20px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <h4 style={{ margin: "0 0 14px", fontSize: "14px", color: "#ffffff" }}>{t("publicHotel.summaryTitle")}</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px", color: "#e8eee8", marginBottom: "16px" }}>
-              <div><strong>{t("publicHotel.summaryProperty")}</strong> {hotel.name}</div>
-              <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
-              <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
-              <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
-              <div><strong>{t("publicHotel.summaryGuests")}</strong> {t("publicHotel.adultsLabel")}: {adults}, {t("publicHotel.childrenLabel")}: {children.length}</div>
+          <div style={{ background: "#f8faf9", padding: "20px", borderRadius: "10px", border: "1px solid #e1e8e4" }}>
+            <h4 style={{ margin: "0 0 14px", fontSize: "14px", color: "var(--public-text)", fontWeight: 700 }}>{t("publicHotel.summaryTitle")}</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px", color: "var(--public-muted)", marginBottom: "16px" }}>
+              <div><strong style={{ color: "var(--public-text)" }}>{t("publicHotel.summaryProperty")}</strong> {hotel.name}</div>
+              <div><strong style={{ color: "var(--public-text)" }}>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
+              <div><strong style={{ color: "var(--public-text)" }}>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
+              <div><strong style={{ color: "var(--public-text)" }}>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
+              <div><strong style={{ color: "var(--public-text)" }}>{t("publicHotel.summaryGuests")}</strong> {adults} {t("publicHotel.adultsLabel")} · {children.length} {t("publicHotel.childrenLabel")}</div>
             </div>
             {(servicesQuery.data ?? []).some((s) => (selectedServiceQty[s.id] ?? 0) > 0) && (
               <div style={{ marginBottom: "16px" }}>
-                <div style={{ fontSize: "12px", color: "#e8eee8", fontWeight: 600, marginBottom: "8px" }}>{t("publicHotel.summaryServices")}</div>
+                <div style={{ fontSize: "12px", color: "var(--public-text)", fontWeight: 600, marginBottom: "8px" }}>{t("publicHotel.summaryServices")}</div>
                 <div style={{ display: "grid", gap: "6px" }}>
                   {(servicesQuery.data ?? [])
                     .filter((s) => (selectedServiceQty[s.id] ?? 0) > 0)
                     .map((s) => (
-                      <div key={s.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#e8eee8" }}>
+                      <div key={s.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--public-muted)" }}>
                         <span>{s.name} x {selectedServiceQty[s.id]}</span>
-                        <span>฿{serviceLineTotal(s, selectedServiceQty[s.id]).toLocaleString()}</span>
+                        <strong style={{ color: "var(--public-text)" }}>฿{serviceLineTotal(s, selectedServiceQty[s.id]).toLocaleString()}</strong>
                       </div>
                     ))}
                 </div>
               </div>
             )}
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, color: "#ffffff" }}>
+            <div style={{ borderTop: "1px solid #dce4df", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, color: "var(--public-text)" }}>
               <span>{t("publicHotel.summaryTotal")}</span>
-              <span>฿{(confirmDetailsMutation.data?.amount ?? (heldBooking?.total_price ?? 0) + selectedServicesTotal).toLocaleString()}</span>
+              <span style={{ color: "var(--pine)" }}>฿{(confirmDetailsMutation.data?.amount ?? (heldBooking?.total_price ?? 0) + selectedServicesTotal).toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "24px" }}>
               <button type="button" className="button button-quiet" onClick={() => setWizardStep(4)}>
@@ -608,29 +761,159 @@ export default function PublicHotel({ slug }: { slug: string }) {
     }
   };
 
+  const primaryCta = isVisible("booking")
+    ? { href: "#book", label: t("publicHotel.navCheckDates") }
+    : isVisible("rooms")
+      ? { href: "#stay", label: t("publicHotel.heroViewRooms") }
+      : isVisible("location")
+        ? { href: "#location", label: t("publicHotel.navLocation") }
+        : isVisible("story")
+          ? { href: "#story", label: t("publicHotel.storyEyebrow") }
+          : null;
+
   return (
-    <div className="public-page">
+    <div className="public-page" style={{ "--public-accent": accentColor } as React.CSSProperties}>
+      <a className="public-skip-link" href="#public-main">{t("publicHotel.skipToContent")}</a>
       <header className="public-nav">
-        <Link href={`/${hotel.slug}`} className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></Link>
-        <nav className={menuOpen ? "is-open" : ""}>
-          <a href="#stay">{t("publicHotel.navRooms")}</a>
-          <a href="#location">{t("publicHotel.navLocation")}</a>
-          <a href="#book" className="public-nav-cta" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>{t("publicHotel.navCheckDates")} <ArrowRight size={14} /></a>
+        <Link href={`/${hotel.slug}`} className="public-brand" aria-label={hotel.name}>
+          <span className="public-brand-mark" aria-hidden="true">{hotel.name.slice(0, 1)}</span>
+          <span>{hotel.name}</span>
+        </Link>
+        <nav id="public-navigation" className={menuOpen ? "is-open" : ""} aria-label={t("publicHotel.navigationAriaLabel")}>
+          {isVisible("rooms") ? <a href="#stay" onClick={() => setMenuOpen(false)}>{t("publicHotel.navRooms")}</a> : null}
+          {isVisible("location") ? <a href="#location" onClick={() => setMenuOpen(false)}>{t("publicHotel.navLocation")}</a> : null}
+          {isVisible("booking") ? <a href="#book" className="public-nav-cta" onClick={() => setMenuOpen(false)}>{t("publicHotel.navCheckDates")} <ArrowRight size={14} aria-hidden="true" /></a> : null}
         </nav>
-        <button className="public-menu" type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={t("publicHotel.menuToggleAria")}>{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>
+        <button className="public-menu" type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={t(menuOpen ? "publicHotel.menuCloseAria" : "publicHotel.menuToggleAria")} aria-expanded={menuOpen} aria-controls="public-navigation">{menuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}</button>
       </header>
-      <main>
-        <section className="public-hero">
-          {heroImage ? <img src={heroImage} alt={hotel.name} /> : <div className="public-hero-image-fallback" aria-hidden="true" />}
-          <div className="public-hero-overlay" />
-          <div className="public-hero-content">
-            <div className="eyebrow light">{t("publicHotel.heroEyebrow")}</div>
-            <h1>{hotel.name}</h1>
-            <p>{heroCopy}</p>
-            <a className="button public-button" href="#stay" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>{t("publicHotel.heroViewRooms")} <ArrowRight size={15} /></a>
+      <main id="public-main">
+        {isVisible("hero") ? (
+          <section className="public-hero" aria-labelledby="public-hotel-title">
+            <div className="public-hero-content">
+              <div className="eyebrow">{t("publicHotel.heroEyebrow")}</div>
+              <h1 id="public-hotel-title">{hotel.name}</h1>
+              <p>{heroCopy}</p>
+              {primaryCta ? <a className="button public-button" href={primaryCta.href}>{primaryCta.label} <ArrowRight size={15} aria-hidden="true" /></a> : null}
+            </div>
+            <figure className="public-hero-media">
+              {heroImage ? <img src={heroImage} alt={media.find(item => item.is_hero)?.caption ?? hotel.name} width={1600} height={1000} fetchPriority="high" /> : <div className="public-hero-image-fallback" aria-hidden="true" />}
+              <figcaption className="public-hero-caption"><MapPin size={15} aria-hidden="true" /><span>{hotel.address}</span></figcaption>
+            </figure>
+          </section>
+        ) : null}
+
+        {/* 6-Photo Atmosphere & Room Gallery */}
+        <section className="public-gallery" id="gallery" aria-labelledby="public-gallery-title">
+          <div className="public-section-heading">
+            <div>
+              <div className="eyebrow">{t("publicHotel.galleryEyebrow")}</div>
+              <h2 id="public-gallery-title">
+                {t("publicHotel.galleryTitle")} <span>{t("publicHotel.galleryTitleHighlight")}</span>
+              </h2>
+            </div>
+            <p>{t("publicHotel.galleryDesc")}</p>
           </div>
-          <div className="public-hero-caption"><span>{t("publicHotel.heroCountry")}</span><span>{hotel.address}</span></div>
+          <div className="public-gallery-grid">
+            {galleryPhotos.map((item, idx) => (
+              <div
+                key={item.id}
+                className={`public-gallery-item ${idx === 0 ? "slot-hero" : ""}`}
+                onClick={() => setActiveLightboxIndex(idx)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveLightboxIndex(idx); }}
+                aria-label={t("publicHotel.galleryPhotoAria", { index: idx + 1 })}
+              >
+                <img
+                  src={item.url}
+                  alt={item.caption}
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+                <span className="public-gallery-badge">{item.badge}</span>
+                <div className="public-gallery-overlay">
+                  <span className="public-gallery-caption">{item.caption}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
+
+        {/* Big Centered Booking Calendar Section (ช่วงเดียว ปฏิทินใหญ่กลางๆ) */}
+        {isVisible("booking") ? (
+          <section className="public-booking" id="book" aria-labelledby="public-booking-title">
+            <div className="public-booking-copy">
+              <div className="eyebrow">{t("publicHotel.bookingEyebrow")}</div>
+              <h2 id="public-booking-title">{t("publicHotel.bookingTitle")} <span>{t("publicHotel.bookingTitleHighlight")}</span></h2>
+              <p>{t("publicHotel.bookingDesc")}</p>
+            </div>
+
+            <div className="public-booking-panel">
+              <div className="public-wizard-progress">
+                <span>{t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}</span>
+                <progress value={wizardStep} max={6} aria-label={t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })} />
+              </div>
+
+              {wizardError && (
+                <div className="public-wizard-error" role="alert">
+                  {wizardError}
+                </div>
+              )}
+
+              {renderStepContent()}
+            </div>
+          </section>
+        ) : null}
+
+        {isVisible("rooms") ? <section className="public-rooms" id="stay" aria-labelledby="public-rooms-title">
+          <div className="public-section-heading">
+            <div>
+              <div className="eyebrow">{t("publicHotel.roomsEyebrow")}</div>
+              <h2 id="public-rooms-title">{t("publicHotel.roomsTitle")} <span>{t("publicHotel.roomsTitleHighlight")}</span></h2>
+            </div>
+            <p>{t("publicHotel.roomsDesc")}</p>
+          </div>
+          {roomTypes.length ? (
+            <div className="public-room-grid">
+              {roomTypes.map((room, index) => (
+                <article className="public-room-card" key={room.id}>
+                  <div className="public-room-image">
+                    {media[index + 1]?.url ? (
+                      <img src={media[index + 1].url} alt={media[index + 1].caption ?? room.name} width={720} height={480} loading="lazy" decoding="async" />
+                    ) : heroImage ? (
+                      <img src={heroImage} alt="" width={720} height={480} loading="lazy" decoding="async" />
+                    ) : (
+                      <div className="public-room-image-fallback" aria-hidden="true" />
+                    )}
+                  </div>
+                  <div className="public-room-copy">
+                    <div>
+                      <h3>{room.name}</h3>
+                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.base_price).toLocaleString() })}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button
+                        className="public-room-book-cta"
+                        type="button"
+                        style={{ backgroundColor: accentColor, borderColor: accentColor }}
+                        onClick={() => handleSelectRoom(room.id)}
+                        aria-label={t("publicHotel.selectRoomAria", { room: room.name })}
+                      >
+                        <span>{t("publicHotel.bookThisRoom")}</span>
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </button>
+                      <button className="public-room-action" type="button" onClick={() => handleSelectRoom(room.id)} aria-label={t("publicHotel.selectRoomAria", { room: room.name })}>
+                        <ArrowRight size={17} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="public-empty-state">{t("publicHotel.noRoomsPublished")}</div>
+          )}
+        </section> : null}
 
         {isVisible("story") ? (
           <section className="public-intro" id="story">
@@ -642,90 +925,111 @@ export default function PublicHotel({ slug }: { slug: string }) {
           </section>
         ) : null}
 
-        <section className="public-rooms" id="stay">
-          <div className="public-section-heading">
-            <div>
-              <div className="eyebrow">{t("publicHotel.roomsEyebrow")}</div>
-              <h2>{t("publicHotel.roomsTitle")}<br /><i>{t("publicHotel.roomsTitleHighlight")}</i></h2>
-            </div>
-            <p>{t("publicHotel.roomsDesc")}</p>
-          </div>
-          {roomTypes.length ? (
-            <div className="public-room-grid">
-              {roomTypes.map((room, index) => (
-                <article
-                  className="public-room-card cursor-pointer"
-                  key={room.id}
-                  onClick={() => handleSelectRoom(room.id)}
-                >
-                  <div className="public-room-image">
-                    {media[index + 1]?.url ? (
-                      <img src={media[index + 1].url} alt={media[index + 1].caption ?? room.name} />
-                    ) : heroImage ? (
-                      <img src={heroImage} alt="" />
-                    ) : (
-                      <div className="public-room-image-fallback" />
-                    )}
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                  </div>
-                  <div className="public-room-copy">
-                    <div>
-                      <h3>{room.name}</h3>
-                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.base_price).toLocaleString() })}</span>
-                    </div>
-                    <ArrowRight size={17} />
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="public-empty-state">{t("publicHotel.noRoomsPublished")}</div>
-          )}
-        </section>
-
-        {isVisible("booking") ? (
-          <section className="public-booking" id="book" style={{ background: "var(--pine)" }}>
-            <div>
-              <div className="eyebrow">{t("publicHotel.bookingEyebrow")}</div>
-              <h2>{t("publicHotel.bookingTitle")}<br /><i>{t("publicHotel.bookingTitleHighlight")}</i></h2>
-              <p>{t("publicHotel.bookingDesc")}</p>
-            </div>
-
-            <div style={{ background: "rgba(255,255,255,0.06)", padding: "24px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.15)" }}>
-              <div style={{ color: "#e8eee8", fontSize: "11px", fontWeight: 600, marginBottom: "14px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}
-              </div>
-
-              {wizardError && (
-                <div style={{ background: "#fee2e2", color: "#991b1b", padding: "12px 14px", borderRadius: "6px", fontSize: "12px", marginBottom: "16px" }}>
-                  {wizardError}
-                </div>
-              )}
-
-              {renderStepContent()}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="public-details" id="location">
+        {isVisible("location") ? <section className="public-details" id="location" aria-labelledby="public-location-title">
           <div>
             <div className="eyebrow">{t("publicHotel.locationEyebrow")}</div>
-            <h2>{t("publicHotel.locationTitle")}<br /><i>{t("publicHotel.locationTitleHighlight")}</i></h2>
+            <h2 id="public-location-title">{t("publicHotel.locationTitle")} <span>{t("publicHotel.locationTitleHighlight")}</span></h2>
           </div>
           <div className="location-card">
-            <MapPin size={16} />
+            <MapPin size={16} aria-hidden="true" />
             <div>
               <strong>{hotel.name}</strong>
-              <span>{hotel.address}</span>
+              <address>{hotel.address}</address>
             </div>
           </div>
-        </section>
+        </section> : null}
       </main>
       <footer className="public-footer">
-        <div className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></div>
+        <div className="public-brand"><span className="public-brand-mark" aria-hidden="true">{hotel.name.slice(0, 1)}</span><span>{hotel.name}</span></div>
         <span>© {new Date().getFullYear()} {hotel.name}</span>
         <span>{t("publicHotel.footerManagedSecurely")}</span>
       </footer>
+
+      {/* Lightbox Modal for 6-photo gallery */}
+      {activeLightboxIndex !== null && (
+        <div
+          className="public-lightbox-backdrop"
+          onClick={() => setActiveLightboxIndex(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="public-lightbox-dialog" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="public-lightbox-close"
+              onClick={() => setActiveLightboxIndex(null)}
+              aria-label="Close photo view"
+            >
+              <X size={20} />
+            </button>
+            <button
+              type="button"
+              className="public-lightbox-nav public-lightbox-prev"
+              onClick={() => setActiveLightboxIndex((activeLightboxIndex - 1 + 6) % 6)}
+              aria-label="Previous photo"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              type="button"
+              className="public-lightbox-nav public-lightbox-next"
+              onClick={() => setActiveLightboxIndex((activeLightboxIndex + 1) % 6)}
+              aria-label="Next photo"
+            >
+              <ChevronRight size={24} />
+            </button>
+            <div className="public-lightbox-image-wrap">
+              <img
+                src={galleryPhotos[activeLightboxIndex]?.url}
+                alt={galleryPhotos[activeLightboxIndex]?.caption}
+              />
+            </div>
+            <div className="public-lightbox-bar">
+              <div>
+                <strong style={{ fontSize: "14px", display: "block" }}>
+                  {galleryPhotos[activeLightboxIndex]?.caption}
+                </strong>
+                <small style={{ color: "rgba(255,255,255,0.7)" }}>
+                  {galleryPhotos[activeLightboxIndex]?.badge} · {activeLightboxIndex + 1} / 6
+                </small>
+              </div>
+              <button
+                type="button"
+                className="public-quick-cta"
+                style={{ backgroundColor: accentColor, borderColor: accentColor }}
+                onClick={() => {
+                  setActiveLightboxIndex(null);
+                  handleQuickBook();
+                }}
+              >
+                {t("publicHotel.quickBookingCta")} <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Sticky Booking Bar */}
+      <div className="public-sticky-booking md:hidden" role="complementary" aria-label="Mobile booking action">
+        <div>
+          <small style={{ display: "block", fontSize: "10px", color: "#5a6e64" }}>
+            {t("publicHotel.quickBookingInstant")}
+          </small>
+          <strong style={{ fontSize: "13px", fontWeight: 700, color: "var(--public-text)" }}>
+            {roomTypes[0]
+              ? t("publicHotel.mobileStickyFrom", { price: Number(roomTypes[0].base_price).toLocaleString() })
+              : hotel.name}
+          </strong>
+        </div>
+        <button
+          type="button"
+          className="public-room-book-cta"
+          style={{ backgroundColor: accentColor, borderColor: accentColor }}
+          onClick={handleQuickBook}
+        >
+          {t("publicHotel.mobileStickyBook")} <ArrowRight size={14} aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 }
