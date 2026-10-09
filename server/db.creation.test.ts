@@ -133,6 +133,12 @@ describe('updateManagedRoomType', () => {
     const migration = readFileSync(resolve(process.cwd(), '20261009_room_type_occupancy_pricing.sql'), 'utf8');
     expect(migration).toMatch(/target_capacity IS DISTINCT FROM current_capacity[\s\S]*?occupancy_pricing[\s\S]*?child_rates/);
   });
+
+  it('uses supported PostgreSQL JSONB functions in the read-only verify script', () => {
+    const verify = readFileSync(resolve(process.cwd(), 'verify_20261009_room_type_occupancy_pricing.sql'), 'utf8');
+    expect(verify).toMatch(/COUNT\(\*\) FROM jsonb_object_keys\(rt\.occupancy_pricing\)/);
+    expect(verify).not.toContain('jsonb_object_length');
+  });
 });
 
 describe('deleteManagedRoomType', () => {

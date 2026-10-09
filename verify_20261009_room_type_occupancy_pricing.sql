@@ -35,7 +35,7 @@ SELECT 'all_guest_levels_have_explicit_configuration',
   CASE WHEN NOT EXISTS (
     SELECT 1 FROM public.room_types rt
     WHERE jsonb_typeof(rt.occupancy_pricing) IS DISTINCT FROM 'object'
-      OR jsonb_object_length(rt.occupancy_pricing) <> rt.max_occupancy
+      OR (SELECT COUNT(*) FROM jsonb_object_keys(rt.occupancy_pricing)) <> rt.max_occupancy
       OR EXISTS (
         SELECT 1 FROM generate_series(1, rt.max_occupancy) AS levels(guest_count)
         WHERE NOT (rt.occupancy_pricing ? levels.guest_count::text)
