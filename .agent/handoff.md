@@ -1,5 +1,13 @@
 # Handoff log
 
+## [2026-10-09 09:52] Public inventory RPC follow-up
+- Project: D:\system make\channel-manager-mvp-latest.
+- Completed: public availability now reads room types under the published-hotel RLS policy and gets inventory through get_public_room_type_availability, which returns only room-type IDs and available counts. Anonymous users do not select from ooms or ookings. Calendar occupancy is scoped to its visible date range; check-in/out uses shared per-hotel permission logic.
+- Verification: pnpm check passed; pnpm test passed (87 files, 458 passed, 3 skipped); pnpm build passed with the existing chunk-size warning. No production SQL was executed.
+- Remaining: human review/apply 20261009_public_room_type_rls.sql, 20261009_public_booking_inventory.sql, and 20261009_booking_lifecycle_checkin_checkout.sql; run each matching verify script. Deployment must wait for all PASS results.
+- Blockers: none for local code; production migrations and final independent review are pending.
+- Changed files: committed in the latest local fix series; specs/05-direct-booking-engine.md and specs/11-booking-lifecycle-v1.md show pending production work.
+- Next step: final kb-review -by codex; after PASS, ask the user before push/deploy and wait for SQL verification.
 ## [2026-10-09 09:46] Channel Manager UI remediation and migration handoff
 - Project: D:\system make\channel-manager-mvp-latest.
 - Completed: published-hotel-only room-type RLS migration; normalized booking room relations; corrected calendar availability for active bookings in the visible range; check-in/out transitions use the lifecycle RPC and per-hotel permission helper; Communications is off by default behind VITE_FEATURE_COMMUNICATIONS.
