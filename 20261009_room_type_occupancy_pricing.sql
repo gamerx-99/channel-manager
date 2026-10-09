@@ -137,6 +137,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.get_public_room_type_availability_for_guests(

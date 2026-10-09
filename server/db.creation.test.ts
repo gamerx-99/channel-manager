@@ -146,6 +146,13 @@ describe('updateManagedRoomType', () => {
     expect(migration).toContain('CROSS JOIN LATERAL (');
     expect(migration).not.toMatch(/\) guest_counts ON true/);
   });
+
+  it('explicitly revokes anonymous execute access from the room type update RPC', () => {
+    const migration = readFileSync(resolve(process.cwd(), '20261009_room_type_occupancy_pricing.sql'), 'utf8');
+    const verify = readFileSync(resolve(process.cwd(), 'verify_20261009_room_type_occupancy_pricing.sql'), 'utf8');
+    expect(migration).toMatch(/REVOKE EXECUTE ON FUNCTION public\.update_room_type_with_occupancy_config\(uuid, uuid, text, integer, numeric, jsonb\) FROM anon;/);
+    expect(verify).toContain("NOT has_function_privilege('anon', 'public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)', 'EXECUTE')");
+  });
 });
 
 describe('deleteManagedRoomType', () => {
