@@ -23,16 +23,22 @@ export async function listBookingsForHotel(client: SupabaseClient, hotelId: stri
     .eq('hotel_id', hotelId)
     .order('check_in', { ascending: false });
   throwOnError(error);
+  type JoinedRoomType = { name: string };
+  type JoinedRoom = { room_number: string; room_types: JoinedRoomType | JoinedRoomType[] | null };
+  type Relation<T> = T | T[] | null;
   type JoinedBooking = Omit<BookingRecord, 'rooms'> & {
-    rooms: Array<{ room_number: string; room_types: Array<{ name: string }> }>;
+    rooms: Relation<JoinedRoom>;
   };
   const joinedRows = (data ?? []) as unknown as JoinedBooking[];
+  const firstRelation = <T,>(relation: Relation<T>): T | null =>
+    Array.isArray(relation) ? relation[0] ?? null : relation;
   return joinedRows.map(row => {
-    const room = row.rooms[0] ?? null;
+    const room = firstRelation(row.rooms);
+    const roomType = firstRelation(room?.room_types ?? null);
     return {
       ...row,
       rooms: room
-        ? { room_number: room.room_number, room_types: room.room_types[0] ?? null }
+        ? { room_number: room.room_number, room_types: roomType }
         : null,
     };
   });
