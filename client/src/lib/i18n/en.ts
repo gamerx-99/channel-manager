@@ -323,6 +323,8 @@ const en = {
     statusCancelled: "Cancelled",
     approveVerification: "Approve",
     rejectVerification: "Reject",
+    checkInAction: "Check in",
+    checkOutAction: "Check out",
   },
   hotelDetail: {
     loadingTitle: "Loading hotel details…",

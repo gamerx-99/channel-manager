@@ -318,6 +318,32 @@ export async function logBookingStatusChange(
   throwOnError(error);
 }
 
+export async function transitionBookingStatus(
+  client: SupabaseClient,
+  input: { booking_id: string; hotel_id: string; to_status: 'checked_in' | 'checked_out' },
+) {
+  const { data, error } = await client.rpc('transition_booking_status', {
+    target_booking_id: input.booking_id,
+    target_hotel_id: input.hotel_id,
+    target_status: input.to_status,
+  });
+  if (error) {
+    if (error.code === '42501') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to check guests in or out.' });
+    }
+    if (error.code === 'P0002') {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+    }
+    if (error.code === '22023') {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: error.message });
+    }
+    throw error;
+  }
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Booking status transition returned no result.' });
+  return result;
+}
+
 export async function expireBookingIfPast(
   client: SupabaseClient,
   bookingId: string,

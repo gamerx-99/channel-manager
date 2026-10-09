@@ -12,6 +12,7 @@ import {
   holdRoomType as dbHoldRoomType,
   confirmBookingDetails as dbConfirmBookingDetails,
   listBookingsForHotel,
+  transitionBookingStatus as dbTransitionBookingStatus,
 } from '../db';
 import { createSupabaseAdminClient } from '../supabase';
 import {
@@ -79,6 +80,23 @@ export const bookings = protectedProcedure.input(hotelIdSchema).query(async ({ c
     return rethrowDomainError(error);
   }
 });
+
+export const transitionBookingStatusSchema = z.object({
+  hotel_id: hotelIdSchema,
+  booking_id: z.string().uuid(),
+  to_status: z.enum(['checked_in', 'checked_out']),
+});
+
+export const transitionBookingStatus = protectedProcedure
+  .input(transitionBookingStatusSchema)
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_checkin_checkout');
+    try {
+      return await dbTransitionBookingStatus(rlsClient(ctx.user.accessToken), input);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
 
 export const exportTm30 = protectedProcedure.input(hotelIdSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input, 'operations.export_tm30');

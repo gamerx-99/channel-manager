@@ -71,6 +71,7 @@ import {
 } from './routers/hotelRouter';
 import {
   bookings,
+  transitionBookingStatus,
   exportTm30,
   previewTm30,
   createBooking,
@@ -116,6 +117,7 @@ export const appRouter = router({
     deleteHotelServiceProcedure,
     listHotelServicesProcedure,
     bookings,
+    transitionBookingStatus,
     exportTm30,
     previewTm30,
     availability,

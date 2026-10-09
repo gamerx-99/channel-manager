@@ -325,6 +325,8 @@ const th: TranslationDictionary = {
     statusCancelled: "ยกเลิกแล้ว",
     approveVerification: "อนุมัติ",
     rejectVerification: "ปฏิเสธ",
+    checkInAction: "เช็คอิน",
+    checkOutAction: "เช็คเอาท์",
   },
   hotelDetail: {
     loadingTitle: "กำลังโหลดข้อมูลโรงแรม",
