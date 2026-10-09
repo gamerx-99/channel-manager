@@ -252,7 +252,15 @@ export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mut
     if (existingRules.size && !existingRules.has(childRule)) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'All room types in a hotel must use the same child measurement rule.' });
     }
-    return await createManagedRoomType(client, { ...input, child_rule: childRule });
+    const childRuleLimit = input.child_rule_limit ?? hotel.room_types[0]?.child_rule_limit ?? null;
+    if (childRule === 'height' && childRuleLimit == null) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'A child height limit is required for this room type.' });
+    }
+    return await createManagedRoomType(client, {
+      ...input,
+      child_rule: childRule,
+      ...(childRule === 'height' || input.child_rule_limit !== undefined ? { child_rule_limit: childRuleLimit } : {}),
+    });
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);

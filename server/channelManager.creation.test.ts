@@ -194,4 +194,47 @@ describe('channelManager.createRoomType', () => {
 
     expect(dbMocks.createManagedRoomType).not.toHaveBeenCalled();
   });
+
+  it('inherits the shared height limit when creating another room type', async () => {
+    const hotelId = '88ed76e4-cc93-4aa7-9c4d-30999d35ada4';
+    dbMocks.getManagedHotel.mockReset().mockResolvedValueOnce({
+      id: hotelId,
+      room_types: [{ child_rule: 'height', child_rule_limit: 160 }],
+    });
+    dbMocks.createManagedRoomType.mockReset().mockResolvedValueOnce({ id: 'room-type-created' });
+    const app = await caller('hotel_owner');
+
+    await expect(app.channelManager.createRoomType({
+      hotel_id: hotelId,
+      name: 'Family Room',
+      capacity: 3,
+      base_price: 2500,
+      quantity: 1,
+    })).resolves.toEqual({ id: 'room-type-created' });
+
+    expect(dbMocks.createManagedRoomType).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      child_rule: 'height',
+      child_rule_limit: 160,
+    }));
+  });
+
+  it('requires a height limit when no sibling has one to inherit', async () => {
+    const hotelId = '88ed76e4-cc93-4aa7-9c4d-30999d35ada4';
+    dbMocks.getManagedHotel.mockReset().mockResolvedValueOnce({
+      id: hotelId,
+      room_types: [{ child_rule: 'height', child_rule_limit: null }],
+    });
+    dbMocks.createManagedRoomType.mockReset();
+    const app = await caller('hotel_owner');
+
+    await expect(app.channelManager.createRoomType({
+      hotel_id: hotelId,
+      name: 'Family Room',
+      capacity: 3,
+      base_price: 2500,
+      quantity: 1,
+    })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+    expect(dbMocks.createManagedRoomType).not.toHaveBeenCalled();
+  });
 });
