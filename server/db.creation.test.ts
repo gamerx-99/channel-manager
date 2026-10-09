@@ -140,6 +140,12 @@ describe('updateManagedRoomType', () => {
     expect(verify).toMatch(/COUNT\(\*\) FROM jsonb_object_keys\(rt\.occupancy_pricing\)/);
     expect(verify).not.toContain('jsonb_object_length');
   });
+
+  it('uses valid CROSS JOIN LATERAL syntax in the availability RPC migration', () => {
+    const migration = readFileSync(resolve(process.cwd(), '20261009_room_type_occupancy_pricing.sql'), 'utf8');
+    expect(migration).toContain('CROSS JOIN LATERAL (');
+    expect(migration).not.toMatch(/\) guest_counts ON true/);
+  });
 });
 
 describe('deleteManagedRoomType', () => {

@@ -187,7 +187,7 @@ BEGIN
             )
         END)::integer AS qualifying_children
       FROM jsonb_array_elements(target_children) child(value)
-    ) guest_counts ON true
+    ) guest_counts
     WHERE h.id = target_hotel_id
       AND h.public_enabled = true
       AND target_adults + (jsonb_array_length(target_children) - guest_counts.qualifying_children)
