@@ -204,7 +204,10 @@ export const createBooking = protectedProcedure
 
 export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAvailabilitySchema).query(async ({ input }) => {
   try {
-    return await getPublicHotelAvailability(rlsClient(), input.slug, input.check_in, input.check_out);
+    // The public availability response is deliberately aggregated by the server.
+    // Use the admin client only after the DB helper checks public_enabled for this slug;
+    // do not grant anon direct access to rooms or bookings to calculate inventory.
+    return await getPublicHotelAvailability(createSupabaseAdminClient(), input.slug, input.check_in, input.check_out);
   } catch (error) {
     return rethrowDomainError(error);
   }
