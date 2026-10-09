@@ -40,6 +40,7 @@ import {
 } from './routers/staffRouter';
 import {
   availability,
+  bookingOccupancy,
   updateAvailabilityProcedure as updateAvailability,
   createRateOverrideProcedure as createRateOverride,
   listRateOverridesProcedure as listRateOverrides,
@@ -118,6 +119,7 @@ export const appRouter = router({
     exportTm30,
     previewTm30,
     availability,
+    bookingOccupancy,
     createBooking,
     updateAvailability,
     createRateOverride,

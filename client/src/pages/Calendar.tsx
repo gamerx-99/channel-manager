@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
+import { getAvailableRoomCount, getBookedRoomCountForDate } from "./calendarAvailability";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 type CalendarViewMode = "week" | "month";
@@ -90,6 +91,7 @@ export default function Calendar({ id }: { id: string }) {
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id);
   const availabilityQuery = trpc.channelManager.availability.useQuery(id);
+  const bookingOccupancyQuery = trpc.channelManager.bookingOccupancy.useQuery(id);
   const updateAvailability = trpc.channelManager.updateAvailability.useMutation({
     onSuccess: async () => {
       await utils.channelManager.availability.invalidate(id);
@@ -110,14 +112,15 @@ export default function Calendar({ id }: { id: string }) {
   const retryAvailability = () => {
     void hotelQuery.refetch();
     void availabilityQuery.refetch();
+    void bookingOccupancyQuery.refetch();
   };
 
-  if (hotelQuery.isLoading || availabilityQuery.isLoading) {
+  if (hotelQuery.isLoading || availabilityQuery.isLoading || bookingOccupancyQuery.isLoading) {
     return <div className="page-content"><PageState tone="loading" title={t("availability.loadingTitle")} description={t("availability.loadingDesc")} /></div>;
   }
 
-  if (hotelQuery.error || availabilityQuery.error || !hotelQuery.data) {
-    return <div className="page-content"><PageState tone="error" title={t("availability.errorTitle")} description={hotelQuery.error?.message ?? availabilityQuery.error?.message ?? t("availability.errorDescFallback")} actionLabel={t("availability.retryButton")} onAction={retryAvailability} actionPending={hotelQuery.isFetching || availabilityQuery.isFetching} /></div>;
+  if (hotelQuery.error || availabilityQuery.error || bookingOccupancyQuery.error || !hotelQuery.data) {
+    return <div className="page-content"><PageState tone="error" title={t("availability.errorTitle")} description={hotelQuery.error?.message ?? availabilityQuery.error?.message ?? bookingOccupancyQuery.error?.message ?? t("availability.errorDescFallback")} actionLabel={t("availability.retryButton")} onAction={retryAvailability} actionPending={hotelQuery.isFetching || availabilityQuery.isFetching || bookingOccupancyQuery.isFetching} /></div>;
   }
 
   const hotel = hotelQuery.data;
@@ -125,6 +128,16 @@ export default function Calendar({ id }: { id: string }) {
     counts[room.room_type_id] = (counts[room.room_type_id] ?? 0) + 1;
     return counts;
   }, {});
+  const occupancy = bookingOccupancyQuery.data ?? [];
+
+  function getAllotment(roomTypeId: string, date: string, totalRooms: number) {
+    return availabilityByKey.get(`${roomTypeId}:${date}`)?.rooms_available ?? totalRooms;
+  }
+
+  function getEffectiveAvailability(roomTypeId: string, date: string, totalRooms: number) {
+    const booked = getBookedRoomCountForDate(roomTypeId, date, hotel.rooms, occupancy);
+    return getAvailableRoomCount(totalRooms, getAllotment(roomTypeId, date, totalRooms), booked);
+  }
 
   function draftCell(roomTypeId: string, date: string, fallbackAvailable: number, fallbackPrice: number) {
     return draft[`${roomTypeId}:${date}`] ?? { available: fallbackAvailable, price: fallbackPrice };
@@ -194,7 +207,8 @@ export default function Calendar({ id }: { id: string }) {
     for (const roomType of hotel.room_types) {
       const total = roomCountByType[roomType.id] ?? 0;
       const savedCell = availabilityByKey.get(`${roomType.id}:${dateStr}`);
-      const fallbackAvailable = savedCell?.rooms_available ?? total;
+      const allotment = savedCell?.rooms_available ?? total;
+      const fallbackAvailable = editing ? allotment : getEffectiveAvailability(roomType.id, dateStr, total);
       const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
       const cell = draftCell(roomType.id, dateStr, fallbackAvailable, fallbackPrice);
 
@@ -338,7 +352,9 @@ export default function Calendar({ id }: { id: string }) {
                       {days.map(day => {
                         const date = toIsoDate(day);
                         const savedCell = availabilityByKey.get(`${roomType.id}:${date}`);
-                        const fallbackAvailable = savedCell?.rooms_available ?? roomCountByType[roomType.id] ?? 0;
+                        const totalRooms = roomCountByType[roomType.id] ?? 0;
+                        const allotment = savedCell?.rooms_available ?? totalRooms;
+                        const fallbackAvailable = editing ? allotment : getEffectiveAvailability(roomType.id, date, totalRooms);
                         const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
                         const cell = draftCell(roomType.id, date, fallbackAvailable, fallbackPrice);
                         return (

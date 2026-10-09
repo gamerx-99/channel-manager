@@ -65,6 +65,7 @@ export default function Bookings({ id }: { id: string }) {
     onSuccess: async () => {
       await utils.channelManager.bookings.invalidate(id);
       await utils.channelManager.dashboard.invalidate();
+      await utils.channelManager.bookingOccupancy.invalidate(id);
       setShowAdd(false);
     },
     onError: error => console.error(error.message),

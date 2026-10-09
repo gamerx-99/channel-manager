@@ -34,6 +34,13 @@ const mocks = vi.hoisted(() => {
     refetch: vi.fn(),
   };
 
+  const bookingOccupancyQuery = {
+    data: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+
   const updateAvailability = {
     mutateAsync: vi.fn(),
     isPending: false,
@@ -43,6 +50,7 @@ const mocks = vi.hoisted(() => {
   return {
     hotelQuery,
     availabilityQuery,
+    bookingOccupancyQuery,
     updateAvailability,
     invalidate: vi.fn(),
   };
@@ -58,6 +66,7 @@ vi.mock("@/lib/trpc", () => ({
     channelManager: {
       hotel: { useQuery: () => mocks.hotelQuery },
       availability: { useQuery: () => mocks.availabilityQuery },
+      bookingOccupancy: { useQuery: () => mocks.bookingOccupancyQuery },
       updateAvailability: { useMutation: () => mocks.updateAvailability },
     },
   },

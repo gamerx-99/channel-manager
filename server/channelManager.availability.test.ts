@@ -14,6 +14,7 @@ const dbMocks = vi.hoisted(() => ({
   getPublicHotel: vi.fn(),
   isSuperAdmin: vi.fn(),
   listAvailabilityForHotel: vi.fn(),
+  listBookingOccupancyForHotel: vi.fn(),
   listBookingsForHotel: vi.fn(),
   listManagedHotels: vi.fn(),
   updateAvailability: vi.fn(),
@@ -141,5 +142,14 @@ describe('channelManager.updateAvailability quick actions', () => {
     })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
 
     expect(dbMocks.updateAvailability).not.toHaveBeenCalled();
+  });
+
+  it('returns booking occupancy through the property-scoped calendar query', async () => {
+    const occupancy = [{ room_id: 'room-1', check_in: '2026-10-09', check_out: '2026-10-11', status: 'confirmed', expires_at: null }];
+    dbMocks.listBookingOccupancyForHotel.mockResolvedValueOnce(occupancy);
+    const app = await caller('revenue_manager');
+
+    await expect(app.channelManager.bookingOccupancy(hotelId)).resolves.toEqual(occupancy);
+    expect(dbMocks.listBookingOccupancyForHotel).toHaveBeenCalledWith(expect.anything(), hotelId);
   });
 });

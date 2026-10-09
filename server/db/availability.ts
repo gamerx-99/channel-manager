@@ -1,6 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMissingTableError, throwOnError } from './utils';
 import type { AvailabilityRecord, RateOverrideRecord } from './types';
+import type { BookingStatus } from '@shared/bookingLifecycle';
+
+export async function listBookingOccupancyForHotel(client: SupabaseClient, hotelId: string) {
+  const { data, error } = await client
+    .from('bookings')
+    .select('room_id,check_in,check_out,status,expires_at')
+    .eq('hotel_id', hotelId);
+  throwOnError(error);
+  return (data ?? []) as Array<{
+    room_id: string | null;
+    check_in: string;
+    check_out: string;
+    status: BookingStatus;
+    expires_at: string | null;
+  }>;
+}
 
 export async function listAvailabilityForHotel(client: SupabaseClient, hotelId: string) {
   const { data, error } = await client

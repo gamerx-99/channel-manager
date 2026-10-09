@@ -4,6 +4,7 @@ import { protectedProcedure, router } from '../_core/trpc';
 import type { Permission } from '@shared/authorization';
 import {
   listAvailabilityForHotel,
+  listBookingOccupancyForHotel,
   updateAvailability as dbUpdateAvailability,
   createRateOverride as dbCreateRateOverride,
   listRateOverrides as dbListRateOverrides,
@@ -54,6 +55,15 @@ export const availability = protectedProcedure.input(hotelIdSchema).query(async 
   requireHotelPermission(ctx.user, input, 'property.view');
   try {
     return await listAvailabilityForHotel(rlsClient(ctx.user.accessToken), input);
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
+
+export const bookingOccupancy = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input, 'property.view');
+  try {
+    return await listBookingOccupancyForHotel(rlsClient(ctx.user.accessToken), input);
   } catch (error) {
     return rethrowDomainError(error);
   }
