@@ -88,7 +88,7 @@ describe('channelManager.updateRoomType', () => {
       hotel_id: hotelId,
       room_type_id: roomTypeId,
       name: '  Suite  ',
-      capacity: 3,
+      capacity: 2,
       base_price: 3200,
     })).resolves.toMatchObject({ id: roomTypeId });
 
@@ -98,7 +98,7 @@ describe('channelManager.updateRoomType', () => {
       hotel_id: hotelId,
       room_type_id: roomTypeId,
       name: 'Suite',
-      capacity: 3,
+      capacity: 2,
       base_price: 3200,
     });
   });
