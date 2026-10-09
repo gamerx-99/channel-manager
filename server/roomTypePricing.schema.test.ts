@@ -53,4 +53,13 @@ describe('room type pricing save validation', () => {
     expect(updateRoomTypeSchema.safeParse(update).success).toBe(true);
     expect(updateRoomTypeSchema.safeParse({ ...update, occupancy_pricing: { '2': baseInput.occupancy_pricing['2'] } }).success).toBe(false);
   });
+
+  it('requires a complete pricing schedule when an update changes occupancy limits', () => {
+    const { occupancy_pricing: _occupancyPricing, child_rates: _childRates, ...updateWithoutPricing } = {
+      ...baseInput,
+      room_type_id: 'f1a1b1c1-d1e1-41f1-81f1-111111111111',
+      base_occupancy: 1,
+    };
+    expect(updateRoomTypeSchema.safeParse(updateWithoutPricing).success).toBe(false);
+  });
 });

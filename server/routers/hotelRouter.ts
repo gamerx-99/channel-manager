@@ -60,11 +60,12 @@ function validateRoomTypePricing(data: {
   child_rule?: 'age' | 'height';
   child_rule_limit?: number | null;
   child_rates?: ChildRateConfig;
-}, ctx: z.RefinementCtx) {
+}, ctx: z.RefinementCtx, requirePricingWhenOccupancyChanges = false) {
   if (data.child_rule === 'height' && (data.child_rule_limit == null || !Number.isFinite(Number(data.child_rule_limit)))) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'A child height limit is required.', path: ['child_rule_limit'] });
   }
-  if (!data.occupancy_pricing && !data.child_rates) return;
+  const occupancyChanged = data.base_occupancy !== undefined || data.max_occupancy !== undefined;
+  if (!data.occupancy_pricing && !data.child_rates && !(requirePricingWhenOccupancyChanges && occupancyChanged)) return;
   if (!data.occupancy_pricing || !data.child_rates) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Occupancy pricing and child rates must be saved together.', path: ['occupancy_pricing'] });
     return;
@@ -123,7 +124,7 @@ export const updateRoomTypeSchema = z.object({
   if ((data.max_occupancy ?? data.capacity) < (data.base_occupancy ?? Math.min(2, data.capacity))) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum occupancy must be at least base occupancy.', path: ['max_occupancy'] });
   }
-  validateRoomTypePricing(data, ctx);
+  validateRoomTypePricing(data, ctx, true);
 });
 
 export const deleteRoomTypeSchema = z.object({
