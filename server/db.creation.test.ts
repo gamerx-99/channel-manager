@@ -132,6 +132,7 @@ describe('updateManagedRoomType', () => {
   it('requires pricing fields when the migration RPC changes room capacity', () => {
     const migration = readFileSync(resolve(process.cwd(), '20261009_room_type_occupancy_pricing.sql'), 'utf8');
     expect(migration).toMatch(/target_capacity IS DISTINCT FROM current_capacity[\s\S]*?occupancy_pricing[\s\S]*?child_rates/);
+    expect(migration).toContain('Occupancy pricing must define every guest count from one through room capacity.');
   });
 
   it('uses supported PostgreSQL JSONB functions in the read-only verify script', () => {

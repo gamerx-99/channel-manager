@@ -83,6 +83,7 @@ SELECT 'occupancy_update_requires_consistent_schedule',
     WHERE p.oid = to_regprocedure('public.update_room_type_with_occupancy_config(uuid,uuid,text,integer,numeric,jsonb)')
       AND p.prosrc LIKE '%Base occupancy is required when saving an occupancy pricing schedule.%'
       AND p.prosrc LIKE '%Maximum occupancy must match room capacity.%'
+      AND p.prosrc LIKE '%Occupancy pricing must define every guest count from one through room capacity.%'
   ) THEN 'PASS' ELSE 'FAIL' END
 UNION ALL
 SELECT 'atomic_room_type_occupancy_update_rpc_grants',

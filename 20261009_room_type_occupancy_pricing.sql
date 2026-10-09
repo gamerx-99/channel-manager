@@ -52,9 +52,13 @@ DECLARE
   current_child_rule text;
   current_capacity integer;
   next_child_rule text;
+  occupancy_level_count integer;
 BEGIN
   IF jsonb_typeof(target_occupancy_config) IS DISTINCT FROM 'object' THEN
     RAISE EXCEPTION 'Room type occupancy configuration is invalid.' USING ERRCODE = '22023';
+  END IF;
+  IF target_capacity IS NULL OR target_capacity < 1 THEN
+    RAISE EXCEPTION 'Room capacity must be a positive integer.' USING ERRCODE = '22023';
   END IF;
 
   PERFORM 1
@@ -83,6 +87,21 @@ BEGIN
   IF target_occupancy_config ? 'max_occupancy'
     AND (target_occupancy_config->>'max_occupancy')::integer IS DISTINCT FROM target_capacity THEN
     RAISE EXCEPTION 'Maximum occupancy must match room capacity.' USING ERRCODE = '22023';
+  END IF;
+
+  IF target_occupancy_config ? 'occupancy_pricing' THEN
+    IF jsonb_typeof(target_occupancy_config->'occupancy_pricing') IS DISTINCT FROM 'object' THEN
+      RAISE EXCEPTION 'Occupancy pricing must be an object.' USING ERRCODE = '22023';
+    END IF;
+    SELECT COUNT(*) INTO occupancy_level_count
+    FROM jsonb_object_keys(target_occupancy_config->'occupancy_pricing');
+    IF occupancy_level_count <> target_capacity OR EXISTS (
+      SELECT 1
+      FROM jsonb_object_keys(target_occupancy_config->'occupancy_pricing') AS configured(key)
+      WHERE NOT configured.key = ANY(ARRAY(SELECT generate_series(1, target_capacity)::text))
+    ) THEN
+      RAISE EXCEPTION 'Occupancy pricing must define every guest count from one through room capacity.' USING ERRCODE = '22023';
+    END IF;
   END IF;
 
   next_child_rule := COALESCE(target_occupancy_config->>'child_rule', current_child_rule);
