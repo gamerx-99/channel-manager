@@ -6,8 +6,13 @@ Depends on: 01-payments-slipok, 02-advanced-pricing
 - Anonymous room-type reads are allowed only when the related hotel has
   `public_enabled = true`; hotel rows remain private. The published-hotel
   boolean predicate avoids relying on anonymous SELECT access to `hotels`.
+- Inventory counts are returned by `get_public_room_type_availability`, which
+  exposes only room-type IDs and available counts for that published hotel;
+  anonymous clients do not read `rooms` or `bookings`.
 - `20261009_public_room_type_rls.sql` and its verify script are prepared but
   pending human application and confirmation in the production SQL editor.
+- The same apply/verify requirement applies to
+  `20261009_public_booking_inventory.sql` and its verify script.
 
 ## Goal
 Let a guest complete a real booking from the public hotel page (`PublicHotel.tsx`),

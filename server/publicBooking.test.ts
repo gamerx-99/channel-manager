@@ -56,6 +56,50 @@ describe('Public Booking Engine & Availability Logic', () => {
     });
   });
 
+  describe('public availability inventory boundary', () => {
+    it('uses the published-hotel inventory RPC and returns only room-type availability counts', async () => {
+      const hotel = { id: 'hotel-1', name: 'Test Resort', slug: 'test-resort', address: 'Phuket' };
+      const roomTypes = [
+        { id: 'rt-1', hotel_id: 'hotel-1', name: 'Deluxe', capacity: 2, base_price: 1500 },
+        { id: 'rt-2', hotel_id: 'hotel-1', name: 'Standard', capacity: 2, base_price: 1000 },
+      ];
+      const rpc = vi.fn((name: string) => name === 'get_public_hotel'
+        ? { single: vi.fn().mockResolvedValue({ data: hotel, error: null }) }
+        : Promise.resolve({
+          data: [
+            { room_type_id: 'rt-1', rooms_available: 1 },
+            { room_type_id: 'rt-2', rooms_available: 0 },
+          ],
+          error: null,
+        }));
+      const from = vi.fn((table: string) => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: table === 'room_types' ? roomTypes : [],
+              error: null,
+            }),
+          }),
+        }),
+      }));
+
+      const result = await getPublicHotelAvailability({ rpc, from } as any, 'test-resort', '2026-10-20', '2026-10-22');
+
+      expect(rpc).toHaveBeenCalledWith('get_public_room_type_availability', {
+        target_hotel_id: 'hotel-1',
+        target_check_in: '2026-10-20',
+        target_check_out: '2026-10-22',
+      });
+      expect(from).toHaveBeenCalledTimes(3);
+      expect(from).not.toHaveBeenCalledWith('rooms');
+      expect(from).not.toHaveBeenCalledWith('bookings');
+      expect(result.room_types.map(roomType => [roomType.id, roomType.rooms_available, roomType.is_available])).toEqual([
+        ['rt-1', 1, true],
+        ['rt-2', 0, false],
+      ]);
+    });
+  });
+
   describe('createPublicBooking error handling', () => {
     it('rejects invalid stay date ranges with BAD_REQUEST', async () => {
       const mockClient = {} as any;

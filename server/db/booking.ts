@@ -76,31 +76,27 @@ export async function getPublicHotelAvailability(
   if (!hotelData) throw new Error('Hotel not found or not published.');
   const hotel = hotelData as Pick<HotelRecord, 'id' | 'name' | 'slug' | 'address'>;
 
-  const [{ data: roomTypes, error: rtErr }, { data: rooms, error: roomsErr }, { data: bookings, error: bErr }] = await Promise.all([
+  const [{ data: roomTypes, error: rtErr }, { data: inventoryCounts, error: inventoryErr }] = await Promise.all([
     client.from('room_types').select('id,hotel_id,name,capacity,base_price').eq('hotel_id', hotel.id).order('base_price'),
-    client.from('rooms').select('id,hotel_id,room_type_id,room_number,status').eq('hotel_id', hotel.id),
-    client.from('bookings').select('id,hotel_id,room_id,check_in,check_out,status,expires_at').eq('hotel_id', hotel.id),
+    client.rpc('get_public_room_type_availability', {
+      target_hotel_id: hotel.id,
+      target_check_in: checkIn,
+      target_check_out: checkOut,
+    }),
   ]);
   throwOnError(rtErr);
-  throwOnError(roomsErr);
-  throwOnError(bErr);
+  throwOnError(inventoryErr);
 
   const allRoomTypes = (roomTypes ?? []) as RoomTypeRecord[];
-  const allRooms = (rooms ?? []) as Array<{ id: string; hotel_id: string; room_type_id: string; room_number: string; status: string }>;
-  const activeBookings = (bookings ?? []) as Array<{ id: string; room_id: string | null; check_in: string; check_out: string; status: string; expires_at: string | null }>;
-
-  const overlappingBookings = activeBookings.filter(
-    b => b.room_id && b.check_in < checkOut && b.check_out > checkIn && isBookingOccupyingInventory(b as { status: BookingStatus; expires_at: string | null }),
+  const availableCountByRoomType = new Map(
+    ((inventoryCounts ?? []) as Array<{ room_type_id: string; rooms_available: number }>).map(row => [row.room_type_id, row.rooms_available]),
   );
-  const bookedRoomIds = new Set(overlappingBookings.map(b => b.room_id!));
 
   const resultRoomTypes: PublicRoomTypeAvailability[] = [];
 
   for (const rt of allRoomTypes) {
     const overrides = await listRateOverridesForRoomType(client, rt.id);
-    const roomsOfType = allRooms.filter(r => r.room_type_id === rt.id && r.status !== 'maintenance');
-    const availableRooms = roomsOfType.filter(r => !bookedRoomIds.has(r.id));
-    const availableCount = availableRooms.length;
+    const availableCount = availableCountByRoomType.get(rt.id) ?? 0;
 
     let totalPrice = 0;
     for (const date of stayDates) {
