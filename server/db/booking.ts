@@ -71,15 +71,7 @@ export async function getPublicHotelAvailability(
   }
   const nights = stayDates.length;
 
-  // This function is invoked with a server-only admin client so it can calculate
-  // inventory without exposing rooms or bookings to anon table reads. Keep the
-  // public boundary explicit here and return only fields needed by the booking page.
-  const { data: hotelData, error: hotelError } = await client
-    .from('hotels')
-    .select('id,name,slug,address')
-    .eq('slug', slug)
-    .eq('public_enabled', true)
-    .maybeSingle();
+  const { data: hotelData, error: hotelError } = await client.rpc('get_public_hotel', { target_slug: slug }).single();
   throwOnError(hotelError);
   if (!hotelData) throw new Error('Hotel not found or not published.');
   const hotel = hotelData as Pick<HotelRecord, 'id' | 'name' | 'slug' | 'address'>;

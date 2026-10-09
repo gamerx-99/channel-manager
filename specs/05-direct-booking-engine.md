@@ -2,6 +2,13 @@
 Status: DONE (2026-08-31)
 Depends on: 01-payments-slipok, 02-advanced-pricing
 
+## Public room-type RLS follow-up
+- Anonymous room-type reads are allowed only when the related hotel has
+  `public_enabled = true`; hotel rows remain private. The published-hotel
+  boolean predicate avoids relying on anonymous SELECT access to `hotels`.
+- `20261009_public_room_type_rls.sql` and its verify script are prepared but
+  pending human application and confirmation in the production SQL editor.
+
 ## Goal
 Let a guest complete a real booking from the public hotel page (`PublicHotel.tsx`),
 which currently says "Online checkout is not enabled in this MVP" at its booking
