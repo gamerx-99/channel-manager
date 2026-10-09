@@ -16,9 +16,16 @@ and release inventory automatically when a hold or payment window expires,
 without relying on a cron job.
 
 ## Non-goals
-- Front-desk `checked_in` / `checked_out` transitions (Phase 2 front-desk feature)
 - Refund flow UI (handled later)
 - Guest portal / accounts
+
+## Front-desk Phase 2 transitions
+- Staff with `operations.manage_checkin_checkout` for the selected hotel can move
+  `confirmed` → `checked_in` → `checked_out` using the existing lifecycle edges.
+- The server validates the hotel permission; one database transaction locks and
+  updates the booking and appends its `booking_status_log` audit row.
+- The additive transition RPC migration must be applied and its verify script
+  confirmed by the human before these actions are considered live.
 
 ## Interface contract
 - Pure state-machine helpers live in `shared/bookingLifecycle.ts` and are the

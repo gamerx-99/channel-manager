@@ -7,6 +7,7 @@ import {
   ROLE_PERMISSIONS,
   isHumanRole,
   isPlatformRole,
+  hasHotelPermission,
   roleHasPermission,
 } from "./authorization";
 
@@ -86,5 +87,13 @@ describe("seven-role authorization matrix", () => {
     for (const role of APP_ROLES) {
       expect(roleHasPermission(role, "platform.manage_signup_links")).toBe(role === "super_admin");
     }
+  });
+
+  it("scopes hotel permissions to the selected hotel's membership", () => {
+    const memberships = [{ hotelId: "hotel-a", role: "front_desk" as const }];
+    expect(hasHotelPermission([], memberships, "hotel-a", "operations.manage_checkin_checkout")).toBe(true);
+    expect(hasHotelPermission([], memberships, "hotel-b", "operations.manage_checkin_checkout")).toBe(false);
+    expect(hasHotelPermission(["super_admin"], [], "hotel-b", "operations.manage_checkin_checkout")).toBe(true);
+    expect(hasHotelPermission(["admin"], [], "hotel-b", "operations.manage_checkin_checkout")).toBe(false);
   });
 });

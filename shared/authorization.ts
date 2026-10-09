@@ -180,6 +180,19 @@ export function hasAnyPermission(roles: readonly AppRole[], permission: Permissi
   return roles.some(role => roleHasPermission(role, permission));
 }
 
+export function hasHotelPermission(
+  roles: readonly AppRole[],
+  memberships: readonly { hotelId: string; role: AppRole }[],
+  hotelId: string,
+  permission: Permission,
+) {
+  return roles.includes("super_admin")
+    || roles.some(role => isPlatformRole(role) && roleHasPermission(role, permission))
+    || memberships.some(
+      membership => membership.hotelId === hotelId && roleHasPermission(membership.role, permission),
+    );
+}
+
 export function getHighestRole(roles: readonly AppRole[]): AppRole | null {
   return roles.slice().sort((a, b) => ROLE_PRIORITY[b] - ROLE_PRIORITY[a])[0] ?? null;
 }

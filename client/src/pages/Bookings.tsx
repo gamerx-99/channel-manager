@@ -7,7 +7,7 @@ import PageState from '@/components/PageState';
 import BookingWizard from '@/components/BookingWizard';
 import { useTranslation } from '@/lib/i18n';
 import { communicationsEnabled } from '@/lib/featureFlags';
-import { hasAnyPermission, type AppRole } from '@shared/authorization';
+import { hasHotelPermission } from '@shared/authorization';
 
 type BookingStatus = 'held' | 'pending_payment' | 'pending_verification' | 'confirmed' | 'expired' | 'payment_rejected' | 'cancelled' | 'refund_pending' | 'refunded' | 'checked_in' | 'checked_out';
 
@@ -42,7 +42,12 @@ export default function Bookings({ id }: { id: string }) {
   const hotelQuery = trpc.channelManager.hotel.useQuery(id, { enabled: Boolean(id) });
   const bookingsQuery = trpc.channelManager.bookings.useQuery(id, { enabled: Boolean(id) });
   const authMeQuery = trpc.auth.me.useQuery();
-  const canManageCheckInOut = hasAnyPermission((authMeQuery.data?.roles ?? []) as AppRole[], 'operations.manage_checkin_checkout');
+  const canManageCheckInOut = hasHotelPermission(
+    authMeQuery.data?.roles ?? [],
+    authMeQuery.data?.memberships ?? [],
+    id,
+    'operations.manage_checkin_checkout',
+  );
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | BookingStatus>('all');
   const [showAdd, setShowAdd] = useState(false);
