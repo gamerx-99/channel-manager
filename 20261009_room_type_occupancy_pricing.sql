@@ -50,6 +50,7 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   current_child_rule text;
+  current_capacity integer;
   next_child_rule text;
 BEGIN
   IF jsonb_typeof(target_occupancy_config) IS DISTINCT FROM 'object' THEN
@@ -62,11 +63,16 @@ BEGIN
   ORDER BY rt.id
   FOR UPDATE;
 
-  SELECT rt.child_rule INTO current_child_rule
+  SELECT rt.child_rule, rt.capacity INTO current_child_rule, current_capacity
   FROM public.room_types rt
   WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Room type not found.' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF target_capacity IS DISTINCT FROM current_capacity
+    AND (NOT (target_occupancy_config ? 'occupancy_pricing') OR NOT (target_occupancy_config ? 'child_rates')) THEN
+    RAISE EXCEPTION 'A capacity change requires a complete occupancy pricing schedule and child rates.' USING ERRCODE = '22023';
   END IF;
 
   next_child_rule := COALESCE(target_occupancy_config->>'child_rule', current_child_rule);

@@ -263,7 +263,12 @@ export const updateRoomType = protectedProcedure.input(updateRoomTypeSchema).mut
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
   const client = rlsClient(ctx.user.accessToken);
   try {
-    await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
+    const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
+    const roomType = hotel.room_types.find(item => item.id === input.room_type_id)!;
+    const nextCapacity = input.max_occupancy ?? input.capacity;
+    if (nextCapacity !== roomType.capacity && (!input.occupancy_pricing || !input.child_rates)) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'A capacity change requires a complete occupancy pricing schedule and child rates.' });
+    }
     const updated = await updateManagedRoomType(client, input);
     if (!updated) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type could not be updated.' });

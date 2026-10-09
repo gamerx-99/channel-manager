@@ -103,6 +103,21 @@ describe('channelManager.updateRoomType', () => {
     });
   });
 
+  it('rejects a capacity change without a complete pricing schedule', async () => {
+    dbMocks.getManagedHotel.mockResolvedValueOnce(visibleHotel());
+    const app = await caller('hotel_owner');
+
+    await expect(app.channelManager.updateRoomType({
+      hotel_id: hotelId,
+      room_type_id: roomTypeId,
+      name: 'Deluxe King',
+      capacity: 3,
+      base_price: 2800,
+    })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+    expect(dbMocks.updateManagedRoomType).not.toHaveBeenCalled();
+  });
+
   it('allows a super admin to update a visible room type without using a service-role client', async () => {
     const client = { requestScoped: true };
     supabaseMocks.createRlsSupabaseClient.mockReturnValueOnce(client);

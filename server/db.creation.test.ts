@@ -127,6 +127,11 @@ describe('updateManagedRoomType', () => {
     expect(migration).toMatch(/IF next_child_rule IS DISTINCT FROM current_child_rule THEN[\s\S]*?child_rule_limit = NULL/);
     expect(migration).toMatch(/WHEN target_occupancy_config \? 'child_rule_limit'[\s\S]*?THEN NULLIF\(target_occupancy_config->>'child_rule_limit', ''\)::numeric/);
   });
+
+  it('requires pricing fields when the migration RPC changes room capacity', () => {
+    const migration = readFileSync(resolve(process.cwd(), '20261009_room_type_occupancy_pricing.sql'), 'utf8');
+    expect(migration).toMatch(/target_capacity IS DISTINCT FROM current_capacity[\s\S]*?occupancy_pricing[\s\S]*?child_rates/);
+  });
 });
 
 describe('deleteManagedRoomType', () => {
