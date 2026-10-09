@@ -1,5 +1,13 @@
 # Handoff log
 
+## [2026-10-09 09:46] Channel Manager UI remediation and migration handoff
+- Project: D:\system make\channel-manager-mvp-latest.
+- Completed: published-hotel-only room-type RLS migration; normalized booking room relations; corrected calendar availability for active bookings in the visible range; check-in/out transitions use the lifecycle RPC and per-hotel permission helper; Communications is off by default behind VITE_FEATURE_COMMUNICATIONS.
+- Verification: pnpm check passed; pnpm test passed (87 files, 457 passed, 3 skipped); pnpm build passed with a chunk-size warning. No production SQL was executed.
+- Remaining: apply 20261009_public_room_type_rls.sql and 20261009_booking_lifecycle_checkin_checkout.sql in the production SQL editor, then run both verify scripts. Wait for their PASS results before deployment.
+- Blockers: no local implementation blockers; production verification is pending.
+- Changed files: committed in the task's local commit series; specs/05-direct-booking-engine.md and specs/11-booking-lifecycle-v1.md document pending migrations.
+- Next step: final kb-review -by codex, then ask the user before push/deploy; wait for user-applied SQL verification first.
 ## [2026-09-03] Booking Lifecycle v1 — both migrations applied to production — DONE ✅
 - **Context**: Sub-phase A's two migrations (`20260910_booking_lifecycle_v1.sql`,
   `20260911_add_hotel_services_catalog.sql`) were written and pushed during earlier sub-phases but
