@@ -1,5 +1,6 @@
 # 11 Booking Lifecycle v1 — held / pending_payment state machine
-Status: COMPLETE AND LIVE. All sub-phases (A–F) done in code and both migrations
+Status: v1 COMPLETE AND LIVE. Front-desk Phase 2 check-in/out code is prepared; its migration
+and verify script still require human application and confirmation. All sub-phases (A–F) done in code and both migrations
 (`20260910_booking_lifecycle_v1.sql`, `20260911_add_hotel_services_catalog.sql`) applied to
 production — human confirmed 2026-09-03, every row of both verify scripts (20 checks total)
 returned PASS. The public booking wizard is fully operational end to end.
