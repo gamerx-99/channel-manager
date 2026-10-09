@@ -5,6 +5,7 @@ import { throwOnError } from './utils';
 import { listRateOverridesForRoomType, assertBookingMinStay } from './availability';
 import { isBookingOccupyingInventory, isExpired, assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 import { calcNights, calculateServiceTotal } from '@shared/pricingModels';
+import { calculateStayOccupancyPrice, classifyGuests, fitsOccupancy, type ChildMeasurement } from '@shared/occupancyPricing';
 import type {
   BookingRecord,
   GuestRecord,
@@ -64,6 +65,7 @@ export async function getPublicHotelAvailability(
   slug: string,
   checkIn: string,
   checkOut: string,
+  guests: { adults: number; children: ChildMeasurement[] } = { adults: 2, children: [] },
 ): Promise<PublicHotelAvailabilityResult> {
   const stayDates = getStayDates(checkIn, checkOut);
   if (stayDates.length === 0) {
@@ -76,18 +78,21 @@ export async function getPublicHotelAvailability(
   if (!hotelData) throw new Error('Hotel not found or not published.');
   const hotel = hotelData as Pick<HotelRecord, 'id' | 'name' | 'slug' | 'address'>;
 
-  const [{ data: roomTypes, error: rtErr }, { data: inventoryCounts, error: inventoryErr }] = await Promise.all([
-    client.from('room_types').select('id,hotel_id,name,capacity,base_price').eq('hotel_id', hotel.id).order('base_price'),
-    client.rpc('get_public_room_type_availability', {
-      target_hotel_id: hotel.id,
-      target_check_in: checkIn,
-      target_check_out: checkOut,
-    }),
-  ]);
+  const { data: roomTypes, error: rtErr } = await client.from('room_types')
+    .select('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max')
+    .eq('hotel_id', hotel.id).order('base_price');
   throwOnError(rtErr);
+  const allRoomTypes = (roomTypes ?? []) as RoomTypeRecord[];
+  const guestInventory = await client.rpc('get_public_room_type_availability_for_guests', {
+    target_hotel_id: hotel.id,
+    target_check_in: checkIn,
+    target_check_out: checkOut,
+    target_adults: guests.adults,
+    target_children: guests.children,
+  });
+  const { data: inventoryCounts, error: inventoryErr } = guestInventory;
   throwOnError(inventoryErr);
 
-  const allRoomTypes = (roomTypes ?? []) as RoomTypeRecord[];
   const availableCountByRoomType = new Map(
     ((inventoryCounts ?? []) as Array<{ room_type_id: string; rooms_available: number }>).map(row => [row.room_type_id, row.rooms_available]),
   );
@@ -95,13 +100,21 @@ export async function getPublicHotelAvailability(
   const resultRoomTypes: PublicRoomTypeAvailability[] = [];
 
   for (const rt of allRoomTypes) {
-    const overrides = await listRateOverridesForRoomType(client, rt.id);
+    const guestClassification = classifyGuests(guests.children, {
+      child_rule: rt.child_rule,
+      child_rule_limit: rt.child_rule_limit == null ? null : Number(rt.child_rule_limit),
+    });
+    if (!fitsOccupancy(rt, guests.adults, guestClassification.qualifyingChildren, guestClassification.adultEquivalentCount)) continue;
     const availableCount = availableCountByRoomType.get(rt.id) ?? 0;
-
-    let totalPrice = 0;
-    for (const date of stayDates) {
-      totalPrice += resolveEffectiveRate({ id: rt.id, base_price: rt.base_price }, date, overrides);
-    }
+    if (availableCount <= 0) continue;
+    const overrides = await listRateOverridesForRoomType(client, rt.id);
+    const pricing = calculateStayOccupancyPrice({
+      nightlyRates: stayDates.map(date => resolveEffectiveRate({ id: rt.id, base_price: rt.base_price }, date, overrides)),
+      rules: rt,
+      adults: guests.adults + guestClassification.adultEquivalentCount,
+      qualifyingChildren: guestClassification.qualifyingChildren,
+    });
+    const totalPrice = pricing.totalPrice;
     const avgNightly = nights > 0 ? Math.round(totalPrice / nights) : Number(rt.base_price);
 
     const minStay = getRequiredMinStayNights(checkIn, checkOut, overrides);
@@ -111,7 +124,7 @@ export async function getPublicHotelAvailability(
     resultRoomTypes.push({
       id: rt.id,
       name: rt.name,
-      capacity: rt.capacity,
+      capacity: rt.max_occupancy,
       base_price: Number(rt.base_price),
       total_price: totalPrice,
       avg_nightly_price: avgNightly,
@@ -120,6 +133,7 @@ export async function getPublicHotelAvailability(
       min_stay_nights: minStay,
       is_available: isAvailable,
       min_stay_violated: minStayViolated,
+      nightly_prices: pricing.nightlyPrices,
     });
   }
 
@@ -374,6 +388,8 @@ export async function holdRoomType(
     room_type_id: string;
     check_in: string;
     check_out: string;
+    adults: number;
+    children: ChildMeasurement[];
   },
 ): Promise<{
   booking_id: string;
@@ -402,7 +418,7 @@ export async function holdRoomType(
 
   const { data: roomTypeData, error: rtError } = await adminClient
     .from('room_types')
-    .select('id,hotel_id,name,capacity,base_price')
+    .select('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max')
     .eq('id', input.room_type_id)
     .eq('hotel_id', hotel.id)
     .maybeSingle();
@@ -411,6 +427,13 @@ export async function holdRoomType(
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Selected room type does not exist for this hotel.' });
   }
   const roomType = roomTypeData as RoomTypeRecord;
+  const guestClassification = classifyGuests(input.children, {
+    child_rule: roomType.child_rule,
+    child_rule_limit: roomType.child_rule_limit == null ? null : Number(roomType.child_rule_limit),
+  });
+  if (!fitsOccupancy(roomType, input.adults, guestClassification.qualifyingChildren, guestClassification.adultEquivalentCount)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'The selected room type cannot fit this guest count.' });
+  }
 
   const overrides = await listRateOverridesForRoomType(adminClient, roomType.id);
   const minStay = getRequiredMinStayNights(input.check_in, input.check_out, overrides);
@@ -421,10 +444,13 @@ export async function holdRoomType(
     });
   }
 
-  let totalPrice = 0;
-  for (const date of stayDates) {
-    totalPrice += resolveEffectiveRate({ id: roomType.id, base_price: roomType.base_price }, date, overrides);
-  }
+  const pricing = calculateStayOccupancyPrice({
+    nightlyRates: stayDates.map(date => resolveEffectiveRate({ id: roomType.id, base_price: roomType.base_price }, date, overrides)),
+    rules: roomType,
+    adults: input.adults + guestClassification.adultEquivalentCount,
+    qualifyingChildren: guestClassification.qualifyingChildren,
+  });
+  const totalPrice = pricing.totalPrice;
 
   const [{ data: rooms, error: roomsErr }, { data: bookings, error: bErr }, { data: paymentSettings, error: psErr }] =
     await Promise.all([

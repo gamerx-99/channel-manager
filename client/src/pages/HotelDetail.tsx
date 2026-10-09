@@ -16,8 +16,8 @@ import { PageState } from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
-const emptyRoomTypeForm = { name: '', capacity: '', base_price: '', quantity: '' };
-type RoomType = { id: string; hotel_id: string; name: string; capacity: number; base_price: number | string };
+const emptyRoomTypeForm = { name: '', capacity: '2', base_price: '', quantity: '', base_occupancy: '2', extra_guest_mode: 'per_person' as 'per_person' | 'tiered_percent', extra_guest_amount: '0', extra_guest_tier_percents: '', child_rule: 'age' as 'age' | 'height', child_rule_limit: '', child_price_mode: 'free' as 'free' | 'fixed' | 'percent', child_price_value: '0', children_count_toward_max: true };
+type RoomType = { id: string; hotel_id: string; name: string; capacity: number; base_price: number | string; base_occupancy: number; max_occupancy: number; extra_guest_mode: 'per_person' | 'tiered_percent'; extra_guest_amount: number | string; extra_guest_tier_percents: number[]; child_rule: 'age' | 'height'; child_rule_limit: number | string | null; child_price_mode: 'free' | 'fixed' | 'percent'; child_price_value: number | string; children_count_toward_max: boolean };
 
 export default function HotelDetail({ id }: { id: string }) {
   const { t } = useTranslation();
@@ -88,7 +88,7 @@ export default function HotelDetail({ id }: { id: string }) {
 
   function openEditRoomType(type: RoomType) {
     setSelectedRoomTypeId(type.id);
-    setRoomTypeForm({ name: type.name, capacity: String(type.capacity), base_price: String(type.base_price), quantity: '' });
+    setRoomTypeForm({ name: type.name, capacity: String(type.max_occupancy), base_price: String(type.base_price), quantity: '', base_occupancy: String(type.base_occupancy), extra_guest_mode: type.extra_guest_mode, extra_guest_amount: String(type.extra_guest_amount), extra_guest_tier_percents: type.extra_guest_tier_percents.join(', '), child_rule: type.child_rule, child_rule_limit: type.child_rule_limit == null ? '' : String(type.child_rule_limit), child_price_mode: type.child_price_mode, child_price_value: String(type.child_price_value), children_count_toward_max: type.children_count_toward_max });
     setRoomTypeError(null);
     setShowEditRoomType(true);
   }
@@ -99,11 +99,17 @@ export default function HotelDetail({ id }: { id: string }) {
     setShowDeleteRoomType(true);
   }
 
-  function validateRoomTypeForm() {
+  function validateRoomTypeForm(requireQuantity: boolean) {
     const name = roomTypeForm.name.trim();
     const capacity = Number(roomTypeForm.capacity);
     const basePrice = Number(roomTypeForm.base_price);
     const quantity = Number(roomTypeForm.quantity);
+    const baseOccupancy = Number(roomTypeForm.base_occupancy);
+    const maxOccupancy = Number(roomTypeForm.capacity);
+    const extraGuestAmount = Number(roomTypeForm.extra_guest_amount);
+    const childRuleLimit = roomTypeForm.child_rule_limit.trim() === '' ? null : Number(roomTypeForm.child_rule_limit);
+    const childPriceValue = Number(roomTypeForm.child_price_value);
+    const tierPercents = roomTypeForm.extra_guest_tier_percents.trim() === '' ? [] : roomTypeForm.extra_guest_tier_percents.split(',').map(value => Number(value.trim()));
     if (!name) {
       setRoomTypeError(t('hotelDetail.errorNameRequired'));
       return null;
@@ -112,23 +118,31 @@ export default function HotelDetail({ id }: { id: string }) {
       setRoomTypeError(t('hotelDetail.errorCapacityInvalid'));
       return null;
     }
+    if (!Number.isInteger(baseOccupancy) || baseOccupancy <= 0 || maxOccupancy < baseOccupancy) {
+      setRoomTypeError(t('hotelDetail.errorOccupancyInvalid'));
+      return null;
+    }
     if (!Number.isFinite(basePrice) || basePrice <= 0) {
       setRoomTypeError(t('hotelDetail.errorBasePriceInvalid'));
       return null;
     }
-    if (!Number.isInteger(quantity) || quantity <= 0) {
+    if (requireQuantity && (!Number.isInteger(quantity) || quantity <= 0)) {
       setRoomTypeError(t('hotelDetail.errorQuantityInvalid'));
       return null;
     }
-    return { name, capacity, base_price: basePrice, quantity };
+    if (!Number.isFinite(extraGuestAmount) || extraGuestAmount < 0 || (childRuleLimit != null && (!Number.isFinite(childRuleLimit) || childRuleLimit < 0)) || !Number.isFinite(childPriceValue) || childPriceValue < 0 || tierPercents.some(value => !Number.isFinite(value) || value < 0 || value > 1000)) {
+      setRoomTypeError(t('hotelDetail.errorPricingInvalid'));
+      return null;
+    }
+    return { name, capacity: maxOccupancy, max_occupancy: maxOccupancy, base_occupancy: baseOccupancy, base_price: basePrice, quantity, extra_guest_mode: roomTypeForm.extra_guest_mode, extra_guest_amount: extraGuestAmount, extra_guest_tier_percents: tierPercents, child_rule: roomTypeForm.child_rule, child_rule_limit: childRuleLimit, child_price_mode: roomTypeForm.child_price_mode, child_price_value: childPriceValue, children_count_toward_max: roomTypeForm.children_count_toward_max };
   }
 
   function submitCreateRoomType(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setRoomTypeError(null);
-    const values = validateRoomTypeForm();
+    const values = validateRoomTypeForm(true);
     if (!values) return;
-    createRoomType.mutate({ hotel_id: id, ...values });
+    createRoomType.mutate({ hotel_id: id, ...values, child_rule: hotel?.room_types[0]?.child_rule ?? values.child_rule });
   }
 
   function submitEditRoomType(event: FormEvent<HTMLFormElement>) {
@@ -138,7 +152,7 @@ export default function HotelDetail({ id }: { id: string }) {
       setRoomTypeError(t('hotelDetail.errorSelectToEdit'));
       return;
     }
-    const values = validateRoomTypeForm();
+    const values = validateRoomTypeForm(false);
     if (!values) return;
     updateRoomType.mutate({ hotel_id: id, room_type_id: selectedRoomTypeId, ...values });
   }
@@ -147,6 +161,23 @@ export default function HotelDetail({ id }: { id: string }) {
     if (!selectedRoomTypeId || deleteRoomType.isPending) return;
     setRoomTypeError(null);
     deleteRoomType.mutate({ hotel_id: id, room_type_id: selectedRoomTypeId });
+  }
+  function occupancyPricingFields() {
+    return <fieldset className="form-span-two" style={{ border: '1px solid #dce4df', borderRadius: 10, padding: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <legend>{t('hotelDetail.occupancyPricingTitle')}</legend>
+      <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#64736b' }}>{t('hotelDetail.childRuleSharedHint')}</p>
+      <label>{t('hotelDetail.baseOccupancyLabel')}<input type="number" min="1" step="1" required value={roomTypeForm.base_occupancy} onChange={event => setRoomTypeForm({ ...roomTypeForm, base_occupancy: event.target.value })} /></label>
+      <label>{t('hotelDetail.maxOccupancyLabel')}<input type="number" min="1" step="1" required value={roomTypeForm.capacity} onChange={event => setRoomTypeForm({ ...roomTypeForm, capacity: event.target.value })} /></label>
+      <label>{t('hotelDetail.extraGuestModeLabel')}<select value={roomTypeForm.extra_guest_mode} onChange={event => setRoomTypeForm({ ...roomTypeForm, extra_guest_mode: event.target.value as 'per_person' | 'tiered_percent' })}><option value="per_person">{t('hotelDetail.extraGuestPerPerson')}</option><option value="tiered_percent">{t('hotelDetail.extraGuestTiered')}</option></select></label>
+      {roomTypeForm.extra_guest_mode === 'per_person'
+        ? <label>{t('hotelDetail.extraGuestAmountLabel')}<input type="number" min="0" step="0.01" value={roomTypeForm.extra_guest_amount} onChange={event => setRoomTypeForm({ ...roomTypeForm, extra_guest_amount: event.target.value })} /></label>
+        : <label>{t('hotelDetail.extraGuestTiersLabel')}<input value={roomTypeForm.extra_guest_tier_percents} onChange={event => setRoomTypeForm({ ...roomTypeForm, extra_guest_tier_percents: event.target.value })} placeholder="25, 50, 75" /><small>{t('hotelDetail.extraGuestTiersHint')}</small></label>}
+      <label>{t('hotelDetail.childRuleLabel')}<select value={roomTypeForm.child_rule} onChange={event => setRoomTypeForm({ ...roomTypeForm, child_rule: event.target.value as 'age' | 'height', child_rule_limit: '' })}><option value="age">{t('hotelDetail.childRuleAge')}</option><option value="height">{t('hotelDetail.childRuleHeight')}</option></select></label>
+      <label>{roomTypeForm.child_rule === 'age' ? t('hotelDetail.childAgeLimitLabel') : t('hotelDetail.childHeightLimitLabel')}<input type="number" min="0" step={roomTypeForm.child_rule === 'age' ? '1' : '0.5'} value={roomTypeForm.child_rule_limit} onChange={event => setRoomTypeForm({ ...roomTypeForm, child_rule_limit: event.target.value })} /></label>
+      <label>{t('hotelDetail.childPriceModeLabel')}<select value={roomTypeForm.child_price_mode} onChange={event => setRoomTypeForm({ ...roomTypeForm, child_price_mode: event.target.value as 'free' | 'fixed' | 'percent' })}><option value="free">{t('hotelDetail.childPriceFree')}</option><option value="fixed">{t('hotelDetail.childPriceFixed')}</option><option value="percent">{t('hotelDetail.childPricePercent')}</option></select></label>
+      {roomTypeForm.child_price_mode !== 'free' && <label>{t('hotelDetail.childPriceValueLabel')}<input type="number" min="0" step="0.01" value={roomTypeForm.child_price_value} onChange={event => setRoomTypeForm({ ...roomTypeForm, child_price_value: event.target.value })} /></label>}
+      <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" checked={roomTypeForm.children_count_toward_max} onChange={event => setRoomTypeForm({ ...roomTypeForm, children_count_toward_max: event.target.checked })} />{t('hotelDetail.childrenCountTowardMaxLabel')}</label>
+    </fieldset>;
   }
   if (isLoading) return <div className="page-content"><PageState tone="loading" title={t('hotelDetail.loadingTitle')} description={t('hotelDetail.loadingDesc')} /></div>;
   if (error || !hotel) return <div className="page-content"><PageState tone="error" title={t('hotelDetail.errorTitle')} description={error?.message ?? t('hotelDetail.errorDescFallback')} actionLabel={t('hotelDetail.retryButton')} onAction={() => void utils.channelManager.hotel.invalidate(id)} /></div>;
@@ -161,9 +192,9 @@ export default function HotelDetail({ id }: { id: string }) {
           {roomTypeError && <p className="form-error" role="alert">{roomTypeError}</p>}
           <div className="form-grid">
             <label className="form-span-two">{t('hotelDetail.roomTypeNameLabel')}<input autoFocus required value={roomTypeForm.name} onChange={event => setRoomTypeForm({ ...roomTypeForm, name: event.target.value })} placeholder={t('hotelDetail.roomTypeNamePlaceholder')} /></label>
-            <label>{t('hotelDetail.capacityLabel')}<input required min="1" step="1" type="number" value={roomTypeForm.capacity} onChange={event => setRoomTypeForm({ ...roomTypeForm, capacity: event.target.value })} placeholder={t('hotelDetail.capacityPlaceholder')} /></label>
             <label>{t('hotelDetail.basePriceLabel')}<input required min="0.01" step="0.01" type="number" value={roomTypeForm.base_price} onChange={event => setRoomTypeForm({ ...roomTypeForm, base_price: event.target.value })} placeholder={t('hotelDetail.basePricePlaceholder')} /></label>
             <label>{t('hotelDetail.quantityLabel')}<input required min="1" step="1" type="number" value={roomTypeForm.quantity} onChange={event => setRoomTypeForm({ ...roomTypeForm, quantity: event.target.value })} placeholder={t('hotelDetail.quantityPlaceholder')} /></label>
+            {occupancyPricingFields()}
           </div>
           <DialogFooter className="modal-actions"><button className="button button-quiet" type="button" onClick={() => closeRoomTypeDialog(false)} disabled={createRoomType.isPending}>{t('hotelDetail.cancel')}</button><button className="button button-primary" type="submit" disabled={createRoomType.isPending}>{createRoomType.isPending ? t('hotelDetail.creating') : t('hotelDetail.createRoomType')}</button></DialogFooter>
         </form>
@@ -176,8 +207,8 @@ export default function HotelDetail({ id }: { id: string }) {
           {roomTypeError && <p className="form-error" role="alert">{roomTypeError}</p>}
           <div className="form-grid">
             <label className="form-span-two">{t('hotelDetail.roomTypeNameLabel')}<input autoFocus required value={roomTypeForm.name} onChange={event => setRoomTypeForm({ ...roomTypeForm, name: event.target.value })} placeholder={t('hotelDetail.roomTypeNamePlaceholder')} /></label>
-            <label>{t('hotelDetail.capacityLabel')}<input required min="1" step="1" type="number" value={roomTypeForm.capacity} onChange={event => setRoomTypeForm({ ...roomTypeForm, capacity: event.target.value })} placeholder={t('hotelDetail.capacityPlaceholder')} /></label>
             <label>{t('hotelDetail.basePriceLabel')}<input required min="0.01" step="0.01" type="number" value={roomTypeForm.base_price} onChange={event => setRoomTypeForm({ ...roomTypeForm, base_price: event.target.value })} placeholder={t('hotelDetail.basePricePlaceholder')} /></label>
+            {occupancyPricingFields()}
           </div>
           <DialogFooter className="modal-actions"><button className="button button-quiet" type="button" onClick={() => closeEditRoomTypeDialog(false)} disabled={updateRoomType.isPending}>{t('hotelDetail.cancel')}</button><button className="button button-primary" type="submit" disabled={updateRoomType.isPending}>{updateRoomType.isPending ? t('hotelDetail.saving') : t('hotelDetail.saveChanges')}</button></DialogFooter>
         </form>

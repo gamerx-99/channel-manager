@@ -51,6 +51,19 @@ export const createRoomTypeSchema = z.object({
   capacity: z.number().int().positive('Capacity must be at least 1.'),
   base_price: z.number().positive('Base price must be greater than zero.'),
   quantity: z.number().int().positive('Number of rooms must be at least 1.'),
+  base_occupancy: z.number().int().positive().optional(),
+  max_occupancy: z.number().int().positive().optional(),
+  extra_guest_mode: z.enum(['per_person', 'tiered_percent']).optional(),
+  extra_guest_amount: z.number().nonnegative().optional(),
+  extra_guest_tier_percents: z.array(z.number().min(0).max(1000)).max(19).optional(),
+  child_rule: z.enum(['age', 'height']).optional(),
+  child_rule_limit: z.number().nonnegative().nullable().optional(),
+  child_price_mode: z.enum(['free', 'fixed', 'percent']).optional(),
+  child_price_value: z.number().nonnegative().optional(),
+  children_count_toward_max: z.boolean().optional(),
+}).refine(data => (data.max_occupancy ?? data.capacity) >= (data.base_occupancy ?? Math.min(2, data.capacity)), {
+  message: 'Maximum occupancy must be at least base occupancy.',
+  path: ['max_occupancy'],
 });
 
 export const updateRoomTypeSchema = z.object({
@@ -59,6 +72,19 @@ export const updateRoomTypeSchema = z.object({
   name: z.string().trim().min(1, 'Room type name is required.').max(120),
   capacity: z.number().int().positive('Capacity must be at least 1.'),
   base_price: z.number().positive('Base price must be greater than zero.'),
+  base_occupancy: z.number().int().positive().optional(),
+  max_occupancy: z.number().int().positive().optional(),
+  extra_guest_mode: z.enum(['per_person', 'tiered_percent']).optional(),
+  extra_guest_amount: z.number().nonnegative().optional(),
+  extra_guest_tier_percents: z.array(z.number().min(0).max(1000)).max(19).optional(),
+  child_rule: z.enum(['age', 'height']).optional(),
+  child_rule_limit: z.number().nonnegative().nullable().optional(),
+  child_price_mode: z.enum(['free', 'fixed', 'percent']).optional(),
+  child_price_value: z.number().nonnegative().optional(),
+  children_count_toward_max: z.boolean().optional(),
+}).refine(data => (data.max_occupancy ?? data.capacity) >= (data.base_occupancy ?? Math.min(2, data.capacity)), {
+  message: 'Maximum occupancy must be at least base occupancy.',
+  path: ['max_occupancy'],
 });
 
 export const deleteRoomTypeSchema = z.object({
@@ -177,8 +203,16 @@ export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mut
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
   const client = rlsClient(ctx.user.accessToken);
   try {
-    await assertHotelExists(client, input.hotel_id);
-    return await createManagedRoomType(client, input);
+    const hotel = await assertHotelExists(client, input.hotel_id);
+    const existingRules = new Set(hotel.room_types.map(roomType => roomType.child_rule).filter(Boolean));
+    if (existingRules.size > 1) {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Room types must use one shared child measurement rule before adding another room type.' });
+    }
+    const childRule = input.child_rule ?? hotel.room_types[0]?.child_rule ?? 'age';
+    if (existingRules.size && !existingRules.has(childRule)) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'All room types in a hotel must use the same child measurement rule.' });
+    }
+    return await createManagedRoomType(client, { ...input, child_rule: childRule });
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);

@@ -96,6 +96,15 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(publicHotelSource).toContain('publicHotel.bookAnotherStay');
   });
 
+  it('collects party size before selecting exactly one occupancy-matched room type', () => {
+    expect(publicHotelSource).toContain('publicHotel.adultsLabel');
+    expect(publicHotelSource).toContain('publicHotel.childrenLabel');
+    expect(publicHotelSource).toContain('childMeasurements');
+    expect(dbSource).toContain('get_public_room_type_availability_for_guests');
+    expect(publicHotelSource).not.toContain('roomTypes.map((rt) => (');
+    expect(bookingRouterText).toContain('children: z.array(publicChildMeasurementSchema)');
+  });
+
   it('server/db/booking.ts exposes holdRoomType and confirmBookingDetails with service persistence', () => {
     expect(dbSource).toContain('export async function holdRoomType');
     expect(dbSource).toContain('export async function confirmBookingDetails');

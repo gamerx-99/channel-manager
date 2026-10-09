@@ -60,8 +60,8 @@ describe('createManagedRoomType', () => {
 
     await expect(createManagedRoomType(client, input)).resolves.toMatchObject({ id: 'room-type-created' });
     expect(from).toHaveBeenCalledWith('room_types');
-    expect(insert).toHaveBeenCalledWith(input);
-    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price');
+    expect(insert).toHaveBeenCalledWith({ ...input, base_occupancy: 2, max_occupancy: 2, extra_guest_mode: 'per_person', extra_guest_amount: 0, extra_guest_tier_percents: [], child_rule: 'age', child_rule_limit: null, child_price_mode: 'free', child_price_value: 0, children_count_toward_max: true });
+    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max');
     expect(single).toHaveBeenCalledOnce();
   });
 });
@@ -94,10 +94,10 @@ describe('updateManagedRoomType', () => {
 
     await expect(updateManagedRoomType(client, input)).resolves.toMatchObject({ id: 'room-type-updated' });
     expect(from).toHaveBeenCalledWith('room_types');
-    expect(update).toHaveBeenCalledWith({ name: 'Suite', capacity: 3, base_price: 3200 });
+    expect(update).toHaveBeenCalledWith({ name: 'Suite', capacity: 3, base_price: 3200, max_occupancy: 3 });
     expect(roomFilter).toHaveBeenCalledWith('id', input.room_type_id);
     expect(hotelFilter).toHaveBeenCalledWith('hotel_id', input.hotel_id);
-    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price');
+    expect(select).toHaveBeenCalledWith('id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max');
     expect(maybeSingle).toHaveBeenCalledOnce();
   });
 });

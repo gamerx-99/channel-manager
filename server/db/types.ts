@@ -16,13 +16,27 @@ export type RoomTypeRecord = {
   name: string;
   capacity: number;
   base_price: number | string;
+  base_occupancy: number;
+  max_occupancy: number;
+  extra_guest_mode: 'per_person' | 'tiered_percent';
+  extra_guest_amount: number | string;
+  extra_guest_tier_percents: number[];
+  child_rule: 'age' | 'height';
+  child_rule_limit: number | string | null;
+  child_price_mode: 'free' | 'fixed' | 'percent';
+  child_price_value: number | string;
+  children_count_toward_max: boolean;
 };
 
 export type CreateHotelInput = Pick<HotelRecord, 'name' | 'slug' | 'address' | 'public_enabled'> & {
   owner_contact: string;
 };
 
-export type CreateRoomTypeInput = Pick<RoomTypeRecord, 'hotel_id' | 'name' | 'capacity' | 'base_price'> & { quantity: number };
+export type RoomTypeOccupancyPricingInput = Pick<RoomTypeRecord,
+  'base_occupancy' | 'max_occupancy' | 'extra_guest_mode' | 'extra_guest_amount' |
+  'extra_guest_tier_percents' | 'child_rule' | 'child_rule_limit' | 'child_price_mode' |
+  'child_price_value' | 'children_count_toward_max'>;
+export type CreateRoomTypeInput = Pick<RoomTypeRecord, 'hotel_id' | 'name' | 'capacity' | 'base_price'> & Partial<RoomTypeOccupancyPricingInput> & { quantity: number };
 
 export type UpdateRoomTypeInput = Omit<CreateRoomTypeInput, 'quantity'> & { room_type_id: string };
 export type DeleteRoomTypeInput = Pick<UpdateRoomTypeInput, 'hotel_id' | 'room_type_id'>;
@@ -160,6 +174,12 @@ export type PublicRoomTypeAvailability = {
   min_stay_nights: number | null;
   is_available: boolean;
   min_stay_violated: boolean;
+  nightly_prices: number[];
+};
+
+export type PublicGuestCounts = {
+  adults: number;
+  children: Array<{ age: number } | { height_cm: number }>;
 };
 
 export type PublicHotelAvailabilityResult = {

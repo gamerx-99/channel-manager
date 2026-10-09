@@ -36,6 +36,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [checkIn, setCheckIn] = useState<string | null>(getTomorrowDateString());
   const [checkOut, setCheckOut] = useState<string | null>(getDayAfterTomorrowDateString());
+  const [adults, setAdults] = useState(2);
+  const [children, setChildren] = useState<string[]>([]);
   const [preferredRoomTypeId, setPreferredRoomTypeId] = useState<string | null>(null);
   const [heldBooking, setHeldBooking] = useState<{
     booking_id: string;
@@ -63,9 +65,13 @@ export default function PublicHotel({ slug }: { slug: string }) {
   });
 
   const isDatesValid = Boolean(checkIn && checkOut && checkOut > checkIn);
+  const propertyChildRule = publicHotel.data?.roomTypes[0]?.child_rule ?? 'age';
+  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.child_rule_limit != null);
+  const childMeasurements = children.filter(value => value !== '').map(value => propertyChildRule === 'age' ? { age: Number(value) } : { height_cm: Number(value) });
+  const guestsValid = adults >= 1 && children.every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
 
   const availabilityQuery = trpc.channelManager.publicHotelAvailability.useQuery(
-    { slug, check_in: checkIn ?? "", check_out: checkOut ?? "" },
+    { slug, check_in: checkIn ?? "", check_out: checkOut ?? "", adults, children: childMeasurements },
     {
       enabled: Boolean(slug && isDatesValid && wizardStep >= 2 && !publicHotel.isLoading && !publicHotel.error),
       staleTime: 30_000,
@@ -144,6 +150,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
     setWizardStep(1);
     setCheckIn(getTomorrowDateString());
     setCheckOut(getDayAfterTomorrowDateString());
+    setAdults(2);
+    setChildren([]);
     setPreferredRoomTypeId(null);
     setHeldBooking(null);
     setSelectedServiceQty({});
@@ -164,6 +172,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
       room_type_id: roomTypeId,
       check_in: checkIn,
       check_out: checkOut,
+      adults,
+      children: childMeasurements,
     });
   };
 
@@ -226,18 +236,32 @@ export default function PublicHotel({ slug }: { slug: string }) {
               minDateIso={new Date().toISOString().slice(0, 10)}
               accentColor={accentColor}
             />
+            <div style={{ width: "min(100%, 520px)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
+              <label style={{ color: "var(--public-text)", fontSize: 12, fontWeight: 600 }}>{t("publicHotel.adultsLabel")}
+                <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} />
+              </label>
+              <label style={{ color: "var(--public-text)", fontSize: 12, fontWeight: 600 }}>{t("publicHotel.childrenLabel")}
+                <select aria-label={t("publicHotel.childrenLabel")} value={children.length} disabled={!childRulesConfigured} onChange={event => setChildren(Array.from({ length: Number(event.target.value) }, (_, index) => children[index] ?? ""))}>
+                  {Array.from({ length: 11 }, (_, count) => <option key={count} value={count}>{count}</option>)}
+                </select>
+              </label>
+              {!childRulesConfigured && <p style={{ gridColumn: "1 / -1", margin: 0 }}>{t("publicHotel.childRuleNotConfigured")}</p>}
+              {children.map((value, index) => <label key={index} style={{ gridColumn: "1 / -1" }}>{t("publicHotel.childMeasurementLabel", { index: index + 1, measure: propertyChildRule === 'age' ? t("publicHotel.childAgeUnit") : t("publicHotel.childHeightUnit") })}
+                <input type="number" min="0" max={propertyChildRule === 'age' ? 17 : 250} step={propertyChildRule === 'age' ? 1 : 0.5} value={value} onChange={event => setChildren(current => current.map((child, childIndex) => childIndex === index ? event.target.value : child))} />
+              </label>)}
+            </div>
             <div style={{ marginTop: "18px", textAlign: "right" }}>
               <button
                 type="button"
                 className="button public-button"
-                disabled={!isDatesValid}
+                disabled={!isDatesValid || !guestsValid}
                 onClick={() => setWizardStep(2)}
                 style={{
                   backgroundColor: accentColor,
                   borderColor: accentColor,
                   color: "#ffffff",
-                  opacity: !isDatesValid ? 0.6 : 1,
-                  cursor: !isDatesValid ? "not-allowed" : "pointer",
+                  opacity: !isDatesValid || !guestsValid ? 0.6 : 1,
+                  cursor: !isDatesValid || !guestsValid ? "not-allowed" : "pointer",
                 }}
               >
                 {t("publicHotel.wizardNext")} <ArrowRight size={14} />
@@ -300,30 +324,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   })}
                 </div>
               ) : (
-                <div style={{ display: "grid", gap: "8px" }}>
-                  {roomTypes.map((rt) => (
-                    <div
-                      key={rt.id}
-                      onClick={() => handleHoldRoom(rt.id)}
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: "7px",
-                        background: preferredRoomTypeId === rt.id ? "#ffffff" : "rgba(255,255,255,0.92)",
-                        color: "var(--ink)",
-                        border: preferredRoomTypeId === rt.id ? `2px solid ${accentColor}` : "1px solid #dfd8cb",
-                        cursor: "pointer",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <strong style={{ fontSize: "13px" }}>{rt.name}</strong>
-                        <small style={{ display: "block", color: "#6a7670", fontSize: "10px" }}>{t("publicHotel.fallbackCapacity", { capacity: rt.capacity })}</small>
-                      </div>
-                      <strong style={{ color: "var(--pine)" }}>฿{Number(rt.base_price).toLocaleString()}</strong>
-                    </div>
-                  ))}
+                <div role="status" style={{ color: "#d2e8de", fontSize: "12px", padding: "12px", background: "rgba(0,0,0,0.15)", borderRadius: "6px" }}>
+                  {t("publicHotel.noRoomsFitGuests")}
                 </div>
               )}
             </div>
@@ -516,6 +518,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
               <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
               <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
               <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
+              <div><strong>{t("publicHotel.summaryGuests")}</strong> {t("publicHotel.adultsLabel")}: {adults}, {t("publicHotel.childrenLabel")}: {children.length}</div>
             </div>
             {(servicesQuery.data ?? []).some((s) => (selectedServiceQty[s.id] ?? 0) > 0) && (
               <div style={{ marginBottom: "16px" }}>

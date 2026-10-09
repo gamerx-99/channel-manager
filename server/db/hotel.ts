@@ -46,7 +46,7 @@ export async function listManagedHotelsForFinancials(client: SupabaseClient) {
 export async function getManagedHotel(client: SupabaseClient, hotelId: string) {
   const { data, error } = await client
     .from("hotels")
-    .select("id,name,slug,address,public_enabled,created_at,room_types(id,hotel_id,name,capacity,base_price),rooms(id,room_type_id,room_number,status)")
+    .select("id,name,slug,address,public_enabled,created_at,room_types(id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max),rooms(id,room_type_id,room_number,status)")
     .eq("id", hotelId)
     .maybeSingle();
   throwOnError(error);
@@ -72,10 +72,22 @@ export async function createManagedHotel(client: SupabaseClient, input: CreateHo
 /** Inserts after the router has checked that the caller can read the target hotel under RLS. */
 export async function createManagedRoomType(client: SupabaseClient, input: CreateRoomTypeInput) {
   const { quantity, ...roomTypeInput } = input;
+  const configuration = {
+    base_occupancy: input.base_occupancy ?? Math.min(2, input.capacity),
+    max_occupancy: input.max_occupancy ?? input.capacity,
+    extra_guest_mode: input.extra_guest_mode ?? 'per_person',
+    extra_guest_amount: input.extra_guest_amount ?? 0,
+    extra_guest_tier_percents: input.extra_guest_tier_percents ?? [],
+    child_rule: input.child_rule ?? 'age',
+    child_rule_limit: input.child_rule_limit ?? null,
+    child_price_mode: input.child_price_mode ?? 'free',
+    child_price_value: input.child_price_value ?? 0,
+    children_count_toward_max: input.children_count_toward_max ?? true,
+  };
   const { data: roomType, error: typeError } = await client
     .from("room_types")
-    .insert(roomTypeInput)
-    .select("id,hotel_id,name,capacity,base_price")
+    .insert({ ...roomTypeInput, ...configuration, capacity: configuration.max_occupancy })
+    .select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max")
     .single();
   throwOnError(typeError);
   if (!roomType) throw new Error("Room type insert did not return a record.");
@@ -93,12 +105,24 @@ export async function createManagedRoomType(client: SupabaseClient, input: Creat
 
 /** Updates only mutable room type fields while constraining the write to the selected hotel. */
 export async function updateManagedRoomType(client: SupabaseClient, input: UpdateRoomTypeInput) {
+  const configurationPatch = Object.fromEntries(
+    (['base_occupancy', 'extra_guest_mode', 'extra_guest_amount', 'extra_guest_tier_percents', 'child_rule', 'child_rule_limit', 'child_price_mode', 'child_price_value', 'children_count_toward_max'] as const)
+      .filter(key => input[key] !== undefined)
+      .map(key => [key, input[key]]),
+  );
+  if (input.child_rule !== undefined) {
+    const { error: sharedRuleError } = await client.from('room_types')
+      .update({ child_rule: input.child_rule, child_rule_limit: null })
+      .eq('hotel_id', input.hotel_id);
+    throwOnError(sharedRuleError);
+    configurationPatch.child_rule_limit = null;
+  }
   const { data, error } = await client
     .from("room_types")
-    .update({ name: input.name, capacity: input.capacity, base_price: input.base_price })
+    .update({ name: input.name, capacity: input.max_occupancy ?? input.capacity, base_price: input.base_price, max_occupancy: input.max_occupancy ?? input.capacity, ...configurationPatch })
     .eq("id", input.room_type_id)
     .eq("hotel_id", input.hotel_id)
-    .select("id,hotel_id,name,capacity,base_price")
+    .select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max")
     .maybeSingle();
   throwOnError(error);
   return (data ?? null) as RoomTypeRecord | null;
@@ -184,7 +208,7 @@ export async function getPublicHotel(client: SupabaseClient, slug: string) {
 
   const hotel = data as Pick<HotelRecord, "id" | "name" | "slug" | "address" | "created_at">;
   const [{ data: roomTypes, error: roomTypeError }, { data: media, error: mediaError }] = await Promise.all([
-    client.from("room_types").select("id,hotel_id,name,capacity,base_price").eq("hotel_id", hotel.id).order("base_price"),
+    client.from("room_types").select("id,hotel_id,name,capacity,base_price,base_occupancy,max_occupancy,extra_guest_mode,extra_guest_amount,extra_guest_tier_percents,child_rule,child_rule_limit,child_price_mode,child_price_value,children_count_toward_max").eq("hotel_id", hotel.id).order("base_price"),
     client.from("hotel_media").select("id,url,caption,is_hero,display_order").eq("hotel_id", hotel.id).order("display_order"),
   ]);
   throwOnError(roomTypeError);

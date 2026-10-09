@@ -22,6 +22,14 @@ import {
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
+const publicChildMeasurementSchema = z.union([
+  z.object({ age: z.number().int().min(0).max(17) }),
+  z.object({ height_cm: z.number().min(20).max(250) }),
+]);
+const publicGuestCountsSchema = {
+  adults: z.number().int().min(1).max(20).default(2),
+  children: z.array(publicChildMeasurementSchema).max(20).default([]),
+};
 export const bookingStatusSchema = z.enum(['confirmed', 'checked_in', 'checked_out', 'cancelled']);
 export const bookingSourceSchema = z.enum(['manual', 'walk-in', 'phone']);
 
@@ -29,6 +37,7 @@ export const publicHotelAvailabilitySchema = z.object({
   slug: z.string().trim().min(1).max(100),
   check_in: z.string().date(),
   check_out: z.string().date(),
+  ...publicGuestCountsSchema,
 }).refine(data => data.check_out > data.check_in, {
   message: 'Check-out date must be later than check-in date.',
   path: ['check_out'],
@@ -53,6 +62,7 @@ export const holdRoomTypeSchema = z.object({
   room_type_id: z.string().uuid(),
   check_in: z.string().date(),
   check_out: z.string().date(),
+  ...publicGuestCountsSchema,
 }).refine(data => data.check_out > data.check_in, {
   message: 'Check-out date must be later than check-in date.',
   path: ['check_out'],
@@ -222,7 +232,10 @@ export const createBooking = protectedProcedure
 
 export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAvailabilitySchema).query(async ({ input }) => {
   try {
-    return await getPublicHotelAvailability(rlsClient(), input.slug, input.check_in, input.check_out);
+    return await getPublicHotelAvailability(rlsClient(), input.slug, input.check_in, input.check_out, {
+      adults: input.adults,
+      children: input.children,
+    });
   } catch (error) {
     return rethrowDomainError(error);
   }

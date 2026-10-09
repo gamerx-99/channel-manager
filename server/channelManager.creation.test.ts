@@ -120,7 +120,7 @@ describe('channelManager.createRoomType', () => {
   it('allows an RLS-visible hotel owner to create a positive-priced room type', async () => {
     const client = { requestScoped: true };
     supabaseMocks.createRlsSupabaseClient.mockReturnValueOnce(client);
-    dbMocks.getManagedHotel.mockResolvedValueOnce({ id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4' });
+    dbMocks.getManagedHotel.mockResolvedValueOnce({ id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4', room_types: [] });
     dbMocks.createManagedRoomType.mockResolvedValueOnce({ id: 'room-type-created' });
     const app = await caller('hotel_owner');
 
@@ -130,6 +130,7 @@ describe('channelManager.createRoomType', () => {
       capacity: 2,
       base_price: 2500,
       quantity: 5,
+      child_rule: 'age',
     })).resolves.toEqual({ id: 'room-type-created' });
 
     expect(dbMocks.getManagedHotel).toHaveBeenCalledWith(client, '88ed76e4-cc93-4aa7-9c4d-30999d35ada4');
@@ -139,6 +140,7 @@ describe('channelManager.createRoomType', () => {
       capacity: 2,
       base_price: 2500,
       quantity: 5,
+      child_rule: 'age',
     });
   });
 
@@ -158,7 +160,7 @@ describe('channelManager.createRoomType', () => {
   });
 
   it('maps a database uniqueness error to a conflict response', async () => {
-    dbMocks.getManagedHotel.mockResolvedValueOnce({ id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4' });
+    dbMocks.getManagedHotel.mockResolvedValueOnce({ id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4', room_types: [] });
     dbMocks.createManagedRoomType.mockRejectedValueOnce(new Error('23505: duplicate key value violates unique constraint'));
     const app = await caller('hotel_owner');
 
@@ -172,5 +174,24 @@ describe('channelManager.createRoomType', () => {
       code: 'CONFLICT',
       message: 'A hotel or room type with the same unique details already exists.',
     });
+  });
+
+  it('rejects a child measurement rule that conflicts with the hotel-wide rule', async () => {
+    dbMocks.getManagedHotel.mockResolvedValueOnce({
+      id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4',
+      room_types: [{ child_rule: 'age' }],
+    });
+    const app = await caller('hotel_owner');
+
+    await expect(app.channelManager.createRoomType({
+      hotel_id: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4',
+      name: 'Height Rule Room',
+      capacity: 2,
+      base_price: 2500,
+      quantity: 1,
+      child_rule: 'height',
+    })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+    expect(dbMocks.createManagedRoomType).not.toHaveBeenCalled();
   });
 });

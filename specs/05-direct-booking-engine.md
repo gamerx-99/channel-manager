@@ -1,5 +1,5 @@
 # 05 Direct Booking Engine — guest-facing checkout
-Status: DONE (2026-08-31)
+Status: IN PROGRESS (occupancy/pricing extension; waiting on migration apply + verify)
 Depends on: 01-payments-slipok, 02-advanced-pricing
 
 ## Public room-type RLS follow-up
@@ -83,3 +83,18 @@ procedure wiring existing pieces together.
 - [x] No TODO/FIXME left in touched files
 - [x] Spec status updated to DONE, `.agent/handoff.md` entry written
 - [x] Reviewer approved with evidence
+
+## Occupancy and pricing extension (2026-10-09)
+- Added configurable base/max occupancy, per-person or tiered extra-adult pricing,
+  shared child measurement type, per-room-type child limit and child pricing.
+- The child limit has no database default. Public child selection remains disabled
+  until every room type has an owner-configured limit. Changing age/height clears
+  all existing limits so thresholds are re-entered in the new unit.
+- Public availability filters inventory by fit and booking overlap; prices are
+  recomputed per night and for the full stay, then recomputed again when holding
+  the selected single room.
+- `20261009_room_type_occupancy_pricing.sql` and its verify script are prepared.
+  They are pending human application and all-PASS confirmation in the production
+  SQL editor; no database changes have been applied by this task.
+- Verification run: `pnpm check`, `pnpm test`, and `pnpm build` passed. The build
+  reports the existing large-client-chunk warning.

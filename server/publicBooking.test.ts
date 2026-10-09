@@ -60,15 +60,14 @@ describe('Public Booking Engine & Availability Logic', () => {
     it('uses the published-hotel inventory RPC and returns only room-type availability counts', async () => {
       const hotel = { id: 'hotel-1', name: 'Test Resort', slug: 'test-resort', address: 'Phuket' };
       const roomTypes = [
-        { id: 'rt-1', hotel_id: 'hotel-1', name: 'Deluxe', capacity: 2, base_price: 1500 },
-        { id: 'rt-2', hotel_id: 'hotel-1', name: 'Standard', capacity: 2, base_price: 1000 },
+        { id: 'rt-1', hotel_id: 'hotel-1', name: 'Deluxe', capacity: 2, base_price: 1500, base_occupancy: 2, max_occupancy: 2, extra_guest_mode: 'per_person', extra_guest_amount: 0, extra_guest_tier_percents: [], child_rule: 'age', child_rule_limit: 12, child_price_mode: 'free', child_price_value: 0, children_count_toward_max: true },
+        { id: 'rt-2', hotel_id: 'hotel-1', name: 'Standard', capacity: 2, base_price: 1000, base_occupancy: 2, max_occupancy: 2, extra_guest_mode: 'per_person', extra_guest_amount: 0, extra_guest_tier_percents: [], child_rule: 'age', child_rule_limit: 12, child_price_mode: 'free', child_price_value: 0, children_count_toward_max: true },
       ];
       const rpc = vi.fn((name: string) => name === 'get_public_hotel'
         ? { single: vi.fn().mockResolvedValue({ data: hotel, error: null }) }
         : Promise.resolve({
           data: [
-            { room_type_id: 'rt-1', rooms_available: 1 },
-            { room_type_id: 'rt-2', rooms_available: 0 },
+          { room_type_id: 'rt-1', rooms_available: 1 },
           ],
           error: null,
         }));
@@ -85,17 +84,18 @@ describe('Public Booking Engine & Availability Logic', () => {
 
       const result = await getPublicHotelAvailability({ rpc, from } as any, 'test-resort', '2026-10-20', '2026-10-22');
 
-      expect(rpc).toHaveBeenCalledWith('get_public_room_type_availability', {
+      expect(rpc).toHaveBeenCalledWith('get_public_room_type_availability_for_guests', {
         target_hotel_id: 'hotel-1',
         target_check_in: '2026-10-20',
         target_check_out: '2026-10-22',
+        target_adults: 2,
+        target_children: [],
       });
-      expect(from).toHaveBeenCalledTimes(3);
+      expect(from).toHaveBeenCalledTimes(2);
       expect(from).not.toHaveBeenCalledWith('rooms');
       expect(from).not.toHaveBeenCalledWith('bookings');
-      expect(result.room_types.map(roomType => [roomType.id, roomType.rooms_available, roomType.is_available])).toEqual([
-        ['rt-1', 1, true],
-        ['rt-2', 0, false],
+      expect(result.room_types.map(roomType => [roomType.id, roomType.rooms_available, roomType.is_available, roomType.nightly_prices])).toEqual([
+        ['rt-1', 1, true, [1500, 1500]],
       ]);
     });
   });
