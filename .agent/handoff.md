@@ -1,4 +1,14 @@
 # Handoff log
+## 2026-10-10 · channel-manager-mvp-latest (RONDMAP P2 public booking page)
+- **Project:** channel-manager-mvp-latest
+- **Current task:** Implement the P2 public booking page updates from the owner’s screenshot review.
+- **Completed:** Added a localized hero booking CTA; translated the public-page fallback copy and gallery captions, including legacy saved default copy; matched room photos by exact room-name caption with a labeled illustrated placeholder; raised public labels/nav/body type sizes and text contrast; made the sticky booking bar work on desktop and mobile, scroll to the booking section, and removed its top border line. No database or schema changes.
+- **Remaining:** Visual screenshot verification at 390px and desktop. Browser-control tools were unavailable in this session; responsive CSS and the page contract were checked.
+- **Blockers:** `pnpm` is unavailable and Corepack cannot read its cache in this sandbox. Equivalent local binaries were used for typecheck, Vitest, Vite build, and esbuild.
+- **Changed files:** `client/src/pages/PublicHotel.tsx`, `client/src/index.css`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `client/src/pages/PublicHotel.contract.test.ts`.
+- **Verification:** TypeScript `tsc --noEmit` PASS (tsbuildinfo redirected to temp); Vitest PASS (89 files passed, 2 skipped; 490 passed, 3 skipped); Vite + esbuild build PASS (existing >500 kB client chunk warning); `git diff --check` PASS. No commit, push, deploy, or database operation.
+- **Next step:** Perform visual QA at 390px and desktop when a browser-control surface is available, then review/commit the working tree.
+
 ## 2026-10-10 · channel-manager-mvp-latest (booking guest counts)
 - **Project:** channel-manager-mvp-latest
 - **Current task:** Implement RONDMAP P1 item 1: persist adults, children, and each child’s age or height on bookings.

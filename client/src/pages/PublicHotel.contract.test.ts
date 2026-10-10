@@ -7,6 +7,9 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/db/siteConfig.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
+  const thaiI18n = readFileSync(resolve(process.cwd(), 'client/src/lib/i18n/th.ts'), 'utf8');
+  const englishI18n = readFileSync(resolve(process.cwd(), 'client/src/lib/i18n/en.ts'), 'utf8');
+  const publicStyles = readFileSync(resolve(process.cwd(), 'client/src/index.css'), 'utf8');
   const routerSource = routerText + hotelRouterText;
 
   it('PublicHotel reads hotel_site_config via tRPC getHotelSiteConfig with slug', () => {
@@ -15,13 +18,16 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toMatch(/getHotelSiteConfig\.useQuery\(slug/);
   });
 
-  it('PublicHotel falls back to fixed copy/colors when no config (42P01 or missing row)', () => {
-    expect(publicHotelSource).toContain('DEFAULT_HERO_COPY');
+  it('PublicHotel localizes default hero copy when no site config is present', () => {
     expect(publicHotelSource).toContain('DEFAULT_ACCENT_COLOR');
-    expect(publicHotelSource).toContain('Explore room types, rates, and availability directly from this hotel.');
+    expect(publicHotelSource).toContain('t("publicHotel.defaultHeroCopy")');
+    expect(thaiI18n).toContain('defaultHeroCopy:');
+    expect(englishI18n).toContain('defaultHeroCopy:');
     expect(publicHotelSource).toContain('#334155');
-    // Fallback via nullish coalescing
-    expect(publicHotelSource).toMatch(/hero_copy.*\?\?.*DEFAULT_HERO_COPY|DEFAULT_HERO_COPY.*\?\?/s);
+    // Missing and legacy default text both resolve to the active language's translation.
+    expect(publicHotelSource).toContain('configuredHeroCopy !== en.publicHotel.defaultHeroCopy');
+    expect(publicHotelSource).toContain(': t("publicHotel.defaultHeroCopy")');
+    expect(englishI18n).toContain('defaultHeroCopy: "Explore room types, rates, and availability directly from this hotel."');
     expect(publicHotelSource).toMatch(/accent_color.*\?\?.*DEFAULT_ACCENT_COLOR|DEFAULT_ACCENT_COLOR.*\?\?/s);
     // Also checks siteConfigQuery.data ?? null
     expect(publicHotelSource).toContain('siteConfigQuery.data');
@@ -36,8 +42,9 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   });
 
   it('PublicHotel shows default hero_copy/accent_color when config missing, and configured values when present (derived logic)', () => {
-    // Derive logic string is present: heroCopy = siteConfig?.hero_copy ?? DEFAULT_HERO_COPY
-    expect(publicHotelSource).toMatch(/const heroCopy = siteConfig\?\.hero_copy \?\? DEFAULT_HERO_COPY/);
+    // Configured owner copy stays intact while the missing/legacy default is translated.
+    expect(publicHotelSource).toContain('const configuredHeroCopy = siteConfig?.hero_copy?.trim();');
+    expect(publicHotelSource).toContain('t("publicHotel.defaultHeroCopy")');
     expect(publicHotelSource).toMatch(/const accentColor = siteConfig\?\.accent_color \?\? DEFAULT_ACCENT_COLOR/);
   });
 
@@ -73,6 +80,23 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toContain('className="public-room-action"');
     expect(publicHotelSource).toContain('fetchPriority="high"');
     expect(publicHotelSource).toContain('loading="lazy"');
+  });
+
+  it('uses the localized booking CTA and keeps a sticky booking action on all screen sizes', () => {
+    expect(publicHotelSource).toContain('label: t("publicHotel.bookNow")');
+    expect(thaiI18n).toContain('bookNow: "จองห้องพัก"');
+    expect(englishI18n).toContain('bookNow: "Book now"');
+    expect(publicHotelSource).toContain('className="public-sticky-booking"');
+    expect(publicHotelSource).toContain('onClick={scrollToBooking}');
+    expect(publicHotelSource).not.toContain('public-sticky-booking md:hidden');
+    expect(publicStyles).toContain('border-top: 0;');
+    expect(publicStyles).toContain('.public-page .eyebrow');
+    expect(publicStyles).toContain('font-size:13px');
+  });
+
+  it('uses room-specific gallery photos when captions match and a labeled placeholder otherwise', () => {
+    expect(publicHotelSource).toContain('roomPhotoFor(room.name)');
+    expect(publicHotelSource).toContain('publicHotel.roomImagePlaceholder');
   });
 });
 

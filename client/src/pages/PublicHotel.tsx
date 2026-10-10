@@ -1,45 +1,44 @@
-import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, MapPin, Menu, X } from "lucide-react";
+import { ArrowRight, BedDouble, CheckCircle2, ChevronLeft, ChevronRight, MapPin, Menu, X } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { PaymentQR } from "@/components/PaymentQR";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
-import { useTranslation } from "@/lib/i18n";
+import { en, useTranslation } from "@/lib/i18n";
 import { calculateServiceTotal } from "@shared/pricingModels";
 
-export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_ACCENT_COLOR = "#334155";
 
 const DEFAULT_ATMOSPHERE_PHOTOS = [
   {
     id: "default-1",
     url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80",
-    caption: "Resort Pool & Architecture",
+    captionKey: "publicHotel.defaultAtmospherePhoto1",
   },
   {
     id: "default-2",
     url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-    caption: "Deluxe Bedroom Suite",
+    captionKey: "publicHotel.defaultAtmospherePhoto2",
   },
   {
     id: "default-3",
     url: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80",
-    caption: "Relaxation Poolside Lounge",
+    captionKey: "publicHotel.defaultAtmospherePhoto3",
   },
   {
     id: "default-4",
     url: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80",
-    caption: "Lobby & Scenic Garden",
+    captionKey: "publicHotel.defaultAtmospherePhoto4",
   },
   {
     id: "default-5",
     url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80",
-    caption: "Modern Comfort Room",
+    captionKey: "publicHotel.defaultAtmospherePhoto5",
   },
   {
     id: "default-6",
     url: "https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80",
-    caption: "Dining Terrace & Surroundings",
+    captionKey: "publicHotel.defaultAtmospherePhoto6",
   },
 ];
 
@@ -61,6 +60,17 @@ function formatCountdown(ms: number): string {
   const min = Math.floor(totalSec / 60).toString().padStart(2, "0");
   const sec = (totalSec % 60).toString().padStart(2, "0");
   return `${min}:${sec}`;
+}
+
+function getAccentForeground(color: string): "#ffffff" | "#1f2933" {
+  const hex = color.replace("#", "");
+  if (!/^[\da-f]{3}([\da-f]{3})?$/i.test(hex)) return "#ffffff";
+  const expanded = hex.length === 3 ? hex.split("").map(part => part + part).join("") : hex;
+  const channels = [0, 2, 4].map(index => Number.parseInt(expanded.slice(index, index + 2), 16) / 255);
+  const luminance = channels
+    .map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  return luminance > 0.179 ? "#1f2933" : "#ffffff";
 }
 
 export default function PublicHotel({ slug }: { slug: string }) {
@@ -161,11 +171,18 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
   const { hotel, roomTypes, media } = publicHotel.data;
   const heroImage = media.find(item => item.is_hero)?.url ?? media[0]?.url;
+  const roomPhotoFor = (roomName: string) => media.find(
+    item => item.caption?.trim().toLocaleLowerCase() === roomName.trim().toLocaleLowerCase(),
+  );
 
   // hotel_site_config fallback: when no config row or table missing, use fixed copy/colors
   const siteConfig = siteConfigQuery.data ?? null;
-  const heroCopy = siteConfig?.hero_copy ?? DEFAULT_HERO_COPY;
+  const configuredHeroCopy = siteConfig?.hero_copy?.trim();
+  const heroCopy = configuredHeroCopy && configuredHeroCopy !== en.publicHotel.defaultHeroCopy
+    ? configuredHeroCopy
+    : t("publicHotel.defaultHeroCopy");
   const accentColor = siteConfig?.accent_color ?? DEFAULT_ACCENT_COLOR;
+  const accentForeground = getAccentForeground(accentColor);
   const visibleSections = siteConfig?.visible_sections ?? null;
   const isVisible = (key: string) => visibleSections == null || visibleSections[key] !== false;
 
@@ -186,7 +203,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
         return {
           id: items[idx].id,
           url: items[idx].url,
-          caption: items[idx].caption || `${hotel.name} Photo ${idx + 1}`,
+          caption: items[idx].caption || `${hotel.name} · ${t("publicHotel.photoNumber", { index: idx + 1 })}`,
           badge: slotBadges[idx] || `Photo ${idx + 1}`,
         };
       }
@@ -194,17 +211,21 @@ export default function PublicHotel({ slug }: { slug: string }) {
       return {
         id: def.id,
         url: def.url,
-        caption: `${hotel.name} — ${def.caption}`,
+        caption: `${hotel.name} — ${t(def.captionKey as Parameters<typeof t>[0])}`,
         badge: slotBadges[idx],
       };
     });
   }, [media, hotel?.name, t]);
 
-  const handleQuickBook = () => {
+  const scrollToBooking = () => {
     const bookElem = document.getElementById("book");
     if (bookElem) {
       bookElem.scrollIntoView({ behavior: "smooth" });
     }
+  };
+
+  const handleQuickBook = () => {
+    scrollToBooking();
     if (wizardStep === 1 && isDatesValid) {
       setWizardStep(2);
     }
@@ -700,7 +721,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 type="button"
                 className="button public-button"
                 onClick={() => setWizardStep(6)}
-                style={{ backgroundColor: accentColor, borderColor: accentColor, color: "#ffffff" }}
+                style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentForeground }}
               >
                 {t("publicHotel.confirmAndPay")}
               </button>
@@ -762,7 +783,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   };
 
   const primaryCta = isVisible("booking")
-    ? { href: "#book", label: t("publicHotel.navCheckDates") }
+    ? { href: "#book", label: t("publicHotel.bookNow") }
     : isVisible("rooms")
       ? { href: "#stay", label: t("publicHotel.heroViewRooms") }
       : isVisible("location")
@@ -772,7 +793,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
           : null;
 
   return (
-    <div className="public-page" style={{ "--public-accent": accentColor } as React.CSSProperties}>
+      <div className="public-page" style={{ "--public-accent": accentColor, "--public-accent-foreground": accentForeground } as React.CSSProperties}>
       <a className="public-skip-link" href="#public-main">{t("publicHotel.skipToContent")}</a>
       <header className="public-nav">
         <Link href={`/${hotel.slug}`} className="public-brand" aria-label={hotel.name}>
@@ -875,15 +896,13 @@ export default function PublicHotel({ slug }: { slug: string }) {
           </div>
           {roomTypes.length ? (
             <div className="public-room-grid">
-              {roomTypes.map((room, index) => (
+              {roomTypes.map((room) => (
                 <article className="public-room-card" key={room.id}>
                   <div className="public-room-image">
-                    {media[index + 1]?.url ? (
-                      <img src={media[index + 1].url} alt={media[index + 1].caption ?? room.name} width={720} height={480} loading="lazy" decoding="async" />
-                    ) : heroImage ? (
-                      <img src={heroImage} alt="" width={720} height={480} loading="lazy" decoding="async" />
+                    {roomPhotoFor(room.name)?.url ? (
+                      <img src={roomPhotoFor(room.name)!.url} alt={room.name} width={720} height={480} loading="lazy" decoding="async" />
                     ) : (
-                      <div className="public-room-image-fallback" aria-hidden="true" />
+                      <div className="public-room-image-fallback" role="img" aria-label={t("publicHotel.roomImagePlaceholder")}><BedDouble size={42} strokeWidth={1.4} aria-hidden="true" /></div>
                     )}
                   </div>
                   <div className="public-room-copy">
@@ -958,7 +977,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
               type="button"
               className="public-lightbox-close"
               onClick={() => setActiveLightboxIndex(null)}
-              aria-label="Close photo view"
+              aria-label={t("publicHotel.closePhotoAria")}
             >
               <X size={20} />
             </button>
@@ -966,7 +985,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
               type="button"
               className="public-lightbox-nav public-lightbox-prev"
               onClick={() => setActiveLightboxIndex((activeLightboxIndex - 1 + 6) % 6)}
-              aria-label="Previous photo"
+              aria-label={t("publicHotel.previousPhotoAria")}
             >
               <ChevronLeft size={24} />
             </button>
@@ -974,7 +993,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
               type="button"
               className="public-lightbox-nav public-lightbox-next"
               onClick={() => setActiveLightboxIndex((activeLightboxIndex + 1) % 6)}
-              aria-label="Next photo"
+              aria-label={t("publicHotel.nextPhotoAria")}
             >
               <ChevronRight size={24} />
             </button>
@@ -1010,12 +1029,12 @@ export default function PublicHotel({ slug }: { slug: string }) {
       )}
 
       {/* Mobile Sticky Booking Bar */}
-      <div className="public-sticky-booking md:hidden" role="complementary" aria-label="Mobile booking action">
+      {isVisible("booking") ? <div className="public-sticky-booking" role="complementary" aria-label={t("publicHotel.stickyBookingAria")}>
         <div>
-          <small style={{ display: "block", fontSize: "10px", color: "#5a6e64" }}>
+          <small style={{ display: "block", fontSize: "13px", color: "#475467" }}>
             {t("publicHotel.quickBookingInstant")}
           </small>
-          <strong style={{ fontSize: "13px", fontWeight: 700, color: "var(--public-text)" }}>
+            <strong style={{ fontSize: "16px", fontWeight: 700, color: "var(--public-text)" }}>
             {roomTypes[0]
               ? t("publicHotel.mobileStickyFrom", { price: Number(roomTypes[0].base_price).toLocaleString() })
               : hotel.name}
@@ -1024,12 +1043,12 @@ export default function PublicHotel({ slug }: { slug: string }) {
         <button
           type="button"
           className="public-room-book-cta"
-          style={{ backgroundColor: accentColor, borderColor: accentColor }}
-          onClick={handleQuickBook}
+          style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentForeground }}
+          onClick={scrollToBooking}
         >
           {t("publicHotel.mobileStickyBook")} <ArrowRight size={14} aria-hidden="true" />
         </button>
-      </div>
+      </div> : null}
     </div>
   );
 }
