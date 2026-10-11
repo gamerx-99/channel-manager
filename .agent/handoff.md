@@ -1,4 +1,15 @@
 # Handoff log
+
+## 2026-10-11 07:40 · channel-manager-mvp-latest (public booking and website builder UI)
+- **Project:** channel-manager-mvp-latest
+- **Current task:** Fix the public booking route crash, improve toast contrast, and address nonfunctional controls/status clarity in Website Builder.
+- **Completed:** Moved all `PublicHotel` hooks before loading/error returns and removed a render-only gallery memo; made global Sonner backgrounds/colors explicit and opaque; wired preview navigation/CTAs to the published hotel page in a new tab and made empty gallery slots keyboard-accessible buttons. Added Thai/English copy explaining that order arrows affect preview only and public-page links require publication.
+- **Remaining:** Website Builder v1 spec is DONE for image/content/color/visibility settings; room-section preview is still a summary, section order is not persisted, and custom domains remain deferred. Manual browser visual QA remains pending.
+- **Blockers:** `kb-review -by codex` returned FAIL because the release range includes `20261010_booking_guest_counts.sql`, recorded as unapplied; the reviewer says production booking reads/writes require that schema. No push/deploy was done.
+- **Changed files:** `client/src/pages/PublicHotel.tsx`, `client/src/pages/PublicHotel.contract.test.ts`, `client/src/components/ui/sonner.tsx`, `client/src/components/ui/sonner.contract.test.ts`, `client/src/pages/WebsiteBuilder.tsx`, `client/src/pages/WebsiteBuilder.contract.test.ts`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`.
+- **Verification:** `pnpm check` PASS; `pnpm test` PASS (90 files passed, 2 skipped; 494 tests passed, 3 skipped); `pnpm build` PASS with existing large-client-chunk warning. Reviewer verdict FAIL for release order, not these UI fixes.
+- **Next step:** Owner verifies the pending booking guest-count migration in production before any release; perform visual browser QA after the local app is refreshed.
+
 ## 2026-10-10 · channel-manager-mvp-latest (RONDMAP P2 public booking page)
 - **Project:** channel-manager-mvp-latest
 - **Current task:** Implement the P2 public booking page updates from the owner’s screenshot review.
