@@ -1,5 +1,9 @@
 # Handoff log
 
+## 2026-10-11 · channel-manager-mvp-latest (production migration evidence)
+- **Completed:** Owner applied `20261010_booking_guest_counts.sql` in Supabase project `channel-manager` (main, PRODUCTION) on 2026-10-11; the column check returned adults/children/child_measurements and the owner reported `verify_20261010_booking_guest_counts.sql` as PASS. `verify_20261009_room_type_occupancy_pricing.sql` returned all 13 checks PASS (owner-run, same day).
+- **Next step:** release review of origin/main..HEAD, then push only with the owner's approval.
+
 ## 2026-10-11 07:40 · channel-manager-mvp-latest (public booking and website builder UI)
 - **Project:** channel-manager-mvp-latest
 - **Current task:** Fix the public booking route crash, improve toast contrast, and address nonfunctional controls/status clarity in Website Builder.
