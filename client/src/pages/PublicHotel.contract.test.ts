@@ -94,6 +94,14 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicStyles).toContain('font-size:13px');
   });
 
+  it('declares all React hooks before the public hotel loading return', () => {
+    const loadingReturn = publicHotelSource.indexOf('if (publicHotel.isLoading)');
+    expect(loadingReturn).toBeGreaterThan(-1);
+    const hooks = [...publicHotelSource.matchAll(/\buse(?:Effect|Memo|State)\s*\(/g)];
+    expect(hooks.length).toBeGreaterThan(0);
+    expect(hooks.every(hook => hook.index < loadingReturn)).toBe(true);
+  });
+
   it('uses room-specific gallery photos when captions match and a labeled placeholder otherwise', () => {
     expect(publicHotelSource).toContain('roomPhotoFor(room.name)');
     expect(publicHotelSource).toContain('publicHotel.roomImagePlaceholder');

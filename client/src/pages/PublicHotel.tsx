@@ -1,5 +1,5 @@
 import { ArrowRight, BedDouble, CheckCircle2, ChevronLeft, ChevronRight, MapPin, Menu, X } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { PaymentQR } from "@/components/PaymentQR";
@@ -161,6 +161,22 @@ export default function PublicHotel({ slug }: { slug: string }) {
     return () => clearInterval(id);
   }, [heldBooking?.expires_at, wizardStep, t]);
 
+  // Keep hooks above the loading/error returns so query transitions preserve hook order.
+  useEffect(() => {
+    if (activeLightboxIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveLightboxIndex(null);
+      if (e.key === "ArrowRight") {
+        setActiveLightboxIndex(prev => (prev === null ? null : (prev + 1) % 6));
+      }
+      if (e.key === "ArrowLeft") {
+        setActiveLightboxIndex(prev => (prev === null ? null : (prev - 1 + 6) % 6));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeLightboxIndex]);
+
   if (publicHotel.isLoading) {
     return <div className="public-page"><main className="public-loading">{t("publicHotel.loadingHotelDetails")}</main></div>;
   }
@@ -188,7 +204,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
   const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
 
-  const galleryPhotos = useMemo(() => {
+  const galleryPhotos = (() => {
     const slotBadges = [
       t("websiteBuilder.slot1Label"),
       t("websiteBuilder.slot2Label"),
@@ -215,7 +231,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
         badge: slotBadges[idx],
       };
     });
-  }, [media, hotel?.name, t]);
+  })();
 
   const scrollToBooking = () => {
     const bookElem = document.getElementById("book");
@@ -230,22 +246,6 @@ export default function PublicHotel({ slug }: { slug: string }) {
       setWizardStep(2);
     }
   };
-
-  // Keyboard navigation for lightbox
-  useEffect(() => {
-    if (activeLightboxIndex === null) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveLightboxIndex(null);
-      if (e.key === "ArrowRight") {
-        setActiveLightboxIndex(prev => (prev === null ? null : (prev + 1) % 6));
-      }
-      if (e.key === "ArrowLeft") {
-        setActiveLightboxIndex(prev => (prev === null ? null : (prev - 1 + 6) % 6));
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeLightboxIndex]);
 
   const handleSelectRoom = (roomTypeId: string) => {
     setPreferredRoomTypeId(roomTypeId);
