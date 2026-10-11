@@ -243,7 +243,7 @@ function SectionBlockCard({
 type PublicPreviewProps = {
   draft: SiteConfig;
   sectionOrder: SectionKey[];
-  selectedHotel: { name?: string; address?: string; room_types?: unknown[] } | undefined;
+  selectedHotel: { name?: string; slug?: string; public_enabled?: boolean; address?: string; room_types?: unknown[] } | undefined;
   heroImage: string | null;
   media?: MediaItem[];
   t: (key: string, params?: Record<string, string | number>) => string;
@@ -251,6 +251,12 @@ type PublicPreviewProps = {
 
 function PublicPreview({ draft, sectionOrder, selectedHotel, heroImage, media, t }: PublicPreviewProps) {
   const visibleOrdered = sectionOrder.filter(k => draft.visible_sections[k]);
+  const publishedPagePath = selectedHotel?.public_enabled && selectedHotel.slug
+    ? `/${selectedHotel.slug}`
+    : null;
+  const previewLink = (anchor: string, label: string, className?: string, style?: React.CSSProperties) => publishedPagePath
+    ? <a href={`${publishedPagePath}${anchor}`} target="_blank" rel="noreferrer" className={className} style={style}>{label}</a>
+    : <span aria-disabled="true" title={t("websiteBuilder.previewLinkRequiresPublishedHotel")} className={className} style={style}>{label}</span>;
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
@@ -263,10 +269,10 @@ function PublicPreview({ draft, sectionOrder, selectedHotel, heroImage, media, t
           {selectedHotel?.name ?? "Hotel name"}
         </span>
         <div className="flex items-center gap-3 text-[10px] text-white/70">
-          {draft.visible_sections.rooms && <span>Rooms</span>}
-          {draft.visible_sections.location && <span>Location</span>}
+          {draft.visible_sections.rooms && previewLink("#stay", "Rooms", "rounded-sm hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white")}
+          {draft.visible_sections.location && previewLink("#location", "Location", "rounded-sm hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white")}
           {draft.visible_sections.booking && (
-            <span className="rounded-full border border-white/40 px-2 py-0.5 text-white">Book</span>
+            previewLink("#book", "Book", "rounded-full border border-white/40 px-2 py-0.5 text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white")
           )}
         </div>
       </div>
@@ -294,12 +300,7 @@ function PublicPreview({ draft, sectionOrder, selectedHotel, heroImage, media, t
                   <div className="absolute bottom-0 left-0 right-0 p-3">
                     <p className="text-sm font-semibold text-white">{selectedHotel?.name ?? "Your hotel"}</p>
                     <p className="mt-0.5 text-[11px] leading-4 text-white/85 line-clamp-2">{draft.hero_copy}</p>
-                    <span
-                      className="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
-                      style={{ background: draft.accent_color }}
-                    >
-                      {t("websiteBuilder.viewRooms")}
-                    </span>
+                    {previewLink("#stay", t("websiteBuilder.viewRooms"), "mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white", { background: draft.accent_color })}
                   </div>
                 </div>
                 {media && media.length > 0 && (
@@ -349,12 +350,7 @@ function PublicPreview({ draft, sectionOrder, selectedHotel, heroImage, media, t
               <div key="booking" className="px-4 py-3 bg-[#fbfdfb]">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[#789087]">{t("websiteBuilder.yourStay")}</p>
                 <p className="mt-1 text-xs text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
-                <span
-                  className="mt-2 inline-flex rounded-md px-2.5 py-0.5 text-[11px] font-semibold text-white"
-                  style={{ background: draft.accent_color }}
-                >
-                  {t("websiteBuilder.planVisit")}
-                </span>
+                {previewLink("#book", t("websiteBuilder.planVisit"), "mt-2 inline-flex rounded-md px-2.5 py-0.5 text-[11px] font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d6b56]", { background: draft.accent_color })}
               </div>
             );
             if (key === "location") return (
@@ -754,13 +750,16 @@ export default function WebsiteBuilder() {
                           </div>
                         </div>
                       ) : (
-                        <div
-                          className="flex flex-col items-center justify-center p-6 text-center cursor-pointer aspect-[16/10] bg-[#fbfdfb] hover:bg-[#edf7f1]/40 border-2 border-dashed border-[#e0e8e3] m-2 rounded-lg transition-colors"
-                          onClick={() => canManage && fileInputRef.current?.click()}
+                        <button
+                          type="button"
+                          disabled={!canManage}
+                          className="m-2 flex w-[calc(100%-1rem)] flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#e0e8e3] bg-[#fbfdfb] p-6 text-center transition-colors hover:bg-[#edf7f1]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d6b56] disabled:cursor-not-allowed disabled:opacity-50 aspect-[16/10]"
+                          onClick={() => fileInputRef.current?.click()}
+                          aria-label={t("websiteBuilder.uploadSlotAria", { slot: slotDef.slot })}
                         >
                           <Upload size={18} className="text-[#8ba297] mb-1.5" />
                           <span className="text-[11px] font-medium text-[#52655b]">{t("websiteBuilder.slotEmpty")}</span>
-                        </div>
+                        </button>
                       )}
                     </div>
                   );
@@ -826,6 +825,7 @@ export default function WebsiteBuilder() {
                 media={media}
                 t={t}
               />
+              <p className="mt-3 text-xs leading-5 text-[#667a70]">{t("websiteBuilder.previewActionsHint")}</p>
               <p className="mt-3 text-xs leading-5 text-[#667a70]">
                 {t("websiteBuilder.publicHotelFallbackNote")}
               </p>
@@ -934,6 +934,7 @@ export default function WebsiteBuilder() {
                 )}
 
                 <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.visibleSectionsHint")}</p>
+                <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.sectionOrderPreviewOnlyHint")}</p>
               </div>
 
               <Button type="button" onClick={handleSave} disabled={!canManage} className="w-full bg-[#1d6b56] hover:bg-[#155442] disabled:opacity-50">

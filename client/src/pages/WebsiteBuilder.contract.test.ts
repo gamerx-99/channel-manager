@@ -55,6 +55,19 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(wbSource).toContain('draft.hero_copy');
   });
 
+  it('preview navigation and calls to action open the published hotel page', () => {
+    expect(wbSource).toContain('selectedHotel?.public_enabled && selectedHotel.slug');
+    expect(wbSource).toContain('target="_blank" rel="noreferrer"');
+    expect(wbSource).toContain('previewLink("#stay", t("websiteBuilder.viewRooms")');
+    expect(wbSource).toContain('previewLink("#book", t("websiteBuilder.planVisit")');
+    expect(wbSource).toContain('websiteBuilder.previewLinkRequiresPublishedHotel');
+  });
+
+  it('empty gallery slots use keyboard-accessible upload buttons and clarifies preview-only ordering', () => {
+    expect(wbSource).toContain('websiteBuilder.uploadSlotAria');
+    expect(wbSource).toContain('websiteBuilder.sectionOrderPreviewOnlyHint');
+  });
+
   // ── hotel_domains deferral ───────────────────────────────────────────────
   it('WebsiteBuilder explicitly documents hotel_domains deferral (spec requirement)', () => {
     expect(wbSource).toContain('DECISIONS.md');
