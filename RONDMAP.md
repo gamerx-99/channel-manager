@@ -1,37 +1,132 @@
-# Channel Manager → SaaS — RONDMAP
+# Good Hotel — RONDMAP (ฉบับพร้อมขาย)
 
-Owner: เกมส์ · Updated: 2026-10-10 · Source of decisions: Z:\knowledge (DECISIONS + inbox candidates `cm-*`)
-Positioning: hotel PMS + direct booking engine for Thai guesthouses (not an OTA). Data baseline: Sirvoy (`reference/`). Thai edge: TM.30, PromptPay + SlipOK, Thai UI.
-Principle: the owner thinks as little as possible (working defaults, optional settings), while the system is careful about money, availability, guest data (PDPA), and review before release.
-Authorization (2026-10-10): the owner authorized agents to work through this roadmap. Level-3 actions (production SQL, push, deploy, deleting data) still need the owner's explicit OK each time.
+Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เดิม (ฉบับก่อนหน้าอยู่ใน git history)
+ที่มา: `Z:\ส่งงาน\claude.md` (หัวข้อ 9, 13, 14) + RONDMAP เดิม
 
-## P0 — Close open work
-- [x] Public booking RLS/RPC, check-in/out, calendar fix, unassigned-room fix, hide messaging (pushed)
-- [x] Occupancy pricing per guest count (not cumulative), child age groups, height rule (042de19, pushed)
-- [ ] Owner: enable 3–4 guest levels + prices for Little Bro room types (levels above base are OFF after migration)
-- [ ] Confirm verify_20261009_room_type_occupancy_pricing.sql is all PASS (rpc_grants)
-- [ ] agy UI retest: book 2/3/4 guests + children, check-in/out, calendar
+## กติกาสำหรับ agent ที่ทำงานตาม RONDMAP นี้
+1. อ่าน `AGENTS.md` และ `.agent/BANNED_ZONE.md` ก่อนเริ่มทุกครั้ง
+2. ทำ **ทีละ task ตามลำดับ** ห้ามข้าม ห้ามทำงานนอก task (เจออะไรนอกขอบเขต → จด 1 บรรทัดในหัวข้อ "พบระหว่างทาง" ท้ายไฟล์ ห้ามแก้)
+3. แต่ละ task ปิดได้เมื่อ: `pnpm test` + `pnpm check` + `pnpm build` ผ่าน และเกณฑ์ "เสร็จเมื่อ" ครบ
+4. migration ใหม่ = ไฟล์ `YYYYMMDD_*.sql` ใหม่ + `verify_YYYYMMDD_*.sql` คู่กัน ห้ามแก้ migration เก่า
+5. **ห้าม**: รัน SQL กับฐานข้อมูลจริง, deploy, push, แก้ `.env` / `vercel.json` — งานเหล่านี้เจ้าของทำเองหรืออนุมัติทีละครั้ง
+6. ข้อความในหน้าจอต้องมีทั้งไทย (th) และอังกฤษ (en)
+7. จบแต่ละ task: ติ๊ก [x] และเขียนสรุป 1–3 บรรทัด (ไฟล์ที่แก้, migration, ผลเทสต์)
 
-## P1 — Complete booking
-- [ ] Store adults/children (and child ages) on the booking record (check-in, TM.30)
-- [ ] Retire the legacy public booking endpoint
-- [ ] Extra bed as an add-on in step ③ (services catalog)
-- [ ] Cancellation & refund policy (owner-set), shown before payment
-- [ ] Check-in/out times + one free-text house rules box, shown in step ⑤
+## การตัดสินใจที่ล็อกแล้ว (ห้ามเปลี่ยน)
+- ระบบ = PMS + หน้าจองตรง สำหรับที่พักเล็กไทยที่ขายตรงอยู่แล้ว **ไม่ใช่ Channel Manager**
+- เงินค่าห้องเข้าบัญชีโรงแรมโดยตรง (PromptPay + SlipOK ของแต่ละโรงแรม) ระบบไม่ถือเงินแทน
+- รายได้ = ค่าสมาชิกอย่างเดียว ไม่หัก % ต่อการจอง
+- OTA = ซิงก์ปฏิทิน iCal สองทางเท่านั้น (วันที่ ไม่มีข้อมูลแขก ไม่ส่งราคา)
+- ตม.30 = บัญชี/API ของบริษัทแจ้งแทนทุกโรงแรม (รอคำตอบ ตม.) ระหว่างนี้ใช้ export Excel
 
-## P2 — Usable by owners
-- [ ] Public page: empty hero CTA, line across booking section, room photos, tiny/low-contrast Thai text, English leftovers, booking section too deep (sticky)
-- [ ] Back office mobile layout
-- [ ] SlipOK setup without forced MFA friction
-- [ ] Owner access to Financials
+---
 
-## P3 — Owner understands the system
-- [ ] Thai guide from the code: booking flow, data tables, where to look when it breaks
+## เฟส A — ปิดงานค้าง (ต้องจบก่อน)
 
-## 🎯 Start selling: after P0–P3, 3–5 known guesthouses on a free trial
+### A1 ซิงก์ปฏิทิน iCal สองทาง — 🔄 (โค้ดเสร็จ รอ apply migration)
+- [x] ปฏิทิน OTA ที่ดึงเข้ามาปิดห้องจริง (imported blocks หักออกจาก availability ทั้ง public RPCs และปฏิทินในระบบ)
+- [x] OTA ยกเลิก → ห้องเปิดคืน (diff รายคืนต่อ UID; event หายจากฟีด = เปิดคืนเฉพาะคืนที่เคยปิด)
+- [x] ลิงก์ .ics ต่อโรงแรม (token ต่อโรงแรม ไม่มีชื่อแขกใน feed): `GET /api/ical/:hotelId.ics?token=…`
+- [x] ปุ่ม "ซิงก์ทันที" (มีอยู่แล้ว + ตอนนี้ซิงก์เข้ามาปิด/เปิดห้องจริง)
+- [x] เมนูชื่อ "ซิงก์ปฏิทิน" (Calendar Sync) ทั้ง en/th
+- [ ] มนุษย์รัน `20261012_ical_two_way_sync.sql` + `verify_20261012_ical_two_way_sync.sql` ใน Supabase SQL editor ให้ผ่านครบ (ยังไม่ mark DONE กว่ายืนยันผล verify บน live)
 
-## P4 — SaaS
-- [ ] L1: landing page + self-signup (reuse the signup-link flow)
-- [ ] L2: dashboard "get set up" checklist + trial period
-- [ ] L3: account balance topped up via PromptPay + SlipOK. Pricing: up to 5 rooms ~฿290–390/mo + stepped per-room add-on. Prepay 3/6/12 months with a discount. Simple coupons (%/THB, uses, expiry)
-- [ ] L4: platform admin + per-tenant export/delete (PDPA), Terms + DPA (lawyer review)
+### A2 ราคาตามจำนวนแขก (P0 เดิม)
+- [ ] ตรวจ `verify_20261009_room_type_occupancy_pricing.sql` ให้ผ่านครบ (รวม rpc_grants)
+- [ ] ทดสอบหน้าจอง: 2 / 3 / 4 คน + เด็ก, เช็กอิน/เช็กเอาต์, ปฏิทิน
+- [ ] (เจ้าของทำเอง) เปิดระดับราคา 3–4 คนให้ห้องของ Little Bro
+- เสร็จเมื่อ: ราคาแสดงตรงตามจำนวนแขกทุกกรณีที่ทดสอบ
+
+### A3 ข้อมูลผู้เข้าพักในการจอง (P1 เดิม)
+- [ ] เก็บจำนวนผู้ใหญ่ / เด็ก / อายุเด็ก ลงในการจอง (ใช้ต่อในเช็กอินและ ตม.30)
+- [ ] ปลด endpoint จองแบบเก่า (legacy public booking)
+- [ ] เตียงเสริมเป็นบริการเสริมในขั้นตอนที่ ③ (ใช้ services catalog ที่มีอยู่)
+- เสร็จเมื่อ: เปิดการจองย้อนดูแล้วเห็นจำนวนคนครบ; เรียก endpoint เก่าไม่ได้
+
+---
+
+## เฟส B — เงินและเงื่อนไข
+
+### B1 นโยบายยกเลิกและคืนเงิน
+- [ ] โรงแรมตั้งได้: ยกเลิกฟรีก่อน X วัน / เก็บ % / ไม่คืนเงิน, มัดจำ (% หรือคืนแรก), no-show
+- [ ] แสดงนโยบายก่อนชำระเงิน แขกต้องกดยอมรับ
+- [ ] เก็บ **ฉบับนโยบาย + เวลาที่ยอมรับ** ไว้กับการจอง (แก้นโยบายทีหลังไม่กระทบการจองเดิม)
+- [ ] ยกเลิกแล้วระบบคำนวณยอดคืนตามนโยบายฉบับที่แขกยอมรับ, สถานะเงิน refund_pending → refunded (โรงแรมโอนคืนเอง แล้วกดยืนยัน)
+- เสร็จเมื่อ: เทสต์ครอบ ยกเลิกในช่วงฟรี / ช่วงเก็บ % / ไม่คืนเงิน / no-show
+
+### B2 เวลาเช็กอิน-เอาต์ และกฎที่พัก (P1 เดิม)
+- [ ] ตั้งเวลาเช็กอิน/เอาต์ + กล่องข้อความกฎที่พัก 1 ช่อง
+- [ ] แสดงในขั้นตอนที่ ⑤ ก่อนจ่าย และในอีเมลยืนยัน
+- เสร็จเมื่อ: แขกเห็นข้อมูลนี้ก่อนกดจ่าย
+
+### B3 ใบเสร็จ
+- [ ] ออกใบเสร็จจากการจองที่ชำระแล้ว: ข้อมูลโรงแรม, รายการ, ยอด, วิธีชำระ, เลขที่เอกสารต่อเนื่องต่อโรงแรม
+- [ ] โรงแรมตั้งค่าได้ว่า จด VAT หรือไม่ / ราคารวม VAT หรือไม่ / อัตรา VAT (เก็บแบบมีวันที่เริ่ม-สิ้นสุด, ค่าเริ่มต้น 7%)
+- [ ] โรงแรมที่จด VAT: ออกใบกำกับภาษีเต็มรูป (ชื่อ/ที่อยู่/เลขผู้เสียภาษีผู้ซื้อ) เมื่อแขกขอ
+- [ ] เอกสารที่ออกแล้วแก้ไม่ได้ — ต้องยกเลิกแล้วออกใหม่ (เก็บประวัติ)
+- [ ] ดาวน์โหลด PDF / ส่งอีเมลให้แขก
+- เสร็จเมื่อ: เลขเอกสารไม่ซ้ำไม่ข้าม, เทสต์ VAT รวม/ไม่รวม
+
+### B4 SlipOK และรายงานการเงิน (P2 เดิม)
+- [ ] ตั้งค่า SlipOK ได้โดยไม่ติดขั้นตอน MFA ที่บังคับเกินจำเป็น
+- [ ] เจ้าของเปิดหน้ารายงานการเงิน (Financials) ได้
+- เสร็จเมื่อ: เจ้าของที่ไม่ใช่ admin ตั้ง SlipOK และดูรายงานได้เอง
+
+---
+
+## เฟส C — งานตามกฎหมาย
+
+### C1 ทะเบียนผู้พัก ร.ร.3 / ร.ร.4
+- [ ] ฟอร์มเช็กอินเก็บข้อมูลครบตามแบบ ร.ร.3 (คนไทย: บัตรประชาชน, ต่างชาติ: พาสปอร์ต)
+- [ ] พิมพ์บัตร ร.ร.3 รายคน และส่งออกทะเบียน ร.ร.4 ตามช่วงวันที่ (PDF/Excel)
+- [ ] ข้อมูลผู้พักเก็บไว้อย่างน้อย 1 ปี (ห้ามลบก่อนกำหนด)
+- [ ] โรงแรมเลือกปิดได้ (ที่พักที่ไม่ใช่โรงแรม เช่น ≤8 ห้อง/30 คนที่มีหนังสือรับแจ้ง)
+- เสร็จเมื่อ: ส่งออก ร.ร.4 ของเดือนหนึ่งได้ครบทุกผู้พัก
+
+### C2 ตม.30 สถานะและการเตือน
+- [ ] สถานะต่อผู้พักต่างชาติ: รอแจ้ง → ส่งออกไฟล์แล้ว → แจ้งแล้ว (กรอกเลขอ้างอิง/แนบใบรับ)
+- [ ] "ส่งออกไฟล์แล้ว" ห้ามแสดงเป็น "แจ้งแล้ว"
+- [ ] แจ้งเตือนรายการที่ใกล้ครบ 24 ชม. นับจากเช็กอิน
+- [ ] ไม่ต้องทำ API จนกว่า ตม. ตอบ
+- เสร็จเมื่อ: หน้ารายการ ตม.30 แยกสถานะชัด และเตือนได้
+
+---
+
+## เฟส D — ใช้งานได้จริงบนมือถือ
+
+### D1 หน้าจองสาธารณะ (P2 เดิม)
+- [ ] ปุ่มหลักในส่วนหัวว่างอยู่, เส้นขวางส่วนจอง, รูปห้อง, ตัวอักษรไทยเล็ก/สีจาง, ข้อความอังกฤษตกค้าง, ส่วนจองลึกเกิน (ทำ sticky)
+- เสร็จเมื่อ: จองครบ flow บนมือถือ 375px ได้ไม่ติดขัด
+
+### D2 หลังบ้านบนมือถือ (P2 เดิม)
+- [ ] ฟรอนต์และแม่บ้านใช้หน้าหลักบนมือถือได้ (ปฏิทิน, เช็กอิน/เอาต์, สถานะห้อง)
+- เสร็จเมื่อ: งานประจำวันทำบนมือถือได้ทั้งหมด
+
+### D3 เปลี่ยนชื่อแบรนด์
+- [ ] เปลี่ยนข้อความ "Channel Manager" ในหน้าจอเป็น "Good Hotel" (ไม่เปลี่ยนชื่อ repo/ตาราง)
+- เสร็จเมื่อ: ไม่มีคำว่า Channel Manager ในหน้าจอที่เจ้าของ/แขกเห็น
+
+---
+
+## เฟส E — ส่งมอบ
+
+### E1 คู่มือภาษาไทย (P3 เดิม)
+- [ ] คู่มือเจ้าของ: ตั้งค่าครั้งแรก, รับจอง, เช็กอิน/เอาต์, ตม.30, ร.ร.4, ใบเสร็จ, ซิงก์ปฏิทิน
+- [ ] คู่มือทีม: flow การจอง, ตารางข้อมูลหลัก, จุดตรวจเมื่อระบบมีปัญหา
+
+### E2 ทดลองจริง
+- [ ] เกสต์เฮาส์ที่รู้จัก 3–5 แห่ง ใช้ฟรี 2–4 สัปดาห์
+- [ ] เก็บปัญหาแล้วแก้ก่อนขาย
+- เสร็จเมื่อ: ไม่มีปัญหาเรื่องเงิน การจองซ้ำ หรือข้อมูลหาย
+
+## 🎯 พร้อมขาย = เฟส A–E ครบ → โพสต์กลุ่มโรงแรมจังหวัด
+
+---
+
+## หลังพร้อมขาย (ยังไม่ทำ)
+- P4 เดิม: หน้าแลนดิ้ง + สมัครเอง, checklist ตั้งค่า + ช่วงทดลอง, ค่าสมาชิกเติมเงินผ่าน PromptPay+SlipOK (ราคายังเป็นสมมติฐาน), platform admin + ส่งออก/ลบข้อมูลรายโรงแรม, ข้อตกลงการใช้บริการ + DPA (นักกฎหมายตรวจ)
+- ตม.30 ผ่าน API (เมื่อ ตม. ตอบ)
+- ค่าธรรมเนียม อบจ. 1%
+
+## พบระหว่างทาง (agent จดที่นี่ ห้ามแก้เอง)
+-

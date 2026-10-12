@@ -1,8 +1,16 @@
 # AGENTS.md — Project rules for channel-manager-mvp
 
 This file is the permanent rulebook for working in this repo. Read it in full every
-session before touching code. Details too long to keep here live in `specs/` — this
-file stays short enough to read every time.
+session before touching code.
+
+## Scope (read first)
+- **`RONDMAP.md` is the only source of scope and tasks.** Work the next unchecked
+  task there, in order. Nothing else defines what to build.
+- **Never read `archive/`.** It holds old plans, specs, reports and reference data
+  that are out of scope (e.g. live OTA integrations, channel manager). Do not use
+  them as requirements, even if they look relevant.
+- Out-of-scope findings go in one line under "พบระหว่างทาง" at the end of
+  `RONDMAP.md`. Do not fix them.
 
 ## Stack & commands
 - Stack: TypeScript, Vite + React (client), Express + tRPC (server), Supabase
@@ -27,8 +35,9 @@ shared/                Code shared by client and server (authorization.ts is loa
 api/index.ts            Vercel serverless entry — imports the pre-bundled dist/index.js
 *.sql (repo root)       Numbered migrations (YYYYMMDD_description.sql) + matching
                          verify_YYYYMMDD_description.sql — see "Migrations" below
-.agent/                 Orchestration scaffold (this workflow) — see MASTER_PROMPT.md
-specs/                  Executable specs for the roadmap in todo.md's "Roadmap" section
+.agent/                 handoff.md, OPEN_QUESTIONS.md, BANNED_ZONE.md only
+RONDMAP.md              Scope and task list (the only one)
+archive/                Old docs — never read
 ```
 
 ## Do not touch without asking
@@ -74,8 +83,7 @@ programmatically. Every migration ships as a pair:
 Supabase SQL editor. Never mark a migration-touching ticket DONE until the human
 confirms the verify script passed against the live project.
 
-## Hard rules (non-negotiable, copied from `.agent/MASTER_PROMPT.md` so no sub-agent
-misses them even if it never reads the master prompt)
+## Hard rules (non-negotiable)
 1. Never delete or modify anything outside this repo, and never touch
    `.agent/BANNED_ZONE.md`'s list without asking first.
 2. Never run destructive commands (`rm -rf`, `git reset --hard`, `git push --force`,
@@ -102,12 +110,10 @@ misses them even if it never reads the master prompt)
 - [ ] `pnpm check` passes — output pasted in the ticket
 - [ ] `pnpm build` passes if server/client/deploy config changed
 - [ ] No stray `TODO`/`FIXME` left in touched files
-- [ ] Spec status updated (`specs/<file>.md`'s `Status:` line) and
+- [ ] Task ticked `[x]` in `RONDMAP.md` with a 1–3 line summary, and
       `.agent/handoff.md` has a new entry
-- [ ] Reviewer approved (see `.agent/agents/reviewer.md`) with evidence, for any
-      ticket above trivial size
+- [ ] Owner/lead reviews before push (`kb-review`)
 
 ## Where to start
+- `RONDMAP.md` — the next unchecked task
 - `.agent/handoff.md` — what happened most recently
-- `specs/00-OVERVIEW.md` — the full roadmap and dependency graph
-- `todo.md` — the historical build log for everything before this workflow existed
