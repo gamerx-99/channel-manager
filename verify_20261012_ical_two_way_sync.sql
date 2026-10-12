@@ -71,7 +71,8 @@ from pg_policies
 where schemaname = 'public'
   and tablename = 'ota_import_blocks';
 
--- 8. Backfill: no hotel has connections with mixed token state (some null, some set).
+-- 8. Backfill: no hotel has connections with mixed token state (some null, some set),
+--    and no hotel carries more than one distinct token (the trigger's own rule).
 select
   case when count(*) = 0 then 'PASS' else 'FAIL' end as check_token_backfill_complete
 from (
@@ -81,6 +82,15 @@ from (
   having count(*) > count(ical_feed_token)
     and count(ical_feed_token) > 0
 ) mixed;
+
+select
+  case when count(*) = 0 then 'PASS' else 'FAIL' end as check_single_token_per_hotel
+from (
+  select hotel_id
+  from public.ota_connections
+  group by hotel_id
+  having count(distinct ical_feed_token) > 1
+) forked;
 
 -- 9. Availability RPCs were replaced with the block-aware versions (grants intact).
 select

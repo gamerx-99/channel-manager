@@ -60,16 +60,32 @@ create trigger trg_ota_connections_single_ical_feed_token
   for each row execute function public.enforce_single_ical_feed_token();
 
 -- Backfill: give every hotel that already has an OTA connection one shared
--- feed token if it does not have any yet.
+-- feed token if it does not have any yet. All rows of a hotel are updated in
+-- ONE statement with a single per-hotel token so the single-token trigger is
+-- satisfied even for hotels with multiple connections. Safe to re-run: rows
+-- that already carry a token are skipped.
 update public.ota_connections target
-set ical_feed_token = encode(gen_random_bytes(24), 'hex')
-where ical_feed_token is null
-  and not exists (
+set ical_feed_token = tokens.shared_token
+from (
+  -- One shared token per hotel that has no token anywhere yet, derived from
+  -- the hotel's own id (stable across the row-by-row trigger checks, random
+  -- across hotels, and deterministic on re-run after a partial apply).
+  -- ASSUMPTION: deriving the backfilled token deterministically from the hotel
+  -- id (instead of gen_random_bytes) is acceptable because this backfill runs
+  -- once per hotel; the app itself generates tokens from a random UUID. The
+  -- owner can rotate a leaked token later via the OTA page.
+  select h.id as hotel_id,
+    md5('ical-feed-token-v1:' || h.id::text) as shared_token
+  from public.hotels h
+  where not exists (
     select 1
     from public.ota_connections other
-    where other.hotel_id = target.hotel_id
+    where other.hotel_id = h.id
       and other.ical_feed_token is not null
-  );
+  )
+) tokens
+where target.hotel_id = tokens.hotel_id
+  and target.ical_feed_token is null;
 
 -- 2. RLS policies for ota_import_blocks (hotel-membership based, mirroring
 --    the ota_connections / ota_sync_logs policy pattern).

@@ -30,6 +30,7 @@ Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เด�
 - [x] ปุ่ม "ซิงก์ทันที" (มีอยู่แล้ว + ตอนนี้ซิงก์เข้ามาปิด/เปิดห้องจริง)
 - [x] เมนูชื่อ "ซิงก์ปฏิทิน" (Calendar Sync) ทั้ง en/th
 - [ ] มนุษย์รัน `20261012_ical_two_way_sync.sql` + `verify_20261012_ical_two_way_sync.sql` ใน Supabase SQL editor ให้ผ่านครบ (ยังไม่ mark DONE กว่ายืนยันผล verify บน live)
+  - แก้ไขเมื่อ 2026-10-12: รอบแรกล้มที่ backfill (23P01 trigger) เพราะสุ่ม token ใหม่ทีละแถว — แก้ backfill ให้ token เดียวกันต่อโรงแรมใน statement เดียว (md5 จาก hotel id) รันซ้ำได้ ให้รันไฟล์นี้ซ้ำได้เลย เพราะทุกขั้น idempotent
 
 ### A2 ราคาตามจำนวนแขก (P0 เดิม)
 - [ ] ตรวจ `verify_20261009_room_type_occupancy_pricing.sql` ให้ผ่านครบ (รวม rpc_grants)

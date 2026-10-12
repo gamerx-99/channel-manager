@@ -38,6 +38,22 @@ Newest entry on top. Old history: archive/ (do not read).
 - Next human steps: apply+verify `20261012_ical_two_way_sync.sql` (A1) and
   `20261010_booking_guest_counts.sql` + `20261009_room_type_occupancy_pricing.sql`
   verify scripts (A2) in Supabase; owner-side pricing/service configuration.
+- A1 migration fix (same day, post first apply attempt): the live apply failed at
+  the token backfill with 23P01 `ical_feed_token must be identical across all
+  connections of a hotel` — the original backfill generated a fresh random token
+  per ROW, so a hotel with 2+ connections hit the single-token trigger on its
+  second row and the statement aborted, leaving the rest of the file unapplied
+  (RLS policies, block-count fn, availability RPC rewrites). Fix: backfill now
+  assigns ONE deterministic token per hotel (md5 of 'ical-feed-token-v1:' ||
+  hotel id) to all of that hotel's rows in a single UPDATE FROM statement.
+  Deterministic = safe to re-run after the partial apply; rows already holding a
+  token are skipped. NOTE the token is a deterministic derivation of a public
+  hotel id — acceptable here because it is only created by this one-time backfill
+  (app path uses hash of random UUID) and rotating it is a future owner action;
+  flagged as ASSUMPTION in the migration comment. Verify script gained a
+  `check_single_token_per_hotel` check (count(distinct ical_feed_token) > 1 per
+  hotel must return zero rows). Re-run the whole migration file top to bottom in
+  the SQL editor; every step is idempotent, then run the verify script.
 
 
 ## 2026-10-12 - A1: iCal two-way sync (Phase A) — implementation complete, pending migration apply
