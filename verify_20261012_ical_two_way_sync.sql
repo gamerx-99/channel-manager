@@ -71,6 +71,17 @@ from pg_policies
 where schemaname = 'public'
   and tablename = 'ota_import_blocks';
 
+-- 7b. Insert policy is scoped to the ROW's hotel. An unqualified hotel_id
+--     inside the subquery binds to hu.hotel_id and lets any hotel member
+--     insert blocks for every hotel.
+select
+  case when count(*) = 1 then 'PASS' else 'FAIL' end as check_insert_policy_scoped
+from pg_policies
+where schemaname = 'public'
+  and tablename = 'ota_import_blocks'
+  and policyname = 'ota_import_blocks_insert'
+  and with_check like '%ota_import_blocks.hotel_id%';
+
 -- 8. Backfill: no hotel has connections with mixed token state (some null, some set),
 --    and no hotel carries more than one distinct token (the trigger's own rule).
 select
@@ -103,7 +114,8 @@ select
 
 -- 10. Execute grants survived the function replacement.
 select
-  case when count(*) = 2 then 'PASS' else 'FAIL' end as check_availability_grants
+  -- One row (both grants checked in it), kept only when both are true.
+  case when count(*) = 1 then 'PASS' else 'FAIL' end as check_availability_grants
 from (
   select has_function_privilege('anon', 'public.get_public_room_type_availability(uuid,date,date)', 'execute') as anon_ok1,
     has_function_privilege('anon', 'public.get_public_room_type_availability_for_guests(uuid,date,date,integer,jsonb)', 'execute') as anon_ok2

@@ -55,6 +55,7 @@ end;
 $$;
 
 drop trigger if exists trg_ota_connections_single_feed_token on public.ota_connections;
+drop trigger if exists trg_ota_connections_single_ical_feed_token on public.ota_connections;
 create trigger trg_ota_connections_single_ical_feed_token
   before insert or update on public.ota_connections
   for each row execute function public.enforce_single_ical_feed_token();
@@ -110,7 +111,7 @@ create policy "ota_import_blocks_insert" on public.ota_import_blocks
   with check (
     exists (
       select 1 from public.hotel_users hu
-      where hu.hotel_id = hotel_id
+      where hu.hotel_id = ota_import_blocks.hotel_id
         and hu.user_id = auth.uid()
     )
   );
@@ -132,7 +133,7 @@ create or replace function public.get_ota_blocked_room_type_counts(
   target_check_in date,
   target_check_out date
 )
-returns table (room_type_id uuid, rooms_blocked integer)
+returns table (room_type_id uuid, blocked_date date, rooms_blocked integer)
 language sql
 stable
 security definer
@@ -213,7 +214,7 @@ begin
     greatest(
       0,
       count(distinct inventory.room_id) - count(distinct occupied.room_id)
-        - coalesce(blocked.rooms_blocked, 0)
+        - coalesce(max(blocked.rooms_blocked), 0)
     )::integer as rooms_available
   from room_inventory inventory
   left join occupied_rooms occupied on occupied.room_id = inventory.room_id
@@ -313,12 +314,12 @@ begin
   )
   select inventory.room_type_id,
     greatest(0, count(distinct inventory.room_id) - count(distinct occupied.room_id)
-      - coalesce(blocked.rooms_blocked, 0))::integer
+      - coalesce(max(blocked.rooms_blocked), 0))::integer
   from room_inventory inventory
   left join occupied_rooms occupied on occupied.room_id = inventory.room_id
   left join ota_blocked blocked on blocked.room_type_id = inventory.room_type_id
   group by inventory.room_type_id
-  having count(distinct inventory.room_id) - count(distinct occupied.room_id) - coalesce(blocked.rooms_blocked, 0) > 0;
+  having count(distinct inventory.room_id) - count(distinct occupied.room_id) - coalesce(max(blocked.rooms_blocked), 0) > 0;
 end;
 $$;
 
