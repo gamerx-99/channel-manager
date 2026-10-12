@@ -4,6 +4,7 @@ import {
   requirePermission,
   requireHotelPermission,
   rethrowDomainError,
+  rlsClient,
 } from '../routerUtils';
 import {
   getOtaConnections,
@@ -13,6 +14,7 @@ import {
   getOtaSyncLogs,
   triggerOtaCalendarSync,
 } from '../otaSync';
+import { listOtaImportBlocks } from '../db/otaBlocks';
 
 export const otaRouter = router({
   summary: protectedProcedure.query(async ({ ctx }) => {
@@ -76,6 +78,16 @@ export const otaRouter = router({
       try {
         await deleteOtaConnection(ctx.user.accessToken, input.hotelId, input.provider);
         return { success: true };
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+  listImportedBlocks: protectedProcedure
+    .input(z.object({ hotelId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotelId, 'ota.view_status');
+      try {
+        return await listOtaImportBlocks(rlsClient(ctx.user.accessToken), input.hotelId);
       } catch (error) {
         return rethrowDomainError(error);
       }

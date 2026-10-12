@@ -68,6 +68,9 @@ vi.mock("@/lib/trpc", () => ({
       availability: { useQuery: () => mocks.availabilityQuery },
       bookingOccupancy: { useQuery: () => mocks.bookingOccupancyQuery },
       updateAvailability: { useMutation: () => mocks.updateAvailability },
+      ota: {
+        listImportedBlocks: { useQuery: () => ({ data: [], isLoading: false, error: null }) },
+      },
     },
   },
 }));

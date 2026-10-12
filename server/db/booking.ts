@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveEffectiveRate, getRequiredMinStayNights } from '../pricing';
-import { throwOnError } from './utils';
+import { isMissingTableError, throwOnError } from './utils';
 import { listRateOverridesForRoomType, assertBookingMinStay } from './availability';
 import { isBookingOccupyingInventory, isExpired, assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 import { calcNights, calculateServiceTotal } from '@shared/pricingModels';
@@ -58,6 +58,42 @@ export function getStayDates(checkIn: string, checkOut: string): string[] {
     current.setUTCDate(current.getUTCDate() + 1);
   }
   return dates;
+}
+
+/**
+ * Counts imported OTA blocks per night for one room type over a stay window.
+ * Returns an empty map when the ota_import_blocks migration has not been
+ * applied yet (same graceful fallback as listOtaImportBlocks).
+ */
+async function countOtaBlockedNights(
+  client: SupabaseClient,
+  hotelId: string,
+  roomTypeId: string,
+  checkIn: string,
+  checkOut: string,
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  try {
+    const { data, error } = await client
+      .from('ota_import_blocks')
+      .select('date')
+      .eq('hotel_id', hotelId)
+      .eq('room_type_id', roomTypeId)
+      .gte('date', checkIn)
+      .lt('date', checkOut);
+    if (error) {
+      if (isMissingTableError('ota_import_blocks', error)) return counts;
+      throw error;
+    }
+    for (const row of (data ?? []) as Array<{ date: string }>) {
+      if (!row?.date) continue;
+      counts.set(row.date, (counts.get(row.date) ?? 0) + 1);
+    }
+    return counts;
+  } catch (err) {
+    if (isMissingTableError('ota_import_blocks', err)) return counts;
+    throw err;
+  }
 }
 
 export async function getPublicHotelAvailability(
@@ -469,6 +505,12 @@ export async function holdRoomType(
   throwOnError(bErr);
   throwOnError(psErr);
 
+  // Imported OTA blocks close sellable inventory the same way the public
+  // availability RPCs do. Check them here too: the RPC runs at "look" time,
+  // but the hold is a separate request, so without this check a guest could
+  // hold a room type whose every room is OTA-blocked for the requested dates.
+  const otaBlockedByDate = await countOtaBlockedNights(adminClient, hotel.id, roomType.id, input.check_in, input.check_out);
+
   const candidateRooms = (rooms ?? []).filter((r: any) => r.status !== 'maintenance');
   const candidateRoomIds = new Set(candidateRooms.map((r: any) => r.id));
   const allBookings = (bookings ?? []) as Array<{ id: string; room_id: string | null; check_in: string; check_out: string; status: BookingStatus; expires_at: string | null }>;
@@ -497,7 +539,13 @@ export async function holdRoomType(
   const occupiedRoomIds = new Set(occupiedBookings.map(b => b.room_id!));
   const availableRooms = candidateRooms.filter((r: any) => !occupiedRoomIds.has(r.id));
 
-  if (availableRooms.length === 0) {
+  // The whole stay needs a free room on EVERY night: subtract the maximum
+  // OTA-blocked count across the stay window, mirroring the availability RPCs.
+  const maxOtaBlocked = stayDates.reduce(
+    (max, date) => Math.max(max, otaBlockedByDate.get(date) ?? 0),
+    0,
+  );
+  if (availableRooms.length - maxOtaBlocked <= 0) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: 'The selected room type is no longer available for the requested dates. Please choose another date or room type.',

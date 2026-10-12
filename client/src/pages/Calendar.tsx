@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
-import { getAvailableRoomCount, getBookedRoomCountForDate } from "./calendarAvailability";
+import { getAvailableRoomCount, getBookedRoomCountForDate, getOtaBlockedRoomCountForDate } from "./calendarAvailability";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 type CalendarViewMode = "week" | "month";
@@ -100,6 +100,10 @@ export default function Calendar({ id }: { id: string }) {
     check_out: toIsoDate(addDays(occupancyDates[occupancyDates.length - 1], 1)),
   };
   const bookingOccupancyQuery = trpc.channelManager.bookingOccupancy.useQuery(occupancyRange);
+  const importedBlocksQuery = trpc.channelManager.ota.listImportedBlocks.useQuery(
+    { hotelId: id },
+    { retry: false },
+  );
   const updateAvailability = trpc.channelManager.updateAvailability.useMutation({
     onSuccess: async () => {
       await utils.channelManager.availability.invalidate(id);
@@ -142,7 +146,12 @@ export default function Calendar({ id }: { id: string }) {
 
   function getEffectiveAvailability(roomTypeId: string, date: string, totalRooms: number) {
     const booked = getBookedRoomCountForDate(roomTypeId, date, hotel.rooms, occupancy);
-    return getAvailableRoomCount(totalRooms, getAllotment(roomTypeId, date, totalRooms), booked);
+    const otaBlocked = getOtaBlockedRoomCountForDate(
+      roomTypeId,
+      date,
+      importedBlocksQuery.data ?? [],
+    );
+    return getAvailableRoomCount(totalRooms, getAllotment(roomTypeId, date, totalRooms), booked, otaBlocked);
   }
 
   function draftCell(roomTypeId: string, date: string, fallbackAvailable: number, fallbackPrice: number) {

@@ -27,6 +27,11 @@ function formatSyncTimestamp(value: string | null | undefined, invalidDateLabel:
   }).format(date);
 }
 
+/** Builds the public outbound feed URL for a hotel's built-in iCal export. */
+function buildIcalExportUrl(hotelId: string, feedToken: string): string {
+  return `${window.location.origin}/api/ical/${hotelId}.ics?token=${encodeURIComponent(feedToken)}`;
+}
+
 export default function OtaSync({ hotelId }: { hotelId: string }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
@@ -347,15 +352,46 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                   {t("otaSync.exportModalDesc")}
                 </DialogDescription>
               </DialogHeader>
-              <div className="py-2">
-                <Label className="text-xs font-medium">{t("otaSync.exportUrlLabel")}</Label>
-                <Input
-                  readOnly
-                  value={exportUrlDialogConn.ical_export_url || ''}
-                  className="mt-2 bg-muted text-xs font-mono"
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                />
-                <p className="text-xs text-muted-foreground mt-2">{t("otaSync.exportUrlHint")}</p>
+              <div className="py-2 space-y-4">
+                {exportUrlDialogConn.ical_feed_token && (
+                  <div>
+                    <Label className="text-xs font-medium">{t("otaSync.ownExportUrlLabel")}</Label>
+                    <div className="mt-2 flex items-center gap-1">
+                      <Input
+                        readOnly
+                        value={buildIcalExportUrl(exportUrlDialogConn.hotel_id, exportUrlDialogConn.ical_feed_token)}
+                        className="bg-muted text-xs font-mono"
+                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2 text-xs shrink-0"
+                        onClick={() => {
+                          const url = buildIcalExportUrl(exportUrlDialogConn.hotel_id, exportUrlDialogConn.ical_feed_token);
+                          void navigator.clipboard?.writeText(url);
+                          toast.success(t("otaSync.exportUrlCopied"));
+                        }}
+                        title={t("otaSync.copyExportUrl")}
+                      >
+                        {t("otaSync.copy")}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">{t("otaSync.ownExportUrlHint")}</p>
+                  </div>
+                )}
+                {exportUrlDialogConn.ical_export_url && (
+                  <div>
+                    <Label className="text-xs font-medium">{t("otaSync.exportUrlLabel")}</Label>
+                    <Input
+                      readOnly
+                      value={exportUrlDialogConn.ical_export_url || ''}
+                      className="mt-2 bg-muted text-xs font-mono"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">{t("otaSync.exportUrlHint")}</p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setExportUrlDialogConn(null)}>
