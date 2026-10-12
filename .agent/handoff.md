@@ -2,6 +2,21 @@
 
 Newest entry on top. Old history: archive/ (do not read).
 
+## 2026-10-13 - A1 migration second live failure fixed (21a3c43)
+- Owner's live apply failed: 42P13 return type mismatch in
+  `get_ota_blocked_room_type_counts` (2 declared columns, 3 selected).
+- Running the file on a disposable postgres:16 (base schema + prior migrations)
+  also found: both availability RPCs raised a GROUP BY error at call time; the
+  ota_import_blocks insert policy let any hotel member insert blocks for every
+  hotel (unqualified hotel_id); a re-run failed on the trigger name; verify
+  `check_availability_grants` always FAILed. All fixed in 21a3c43.
+- Evidence: apply x2 OK, verify 15/15 PASS, cross-hotel insert denied,
+  availability 2 rooms - 1 block = 1; negative controls FAIL as expected.
+  pnpm test/check/build unchanged since ee10dad (SQL only; no TS reads it).
+- Still open: token backfill derives the feed token from the hotel id
+  (md5 formula) and no rotate path exists — owner to decide before the live
+  apply succeeds. A1 stays NOT-DONE until the owner runs migration + verify on live.
+
 ## 2026-10-12 - Phase A working session — A1 committed, A3 retired legacy endpoint, A2 test coverage confirmed
 - A1 (iCal two-way sync): code + migration pair committed (`4658dff`) — the working
   tree had the completed implementation uncommitted. Separated the scope-reset
