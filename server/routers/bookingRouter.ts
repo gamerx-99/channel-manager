@@ -8,7 +8,6 @@ import {
   createBookingWithGuests,
   getManagedHotel,
   getPublicHotelAvailability,
-  createPublicBooking as dbCreatePublicBooking,
   holdRoomType as dbHoldRoomType,
   confirmBookingDetails as dbConfirmBookingDetails,
   listBookingsForHotel,
@@ -38,20 +37,6 @@ export const publicHotelAvailabilitySchema = z.object({
   check_in: z.string().date(),
   check_out: z.string().date(),
   ...publicGuestCountsSchema,
-}).refine(data => data.check_out > data.check_in, {
-  message: 'Check-out date must be later than check-in date.',
-  path: ['check_out'],
-});
-
-export const createPublicBookingSchema = z.object({
-  slug: z.string().trim().min(1).max(100),
-  room_type_id: z.string().uuid(),
-  check_in: z.string().date(),
-  check_out: z.string().date(),
-  guest_name: z.string().trim().min(1, 'Guest name is required.').max(180),
-  guest_email: z.string().trim().email('Invalid email address.').max(320).optional().or(z.literal('')),
-  guest_phone: z.string().trim().max(50).optional().or(z.literal('')),
-  special_requests: z.string().trim().max(500).optional().or(z.literal('')),
 }).refine(data => data.check_out > data.check_in, {
   message: 'Check-out date must be later than check-in date.',
   path: ['check_out'],
@@ -248,14 +233,6 @@ export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAva
   }
 });
 
-export const createPublicBooking = rateLimitedProcedure.input(createPublicBookingSchema).mutation(async ({ input }) => {
-  try {
-    return await dbCreatePublicBooking(createSupabaseAdminClient(), input);
-  } catch (error) {
-    return rethrowDomainError(error);
-  }
-});
-
 export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutation(async ({ input }) => {
   try {
     return await dbHoldRoomType(createSupabaseAdminClient(), input);
@@ -278,7 +255,6 @@ export const bookingRouter = router({
   previewTm30,
   createBooking,
   publicHotelAvailability,
-  createPublicBooking,
   holdRoomType,
   confirmBookingDetails,
 });

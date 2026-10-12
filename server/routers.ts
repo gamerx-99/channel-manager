@@ -76,7 +76,6 @@ import {
   previewTm30,
   createBooking,
   publicHotelAvailability,
-  createPublicBooking,
   holdRoomType,
   confirmBookingDetails,
 } from './routers/bookingRouter';
@@ -137,7 +136,6 @@ export const appRouter = router({
     publicHotel,
     publicHotelAvailability,
     listPublicHotelServices,
-    createPublicBooking,
     holdRoomType,
     confirmBookingDetails,
     getHotelSiteConfig,

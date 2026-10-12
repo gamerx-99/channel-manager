@@ -66,3 +66,12 @@ describe('channelManager.holdRoomType / confirmBookingDetails wiring', () => {
     expect(dbMocks.confirmBookingDetails).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('legacy public booking endpoint retirement', () => {
+  it('createPublicBooking is no longer reachable on the real appRouter', async () => {
+    const { appRouter } = await import('./routers');
+    // The retired one-shot public booking procedure must not exist on the router at all:
+    // the public flow is hold-based (holdRoomType → confirmBookingDetails → payment).
+    expect((appRouter.channelManager as unknown as Record<string, unknown>).createPublicBooking).toBeUndefined();
+  });
+});

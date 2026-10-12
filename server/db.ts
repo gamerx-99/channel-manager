@@ -20,7 +20,6 @@ import type {
   LegacyTemplateUser,
   PublicRoomTypeAvailability,
   PublicHotelAvailabilityResult,
-  CreatePublicBookingInput,
   RateOverrideRecord,
   HotelOptionRecord,
   HotelUserAssignmentRecord,

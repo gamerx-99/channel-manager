@@ -190,17 +190,6 @@ export type PublicHotelAvailabilityResult = {
   room_types: PublicRoomTypeAvailability[];
 };
 
-export type CreatePublicBookingInput = {
-  slug: string;
-  room_type_id: string;
-  check_in: string;
-  check_out: string;
-  guest_name: string;
-  guest_email?: string | null;
-  guest_phone?: string | null;
-  special_requests?: string | null;
-};
-
 export type RateOverrideRecord = {
   id: string;
   room_type_id: string;
