@@ -38,9 +38,10 @@ Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เด�
 - เสร็จเมื่อ: ราคาแสดงตรงตามจำนวนแขกทุกกรณีที่ทดสอบ
 
 ### A3 ข้อมูลผู้เข้าพักในการจอง (P1 เดิม)
-- [ ] เก็บจำนวนผู้ใหญ่ / เด็ก / อายุเด็ก ลงในการจอง (ใช้ต่อในเช็กอินและ ตม.30)
-- [ ] ปลด endpoint จองแบบเก่า (legacy public booking)
-- [ ] เตียงเสริมเป็นบริการเสริมในขั้นตอนที่ ③ (ใช้ services catalog ที่มีอยู่)
+- [x] เก็บจำนวนผู้ใหญ่ / เด็ก / อายุเด็ก ลงในการจอง (ใช้ต่อในเช็กอินและ ตม.30) — hold-based flow เก็บ adults/children/child_measurements ตั้งแต่การ hold ห้อง (20261010_booking_guest_counts.sql) และหน้า Bookings แสดงจำนวนคน + การวัดของเด็กแล้ว
+- [x] ปลด endpoint จองแบบเก่า (legacy public booking) — ลบ `createPublicBooking` ออกจาก router/db/types พร้อมเทสต์ยืนยันว่าเรียกไม่ได้ (11bd5ab)
+- [x] เตียงเสริมเป็นบริการเสริมในขั้นตอนที่ ③ (ใช้ services catalog ที่มีอยู่) — wizard ขั้น ③ อ่าน catalog อยู่แล้ว โรงแรมเพิ่มบริการ "เตียงเสริม" (PER_NIGHT) ในหน้า HotelServices เอง
+- [ ] มนุษย์ยืนยันบน live: migration `20261010_booking_guest_counts.sql` + verify ผ่าน และจองจริงแล้วเปิดดูเห็นจำนวนคนครบ (ยังไม่ mark DONE กว่ายืนยัน)
 - เสร็จเมื่อ: เปิดการจองย้อนดูแล้วเห็นจำนวนคนครบ; เรียก endpoint เก่าไม่ได้
 
 ---
@@ -129,4 +130,4 @@ Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เด�
 - ค่าธรรมเนียม อบจ. 1%
 
 ## พบระหว่างทาง (agent จดที่นี่ ห้ามแก้เอง)
--
+- `supabase/.temp/` (Supabase CLI local state ที่ link project ไว้) เคยถูก stage มากับงาน A1 — เพิ่มเป็น ignore ใน .gitignore แล้ว ไม่ได้ commit

@@ -2,6 +2,44 @@
 
 Newest entry on top. Old history: archive/ (do not read).
 
+## 2026-10-12 - Phase A working session — A1 committed, A3 retired legacy endpoint, A2 test coverage confirmed
+- A1 (iCal two-way sync): code + migration pair committed (`4658dff`) — the working
+  tree had the completed implementation uncommitted. Separated the scope-reset
+  archive move into its own commit (`6c1b203`). Migration pair
+  `20261012_ical_two_way_sync.sql` + `verify_20261012_ical_two_way_sync.sql` still
+  requires HUMAN apply in Supabase SQL editor (agent forbidden from running SQL on
+  live). Ticket A1 stays NOT-DONE until that confirmation.
+- A3: retired the legacy one-shot public booking endpoint. Removed
+  `createPublicBooking` from `server/routers.ts` + `bookingRouter.ts`, removed
+  `createPublicBooking` from `server/db/booking.ts` and `CreatePublicBookingInput`
+  from `server/db/types.ts`. Added router-level regression test in
+  `server/bookingRouter.wiring.test.ts` asserting `createPublicBooking` is
+  undefined on the real appRouter. Trimmed now-dead tests from
+  `server/publicBooking.test.ts` (kept getStayDates / price-override /
+  availability-RPC coverage). Commit `11bd5ab`.
+- A3 party size: verified already implemented — `holdRoomType` persists
+  adults/children/child_measurements on the held booking, Bookings.tsx renders
+  occupancy + child measurements, migration pair `20261010_booking_guest_counts.sql`
+  exists (human must still confirm apply + verify live).
+- A3 extra bed: no code change needed — wizard step ③ already offers the hotel's
+  active services catalog; the owner adds an "เตียงเสริม / Extra bed" PER_NIGHT
+  service in HotelServices (same owner-action shape as A2's Little Bro item).
+- A2: pricing engine + RPCs + hold path already implement occupancy pricing;
+  unit coverage exists in `shared/occupancyPricing.test.ts` (2/3/4-guest levels,
+  child classification incl. infant/age-group/height, disabled-level rejection).
+  Remaining A2 items are human/live: run `verify_20261009_room_type_occupancy_pricing.sql`
+  on live, manual 2/3/4-guest booking test, and owner enabling 3–4 person levels
+  for Little Bro.
+- Evidence (after A3 changes): `pnpm check` exit 0; `pnpm test` → 91 files passed /
+  2 skipped, **510 passed | 3 skipped, 0 failed**; `pnpm build` exit 0.
+- Note: deleted tests were removed only because the endpoint they exercised no
+  longer exists (A3 requirement "เรียก endpoint เก่าไม่ได้"); coverage moved to a
+  router-level retirement assertion in bookingRouter.wiring.test.ts.
+- Next human steps: apply+verify `20261012_ical_two_way_sync.sql` (A1) and
+  `20261010_booking_guest_counts.sql` + `20261009_room_type_occupancy_pricing.sql`
+  verify scripts (A2) in Supabase; owner-side pricing/service configuration.
+
+
 ## 2026-10-12 - A1: iCal two-way sync (Phase A) — implementation complete, pending migration apply
 - Inbound: `triggerOtaCalendarSync` now fetches the raw feed (`fetchIcalFeedText`),
   parses full VEVENTs (`parseIcalEvents` — UID/SUMMARY/DTSTART/DTEND, multi-night
