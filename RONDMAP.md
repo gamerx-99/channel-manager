@@ -23,13 +23,14 @@ Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เด�
 
 ## เฟส A — ปิดงานค้าง (ต้องจบก่อน)
 
-### A1 ซิงก์ปฏิทิน iCal สองทาง — 🔄 (โค้ดเสร็จ รอ apply migration)
+### A1 ซิงก์ปฏิทิน iCal สองทาง — ✅ (apply บน live แล้ว 2026-10-13)
 - [x] ปฏิทิน OTA ที่ดึงเข้ามาปิดห้องจริง (imported blocks หักออกจาก availability ทั้ง public RPCs และปฏิทินในระบบ)
 - [x] OTA ยกเลิก → ห้องเปิดคืน (diff รายคืนต่อ UID; event หายจากฟีด = เปิดคืนเฉพาะคืนที่เคยปิด)
 - [x] ลิงก์ .ics ต่อโรงแรม (token ต่อโรงแรม ไม่มีชื่อแขกใน feed): `GET /api/ical/:hotelId.ics?token=…`
 - [x] ปุ่ม "ซิงก์ทันที" (มีอยู่แล้ว + ตอนนี้ซิงก์เข้ามาปิด/เปิดห้องจริง)
 - [x] เมนูชื่อ "ซิงก์ปฏิทิน" (Calendar Sync) ทั้ง en/th
-- [ ] มนุษย์รัน `20261012_ical_two_way_sync.sql` + `verify_20261012_ical_two_way_sync.sql` ใน Supabase SQL editor ให้ผ่านครบ (ยังไม่ mark DONE กว่ายืนยันผล verify บน live)
+- [x] มนุษย์รัน `20261012_ical_two_way_sync.sql` + `verify_20261012_ical_two_way_sync.sql` ใน Supabase SQL editor ให้ผ่านครบ — 2026-10-13 เจ้าของรัน migration ฉบับ 21a3c43 ได้ "Success. No rows returned" และรายงาน verify (แบบรวมเป็นคำสั่งเดียว) PASS ทุกข้อ; ภาพที่ส่งมาเห็น 10/15 แถว
+  - 21a3c43 แก้ return type, GROUP BY ใน RPC ห้องว่าง, policy insert ข้ามโรงแรม, ชื่อ trigger ตอนรันซ้ำ และ verify grants; ทดสอบใน postgres:16 ชั่วคราวแล้ว
   - แก้ไขเมื่อ 2026-10-12: รอบแรกล้มที่ backfill (23P01 trigger) เพราะสุ่ม token ใหม่ทีละแถว — แก้ backfill ให้ token เดียวกันต่อโรงแรมใน statement เดียว (md5 จาก hotel id) รันซ้ำได้ ให้รันไฟล์นี้ซ้ำได้เลย เพราะทุกขั้น idempotent
 
 ### A2 ราคาตามจำนวนแขก (P0 เดิม)
