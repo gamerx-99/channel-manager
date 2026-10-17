@@ -33,6 +33,47 @@ Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เด�
   - 21a3c43 แก้ return type, GROUP BY ใน RPC ห้องว่าง, policy insert ข้ามโรงแรม, ชื่อ trigger ตอนรันซ้ำ และ verify grants; ทดสอบใน postgres:16 ชั่วคราวแล้ว
   - แก้ไขเมื่อ 2026-10-12: รอบแรกล้มที่ backfill (23P01 trigger) เพราะสุ่ม token ใหม่ทีละแถว — แก้ backfill ให้ token เดียวกันต่อโรงแรมใน statement เดียว (md5 จาก hotel id) รันซ้ำได้ ให้รันไฟล์นี้ซ้ำได้เลย เพราะทุกขั้น idempotent
 
+#### A1-แก้ P0 (2026-10-17) — ยกเลิก 1 ดีลแล้วห้องของดีลอื่นกลับมาเปิด
+พบตอนรีวิวอิสระ: `replaceOtaImportBlocks` ลบด้วย (hotel, provider, room_type, date)
+**ไม่ใส่ `source_uid`** ทั้งที่ schema อนุญาตหลายแถวต่อคืน (`uq_ota_import_blocks_unique`
+ครอบ provider, room_type_id, date, source_uid) → โรงแรมขายห้องเดลูก์ 3 ห้องคืนเดียวบน Agoda
+เมื่อยกเลิก 1 ดีล บล็อกทั้ง 3 ถูกลบ ห้องที่ยังขายอยู่ 2 ห้องกลับมาเปิดขายเกิน
+
+- [x] เพิ่ม `.eq('source_uid', …)` ในตัวลบ (`server/db/otaBlocks.ts`)
+- [x] อ่าน block แยกตาม provider ตอน diff — เดิมอ่านทั้งโรงแรม ทำให้ UID ชนกับ OTA อื่นแล้ว
+      ของ provider นี้ไม่ถูก insert → ห้องที่ OTA จองไว้หลุดการปิด
+- [x] event ที่ยังอยู่ในฟีดแต่ชื่อไม่ตรงห้อง ไม่ลบบล็อกเดิม (เดิมถือว่ายกเลิก → เปิดห้องที่ยังขายอยู่)
+- [x] ย้ายการเขียน log `success` ไปหลัง apply block และ `last_sync_at` (เดิมเขียนก่อน → รอบถัดไป
+      เทียบกับ snapshot ที่ไม่เคยเกิดขึ้นจริง)
+- [x] เทสต์ `server/db/otaBlocks.test.ts` (ใหม่, 7 เคส) ยืนยันว่าถอด `.eq('source_uid')`
+      ออกแล้วเทสต์ fail 2 เคส · `server/otaSync.test.ts` +4 เคส
+- [x] ไม่ต้อง apply migration ใหม่ (เป็นการแก้โค้ดอย่างเดียว)
+
+#### A1-แก้เพิ่ม (2026-10-17) — token เดาได้ + ปฏิทินไม่ตรงกัน + ปุ่ม .ics ซ่อน
+
+**2. iCal feed token เดาได้ (P1)** — backfill เดิมใช้ `md5('ical-feed-token-v1:'||hotel_id)`
+แต่ `hotel_id` อ่านได้จาก anon ผ่าน `get_public_hotel()` → ไม่ใช่เดา แต่**คำนวณได้**
+ต้องใช้ migration `20261017_ical_feed_token_rotation.sql` + verify (เจ้าของรัน)
+- [x] เขียน migration หมุน token เป็น `encode(gen_random_bytes(32),'hex')` ทุกแถว
+- [x] เขียน verify ตรวจว่าไม่มีแถวไหนยัง match สูตร md5 เดิม + ยาว 64 hex + ต่อโรงแรม token เดียว
+- [x] ใส่คำเตือนในไฟล์ migration: **ลิงก์ .ics เดิมที่ส่งให้ OTA ใช้ไม่ได้แล้ว ต้องส่ง URL ใหม่**
+- [ ] เจ้าของ apply + verify แล้วส่ง URL ใหม่ให้ OTA ทุกเจ้า
+- [ ] ปุ่ม rotate token ในหน้า OTA (ยังไม่มี — ถ้าสงสัยว่ารั่ว ต้องมีทางหมุนเอง)
+
+**3. ปฏิทินหน้า Home ไม่หัก OTA block** — `dashboardCalendar` ไม่เคยอ่าน `ota_import_blocks`
+หน้า Home เห็นห้องว่าง แต่หน้าปฏิทินของโรงแรมและหน้าจองสาธารณะหักอยู่แล้ว → สองหน้าจอไม่ตรงกัน
+- [x] ดึง `listOtaImportBlocks` ใน `dashboardRouter.ts` แล้วหักก่อนคำนวณสถานะ
+- [x] ย้ายสูตรนับเป็น helper กลาง `countBlockedUnitsByRoomTypeAndDate` + `subtractOtaBlocks`
+      (เพื่อให้ 3 จุดที่หัก inventory ใช้ตัวเดียวกัน ไม่หลุดอีก)
+- [x] เทสต์ helper 6 เคส (นับหลาย event คืนเดียวเป็นหลายห้อง / ไม่ติดลบ / ไม่นับแถวเสีย)
+      + contract test ยืนยันว่า dashboard เรียก helper ตัวนี้จริง
+
+**4. ปุ่ม `.ics` ซ่อนอยู่** — ปุ่มเปิด dialog ถูก gate ด้วย `conn.ical_export_url` ซึ่งมีเฉพาะตอน
+OTA ส่งมาให้ แต่ dialog ที่เราต้องการคือ URL ที่ระบบสร้างเองจาก `ical_feed_token` → ทุก connection
+ที่โรงแรมสร้างจากหน้านี้ **เปิดดู URL ตัวเองไม่ได้เลย**
+- [x] เอาเงื่อนไขออก ปุ่มแสดงทุกแถวที่มี import URL
+- [x] เทสต์ยืนยันว่าไม่มี `conn.ical_export_url && (<Button` เหลือ
+
 ### A2 ราคาตามจำนวนแขก (P0 เดิม)
 - [ ] ตรวจ `verify_20261009_room_type_occupancy_pricing.sql` ให้ผ่านครบ (รวม rpc_grants)
 - [ ] ทดสอบหน้าจอง: 2 / 3 / 4 คน + เด็ก, เช็กอิน/เช็กเอาต์, ปฏิทิน
@@ -126,10 +167,30 @@ Owner: เกมส์ · ร่าง: 2026-10-12 · แทน RONDMAP เด�
 
 ---
 
+## P4 — SaaS (ทำแล้ว 2026-10-17, รอ apply migration + deploy)
+- [x] ปิดช่องโหว่ hotel_owner เลื่อนตัวเองเป็น platform admin (`20261017_hotel_users_role_escalation_guard.sql`)
+- [x] schema สมาชิก: plans (ขั้นบันไดตามจำนวนห้อง) + subscriptions + hotels lifecycle (`20261017_saas_billing_schema.sql`)
+- [x] pure functions คิดราคา/เลือกขั้นบันได + กติกาว่าจะรับการจองใหม่ไหม (`shared/billing/`)
+- [x] บังคับจ่ายที่ holdRoomType (จุดเดียว) + ปิดปุ่มจองบนหน้าสาธารณะ
+- [x] billingRouter: plans / mySubscription / createCheckout (PromptPay QR) / platform ops
+- [x] self-signup (สร้างโรงแรม + owner + trial ในขั้นตอนเดียว) + หน้าแลนดิ้ง + หน้าราคา
+- [ ] เจ้าของ apply `20261017_hotel_users_role_escalation_guard.sql` + verify (P0 — ห้ามขายก่อน)
+- [ ] เจ้าของ apply `20261017_saas_billing_schema.sql` + verify
+- [ ] ตั้ง `PLATFORM_PROMPTPAY_ID` ใน Vercel + `.env`
+- [ ] ยืนยันราคาจริงในตาราง `plans` (ตอนนี้เป็นตัวเลขสมมติ)
+- [ ] staff banner เมื่อสมาชิกหมดอายุ (ตอนนี้ปิดเฉพาะหน้าจองสาธารณะ)
+- [ ] SlipOK สำหรับค่าสมาชิก (รอคำตอบ ตม.)
+- ยังไม่ทำ: cron ตัดสมาชิกเป็น past_due, webhook ยืนยัน PromptPay, ข้อตกลงการใช้บริการ + DPA (นักกฎหมายตรวจ)
+
 ## หลังพร้อมขาย (ยังไม่ทำ)
-- P4 เดิม: หน้าแลนดิ้ง + สมัครเอง, checklist ตั้งค่า + ช่วงทดลอง, ค่าสมาชิกเติมเงินผ่าน PromptPay+SlipOK (ราคายังเป็นสมมติฐาน), platform admin + ส่งออก/ลบข้อมูลรายโรงแรม, ข้อตกลงการใช้บริการ + DPA (นักกฎหมายตรวจ)
 - ตม.30 ผ่าน API (เมื่อ ตม. ตอบ)
 - ค่าธรรมเนียม อบจ. 1%
 
 ## พบระหว่างทาง (agent จดที่นี่ ห้ามแก้เอง)
+- `server/db.ts` กับ `server/db/index.ts` แข่งกันเอง — `import from '../db'` resolve ไปที่ **`server/db.ts`** ไม่ใช่โฟลเดอร์ `server/db/` ทำให้งาน B1 ที่เพิ่ม export ผิดไฟล์ (เจ้าของตัดสินใจว่าจะลบ `server/db/index.ts` หรือไม่ — ยังไม่ลบ)
+- ~~`server/db/otaBlocks.ts:193` ลบ block โดยไม่ใส่ `.eq('source_uid')`~~ — **แก้แล้ว 2026-10-17** ดูหัวข้อ A1-แก้ P0
+- ~~iCal feed token ที่ backfill = `md5(...)` เดาได้~~ — **แก้แล้ว 2026-10-17** ดู A1-แก้ P0 ตอนที่ 2
+- `subscriptionAccess.canAccessExistingData` มีแล้วแต่ยังไม่มีจุดไหนเรียกใช้จริง — enforcement ฝั่ง staff ยังไม่ต่อ
+- `billing.confirmPayment` เรียก `requireSuperAdmin` แล้วทิ้งค่า (`void admin`) — ตัวแปรไม่ได้ใช้ ควรตัดทิ้งหรือใช้จริง
 - `supabase/.temp/` (Supabase CLI local state ที่ link project ไว้) เคยถูก stage มากับงาน A1 — เพิ่มเป็น ignore ใน .gitignore แล้ว ไม่ได้ commit
+- Working tree มีโค้ด B1 ที่ยังไม่ commit และ parse ไม่ผ่านใน `server/routers/bookingRouter.ts:15` กับ `server/db/booking.ts:640`; Gate A review ไม่รวมการเปลี่ยนแปลงนี้.

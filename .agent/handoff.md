@@ -2,6 +2,156 @@
 
 Newest entry on top. Old history: archive/ (do not read).
 
+## 2026-10-17 — Remaining three review findings closed (token, dashboard, .ics button)
+- **1. iCal feed token was derivable, not just guessable** (P1).
+  `20261012` backfilled `md5('ical-feed-token-v1:' || hotel.id)`, and hotel.id
+  is readable by anonymous callers via `get_public_hotel()`. So an attacker
+  computed the token instead of brute-forcing it and read any hotel's booking
+  calendar. New `20261017_ical_feed_token_rotation.sql` + verify rotate every
+  row to `encode(gen_random_bytes(32),'hex')`, one token per hotel per statement
+  so the single-token trigger holds. `upsertOtaConnection` already used
+  `sha256(randomUUID())`, so only backfilled rows were weak — rotating all is
+  the only way to be sure. **The migration header states plainly that every
+  `.ics` URL already sent to an OTA stops working and must be re-sent**; there is
+  no way to keep the old URLs and remove the weakness, the old value is public.
+  Owner action: apply + verify, then re-send URLs from the OTA page. Still no
+  rotate button — a separate small ticket.
+- **2. `dashboardCalendar` ignored imported OTA blocks** — the cross-hotel Home
+  calendar showed rooms as sellable that the per-hotel calendar
+  (`client/src/pages/Calendar.tsx`) and the public availability RPCs both closed,
+  so staff saw availability the guest site would refuse. Now reads
+  `listOtaImportBlocks` per hotel and subtracts before computing
+  healthy/low/closed.
+  The arithmetic moved into shared helpers `countBlockedUnitsByRoomTypeAndDate`
+  and `subtractOtaBlocks` in `server/db/otaBlocks.ts` so the three surfaces
+  that subtract OTA inventory cannot drift apart again — that drift is what
+  caused the bug. `countOtaBlockedNights` in `server/db/booking.ts` still has its
+  own inline loop; consolidating it onto the helper is a tidy-up, not a fix.
+- **3. The `.ics` export button was unreachable** — gated on
+  `conn.ical_export_url`, which is only populated when an OTA supplies one, but
+  the dialog it opens shows OUR generated URL built from `ical_feed_token`.
+  Every connection a hotel created from that page therefore had no way to see
+  or copy its own calendar URL — the RONDMAP A1 deliverable was invisible for
+  exactly the hotels that need it. Gate removed.
+- **Tests:** `server/db/otaBlocks.test.ts` 7→13 cases (the 6 new ones cover the
+  shared helpers, including the multi-event-one-night count and the floor at
+  zero); `client/src/dashboardCalendar.contract.test.ts` +1 regression asserting
+  the dashboard calls the helpers; `client/src/pages/OtaSync.contract.test.ts`
+  +2 asserting the button is not gated on `ical_export_url`.
+- **Evidence:** `pnpm check` exit 0 · `pnpm test` 100 files passed / 2 skipped,
+  **597 passed | 3 skipped, 0 failed** · `pnpm build` ✓, dist/index.js 272.1kb.
+- **No app change needed for the token rotation.** Still not committed, not
+  pushed, no SQL run against live.
+
+## 2026-10-17 — Gate A P0 fixed: OTA cancellation reopened other bookings' rooms
+- **Bug:** `replaceOtaImportBlocks` deleted OTA blocks on
+  (hotel, provider, room_type_id, date) with **no `source_uid`**, while the
+  schema's uniqueness key is (provider, room_type_id, date, source_uid) — i.e.
+  several reservations may block the same room type on the same night. A hotel
+  selling 3 Deluxe rooms on Agoda, cancelling one, deleted all three blocks and
+  re-opened the 2 rooms that were still sold (over-sell on both availability
+  RPCs and the public hold path).
+- **Fix (`server/db/otaBlocks.ts`, `server/otaSync.ts`):**
+  1. Added `.eq('source_uid', item.source_uid)` to the delete.
+  2. `listOtaImportBlocks(client, hotelId, provider?)` gained an optional
+     provider scope; `triggerOtaCalendarSync` now passes `provider`. Reading all
+     providers let another OTA's row with a colliding `source_uid` satisfy the
+     key, so this provider's own reservation was never inserted and silently
+     stopped blocking inventory.
+  3. New `selectDeletableBlocks(previous, unresolvedUids)` keeps blocks whose
+     event is still in the feed but whose SUMMARY no longer matches a room type.
+     Previously such an event fell out of `resolvedEvents`, landed in `removed`,
+     and re-opened a room the OTA still holds. Now logged via `console.warn`
+     (the `unmatched` list was destructured and never read).
+  4. Moved the `status:'success'` sync-log write to AFTER the block apply and
+     `last_sync_at`. `getPreviousIcalSnapshot` filters on `success`, so the old
+     order let the next run diff against a snapshot whose inventory change never
+     happened.
+- **Tests:** new `server/db/otaBlocks.test.ts` (7 cases) asserts the delete
+  filter carries `source_uid` and that cancelling one of three same-night
+  siblings leaves two blocks standing. Verified it catches the bug: removing
+  `.eq('source_uid')` makes 2 of the 7 fail. `server/otaSync.test.ts` +4 for
+  `selectDeletableBlocks`.
+- **Evidence:** `pnpm check` exit 0 · `pnpm test` 100 files passed / 2 skipped,
+  **588 passed | 3 skipped, 0 failed** · `pnpm build` ✓, dist/index.js 271.1kb.
+- **No migration needed** — code-only change, works against the schema already
+  applied on 2026-10-13.
+- **Still open from the same review:** the iCal feed token is
+  `md5('ical-feed-token-v1:' || hotel_id)` and derivable, with no rotate path
+  (P1); `dashboardCalendar` ignores OTA blocks so the Home calendar disagrees
+  with the per-hotel one; the `.ics` button is gated on `ical_export_url` which
+  UI-created connections never set.
+- **Not committed, not pushed.**
+
+## 2026-10-17 — Independent review + SaaS shell (6 steps, all six done, nothing committed)
+- **Step 1 restored the build.** The working tree had uncommitted B1 work that
+  did not parse: a nested `import {}` in `server/routers/bookingRouter.ts` and a
+  missing/extra brace around `createBookingWithGuests` in `server/db/booking.ts`.
+  Root cause of the confusing second error: the repo has BOTH `server/db.ts` and
+  `server/db/index.ts`, and `from '../db'` resolves to the **file** `server/db.ts`.
+  B1 had added its exports to the dead `index.ts`. Added the missing export to
+  `server/db.ts`; left `index.ts` alone pending the owner's delete decision
+  (logged in RONDMAP "พบระหว่างทาง").
+- **One behaviour change:** `accepted_policy_version` is now `.optional()`
+  (`bookingRouter.ts:71`). B1 made it required, but the wizard never sends it,
+  so every public booking would have failed validation. Server-side enforcement
+  is unchanged — a hotel WITH a policy row still requires a matching version
+  (`server/db/booking.ts:518`). Marked `ASSUMPTION:` in the schema comment.
+- **Step 2 — P0 cross-tenant escalation closed at the DB layer.**
+  `20261017_hotel_users_role_escalation_guard.sql` + verify. `hotel_users`
+  writes previously allowed `can_manage_staff(hotel_id) and role <> 'super_admin'`,
+  which let any hotel_owner self-assign the platform `admin` role via direct
+  PostgREST (anon key is public in client source); `is_platform_admin()` then
+  short-circuits `is_hotel_member()` for every tenant. New WITH CHECK allows
+  only the four hotel-scoped roles for non-super-admins. Verify asserts the
+  policy text no longer contains a bare `role <> ` guard.
+- **Steps 3–5 — billing.** `20261017_saas_billing_schema.sql` adds `plans`,
+  `subscriptions`, `hotels.suspended_at/deleted_at`, and `hotel_is_active()`.
+  RLS is capability-scoped from the start (`is_super_admin` for subscription
+  writes) specifically to avoid the post-bootstrap regression where every newer
+  table used `is_hotel_member` on writes. Pure logic lives in `shared/billing/`
+  per the `channelPerformance.ts` precedent. `holdRoomType` is the single
+  enforcement point; `getPublicHotelAvailability` now returns a `billing` field
+  so the public page closes the book action. `billingRouter` covers plans /
+  mySubscription / createCheckout (PromptPay QR, amount computed server-side) /
+  confirmPayment / trial / listAll / suspend / soft-delete.
+- **Step 6 — self-signup + landing.** `signupRouter.createHotel` requires a
+  session and always binds `ctx.user.id` (the P1-4 finding on the invite-token
+  flow, avoided by construction), derives the slug server-side with Thai
+  preserved, and opens the trial in the same call. `Landing.tsx` is the new `/`
+  route; `Signup.tsx` is `/signup`. `/` no longer redirects to the dashboard.
+- **Owner decision (2026-10-17):** trial first, then tiered by physical room
+  count (not room-type count). On non-payment: block NEW bookings only — existing
+  data stays readable so check-in/check-out and ร.ร.4 / ตม.30 continue.
+- **Evidence:** `pnpm check` exit 0 · `pnpm test` 99 files passed / 2 skipped,
+  **577 passed | 3 skipped, 0 failed** · `pnpm build` ✓ built, dist/index.js
+  270.4kb.
+- **NOT committed, NOT pushed, no SQL run against live.** The two migrations
+  need the owner's hands in the Supabase SQL editor, and `PLATFORM_PROMPTPAY_ID`
+  must be set in Vercel. Plan prices are placeholders (see
+  `.agent/OPEN_QUESTIONS.md`).
+- **Out of scope, found by the same review, NOT fixed:** `otaBlocks.ts:193`
+  deletes OTA blocks without `source_uid` (P0 — one cancellation reopens other
+  bookings' rooms); the iCal feed token is `md5(hotel_id)` and derivable
+  (P1, no rotate path); no `past_due` sweep and no PromptPay webhook; no
+  staff-facing lapsed-subscription banner yet.
+
+## 2026-10-14 - Gate A independent review — FAIL
+- `kb-review -by codex -base origin/main -phase 'Gate A: RONDMAP Phase A (A1-A3)'`
+  returned FAIL for HEAD `30b4478`; report is in the KB review folder.
+- Confirmed from source: OTA block deletion omits `source_uid` and sync diffs
+  all providers together (`server/db/otaBlocks.ts`, `server/otaSync.ts`); the
+  live migration backfills public feed tokens deterministically from hotel IDs.
+  These are Gate A blockers; no production SQL or code fixes were made.
+- RONDMAP A2 verification/UAT and A3 live migration + booking confirmation
+  remain unchecked.
+- Working tree also has out-of-order, uncommitted B1 work. Current `pnpm check`,
+  `pnpm test`, and `pnpm build` fail because `server/routers/bookingRouter.ts`
+  and `server/db/booking.ts` have parse errors in those changes.
+- Changed files: this handoff, one RONDMAP note; no code or production DB.
+- Next step: fix/review Gate A blockers and complete A2/A3 live evidence before
+  advancing to B1. Review artifact: `30b4478...claude.md`.
+
 ## 2026-10-13 - A1 migration second live failure fixed (21a3c43)
 - Owner's live apply failed: 42P13 return type mismatch in
   `get_ota_blocked_room_type_counts` (2 declared columns, 3 selected).
