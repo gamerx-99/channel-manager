@@ -99,6 +99,32 @@ export type BookingServiceRecord = {
 export type PaymentStatus = 'unpaid' | 'pending' | 'verified' | 'failed';
 export type PaymentSessionStatus = 'pending' | 'paid' | 'expired' | 'failed';
 
+/** B1 — current cancellation policy row (one per hotel, versioned on edit). */
+export type CancellationPolicyRecord = {
+  id: string;
+  hotel_id: string;
+  free_cancellation_days: number;
+  partial_keep_percent: number | string;
+  partial_cutoff_days: number;
+  deposit_percent: number | string;
+  no_show_keep_percent: number | string;
+  policy_text_th: string;
+  policy_text_en: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UpsertCancellationPolicyInput = {
+  free_cancellation_days: number;
+  partial_keep_percent: number;
+  partial_cutoff_days: number;
+  deposit_percent: number;
+  no_show_keep_percent: number;
+  policy_text_th: string;
+  policy_text_en: string;
+};
+
 export type BookingRecord = {
   id: string;
   hotel_id: string;
@@ -116,6 +142,10 @@ export type BookingRecord = {
   payment_status?: PaymentStatus;
   payment_method?: 'cash' | 'transfer' | 'promptpay' | null;
   created_by?: string | null;
+  /** B1 — accepted policy snapshot + acceptance time + computed refund (THB). */
+  policy_snapshot?: Record<string, unknown> | null;
+  policy_accepted_at?: string | null;
+  refund_amount?: number | string | null;
   created_at: string;
   rooms: { room_number: string; room_types: { name: string } | null } | null;
   guests: GuestRecord[];
@@ -188,6 +218,15 @@ export type PublicHotelAvailabilityResult = {
   check_out: string;
   nights: number;
   room_types: PublicRoomTypeAvailability[];
+  /**
+   * SaaS billing state so the public page can hide the book action before the
+   * guest reaches the hold step. `null` before 20261017_saas_billing_schema.sql
+   * is applied — the page then behaves exactly as it did pre-billing.
+   */
+  billing: {
+    accepts_new_bookings: boolean;
+    reason: string;
+  } | null;
 };
 
 export type RateOverrideRecord = {

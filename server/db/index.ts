@@ -1,6 +1,7 @@
 export * from './auth';
 export * from './availability';
 export * from './booking';
+export * from './cancellationPolicy';
 export * from './hotel';
 export * from './housekeeping';
 export * from './messaging';

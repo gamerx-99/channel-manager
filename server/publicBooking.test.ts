@@ -70,15 +70,43 @@ describe('Public Booking Engine & Availability Logic', () => {
           ],
           error: null,
         }));
-      const from = vi.fn((table: string) => ({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: table === 'room_types' ? roomTypes : [],
-              error: null,
-            }),
+      // Chainable stub covering both the availability reads and the SaaS
+      // billing read added in 2026-10-17 (hotels lifecycle + subscriptions).
+      const resolveChain = (table: string) => {
+        const single = () => ({
+          data: table === 'hotels'
+            ? { suspended_at: null, deleted_at: null }
+            : table === 'subscriptions'
+              ? {
+                  id: 'sub-1', hotel_id: 'hotel-1', plan_code: 'starter', status: 'active',
+                  billing_cycle: 'monthly', tier_rooms: 5, price_paid: 990,
+                  trial_ends_at: null, period_start: '2026-10-01T00:00:00.000Z',
+                  period_end: '2999-01-01T00:00:00.000Z', source: 'promptpay',
+                  reference: 'x', verified_at: '2026-10-01T00:00:00.000Z', cancelled_at: null,
+                }
+              : null,
+          error: null,
+        });
+        const chain: Record<string, unknown> = {};
+        // `.order()` must be awaitable AND chainable: the availability read
+        // awaits it, the billing read chains `.limit().maybeSingle()` onto it.
+        chain.order = vi.fn().mockReturnValue(
+          Object.assign(Promise.resolve({ data: table === 'room_types' ? roomTypes : [], error: null }), {
+            in: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue(single()),
           }),
-        }),
+        );
+        chain.limit = vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue(single()) });
+        chain.maybeSingle = vi.fn().mockResolvedValue(single());
+        chain.in = vi.fn().mockReturnValue(chain);
+        chain.eq = vi.fn().mockReturnValue(chain);
+        return chain;
+      };
+      const from = vi.fn((table: string) => ({
+        select: vi.fn().mockReturnValue(resolveChain(table)),
       }));
 
       const result = await getPublicHotelAvailability({ rpc, from } as any, 'test-resort', '2026-10-20', '2026-10-22');
@@ -90,9 +118,14 @@ describe('Public Booking Engine & Availability Logic', () => {
         target_adults: 2,
         target_children: [],
       });
-      expect(from).toHaveBeenCalledTimes(2);
+      // The availability path must never read raw inventory: counts come from
+      // the published-hotel RPC only. The extra reads here are the SaaS billing
+      // state (hotels lifecycle + subscriptions), which carry no inventory.
       expect(from).not.toHaveBeenCalledWith('rooms');
       expect(from).not.toHaveBeenCalledWith('bookings');
+      expect(from).toHaveBeenCalledTimes(4);
+      // Billing state is surfaced so the public page can close the book action.
+      expect(result.billing).toEqual({ accepts_new_bookings: true, reason: 'active' });
       expect(result.room_types.map(roomType => [roomType.id, roomType.rooms_available, roomType.is_available, roomType.nightly_prices])).toEqual([
         ['rt-1', 1, true, [1500, 1500]],
       ]);

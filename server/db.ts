@@ -46,6 +46,7 @@ export * from './db/hotel';
 export * from './db/auth';
 export * from './db/availability';
 export * from './db/booking';
+export * from './db/cancellationPolicy';
 export * from './db/staff';
 export * from './db/payment';
 export * from './db/notification';

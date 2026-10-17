@@ -5,12 +5,15 @@ import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/
 import { TM30_HEADERS, buildTm30Rows, createTm30Workbook } from '../tm30';
 import {
   assertBookingMinStay,
+  cancelBooking as dbCancelBooking,
+  confirmBookingDetails as dbConfirmBookingDetails,
+  confirmRefund as dbConfirmRefund,
   createBookingWithGuests,
   getManagedHotel,
   getPublicHotelAvailability,
   holdRoomType as dbHoldRoomType,
-  confirmBookingDetails as dbConfirmBookingDetails,
   listBookingsForHotel,
+  markBookingNoShow as dbMarkBookingNoShow,
   transitionBookingStatus as dbTransitionBookingStatus,
 } from '../db';
 import { createSupabaseAdminClient } from '../supabase';
@@ -65,6 +68,17 @@ export const confirmBookingDetailsSchema = z.object({
     unit_price: z.number().nonnegative(),
     quantity: z.number().int().min(1).default(1),
   })).default([]),
+  /**
+   * B1: version of the cancellation policy the guest was shown and accepted.
+   *
+   * ASSUMPTION: optional until the booking wizard renders the policy and sends
+   * the accepted version back. The server still enforces the gate for hotels
+   * that HAVE a policy row (see confirmBookingDetails in server/db/booking.ts):
+   * a missing or stale version is rejected there. Hotels with no policy row
+   * flow through unchanged, which is every hotel until the owner applies
+   * 20261013_cancellation_policy.sql and configures terms.
+   */
+  accepted_policy_version: z.number().int().min(1).optional(),
 });
 
 export const bookings = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
@@ -249,6 +263,61 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
   }
 });
 
+const staffBookingActionSchema = z.object({
+  hotel_id: hotelIdSchema,
+  booking_id: z.string().uuid(),
+  reason: z.string().trim().max(500).optional(),
+});
+
+/** B1 — staff cancel (confirmed -> cancelled -> refund_pending when owed). */
+export const cancelBooking = protectedProcedure
+  .input(staffBookingActionSchema)
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
+    try {
+      return await dbCancelBooking(rlsClient(ctx.user.accessToken), {
+        booking_id: input.booking_id,
+        hotel_id: input.hotel_id,
+        changed_by: ctx.user.id,
+        reason: input.reason,
+      });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
+
+/** B1 — staff confirms the offline refund transfer (refund_pending -> refunded). */
+export const confirmRefund = protectedProcedure
+  .input(z.object({ hotel_id: hotelIdSchema, booking_id: z.string().uuid() }))
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
+    try {
+      return await dbConfirmRefund(rlsClient(ctx.user.accessToken), {
+        booking_id: input.booking_id,
+        hotel_id: input.hotel_id,
+        changed_by: ctx.user.id,
+      });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
+
+/** B1 — staff marks a confirmed booking as no-show. */
+export const markNoShow = protectedProcedure
+  .input(z.object({ hotel_id: hotelIdSchema, booking_id: z.string().uuid() }))
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
+    try {
+      return await dbMarkBookingNoShow(rlsClient(ctx.user.accessToken), {
+        booking_id: input.booking_id,
+        hotel_id: input.hotel_id,
+        changed_by: ctx.user.id,
+      });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
+
 export const bookingRouter = router({
   bookings,
   exportTm30,
@@ -257,4 +326,7 @@ export const bookingRouter = router({
   publicHotelAvailability,
   holdRoomType,
   confirmBookingDetails,
+  cancelBooking,
+  confirmRefund,
+  markNoShow,
 });

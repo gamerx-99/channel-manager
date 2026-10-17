@@ -4,6 +4,9 @@ import { notificationsRouter } from './routers/notificationsRouter';
 import { authRouter } from './routers/authRouter';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
+import { cancellationPolicyRouter } from './routers/cancellationPolicyRouter';
+import { billingRouter } from './routers/billingRouter';
+import { signupRouter } from './routers/signupRouter';
 import { otaRouter } from './routers/otaRouter';
 import {
   dashboard,
@@ -153,6 +156,12 @@ export const appRouter = router({
 
   // ── Phase 12B: Public booking payment flow ─────────────────────────────
   payment: paymentRouter,
+  // ── B1: Cancellation & refund policy ─────────────────────────────────────
+  cancellationPolicy: cancellationPolicyRouter,
+  // ── SaaS: subscriptions, plans, tenant lifecycle ──────────────────────────
+  billing: billingRouter,
+  // ── SaaS: public self-signup (hotel + owner + trial in one step) ──────────
+  signup: signupRouter,
 });
 
 export type AppRouter = typeof appRouter;

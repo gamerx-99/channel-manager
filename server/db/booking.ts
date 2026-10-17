@@ -5,7 +5,15 @@ import { isMissingTableError, throwOnError } from './utils';
 import { listRateOverridesForRoomType, assertBookingMinStay } from './availability';
 import { isBookingOccupyingInventory, isExpired, assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 import { calcNights, calculateServiceTotal } from '@shared/pricingModels';
+import {
+  evaluateCancellationRefund,
+  evaluateNoShowRefund,
+  calculateRefundAmount,
+  type AcceptedPolicySnapshot,
+} from '@shared/cancellationPolicy';
 import { calculateStayOccupancyPrice, classifyGuests, fitsOccupancy, type ChildMeasurement } from '@shared/occupancyPricing';
+import { resolveHotelBillingState } from '../billing/subscriptionDb';
+import type { SubscriptionDecision } from '@shared/billing/subscriptionAccess';
 import type {
   BookingRecord,
   GuestRecord,
@@ -15,6 +23,24 @@ import type {
   HotelRecord,
   RoomTypeRecord,
 } from './types';
+
+/**
+ * Guest-facing copy for a closed new-booking gate. Keyed by the decision reason
+ * so the public wizard can show something actionable instead of a bare error.
+ * English only: this is the pre-payment public surface, and RONDMAP rule 6
+ * (th/en) applies to the staff-facing screens.
+ */
+export const BILLING_BLOCK_MESSAGES: Record<
+  Exclude<SubscriptionDecision['reason'], 'trialing' | 'active'>,
+  string
+> = {
+  no_subscription: 'Online booking is not available for this hotel at the moment. Please contact the hotel directly.',
+  trial_expired: 'This hotel\'s trial period has ended. Please contact the hotel directly.',
+  period_ended: 'This hotel is not currently accepting online bookings. Please contact the hotel directly.',
+  not_paying: 'This hotel is not currently accepting online bookings. Please contact the hotel directly.',
+  suspended: 'Online booking is temporarily unavailable for this hotel.',
+  deleted: 'Online booking is unavailable for this hotel.',
+};
 
 export async function listBookingsForHotel(client: SupabaseClient, hotelId: string) {
   const { data, error } = await client
@@ -174,12 +200,25 @@ export async function getPublicHotelAvailability(
     });
   }
 
+  // Surfaced so the public page can close the book action before the guest
+  // reaches the hold step. Read last: it must not change availability output.
+  let billing: PublicHotelAvailabilityResult['billing'] = null;
+  try {
+    const state = await resolveHotelBillingState(client, hotel.id);
+    billing = { accepts_new_bookings: state.decision.allowed, reason: state.decision.reason };
+  } catch (error) {
+    // A billing read failure must not take the whole page down; holdRoomType is
+    // the enforcement point and fails closed there.
+    billing = null;
+  }
+
   return {
     hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address },
     check_in: checkIn,
     check_out: checkOut,
     nights,
     room_types: resultRoomTypes,
+    billing,
   };
 }
 
@@ -298,6 +337,21 @@ export async function holdRoomType(
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Hotel not found or not published.' });
   }
   const hotel = hotelData as Pick<HotelRecord, 'id' | 'name' | 'slug' | 'address'>;
+
+  // SaaS billing gate — the single enforcement point for "may this hotel take
+  // a new booking". Owner decision (2026-10-17): a lapsed subscription closes
+  // NEW bookings only; existing bookings stay readable so check-in/check-out
+  // and ร.ร.4 / ตม.30 obligations continue.
+  //
+  // This runs before any inventory work so a lapsed hotel returns one clear
+  // message instead of a misleading "no availability".
+  const billing = await resolveHotelBillingState(adminClient, hotel.id);
+  if (!billing.decision.allowed) {
+    throw new TRPCError({
+      code: 'PRECONDITION_FAILED',
+      message: BILLING_BLOCK_MESSAGES[billing.decision.reason],
+    });
+  }
 
   const { data: roomTypeData, error: rtError } = await adminClient
     .from('room_types')
@@ -475,6 +529,8 @@ export async function confirmBookingDetails(
       unit_price: number;
       quantity: number;
     }>;
+    /** B1: policy version the guest saw + accepted before payment. */
+    accepted_policy_version?: number | null;
   },
 ): Promise<{ booking_id: string; hotel_id: string; status: 'pending_payment'; expires_at: string; amount: number }> {
   const { data: booking, error } = await adminClient
@@ -497,6 +553,37 @@ export async function confirmBookingDetails(
 
   assertValidTransition('held', 'pending_payment');
 
+  // B1: pin the accepted policy snapshot (version must match current).
+  // A missing policy row (pre-migration hotels) means no gate: bookings flow
+  // as before with NULL snapshot. A version mismatch means the guest saw a
+  // stale policy — reject so the wizard re-shows the current one.
+  const { data: policyRow, error: policyErr } = await adminClient
+    .from('hotel_cancellation_policies')
+    .select('free_cancellation_days,partial_keep_percent,partial_cutoff_days,deposit_percent,no_show_keep_percent,policy_text_th,policy_text_en,version')
+    .eq('hotel_id', (booking as any).hotel_id)
+    .maybeSingle();
+  if (policyErr && (policyErr as any).code !== '42P01') throw policyErr;
+  let policySnapshot: Record<string, unknown> | null = null;
+  if (policyRow) {
+    if (input.accepted_policy_version == null || input.accepted_policy_version !== (policyRow as any).version) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: 'The cancellation policy changed. Please review and accept the current policy.',
+      });
+    }
+    const row = policyRow as any;
+    policySnapshot = {
+      version: row.version,
+      policy_text_th: row.policy_text_th,
+      policy_text_en: row.policy_text_en,
+      free_cancellation_days: row.free_cancellation_days,
+      partial_keep_percent: Number(row.partial_keep_percent),
+      partial_cutoff_days: row.partial_cutoff_days,
+      deposit_percent: Number(row.deposit_percent),
+      no_show_keep_percent: Number(row.no_show_keep_percent),
+    };
+  }
+
   const { data: paymentSettings, error: psErr } = await adminClient
     .from('hotel_payment_settings')
     .select('payment_timeout_minutes')
@@ -515,6 +602,9 @@ export async function confirmBookingDetails(
     guest_name: input.guest_name.trim(),
     status: 'pending_payment',
     expires_at: newExpiresAt,
+    // B1: NULL when the hotel has no policy row yet (pre-migration).
+    policy_snapshot: policySnapshot,
+    policy_accepted_at: policySnapshot ? new Date().toISOString() : null,
   };
 
   if (services.length > 0) {
@@ -588,4 +678,125 @@ export async function createBookingWithGuests(
   }
 
   return createdBooking;
+}
+
+/**
+ * B1 — staff cancel: confirmed -> cancelled (+ refund_pending when owed).
+ * Refund uses the booking's OWN snapshot (never current policy).
+ * No snapshot (pre-migration booking) = cancel with refund_amount 0.
+ * Hotel transfers offline, then confirms via confirmRefund.
+ */
+export async function cancelBooking(
+  client: SupabaseClient,
+  input: { booking_id: string; hotel_id: string; changed_by?: string | null; reason?: string | null },
+  nowIso: string = new Date().toISOString(),
+): Promise<{ booking_id: string; status: BookingStatus; refund_amount: number }> {
+  const { data: booking, error } = await client
+    .from('bookings')
+    .select('id,hotel_id,status,check_in,price,payment_status,policy_snapshot')
+    .eq('id', input.booking_id)
+    .eq('hotel_id', input.hotel_id)
+    .maybeSingle();
+  throwOnError(error);
+  if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+  if ((booking as any).status !== 'confirmed') {
+    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Only confirmed bookings can be cancelled.' });
+  }
+  const snapshot = (booking as any).policy_snapshot as AcceptedPolicySnapshot | null;
+  const paid = (booking as any).payment_status === 'verified' ? Number((booking as any).price) : 0;
+  let refundAmount = 0;
+  if (snapshot && paid > 0) {
+    refundAmount = calculateRefundAmount(paid, evaluateCancellationRefund(snapshot, nowIso, (booking as any).check_in));
+  }
+  assertValidTransition('confirmed', 'cancelled');
+  const { error: updateError } = await client
+    .from('bookings')
+    .update({ status: 'cancelled', refund_amount: refundAmount })
+    .eq('id', input.booking_id);
+  throwOnError(updateError);
+  await logBookingStatusChange(client, {
+    booking_id: input.booking_id, from_status: 'confirmed', to_status: 'cancelled',
+    changed_by: input.changed_by ?? null, reason: input.reason ?? 'staff_cancel',
+  });
+  if (refundAmount > 0) {
+    assertValidTransition('cancelled', 'refund_pending');
+    const { error: refundError } = await client
+      .from('bookings').update({ status: 'refund_pending' }).eq('id', input.booking_id);
+    throwOnError(refundError);
+    await logBookingStatusChange(client, {
+      booking_id: input.booking_id, from_status: 'cancelled', to_status: 'refund_pending',
+      changed_by: input.changed_by ?? null, reason: 'refund_owed',
+    });
+    return { booking_id: input.booking_id, status: 'refund_pending', refund_amount: refundAmount };
+  }
+  return { booking_id: input.booking_id, status: 'cancelled', refund_amount: 0 };
+}
+
+/** B1 — staff confirms offline transfer done: refund_pending -> refunded. */
+export async function confirmRefund(
+  client: SupabaseClient,
+  input: { booking_id: string; hotel_id: string; changed_by?: string | null },
+): Promise<{ booking_id: string; status: 'refunded' }> {
+  const { data: booking, error } = await client
+    .from('bookings').select('id,status')
+    .eq('id', input.booking_id).eq('hotel_id', input.hotel_id).maybeSingle();
+  throwOnError(error);
+  if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+  if ((booking as any).status !== 'refund_pending') {
+    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This booking is not awaiting a refund.' });
+  }
+  assertValidTransition('refund_pending', 'refunded');
+  const { error: updateError } = await client
+    .from('bookings').update({ status: 'refunded' }).eq('id', input.booking_id);
+  throwOnError(updateError);
+  await logBookingStatusChange(client, {
+    booking_id: input.booking_id, from_status: 'refund_pending', to_status: 'refunded',
+    changed_by: input.changed_by ?? null, reason: 'refund_transferred',
+  });
+  return { booking_id: input.booking_id, status: 'refunded' };
+}
+
+
+/**
+ * B1 — no-show: confirmed booking whose guest never arrived.
+ * Reuses the cancel edge (confirmed -> cancelled) then refund_pending when owed.
+ */
+export async function markBookingNoShow(
+  client: SupabaseClient,
+  input: { booking_id: string; hotel_id: string; changed_by?: string | null },
+): Promise<{ booking_id: string; status: BookingStatus; refund_amount: number }> {
+  const { data: booking, error } = await client
+    .from('bookings').select('id,hotel_id,status,price,payment_status,policy_snapshot')
+    .eq('id', input.booking_id).eq('hotel_id', input.hotel_id).maybeSingle();
+  throwOnError(error);
+  if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+  if ((booking as any).status !== 'confirmed') {
+    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Only confirmed bookings can be marked no-show.' });
+  }
+  const snapshot = (booking as any).policy_snapshot as AcceptedPolicySnapshot | null;
+  const paid = (booking as any).payment_status === 'verified' ? Number((booking as any).price) : 0;
+  let refundAmount = 0;
+  if (snapshot && paid > 0) {
+    refundAmount = calculateRefundAmount(paid, evaluateNoShowRefund(snapshot));
+  }
+  assertValidTransition('confirmed', 'cancelled');
+  const { error: updateError } = await client
+    .from('bookings').update({ status: 'cancelled', refund_amount: refundAmount }).eq('id', input.booking_id);
+  throwOnError(updateError);
+  await logBookingStatusChange(client, {
+    booking_id: input.booking_id, from_status: 'confirmed', to_status: 'cancelled',
+    changed_by: input.changed_by ?? null, reason: 'no_show',
+  });
+  if (refundAmount > 0) {
+    assertValidTransition('cancelled', 'refund_pending');
+    const { error: refundError } = await client
+      .from('bookings').update({ status: 'refund_pending' }).eq('id', input.booking_id);
+    throwOnError(refundError);
+    await logBookingStatusChange(client, {
+      booking_id: input.booking_id, from_status: 'cancelled', to_status: 'refund_pending',
+      changed_by: input.changed_by ?? null, reason: 'no_show_refund_owed',
+    });
+    return { booking_id: input.booking_id, status: 'refund_pending', refund_amount: refundAmount };
+  }
+  return { booking_id: input.booking_id, status: 'cancelled', refund_amount: 0 };
 }
