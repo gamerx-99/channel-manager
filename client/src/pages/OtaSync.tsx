@@ -187,17 +187,22 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                                   <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px]" title={conn.ical_import_url}>
                                     {conn.ical_import_url}
                                   </span>
-                                  {conn.ical_export_url && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 px-1.5 text-[10px] shrink-0"
-                                      onClick={() => setExportUrlDialogConn(conn)}
-                                      title={t("otaSync.viewExportUrl")}
-                                    >
-                                      <Link2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
+                                  {/* Always reachable: the built-in per-hotel
+                                      .ics URL is what we generate ourselves
+                                      (ical_feed_token), while ical_export_url is
+                                      only set when an OTA supplied one. Gating
+                                      this button on ical_export_url hid the
+                                      export dialog for every connection the
+                                      hotel created from this page. */}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-1.5 text-[10px] shrink-0"
+                                    onClick={() => setExportUrlDialogConn(conn)}
+                                    title={t("otaSync.viewExportUrl")}
+                                  >
+                                    <Link2 className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               ) : (
                                 <span className="text-xs text-muted-foreground italic">{t("otaSync.notConfigured")}</span>

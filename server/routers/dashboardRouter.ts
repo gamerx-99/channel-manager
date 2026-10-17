@@ -8,6 +8,11 @@ import {
   listManagedHotelsForFinancials,
 } from '../db';
 import { getGlobalOtaSummary, getUpdatedItemCount } from '../otaSync';
+import {
+  countBlockedUnitsByRoomTypeAndDate,
+  listOtaImportBlocks,
+  subtractOtaBlocks,
+} from '../db/otaBlocks';
 import { buildChannelPerformanceSummary } from '../channelPerformance';
 import { buildFinancialsSummary } from '../financials';
 
@@ -74,11 +79,20 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
     ]);
 
     const hotelCalendars = await Promise.all(hotels.map(async (hotel) => {
-      const [hotelDetail, availability] = await Promise.all([
+      const [hotelDetail, availability, otaBlocks] = await Promise.all([
         getManagedHotel(client, hotel.id),
         listAvailabilityForHotel(client, hotel.id),
+        // Imported OTA reservations close real inventory, so the cross-hotel
+        // dashboard calendar must subtract them exactly like the per-hotel
+        // calendar (Calendar.tsx) and the public availability RPCs do. Without
+        // this the two calendars disagree: Home shows rooms the public page
+        // refuses to sell.
+        listOtaImportBlocks(client, hotel.id),
       ]);
       if (!hotelDetail) return null;
+
+      // Shared helper so this calendar and the public hold path cannot drift.
+      const otaBlockedByKey = countBlockedUnitsByRoomTypeAndDate(otaBlocks);
 
       const roomCountByType = hotelDetail.rooms.reduce<Record<string, number>>((counts, room) => {
         counts[room.room_type_id] = (counts[room.room_type_id] ?? 0) + 1;
@@ -109,9 +123,13 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
           roomTypes: hotelDetail.room_types.map(roomType => {
             const saved = availabilityByKey.get(`${roomType.id}:${date}`);
             const totalRooms = roomCountByType[roomType.id] ?? 0;
-            const available = saved?.rooms_available ?? (date === todayIso()
+            const baseAvailable = saved?.rooms_available ?? (date === todayIso()
               ? hotelDetail.rooms.filter(room => room.room_type_id === roomType.id && room.status === 'available').length
               : totalRooms);
+            const otaBlocked = otaBlockedByKey.get(`${roomType.id}:${date}`) ?? 0;
+            // Floored at zero: an over-count from a stale feed should read as
+            // "closed", not as a negative room count.
+            const available = subtractOtaBlocks(baseAvailable, otaBlocked);
             return {
               roomTypeId: roomType.id,
               available,

@@ -33,6 +33,34 @@ export type OwnBookingNight = {
 };
 
 /**
+ * Groups OTA blocks into "sold units per room type per night".
+ *
+ * Several OTA reservations can block the same room type on the same night, and
+ * each one is one sold room, so the count is the number of rows — not the
+ * number of distinct dates.
+ *
+ * Single source of truth for the subtraction every availability surface does
+ * (dashboard calendar, per-hotel calendar, the public hold). Sharing it is what
+ * stops those three from drifting apart again.
+ */
+export function countBlockedUnitsByRoomTypeAndDate(
+  blocks: Array<{ room_type_id: string; date: string }>,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const block of blocks) {
+    if (!block?.room_type_id || !block?.date) continue;
+    const key = `${block.room_type_id}:${block.date}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** Sellable rooms left after OTA blocks, floored at zero. */
+export function subtractOtaBlocks(baseAvailable: number, blocked: number): number {
+  return Math.max(0, baseAvailable - blocked);
+}
+
+/**
  * Reads every currently-blocked room type / night for a hotel. RLS-scoped.
  * Gracefully returns [] when the ota_import_blocks migration has not been
  * applied yet (42P01 undefined_table / PGRST205 schema-cache miss).
@@ -40,12 +68,20 @@ export type OwnBookingNight = {
 export async function listOtaImportBlocks(
   client: SupabaseClient,
   hotelId: string,
+  provider?: string,
 ): Promise<OtaImportBlockRecord[]> {
   try {
-    const { data, error } = await client
+    let query = client
       .from('ota_import_blocks')
       .select(COLUMNS)
       .eq('hotel_id', hotelId);
+    // Sync diffs MUST be scoped to one provider: the block key is
+    // (provider, room_type_id, date, source_uid). Reading every provider makes
+    // another OTA's row with a colliding source_uid look already-satisfied, so
+    // this provider's own reservation is never inserted and stops blocking
+    // inventory.
+    if (provider) query = query.eq('provider', provider);
+    const { data, error } = await query;
     if (error) {
       if (isMissingTableError('ota_import_blocks', error)) return [];
       throw error;
@@ -184,6 +220,11 @@ export async function replaceOtaImportBlocks(
   let deleted = 0;
 
   for (const item of removed) {
+    // source_uid is REQUIRED in this filter. Several OTA reservations can block
+    // the same room type on the same night (the schema's uniqueness key is
+    // (provider, room_type_id, date, source_uid) for exactly that reason), so
+    // deleting on (hotel, provider, room_type, date) alone would remove every
+    // sibling event's block and re-open rooms that are still sold.
     const { error, count } = await client
       .from('ota_import_blocks')
       .delete()
@@ -191,6 +232,7 @@ export async function replaceOtaImportBlocks(
       .eq('provider', provider)
       .eq('room_type_id', item.room_type_id)
       .eq('date', item.date)
+      .eq('source_uid', item.source_uid)
       .select('room_type_id');
     throwOnError(error);
     deleted += count ?? 0;

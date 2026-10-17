@@ -27,6 +27,15 @@ describe('Dashboard Calendar View contract', () => {
     expect(router).toContain('getUpdatedItemCount(log)');
   });
 
+  // Regression: the cross-hotel dashboard calendar ignored imported OTA
+  // reservations, so it showed rooms the per-hotel calendar and the public
+  // booking page both considered sold. The two in-app calendars disagreed.
+  it('subtracts imported OTA blocks from the dashboard calendar availability', () => {
+    expect(dashboardRouterText).toContain('listOtaImportBlocks(client, hotel.id)');
+    expect(dashboardRouterText).toContain('countBlockedUnitsByRoomTypeAndDate(otaBlocks)');
+    expect(dashboardRouterText).toContain('subtractOtaBlocks(baseAvailable, otaBlocked)');
+  });
+
   it('renders the calendar inside the Dashboard and supports property/date selection', () => {
     expect(home).toContain('<DashboardCalendarView canEditAvailability={canEditCalendar} />');
     expect(component).toContain('trpc.channelManager.dashboardCalendar.useQuery');

@@ -450,16 +450,6 @@ export async function triggerOtaCalendarSync(
       updatedItemCount,
     };
 
-    await logOtaSync(accessToken, {
-      hotel_id: hotelId,
-      provider,
-      direction: 'inbound',
-      action: 'sync_calendar',
-      status: 'success',
-      payload: syncPayload,
-      response: responsePayload
-    });
-
     // Two-way sync: persist the imported block set and rebuild the outbound
     // feed so OTAs importing our calendar immediately see the freed nights.
     // A block-apply failure FAILS the sync run (not silent): the availability
@@ -478,15 +468,37 @@ export async function triggerOtaCalendarSync(
         return roomTypeId ? { uid: event.uid, room_type_id: roomTypeId, nights: event.nights } : null;
       })
       .filter((event): event is { uid: string; room_type_id: string; nights: string[] } => Boolean(event));
-    const previousBlocks = await listOtaImportBlocks(client, hotelId);
+    // An event present in the feed but NOT resolvable to a room type (name
+    // mismatch, or the hotel renamed its room type) must never cause its
+    // existing block to be deleted. Dropping it from resolvedEvents would put
+    // its stored block in `removed` and re-open a room the OTA still holds.
+    // We keep the block and surface the problem instead of over-selling.
+    const unresolvedUids = new Set(
+      events
+        .filter(event => !bySummary.has(event.summary.trim().toLowerCase()))
+        .map(event => event.uid),
+    );
+    // Scoped to THIS provider: the block key includes `provider`, so reading
+    // the whole hotel would let another OTA's row satisfy this feed's key and
+    // silently skip inserting this provider's reservation.
+    const previousBlocks = await listOtaImportBlocks(client, hotelId, provider);
     const diff = buildOtaImportBlockDiff(
-      previousBlocks.map((block) => ({
-        room_type_id: block.room_type_id,
-        date: block.date,
-        source_uid: block.source_uid,
-      })),
+      selectDeletableBlocks(
+        previousBlocks.map((block) => ({
+          room_type_id: block.room_type_id,
+          date: block.date,
+          source_uid: block.source_uid,
+        })),
+        unresolvedUids,
+      ),
       resolvedEvents,
     );
+    if (unresolvedUids.size > 0) {
+      console.warn(
+        `[ota-sync] ${provider}: ${unresolvedUids.size} feed event(s) did not match a room type; ` +
+        `their existing blocks were left untouched. Unmatched names: ${unmatched.join(', ') || '(unknown)'}`,
+      );
+    }
     await replaceOtaImportBlocks(client, hotelId, provider, diff.removed, diff.added);
     await rebuildOwnExportFeed(accessToken, hotelId);
 
@@ -495,6 +507,20 @@ export async function triggerOtaCalendarSync(
       .update({ last_sync_at: new Date().toISOString(), status: 'connected', updated_at: new Date().toISOString() })
       .eq('hotel_id', hotelId)
       .eq('provider', provider);
+
+    // Logged only AFTER the block apply and last_sync_at. getPreviousIcalSnapshot
+    // filters on status='success', so a success row written before the apply
+    // would make the next run diff against a snapshot whose inventory change
+    // never happened — reporting "0 changed" for a run that moved rooms.
+    await logOtaSync(accessToken, {
+      hotel_id: hotelId,
+      provider,
+      direction: 'inbound',
+      action: 'sync_calendar',
+      status: 'success',
+      payload: syncPayload,
+      response: responsePayload
+    });
 
     return { success: true, durationMs: Date.now() - startTime, updatedItemCount, response: responsePayload };
   } catch (err: any) {
@@ -679,6 +705,22 @@ export function buildOtaImportBlockDiff(
 }
 
 
+
+/**
+ * Blocks that are safe to consider for deletion.
+ *
+ * A feed event whose SUMMARY does not resolve to a room type is NOT evidence of
+ * a cancellation — the reservation may well still exist. Dropping such a block
+ * from the diff input would re-open a room the OTA still holds, so blocks whose
+ * source_uid belongs to an unresolved event are excluded from deletion and kept
+ * as-is. The mismatch is logged by the caller instead.
+ */
+export function selectDeletableBlocks(
+  previous: Array<{ room_type_id: string; date: string; source_uid: string }>,
+  unresolvedUids: ReadonlySet<string>,
+): Array<{ room_type_id: string; date: string; source_uid: string }> {
+  return previous.filter(block => !unresolvedUids.has(block.source_uid));
+}
 
 /**
  * Rebuilds this hotel's outbound iCal feed artifacts after an inbound sync:

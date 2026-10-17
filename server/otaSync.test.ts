@@ -10,6 +10,7 @@ import {
   getUpdatedItemCount,
   parseIcalEventFingerprints,
   parseIcalEvents,
+  selectDeletableBlocks,
 } from "./otaSync";
 
 const feed = (...summaries: string[]) => [
@@ -211,6 +212,49 @@ describe("buildOtaImportBlockDiff", () => {
       { room_type_id: "rt-1", date: "2026-08-20", source_uid: "event-2" },
     ]);
     expect(diff.added).toEqual([]);
+  });
+});
+
+describe("selectDeletableBlocks", () => {
+  // A room-type rename or an OTA-side name change makes an event unresolvable.
+  // Treating that as a cancellation would re-open a room that is still sold.
+  it("keeps blocks belonging to events that are present but unresolved", () => {
+    const previous = [
+      { room_type_id: "rt-1", date: "2026-08-20", source_uid: "resolved-1" },
+      { room_type_id: "rt-2", date: "2026-08-21", source_uid: "renamed-1" },
+    ];
+    const deletable = selectDeletableBlocks(previous, new Set(["renamed-1"]));
+    expect(deletable.map(block => block.source_uid)).toEqual(["resolved-1"]);
+  });
+
+  it("returns everything when nothing is unresolved", () => {
+    const previous = [
+      { room_type_id: "rt-1", date: "2026-08-20", source_uid: "a" },
+      { room_type_id: "rt-1", date: "2026-08-20", source_uid: "b" },
+    ];
+    expect(selectDeletableBlocks(previous, new Set())).toHaveLength(2);
+  });
+
+  it("protects every night of an unresolved multi-night reservation", () => {
+    const previous = [
+      { room_type_id: "rt-2", date: "2026-08-20", source_uid: "renamed-1" },
+      { room_type_id: "rt-2", date: "2026-08-21", source_uid: "renamed-1" },
+      { room_type_id: "rt-2", date: "2026-08-22", source_uid: "renamed-1" },
+    ];
+    expect(selectDeletableBlocks(previous, new Set(["renamed-1"]))).toEqual([]);
+  });
+
+  it("still lets a genuinely cancelled sibling be removed", () => {
+    const previous = [
+      { room_type_id: "rt-1", date: "2026-08-20", source_uid: "cancelled" },
+      { room_type_id: "rt-2", date: "2026-08-20", source_uid: "renamed" },
+    ];
+    const resolvedEvents = [{ uid: "renamed", room_type_id: "rt-2", nights: ["2026-08-20"] }];
+    const diff = buildOtaImportBlockDiff(
+      selectDeletableBlocks(previous, new Set(["renamed"])),
+      resolvedEvents,
+    );
+    expect(diff.removed.map(row => row.source_uid)).toEqual(["cancelled"]);
   });
 });
 
