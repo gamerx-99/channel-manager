@@ -1,6 +1,6 @@
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
-import { Route, Switch, useLocation } from "wouter";
-import React, { useEffect } from "react";
+import { Route, Switch } from "wouter";
+import React from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -15,6 +15,8 @@ import Communications from "./pages/Communications";
 import Login from "./pages/Login";
 import MfaEnroll from "./pages/MfaEnroll";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
+import Landing from "./pages/Landing";
+import Signup from "./pages/Signup";
 import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
@@ -37,6 +39,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/mfa/enroll" component={MfaEnroll} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/" component={Landing} />
       <Route path="/signup/:token">
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
@@ -92,18 +96,9 @@ function Router() {
       <Route path="/:slug">
         {(params) => <PublicHotel slug={params.slug} />}
       </Route>
-      <Route path="/" component={() => <RedirectToDashboard />} />
       <Route component={NotFound} />
     </Switch>
   );
-}
-
-function RedirectToDashboard() {
-  const [, navigate] = useLocation();
-  useEffect(() => {
-    navigate("/dashboard");
-  }, [navigate]);
-  return null;
 }
 
 export default function App() {

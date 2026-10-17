@@ -9,6 +9,20 @@ import { calculateServiceTotal } from "@shared/pricingModels";
 
 export const DEFAULT_ACCENT_COLOR = "#334155";
 
+/**
+ * Server billing decision reason -> i18n key. Keys match
+ * SubscriptionDecision['reason'] in @shared/billing/subscriptionAccess.
+ */
+export const BILLING_REASON_KEYS: Record<string, string> = {
+  no_subscription: "publicHotel.billingNoSubscription",
+  trial_expired: "publicHotel.billingTrialExpired",
+  period_ended: "publicHotel.billingPeriodEnded",
+  not_paying: "publicHotel.billingNotPaying",
+  suspended: "publicHotel.billingSuspended",
+  deleted: "publicHotel.billingUnavailable",
+  default: "publicHotel.billingNotPaying",
+};
+
 const DEFAULT_ATMOSPHERE_PHOTOS = [
   {
     id: "default-1",
@@ -203,6 +217,17 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const isVisible = (key: string) => visibleSections == null || visibleSections[key] !== false;
 
   const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
+
+  // SaaS billing gate (mirrors the server check in holdRoomType): a hotel with
+  // a lapsed subscription stops taking new bookings, but its page still renders
+  // so guests who are already mid-stay / asking about an existing booking can
+  // still find the contact details. `null` = billing not configured yet (pre-
+  // migration), in which case the page behaves exactly as before.
+  const billingBlock = (() => {
+    const billing = availabilityQuery.data?.billing;
+    if (!billing || billing.accepts_new_bookings) return null;
+    return t(BILLING_REASON_KEYS[billing.reason] ?? BILLING_REASON_KEYS.default);
+  })();
 
   const galleryPhotos = (() => {
     const slotBadges = [
@@ -448,7 +473,14 @@ export default function PublicHotel({ slug }: { slug: string }) {
         return (
           <div>
             <div style={{ marginBottom: "18px" }}>
-              {availabilityQuery.isLoading ? (
+              {billingBlock ? (
+                // Lapsed subscription: keep the room list visible for context but
+                // close the booking action. The server rejects the hold anyway;
+                // hiding it here just avoids a dead-end click.
+                <div style={{ color: "#d2e8de", fontSize: "12px", padding: "12px", background: "rgba(0,0,0,0.15)", borderRadius: "6px" }}>
+                  {billingBlock}
+                </div>
+              ) : availabilityQuery.isLoading ? (
                 <div style={{ color: "#d2e8de", fontSize: "12px", padding: "12px", background: "rgba(0,0,0,0.15)", borderRadius: "6px" }}>
                   {t("publicHotel.checkingLiveRates")}
                 </div>
@@ -456,7 +488,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 <div style={{ display: "grid", gap: "8px" }}>
                   {availableRoomTypes.map((rt) => {
                     const isPreferred = preferredRoomTypeId === rt.id;
-                    const isAvailable = rt.is_available;
+                    const isAvailable = rt.is_available && !billingBlock;
                     return (
                       <div
                         key={rt.id}
