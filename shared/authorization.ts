@@ -1,6 +1,7 @@
 export const APP_ROLES = [
   "super_admin",
   "admin",
+  "support",
   "hotel_owner",
   "revenue_manager",
   "front_desk",
@@ -17,9 +18,17 @@ export const HUMAN_ROLES = APP_ROLES.filter((role): role is HumanRole => role !=
  * Platform-level roles are not property memberships. Their `hotel_users` row still
  * carries a `hotel_id` because the column is NOT NULL, but the database gatekeeper
  * `public.is_platform_admin()` ignores which hotel the row points at.
+ * `support` holds no hotel data permission of its own; it reaches a hotel only through
+ * an owner-approved, time-limited support grant (see `shared/permissions.ts`).
  */
-export const PLATFORM_ROLES = ["super_admin", "admin"] as const;
+export const PLATFORM_ROLES = ["super_admin", "admin", "support"] as const;
 export type PlatformRole = (typeof PLATFORM_ROLES)[number];
+
+/**
+ * The roles `public.is_platform_admin()` currently lets read every hotel. `support` is
+ * deliberately not one of them. Spec 14 removes this cross-hotel read entirely.
+ */
+export const CROSS_HOTEL_READ_ROLES = ["super_admin", "admin"] as const satisfies readonly PlatformRole[];
 
 /** Roles a property may hand out to its own staff. Platform roles are never assignable per hotel. */
 export type AssignableStaffRole = Exclude<HumanRole, PlatformRole>;
@@ -35,6 +44,7 @@ export function isPlatformRole(role: string | null | undefined): role is Platfor
 export const ROLE_LABELS: Record<AppRole, string> = {
   super_admin: "Super Admin",
   admin: "Platform Admin (read-only)",
+  support: "hayhost Support",
   hotel_owner: "Hotel Admin / Property Owner",
   revenue_manager: "Revenue Manager",
   front_desk: "Front Desk / Operations Staff",
@@ -61,6 +71,7 @@ export const PERMISSIONS = [
   "revenue.manage_stop_sell",
   "operations.view_bookings",
   "operations.manage_bookings",
+  "operations.cancel_bookings",
   "operations.manage_guests",
   "operations.manage_checkin_checkout",
   "operations.export_tm30",
@@ -102,6 +113,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "ota.view_status",
     "ota.view_sync_logs",
   ],
+  // Support sees the hotel list only. Hotel data comes solely from an active support
+  // grant the owner approved (`resolveSupportGrantPermissions` in shared/permissions.ts).
+  support: ["platform.view_all_hotels"],
   hotel_owner: [
     "property.view",
     "property.manage_profile",
@@ -111,6 +125,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "property.view_financials",
     "operations.view_bookings",
     "operations.manage_bookings",
+    "operations.cancel_bookings",
     "operations.manage_guests",
     "operations.manage_checkin_checkout",
     "operations.export_tm30",
@@ -157,6 +172,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
 export const ROLE_PRIORITY: Record<AppRole, number> = {
   super_admin: 100,
   admin: 90,
+  support: 85,
   hotel_owner: 80,
   revenue_manager: 60,
   front_desk: 40,
@@ -180,16 +196,27 @@ export function hasAnyPermission(roles: readonly AppRole[], permission: Permissi
   return roles.some(role => roleHasPermission(role, permission));
 }
 
+/**
+ * A membership may carry its already-resolved `permissions` (role defaults plus the
+ * owner's per-person switches, or a support grant). Without them the role defaults apply.
+ */
+export type PermissionMembership = {
+  hotelId: string;
+  role: AppRole;
+  permissions?: readonly Permission[];
+};
+
 export function hasHotelPermission(
   roles: readonly AppRole[],
-  memberships: readonly { hotelId: string; role: AppRole }[],
+  memberships: readonly PermissionMembership[],
   hotelId: string,
   permission: Permission,
 ) {
   return roles.includes("super_admin")
     || roles.some(role => isPlatformRole(role) && roleHasPermission(role, permission))
     || memberships.some(
-      membership => membership.hotelId === hotelId && roleHasPermission(membership.role, permission),
+      membership => membership.hotelId === hotelId
+        && (membership.permissions ?? ROLE_PERMISSIONS[membership.role]).includes(permission),
     );
 }
 

@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { APP_ROLES, getHighestRole, isAppRole, isHumanRole, type AppRole, type HumanRole } from '@shared/authorization';
+import { APP_ROLES, getHighestRole, isAppRole, isHumanRole, type AppRole, type HumanRole, type Permission } from '@shared/authorization';
+import { resolveMembershipPermissions } from '@shared/permissions';
 
 // The configured VITE values are the approved publishable browser credentials.
 // Keep the same URL/key pair on the server so request-scoped clients remain
@@ -61,7 +62,13 @@ export function createRlsSupabaseClient(accessToken?: string) {
 export type SupabaseMembership = {
   hotelId: string;
   role: HumanRole;
+  /** Role template plus the owner's per-person switches (spec 14). */
+  permissions: Permission[];
 };
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
 
 export type SupabaseIdentity = {
   id: string;
@@ -127,10 +134,20 @@ export async function getSupabaseIdentity(authorization: string | null | undefin
   }
 
   const client = createRlsSupabaseClient(accessToken);
-  const { data: membershipRows, error: membershipError } = await client
+  type MembershipRow = { hotel_id: unknown; role: unknown; permission_grants?: unknown; permission_revokes?: unknown };
+  let { data: membershipRows, error: membershipError } = await client
     .from("hotel_users")
-    .select("hotel_id,role")
-    .eq("user_id", data.user.id);
+    .select("hotel_id,role,permission_grants,permission_revokes")
+    .eq("user_id", data.user.id)
+    .returns<MembershipRow[]>();
+  // Keep logins working until the spec 14 migration adds the override columns.
+  if (membershipError && (membershipError.code === "42703" || membershipError.code === "PGRST204")) {
+    ({ data: membershipRows, error: membershipError } = await client
+      .from("hotel_users")
+      .select("hotel_id,role")
+      .eq("user_id", data.user.id)
+      .returns<MembershipRow[]>());
+  }
   if (membershipError) {
     console.error(
       "[Auth] hotel_users membership query failed:",
@@ -142,7 +159,14 @@ export async function getSupabaseIdentity(authorization: string | null | undefin
 
   const memberships = (membershipRows ?? [])
     .filter(row => typeof row.hotel_id === "string" && isHumanRole(typeof row.role === "string" ? row.role : null))
-    .map(row => ({ hotelId: row.hotel_id as string, role: row.role as HumanRole }));
+    .map(row => ({
+      hotelId: row.hotel_id as string,
+      role: row.role as HumanRole,
+      permissions: resolveMembershipPermissions(row.role as HumanRole, {
+        grants: toStringArray(row.permission_grants),
+        revokes: toStringArray(row.permission_revokes),
+      }),
+    }));
   const roles = APP_ROLES.filter(role => memberships.some(membership => membership.role === role));
   try {
     const { data: isSa, error: saError } = await client.rpc("is_super_admin");

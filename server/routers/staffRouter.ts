@@ -40,7 +40,8 @@ import {
 
 const hotelIdSchema = z.string().uuid();
 const adminUserIdSchema = z.string().uuid();
-const adminUserRoleSchema = z.enum(['super_admin', 'admin', 'hotel_owner', 'revenue_manager', 'front_desk', 'housekeeping']);
+// `support` is stored only once the spec 14 migration widens the hotel_users role check.
+const adminUserRoleSchema = z.enum(['super_admin', 'admin', 'support', 'hotel_owner', 'revenue_manager', 'front_desk', 'housekeeping']);
 const adminUserEmailSchema = z.string().trim().email('Enter a valid email address.').max(320).transform(email => email.toLowerCase());
 
 export const assignUserSchema = z.object({

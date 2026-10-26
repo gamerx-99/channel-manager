@@ -107,11 +107,21 @@ describe("route scope", () => {
       visibleHotelIds: [],
     })).toEqual({ allowed: false, reason: "role_required" });
 
+    // `support` used to be the example of an unknown role; spec 14 made it a real
+    // platform role, so an unknown string now stands in for it.
     expect(getRouteScopeDecision({
-      role: "support",
+      role: "guest" as never,
       pathname: "/hotels/hotel-1/bookings",
       visibleHotelIds: ["hotel-1"],
     })).toEqual({ allowed: false, reason: "role_required" });
+  });
+
+  it("keeps a support user out of hotel data routes without a grant", () => {
+    expect(getRouteScopeDecision({
+      role: "support",
+      pathname: "/hotels/hotel-1/bookings",
+      visibleHotelIds: [],
+    })).toEqual({ allowed: false, reason: "permission_required" });
   });
 
   it("uses the first RLS-visible hotel as the default property context", () => {

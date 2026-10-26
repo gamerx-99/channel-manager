@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PLATFORM_ROLES } from "@shared/authorization";
+import { CROSS_HOTEL_READ_ROLES } from "@shared/authorization";
 
 const root = process.cwd();
 const migration = readFileSync(resolve(root, "20260824_add_admin_role_and_platform_admin.sql"), "utf8");
@@ -18,14 +18,16 @@ describe("platform admin role migration contract", () => {
     }
   });
 
-  it("defines is_platform_admin() over exactly the shared platform roles", () => {
+  // Spec 14 added `support` to PLATFORM_ROLES without cross-hotel read, so the SQL is
+  // compared with CROSS_HOTEL_READ_ROLES, the roles this function is meant to cover.
+  it("defines is_platform_admin() over exactly the cross-hotel read roles", () => {
     const start = migration.indexOf("create or replace function public.is_platform_admin()");
     expect(start).toBeGreaterThanOrEqual(0);
     const fn = migration.slice(start, migration.indexOf("grant execute on function public.is_platform_admin()", start));
     expect(fn).toContain("security definer");
     expect(fn).toContain("set search_path to 'public', 'pg_temp'");
     expect(fn).toContain("set row_security to 'off'");
-    expect(fn).toContain(`hu.role in (${PLATFORM_ROLES.map(role => `'${role}'`).join(", ")})`);
+    expect(fn).toContain(`hu.role in (${CROSS_HOTEL_READ_ROLES.map(role => `'${role}'`).join(", ")})`);
   });
 
   it("routes the cross-hotel read grant through is_hotel_member only", () => {

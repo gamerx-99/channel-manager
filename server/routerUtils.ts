@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { hasAnyPermission, hasHotelPermission, type AppRole, type Permission } from '@shared/authorization';
+import { hasAnyPermission, hasHotelPermission, type AppRole, type Permission, type PermissionMembership } from '@shared/authorization';
 import { createRlsSupabaseClient } from './supabase';
 import { isSuperAdmin, getManagedHotel } from './db';
 
@@ -28,7 +28,7 @@ export function requirePermission(user: { role?: AppRole | null; roles?: readonl
 }
 
 export function requireHotelPermission(
-  user: { id: string; role?: AppRole | null; roles?: readonly AppRole[] | null; memberships?: readonly { hotelId: string; role: AppRole }[] | null },
+  user: { id: string; role?: AppRole | null; roles?: readonly AppRole[] | null; memberships?: readonly PermissionMembership[] | null },
   hotelId: string,
   permission: Permission,
 ) {
