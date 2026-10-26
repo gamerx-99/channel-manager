@@ -1,5 +1,9 @@
 # Handoff log
 
+## [2026-10-27] Spec 14 ticket 14-03a (review fixes): pending signup, MFA promptpay, tests (branch `agent-a/next`)
+- **What happened**: Fixed email-confirmation regression (token stored in localStorage, redeemed after first login), added MFA step-up to PromptPay settings, hid no-op mark-as-read button, added 6+ regression/contract tests.
+- **Verification**: `pnpm test`: 99 passed files | 4 failed (inviteAuthUser x4 + 3 credential env) | 2 skipped; 629 passed | 7 failed | 3 skipped. `pnpm check`: 0 errors. `pnpm build`: OK.
+
 ## [2026-10-27] Spec 14 ticket 14-03a: server-side security fixes (branch `agent-a/next`)
 - **What happened**: Seven server-side fixes landed, each as its own commit:
   1. `completeHotelOwnerSignup` now uses `ctx.user.id` (userId removed from schema).
