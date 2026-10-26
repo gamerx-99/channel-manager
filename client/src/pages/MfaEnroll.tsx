@@ -133,7 +133,7 @@ export default function MfaEnroll() {
     <div className="login-page">
       <div className="login-aside">
         <div className="login-brand">
-          <span className="brand-mark"><span /></span><strong>channel<em>manager</em></strong>
+          <span className="brand-mark"><span /></span><strong>hay<em>host</em></strong>
         </div>
         <div className="login-aside-copy">
           <div className="eyebrow">{t("mfaEnroll.asideEyebrow")}</div>

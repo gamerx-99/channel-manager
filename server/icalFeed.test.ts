@@ -112,7 +112,7 @@ describe('buildIcalExport', () => {
     expect(ics.split('\r\n')).toEqual([
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Channel Manager//OTA iCal Export//EN',
+      'PRODID:-//hayhost//OTA iCal Export//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Seaside Inn · 101',

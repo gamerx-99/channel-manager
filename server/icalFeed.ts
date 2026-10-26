@@ -156,7 +156,7 @@ export function buildIcalExport(input: { calendarName: string; events: IcalExpor
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Channel Manager//OTA iCal Export//EN',
+    'PRODID:-//hayhost//OTA iCal Export//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(input.calendarName)}`,

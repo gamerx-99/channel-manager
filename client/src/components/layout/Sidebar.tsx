@@ -91,8 +91,8 @@ export function Sidebar({
         <Link href="/dashboard" className="brand-lockup" onClick={() => onClose()}>
           <BrandMark />
           <span>
-            <strong>channel</strong>
-            <em>manager</em>
+            <strong>hay</strong>
+            <em>host</em>
           </span>
         </Link>
         <button className="icon-button sidebar-close" onClick={() => onClose()} aria-label={t("sidebar.closeMenu")}>

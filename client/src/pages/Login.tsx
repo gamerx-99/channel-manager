@@ -80,7 +80,7 @@ export default function Login() {
       <div className="login-aside">
         <div className="login-brand">
           <span className="brand-mark"><span /></span>
-          <strong>channel<em>manager</em></strong>
+          <strong>hay<em>host</em></strong>
         </div>
         <div className="login-aside-copy">
           <div className="eyebrow">{t("login.eyebrowAside")}</div>

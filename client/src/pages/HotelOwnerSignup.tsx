@@ -87,7 +87,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
   return (
     <div className="login-page">
       <div className="login-aside">
-        <div className="login-brand"><span className="brand-mark"><span /></span><strong>channel<em>manager</em></strong></div>
+        <div className="login-brand"><span className="brand-mark"><span /></span><strong>hay<em>host</em></strong></div>
         <div className="login-aside-copy">
           <div className="eyebrow">Hotel operations / Central console</div>
           <h1>Set up<br /><i>{validation.data.hotelName}.</i></h1>

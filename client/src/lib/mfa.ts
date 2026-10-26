@@ -205,7 +205,7 @@ export async function enrollTotpFactor(): Promise<EnrollTotpResult> {
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
     friendlyName: `Authenticator-${Date.now().toString(36)}`,
-    issuer: "ChannelManager",
+    issuer: "hayhost",
   });
 
   if (error || !data) {

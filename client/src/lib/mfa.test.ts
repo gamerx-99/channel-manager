@@ -92,7 +92,7 @@ describe("MFA Enrollment and Cleanup flow", () => {
     expect(mocks.enroll).toHaveBeenCalledWith({
       factorType: "totp",
       friendlyName: expect.stringMatching(/^Authenticator-/),
-      issuer: "ChannelManager",
+      issuer: "hayhost",
     });
   });
 
@@ -127,7 +127,7 @@ describe("MFA Enrollment and Cleanup flow", () => {
     expect(mocks.enroll).toHaveBeenCalledWith({
       factorType: "totp",
       friendlyName: expect.stringMatching(/^Authenticator-/),
-      issuer: "ChannelManager",
+      issuer: "hayhost",
     });
   });
 

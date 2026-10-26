@@ -92,7 +92,7 @@ export function Topbar({
       </button>
       <Link href="/dashboard" className="topbar-brand">
         <BrandMark />
-        <span>channel <em>manager</em></span>
+        <span>hay<em>host</em></span>
       </Link>
       <div className="topbar-rule" />
       <div className="breadcrumbs">
