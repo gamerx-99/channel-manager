@@ -13,6 +13,7 @@ import {
   getOtaSyncLogs,
   triggerOtaCalendarSync,
 } from '../otaSync';
+import { ICAL_URL_ERROR, isPublicIcalUrl } from '../icalUrl';
 
 export const otaRouter = router({
   summary: protectedProcedure.query(async ({ ctx }) => {
@@ -37,8 +38,8 @@ export const otaRouter = router({
         hotelId: z.string().uuid(),
         provider: z.string().min(1),
         status: z.string().min(1),
-        icalImportUrl: z.string().optional(),
-        icalExportUrl: z.string().optional(),
+        icalImportUrl: z.string().trim().refine(isPublicIcalUrl, ICAL_URL_ERROR).optional(),
+        icalExportUrl: z.string().trim().url().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

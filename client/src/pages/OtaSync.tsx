@@ -11,6 +11,7 @@ import { Loader2, RefreshCw, Globe, PlusCircle, Trash2, Link2 } from "lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
+import { hasHotelPermission } from "@shared/authorization";
 
 function formatSyncTimestamp(value: string | null | undefined, invalidDateLabel: string): string {
   if (!value) return "—";
@@ -30,6 +31,9 @@ function formatSyncTimestamp(value: string | null | undefined, invalidDateLabel:
 export default function OtaSync({ hotelId }: { hotelId: string }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
+  const authMeQuery = trpc.auth.me.useQuery();
+  const canManageConnections = hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], hotelId, "ota.manage_ical_connection");
+  const canTriggerSync = hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], hotelId, "ota.trigger_ical_sync");
   const { data: connections, isLoading: loadingConn, error: connectionError, refetch: refetchConnections } = trpc.channelManager.ota.listConnections.useQuery({ hotelId });
   const { data: logs, isLoading: loadingLogs, error: logsError, refetch: refetchLogs } = trpc.channelManager.ota.listLogs.useQuery({ hotelId });
 
@@ -140,10 +144,10 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                       {t("otaSync.connectedChannelsDesc")}
                     </CardDescription>
                   </div>
-                  <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+                  {canManageConnections && <Button size="sm" onClick={() => setAddDialogOpen(true)}>
                     <PlusCircle className="h-4 w-4 mr-1.5" />
                     {t("otaSync.addConnectionButton")}
-                  </Button>
+                  </Button>}
                 </div>
               </CardHeader>
               <CardContent>
@@ -208,7 +212,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
-                                <Button
+                                {canTriggerSync && <Button
                                   size="sm"
                                   variant="outline"
                                   className="h-7 px-2 text-xs"
@@ -218,8 +222,8 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                                 >
                                   {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                                   <span className="ml-1">{t("otaSync.syncButton")}</span>
-                                </Button>
-                                <Button
+                                </Button>}
+                                {canManageConnections && <Button
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -228,7 +232,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                                 >
                                   {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                                   <span className="ml-1">{t("otaSync.deleteButton")}</span>
-                                </Button>
+                                </Button>}
                               </div>
                             </TableCell>
                           </TableRow>

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createRlsSupabaseClient } from './supabase';
+import { fetchPublicIcalFeed } from './icalUrl';
 
 export interface OtaConnectionRow {
   id: string;
@@ -91,29 +92,8 @@ export function buildIcalSyncPayload(
   };
 }
 
-function validateIcalImportUrl(value: string): string {
-  const url = new URL(value);
-  const hostname = url.hostname.toLowerCase();
-  const blockedHost = hostname === 'localhost'
-    || hostname === '127.0.0.1'
-    || hostname === '0.0.0.0'
-    || hostname === '::1'
-    || hostname.endsWith('.localhost')
-    || /^10\./.test(hostname)
-    || /^192\.168\./.test(hostname)
-    || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
-
-  if (!['http:', 'https:'].includes(url.protocol) || blockedHost) {
-    throw new Error('The iCal import URL must be a public HTTP(S) URL.');
-  }
-  return url.toString();
-}
-
 export async function fetchIcalEventFingerprints(url: string): Promise<IcalEventFingerprint[]> {
-  const response = await fetch(validateIcalImportUrl(url), {
-    headers: { Accept: 'text/calendar, text/plain;q=0.9' },
-    signal: AbortSignal.timeout(10_000),
-  });
+  const response = await fetchPublicIcalFeed(url);
   if (!response.ok) throw new Error(`iCal feed returned HTTP ${response.status}.`);
 
   const feed = await response.text();
@@ -252,7 +232,10 @@ export async function upsertOtaConnection(
 
 export async function logOtaSync(accessToken: string, log: OtaSyncLogInsert): Promise<void> {
   const client = createRlsSupabaseClient(accessToken);
-  await client.from('ota_sync_logs').insert(log);
+  const { error } = await client.from('ota_sync_logs').insert(log);
+  if (error) {
+    throw new Error(`Failed to write OTA sync log: ${error.message}`);
+  }
 }
 
 export async function getOtaSyncLogs(accessToken: string, hotelId: string, limit = 50) {
@@ -311,24 +294,31 @@ export async function triggerOtaCalendarSync(
     });
 
     const client = createRlsSupabaseClient(accessToken);
-    await client
+    const { error } = await client
       .from('ota_connections')
       .update({ last_sync_at: new Date().toISOString(), status: 'connected', updated_at: new Date().toISOString() })
       .eq('hotel_id', hotelId)
       .eq('provider', provider);
+    if (error) {
+      throw new Error(`Failed to update OTA connection sync time: ${error.message}`);
+    }
 
     return { success: true, durationMs: Date.now() - startTime, updatedItemCount, response: responsePayload };
   } catch (err: any) {
     status = 'failed';
     errorMessage = err.message || 'Unknown calendar sync error';
-    await logOtaSync(accessToken, {
-      hotel_id: hotelId,
-      provider,
-      direction: 'inbound',
-      action: 'sync_calendar',
-      status: 'failed',
-      error_message: errorMessage
-    });
+    try {
+      await logOtaSync(accessToken, {
+        hotel_id: hotelId,
+        provider,
+        direction: 'inbound',
+        action: 'sync_calendar',
+        status: 'failed',
+        error_message: errorMessage
+      });
+    } catch (logError: any) {
+      console.error('[OTA Sync] failed to record failed sync log:', logError?.message || logError);
+    }
     throw err;
   }
 }
