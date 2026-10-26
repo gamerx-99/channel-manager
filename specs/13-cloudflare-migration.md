@@ -79,7 +79,9 @@ external piece (see Q1).
   `server/supabase.ts`, `server/_core/env.ts`).
 - **13-08 Data migration + cutover**: export from Supabase (Postgres → JSON per table),
   transform, import to D1 staging, verify row counts and invariants, rehearse, then production
-  import; point the domain at the Worker; re-issue OTA export URLs; smoke test.
+  import; copy every object in the Supabase Storage `hotel-media` bucket (B's 872234a) to R2 under
+  the same `<hotel_id>/` keys and rewrite `hotel_media.url` to the R2 URLs; point the domain at
+  the Worker; re-issue OTA export URLs; smoke test.
 - **13-09 Decommission**: remove Express/Vercel files (`api/index.ts`, `vercel.json`,
   `server/_core/vite.ts`, `@supabase/*`, `pg`, `mysql2`, Manus/Forge leftovers), archive the
   Supabase project after a retention window, update `CLAUDE.md` (stack, commands, migrations
