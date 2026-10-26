@@ -1,0 +1,58 @@
+# Cloudflare Worker for hayhost (spec 13). The top level is local `wrangler dev`;
+# deploy with `--env staging` or `--env production`. Bindings are not inherited
+# by environments, so each one repeats them.
+name = "hayhost-dev"
+main = "worker/index.ts"
+compatibility_date = "2026-10-20"
+# nodejs_compat also fills process.env from vars and secrets, which server/ reads.
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist/public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hayhost-dev"
+# Local-only id; `wrangler dev` keeps the data in .wrangler/state.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "drizzle/d1"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "hayhost-media-dev"
+
+[env.staging]
+name = "hayhost-staging"
+workers_dev = true
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "hayhost-staging"
+# Replace with the id printed by `wrangler d1 create hayhost-staging`.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "drizzle/d1"
+
+[[env.staging.r2_buckets]]
+binding = "MEDIA"
+bucket_name = "hayhost-media-staging"
+
+[env.production]
+name = "hayhost"
+workers_dev = false
+
+[env.production.vars]
+PUBLIC_APP_URL = "https://www.hayhostth.com"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "hayhost-production"
+# Replace with the id printed by `wrangler d1 create hayhost-production`.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "drizzle/d1"
+
+[[env.production.r2_buckets]]
+binding = "MEDIA"
+bucket_name = "hayhost-media"

@@ -112,3 +112,9 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Cloudflare Workers (spec 13): local state, local secrets, dry-run bundle
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+dist-worker/

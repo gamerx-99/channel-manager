@@ -1,6 +1,7 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: TODO — approved direction (human, 2026-10-26); blocked only on the questions below for
-the tickets that need them. Owner: A (cross-cutting; B coordinates per `.agent/WORK_SPLIT.md`).
+Status: IN PROGRESS — 13-01 committed on `agent-a/next` (2026-10-27), not yet deployed to staging;
+approved direction (human, 2026-10-26), blocked only on the questions below for the tickets that
+need them. Owner: A (cross-cutting; B coordinates per `.agent/WORK_SPLIT.md`).
 Depends on: — (supersedes the hosting/Supabase assumptions in `CLAUDE.md` once complete)
 Owner-tier: worker-code
 
@@ -52,7 +53,7 @@ external piece (see Q1).
 - iCal export never contains guest data; cron sync stays idempotent.
 
 ## Ticket plan (each = one concern = one commit, in this order)
-- **13-01 Scaffold**: `wrangler.toml`, Worker entry (Hono + tRPC fetch adapter + static
+- [x] **13-01 Scaffold** (2026-10-27, staging deploy pending `wrangler login`): `wrangler.toml`, Worker entry (Hono + tRPC fetch adapter + static
   assets), local dev via `wrangler dev`, staging + production environments, D1 + R2 bindings,
   CI-able `pnpm build`. App still talks to Supabase at this point (Hyperdrive or supabase-js over
   fetch) so the Worker can serve the current app end-to-end on a preview URL.

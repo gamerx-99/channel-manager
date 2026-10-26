@@ -10,18 +10,24 @@ const t = initTRPC.context<TrpcContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-// Basic in-memory rate limiter for TRPC public endpoints
+// Basic in-memory rate limiter for TRPC public endpoints (per instance/isolate).
 const rlStore: Record<string, { count: number; resetTime: number }> = {};
-setInterval(() => {
-  const now = Date.now();
+const PRUNE_INTERVAL_MS = 5 * 60 * 1000;
+let nextPruneAt = 0;
+
+// Pruned lazily on request: Workers forbid timers at module scope.
+function pruneExpired(now: number) {
+  if (now < nextPruneAt) return;
+  nextPruneAt = now + PRUNE_INTERVAL_MS;
   for (const ip in rlStore) {
     if (rlStore[ip].resetTime < now) delete rlStore[ip];
   }
-}, 5 * 60 * 1000).unref();
+}
 
 const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
-  const ip = ctx.req.ip || ctx.req.socket?.remoteAddress || "unknown";
+  const ip = ctx.clientIp || "unknown";
   const now = Date.now();
+  pruneExpired(now);
   const windowMs = 60 * 1000; // 1 minute
   const max = 20; // 20 requests per minute
 

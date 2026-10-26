@@ -1,5 +1,4 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Request } from 'express';
 import { APP_ROLES, getHighestRole, isAppRole, isHumanRole, type AppRole, type HumanRole } from '@shared/authorization';
 
 // The configured VITE values are the approved publishable browser credentials.
@@ -76,8 +75,8 @@ export type SupabaseIdentity = {
   userMetadata: Record<string, unknown>;
 };
 
-export async function getSupabaseIdentity(req: Request): Promise<SupabaseIdentity | null> {
-  const authorization = req.header("authorization") ?? (req.headers["authorization"] as string | undefined);
+/** Takes the raw Authorization header so both the Express server and the Worker can call it. */
+export async function getSupabaseIdentity(authorization: string | null | undefined): Promise<SupabaseIdentity | null> {
   if (!authorization) {
     console.warn("[Auth] No Authorization header received in request");
     return null;
