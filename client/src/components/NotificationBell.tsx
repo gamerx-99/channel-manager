@@ -91,13 +91,13 @@ export default function NotificationBell({ hotelId }: NotificationBellProps) {
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  {!n.is_read && (
+                  {!n.is_read && effectiveHotelId && (
                     <button
                       type="button"
                       className="icon-button"
                       title="Mark as read"
                       aria-label="Mark as read"
-                      onClick={() => { if (effectiveHotelId) markRead.mutate({ hotelId: effectiveHotelId, notificationId: n.id }); }}
+                      onClick={() => markRead.mutate({ hotelId: effectiveHotelId, notificationId: n.id })}
                       disabled={markRead.isPending}
                     >
                       <Check size={14} />
