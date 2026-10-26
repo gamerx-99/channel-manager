@@ -107,7 +107,8 @@ export type BookingRecord = {
   check_in: string;
   check_out: string;
   price: number | string;
-  source: 'manual' | 'walk-in' | 'phone';
+  /** 'ota_ical' rows are dates blocked by an OTA calendar feed (price 0, no guests). */
+  source: 'manual' | 'walk-in' | 'phone' | 'ota_ical';
   status: BookingStatus;
   /** DB default 'unpaid' — omit on insert, present on reads */
   payment_status?: PaymentStatus;

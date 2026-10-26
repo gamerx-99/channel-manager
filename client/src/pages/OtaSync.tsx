@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, Globe, PlusCircle, Trash2, Link2 } from "lucide-react";
+import { Loader2, RefreshCw, Globe, PlusCircle, Trash2, Link2, Pencil } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -37,20 +38,46 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
   const { data: connections, isLoading: loadingConn, error: connectionError, refetch: refetchConnections } = trpc.channelManager.ota.listConnections.useQuery({ hotelId });
   const { data: logs, isLoading: loadingLogs, error: logsError, refetch: refetchLogs } = trpc.channelManager.ota.listLogs.useQuery({ hotelId });
 
+  const { data: hotel } = trpc.channelManager.hotel.useQuery(hotelId);
+  const rooms = [...(hotel?.rooms ?? [])].sort((a, b) => a.room_number.localeCompare(b.room_number, undefined, { numeric: true }));
+  const roomTypeNames = new Map((hotel?.room_types ?? []).map(roomType => [roomType.id, roomType.name]));
+  const roomLabel = (roomId?: string | null) => {
+    const room = rooms.find(candidate => candidate.id === roomId);
+    if (!room) return null;
+    const typeName = roomTypeNames.get(room.room_type_id);
+    return typeName ? `${room.room_number} · ${typeName}` : room.room_number;
+  };
+
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [exportUrlDialogConn, setExportUrlDialogConn] = useState<any | null>(null);
   const [newProvider, setNewProvider] = useState("");
   const [newImportUrl, setNewImportUrl] = useState("");
+  const [newRoomId, setNewRoomId] = useState("");
+
+  const closeConnectionDialog = () => {
+    setAddDialogOpen(false);
+    setEditingProvider(null);
+    setNewProvider("");
+    setNewImportUrl("");
+    setNewRoomId("");
+  };
+
+  const openEditDialog = (conn: any) => {
+    setEditingProvider(conn.provider);
+    setNewProvider(conn.provider);
+    setNewImportUrl(conn.ical_import_url ?? "");
+    setNewRoomId(conn.room_id ?? "");
+    setAddDialogOpen(true);
+  };
 
   const upsertMutation = trpc.channelManager.ota.upsertConnection.useMutation({
     onSuccess: () => {
       toast.success(t("otaSync.toastSavedSuccess"));
       utils.channelManager.ota.listConnections.invalidate({ hotelId });
       utils.channelManager.ota.listLogs.invalidate({ hotelId });
-      setAddDialogOpen(false);
-      setNewProvider("");
-      setNewImportUrl("");
+      closeConnectionDialog();
     },
     onError: (err) => {
       toast.error(t("otaSync.toastSaveFailed", { error: err.message }));
@@ -69,11 +96,18 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
 
   const syncMutation = trpc.channelManager.ota.triggerSync.useMutation({
     onSuccess: (res, variables: any) => {
-      toast.success(t("otaSync.toastSyncSuccess", { provider: variables.provider.toUpperCase(), count: (res as any).updatedItemCount ?? 0 }));
+      const conflictCount = (res as any).conflictCount ?? 0;
+      if (conflictCount > 0) {
+        toast.warning(t("otaSync.toastSyncConflicts", { provider: variables.provider, count: conflictCount }), { duration: 15000 });
+      } else {
+        toast.success(t("otaSync.toastSyncSuccess", { provider: variables.provider.toUpperCase(), count: (res as any).updatedItemCount ?? 0 }));
+      }
       utils.channelManager.ota.listConnections.invalidate({ hotelId });
       utils.channelManager.ota.listLogs.invalidate({ hotelId });
     },
     onError: (err: any, variables: any) => {
+      utils.channelManager.ota.listConnections.invalidate({ hotelId });
+      utils.channelManager.ota.listLogs.invalidate({ hotelId });
       toast.error(t("otaSync.toastSyncFailed", { provider: variables.provider.toUpperCase(), error: err.message }), {
         action: {
           label: t("otaSync.retry"),
@@ -83,9 +117,13 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
     }
   });
 
-  const handleAddConnection = () => {
+  const handleSaveConnection = () => {
     if (!newProvider.trim()) {
       toast.error(t("otaSync.toastEnterChannelName"));
+      return;
+    }
+    if (!newRoomId) {
+      toast.error(t("otaSync.toastRoomRequired"));
       return;
     }
     upsertMutation.mutate({
@@ -93,6 +131,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
       provider: newProvider.trim(),
       status: 'active',
       icalImportUrl: newImportUrl.trim() || undefined,
+      roomId: newRoomId,
     });
   };
 
@@ -162,6 +201,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t("otaSync.colCalendarName")}</TableHead>
+                        <TableHead>{t("otaSync.colRoom")}</TableHead>
                         <TableHead>{t("otaSync.colCalendarLink")}</TableHead>
                         <TableHead className="whitespace-nowrap">{t("otaSync.colLastSynced")}</TableHead>
                         <TableHead>{t("otaSync.colStatus")}</TableHead>
@@ -180,24 +220,14 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                                 {conn.provider}
                               </div>
                             </TableCell>
+                            <TableCell className="text-xs whitespace-nowrap">
+                              {roomLabel(conn.room_id) ?? <span className="text-muted-foreground italic">{t("otaSync.noRoom")}</span>}
+                            </TableCell>
                             <TableCell className="max-w-xs">
                               {conn.ical_import_url ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px]" title={conn.ical_import_url}>
-                                    {conn.ical_import_url}
-                                  </span>
-                                  {conn.ical_export_url && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 px-1.5 text-[10px] shrink-0"
-                                      onClick={() => setExportUrlDialogConn(conn)}
-                                      title={t("otaSync.viewExportUrl")}
-                                    >
-                                      <Link2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
+                                <span className="block text-xs font-mono text-muted-foreground truncate max-w-[200px]" title={conn.ical_import_url}>
+                                  {conn.ical_import_url}
+                                </span>
                               ) : (
                                 <span className="text-xs text-muted-foreground italic">{t("otaSync.notConfigured")}</span>
                               )}
@@ -206,22 +236,44 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                               {formatSyncTimestamp(conn.last_sync_at, t("otaSync.invalidDate"))}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={conn.status === 'connected' || conn.status === 'active' ? 'default' : conn.status === 'error' ? 'destructive' : 'secondary'} className="text-[10px]">
+                              <Badge variant={conn.status === 'connected' || conn.status === 'active' ? 'default' : conn.status === 'error' || conn.status === 'conflict' ? 'destructive' : 'secondary'} className="text-[10px]">
                                 {conn.status || 'inactive'}
                               </Badge>
+                              {conn.last_error && (
+                                <p className="text-[10px] text-destructive mt-1 max-w-[220px]" title={conn.last_error}>{conn.last_error}</p>
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
+                                {conn.ical_export_url && <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => setExportUrlDialogConn(conn)}
+                                  title={t("otaSync.viewExportUrl")}
+                                >
+                                  <Link2 className="h-3.5 w-3.5" />
+                                  <span className="ml-1">{t("otaSync.exportButton")}</span>
+                                </Button>}
                                 {canTriggerSync && <Button
                                   size="sm"
                                   variant="outline"
                                   className="h-7 px-2 text-xs"
-                                  disabled={isSyncing || !conn.ical_import_url}
+                                  disabled={isSyncing || !conn.ical_import_url || !conn.room_id}
                                   onClick={() => syncMutation.mutate({ hotelId, provider: conn.provider })}
-                                  title={!conn.ical_import_url ? t("otaSync.setImportUrlFirst") : t("otaSync.syncNow")}
+                                  title={!conn.ical_import_url ? t("otaSync.setImportUrlFirst") : !conn.room_id ? t("otaSync.setRoomFirst") : t("otaSync.syncNow")}
                                 >
                                   {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                                   <span className="ml-1">{t("otaSync.syncButton")}</span>
+                                </Button>}
+                                {canManageConnections && <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => openEditDialog(conn)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  <span className="ml-1">{t("otaSync.editButton")}</span>
                                 </Button>}
                                 {canManageConnections && <Button
                                   size="sm"
@@ -298,10 +350,10 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
         </Tabs>
 
         {/* Add Connection Dialog */}
-        <Dialog open={addDialogOpen} onOpenChange={(open) => { if (!open) { setAddDialogOpen(false); setNewProvider(""); setNewImportUrl(""); } }}>
+        <Dialog open={addDialogOpen} onOpenChange={(open) => { if (!open) closeConnectionDialog(); }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{t("otaSync.addModalTitle")}</DialogTitle>
+              <DialogTitle>{editingProvider ? t("otaSync.editModalTitle") : t("otaSync.addModalTitle")}</DialogTitle>
               <DialogDescription>
                 {t("otaSync.addModalDesc")}
               </DialogDescription>
@@ -314,9 +366,25 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                   placeholder={t("otaSync.channelNamePlaceholder")}
                   value={newProvider}
                   onChange={(e) => setNewProvider(e.target.value)}
-                  autoFocus
+                  readOnly={Boolean(editingProvider)}
+                  maxLength={50}
+                  autoFocus={!editingProvider}
                 />
                 <p className="text-xs text-muted-foreground">{t("otaSync.channelNameHint")}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-room">{t("otaSync.roomLabel")}</Label>
+                <Select value={newRoomId} onValueChange={setNewRoomId}>
+                  <SelectTrigger id="new-room" className="w-full">
+                    <SelectValue placeholder={t("otaSync.roomPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rooms.map(room => (
+                      <SelectItem key={room.id} value={room.id}>{roomLabel(room.id)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t("otaSync.roomHint")}</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="new-import-url">{t("otaSync.importUrlLabel")}</Label>
@@ -330,10 +398,10 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setAddDialogOpen(false); setNewProvider(""); setNewImportUrl(""); }}>
+              <Button variant="outline" onClick={closeConnectionDialog}>
                 {t("otaSync.cancel")}
               </Button>
-              <Button onClick={handleAddConnection} disabled={upsertMutation.isPending || !newProvider.trim()}>
+              <Button onClick={handleSaveConnection} disabled={upsertMutation.isPending || !newProvider.trim() || !newRoomId}>
                 {upsertMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
                 {t("otaSync.save")}
               </Button>

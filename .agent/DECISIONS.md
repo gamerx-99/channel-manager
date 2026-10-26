@@ -4,6 +4,31 @@ Format: `## <date> — <short title>` then **Decision**, **Why**, **Status** (op
 Newest first. Log the reasoning, not just the outcome — the reasoning is what keeps a
 future ticket from accidentally reversing a decision that was actually deliberate.
 
+## 2026-10-26 — iCal sync: one connection = one room; OTA blocks are bookings rows; pg_cron every 15 min
+**Decision** (human chose each option in chat):
+1. Each `ota_connections` row maps to **one physical room** (`room_id`). Booking.com
+   and Airbnb iCal feeds describe a single unit, so a hotel with Booking.com on two
+   rooms adds two connections ("Booking.com - 101", "Booking.com - 102").
+2. Imported VEVENTs are stored as **`bookings` rows with `source = 'ota_ical'`**
+   (price 0, no guests, keyed by `(ota_connection_id, external_uid)`), reconciled
+   atomically by the `sync_ota_ical_blocks` RPC. The existing `prevent_double_booking`
+   exclusion constraint, the public inventory RPC and the calendar then treat them as
+   occupied for free. An event that overlaps an existing booking is not inserted; it is
+   returned as a conflict, and the connection status becomes `conflict`.
+3. The export feed is `GET /api/ical/<64-hex token>.ics`, served via the token-gated
+   `get_ota_ical_export` RPC: date ranges only, never guest data, and never the blocks
+   the same connection imported (no echo loop).
+4. Scheduled sync is **Supabase pg_cron + pg_net every 15 minutes** calling
+   `POST /api/cron/ota-ical-sync` (Bearer `CRON_SECRET`, stored in Vault). The human
+   asked about every 1 minute; 15 was kept because OTAs refresh and pull iCal only every
+   1-3 hours, so faster polling adds rate-limit risk without fresher data. The cron run
+   has no end user, so it is the one OTA path that uses the service-role client.
+**Why not a separate blocks table**: every availability query, `holdRoomType` and the DB
+exclusion constraint would have had to learn about a second source of occupancy.
+**Why not Vercel Cron**: `vercel.json` is banned-zone, and the Hobby plan caps crons
+at once a day.
+**Status**: closed (implemented 2026-10-26, migration pending human apply).
+
 ## 2026-08-31 — Review finding: three phases marked DONE with unwired UI; one marked DONE with zero implementation; corrected
 **Finding**: The opencode/deepseek loop (running unattended, hit a usage limit
 2026-08-30) produced real, well-tested server-side work for Phases 02, 03, 04, 09,

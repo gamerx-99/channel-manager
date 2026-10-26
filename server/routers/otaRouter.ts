@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
+import { hasHotelPermission } from '@shared/authorization';
 import {
+  getIdentityRoles,
   requirePermission,
   requireHotelPermission,
   rethrowDomainError,
@@ -27,7 +29,14 @@ export const otaRouter = router({
   listConnections: protectedProcedure.input(z.object({ hotelId: z.string().uuid() })).query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotelId, 'ota.view_status');
     try {
-      return await getOtaConnections(ctx.user.accessToken, input.hotelId);
+      // The export URL is a credential for the room's calendar; only managers see it.
+      const includeExportUrl = hasHotelPermission(
+        getIdentityRoles(ctx.user),
+        ctx.user.memberships ?? [],
+        input.hotelId,
+        'ota.manage_ical_connection',
+      );
+      return await getOtaConnections(ctx.user.accessToken, input.hotelId, { includeExportUrl });
     } catch (error) {
       return rethrowDomainError(error);
     }
@@ -36,10 +45,10 @@ export const otaRouter = router({
     .input(
       z.object({
         hotelId: z.string().uuid(),
-        provider: z.string().min(1),
-        status: z.string().min(1),
+        provider: z.string().trim().min(1).max(50),
+        status: z.enum(['active', 'disconnected']),
         icalImportUrl: z.string().trim().refine(isPublicIcalUrl, ICAL_URL_ERROR).optional(),
-        icalExportUrl: z.string().trim().url().optional(),
+        roomId: z.string().uuid().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -51,7 +60,7 @@ export const otaRouter = router({
           input.provider,
           input.status,
           input.icalImportUrl,
-          input.icalExportUrl
+          input.roomId
         );
       } catch (error) {
         return rethrowDomainError(error);

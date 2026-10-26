@@ -29,6 +29,11 @@ export function getOtaStatusMeta(item: Pick<OtaSummaryItem, "status" | "latest_l
     return { tone: "error", label: "Sync error" };
   }
 
+  // The OTA feed has stays overlapping existing bookings on the mapped room.
+  if (status === "conflict") {
+    return { tone: "error", label: "Booking conflict" };
+  }
+
   if (status === "connected" || status === "healthy" || status === "synced") {
     return { tone: "healthy", label: "Healthy" };
   }

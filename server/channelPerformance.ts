@@ -70,6 +70,7 @@ const BOOKING_CHANNEL_LABELS: Record<BookingRow['source'], string> = {
   manual: 'Direct / Manual',
   'walk-in': 'Walk-in',
   phone: 'Phone',
+  ota_ical: 'OTA (iCal)',
 };
 
 const OTA_LABELS: Record<string, string> = {

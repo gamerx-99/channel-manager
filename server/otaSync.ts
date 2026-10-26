@@ -1,16 +1,26 @@
-import { createHash } from 'node:crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createRlsSupabaseClient } from './supabase';
 import { fetchPublicIcalFeed } from './icalUrl';
+import { parseIcalEvents, type IcalEvent } from './icalFeed';
+
+export type OtaConnectionStatus = 'active' | 'connected' | 'conflict' | 'error' | 'disconnected';
 
 export interface OtaConnectionRow {
   id: string;
   hotel_id: string;
-  provider: string; // 'agoda' | 'booking' | 'airbnb' | 'expedia'
-  status: string;
-  ical_import_url?: string;
-  ical_export_url?: string;
-  last_sync_at?: string;
+  provider: string; // free-text channel label, e.g. 'Booking.com - 101'
+  status: OtaConnectionStatus | string;
+  room_id?: string | null;
+  ical_import_url?: string | null;
+  last_sync_at?: string | null;
+  last_error?: string | null;
+  ical_export_token?: string;
 }
+
+/** What the client sees: the export token is replaced by a ready-to-paste URL, or hidden. */
+export type OtaConnectionView = Omit<OtaConnectionRow, 'ical_export_token'> & {
+  ical_export_url: string | null;
+};
 
 export interface OtaSyncLogInsert {
   hotel_id: string;
@@ -27,102 +37,46 @@ export type OtaSyncLogSummary = OtaSyncLogInsert & {
   created_at?: string;
 };
 
-export type IcalEventFingerprint = {
-  uid: string;
-  fingerprint: string;
+export type IcalSyncConflict = { uid: string; start: string; end: string };
+
+export type IcalBlockSyncResult = {
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  cancelled: number;
+  conflicts: IcalSyncConflict[];
 };
 
-function hashEvent(lines: string[]): string {
-  return createHash('sha256').update(lines.join('\n')).digest('hex');
+const CONNECTION_COLUMNS = 'id,hotel_id,provider,status,room_id,ical_import_url,last_sync_at,last_error,ical_export_token';
+const MAX_FEED_BYTES = 2_000_000;
+
+function getPublicAppUrl(): string {
+  // Same fallback as inviteAuthUser in ./supabase.
+  return (process.env.PUBLIC_APP_URL
+    || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://channel-manager-seven-blue.vercel.app'))
+    .replace(/\/+$/, '');
 }
 
-/** Parse VEVENT blocks and retain only a stable UID plus a privacy-safe hash. */
-export function parseIcalEventFingerprints(feed: string): IcalEventFingerprint[] {
-  const unfoldedLines = feed.replace(/\r?\n[ \t]/g, '').split(/\r?\n/);
-  const events: IcalEventFingerprint[] = [];
-  let current: string[] | null = null;
-
-  for (const line of unfoldedLines) {
-    if (line.trim().toUpperCase() === 'BEGIN:VEVENT') {
-      current = [line];
-      continue;
-    }
-    if (!current) continue;
-
-    current.push(line);
-    if (line.trim().toUpperCase() !== 'END:VEVENT') continue;
-
-    const uidLine = current.find((candidate) => candidate.toUpperCase().startsWith('UID:'));
-    const uid = uidLine?.slice(uidLine.indexOf(':') + 1).trim() || `event-${events.length + 1}`;
-    events.push({ uid, fingerprint: hashEvent(current) });
-    current = null;
-  }
-
-  return events;
+export function buildIcalExportUrl(token: string): string {
+  return `${getPublicAppUrl()}/api/ical/${token}.ics`;
 }
 
-/** Count added, changed, and removed VEVENT records between two feed snapshots. */
-export function countUpdatedIcalItems(
-  previous: IcalEventFingerprint[],
-  current: IcalEventFingerprint[],
-): number {
-  const previousByUid = new Map(previous.map((event) => [event.uid, event.fingerprint]));
-  const currentByUid = new Map(current.map((event) => [event.uid, event.fingerprint]));
-  let changed = 0;
-
-  currentByUid.forEach((fingerprint, uid) => {
-    if (previousByUid.get(uid) !== fingerprint) changed += 1;
-  });
-  previousByUid.forEach((_fingerprint, uid) => {
-    if (!currentByUid.has(uid)) changed += 1;
-  });
-
-  return changed;
+export function toOtaConnectionView(row: OtaConnectionRow, includeExportUrl: boolean): OtaConnectionView {
+  const { ical_export_token: token, ...rest } = row;
+  return { ...rest, ical_export_url: includeExportUrl && token ? buildIcalExportUrl(token) : null };
 }
 
-export function buildIcalSyncPayload(
-  previous: IcalEventFingerprint[],
-  current: IcalEventFingerprint[],
-) {
+export function buildIcalSyncPayload(events: IcalEvent[], result: IcalBlockSyncResult) {
   return {
-    syncType: 'iCal availability & blocked dates',
-    processedItemCount: current.length,
-    updatedItemCount: countUpdatedIcalItems(previous, current),
-    eventFingerprints: current,
+    syncType: 'iCal blocked dates',
+    processedItemCount: events.length,
+    updatedItemCount: result.inserted + result.updated + result.cancelled,
+    inserted: result.inserted,
+    updated: result.updated,
+    cancelled: result.cancelled,
+    unchanged: result.unchanged,
+    conflicts: result.conflicts,
   };
-}
-
-export async function fetchIcalEventFingerprints(url: string): Promise<IcalEventFingerprint[]> {
-  const response = await fetchPublicIcalFeed(url);
-  if (!response.ok) throw new Error(`iCal feed returned HTTP ${response.status}.`);
-
-  const feed = await response.text();
-  if (feed.length > 2_000_000) throw new Error('The iCal feed is larger than the supported 2 MB limit.');
-  return parseIcalEventFingerprints(feed);
-}
-
-async function getPreviousIcalSnapshot(
-  accessToken: string,
-  hotelId: string,
-  provider: string,
-): Promise<IcalEventFingerprint[]> {
-  const client = createRlsSupabaseClient(accessToken);
-  const { data, error } = await client
-    .from('ota_sync_logs')
-    .select('payload')
-    .eq('hotel_id', hotelId)
-    .eq('provider', provider)
-    .eq('action', 'sync_calendar')
-    .eq('status', 'success')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error(`Failed to fetch previous iCal snapshot: ${error.message}`);
-  const snapshot = data?.payload && typeof data.payload === 'object'
-    ? (data.payload as Record<string, unknown>).eventFingerprints
-    : null;
-  return Array.isArray(snapshot) ? snapshot as IcalEventFingerprint[] : [];
 }
 
 function readNonNegativeCount(value: unknown): number | null {
@@ -147,24 +101,42 @@ export function getUpdatedItemCount(log: Pick<OtaSyncLogSummary, 'payload' | 're
   return 0;
 }
 
-export async function getOtaConnections(accessToken: string, hotelId: string): Promise<OtaConnectionRow[]> {
+export async function fetchIcalEvents(url: string): Promise<IcalEvent[]> {
+  const response = await fetchPublicIcalFeed(url);
+  if (!response.ok) throw new Error(`iCal feed returned HTTP ${response.status}.`);
+  if (Number(response.headers.get('content-length') ?? 0) > MAX_FEED_BYTES) {
+    throw new Error('The iCal feed is larger than the supported 2 MB limit.');
+  }
+
+  const feed = await response.text();
+  if (feed.length > MAX_FEED_BYTES) throw new Error('The iCal feed is larger than the supported 2 MB limit.');
+  if (!/BEGIN:VCALENDAR/i.test(feed)) throw new Error('The URL did not return an iCal calendar.');
+  return parseIcalEvents(feed);
+}
+
+export async function getOtaConnections(
+  accessToken: string,
+  hotelId: string,
+  options: { includeExportUrl?: boolean } = {},
+): Promise<OtaConnectionView[]> {
   const client = createRlsSupabaseClient(accessToken);
   const { data, error } = await client
     .from('ota_connections')
-    .select('*')
-    .eq('hotel_id', hotelId);
+    .select(CONNECTION_COLUMNS)
+    .eq('hotel_id', hotelId)
+    .order('provider');
 
   if (error) {
     throw new Error(`Failed to fetch OTA calendar connections: ${error.message}`);
   }
-  return data || [];
+  return ((data ?? []) as OtaConnectionRow[]).map((row) => toOtaConnectionView(row, Boolean(options.includeExportUrl)));
 }
 
 export async function getGlobalOtaSummary(accessToken: string): Promise<any[]> {
   const client = createRlsSupabaseClient(accessToken);
   const { data: connections, error: connError } = await client
     .from('ota_connections')
-    .select('*, hotels(name)');
+    .select('id,hotel_id,provider,status,room_id,ical_import_url,last_sync_at,last_error,hotels(name)');
 
   if (connError) {
     // Graceful fallback if table does not exist or schema cache is not yet refreshed
@@ -172,11 +144,11 @@ export async function getGlobalOtaSummary(accessToken: string): Promise<any[]> {
     return [];
   }
 
-  const results = [];
-  for (const row of (connections || [])) {
+  // One small query per connection, run concurrently rather than one after another.
+  return Promise.all((connections || []).map(async (row: any) => {
     const { data: logs } = await client
       .from('ota_sync_logs')
-      .select('*')
+      .select('id,hotel_id,provider,direction,action,status,response,error_message,created_at')
       .eq('hotel_id', row.hotel_id)
       .eq('provider', row.provider)
       .order('created_at', { ascending: false })
@@ -187,7 +159,7 @@ export async function getGlobalOtaSummary(accessToken: string): Promise<any[]> {
       .filter(l => l.action === 'sync_calendar' && l.status === 'success')
       .reduce((total, log) => total + getUpdatedItemCount(log), 0);
 
-    results.push({
+    return {
       ...row,
       hotel_name: row.hotels?.name || 'Property',
       latest_log: latestLog,
@@ -196,10 +168,8 @@ export async function getGlobalOtaSummary(accessToken: string): Promise<any[]> {
       // value now represents updated items, never the number of sync runs.
       recent_synced_count: recentUpdatedItemCount,
       logs: logs || []
-    });
-  }
-
-  return results;
+    };
+  }));
 }
 
 export async function upsertOtaConnection(
@@ -208,8 +178,8 @@ export async function upsertOtaConnection(
   provider: string,
   status: string,
   icalImportUrl?: string,
-  icalExportUrl?: string
-): Promise<OtaConnectionRow> {
+  roomId?: string | null,
+): Promise<OtaConnectionView> {
   const client = createRlsSupabaseClient(accessToken);
   const { data, error } = await client
     .from('ota_connections')
@@ -218,20 +188,19 @@ export async function upsertOtaConnection(
       provider,
       status,
       ical_import_url: icalImportUrl,
-      ical_export_url: icalExportUrl,
+      room_id: roomId,
       updated_at: new Date().toISOString()
     }, { onConflict: 'hotel_id,provider' })
-    .select()
+    .select(CONNECTION_COLUMNS)
     .single();
 
   if (error) {
-    throw new Error(`Failed to upsert OTA calendar connection: ${error.message}`);
+    throw new Error(error.code ? `${error.code}: ${error.message}` : `Failed to upsert OTA calendar connection: ${error.message}`);
   }
-  return data;
+  return toOtaConnectionView(data as OtaConnectionRow, true);
 }
 
-export async function logOtaSync(accessToken: string, log: OtaSyncLogInsert): Promise<void> {
-  const client = createRlsSupabaseClient(accessToken);
+export async function logOtaSync(client: SupabaseClient, log: OtaSyncLogInsert): Promise<void> {
   const { error } = await client.from('ota_sync_logs').insert(log);
   if (error) {
     throw new Error(`Failed to write OTA sync log: ${error.message}`);
@@ -253,74 +222,109 @@ export async function getOtaSyncLogs(accessToken: string, hotelId: string, limit
   return data || [];
 }
 
+async function recordSyncFailure(client: SupabaseClient, connection: OtaConnectionRow, message: string) {
+  try {
+    await logOtaSync(client, {
+      hotel_id: connection.hotel_id,
+      provider: connection.provider,
+      direction: 'inbound',
+      action: 'sync_calendar',
+      status: 'failed',
+      error_message: message
+    });
+  } catch (logError: any) {
+    console.error('[OTA Sync] failed to record failed sync log:', logError?.message || logError);
+  }
+
+  const { error } = await client
+    .from('ota_connections')
+    .update({ status: 'error', last_error: message.slice(0, 500), updated_at: new Date().toISOString() })
+    .eq('id', connection.id);
+  if (error) console.error('[OTA Sync] failed to mark connection as error:', error.message);
+}
+
+/**
+ * Fetches one connection's feed and reconciles it into blocking bookings on the
+ * mapped room, atomically, via sync_ota_ical_blocks. `client` decides whose
+ * authority applies: a request-scoped RLS client (manual sync) or the scheduler's
+ * service-role client (see ./otaScheduler).
+ */
+export async function syncOtaConnection(
+  client: SupabaseClient,
+  connection: OtaConnectionRow,
+  options: { skipUnchangedLog?: boolean } = {},
+) {
+  const startTime = Date.now();
+  try {
+    if (!connection.ical_import_url) {
+      throw new Error(`No iCal import URL is configured for ${connection.provider}.`);
+    }
+    if (!connection.room_id) {
+      throw new Error(`Choose the room that ${connection.provider} blocks before syncing.`);
+    }
+
+    const events = await fetchIcalEvents(connection.ical_import_url);
+    const { data, error } = await client.rpc('sync_ota_ical_blocks', {
+      target_connection_id: connection.id,
+      events,
+    });
+    if (error) throw new Error(error.code ? `${error.code}: ${error.message}` : error.message);
+
+    const result = data as IcalBlockSyncResult;
+    const syncPayload = buildIcalSyncPayload(events, result);
+    const responsePayload = {
+      message: result.conflicts.length > 0
+        ? `${result.conflicts.length} event(s) from ${connection.provider} overlap existing bookings on this room`
+        : `Successfully synchronized iCal calendar with ${connection.provider}`,
+      processedItemCount: syncPayload.processedItemCount,
+      updatedItemCount: syncPayload.updatedItemCount,
+      conflictCount: result.conflicts.length,
+    };
+
+    // ASSUMPTION: scheduled runs skip logging no-op successes so a 15-minute cron
+    // does not flood ota_sync_logs; last_sync_at still records every run.
+    if (!(options.skipUnchangedLog && syncPayload.updatedItemCount === 0 && result.conflicts.length === 0)) {
+      await logOtaSync(client, {
+        hotel_id: connection.hotel_id,
+        provider: connection.provider,
+        direction: 'inbound',
+        action: 'sync_calendar',
+        status: 'success',
+        payload: syncPayload,
+        response: responsePayload
+      });
+    }
+
+    return {
+      success: true,
+      durationMs: Date.now() - startTime,
+      updatedItemCount: syncPayload.updatedItemCount,
+      conflictCount: result.conflicts.length,
+      conflicts: result.conflicts,
+      response: responsePayload,
+    };
+  } catch (err: any) {
+    await recordSyncFailure(client, connection, err?.message || 'Unknown calendar sync error');
+    throw err;
+  }
+}
+
 export async function triggerOtaCalendarSync(
   accessToken: string,
   hotelId: string,
   provider: string
 ) {
-  const startTime = Date.now();
-  let status: 'success' | 'failed' = 'success';
-  let errorMessage: string | undefined;
-  let updatedItemCount = 0;
-  let responsePayload: any;
+  const client = createRlsSupabaseClient(accessToken);
+  const { data, error } = await client
+    .from('ota_connections')
+    .select(CONNECTION_COLUMNS)
+    .eq('hotel_id', hotelId)
+    .eq('provider', provider)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to fetch OTA calendar connection: ${error.message}`);
+  if (!data) throw new Error(`No iCal import URL is configured for ${provider}.`);
 
-  try {
-    const connection = (await getOtaConnections(accessToken, hotelId))
-      .find((candidate) => candidate.provider === provider);
-    if (!connection?.ical_import_url) {
-      throw new Error(`No iCal import URL is configured for ${provider}.`);
-    }
-
-    const [previousSnapshot, currentSnapshot] = await Promise.all([
-      getPreviousIcalSnapshot(accessToken, hotelId, provider),
-      fetchIcalEventFingerprints(connection.ical_import_url),
-    ]);
-    const syncPayload = buildIcalSyncPayload(previousSnapshot, currentSnapshot);
-    updatedItemCount = syncPayload.updatedItemCount;
-    responsePayload = {
-      message: `Successfully synchronized iCal calendar with ${provider}`,
-      processedItemCount: syncPayload.processedItemCount,
-      updatedItemCount,
-    };
-
-    await logOtaSync(accessToken, {
-      hotel_id: hotelId,
-      provider,
-      direction: 'inbound',
-      action: 'sync_calendar',
-      status: 'success',
-      payload: syncPayload,
-      response: responsePayload
-    });
-
-    const client = createRlsSupabaseClient(accessToken);
-    const { error } = await client
-      .from('ota_connections')
-      .update({ last_sync_at: new Date().toISOString(), status: 'connected', updated_at: new Date().toISOString() })
-      .eq('hotel_id', hotelId)
-      .eq('provider', provider);
-    if (error) {
-      throw new Error(`Failed to update OTA connection sync time: ${error.message}`);
-    }
-
-    return { success: true, durationMs: Date.now() - startTime, updatedItemCount, response: responsePayload };
-  } catch (err: any) {
-    status = 'failed';
-    errorMessage = err.message || 'Unknown calendar sync error';
-    try {
-      await logOtaSync(accessToken, {
-        hotel_id: hotelId,
-        provider,
-        direction: 'inbound',
-        action: 'sync_calendar',
-        status: 'failed',
-        error_message: errorMessage
-      });
-    } catch (logError: any) {
-      console.error('[OTA Sync] failed to record failed sync log:', logError?.message || logError);
-    }
-    throw err;
-  }
+  return syncOtaConnection(client, data as OtaConnectionRow);
 }
 
 export async function deleteOtaConnection(

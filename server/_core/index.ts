@@ -4,6 +4,7 @@ import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { registerOtaIcalRoutes } from "../otaIcalRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 
@@ -14,6 +15,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 registerStorageProxy(app);
 registerOAuthRoutes(app);
+registerOtaIcalRoutes(app);
 // tRPC API
 app.use(
   "/api/trpc",
