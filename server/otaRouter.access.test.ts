@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const otaMocks = vi.hoisted(() => ({
   getOtaConnections: vi.fn(),
@@ -17,6 +17,12 @@ vi.mock('./supabase', () => supabaseMocks);
 
 const HOME_HOTEL = '88ed76e4-cc93-4aa7-9c4d-30999d35ada4';
 const OTHER_HOTEL = '11111111-1111-4111-8111-111111111111';
+
+// Importing the whole app router cold can exceed the 5s per-test timeout under load;
+// load it once up front so no test times out mid-call and leaks spy calls into the next.
+beforeAll(async () => {
+  await import('./routers');
+}, 30_000);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -82,6 +88,32 @@ describe('OTA router access', () => {
 
     await expect(app.channelManager.ota.upsertConnection({ hotelId: HOME_HOTEL, provider: 'airbnb', status: 'active', icalImportUrl })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(otaMocks.upsertOtaConnection).not.toHaveBeenCalled();
+  });
+
+  it('rejects a connection mapped to both a room and a room type', async () => {
+    const app = await caller('hotel_owner');
+
+    await expect(app.channelManager.ota.upsertConnection({
+      hotelId: HOME_HOTEL,
+      provider: 'Booking.com - Deluxe',
+      status: 'active',
+      roomId: '22222222-2222-4222-8222-222222222222',
+      roomTypeId: '33333333-3333-4333-8333-333333333333',
+    })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(otaMocks.upsertOtaConnection).not.toHaveBeenCalled();
+  });
+
+  it('passes a room-type mapping through to the data layer', async () => {
+    otaMocks.upsertOtaConnection.mockResolvedValueOnce({ id: 'connection-2' });
+    const app = await caller('hotel_owner');
+
+    await app.channelManager.ota.upsertConnection({
+      hotelId: HOME_HOTEL,
+      provider: 'Booking.com - Deluxe',
+      status: 'active',
+      roomTypeId: '33333333-3333-4333-8333-333333333333',
+    });
+    expect(otaMocks.upsertOtaConnection.mock.calls[0][5]).toEqual({ roomId: undefined, roomTypeId: '33333333-3333-4333-8333-333333333333' });
   });
 
   it('forbids a hotel_owner from triggering sync for a different hotel', async () => {

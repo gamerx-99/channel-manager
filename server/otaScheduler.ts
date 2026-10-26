@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseAdminClient } from './supabase';
 import { syncOtaConnection, type OtaConnectionRow } from './otaSync';
 
-const SCHEDULED_CONNECTION_COLUMNS = 'id,hotel_id,provider,status,room_id,ical_import_url,last_sync_at,last_error';
+const SCHEDULED_CONNECTION_COLUMNS = 'id,hotel_id,provider,status,room_id,room_type_id,ical_import_url,last_sync_at,last_error';
 const DEFAULT_CONCURRENCY = 3;
 
 /** Constant-time check of `Authorization: Bearer <CRON_SECRET>`; refuses when no secret is configured. */
@@ -23,7 +23,7 @@ export type ScheduledOtaSyncSummary = {
 };
 
 /**
- * Cron entry point: syncs every connection that has an import URL and a room.
+ * Cron entry point: syncs every connection that has an import URL and a room or room type.
  * There is no end user on a cron request, so this is the one place OTA sync runs
  * with the service-role client; sync_ota_ical_blocks accepts that role explicitly.
  */
@@ -35,7 +35,7 @@ export async function runScheduledOtaSync(
     .from('ota_connections')
     .select(SCHEDULED_CONNECTION_COLUMNS)
     .not('ical_import_url', 'is', null)
-    .not('room_id', 'is', null)
+    .or('room_id.not.is.null,room_type_id.not.is.null')
     .neq('status', 'disconnected');
   if (error) throw new Error(`Failed to list OTA connections for scheduled sync: ${error.message}`);
 

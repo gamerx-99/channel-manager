@@ -194,6 +194,14 @@ describe("triggerOtaCalendarSync", () => {
     expect(insertedLogs[0].response.message).toContain("overlap existing bookings");
   });
 
+  it("syncs a room-type connection that has no single room", async () => {
+    connectionRow = { ...connection, room_id: null as unknown as string, room_type_id: "type-deluxe" } as typeof connection;
+    const { triggerOtaCalendarSync } = await import("./otaSync");
+
+    await expect(triggerOtaCalendarSync("token", hotelId, provider)).resolves.toMatchObject({ success: true });
+    expect(rpcCalls).toHaveLength(1);
+  });
+
   it("refuses to sync a connection that has no room, and marks it as error", async () => {
     connectionRow = { ...connection, room_id: null as unknown as string };
     const { triggerOtaCalendarSync } = await import("./otaSync");

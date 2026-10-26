@@ -28,6 +28,7 @@ describe('runScheduledOtaSync', () => {
     const builder: any = {
       select: () => builder,
       not: (column: string) => { filters.push(`not:${column}`); return builder; },
+      or: (expression: string) => { filters.push(`or:${expression}`); return builder; },
       neq: (column: string, value: string) => { filters.push(`neq:${column}=${value}`); return builder; },
       then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: rows, error: null }).then(resolve),
     };
@@ -48,7 +49,8 @@ describe('runScheduledOtaSync', () => {
 
     const summary = await runScheduledOtaSync(client, 2);
 
-    expect(filters).toEqual(['not:ical_import_url', 'not:room_id', 'neq:status=disconnected']);
+    // Room-type connections (room_id null, room_type_id set) are scheduled too.
+    expect(filters).toEqual(['not:ical_import_url', 'or:room_id.not.is.null,room_type_id.not.is.null', 'neq:status=disconnected']);
     expect(summary).toEqual({
       total: 3,
       succeeded: 2,

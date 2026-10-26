@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw, Globe, PlusCircle, Trash2, Link2, Pencil } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -47,6 +47,16 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
     const typeName = roomTypeNames.get(room.room_type_id);
     return typeName ? `${room.room_number} · ${typeName}` : room.room_number;
   };
+  const roomTypes = (hotel?.room_types ?? [])
+    .map(roomType => ({ id: roomType.id, name: roomType.name, count: rooms.filter(room => room.room_type_id === roomType.id).length }))
+    .filter(roomType => roomType.count > 0);
+  const roomTypeLabel = (roomTypeId?: string | null) => {
+    const roomType = roomTypes.find(candidate => candidate.id === roomTypeId);
+    return roomType ? t("otaSync.roomTypeOption", { name: roomType.name, count: roomType.count }) : null;
+  };
+  // A connection blocks either one room or a whole room type; the picker encodes which.
+  const targetOf = (conn: any) => conn.room_type_id ? `type:${conn.room_type_id}` : conn.room_id ? `room:${conn.room_id}` : "";
+  const targetLabel = (conn: any) => conn.room_type_id ? roomTypeLabel(conn.room_type_id) : roomLabel(conn.room_id);
 
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -54,21 +64,21 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
   const [exportUrlDialogConn, setExportUrlDialogConn] = useState<any | null>(null);
   const [newProvider, setNewProvider] = useState("");
   const [newImportUrl, setNewImportUrl] = useState("");
-  const [newRoomId, setNewRoomId] = useState("");
+  const [newTarget, setNewTarget] = useState("");
 
   const closeConnectionDialog = () => {
     setAddDialogOpen(false);
     setEditingProvider(null);
     setNewProvider("");
     setNewImportUrl("");
-    setNewRoomId("");
+    setNewTarget("");
   };
 
   const openEditDialog = (conn: any) => {
     setEditingProvider(conn.provider);
     setNewProvider(conn.provider);
     setNewImportUrl(conn.ical_import_url ?? "");
-    setNewRoomId(conn.room_id ?? "");
+    setNewTarget(targetOf(conn));
     setAddDialogOpen(true);
   };
 
@@ -122,7 +132,8 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
       toast.error(t("otaSync.toastEnterChannelName"));
       return;
     }
-    if (!newRoomId) {
+    const [targetKind, targetId] = newTarget.split(":");
+    if (!targetId) {
       toast.error(t("otaSync.toastRoomRequired"));
       return;
     }
@@ -131,7 +142,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
       provider: newProvider.trim(),
       status: 'active',
       icalImportUrl: newImportUrl.trim() || undefined,
-      roomId: newRoomId,
+      ...(targetKind === "type" ? { roomTypeId: targetId } : { roomId: targetId }),
     });
   };
 
@@ -221,7 +232,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                               </div>
                             </TableCell>
                             <TableCell className="text-xs whitespace-nowrap">
-                              {roomLabel(conn.room_id) ?? <span className="text-muted-foreground italic">{t("otaSync.noRoom")}</span>}
+                              {targetLabel(conn) ?? <span className="text-muted-foreground italic">{t("otaSync.noRoom")}</span>}
                             </TableCell>
                             <TableCell className="max-w-xs">
                               {conn.ical_import_url ? (
@@ -259,9 +270,9 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                                   size="sm"
                                   variant="outline"
                                   className="h-7 px-2 text-xs"
-                                  disabled={isSyncing || !conn.ical_import_url || !conn.room_id}
+                                  disabled={isSyncing || !conn.ical_import_url || !targetOf(conn)}
                                   onClick={() => syncMutation.mutate({ hotelId, provider: conn.provider })}
-                                  title={!conn.ical_import_url ? t("otaSync.setImportUrlFirst") : !conn.room_id ? t("otaSync.setRoomFirst") : t("otaSync.syncNow")}
+                                  title={!conn.ical_import_url ? t("otaSync.setImportUrlFirst") : !targetOf(conn) ? t("otaSync.setRoomFirst") : t("otaSync.syncNow")}
                                 >
                                   {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                                   <span className="ml-1">{t("otaSync.syncButton")}</span>
@@ -374,14 +385,26 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="new-room">{t("otaSync.roomLabel")}</Label>
-                <Select value={newRoomId} onValueChange={setNewRoomId}>
+                <Select value={newTarget} onValueChange={setNewTarget}>
                   <SelectTrigger id="new-room" className="w-full">
                     <SelectValue placeholder={t("otaSync.roomPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {rooms.map(room => (
-                      <SelectItem key={room.id} value={room.id}>{roomLabel(room.id)}</SelectItem>
-                    ))}
+                    <SelectGroup>
+                      <SelectLabel>{t("otaSync.roomGroupSingle")}</SelectLabel>
+                      {rooms.map(room => (
+                        <SelectItem key={room.id} value={`room:${room.id}`}>{roomLabel(room.id)}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                    {roomTypes.length > 0 && <SelectSeparator />}
+                    {roomTypes.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>{t("otaSync.roomGroupType")}</SelectLabel>
+                        {roomTypes.map(roomType => (
+                          <SelectItem key={roomType.id} value={`type:${roomType.id}`}>{roomTypeLabel(roomType.id)}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">{t("otaSync.roomHint")}</p>
@@ -401,7 +424,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
               <Button variant="outline" onClick={closeConnectionDialog}>
                 {t("otaSync.cancel")}
               </Button>
-              <Button onClick={handleSaveConnection} disabled={upsertMutation.isPending || !newProvider.trim() || !newRoomId}>
+              <Button onClick={handleSaveConnection} disabled={upsertMutation.isPending || !newProvider.trim() || !newTarget}>
                 {upsertMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
                 {t("otaSync.save")}
               </Button>

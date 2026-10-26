@@ -1,5 +1,16 @@
 # Handoff log
 
+## [2026-10-26] (A) iCal room-type mode, branch `agent-a/ical-room-type`
+- **Context**: The target market is multi-room guesthouses and boutique hotels in Chiang Mai, Mae Hong Son and Lamphun, and a one-room-per-connection mapping isn't enough for them. This was A's first ticket under `.agent/WORK_SPLIT.md`, built in the A worktree `C:\WORK\channel-manager-a`.
+- **Changes**:
+  1. **Migration** `20261026_ota_ical_room_type_mode.sql` + `verify_…` (run AFTER `20261026_ota_ical_room_sync.sql`). Adds `ota_connections.room_type_id`, with the `ota_connections_single_target` CHECK (at most one of room/room type), and extends the hotel-consistency trigger to room types. `sync_ota_ical_blocks` now places room-type events on the first free non-maintenance room, keeps a block on its current room when it still fits, and reports a conflict only when no room fits. `get_ota_ical_export` closes a room-type date only when every room of the type is occupied, merges consecutive full days into ranges, and counts all occupying bookings. Single-room behaviour is unchanged.
+  2. **Server**: `room_type_id` added to the connection columns. `upsertOtaConnection(…, { roomId, roomTypeId })` clears the other mapping when one is set. The router refuses requests that set both (BAD_REQUEST). Sync accepts either mapping, and the scheduler selects `room_id OR room_type_id`.
+  3. **UI** `OtaSync.tsx`: the picker has a "Single room" group and a "Whole room type" group (`room:<id>` / `type:<id>`), and the table shows "Deluxe · all N rooms". New en/th keys live in the `otaSync` section only.
+  4. **Tests**: new `server/otaIcalRoomTypeMigration.test.ts`; router tests for the both-set refusal and the room-type pass-through; a sync test for room-type connections. Scheduler filter expectation updated for the new `or(...)` filter, because the behaviour changed. `otaRouter.access.test.ts` now warms the router import in `beforeAll`: a cold import took 5.6s, timed out the first test, and leaked a spy call into the next one. No assertion was loosened.
+- **Verification (worktree)**: `pnpm check` OK. `pnpm build` OK. `pnpm test`: 559 passed, 7 failed, 3 skipped. The 7 failures are the same credential-dependent files as before (`inviteAuthUser`, `supabaseAnonKey`, `supabase.credentials`, `supabase.serverRuntime.credentials`). The SQL was not executed here.
+- **Next / status**: Committed on `agent-a/ical-room-type` only, not merged, not pushed. The human must apply the migration and confirm verify PASS **before** this branch reaches `main`, because the new code selects `room_type_id`.
+- **Heads-up**: Known iCal limit: two channels selling the last room of a type inside one sync window can still double book (the conflict is reported). Tell hotels this.
+
 ## [2026-10-26] iCal Sync — real two-way blocked-date sync (review points 1, 2, 3, 4, 6, 7, 10)
 - **Context**: Follow-up to b61584c. The human chose the design in chat (see `.agent/DECISIONS.md` 2026-10-26): one connection = one room, OTA events stored as `bookings` rows (`source='ota_ical'`), Supabase pg_cron every 15 min. They plan to test with a real Booking.com booking plus a direct booking on 2026-10-29.
 - **Changes**:
