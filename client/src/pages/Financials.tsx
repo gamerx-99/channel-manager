@@ -17,6 +17,7 @@ import type { FinancialsRoomTypeBreakdown } from "@/../../server/financials";
 import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
+import { useMfaStepUp } from "@/lib/mfa";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -213,6 +214,7 @@ function MetricCard({ label, value, detail, icon: Icon, tone }: { label: string;
 
 function PromptPaySettings({ hotelId }: { hotelId: string }) {
   const { t } = useTranslation();
+  const { mfaState, triggerStepUp, reset } = useMfaStepUp();
   const [promptPayId, setPromptPayId] = useState("");
   const [timeoutMin, setTimeoutMin] = useState(15);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -224,15 +226,24 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
       setSaveError(null);
       setPromptPayId("");
       setTimeout(() => setSaved(false), 3000);
+      reset();
     },
     onError(err) {
       setSaveError(err.message);
     },
   });
 
-  function handleSave() {
+  async function handleSave() {
     setSaveError(null);
     setSaved(false);
+    const result = await triggerStepUp();
+    if (result === "needs_enroll") {
+      setSaveError("MFA enrollment required. Set up an authenticator first.");
+      return;
+    }
+    if (result !== "verified" && mfaState.status !== "verified") {
+      return;
+    }
     savePromptPay.mutate({
       hotel_id: hotelId,
       promptpay_id: promptPayId.replace(/\D/g, ""),
