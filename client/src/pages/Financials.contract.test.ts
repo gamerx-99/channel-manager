@@ -31,6 +31,10 @@ describe("Financials dashboard contract", () => {
     expect(authorization).toContain('permission !== "property.view_financials"');
   });
 
+  it("uses MFA step-up for PromptPay settings", () => {
+    expect(component).toContain("useMfaStepUp");
+  });
+
   it("includes loading, retry, revenue trend, room-type breakdown, and CSV export contracts", () => {
     // Note: Updated per Rule 6 to match translation dictionary keys used in Financials.tsx
     expect(component).toContain('financials.loadingData');

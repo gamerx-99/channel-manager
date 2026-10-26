@@ -135,4 +135,15 @@ describe('completeHotelOwnerSignup', () => {
     await expect(app.channelManager.completeHotelOwnerSignup({ token: 'stale' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(supabaseMocks.createHotelOwnerMembership).not.toHaveBeenCalled();
   });
+
+  it('rejects when there is no authenticated user (email-confirmation flow)', async () => {
+    const { appRouter } = await import('./routers');
+    const app = appRouter.createCaller({
+      req: {} as Request,
+      res: {} as Response,
+      user: null,
+    });
+    await expect(app.channelManager.completeHotelOwnerSignup({ token: 'abc', userId: newOwnerId } as any)).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    expect(supabaseMocks.redeemSignupLink).not.toHaveBeenCalled();
+  });
 });

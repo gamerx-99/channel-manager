@@ -37,6 +37,11 @@ describe("Hotel owner signup link contract", () => {
     expect(authorization).toContain('"platform.manage_signup_links"');
   });
 
+  it("stores and consumes the pending signup token", () => {
+    expect(component).toContain('hayhost.pendingSignupToken');
+    expect(component).toContain('localStorage');
+  });
+
   it("handles the invalid/expired-or-used link state without leaking which", () => {
     expect(component).toContain("This signup link is no longer valid");
     expect(component).toContain("supabase.auth.signUp");
