@@ -11,9 +11,11 @@ const dbMocks = vi.hoisted(() => ({
 const supabaseMocks = vi.hoisted(() => ({
   createRlsSupabaseClient: vi.fn(() => ({ mocked: true })),
 }));
-// storagePut is used inside uploadHotelMedia router procedure
+// storage helpers are used inside upload/delete hotelMedia router procedures
 const storageMocks = vi.hoisted(() => ({
   storagePut: vi.fn(),
+  uploadHotelMediaToStorage: vi.fn(),
+  deleteHotelMediaFromStorage: vi.fn(),
 }));
 
 vi.mock('./db', () => dbMocks);
@@ -71,6 +73,11 @@ beforeEach(() => {
   storageMocks.storagePut.mockResolvedValue({
     url: 'https://storage.example.com/hotel-media/test.jpg',
   });
+  storageMocks.uploadHotelMediaToStorage.mockResolvedValue({
+    key: `${HOME_HOTEL}/test_123.jpg`,
+    url: 'https://storage.example.com/hotel-media/test.jpg',
+  });
+  storageMocks.deleteHotelMediaFromStorage.mockResolvedValue(undefined);
 });
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -90,7 +97,7 @@ describe('hotel media CRUD — permission boundaries (Phase 06)', () => {
       filename: 'test.jpg',
     });
     expect(uploaded.url).toContain('storage.example.com');
-    expect(storageMocks.storagePut).toHaveBeenCalledOnce();
+    expect(storageMocks.uploadHotelMediaToStorage).toHaveBeenCalledOnce();
 
     // setHotelMediaHero — property.manage_profile
     const hero = await app.channelManager.setHotelMediaHero({

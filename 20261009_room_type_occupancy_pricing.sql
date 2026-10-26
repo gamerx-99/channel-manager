@@ -110,13 +110,10 @@ BEGIN
   END IF;
 
   IF next_child_rule IS DISTINCT FROM current_child_rule THEN
-    -- Update only the target room type's child_rule; other room types keep their rule
-    -- per the spec's "single shared property threshold" the UI should prevent mixed rules,
-    -- but the RPC must not silently corrupt other room types.
     UPDATE public.room_types rt
     SET child_rule = next_child_rule,
         child_rule_limit = NULL
-    WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id;
+    WHERE rt.hotel_id = target_hotel_id;
   END IF;
 
   RETURN QUERY
@@ -179,7 +176,7 @@ BEGIN
           WHEN rt.child_rule = 'height' THEN
             rt.child_rule_limit IS NOT NULL
             AND jsonb_typeof(child.value->'height_cm') = 'number'
-            AND (child.value->>'height_cm')::numeric < rt.child_rule_limit
+            AND (child.value->>'height_cm')::numeric <= rt.child_rule_limit
           ELSE
             (jsonb_typeof(child.value->'age') = 'number'
               AND (child.value->>'age')::numeric BETWEEN 0 AND 2)

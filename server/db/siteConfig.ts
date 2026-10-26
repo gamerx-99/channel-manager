@@ -149,15 +149,15 @@ export async function createHotelMedia(
 export async function deleteHotelMedia(
   client: SupabaseClient,
   mediaId: string,
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; url?: string } | null> {
   const { data, error } = await client
     .from('hotel_media')
     .delete()
     .eq('id', mediaId)
-    .select('id')
+    .select('id,url')
     .maybeSingle();
   throwOnError(error);
-  return data?.id ? { id: data.id as string } : null;
+  return data?.id ? { id: data.id as string, url: (data.url as string) || undefined } : null;
 }
 
 export async function setHotelMediaHero(

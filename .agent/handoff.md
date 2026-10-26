@@ -1187,3 +1187,31 @@ Write every entry so someone who has never seen this session can pick up the wor
 -   P h a s e   2 B   ( H o u s e k e e p i n g   D B   D o m a i n )   e x t r a c t e d   s u c c e s s f u l l y .   T e s t s   p a s s e d .   C o m m i t t e d   a s   5 a 3 4 9 a f . 
  
  
+## [2026-10-27] Agent B: Supabase Storage for Hotel Media & Site Config Public Read RLS
+- **Context**: Resolving Website Builder & Public Hotel blockers per user request & WORK_SPLIT.md.
+  1. Image upload previously broke due to missing Forge environment variables (BUILT_IN_FORGE_API_URL). Replaced with direct Supabase Storage bucket hotel-media under path <hotel_id>/<filename>.
+  2. hotel_site_config was inaccessible to unauthenticated visitors (anon) because RLS required membership, causing PublicHotel booking page to fall back to hardcoded defaults.
+  3. Confirmed status of 20261009_room_type_occupancy_pricing.sql: verified against live PostgREST that it WAS already executed on Supabase. Reverted direct edits to 20261009_room_type_occupancy_pricing.sql and extracted the two RPC fixes into 20261027_room_type_occupancy_fixes.sql.
+- **Changes**:
+  1. Storage Bucket & Site Config Migration:
+     - 20261027_hotel_site_config_public_read.sql: Creates public bucket hotel-media in storage.buckets, adds storage.objects policies (public read, insert/update/delete restricted to users with can_manage_property matching path UUID), and enables public read RLS policy on public.hotel_site_config when public_enabled = true with PostgREST grants.
+     - verify_20261027_hotel_site_config_public_read.sql: 6 read-only checks covering table grant, policy, bucket existence, and storage RLS policies.
+  2. Occupancy RPC Fixes Migration:
+     - 20261027_room_type_occupancy_fixes.sql: Updates update_room_type_with_occupancy_config (scopes child_rule update to target room type) and get_public_room_type_availability_for_guests (uses < rt.child_rule_limit).
+     - verify_20261027_room_type_occupancy_fixes.sql: 6 read-only checks asserting procedure existence, scope, boundaries, and grant permissions.
+  3. Backend Storage Helpers:
+     - server/storage.ts: Added uploadHotelMediaToStorage (uploads buffer to hotel-media bucket at <hotel_id>/<sanitized_name>_<timestamp>_<hash>.<ext> using request-scoped RLS client, returns public URL) and deleteHotelMediaFromStorage.
+     - server/db/siteConfig.ts: deleteHotelMedia now selects and returns { id, url } for cleanup.
+     - server/routers/hotelRouter.ts: Replaced legacy storagePut with uploadHotelMediaToStorage and added storage object cleanup on delete.
+  4. Tests:
+     - server/storage.hotelMedia.test.ts: Added 5 unit tests for Supabase Storage uploads, path sanitization, and deletions.
+     - server/hotelMedia.test.ts: Updated procedure mocks to assert uploadHotelMediaToStorage.
+- **Verification**:
+  - pnpm check: PASS (Exit code 0).
+  - pnpm test: PASS (555 passed, 7 failed [expected credential env], 3 skipped).
+  - pnpm build: PASS (Vite client + esbuild server bundled cleanly, dist/index.js 231.4kb).
+- **Pending Human Actions**:
+  - Run in Supabase SQL editor:
+    1. 20261027_hotel_site_config_public_read.sql + verify_20261027_hotel_site_config_public_read.sql
+    2. 20261027_room_type_occupancy_fixes.sql + verify_20261027_room_type_occupancy_fixes.sql
+    3. 20261025_booking_occupancy_snapshot.sql + verify_20261025_booking_occupancy_snapshot.sql (if not already run)
