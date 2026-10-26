@@ -195,6 +195,9 @@ export const setHotelMediaHeroSchema = z.object({
   media_id: z.string().uuid(),
 });
 
+// Intentionally unguarded by a named permission: returns only the hotels the caller can
+// see through RLS (listManagedHotels is scoped to the caller's memberships), so there is
+// no single hotel to check. Platform admins see every hotel via is_hotel_member().
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
   try {
     return await listManagedHotels(rlsClient(ctx.user.accessToken));
@@ -236,6 +239,8 @@ export const createHotel = protectedProcedure.input(createHotelSchema).mutation(
   }
 });
 
+// Intentionally unguarded by a named permission beyond RLS: getManagedHotel is scoped to
+// the caller's accessible hotels and returns null (mapped to NOT_FOUND) otherwise.
 export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
   let h;
   try {

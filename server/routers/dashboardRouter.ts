@@ -18,6 +18,8 @@ export const dashboardCalendarSchema = z.object({
   days: z.number().int().min(7).max(31),
 }).optional();
 
+// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
+// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   try {
     const hotels = await listManagedHotels(rlsClient(ctx.user.accessToken));
@@ -41,6 +43,8 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   }
 });
 
+// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
+// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const channelPerformance = protectedProcedure.query(async ({ ctx }) => {
   try {
     const client = rlsClient(ctx.user.accessToken);
@@ -64,6 +68,8 @@ export const financials = protectedProcedure.query(async ({ ctx }) => {
   }
 });
 
+// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
+// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchema).query(async ({ ctx, input }) => {
   try {
     const startDate = input?.startDate ?? todayIso();
