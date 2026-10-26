@@ -57,13 +57,16 @@ external piece (see Q1).
   assets), local dev via `wrangler dev`, staging + production environments, D1 + R2 bindings,
   CI-able `pnpm build`. App still talks to Supabase at this point (Hyperdrive or supabase-js over
   fetch) so the Worker can serve the current app end-to-end on a preview URL.
-- **13-02 Schema**: Drizzle schema for every table that exists after all 24 migrations
-  (constraints, CHECKs, unique and partial indexes), generated D1 migrations, a schema test that
-  lists every Postgres table/column and fails if one is missing in D1.
+- [x] **13-02 Schema** (2026-10-27, `agent-c/d1-schema`): Drizzle SQLite schema for all
+  26 app-owned tables in the root migration end state plus `support_access_grants` and
+  `support_access_log`; `hotel_users` includes `support`, `permission_grants`, and
+  `permission_revokes`. Generated D1 migration under `drizzle/d1`; parity test checks the
+  Postgres application-table snapshot against D1. Supabase-internal tables are excluded.
 - **13-03 Scoped data layer**: `db/scope.ts` — repositories take a verified `HotelScope`
   (`hotelId`, role, permissions) and always filter by it; platform scope is explicit. Port
   `server/db/*` onto it. Tenancy test suite (every repository × foreign hotel = denied/empty).
-- **13-04 Port SQL functions to services**: the 32 functions (booking state transitions,
+- **13-04 Port SQL functions to services**: the final definitions of the 24 distinct
+  functions (the earlier count of 32 includes superseded definitions) (booking state transitions,
   occupancy pricing, public availability, `sync_ota_ical_blocks`, `get_ota_ical_export`,
   `transfer_hotel_admin`, signup links, etc.) become TS services with unit + D1 integration
   tests; the double-booking guard implemented as described above.
@@ -87,6 +90,42 @@ external piece (see Q1).
   `server/_core/vite.ts`, `@supabase/*`, `pg`, `mysql2`, Manus/Forge leftovers), archive the
   Supabase project after a retention window, update `CLAUDE.md` (stack, commands, migrations
   section) and `.agent/BANNED_ZONE.md`.
+
+## PostgreSQL behavior handed to 13-03 / 13-04
+
+SQLite/D1 has no PostgreSQL function or RPC execution model, RLS, trigger functions, custom
+ENUM type, GiST exclusion constraint, or `btree_gist`/`pg_cron`/`pg_net` extension support.
+No `CREATE TYPE ... ENUM` appears in the root SQL; categorical values are text columns guarded
+by CHECK constraints and those checks are represented in D1.
+
+- **13-03 scoped data layer**: replace all RLS/`GRANT`/`REVOKE` behavior, `auth.uid()` and
+  `SECURITY DEFINER`/`row_security` gates with verified `HotelScope` checks and support grant
+  validation. `20261027_rls_write_hardening.sql`'s write boundaries are part of this work.
+  Replace `prevent_double_booking` and `prevent_rate_override_overlap` GiST exclusion
+  constraints with transactional application checks and concurrency tests. The OTA
+  same-hotel trigger also needs repository validation.
+- **13-04 service layer**: port these final function behaviors: `is_super_admin`,
+  `is_platform_admin`, `is_hotel_member`, `current_user_has_role`, `can_manage_property`,
+  `can_manage_staff`, `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`,
+  `can_manage_ical`, `is_published_hotel`, `get_public_hotel`,
+  `get_public_room_type_availability`, `get_public_room_type_availability_for_guests`,
+  `update_room_type_with_occupancy_config`, `transition_booking_status`,
+  `transfer_hotel_admin`, `sync_ota_ical_blocks`, `get_ota_ical_export`,
+  `prevent_notification_content_changes`, `update_hotel_payment_settings_updated_at`,
+  `update_payment_sessions_updated_at`, `update_hotel_services_updated_at`, and
+  `ota_connection_room_same_hotel`. Later definitions in the date-ordered SQL replace earlier
+  versions; port the final definitions only.
+- **Triggers**: `notifications_content_immutable`, `hotel_payment_settings_updated_at`,
+  `payment_sessions_updated_at`, `hotel_services_updated_at`, and
+  `trg_ota_connection_room_same_hotel` need service/repository equivalents.
+- **13-05 identity boundary**: UUIDs are stored as text and generated in the application;
+  Supabase `auth.users` references (`hotel_users.user_id`, booking actor IDs, assigned staff,
+  and support grant actors) become Better Auth relationships in 13-05. PostgreSQL `uuid`,
+  `timestamptz`, `date`, and `jsonb` are represented as text/epoch-milliseconds/ISO-date/JSON
+  text respectively. SQLite NUMERIC has no fixed decimal precision; 13-03 must use a safe
+  money representation when porting calculations.
+- **13-06 scheduled work**: `pg_cron`/`pg_net` are replaced by Workers Cron Triggers as already
+  scoped in 13-06; they are not installed in D1.
 
 ## Coordination with B (Antigravity)
 - B's in-flight work that targets Supabase specifically (Supabase Storage upload, a new RLS
