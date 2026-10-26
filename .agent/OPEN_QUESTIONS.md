@@ -6,6 +6,14 @@ answer noted.
 
 ## Open
 
+- [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
+      ASSUMPTION: Resend free tier. Raised 2026-10-26.
+- [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.
+      ASSUMPTION: re-invite (few users pre-launch). Raised 2026-10-26.
+- [ ] Spec 13 Q3: launch domain registered before cutover (e.g. hayhostth.com), so OTA export
+      URLs are issued once. ASSUMPTION: yes, before ticket 13-08. Raised 2026-10-26.
+- [ ] Spec 13 Q4: which Cloudflare account owns Worker, D1, R2 and the domain. Blocks 13-01.
+      Raised 2026-10-26.
 - [ ] Spec 12 (SaaS billing) Q1: plan line-up, feature/limit mix, THB prices, trial length.
       ASSUMPTION: placeholder plan codes `starter`/`pro`/`business` with no prices; prices
       live only in `billing_plans` rows. Raised 2026-10-26.

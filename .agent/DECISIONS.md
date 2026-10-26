@@ -4,6 +4,20 @@ Format: `## <date> — <short title>` then **Decision**, **Why**, **Status** (op
 Newest first. Log the reasoning, not just the outcome — the reasoning is what keeps a
 future ticket from accidentally reversing a decision that was actually deliberate.
 
+## 2026-10-26 — Move the whole platform to Cloudflare before launch (spec 13)
+**Decision** (human): leave Vercel and Supabase entirely. Target stack: one Worker (Hono +
+tRPC), D1 via Drizzle, Better Auth, R2, Cron Triggers, Cloudflare Registrar domain. The move
+happens **before** the first paying hotel, including the database, not as a later phase.
+**Why**: ~US$5/month running cost instead of ~US$45 (Supabase Pro + Vercel Pro), and the savings
+fund AI work across the human's other projects. The human chose to "harden the foundation before
+release rather than rebuild it after" — pre-launch is the cheapest time, with only the human's own
+property as live data and no OTA holding our export URLs yet.
+**Trade-offs accepted**: RLS (83 policies) is replaced by an app-layer hotel-scoped data layer +
+tenancy tests; the Postgres exclusion constraint is replaced by an atomic conditional insert;
+32 SQL functions are rewritten in TS; Supabase Auth is replaced (MFA, invites, signup links).
+The 2026-10-26 iCal pg_cron decision below is superseded by Workers Cron Triggers after 13-06.
+**Status**: closed (direction); execution tracked in `specs/13-cloudflare-migration.md`.
+
 ## 2026-10-26 — iCal sync: one connection = one room; OTA blocks are bookings rows; pg_cron every 15 min
 **Decision** (human chose each option in chat):
 1. Each `ota_connections` row maps to **one physical room** (`room_id`). Booking.com
