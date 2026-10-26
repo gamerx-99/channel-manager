@@ -38,7 +38,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
       return;
     }
     try {
-      await completeSignup.mutateAsync({ token, userId: data.user.id });
+      await completeSignup.mutateAsync({ token });
     } catch (mutationError) {
       setSubmitting(false);
       setError(mutationError instanceof Error ? mutationError.message : "Could not finish setting up your hotel account.");

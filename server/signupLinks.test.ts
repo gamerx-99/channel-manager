@@ -123,16 +123,16 @@ describe('completeHotelOwnerSignup', () => {
     supabaseMocks.redeemSignupLink.mockResolvedValueOnce({ id: 'link-1', hotel_id: hotelId });
     const app = await caller('super_admin');
 
-    await expect(app.channelManager.completeHotelOwnerSignup({ token: 'abc', userId: newOwnerId })).resolves.toEqual({ success: true });
-    expect(supabaseMocks.redeemSignupLink).toHaveBeenCalledWith('abc', newOwnerId);
-    expect(supabaseMocks.createHotelOwnerMembership).toHaveBeenCalledWith(hotelId, newOwnerId);
+    await expect(app.channelManager.completeHotelOwnerSignup({ token: 'abc' })).resolves.toEqual({ success: true });
+    expect(supabaseMocks.redeemSignupLink).toHaveBeenCalledWith('abc', superAdminId);
+    expect(supabaseMocks.createHotelOwnerMembership).toHaveBeenCalledWith(hotelId, superAdminId);
   });
 
   it('rejects an already-used or expired token without touching hotel_users', async () => {
     supabaseMocks.redeemSignupLink.mockResolvedValueOnce(null);
     const app = await caller('super_admin');
 
-    await expect(app.channelManager.completeHotelOwnerSignup({ token: 'stale', userId: newOwnerId })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    await expect(app.channelManager.completeHotelOwnerSignup({ token: 'stale' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(supabaseMocks.createHotelOwnerMembership).not.toHaveBeenCalled();
   });
 });

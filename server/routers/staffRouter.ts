@@ -206,14 +206,17 @@ export const validateSignupLink = rateLimitedProcedure.input(z.object({ token: z
 
 export const completeHotelOwnerSignup = rateLimitedProcedure.input(z.object({
   token: z.string().min(1),
-  userId: z.string().uuid(),
-})).mutation(async ({ input }) => {
-  const redeemed = await redeemSignupLink(input.token, input.userId);
+})).mutation(async ({ ctx, input }) => {
+  if (!ctx.user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required to complete signup.' });
+  }
+  const userId = ctx.user.id;
+  const redeemed = await redeemSignupLink(input.token, userId);
   if (!redeemed) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'This signup link is no longer valid.' });
   }
   try {
-    await createHotelOwnerMembership(redeemed.hotel_id, input.userId);
+    await createHotelOwnerMembership(redeemed.hotel_id, userId);
   } catch (error) {
     return rethrowDomainError(error);
   }
