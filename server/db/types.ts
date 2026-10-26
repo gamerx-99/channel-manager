@@ -118,6 +118,9 @@ export type BookingRecord = {
   rooms: { room_number: string; room_types: { name: string } | null } | null;
   guests: GuestRecord[];
   services?: BookingServiceRecord[];
+  /** Occupancy snapshot at booking time */
+  adults_count?: number;
+  children_count?: number;
 };
 
 export type PaymentSessionRecord = {

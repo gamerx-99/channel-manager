@@ -42,7 +42,7 @@ describe('occupancy pricing by total guest count', () => {
   it('applies a fixed THB difference to each nightly override and rejects a negative net room price', () => {
     const fixedRules = { ...rules, occupancy_pricing: { ...rules.occupancy_pricing, '1': { enabled: true, mode: 'fixed' as const, value: -100 }, '3': { enabled: true, mode: 'fixed' as const, value: 250 } } };
     expect(calculateStayOccupancyPrice({ nightlyRates: [1000, 1500], rules: fixedRules, totalGuestCount: 3, childRateCounts: { infant: 0, age_groups: [0, 0], height: 0 } }).nightlyPrices).toEqual([1250, 1750]);
-    expect(calculateStayOccupancyPrice({ nightlyRates: [50], rules: fixedRules, totalGuestCount: 1, childRateCounts: { infant: 0, age_groups: [0, 0], height: 0 } }).totalPrice).toBe(0);
+    expect(() => calculateStayOccupancyPrice({ nightlyRates: [50], rules: fixedRules, totalGuestCount: 1, childRateCounts: { infant: 0, age_groups: [0, 0], height: 0 } })).toThrow('Total price cannot be negative after adjustments');
   });
 
   it('does not book an occupancy level that the owner has turned off', () => {

@@ -241,6 +241,11 @@ export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAva
   }
 });
 
+/**
+ * DEPRECATED: createPublicBooking bypasses occupancy pricing and guest counts.
+ * Use holdRoomType + confirmBookingDetails flow instead.
+ * Kept for reference but not exposed in the router.
+ */
 export const createPublicBooking = rateLimitedProcedure.input(createPublicBookingSchema).mutation(async ({ input }) => {
   try {
     return await dbCreatePublicBooking(createSupabaseAdminClient(), input);
@@ -271,7 +276,6 @@ export const bookingRouter = router({
   previewTm30,
   createBooking,
   publicHotelAvailability,
-  createPublicBooking,
   holdRoomType,
   confirmBookingDetails,
 });

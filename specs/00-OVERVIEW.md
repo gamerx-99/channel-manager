@@ -48,6 +48,7 @@ partner API access), not sequencing within this repo.
 || `06-website-builder.md` | F | DONE (2026-08-31) | worker-code | — |
 || `07-ota-live-integrations.md` | G | DEFERRED PERMANENTLY (human decision 2026-08-31) | worker-code | — |
 || `08-cross-cutting-hardening.md` | H | DONE (2026-08-31) | worker-bulk / worker-code (mixed, see spec) | — |
+|| `12-saas-plans-billing.md` | SaaS | TODO — blocked on pricing/collection/tax decisions (2026-10-26) | worker-code | 09, 01 |
 
 Note (2026-09-01): Phases 10 (production security closure), 11A/11B (hotel-context
 refactor), and 12A/12B (booking flow + payments) all landed via `.agent/handoff.md`

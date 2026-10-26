@@ -6,6 +6,22 @@ answer noted.
 
 ## Open
 
+- [ ] Spec 12 (SaaS billing) Q1: plan line-up, feature/limit mix, THB prices, trial length.
+      ASSUMPTION: placeholder plan codes `starter`/`pro`/`business` with no prices; prices
+      live only in `billing_plans` rows. Raised 2026-10-26.
+- [ ] Spec 12 Q2: how the platform collects subscription money — PromptPay/bank slip
+      verified with the platform's own SlipOK key (manual renewals), or card auto-renew via
+      Stripe/Opn. ASSUMPTION: v1 = PromptPay + slip behind a `BillingProvider` interface.
+      Raised 2026-10-26.
+- [ ] Spec 12 Q3: is the operating company VAT-registered, and should invoices handle 3%
+      withholding tax (50 ทวิ)? ASSUMPTION: model both VAT and WHT as per-invoice rates
+      defaulting to 0 until answered. Raised 2026-10-26.
+- [ ] Spec 12 Q4: what a `suspended` hotel can still do. ASSUMPTION: read-only back office,
+      public booking page off, iCal export/import and existing bookings keep working (no
+      double-booking risk). Raised 2026-10-26.
+- [ ] Spec 12 Q5: mid-period plan changes. ASSUMPTION: upgrade immediate with prorated
+      invoice; downgrade at period end, refused if usage exceeds the new limits. Raised 2026-10-26.
+
 - [ ] `DATABASE_URL`/`SUPABASE_POOLER_DB_URL` in `.env` are placeholder values, not a
       real pooler connection string — so `server/runPostgresMigration.mjs` and
       `server/verifySupabaseMigration.mjs` can't run against the live project from

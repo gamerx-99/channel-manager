@@ -11,7 +11,8 @@
   6. **Other**: `getGlobalOtaSummary` selects explicit columns (no token) and runs log queries concurrently (point 10). `BookingRecord.source` and channel performance labels include `ota_ical`. `.env.example` documents `CRON_SECRET`.
   7. **Tests**: new `icalFeed.test.ts`, `otaScheduler.test.ts`, `otaIcalRoutes.test.ts`, `otaIcalMigration.test.ts`; `otaSync.test.ts` rewritten for the RPC flow. A parser test caught a real bug: an invalid date threw a RangeError and would have aborted the whole sync. Fixed in the source.
 - **Verification**: `pnpm check` OK. `pnpm build` OK (dist/index.js 231.4kb). `pnpm test`: 550 passed, 7 failed, 3 skipped. The 7 failures are the same credential-dependent files as the previous ticket (`inviteAuthUser`, `supabaseAnonKey`, `supabase.credentials`, `supabase.serverRuntime.credentials`). The SQL was **not executed** anywhere: the Supabase MCP has no access to project `roznxbvhflwrfvybmhtm`.
-- **Next ticket / status**: Not committed, not pushed. **Order matters**: apply the migration and confirm the verify script shows all PASS **before** deploying, because the new code selects `room_id`/`ical_export_token` and the OTA page fails without them. Then set `CRON_SECRET` in Vercel, check `SUPABASE_SERVICE_ROLE_KEY` is set, deploy, and run `ota_ical_sync_cron_setup.sql`.
+- **Update 2026-10-26**: The human applied the migration to `roznxbvhflwrfvybmhtm`, and the verify script shows 10/10 PASS. With explicit approval, b61584c and d23447b were pushed to origin/main (`042de19..d23447b`). Live smoke test: `/api/ical/<unknown>.ics` returns 404 "Calendar not found.", `POST /api/cron/ota-ical-sync` without a secret returns 401, and the home page returns 200. Pending: the human's end-to-end test with the Booking.com booking and the 2026-10-29 direct booking, then `CRON_SECRET` + `ota_ical_sync_cron_setup.sql`.
+- **Next ticket / status (original)**: Not committed, not pushed. **Order matters**: apply the migration and confirm the verify script shows all PASS **before** deploying, because the new code selects `room_id`/`ical_export_token` and the OTA page fails without them. Then set `CRON_SECRET` in Vercel, check `SUPABASE_SERVICE_ROLE_KEY` is set, deploy, and run `ota_ical_sync_cron_setup.sql`.
 - **Heads-up**: ASSUMPTIONs are hotel time zone Asia/Bangkok, and scheduled no-op successes are not logged. OTA blocks show up in Bookings as price-0 rows named "<provider> · <summary>". Still open: no notification on conflicts (the notifications table exists, but nothing uses it here) and no `ota_sync_logs` retention.
 
 ## [2026-10-26] iCal Sync structural fixes — small items (review points 5, 8, 9, 11)
@@ -24,6 +25,26 @@
 - **Verification**: `pnpm check` OK. `pnpm build` OK (dist/index.js 223.1kb). OTA-related tests 5 files / 49 passed. Full `pnpm test`: 519 passed, 7 failed, 3 skipped. The 7 failures are all in `inviteAuthUser`, `supabaseAnonKey`, `supabase.credentials` and `supabase.serverRuntime.credentials`, which need real Supabase credentials (placeholder `.env`) and do not import the OTA code. An earlier run showed 10 failures across 7 files, so a few other tests look load-flaky.
 - **Next ticket / status**: Not committed. No push (Hard Rule 3).
 - **Heads-up (still open, needs a spec before code)**: (1) sync only fingerprints VEVENTs and never applies blocked dates to `availability`, although ROLE_AND_OTA_CONTRACT.md says it should; (2) no `.ics` export endpoint, and nothing sets `ical_export_url`; (3) no scheduled sync (no `crons` in vercel.json); (4) the snapshot lives in the `ota_sync_logs` payload; (6) status vocabulary is free text; (7) `ota_connections` is defined twice in `supabase_migration_production.sql`; (10) N+1 in `getGlobalOtaSummary`.
+
+## [2026-10-25] Occupancy & child pricing review fixes — Major issues addressed
+- **Context**: Independent review of commits `2118ff0..042de19` (occupancy & guest/child pricing) found Critical C1 (migration unapplied), Major M1–M5, Minor issues, and Questions. This ticket addresses M1–M5 and selected Minors in code.
+- **Changes**:
+  1. **M1** `20261009_room_type_occupancy_pricing.sql`: RPC `update_room_type_with_occupancy_config` now updates only the target room type's `child_rule`/`child_rule_limit` (was updating ALL room types in the hotel). Added comment documenting the "single shared property threshold" expectation.
+  2. **M2** `server/routers/hotelRouter.ts`: Validator now uses effective `child_rule` (with 'age' default) when checking height limit requirement, closing bypass where `child_rule_limit: null` without `child_rule` skipped validation.
+  3. **M3** `server/db/types.ts`, `server/db/booking.ts`: Added `adults_count`/`children_count` to `BookingRecord`; `holdRoomType` now persists them. Created migration `20261025_booking_occupancy_snapshot.sql` + verify script.
+  4. **M4** `client/src/pages/HotelDetail.tsx`: Fixed Mojibake — corrupted `'â€”'` (misencoded em dash) restored to `'—'`.
+  5. **M5** `server/routers/bookingRouter.ts`: Removed `createPublicBooking` from router; kept procedure exported but deprecated with comment (no caller in client — flow uses `holdRoomType` + `confirmBookingDetails`).
+  6. **Minor** `shared/occupancyPricing.ts`: Added validation `percent > -100`; replaced `Math.max(0, roomPrice+childPrice)` clamp with explicit negative-total check throwing error (test updated to expect error); fixed height boundary from `<=` to `<` per "below" spec; deduplicated `guestsCountedForCapacity`/`totalGuestCount` in `fitsOccupancy`.
+  7. **Minor** `20261009_room_type_occupancy_pricing.sql`: Height boundary in SQL RPC changed from `<=` to `<` for consistency.
+  8. **Pre-existing** `tsconfig.json` + `drizzle-orm-mysql-core.d.ts`: Added declaration for legacy drizzle MySQL template to silence TS7016.
+- **Verification**:
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm test`: PASS (478 passed, 7 failed, 3 skipped) — 7 failures are pre-existing env/credentials tests (Supabase keys, inviteAuthUser) unrelated to this work.
+  - `pnpm build`: PASS (Vite client + esbuild server bundled cleanly).
+- **Remaining (C1)**: Migration `20261009_room_type_occupancy_pricing.sql` and its verify script must be applied by human in Supabase SQL editor before deployment — code reads new columns (`base_occupancy`, `occupancy_pricing`, `child_rule`, etc.) and will error 42703 if migration not applied.
+- **New migration pending**: `20261025_booking_occupancy_snapshot.sql` + verify script need human application for `adults_count`/`children_count` columns.
+- **Blockers**: Production migrations (C1 + new migration) require manual Supabase SQL editor application.
+- **Next**: Human applies both migrations + verify scripts; reviewer approves; push/deploy with explicit approval.
 
 ## [2026-10-09 09:52] Public inventory RPC follow-up
 - Project: D:\system make\channel-manager-mvp-latest.

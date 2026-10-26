@@ -518,8 +518,10 @@ export async function holdRoomType(
         source: 'manual',
         status: 'held',
         expires_at: expiresAt,
+        adults_count: input.adults,
+        children_count: input.children.length,
       } as any)
-      .select('id,hotel_id,room_id,guest_name,check_in,check_out,price,source,status,expires_at,created_at')
+      .select('id,hotel_id,room_id,guest_name,check_in,check_out,price,source,status,expires_at,created_at,adults_count,children_count')
       .single();
 
     if (insertError) {

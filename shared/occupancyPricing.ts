@@ -53,7 +53,8 @@ export function defaultOccupancyPricing(baseOccupancy: number, maxOccupancy = ba
 
 function matchesChildRate(child: ChildMeasurement, rule: OccupancyPricingRules): 'infant' | number | 'height' | null {
   if (rule.child_rule === 'height') {
-    return 'height_cm' in child && rule.child_rule_limit != null && Number(child.height_cm) <= Number(rule.child_rule_limit)
+    // Spec says "below" the limit, not "at or below"
+    return 'height_cm' in child && rule.child_rule_limit != null && Number(child.height_cm) < Number(rule.child_rule_limit)
       ? 'height'
       : null;
   }
@@ -90,10 +91,9 @@ export function fitsOccupancy(
   qualifyingChildren: number,
   adultEquivalentChildren: number,
 ): boolean {
-  const guestsCountedForCapacity = adults + adultEquivalentChildren + (rules.children_count_toward_max ? qualifyingChildren : 0);
   const totalGuestCount = adults + adultEquivalentChildren + (rules.children_count_toward_max ? qualifyingChildren : 0);
   const level = rules.occupancy_pricing[String(totalGuestCount)];
-  return guestsCountedForCapacity <= rules.max_occupancy
+  return totalGuestCount <= rules.max_occupancy
     && adults + adultEquivalentChildren >= 1
     && Boolean(level?.enabled);
 }
@@ -102,6 +102,12 @@ function applyChildRate(count: number, rate: ChildRate, normalNightlyRate: numbe
   if (count === 0 || rate.mode === 'free') return 0;
   const value = Number(rate.value);
   return rate.mode === 'fixed' ? count * value : count * normalNightlyRate * value / 100;
+}
+
+function validateOccupancyAdjustment(value: number, mode: PriceAdjustmentMode): void {
+  if (mode === 'percent' && value <= -100) {
+    throw new Error('Percent adjustment must be greater than -100%.');
+  }
 }
 
 export function calculateOccupancyPrice(input: {
@@ -114,6 +120,7 @@ export function calculateOccupancyPrice(input: {
   const level = rules.occupancy_pricing[String(totalGuestCount)];
   if (!level?.enabled) throw new Error(`Occupancy level ${totalGuestCount} is not bookable.`);
   const value = Number(level.value);
+  validateOccupancyAdjustment(value, level.mode);
   const roomPrice = level.mode === 'fixed'
     ? nightlyRate + value
     : nightlyRate * (1 + value / 100);
@@ -124,7 +131,9 @@ export function calculateOccupancyPrice(input: {
   const childPrice = applyChildRate(childRateCounts.infant, rules.child_rates.infant, nightlyRate)
     + ageGroupPrices
     + applyChildRate(childRateCounts.height, rules.child_rates.height, nightlyRate);
-  return Math.round(Math.max(0, roomPrice + childPrice) * 100) / 100;
+  const total = roomPrice + childPrice;
+  if (total < 0) throw new Error('Total price cannot be negative after adjustments.');
+  return Math.round(total * 100) / 100;
 }
 
 export function calculateStayOccupancyPrice(input: {
