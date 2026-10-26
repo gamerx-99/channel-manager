@@ -1,5 +1,21 @@
 # Handoff log
 
+## [2026-10-27] Spec 14 ticket 14-03a: server-side security fixes (branch `agent-a/next`)
+- **What happened**: Seven server-side fixes landed, each as its own commit:
+  1. `completeHotelOwnerSignup` now uses `ctx.user.id` (userId removed from schema).
+  2. `verifySlip` derives hotel from the payment session and rejects a mismatched supplied hotel_id.
+  3. `deleteRateOverride` requires hotel_id and scopes the delete via room_types.hotel_id.
+  4. `markRead` requires hotelId and filters `id AND hotel_id`.
+  5. `auth.me` no longer returns accessToken (client does not read it).
+  6. `hotels`/`hotel`/`dashboard`/`channelPerformance`/`dashboardCalendar` documented as RLS-scoped
+     (no named gate); `hotel` kept RLS-mapped to NOT_FOUND.
+  7. `savePromptPayId` now requires recent MFA.
+- **Verification**: `pnpm test`: 97 passed | 4 failed (inviteAuthUser ×4 + 3 credential env, pre-existing) | 2 skipped;
+  619 passed | 7 failed | 3 skipped. `pnpm check`: 0 errors. `pnpm build`: OK (dist/index.js 240.3kb).
+- **Assumptions**: `hotel` left unguarded beyond RLS to preserve the RLS-hidden→NOT_FOUND mapping;
+  `completeHotelOwnerSignup` stays rate-limited (not protected) so the post-signUp flow still works,
+  using ctx.user when present.
+
 ## [2026-10-27] Spec 14 tickets 14-00 + 14-01: RLS write hardening + core authorization (branch `agent-a/next`)
 - **What happened**: Landed the urgent RLS write-hardening migration (14-00) and the
   core permission system (14-01) on `agent-a/next`, uncommitted until now.
