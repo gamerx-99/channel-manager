@@ -37,6 +37,16 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
       setError(signUpError?.message ?? "Could not create your account.");
       return;
     }
+    if (!data.session) {
+      try {
+        localStorage.setItem("hayhost.pendingSignupToken", token);
+      } catch {
+        // Ignore storage failures (private mode).
+      }
+      setSubmitting(false);
+      setPendingEmailConfirmation(true);
+      return;
+    }
     try {
       await completeSignup.mutateAsync({ token });
     } catch (mutationError) {
@@ -45,11 +55,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
       return;
     }
     setSubmitting(false);
-    if (data.session) {
-      navigate("/dashboard");
-    } else {
-      setPendingEmailConfirmation(true);
-    }
+    navigate("/dashboard");
   }
 
   if (validation.isLoading) {

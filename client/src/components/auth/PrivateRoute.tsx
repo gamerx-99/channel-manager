@@ -13,6 +13,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
   const [location, navigate] = useLocation();
   const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery();
+  const completeSignup = trpc.channelManager.completeHotelOwnerSignup.useMutation();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
   const {
     data: visibleHotels,
@@ -49,6 +50,22 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     })();
     return () => { cancelled = true; };
   }, [isAuthenticated, user, roleLoading, authRolesKey]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user || roleLoading) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("hayhost.pendingSignupToken") : null;
+    if (!token) return;
+    let cancelled = false;
+    completeSignup.mutateAsync({ token }).then(() => {
+      if (cancelled) return;
+      try { localStorage.removeItem("hayhost.pendingSignupToken"); } catch { /* ignore */ }
+    }).catch(() => {
+      if (cancelled) return;
+      try { localStorage.removeItem("hayhost.pendingSignupToken"); } catch { /* ignore */ }
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, roleLoading]);
 
   if (loading || roleLoading || hotelsLoading || !mfaChecked) return <main className="auth-loading">Checking your secure session…</main>;
   if (!isAuthenticated || !user) return null;
