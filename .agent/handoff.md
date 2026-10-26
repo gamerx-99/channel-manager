@@ -1,5 +1,29 @@
 # Handoff log
 
+## [2026-10-27] Spec 14 tickets 14-00 + 14-01: RLS write hardening + core authorization (branch `agent-a/next`)
+- **What happened**: Landed the urgent RLS write-hardening migration (14-00) and the
+  core permission system (14-01) on `agent-a/next`, uncommitted until now.
+  - 14-00: `20261027_rls_write_hardening.sql` + verify + migration test. Blocks hotel
+    staff from writing platform roles and re-gates 8 write surfaces on `can_manage_*`.
+  - 14-01: `shared/permissions.ts` (13 toggles, grants/revokes, support grants up to
+    168h), `shared/authorization.ts` (+support, CROSS_HOTEL_READ_ROLES,
+    operations.cancel_bookings, PermissionMembership), `server/supabase.ts`,
+    `routerUtils.ts`, `staffRouter.ts` updated; tests adjusted for the new role.
+- **Review of 14-00 SQL**: policy names in the migration match the live migrations
+  (hotel_users_manage_scoped, hotel_payment_settings_*, payment_sessions_*, booking_services_*,
+  rate_overrides_*, housekeeping_tasks_*, message_threads_*, messages_*, hotel_services_*).
+  Frontend has no direct writes to the hardened tables (all go through tRPC), so no breakage
+  expected. SELECT policies are untouched.
+- **Verification**: `pnpm test`: 97 files passed | 4 failed (inviteAuthUser x4 + 3 credential
+  env, all pre-existing) | 2 skipped; 619 passed | 7 failed | 3 skipped. `pnpm check`: 0 errors.
+- **Commits**: 14-00 committed separately as
+  `fix(db): close RLS write gaps and platform-role escalation (spec 14-00)`; 14-01 committed
+  as `feat(authz): core permission system and support grants (spec 14-01)`.
+- **Human action required**: apply `20261027_rls_write_hardening.sql` then its verify in
+  Supabase SQL editor (all 7 rows must read PASS); review the platform-role account list
+  and remove unknowns. Do not run `20261027_booking_cancellation_permission.sql`.
+- **Next**: 14-02 schema migration (permission_grants/revokes, support role, support_access_grants).
+
 ## [2026-10-27] (A) Spec 13 ticket 13-01: Cloudflare Worker scaffold, branch `agent-a/next`
 - **Context**: On 2026-10-27 the human decided to finish the Cloudflare move before the live OTA test, because the test has to be repeated on the new domain anyway. This is the first ticket of `specs/13-cloudflare-migration.md`. Files touched outside A's usual list: `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `server/supabase.ts`, `server/_core/context.ts`, `server/_core/trpc.ts`. B should avoid these until this lands.
 - **Changes**:
