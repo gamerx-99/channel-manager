@@ -31,8 +31,7 @@ workers_dev = true
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "hayhost-staging"
-# Replace with the id printed by `wrangler d1 create hayhost-staging`.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "f7fb735d-59a0-4a56-a8b4-bacb654d53d7"
 migrations_dir = "drizzle/d1"
 
 [[env.staging.r2_buckets]]
