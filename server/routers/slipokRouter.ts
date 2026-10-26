@@ -83,6 +83,7 @@ export const slipokRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+      requireRecentMfaVerification(ctx.user);
       const client = rlsClient(ctx.user.accessToken);
       try {
         await savePromptPaySettings(client, input.hotel_id, input.promptpay_id, input.payment_timeout_minutes);
