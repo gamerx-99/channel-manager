@@ -73,7 +73,7 @@ describe('rate overrides access — revenue.manage_pricing_rules', () => {
     await expect(app.channelManager.deleteRateOverride({ hotel_id: HOME_HOTEL, rate_override_id: OVERRIDE_ID })).resolves.toMatchObject({
       success: true,
     });
-    expect(dbMocks.deleteRateOverride).toHaveBeenCalledWith({ mocked: true }, OVERRIDE_ID);
+    expect(dbMocks.deleteRateOverride).toHaveBeenCalledWith({ mocked: true }, OVERRIDE_ID, HOME_HOTEL);
   });
 
   it('lets revenue_manager manage rate overrides via hotel membership', async () => {
