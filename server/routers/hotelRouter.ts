@@ -24,7 +24,7 @@ import {
   deleteHotelMedia as dbDeleteHotelMedia,
   setHotelMediaHero as dbSetHotelMediaHero,
 } from '../db';
-import { storagePut } from '../storage';
+import { uploadHotelMediaToStorage, deleteHotelMediaFromStorage } from '../storage';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
   requirePermission,
@@ -453,8 +453,7 @@ export const uploadHotelMedia = protectedProcedure.input(uploadHotelMediaSchema)
       buffer = Buffer.from(input.base64, 'base64');
     }
 
-    const relKey = `hotel-media/${input.hotel_id}/${input.filename}`;
-    const { url } = await storagePut(relKey, buffer, contentType);
+    const { url } = await uploadHotelMediaToStorage(client, input.hotel_id, input.filename, buffer, contentType);
 
     const existingMedia = await dbListHotelMedia(client, input.hotel_id);
     const is_hero = existingMedia.length === 0;
@@ -482,12 +481,18 @@ export const deleteHotelMedia = protectedProcedure.input(deleteHotelMediaSchema)
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This media item could not be deleted.' });
     }
 
+    if (deleted.url) {
+      await deleteHotelMediaFromStorage(client, deleted.url).catch(err => {
+        console.warn('[Storage] Failed to remove object from storage bucket:', err);
+      });
+    }
+
     const remaining = await dbListHotelMedia(client, input.hotel_id);
     if (remaining.length > 0 && !remaining.some(m => m.is_hero)) {
       await dbSetHotelMediaHero(client, input.hotel_id, remaining[0].id);
     }
 
-    return deleted;
+    return { id: deleted.id };
   } catch (error) {
     return rethrowDomainError(error);
   }

@@ -2,7 +2,75 @@
 // Uploads via Forge Server presigned URL to S3 (PUT direct).
 // Downloads return /manus-storage/{key} paths served via 307 redirect.
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
+
+export const HOTEL_MEDIA_BUCKET = "hotel-media";
+
+/**
+ * Uploads a hotel media file directly to Supabase Storage bucket `hotel-media` under path `<hotel_id>/<filename>`.
+ * Uses the caller's RLS Supabase client (scoped with the user's accessToken) so PostgreSQL
+ * storage.objects RLS policies are enforced.
+ */
+export async function uploadHotelMediaToStorage(
+  client: SupabaseClient,
+  hotelId: string,
+  filename: string,
+  data: Buffer | Uint8Array,
+  contentType = "application/octet-stream",
+): Promise<{ key: string; url: string }> {
+  const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const dotIdx = sanitized.lastIndexOf(".");
+  const base = dotIdx === -1 ? sanitized : sanitized.slice(0, dotIdx);
+  const ext = dotIdx === -1 ? "" : sanitized.slice(dotIdx);
+  const uniqueSuffix = `${Date.now()}_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+  const objectName = `${hotelId}/${base}_${uniqueSuffix}${ext}`;
+
+  const { error: uploadError } = await client.storage
+    .from(HOTEL_MEDIA_BUCKET)
+    .upload(objectName, data, {
+      contentType,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(`Failed to upload media to storage: ${uploadError.message}`);
+  }
+
+  const { data: publicData } = client.storage
+    .from(HOTEL_MEDIA_BUCKET)
+    .getPublicUrl(objectName);
+
+  return { key: objectName, url: publicData.publicUrl };
+}
+
+/**
+ * Removes a file from the `hotel-media` bucket if the URL or path belongs to it.
+ */
+export async function deleteHotelMediaFromStorage(
+  client: SupabaseClient,
+  urlOrPath: string,
+): Promise<void> {
+  let objectPath = urlOrPath;
+  const publicPrefix = `/storage/v1/object/public/${HOTEL_MEDIA_BUCKET}/`;
+  const idx = urlOrPath.indexOf(publicPrefix);
+  if (idx !== -1) {
+    objectPath = urlOrPath.slice(idx + publicPrefix.length);
+  }
+
+  if (!objectPath || objectPath.startsWith("http://") || objectPath.startsWith("https://")) {
+    // Not a relative bucket object path, skip
+    return;
+  }
+
+  const { error } = await client.storage
+    .from(HOTEL_MEDIA_BUCKET)
+    .remove([objectPath]);
+
+  if (error) {
+    console.warn(`[Storage] Failed to delete media ${objectPath}:`, error.message);
+  }
+}
 
 function getForgeConfig() {
   const forgeUrl = ENV.forgeApiUrl;
