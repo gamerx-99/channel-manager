@@ -1,7 +1,9 @@
 # 14 Per-person permissions, support access, and platform-role hardening
 
 Status: IN PROGRESS — 14-00 (RLS write hardening) and 14-01 (core authorization)
-committed on `agent-a/next` (2026-10-27), not yet pushed to `main`. 14-02..14-05 pending.
+committed on `agent-a/next` (2026-10-27), not yet pushed to `main`. 14-02 CANCELLED
+by owner decision (2026-10-27); its D1 schema moves to 13-02 and enforcement to
+13-03. 14-03..14-05 remain pending and are tracked separately.
 Depends on: 12 (SaaS plans/billing) for plan-gated SlipOK quotas (14-05); spec 13 for
 eventual port to the Cloudflare data layer.
 Owner-tier: cross-cutting (shared authorization + server + client + SQL).
@@ -38,15 +40,11 @@ owner-approved access to a hotel without cross-hotel read.
     (`super_admin`, `admin` only — support has no cross-hotel read),
     `operations.cancel_bookings` permission, `PermissionMembership` with resolved
     permissions, `hasHotelPermission` honours stored permissions.
-  - `server/supabase.ts`: read `permission_grants`/`permission_revokes` (with a
-    fallback until 14-02 adds the columns), resolve per membership.
+  - `server/supabase.ts`: legacy Postgres permission data source; its permission
+    fields move to D1 under 13-02 and 13-03.
   - `server/routerUtils.ts`, `server/routers/staffRouter.ts`: thread permissions
     through; allow `support` as an assignable role.
-- [ ] **14-02 Schema migration** — add `permission_grants`/`permission_revokes` columns,
-  add `support` role to the `hotel_users` role check, add `support_access_grants`
-  table, make the RLS permission helpers read per-person grants, drop cross-hotel
-  read for `super_admin`/`admin` (spec 14 removes it entirely).
-  Do NOT run `20261027_booking_cancellation_permission.sql` (Codex) — 14-02 replaces it.
+- [x] **14-02 Postgres RLS changes CANCELLED** — owner decision (2026-10-27): Supabase will be deleted after the Cloudflare migration, so no Postgres RLS changes will be applied. The `permission_grants`/`permission_revokes` and `support` role data model belongs in D1 ticket 13-02; permission and support-grant enforcement belongs in Cloudflare ticket 13-03. Any migration under the old Supabase design is superseded.
 - [ ] **14-03 Server work** — permission switch system + support keys endpoints,
   super-admin dashboard, fix `completeHotelOwnerSignup` to use the logged-in user id,
   fix `verifySlip` to use the session hotel and check the payee account, fix
