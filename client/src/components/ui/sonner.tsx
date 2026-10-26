@@ -10,11 +10,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          // The app theme (index.css) has no shadcn --popover/--border tokens; without
+          // these fallbacks the toast background resolved to transparent.
+          "--normal-bg": "var(--popover, var(--white))",
+          "--normal-text": "var(--popover-foreground, var(--ink))",
+          "--normal-border": "var(--border, var(--rule-strong))",
         } as React.CSSProperties
       }
+      toastOptions={{ style: { boxShadow: "0 12px 32px rgba(60, 45, 40, .18)" } }}
       {...props}
     />
   );

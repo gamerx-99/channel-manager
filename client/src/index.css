@@ -32,6 +32,86 @@
   --radius: 18px;
 }
 
+/* shadcn/ui token bridge. The ui/* components (Dialog, Select, Popover, Dropdown, Card,
+   Toast, Table, Tabs...) style themselves with bg-popover, bg-background, border-border,
+   text-muted-foreground, etc. Tailwind v4 only generates those utilities when the colors
+   exist in @theme, and none did, so every overlay rendered transparent. Map them onto the
+   Quiet Ledger palette above so they follow the app theme. */
+:root {
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--white);
+  --card-foreground: var(--ink);
+  --popover: var(--white);
+  --popover-foreground: var(--ink);
+  --primary: var(--pine);
+  --primary-foreground: #ffffff;
+  --secondary: var(--paper-deep);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-deep);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--pine-soft);
+  --accent-foreground: var(--pine-dark);
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --border: var(--rule-strong);
+  --input: var(--rule-strong);
+  --ring: var(--pine);
+  --chart-1: var(--pine);
+  --chart-2: var(--amber);
+  --chart-3: var(--slate);
+  --chart-4: #c9a48f;
+  --chart-5: var(--pine-dark);
+  --sidebar: var(--white);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--pine);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--pine-soft);
+  --sidebar-accent-foreground: var(--pine-dark);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--pine);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Layered, so every unlayered app rule above/below still wins where it sets a border. */
+@layer base {
+  * { border-color: var(--border); }
+}
+
 body { background: var(--paper); color: var(--ink); }
 .app-shell { background: var(--paper); }
 .sidebar { width: 236px; padding: 28px 16px 20px; background: #fff; border-right-color: var(--rule); }
