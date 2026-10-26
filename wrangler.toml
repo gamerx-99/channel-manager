@@ -28,6 +28,10 @@ bucket_name = "hayhost-media-dev"
 name = "hayhost-staging"
 workers_dev = true
 
+# NODE_ENV=production keeps tRPC from returning stack traces to clients.
+[env.staging.vars]
+NODE_ENV = "production"
+
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "hayhost-staging"
@@ -43,6 +47,7 @@ name = "hayhost"
 workers_dev = false
 
 [env.production.vars]
+NODE_ENV = "production"
 PUBLIC_APP_URL = "https://www.hayhostth.com"
 
 [[env.production.d1_databases]]
