@@ -49,6 +49,10 @@ export const otaRouter = router({
         status: z.enum(['active', 'disconnected']),
         icalImportUrl: z.string().trim().refine(isPublicIcalUrl, ICAL_URL_ERROR).optional(),
         roomId: z.string().uuid().nullable().optional(),
+        roomTypeId: z.string().uuid().nullable().optional(),
+      }).refine(data => !(data.roomId && data.roomTypeId), {
+        message: 'Choose either a room or a room type, not both.',
+        path: ['roomTypeId'],
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -60,7 +64,7 @@ export const otaRouter = router({
           input.provider,
           input.status,
           input.icalImportUrl,
-          input.roomId
+          { roomId: input.roomId, roomTypeId: input.roomTypeId }
         );
       } catch (error) {
         return rethrowDomainError(error);

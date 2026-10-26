@@ -10,7 +10,10 @@ export interface OtaConnectionRow {
   hotel_id: string;
   provider: string; // free-text channel label, e.g. 'Booking.com - 101'
   status: OtaConnectionStatus | string;
+  /** Single-room mode. Mutually exclusive with room_type_id. */
   room_id?: string | null;
+  /** Room-type mode: events go to any free room of the type. */
+  room_type_id?: string | null;
   ical_import_url?: string | null;
   last_sync_at?: string | null;
   last_error?: string | null;
@@ -47,7 +50,7 @@ export type IcalBlockSyncResult = {
   conflicts: IcalSyncConflict[];
 };
 
-const CONNECTION_COLUMNS = 'id,hotel_id,provider,status,room_id,ical_import_url,last_sync_at,last_error,ical_export_token';
+const CONNECTION_COLUMNS = 'id,hotel_id,provider,status,room_id,room_type_id,ical_import_url,last_sync_at,last_error,ical_export_token';
 const MAX_FEED_BYTES = 2_000_000;
 
 function getPublicAppUrl(): string {
@@ -136,7 +139,7 @@ export async function getGlobalOtaSummary(accessToken: string): Promise<any[]> {
   const client = createRlsSupabaseClient(accessToken);
   const { data: connections, error: connError } = await client
     .from('ota_connections')
-    .select('id,hotel_id,provider,status,room_id,ical_import_url,last_sync_at,last_error,hotels(name)');
+    .select('id,hotel_id,provider,status,room_id,room_type_id,ical_import_url,last_sync_at,last_error,hotels(name)');
 
   if (connError) {
     // Graceful fallback if table does not exist or schema cache is not yet refreshed
@@ -178,8 +181,14 @@ export async function upsertOtaConnection(
   provider: string,
   status: string,
   icalImportUrl?: string,
-  roomId?: string | null,
+  target: { roomId?: string | null; roomTypeId?: string | null } = {},
 ): Promise<OtaConnectionView> {
+  // A connection blocks one room OR one room type; choosing one clears the other.
+  const mapping = target.roomTypeId
+    ? { room_id: null, room_type_id: target.roomTypeId }
+    : target.roomId !== undefined
+      ? { room_id: target.roomId, room_type_id: null }
+      : {};
   const client = createRlsSupabaseClient(accessToken);
   const { data, error } = await client
     .from('ota_connections')
@@ -188,7 +197,7 @@ export async function upsertOtaConnection(
       provider,
       status,
       ical_import_url: icalImportUrl,
-      room_id: roomId,
+      ...mapping,
       updated_at: new Date().toISOString()
     }, { onConflict: 'hotel_id,provider' })
     .select(CONNECTION_COLUMNS)
@@ -259,8 +268,8 @@ export async function syncOtaConnection(
     if (!connection.ical_import_url) {
       throw new Error(`No iCal import URL is configured for ${connection.provider}.`);
     }
-    if (!connection.room_id) {
-      throw new Error(`Choose the room that ${connection.provider} blocks before syncing.`);
+    if (!connection.room_id && !connection.room_type_id) {
+      throw new Error(`Choose the room or room type that ${connection.provider} blocks before syncing.`);
     }
 
     const events = await fetchIcalEvents(connection.ical_import_url);
