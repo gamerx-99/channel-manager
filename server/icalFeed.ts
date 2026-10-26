@@ -15,8 +15,9 @@ export type IcalEvent = {
 export type IcalExportEvent = { uid: string; start: string; end: string };
 
 // ASSUMPTION: hotels operate on Asia/Bangkok time (the UI's display zone), so UTC
-// date-times in a feed are converted to that local date. Floating/TZID times keep
-// their written date.
+// date-times in a feed are converted to that local date. DTSTART and DTEND are
+// converted independently; DTEND remains the exclusive checkout date. Floating
+// times keep their written date.
 const HOTEL_UTC_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 function addDays(isoDate: string, days: number): string {
@@ -48,7 +49,7 @@ function unescapeText(value: string): string {
     .trim();
 }
 
-type ContentLine = { name: string; value: string };
+type ContentLine = { name: string; value: string; parameters: Record<string, string> };
 
 function parseContentLine(line: string): ContentLine | null {
   let inQuotes = false;
@@ -56,8 +57,16 @@ function parseContentLine(line: string): ContentLine | null {
     const character = line[index];
     if (character === '"') inQuotes = !inQuotes;
     if (character === ':' && !inQuotes) {
-      const name = line.slice(0, index).split(';')[0].trim().toUpperCase();
-      return name ? { name, value: line.slice(index + 1) } : null;
+      const [rawName, ...rawParameters] = line.slice(0, index).split(';');
+      const name = rawName.trim().toUpperCase();
+      const parameters: Record<string, string> = {};
+      for (const parameter of rawParameters) {
+        const separator = parameter.indexOf('=');
+        if (separator <= 0) continue;
+        const key = parameter.slice(0, separator).trim().toUpperCase();
+        parameters[key] = parameter.slice(separator + 1).trim().replace(/^"|"$/g, '');
+      }
+      return name ? { name, value: line.slice(index + 1), parameters } : null;
     }
   }
   return null;
@@ -98,18 +107,67 @@ export function parseIcalEvents(feed: string): IcalEvent[] {
     }
     if (current && nestedDepth === 0 && !current.has(line.name)) {
       current.set(line.name, line.value);
+      if (line.parameters.TZID) current.set(`${line.name}_TZID`, line.parameters.TZID);
     }
   }
 
   return events;
 }
 
+function parseZonedDate(value: string, timeZone: string | undefined): string | null {
+  if (!timeZone || !/^\d{8}T\d{6}$/.test(value)) return parseIcalDate(value);
+  const match = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/);
+  if (!match) return null;
+  const [, year, month, day, hour, minute, second] = match;
+  const wallClockAsUtc = Date.UTC(+year, +month - 1, +day, +hour, +minute, +second);
+  const written = new Date(wallClockAsUtc);
+  if (written.getUTCFullYear() !== +year || written.getUTCMonth() !== +month - 1 || written.getUTCDate() !== +day
+    || written.getUTCHours() !== +hour || written.getUTCMinutes() !== +minute || written.getUTCSeconds() !== +second) return null;
+  try {
+    const sourceFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+    let instantMs = wallClockAsUtc;
+    // Resolve the source zone's offset by comparing its formatted wall clock with
+    // the requested local wall clock. Repeating handles DST offset boundaries.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const parts = sourceFormatter.formatToParts(new Date(instantMs));
+      const part = (type: string) => parts.find(item => item.type === type)?.value;
+      const formattedWallClock = Date.UTC(
+        Number(part('year')), Number(part('month')) - 1, Number(part('day')),
+        Number(part('hour')), Number(part('minute')), Number(part('second')),
+      );
+      const adjustment = wallClockAsUtc - formattedWallClock;
+      instantMs += adjustment;
+      if (adjustment === 0) break;
+    }
+    const hotelParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(instantMs));
+    const part = (type: string) => hotelParts.find(item => item.type === type)?.value;
+    const result = `${part('year')}-${part('month')}-${part('day')}`;
+    return /^\d{4}-\d{2}-\d{2}$/.test(result) ? result : null;
+  } catch {
+    return null;
+  }
+}
+
 function toIcalEvent(properties: Map<string, string>): IcalEvent | null {
   if (properties.get('STATUS')?.trim().toUpperCase() === 'CANCELLED') return null;
 
-  const start = parseIcalDate(properties.get('DTSTART') ?? '');
+  const start = parseZonedDate(properties.get('DTSTART') ?? '', properties.get('DTSTART_TZID'));
   if (!start) return null;
-  const parsedEnd = parseIcalDate(properties.get('DTEND') ?? '');
+  const parsedEnd = parseZonedDate(properties.get('DTEND') ?? '', properties.get('DTEND_TZID'));
   const end = parsedEnd && parsedEnd > start ? parsedEnd : addDays(start, 1);
   const summary = unescapeText(properties.get('SUMMARY') ?? '');
   const uid = properties.get('UID')?.trim() || `nouid-${start}-${end}`;

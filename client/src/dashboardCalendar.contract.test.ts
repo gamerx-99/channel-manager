@@ -21,7 +21,8 @@ describe('Dashboard Calendar View contract', () => {
   });
 
   it('projects bookings, availability states, and iCal log activity onto each day', () => {
-    expect(router).toContain("booking.status !== 'cancelled' && booking.check_in <= date && booking.check_out > date");
+    expect(router).toContain("listBookingOccupancyForHotel(client, hotel.id, dates[0], occupancyEndDate)");
+    expect(router).toContain("booking.check_in <= date && booking.check_out > date && isBookingOccupyingInventory(booking)");
     expect(router).toContain("status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy')");
     expect(router).toContain('syncEvents: hotelOtaEvents.filter');
     expect(router).toContain('getUpdatedItemCount(log)');

@@ -50,16 +50,32 @@ describe('parseIcalEvents', () => {
     expect(event).toMatchObject({ start: '2026-10-29', end: '2026-10-30' });
   });
 
-  it('keeps the written date for TZID and floating times', () => {
+  it('converts TZID times to the hotel date and keeps floating times as written', () => {
     const [event] = parseIcalEvents(calendar(
       'BEGIN:VEVENT',
       'UID:tz',
-      'DTSTART;TZID="Asia/Bangkok":20261029T140000',
-      'DTEND;TZID="Asia/Bangkok":20261031T120000',
+      'DTSTART;TZID="America/Los_Angeles":20261029T140000',
+      'DTEND;TZID="America/Los_Angeles":20261031T200000',
       'END:VEVENT',
     ));
 
-    expect(event).toMatchObject({ start: '2026-10-29', end: '2026-10-31' });
+    expect(event).toMatchObject({ start: '2026-10-30', end: '2026-11-01' });
+
+    const [floating] = parseIcalEvents(calendar(
+      'BEGIN:VEVENT', 'UID:floating', 'DTSTART:20261029T140000', 'DTEND:20261031T120000', 'END:VEVENT',
+    ));
+    expect(floating).toMatchObject({ start: '2026-10-29', end: '2026-10-31' });
+  });
+
+  it('drops timed events with an unknown TZID instead of silently using the wrong date', () => {
+    const events = parseIcalEvents(calendar(
+      'BEGIN:VEVENT',
+      'UID:unknown-zone',
+      'DTSTART;TZID="Not/A_Real_Zone":20261029T140000',
+      'DTEND;TZID="Not/A_Real_Zone":20261030T120000',
+      'END:VEVENT',
+    ));
+    expect(events).toEqual([]);
   });
 
   it('turns a missing or non-positive DTEND into one night', () => {

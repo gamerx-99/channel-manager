@@ -11,7 +11,7 @@ export async function listBookingOccupancyForHotel(
 ) {
   const { data, error } = await client
     .from('bookings')
-    .select('room_id,check_in,check_out,status,expires_at')
+    .select('room_id,check_in,check_out,status,expires_at,source,guest_name')
     .eq('hotel_id', hotelId)
     .lt('check_in', checkOut)
     .gt('check_out', checkIn);
@@ -22,6 +22,8 @@ export async function listBookingOccupancyForHotel(
     check_out: string;
     status: BookingStatus;
     expires_at: string | null;
+    source: string;
+    guest_name: string | null;
   }>;
 }
 

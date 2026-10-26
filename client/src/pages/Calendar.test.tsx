@@ -35,7 +35,7 @@ const mocks = vi.hoisted(() => {
   };
 
   const bookingOccupancyQuery = {
-    data: [],
+    data: [] as any[],
     isLoading: false,
     error: null,
     refetch: vi.fn(),
@@ -78,88 +78,78 @@ vi.mock("wouter", () => ({
 
 import Calendar from "./Calendar";
 
-describe("Calendar Month View & View Mode Switcher", () => {
+describe("Availability month calendar", () => {
   afterEach(() => cleanup());
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.bookingOccupancyQuery.data = [];
   });
 
-  it("renders week view by default with the table of room types", () => {
+  it("renders one month calendar and has no week/month switcher", () => {
     render(<Calendar id="hotel-1" />);
-    expect(screen.getByRole("button", { name: /^Week$/i, pressed: true })).toBeTruthy();
-    expect(screen.getByRole("table")).toBeTruthy();
-    expect(screen.getByText("Deluxe Ocean")).toBeTruthy();
-    expect(screen.getByText("Standard Suite")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Week$/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Month$/i })).toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.getByLabelText("Previous month")).toBeTruthy();
+    expect(screen.getByLabelText("Next month")).toBeTruthy();
   });
 
-  it("toggles to month view when clicking Month option", async () => {
+  it("uses the three-click IN, OUT, IN range selection", async () => {
     const user = userEvent.setup();
     render(<Calendar id="hotel-1" />);
-
-    const monthToggle = screen.getByRole("button", { name: /^Month$/i });
-    await user.click(monthToggle);
-
-    expect(monthToggle.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.queryByRole("table")).toBeNull();
-    // Month weekdays headers
+    const cells = screen.getAllByRole("button").filter(button => button.className.includes("calendar-month-cell") && !button.className.includes("is-outside"));
+    expect(cells.length).toBeGreaterThanOrEqual(28);
     expect(screen.getByText("Sun")).toBeTruthy();
     expect(screen.getByText("Mon")).toBeTruthy();
     expect(screen.getByText("Sat")).toBeTruthy();
+
+    await user.click(cells[2]);
+    expect(screen.getByText("Click a date to set OUT; click again to start a new range.")).toBeTruthy();
+    await user.click(cells[5]);
+    expect(cells[5].textContent).toContain("OUT");
+    await user.click(cells[8]);
+    expect(screen.getByText("Click a date to set OUT; click again to start a new range.")).toBeTruthy();
   });
 
-  it("switches back to week view when clicking a day in month view", async () => {
+  it("lets a selected date change group IN/OUT and edit price only", async () => {
     const user = userEvent.setup();
     render(<Calendar id="hotel-1" />);
+    const cell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && !button.className.includes("is-outside"));
+    expect(cell).toBeTruthy();
+    await user.click(cell!);
+    await user.click(screen.getByRole("button", { name: "Set all OUT" }));
+    await user.click(screen.getByRole("button", { name: "Edit prices" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledTimes(2);
+    expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ rooms_available: 0 }));
 
-    // Switch to month view
-    await user.click(screen.getByRole("button", { name: /^Month$/i }));
-    expect(screen.queryByRole("table")).toBeNull();
-
-    // Find calendar day buttons and click one
-    const dayCells = screen.getAllByRole("button").filter(b => b.className.includes("calendar-month-cell"));
-    expect(dayCells.length).toBeGreaterThanOrEqual(28);
-
-    await user.click(dayCells[10]);
-
-    // Should switch back to week view with table rendered
-    expect(screen.getByRole("button", { name: /^Week$/i, pressed: true })).toBeTruthy();
-    expect(screen.getByRole("table")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Edit prices" }));
+    expect(screen.getAllByLabelText("Price").length).toBe(2);
+    expect(screen.queryByLabelText("Available rooms")).toBeNull();
   });
 
-  it("handles navigation in both week and month view modes", async () => {
+  it("shows bookings in a dark date tile with their OTA platform", () => {
+    const date = new Date();
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const next = new Date(date);
+    next.setDate(next.getDate() + 1);
+    const checkout = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+    mocks.bookingOccupancyQuery.data = [{
+      room_id: "room-1", check_in: iso, check_out: checkout, status: "confirmed", expires_at: null,
+      source: "ota_ical", guest_name: "Booking.com · CLOSED - Not available",
+    }];
+    render(<Calendar id="hotel-1" />);
+    const bookedCell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && button.className.includes("has-booking"));
+    expect(bookedCell).toBeTruthy();
+    expect(bookedCell?.textContent).toContain("Booking.com");
+  });
+
+  it("navigates month by month and returns to today", async () => {
     const user = userEvent.setup();
     render(<Calendar id="hotel-1" />);
-
-    // Prev / Next in week mode
-    const prevBtn = screen.getByLabelText(/Previous week/i);
-    const nextBtn = screen.getByLabelText(/Next week/i);
-    expect(prevBtn).toBeTruthy();
-    expect(nextBtn).toBeTruthy();
-
-    await user.click(nextBtn);
+    await user.click(screen.getByLabelText("Next month"));
     await user.click(screen.getByRole("button", { name: /^Today$/i }));
-
-    // Switch to month mode
-    await user.click(screen.getByRole("button", { name: /^Month$/i }));
-    expect(screen.getByLabelText(/Previous month/i)).toBeTruthy();
-    expect(screen.getByLabelText(/Next month/i)).toBeTruthy();
-
-    await user.click(screen.getByLabelText(/Next month/i));
-    await user.click(screen.getByRole("button", { name: /^Today$/i }));
-  });
-
-  it("displays aggregate room availability and lowest price in month cells", async () => {
-    const user = userEvent.setup();
-    render(<Calendar id="hotel-1" />);
-
-    await user.click(screen.getByRole("button", { name: /^Month$/i }));
-
-    const cellButtons = screen.getAllByRole("button").filter(b => b.className.includes("calendar-month-cell"));
-    expect(cellButtons.length).toBeGreaterThanOrEqual(28);
-    // Every cell has status dot and room ratio
-    const firstCell = cellButtons[0];
-    expect(firstCell.querySelector(".dot")).toBeTruthy();
-    expect(firstCell.querySelector(".month-cell-status")).toBeTruthy();
+    expect(screen.getByLabelText("Previous month")).toBeTruthy();
   });
 });

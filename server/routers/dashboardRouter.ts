@@ -6,10 +6,12 @@ import {
   getManagedHotel,
   listAvailabilityForHotel,
   listManagedHotelsForFinancials,
+  listBookingOccupancyForHotel,
 } from '../db';
 import { getGlobalOtaSummary, getUpdatedItemCount } from '../otaSync';
 import { buildChannelPerformanceSummary } from '../channelPerformance';
 import { buildFinancialsSummary } from '../financials';
+import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
 
 export const dashboardCalendarSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
@@ -74,9 +76,11 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
     ]);
 
     const hotelCalendars = await Promise.all(hotels.map(async (hotel) => {
-      const [hotelDetail, availability] = await Promise.all([
+      const occupancyEndDate = addIsoDays(dates[dates.length - 1], 1);
+      const [hotelDetail, availability, occupancy] = await Promise.all([
         getManagedHotel(client, hotel.id),
         listAvailabilityForHotel(client, hotel.id),
+        listBookingOccupancyForHotel(client, hotel.id, dates[0], occupancyEndDate),
       ]);
       if (!hotelDetail) return null;
 
@@ -105,13 +109,24 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
         })),
         days: dates.map(date => ({
           date,
-          bookings: hotel.bookings.filter(booking => booking.status !== 'cancelled' && booking.check_in <= date && booking.check_out > date).length,
+          bookings: occupancy.filter(booking =>
+            booking.check_in <= date && booking.check_out > date && isBookingOccupyingInventory(booking),
+          ).length,
           roomTypes: hotelDetail.room_types.map(roomType => {
             const saved = availabilityByKey.get(`${roomType.id}:${date}`);
             const totalRooms = roomCountByType[roomType.id] ?? 0;
-            const available = saved?.rooms_available ?? (date === todayIso()
-              ? hotelDetail.rooms.filter(room => room.room_type_id === roomType.id && room.status === 'available').length
-              : totalRooms);
+            const roomIds = new Set(hotelDetail.rooms
+              .filter(room => room.room_type_id === roomType.id)
+              .map(room => room.id));
+            const bookedRoomIds = new Set(occupancy
+              .filter(booking => booking.room_id !== null
+                && roomIds.has(booking.room_id)
+                && booking.check_in <= date
+                && booking.check_out > date
+                && isBookingOccupyingInventory(booking))
+              .map(booking => booking.room_id));
+            const allotment = Math.min(totalRooms, saved?.rooms_available ?? totalRooms);
+            const available = Math.max(0, allotment - bookedRoomIds.size);
             return {
               roomTypeId: roomType.id,
               available,

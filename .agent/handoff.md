@@ -1229,3 +1229,9 @@ Write every entry so someone who has never seen this session can pick up the wor
     1. 20261027_hotel_site_config_public_read.sql + verify_20261027_hotel_site_config_public_read.sql
     2. 20261027_room_type_occupancy_fixes.sql + verify_20261027_room_type_occupancy_fixes.sql
     3. 20261025_booking_occupancy_snapshot.sql + verify_20261025_booking_occupancy_snapshot.sql (if not already run)
+
+## [2026-10-27] Calendar availability and iCal sync fixes
+- **Context**: Improve availability visibility and calendar sync behavior for OTA connections.
+- **Changes**: Replaced the week/month switcher with a single month calendar; added three-click IN/OUT range selection, bulk and per-room availability updates, price editing, and dark booked dates labeled with their source platform. Dashboard availability now subtracts active booking occupancy. iCal parsing now respects TZID-local event times and converts them to the hotel timezone.
+- **Verification**: Focused tests passed (22/22); `pnpm check` passed; `pnpm build:worker` dry-run passed. Full test suite: 573 passed, 3 skipped, 7 failed because Supabase credentials were not configured for the credential-dependent tests.
+- **Deployment**: Deployed to Cloudflare Worker staging `hayhost-staging` at https://hayhost-staging.lannatc.workers.dev; deployment version `0483798c-f2e2-463c-98bd-4bd970436f12`. Confirmed `/hotels` loads in browser. No Supabase schema or migration changes.
