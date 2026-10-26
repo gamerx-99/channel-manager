@@ -1,0 +1,218 @@
+-- =====================================================================
+-- Migration: 20261027_room_type_occupancy_fixes.sql
+-- Target: channel-manager (Supabase / Postgres)
+--
+-- Context:
+--   Follow-up to 20261009_room_type_occupancy_pricing.sql:
+--   1. update_room_type_with_occupancy_config: scope child_rule update
+--      to the target room type rather than overwriting all room types
+--      in the hotel.
+--   2. get_public_room_type_availability_for_guests: adjust height
+--      boundary from <= to < to match "below threshold" rule consistently.
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION public.update_room_type_with_occupancy_config(
+  target_hotel_id uuid,
+  target_room_type_id uuid,
+  target_name text,
+  target_capacity integer,
+  target_base_price numeric,
+  target_occupancy_config jsonb
+)
+RETURNS SETOF public.room_types
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  current_child_rule text;
+  current_capacity integer;
+  next_child_rule text;
+  occupancy_level_count integer;
+BEGIN
+  IF jsonb_typeof(target_occupancy_config) IS DISTINCT FROM 'object' THEN
+    RAISE EXCEPTION 'Room type occupancy configuration is invalid.' USING ERRCODE = '22023';
+  END IF;
+  IF target_capacity IS NULL OR target_capacity < 1 THEN
+    RAISE EXCEPTION 'Room capacity must be a positive integer.' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM 1
+  FROM public.room_types rt
+  WHERE rt.hotel_id = target_hotel_id
+  ORDER BY rt.id
+  FOR UPDATE;
+
+  SELECT rt.child_rule, rt.capacity INTO current_child_rule, current_capacity
+  FROM public.room_types rt
+  WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Room type not found.' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF target_capacity IS DISTINCT FROM current_capacity
+    AND (NOT (target_occupancy_config ? 'occupancy_pricing') OR NOT (target_occupancy_config ? 'child_rates')) THEN
+    RAISE EXCEPTION 'A capacity change requires a complete occupancy pricing schedule and child rates.' USING ERRCODE = '22023';
+  END IF;
+
+  IF target_occupancy_config ? 'occupancy_pricing'
+    AND NOT (target_occupancy_config ? 'base_occupancy') THEN
+    RAISE EXCEPTION 'Base occupancy is required when saving an occupancy pricing schedule.' USING ERRCODE = '22023';
+  END IF;
+
+  IF target_occupancy_config ? 'max_occupancy'
+    AND (target_occupancy_config->>'max_occupancy')::integer IS DISTINCT FROM target_capacity THEN
+    RAISE EXCEPTION 'Maximum occupancy must match room capacity.' USING ERRCODE = '22023';
+  END IF;
+
+  IF target_occupancy_config ? 'occupancy_pricing' THEN
+    IF jsonb_typeof(target_occupancy_config->'occupancy_pricing') IS DISTINCT FROM 'object' THEN
+      RAISE EXCEPTION 'Occupancy pricing must be an object.' USING ERRCODE = '22023';
+    END IF;
+    SELECT COUNT(*) INTO occupancy_level_count
+    FROM jsonb_object_keys(target_occupancy_config->'occupancy_pricing');
+    IF occupancy_level_count <> target_capacity OR EXISTS (
+      SELECT 1
+      FROM jsonb_object_keys(target_occupancy_config->'occupancy_pricing') AS configured(key)
+      WHERE NOT configured.key = ANY(ARRAY(SELECT generate_series(1, target_capacity)::text))
+    ) THEN
+      RAISE EXCEPTION 'Occupancy pricing must define every guest count from one through room capacity.' USING ERRCODE = '22023';
+    END IF;
+  END IF;
+
+  next_child_rule := COALESCE(target_occupancy_config->>'child_rule', current_child_rule);
+  IF next_child_rule NOT IN ('age', 'height') THEN
+    RAISE EXCEPTION 'Child rule must be age or height.' USING ERRCODE = '22023';
+  END IF;
+
+  IF next_child_rule = 'height' AND (
+    NOT (target_occupancy_config ? 'child_rule_limit')
+    OR target_occupancy_config->>'child_rule_limit' IS NULL
+    OR (target_occupancy_config->>'child_rule_limit')::numeric <= 0
+  ) THEN
+    RAISE EXCEPTION 'Height rule requires a positive child rule limit in cm.' USING ERRCODE = '22023';
+  END IF;
+
+  IF next_child_rule IS DISTINCT FROM current_child_rule THEN
+    -- Update only the target room type's child_rule; other room types keep their rule
+    -- per the spec's "single shared property threshold" the UI should prevent mixed rules,
+    -- but the RPC must not silently corrupt other room types.
+    UPDATE public.room_types rt
+    SET child_rule = next_child_rule,
+        child_rule_limit = NULL
+    WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id;
+  END IF;
+
+  RETURN QUERY
+  UPDATE public.room_types rt
+  SET name = target_name,
+      capacity = target_capacity,
+      base_price = target_base_price,
+      base_occupancy = COALESCE((target_occupancy_config->>'base_occupancy')::integer, rt.base_occupancy),
+      max_occupancy = target_capacity,
+      occupancy_pricing = COALESCE(target_occupancy_config->'occupancy_pricing', rt.occupancy_pricing),
+      child_rule = next_child_rule,
+      child_rule_limit = CASE WHEN target_occupancy_config ? 'child_rule_limit'
+        THEN NULLIF(target_occupancy_config->>'child_rule_limit', '')::numeric
+        WHEN next_child_rule IS DISTINCT FROM current_child_rule THEN NULL
+        ELSE rt.child_rule_limit END,
+      child_rates = COALESCE(target_occupancy_config->'child_rates', rt.child_rates),
+      children_count_toward_max = COALESCE((target_occupancy_config->>'children_count_toward_max')::boolean, rt.children_count_toward_max)
+  WHERE rt.id = target_room_type_id AND rt.hotel_id = target_hotel_id
+  RETURNING rt.*;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) FROM anon;
+GRANT EXECUTE ON FUNCTION public.update_room_type_with_occupancy_config(uuid, uuid, text, integer, numeric, jsonb) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_public_room_type_availability_for_guests(
+  target_hotel_id uuid,
+  target_check_in date,
+  target_check_out date,
+  target_adults integer,
+  target_children jsonb
+)
+RETURNS TABLE (room_type_id uuid, rooms_available integer)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+SET row_security = off
+AS $$
+BEGIN
+  IF target_check_in IS NULL OR target_check_out IS NULL OR target_check_out <= target_check_in THEN
+    RAISE EXCEPTION 'Check-out date must be after check-in date.' USING ERRCODE = '22023';
+  END IF;
+  IF target_adults IS NULL OR target_adults < 1 OR jsonb_typeof(target_children) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'Guest counts are invalid.' USING ERRCODE = '22023';
+  END IF;
+  IF jsonb_array_length(target_children) > 20 THEN
+    RAISE EXCEPTION 'Guest counts are invalid.' USING ERRCODE = '22023';
+  END IF;
+
+  RETURN QUERY
+  WITH eligible_room_types AS (
+    SELECT rt.id
+    FROM public.room_types rt
+    JOIN public.hotels h ON h.id = rt.hotel_id
+    CROSS JOIN LATERAL (
+      SELECT
+        COUNT(*) FILTER (WHERE CASE
+          WHEN rt.child_rule = 'height' THEN
+            rt.child_rule_limit IS NOT NULL
+            AND jsonb_typeof(child.value->'height_cm') = 'number'
+            AND (child.value->>'height_cm')::numeric < rt.child_rule_limit
+          ELSE
+            (jsonb_typeof(child.value->'age') = 'number'
+              AND (child.value->>'age')::numeric BETWEEN 0 AND 2)
+            OR EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements(COALESCE(rt.child_rates->'age_groups', '[]'::jsonb)) age_group(value)
+              WHERE jsonb_typeof(child.value->'age') = 'number'
+                AND (child.value->>'age')::numeric BETWEEN (age_group.value->>'min_age')::numeric AND (age_group.value->>'max_age')::numeric
+            )
+        END)::integer AS qualifying_children
+      FROM jsonb_array_elements(target_children) child(value)
+    ) guest_counts
+    WHERE h.id = target_hotel_id
+      AND h.public_enabled = true
+      AND target_adults + (jsonb_array_length(target_children) - guest_counts.qualifying_children)
+        + CASE WHEN rt.children_count_toward_max THEN guest_counts.qualifying_children ELSE 0 END
+        <= rt.max_occupancy
+      AND COALESCE((rt.occupancy_pricing->(
+        target_adults + (jsonb_array_length(target_children) - guest_counts.qualifying_children)
+          + CASE WHEN rt.children_count_toward_max THEN guest_counts.qualifying_children ELSE 0 END
+      )::text->>'enabled')::boolean, false)
+  ),
+  room_inventory AS (
+    SELECT eligible.id AS room_type_id, r.id AS room_id
+    FROM eligible_room_types eligible
+    JOIN public.rooms r ON r.room_type_id = eligible.id
+    WHERE r.hotel_id = target_hotel_id
+      AND r.status IS DISTINCT FROM 'maintenance'
+  ),
+  occupied_rooms AS (
+    SELECT DISTINCT b.room_id
+    FROM public.bookings b
+    JOIN room_inventory inventory ON inventory.room_id = b.room_id
+    WHERE b.check_in < target_check_out
+      AND b.check_out > target_check_in
+      AND (
+        b.status IN ('confirmed', 'checked_in')
+        OR (b.status IN ('held', 'pending_payment', 'pending_verification')
+            AND (b.expires_at IS NULL OR b.expires_at >= now()))
+      )
+  )
+  SELECT inventory.room_type_id,
+    GREATEST(0, COUNT(DISTINCT inventory.room_id) - COUNT(DISTINCT occupied.room_id))::integer
+  FROM room_inventory inventory
+  LEFT JOIN occupied_rooms occupied ON occupied.room_id = inventory.room_id
+  GROUP BY inventory.room_type_id
+  HAVING COUNT(DISTINCT inventory.room_id) - COUNT(DISTINCT occupied.room_id) > 0;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_public_room_type_availability_for_guests(uuid, date, date, integer, jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_public_room_type_availability_for_guests(uuid, date, date, integer, jsonb) TO anon, authenticated;
