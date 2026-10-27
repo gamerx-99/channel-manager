@@ -1,11 +1,12 @@
-import { getTableName } from "drizzle-orm";
+import { getTableColumns, getTableName } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { d1Schema } from "../drizzle/d1-schema";
+import { agents, bookings, d1Schema, hotels } from "../drizzle/d1-schema";
 
-// Snapshot of app-owned public tables from the root SQL files in migration order.
-// Supabase-managed auth, storage, and migration bookkeeping tables are excluded.
+// App-owned public tables from the root SQL migration end state, plus owner-directed
+// D1-only additions. Supabase-managed auth, storage, and migration tables are excluded.
 const postgresPublicTables = [
   "availability",
+  "agents",
   "booking_services",
   "booking_status_log",
   "bookings",
@@ -39,5 +40,19 @@ describe("D1 schema parity", () => {
   it("contains every app-owned Postgres table and no Supabase-internal tables", () => {
     const d1Tables = Object.values(d1Schema).map(table => getTableName(table)).sort();
     expect(d1Tables).toEqual(postgresPublicTables);
+  });
+
+  it("includes acquisition, agent, and booking-consent schema additions", () => {
+    expect(Object.keys(getTableColumns(hotels))).toEqual(expect.arrayContaining([
+      "acquisitionSource",
+      "referredByHotelId",
+      "agentId",
+    ]));
+    expect(Object.keys(getTableColumns(agents))).toEqual(expect.arrayContaining([
+      "id", "name", "phone", "email", "status", "createdAt",
+    ]));
+    expect(Object.keys(getTableColumns(bookings))).toEqual(expect.arrayContaining([
+      "marketingConsent", "marketingConsentAt",
+    ]));
   });
 });

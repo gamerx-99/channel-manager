@@ -1,7 +1,8 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01 committed on `agent-a/next` (2026-10-27), not yet deployed to staging;
-approved direction (human, 2026-10-26), blocked only on the questions below for the tickets that
-need them. Owner: A (cross-cutting; B coordinates per `.agent/WORK_SPLIT.md`).
+Status: IN PROGRESS — 13-01, 13-02, and 13-02b are implemented locally; 13-03 is in progress.
+13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
+the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
+`.agent/WORK_SPLIT.md`).
 Depends on: — (supersedes the hosting/Supabase assumptions in `CLAUDE.md` once complete)
 Owner-tier: worker-code
 
@@ -62,6 +63,9 @@ external piece (see Q1).
   `support_access_log`; `hotel_users` includes `support`, `permission_grants`, and
   `permission_revokes`. Generated D1 migration under `drizzle/d1`; parity test checks the
   Postgres application-table snapshot against D1. Supabase-internal tables are excluded.
+- [x] **13-02b Schema additions** (2026-10-28, `agent-c/d1-schema`): hotel acquisition source,
+  referral hotel and agent links, `agents`, and public-booking marketing consent. Added as a new
+  D1 migration; initial migration remains unchanged.
 - **13-03 Scoped data layer**: `db/scope.ts` — repositories take a verified `HotelScope`
   (`hotelId`, role, permissions) and always filter by it; platform scope is explicit. Port
   `server/db/*` onto it. Tenancy test suite (every repository × foreign hotel = denied/empty).

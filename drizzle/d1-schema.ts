@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  foreignKey,
   index,
   integer,
   numeric,
@@ -19,6 +20,15 @@ const json = <T>(name: string) => text(name, { mode: "json" }).$type<T>();
 const money = (name: string) => numeric(name, { mode: "number" });
 const maxSupportGrantMs = Math.max(...SUPPORT_GRANT_DURATION_HOURS) * 60 * 60 * 1000;
 
+export const agents = sqliteTable("agents", {
+  id: id(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  status: text("status").notNull(),
+  createdAt: createdAt(),
+}, table => [check("agents_status_check", sql`${table.status} in ('active', 'inactive')`)]);
+
 export const hotels = sqliteTable("hotels", {
   id: id(),
   name: text("name").notNull(),
@@ -27,7 +37,18 @@ export const hotels = sqliteTable("hotels", {
   ownerContact: text("owner_contact").notNull(),
   publicEnabled: integer("public_enabled", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),
-}, table => [uniqueIndex("hotels_slug_key").on(table.slug)]);
+  acquisitionSource: text("acquisition_source").notNull().default("direct"),
+  referredByHotelId: text("referred_by_hotel_id"),
+  agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+}, table => [
+  check("hotels_acquisition_source_check", sql`${table.acquisitionSource} in ('direct', 'referral', 'agent')`),
+  uniqueIndex("hotels_slug_key").on(table.slug),
+  foreignKey({
+    name: "hotels_referred_by_hotel_id_hotels_id_fk",
+    columns: [table.referredByHotelId],
+    foreignColumns: [table.id],
+  }).onDelete("set null"),
+]);
 
 export const hotelUsers = sqliteTable("hotel_users", {
   id: id(),
@@ -136,6 +157,8 @@ export const bookings = sqliteTable("bookings", {
   createdBy: text("created_by"),
   adultsCount: integer("adults_count"),
   childrenCount: integer("children_count"),
+  marketingConsent: integer("marketing_consent", { mode: "boolean" }).notNull().default(false),
+  marketingConsentAt: text("marketing_consent_at"),
 }, table => [
   check("bookings_valid_dates_check", sql`${table.checkOut} > ${table.checkIn}`),
   check("bookings_price_check", sql`${table.price} >= 0`),
@@ -441,6 +464,7 @@ export const supportAccessLog = sqliteTable("support_access_log", {
 ]);
 
 export const d1Schema = {
+  agents,
   hotels,
   hotelUsers,
   hotelMedia,
