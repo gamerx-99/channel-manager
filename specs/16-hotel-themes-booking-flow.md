@@ -1,5 +1,5 @@
 # 16 Hotel landing themes + one themed booking flow
-Status: TODO (draft 2026-10-28, owner-approved direction)
+Status: IN PROGRESS: 16-01, 16-02 and 16-03 done 2026-10-28; themes 03/05/06/07/08 and the stored theme field remain
 Depends on: 06 (site config, media). It runs alongside 13. It does not touch D1/Worker code.
 Owner-tier: worker-code (Beam)
 

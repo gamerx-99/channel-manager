@@ -1,5 +1,16 @@
 # Handoff log
 
+## [2026-10-28] Spec 16-01..16-03 hotel themes + 5-step BookingFlow (branch `agent-a/next`, done by the orchestrator because Beam hit its limit)
+- **What changed**: The public wizard moved into `client/src/components/booking/BookingFlow.tsx`. It now has 5 steps in the owner's order: dates + room (the hold starts here) > add-ons > guest info > summary > payment, styled through `--t-*` variables. Three landing themes, `?theme=minimal-white|lanna-teak|cafe-homestay`, are lazily loaded with scoped CSS and Thai fonts and show real hotel data only. An unknown or missing theme renders the old page.
+- **Fixes found while previewing**: the summary printed nights twice and labelled the guest "Full Name *"; Minimal White overflowed at 375px; Thai labels had Latin letter-spacing.
+- **Verification**:
+  - `pnpm test`: 105 passed files | 4 failed | 2 skipped; 655 passed | 7 failed | 3 skipped. The 7 failures are the known env-only ones (inviteAuthUser ×4, Supabase credentials ×3).
+  - `pnpm check`: 0 errors. `pnpm build`: OK; each theme is its own chunk.
+  - Visual check used a local mock harness (not committed): desktop and 375px, TH/EN, and hotels with and without photos.
+- **Assertion changed**: `PublicHotel.contract.test.ts` Stage E2 now reads PublicHotel.tsx and BookingFlow.tsx together, because the code moved files. No assertion was loosened.
+- **Open**: two items are in OPEN_QUESTIONS: the add-on payload still sends priced lines on Supabase, and the theme has no stored field. Themes 03/05/06/07/08 are not built.
+- **Commits**: ee5df38, fee985a, ba4d4b7, c4ab5f3, ea352bd, 947803c, 59001d3.
+
 ## [2026-10-28] UI-01 mock cleanup (branch `agent-a/next`)
 - **What changed**: Removed dead controls, fake status panels, ChannelPerformance page, topbar search, toast-only menu items; deferred pending owner signup; MFA message i18n; replaced developer jargon in i18n; added contract tests.
 - **Counts**: passed 629 → 636? (UI tests). Only 7 known credential-env failures.
