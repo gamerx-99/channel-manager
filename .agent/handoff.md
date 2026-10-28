@@ -1360,3 +1360,7 @@ Write every entry so someone who has never seen this session can pick up the wor
 ## [2026-10-28] 13-04a review fix: server-priced public add-ons
 - **Finding/fix**: `confirmBookingDetails` now accepts only `hotel_service_id` and `quantity` for public add-ons. It resolves an active service under the booking's hotel and uses persisted name, model, and price; unknown, inactive, and foreign-hotel IDs fail with `BAD_REQUEST`. Caller-sent price/name/model fields cannot set the charge. The 13-07 client migration must send IDs. No changes to `server/db/booking.ts` or `client/`.
 - **Verification**: `pnpm exec vitest run server/d1/booking.test.ts`: 14 passed; `pnpm check`: PASS. Added cases for client-sent zero price, foreign hotel, inactive service, and server-calculated booking total.
+
+## [2026-10-28] 13-04a review fix: validate staff-created booking status
+- **Finding/fix**: Replaced the no-op `assertValidTransition(status, status)` call with an explicit runtime allowlist matching all 11 values in the final Postgres `bookings_status_check` (`20260910_booking_lifecycle_v1.sql`). Removed the pass-through `assertTransition` wrapper in `bookingService.ts` and call `assertValidTransition` directly.
+- **Verification**: `pnpm exec vitest run server/d1/booking.test.ts`: 15 passed, including rejection of an invalid runtime status; `pnpm check`: PASS. The Postgres status CHECK and TypeScript `BookingStatus` union contain the same values, so no mismatch was found.

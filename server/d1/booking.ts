@@ -11,6 +11,7 @@ import { getRequiredMinStayNights } from "../pricing";
 
 const noAvailability = () => new TRPCError({ code: "BAD_REQUEST", message: "The selected room type is no longer available for the requested dates. Please choose another date or room type." });
 const holdStatuses = ["held", "pending_payment", "pending_verification"] as const;
+const BOOKING_STATUSES = ["held", "pending_payment", "pending_verification", "confirmed", "expired", "payment_rejected", "cancelled", "refund_pending", "refunded", "checked_in", "checked_out"] as const satisfies readonly BookingStatus[];
 
 import { getStayDates } from "@shared/stayDates";
 export { getStayDates } from "@shared/stayDates";
@@ -257,7 +258,7 @@ export async function createBookingWithGuests(
     if (required != null && nights < required) throw new TRPCError({ code: "BAD_REQUEST", message: `Booking must be at least ${required} night${required === 1 ? "" : "s"}.` });
   }
   const status = booking.status;
-  try { assertValidTransition(status, status); } catch { throw new TRPCError({ code: "BAD_REQUEST", message: "Booking status is invalid." }); }
+  if (!(BOOKING_STATUSES as readonly string[]).includes(status)) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking status is invalid." });
   const id = crypto.randomUUID();
   const result = await atomicInsert(db, { id, hotelId: booking.hotel_id, roomId: booking.room_id, roomTypeId: null, guestName: booking.guest_name, checkIn: booking.check_in, checkOut: booking.check_out, price: canonicalBookingPrice(booking.price), source: booking.source, status, expiresAt: null, adults: booking.adults_count ?? null, children: booking.children_count ?? null, public: false, guests: guestInputs, services, changedBy: caller.userId || null, reason: "booking_created" }, now);
   if (result[0]!.meta.changes !== 1) throw noAvailability();

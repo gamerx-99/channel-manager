@@ -90,6 +90,7 @@ external piece (see Q1).
   cover month-boundary/check-out-exclusive dates, pricing, hold/expiry, add-ons, transitions,
   cancellation inventory release, rollback, last-room concurrency and hotel isolation. Targeted
   tests: 12 passed. Public add-ons are selected by active hotel-service IDs and priced server-side.
+  Staff booking creation validates the status against the final Postgres lifecycle CHECK list.
   Full `pnpm test`: 681 passed, 7 known Supabase-credential failures, 3 skipped;
   `pnpm check` and `pnpm build` passed (Vite chunk-size advisory only).
 - **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered

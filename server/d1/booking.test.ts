@@ -140,6 +140,12 @@ describe("D1 booking repositories", () => {
     await expect(createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-05", "2026-11-06"), [])).resolves.toMatchObject({ check_in: "2026-11-05" });
   });
 
+  it("rejects a booking status outside the Supabase lifecycle CHECK values", async () => {
+    await seedHotel("a", "owner-a");
+    await expect(createBookingWithGuests(db, ownerA, { ...bookingInput("a", "room-a-1"), status: "not_a_booking_status" } as any, [])).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await db.select().from(bookings)).toHaveLength(0);
+  });
+
   it("expires stale holds atomically; active holds block and expired holds release the room", async () => {
     await seedHotel("a", "owner-a");
     const now = new Date("2026-10-28T00:00:00Z");

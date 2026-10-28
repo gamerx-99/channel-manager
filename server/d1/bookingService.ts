@@ -227,7 +227,7 @@ export async function transitionBookingStatus(
   if (input.to_status !== "checked_in" && input.to_status !== "checked_out") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Unsupported booking status transition." });
   const [booking] = await db.select({ status: bookings.status }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
   if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
-  try { assertTransition(booking.status as BookingStatus, input.to_status); }
+  try { assertValidTransition(booking.status as BookingStatus, input.to_status); }
   catch { throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Booking must be confirmed before check-in and checked in before check-out." }); }
   const [updated, audit] = await db.$client.batch([
     db.$client.prepare("update bookings set status = ? where id = ? and hotel_id = ? and status = ?").bind(input.to_status, input.booking_id, input.hotel_id, booking.status),
@@ -237,10 +237,6 @@ export async function transitionBookingStatus(
   if (updated.meta.changes !== 1) throw new TRPCError({ code: "CONFLICT", message: "Booking status changed; reload and try again." });
   if (audit.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking status audit was not written." });
   return { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: booking.status, to_status: input.to_status };
-}
-
-function assertTransition(from: string, to: BookingStatus): asserts from is BookingStatus {
-  try { assertValidTransition(from as BookingStatus, to); } catch (error) { throw error; }
 }
 
 function validStay(checkIn: string, checkOut: string) {
