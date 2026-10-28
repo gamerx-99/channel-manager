@@ -6,6 +6,13 @@ answer noted.
 
 ## Open
 
+- [ ] Spec 13-04a booking export contract: the prompt says `server/db/booking.ts` has nine exports,
+      but the current source has ten: `listBookingsForHotel`, `getStayDates`,
+      `getPublicHotelAvailability`, `createPublicBooking`, `logBookingStatusChange`,
+      `transitionBookingStatus`, `expireBookingIfPast`, `holdRoomType`, `confirmBookingDetails`,
+      and `createBookingWithGuests`. Should 13-04a port all ten exports, or omit one? The source
+      file is the contract unless the owner names an exception. No D1 booking implementation has
+      started while this API scope is unresolved. Raised 2026-10-28.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.

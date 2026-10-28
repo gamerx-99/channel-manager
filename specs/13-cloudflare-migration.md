@@ -85,8 +85,9 @@ external piece (see Q1).
   - **13-04a Booking, availability, and pricing service**: `is_published_hotel`,
     `get_public_hotel`, `get_public_room_type_availability`,
     `get_public_room_type_availability_for_guests`, `update_room_type_with_occupancy_config`,
-    and `transition_booking_status`; add the D1 `server/db/booking.ts` equivalent with the same
-    nine exports and transactional overlap protection.
+    and `transition_booking_status`; add the D1 `server/db/booking.ts` equivalent with matching
+    exports and transactional overlap protection. The prompt says nine exports, but the current
+    source exposes ten; resolve this API count in `.agent/OPEN_QUESTIONS.md` before implementation.
   - **13-04b iCal sync and export**: `sync_ota_ical_blocks`, `get_ota_ical_export`, and
     `ota_connection_room_same_hotel` (including its same-hotel trigger enforcement).
   - **13-04c Remaining service and trigger behaviors**: `is_super_admin`, `is_platform_admin`,
