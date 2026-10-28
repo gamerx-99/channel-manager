@@ -42,6 +42,9 @@ migrations_dir = "drizzle/d1"
 binding = "MEDIA"
 bucket_name = "hayhost-media-staging"
 
+[env.staging.triggers]
+crons = ["*/15 * * * *"]
+
 [env.production]
 name = "hayhost"
 workers_dev = false
@@ -60,3 +63,6 @@ migrations_dir = "drizzle/d1"
 [[env.production.r2_buckets]]
 binding = "MEDIA"
 bucket_name = "hayhost-media"
+
+[env.production.triggers]
+crons = ["*/15 * * * *"]

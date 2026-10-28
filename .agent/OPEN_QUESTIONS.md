@@ -72,6 +72,11 @@ answer noted.
 
 ## Resolved
 
+- [x] 13-06a private-network DNS protection. ASSUMPTION (2026-10-28): Cloudflare Workers cannot
+      reach private networks, so the Worker iCal guard validates literal IP ranges and local
+      hostname forms without DNS-over-HTTPS. Revalidate every redirect target; do not add a DNS
+      resolver.
+
 - [x] 13-04b OTA cancellation semantics versus `20261026_ota_ical_room_type_mode.sql`. ANSWER
       (owner, 2026-10-28): the owner policy supersedes the SQL for staff-cancelled bookings. A
       cancelled OTA row is sync-cancelled only when its latest status-log row has

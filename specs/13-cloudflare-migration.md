@@ -1,5 +1,5 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, and 13-04b are implemented locally.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, and 13-06a are implemented locally.
 Live Supabase callers remain unchanged until 13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
@@ -113,11 +113,16 @@ external piece (see Q1).
 - **13-05 Auth**: Better Auth on D1, TOTP 2FA (replaces `auth.mfa` flows incl. step-up),
   staff invites and hotel-owner signup links, session cookies; `getSupabaseIdentity` replaced by a
   `getIdentity` with the same shape so routers barely change.
-- **13-06 Platform services**: R2 media upload/serve (replaces Forge `storagePut`, and B's
-  planned Supabase Storage work), Cron Triggers for iCal sync (15 min) and later billing,
-  SlipOK AES-GCM via WebCrypto, TM.30 template bundled as an asset (no `node:fs`), iCal URL
-  guard without `node:dns` (Workers cannot reach private networks; keep the literal/hostname
-  checks, resolve via DoH if still needed).
+- **13-06 Platform services**:
+  - [x] **13-06a iCal fetch, URL guard, and Cron** (DONE locally, 2026-10-28): Workers-safe
+    public URL validation, manually checked redirects (maximum three), 10-second timeout, 2 MiB
+    streamed body cap, safe failure status/logs, and a 15-minute D1 system-caller cron in staging
+    and production. ASSUMPTION: Workers cannot reach private networks, so there is no DoH resolver;
+    see `.agent/OPEN_QUESTIONS.md`.
+  - **13-06b R2 hotel media upload/serve**: permission-scoped R2 upload/delete and public immutable
+    media serving; preserve hero promotion and reject unsafe object keys.
+  - **13-06c later, not started**: SlipOK AES-GCM via WebCrypto and TM.30 template bundled as an
+    asset (no `node:fs`).
 - **13-07 Client**: replace `@supabase/supabase-js` auth calls in the client with the new auth
   client; remove hard-coded Supabase URL/key fallbacks (`client/src/lib/supabase.ts`,
   `server/supabase.ts`, `server/_core/env.ts`).

@@ -80,4 +80,11 @@ describe("wrangler.toml", () => {
     expect(config).toContain("[[env.production.r2_buckets]]");
     expect(config).toContain('PUBLIC_APP_URL = "https://www.hayhostth.com"');
   });
+
+  it("schedules iCal sync every 15 minutes only in staging and production", () => {
+    const normalized = config.replace(/\r\n/g, "\n");
+    expect(normalized).toContain('[env.staging.triggers]\ncrons = ["*/15 * * * *"]');
+    expect(normalized).toContain('[env.production.triggers]\ncrons = ["*/15 * * * *"]');
+    expect(config).not.toMatch(/\n\[triggers\]\n/);
+  });
 });

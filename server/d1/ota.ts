@@ -2,7 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { bookingStatusLog, bookings, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { buildIcalExport, parseIcalEvents, type IcalEvent } from "../icalFeed";
-import { authorizeHotelAction, isD1SystemCallerContext, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
+import { authorizeHotelAction, isD1SystemCallerContext, type D1CallerContext, type D1ScopedDatabase, type D1SystemCallerContext } from "../db/scope";
+import { ICAL_FETCH_ERROR, fetchPublicIcalFeed } from "./icalUrl";
 
 const ACTIVE_HOLD_STATUSES = ["held", "pending_payment", "pending_verification"] as const;
 const OCCUPYING_STATUSES = ["confirmed", "checked_in", ...ACTIVE_HOLD_STATUSES] as const;
@@ -19,6 +20,44 @@ export type OtaIcalSyncResult = {
   conflicts: OtaSyncConflict[];
   skipped_uids: OtaSkippedUid[];
 };
+
+export async function fetchAndSyncOtaConnection(
+  db: D1ScopedDatabase,
+  systemCaller: D1SystemCallerContext,
+  connectionId: string,
+  fetchImpl: typeof fetch = fetch,
+  now = new Date(),
+): Promise<OtaIcalSyncResult> {
+  if (!isD1SystemCallerContext(systemCaller)) throw new TRPCError({ code: "FORBIDDEN", message: "A trusted system caller is required." });
+  const [connection] = await db.select().from(otaConnections).where(eq(otaConnections.id, connectionId)).limit(1);
+  if (!connection || connection.status === "disconnected") throw new TRPCError({ code: "NOT_FOUND", message: "OTA calendar connection not found." });
+  try {
+    if (!connection.icalImportUrl) throw new Error(ICAL_FETCH_ERROR);
+    const body = await fetchPublicIcalFeed(connection.icalImportUrl, fetchImpl);
+    return await syncOtaIcalBlocks(db, systemCaller, connectionId, parseIcalEvents(body), { skipUnchangedLog: true }, now);
+  } catch {
+    await recordSafeFetchFailure(db, connection, now);
+    throw new Error(ICAL_FETCH_ERROR);
+  }
+}
+
+async function recordSafeFetchFailure(
+  db: D1ScopedDatabase,
+  connection: typeof otaConnections.$inferSelect,
+  now: Date,
+) {
+  await db.$client.batch([
+    db.$client.prepare(`UPDATE ota_connections SET status = 'error', last_error = ?, updated_at = ?
+      WHERE id = ? AND hotel_id = ? AND status <> 'disconnected'`)
+      .bind(ICAL_FETCH_ERROR, now.getTime(), connection.id, connection.hotelId),
+    db.$client.prepare(`INSERT INTO ota_sync_logs
+      (id, hotel_id, provider, direction, action, status, payload, response, error_message)
+      SELECT ?, ?, ?, 'inbound', 'sync_calendar', 'failed', ?, ?, ? WHERE changes() = 1`)
+      .bind(crypto.randomUUID(), connection.hotelId, connection.provider,
+        JSON.stringify({ connection_id: connection.id, syncType: "iCal blocked dates" }),
+        JSON.stringify({ message: ICAL_FETCH_ERROR }), ICAL_FETCH_ERROR),
+  ]);
+}
 
 function localToday(now: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);

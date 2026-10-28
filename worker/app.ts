@@ -6,7 +6,7 @@ import { createContextFromRequest } from "../server/_core/context";
 import { buildIcalExport } from "../server/icalFeed";
 import { loadIcalExport } from "../server/otaIcalRoutes";
 
-/** Bindings declared in wrangler.toml. DB and MEDIA are unused until tickets 13-02/13-06. */
+/** Runtime bindings declared in wrangler.toml. */
 export type WorkerEnv = {
   ASSETS: Fetcher;
   DB: D1Database;

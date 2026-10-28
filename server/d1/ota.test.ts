@@ -3,12 +3,13 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bookingStatusLog, bookings, d1Schema, hotelUsers, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createD1SystemCallerContext } from "../db/scope";
+import { createD1SystemCallerContext, isD1SystemCallerContext } from "../db/scope";
 import { createBookingWithGuests } from "./booking";
-import { getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks } from "./ota";
+import { fetchAndSyncOtaConnection, getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks } from "./ota";
+import { runScheduledD1OtaSync } from "./otaScheduler";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -95,6 +96,55 @@ describe("D1 OTA iCal services", () => {
     expect(await db.select().from(bookings)).toHaveLength(1);
     expect(await db.select().from(bookingStatusLog)).toHaveLength(0);
     expect(await db.select().from(otaSyncLogs)).toHaveLength(1);
+  });
+
+  it("fetches a stored feed URL and passes the parsed calendar to sync", async () => {
+    await seedHotel("a", "owner-a");
+    await db.update(otaConnections).set({ icalImportUrl: "https://calendar.example.com/feed.ics" }).where(eq(otaConnections.id, "ota-a"));
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.redirect).toBe("manual");
+      return new Response("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:ota-uid-1\r\nDTSTART;VALUE=DATE:20261110\r\nDTEND;VALUE=DATE:20261112\r\nEND:VEVENT\r\nEND:VCALENDAR", {
+        headers: { "content-type": "text/calendar; charset=utf-8" },
+      });
+    });
+    const result = await fetchAndSyncOtaConnection(db, system(), "ota-a", fetchImpl, NOW);
+    expect(result).toMatchObject({ inserted: 1, conflicts: [] });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(await db.select().from(bookings)).toHaveLength(1);
+  });
+
+  it("records only a client-safe failure for a rejected stored URL", async () => {
+    await seedHotel("a", "owner-a");
+    await db.update(otaConnections).set({ icalImportUrl: "http://127.0.0.1/private?secret=value" }).where(eq(otaConnections.id, "ota-a"));
+    const fetchImpl = vi.fn();
+    await expect(fetchAndSyncOtaConnection(db, system(), "ota-a", fetchImpl, NOW)).rejects.toThrow("Could not fetch or validate the iCal calendar.");
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect((await db.select().from(otaConnections))[0]).toMatchObject({ status: "error", lastError: "Could not fetch or validate the iCal calendar." });
+    const [log] = await db.select().from(otaSyncLogs);
+    expect(log?.errorMessage).toBe("Could not fetch or validate the iCal calendar.");
+    expect(JSON.stringify(log)).not.toContain("127.0.0.1");
+    expect(JSON.stringify(log)).not.toContain("secret=value");
+  });
+
+  it("continues scheduled sync after a failure and supplies only branded system authority", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await db.insert(otaConnections).values({ id: "ota-disconnected", hotelId: "a", provider: "Other", status: "disconnected", roomId: "room-a", icalImportUrl: "https://calendar.example.com/disabled" });
+    await db.update(otaConnections).set({ icalImportUrl: "https://calendar.example.com/feed" }).where(eq(otaConnections.id, "ota-a"));
+    await db.update(otaConnections).set({ icalImportUrl: "https://calendar.example.com/feed" }).where(eq(otaConnections.id, "ota-b"));
+    const callers: boolean[] = [];
+    const processed: string[] = [];
+    const summary = await runScheduledD1OtaSync(db, {
+      syncConnection: async (_database, caller, connectionId) => {
+        callers.push(isD1SystemCallerContext(caller));
+        processed.push(connectionId);
+        if (connectionId === "ota-a") throw new Error("error includes sensitive URL");
+        return { inserted: 1, updated: 0, unchanged: 0, cancelled: 0, conflicts: [], skipped_uids: [] };
+      },
+    });
+    expect(summary).toMatchObject({ total: 2, succeeded: 1, failed: 1, conflicts: 0 });
+    expect(summary.failures[0]?.error).toBe("Could not fetch or validate the iCal calendar.");
+    expect(processed).toEqual(["ota-a", "ota-b"]);
+    expect(callers).toEqual([true, true]);
   });
 
   it("keeps a staff-cancelled UID cancelled, reports it as skipped, and leaves the room bookable", async () => {
