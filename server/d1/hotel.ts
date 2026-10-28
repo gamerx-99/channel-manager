@@ -32,7 +32,7 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
       room_types: hotelRoomTypes, rooms: hotelRooms, bookings: hotelBookings,
     });
   }
-  return output.sort((left, right) => right.created_at.localeCompare(left.created_at));
+  return output.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
 }
 
 export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, caller: D1CallerContext) {
