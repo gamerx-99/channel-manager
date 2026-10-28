@@ -1,0 +1,206 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
+import { eq } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { bookingStatusLog, bookings, d1Schema, hotelUsers, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
+import type { D1ScopedDatabase } from "../db/scope";
+import { createD1SystemCallerContext } from "../db/scope";
+import { createBookingWithGuests } from "./booking";
+import { getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks } from "./ota";
+
+const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
+const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
+let sqlite: InstanceType<typeof DatabaseSync>;
+let db: D1ScopedDatabase;
+
+beforeEach(() => {
+  sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  for (const file of readdirSync(migrationFolder).filter(name => name.endsWith(".sql")).sort()) {
+    const source = readFileSync(resolve(migrationFolder, file), "utf8");
+    for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) sqlite.exec(statement);
+  }
+  db = sqliteProxy(async (query, params, method) => {
+    const statement = sqlite.prepare(query);
+    statement.setReturnArrays(true);
+    if (method === "run") { statement.run(...params); return { rows: [] }; }
+    if (method === "get") { const row = statement.get(...params); return { rows: row ? [row] : [] }; }
+    return { rows: statement.all(...params) };
+  }, { schema: d1Schema }) as unknown as D1ScopedDatabase;
+  db.$client = {
+    prepare: query => ({ bind: (...params) => ({ query, params }) }),
+    batch: async statements => {
+      sqlite.exec("BEGIN");
+      try {
+        const results = statements.map(statement => {
+          const { query, params } = statement as { query: string; params: unknown[] };
+          return { meta: { changes: Number(sqlite.prepare(query).run(...params).changes) } };
+        });
+        sqlite.exec("COMMIT");
+        return results;
+      } catch (error) { sqlite.exec("ROLLBACK"); throw error; }
+    },
+  };
+});
+afterEach(() => sqlite.close());
+
+const system = () => createD1SystemCallerContext();
+const ownerA = { userId: "owner-a" };
+const ownerB = { userId: "owner-b" };
+const publicCaller = { userId: "", access: "public" as const };
+const NOW = new Date("2026-10-28T05:00:00.000Z");
+const feedEvent = { uid: "ota-uid-1", start: "2026-11-10", end: "2026-11-12", summary: "Reserved" };
+
+async function seedHotel(id: string, owner: string, token = (id === "a" ? "a" : "b").repeat(64)) {
+  await db.insert(hotels).values({ id, name: `Hotel ${id}`, slug: `hotel-${id}`, address: "Address", ownerContact: `${owner}@example.test` });
+  await db.insert(hotelUsers).values({ id: `membership-${id}`, hotelId: id, userId: owner, role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
+  await db.insert(roomTypes).values({ id: `type-${id}`, hotelId: id, name: `Type ${id}`, capacity: 2, basePrice: "100.00", baseOccupancy: 2, maxOccupancy: 2, occupancyPricing: {}, childRates: {} });
+  await db.insert(rooms).values({ id: `room-${id}`, hotelId: id, roomTypeId: `type-${id}`, roomNumber: "001" });
+  await db.insert(otaConnections).values({ id: `ota-${id}`, hotelId: id, provider: "Trip", status: "connected", roomId: `room-${id}`, icalExportToken: token });
+}
+
+async function seedOtaBooking(id: string, uid: string, status: string, checkIn = feedEvent.start, checkOut = feedEvent.end) {
+  await db.insert(bookings).values({ id, hotelId: "a", roomId: "room-a", guestName: "Trip · Reserved", checkIn, checkOut, price: "0.00", source: "ota_ical", status, otaConnectionId: "ota-a", externalUid: uid });
+}
+
+describe("D1 OTA iCal services", () => {
+  it("enforces same-hotel room and room-type targets", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await expect(otaConnectionRoomSameHotel(db, ownerA, { hotel_id: "a", room_id: "room-b", room_type_id: null }, NOW)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(otaConnectionRoomSameHotel(db, ownerA, { hotel_id: "a", room_id: null, room_type_id: "type-b" }, NOW)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(otaConnectionRoomSameHotel(db, ownerA, { hotel_id: "a", room_id: "room-a", room_type_id: "type-a" }, NOW)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await otaConnectionRoomSameHotel(db, ownerA, { hotel_id: "a", room_id: "room-a", room_type_id: null }, NOW)).toBe(true);
+    expect(() => sqlite.prepare("UPDATE ota_connections SET room_id = 'room-b' WHERE id = 'ota-a'").run()).toThrow(/does not belong to this hotel/);
+    expect(() => sqlite.prepare("UPDATE ota_connections SET room_type_id = 'type-b' WHERE id = 'ota-a'").run()).toThrow(/does not belong to this hotel/);
+  });
+
+  it("allows only a trusted system identity or a hotel caller with the sync permission", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await expect(syncOtaIcalBlocks(db, publicCaller, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(syncOtaIcalBlocks(db, { userId: "system", access: "system" }, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(syncOtaIcalBlocks(db, { ...ownerA, access: "system" }, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(syncOtaIcalBlocks(db, ownerB, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(syncOtaIcalBlocks(db, ownerA, "ota-a", [feedEvent], {}, NOW)).resolves.toMatchObject({ inserted: 1 });
+    await expect(syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW)).resolves.toMatchObject({ unchanged: 1 });
+  });
+
+  it("imports the same feed idempotently without duplicate bookings or extra sync logs", async () => {
+    await seedHotel("a", "owner-a");
+    const first = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    const second = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(first).toMatchObject({ inserted: 1, updated: 0, conflicts: [], skipped_uids: [] });
+    expect(second).toMatchObject({ inserted: 0, unchanged: 1, conflicts: [], skipped_uids: [] });
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(bookingStatusLog)).toHaveLength(0);
+    expect(await db.select().from(otaSyncLogs)).toHaveLength(1);
+  });
+
+  it("keeps a staff-cancelled UID cancelled, reports it as skipped, and leaves the room bookable", async () => {
+    await seedHotel("a", "owner-a"); await seedOtaBooking("staff-cancelled", feedEvent.uid, "cancelled");
+    await db.insert(bookingStatusLog).values({ id: "staff-audit", bookingId: "staff-cancelled", fromStatus: "confirmed", toStatus: "cancelled", changedBy: "owner-a", reason: "Guest request" });
+    const result = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(result.skipped_uids).toEqual([{ uid: feedEvent.uid, booking_id: "staff-cancelled", start: feedEvent.start, end: feedEvent.end }]);
+    expect(result.conflicts).toEqual([]);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect((await db.select().from(bookings))[0]?.status).toBe("cancelled");
+    const directBooking = await createBookingWithGuests(db, ownerA, {
+      hotel_id: "a", room_id: "room-a", guest_name: "Direct guest", check_in: feedEvent.start, check_out: feedEvent.end,
+      price: "100.00", source: "manual", status: "confirmed", payment_status: "unpaid", created_at: NOW.toISOString(),
+      rooms: null, guests: [], adults_count: 1,
+    }, [], [], NOW);
+    expect(directBooking).toMatchObject({ guest_name: "Direct guest" });
+    expect(await db.select().from(bookings)).toHaveLength(2);
+  });
+
+  it("skips legacy cancelled bookings that have no status log", async () => {
+    await seedHotel("a", "owner-a"); await seedOtaBooking("legacy-cancelled", feedEvent.uid, "cancelled");
+    const result = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(result.skipped_uids).toEqual([{ uid: feedEvent.uid, booking_id: "legacy-cancelled", start: feedEvent.start, end: feedEvent.end }]);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(otaSyncLogs)).toHaveLength(1);
+    expect((await db.select().from(otaSyncLogs))[0]?.response).toMatchObject({ skippedUids: [{ uid: feedEvent.uid }] });
+  });
+
+  it("cancels a removed block and revives it only after the same UID returns", async () => {
+    await seedHotel("a", "owner-a"); await seedOtaBooking("revive-me", feedEvent.uid, "confirmed");
+    const removed = await syncOtaIcalBlocks(db, system(), "ota-a", [], {}, NOW);
+    expect(removed.cancelled).toBe(1);
+    expect((await db.select().from(bookings))[0]?.status).toBe("cancelled");
+    const restored = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(restored).toMatchObject({ updated: 1, conflicts: [], skipped_uids: [] });
+    expect((await db.select().from(bookings))[0]?.status).toBe("confirmed");
+    expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, "revive-me")))
+      .map(row => ({ to: row.toStatus, changedBy: row.changedBy, reason: row.reason }))).toEqual([
+        { to: "cancelled", changedBy: null, reason: "ota_ical_removed_from_feed" },
+        { to: "confirmed", changedBy: null, reason: "ota_ical_restored" },
+      ]);
+  });
+
+  it("does not touch checked-in or checked-out OTA bookings", async () => {
+    await seedHotel("a", "owner-a");
+    await seedOtaBooking("checked-in", "checked-in-uid", "checked_in");
+    await seedOtaBooking("checked-out", "checked-out-uid", "checked_out");
+    const result = await syncOtaIcalBlocks(db, system(), "ota-a", [], {}, NOW);
+    expect(result.cancelled).toBe(0);
+    expect((await db.select().from(bookings)).map(row => row.status)).toEqual(["checked_in", "checked_out"]);
+    expect(await db.select().from(bookingStatusLog)).toHaveLength(0);
+  });
+
+  it("reports direct-booking overlaps as conflicts instead of inserting OTA blocks", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(bookings).values({ id: "direct", hotelId: "a", roomId: "room-a", guestName: "Direct", checkIn: feedEvent.start, checkOut: feedEvent.end, price: "100.00", source: "manual", status: "confirmed" });
+    const result = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(result.conflicts).toEqual([{ uid: feedEvent.uid, start: feedEvent.start, end: feedEvent.end }]);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(otaSyncLogs)).toHaveLength(1);
+  });
+
+  it("places room-type blocks on available rooms, retries another candidate, and conflicts when full", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(rooms).values({ id: "room-a-2", hotelId: "a", roomTypeId: "type-a", roomNumber: "002" });
+    await db.update(otaConnections).set({ roomId: null, roomTypeId: "type-a" }).where(eq(otaConnections.id, "ota-a"));
+    await db.insert(bookings).values({ id: "direct-one", hotelId: "a", roomId: "room-a", guestName: "Direct one", checkIn: feedEvent.start, checkOut: feedEvent.end, price: "100.00", source: "manual", status: "confirmed" });
+    expect(await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW)).toMatchObject({ inserted: 1, conflicts: [] });
+    expect((await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid)))[0]?.roomId).toBe("room-a-2");
+
+    await db.insert(bookings).values({ id: "direct-two", hotelId: "a", roomId: "room-a-2", guestName: "Direct two", checkIn: "2026-11-15", checkOut: "2026-11-16", price: "100.00", source: "manual", status: "confirmed" });
+    const moved = { ...feedEvent, start: "2026-11-15", end: "2026-11-16" };
+    expect(await syncOtaIcalBlocks(db, system(), "ota-a", [moved], {}, NOW)).toMatchObject({ updated: 1, conflicts: [] });
+    expect((await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid)))[0]?.roomId).toBe("room-a");
+
+    const full = await syncOtaIcalBlocks(db, system(), "ota-a", [{ ...moved, uid: "another-uid" }], {}, NOW);
+    expect(full.conflicts).toEqual([{ uid: "another-uid", start: moved.start, end: moved.end }]);
+  });
+
+  it("exports opaque room events with a hotel-scoped token and no guest PII", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await db.insert(bookings).values({ id: "booking-a", hotelId: "a", roomId: "room-a", guestName: "Alice Private Name", checkIn: "2026-11-20", checkOut: "2026-11-22", price: "100.00", source: "manual", status: "confirmed" });
+    await db.insert(bookings).values({ id: "booking-b", hotelId: "b", roomId: "room-b", guestName: "Bob Private Name", checkIn: "2026-11-21", checkOut: "2026-11-23", price: "100.00", source: "manual", status: "confirmed" });
+    const feed = await getOtaIcalExport(db, publicCaller, "a".repeat(64), NOW);
+    expect(feed).toContain("UID:booking-a@channel-manager");
+    expect(feed).not.toContain("booking-b");
+    expect(feed).not.toContain("Alice Private Name");
+    expect(feed).not.toContain("Bob Private Name");
+    expect(feed).toMatch(/\r\n$/);
+    expect(feed!.split("\r\n").filter(Boolean).every(line => new TextEncoder().encode(line).length <= 75 || line.startsWith(" "))).toBe(true);
+    expect(await getOtaIcalExport(db, publicCaller, "b".repeat(64), NOW)).not.toContain("booking-a");
+    expect(await getOtaIcalExport(db, publicCaller, "not-a-token", NOW)).toBeNull();
+    await expect(getOtaIcalExport(db, { userId: "system", access: "system" }, "a".repeat(64), NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("exports room-type dates only when every non-maintenance room is occupied", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(rooms).values({ id: "room-a-2", hotelId: "a", roomTypeId: "type-a", roomNumber: "002" });
+    await db.update(otaConnections).set({ roomId: null, roomTypeId: "type-a" }).where(eq(otaConnections.id, "ota-a"));
+    await db.insert(bookings).values({ id: "room-one", hotelId: "a", roomId: "room-a", guestName: "P1", checkIn: "2026-11-20", checkOut: "2026-11-22", price: "100.00", source: "manual", status: "confirmed" });
+    const partial = await getOtaIcalExport(db, publicCaller, "a".repeat(64), NOW);
+    expect(partial).not.toContain("20261120");
+    await db.insert(bookings).values({ id: "room-two", hotelId: "a", roomId: "room-a-2", guestName: "P2", checkIn: "2026-11-20", checkOut: "2026-11-21", price: "100.00", source: "manual", status: "confirmed" });
+    const full = await getOtaIcalExport(db, publicCaller, "a".repeat(64), NOW);
+    expect(full).toContain("DTSTART;VALUE=DATE:20261120");
+    expect(full).toContain("DTEND;VALUE=DATE:20261121");
+    expect(full).not.toContain("P1");
+  });
+});

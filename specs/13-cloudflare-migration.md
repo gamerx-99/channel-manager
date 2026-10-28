@@ -1,8 +1,6 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, and 13-04a are implemented locally. 13-04b
-is paused because the new OTA-cancellation owner policy conflicts with the final Postgres
-function definition; see `.agent/OPEN_QUESTIONS.md`. Live Supabase callers remain unchanged until
-13-07/13-08.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, and 13-04b are implemented locally.
+Live Supabase callers remain unchanged until 13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
 `.agent/WORK_SPLIT.md`).
@@ -96,10 +94,16 @@ external piece (see Q1).
   `pnpm check` and `pnpm build` passed (Vite chunk-size advisory only).
 - **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered
   migrations supersede earlier definitions. Remaining sub-tickets:
-  - **13-04b iCal sync and export** (PAUSED pending owner resolution): `sync_ota_ical_blocks`,
+  - [x] **13-04b iCal sync and export** (DONE locally, 2026-10-28): `sync_ota_ical_blocks`,
     `get_ota_ical_export`, and `ota_connection_room_same_hotel` (including its same-hotel trigger
-    enforcement). The owner must resolve whether the new cancellation rule supersedes the final
-    SQL function's current behavior before implementation continues.
+    enforcement). `server/d1/ota.ts` accepts parsed events or raw iCal; network fetch and URL
+    validation remain in 13-06. Sync requires a branded server-created system context for Cron or
+    an authorized hotel caller. Feed removals write an audit reason; only the latest sync-removal
+    audit permits revival. Staff-cancelled and legacy rows without audit remain cancelled and are
+    returned in `skipped_uids`, per the resolved owner exception recorded in
+    `.agent/OPEN_QUESTIONS.md`. Exports are token-scoped, opaque iCal without guest data. Tests
+    cover identity boundaries, idempotency, staff and legacy cancellation, restoration, conflicts,
+    same-hotel trigger rules, and room/room-type export behavior.
   - **13-04c Remaining service and trigger behaviors**: `is_super_admin`, `is_platform_admin`,
     `is_hotel_member`, `current_user_has_role`, `can_manage_property`, `can_manage_staff`,
     `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`, `can_manage_ical`,

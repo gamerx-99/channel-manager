@@ -13,8 +13,26 @@ type D1Client = {
 };
 export type D1ScopedDatabase = DrizzleD1Database<typeof d1Schema> & { $client: D1Client };
 
+const SYSTEM_CALLER_BRAND: unique symbol = Symbol("D1 system caller");
+
 /** Construct this context from the verified server identity, never from client input. */
-export type D1CallerContext = { userId: string; roles?: readonly AppRole[]; access?: "authenticated" | "public" };
+export type D1CallerContext = {
+  userId: string;
+  roles?: readonly AppRole[];
+  access?: "authenticated" | "public" | "system";
+  readonly [SYSTEM_CALLER_BRAND]?: true;
+};
+
+export type D1SystemCallerContext = D1CallerContext & { readonly [SYSTEM_CALLER_BRAND]: true };
+
+/** Create the non-serializable authority used by trusted server jobs such as Cron. */
+export function createD1SystemCallerContext(): D1SystemCallerContext {
+  return { userId: "system", access: "system", [SYSTEM_CALLER_BRAND]: true };
+}
+
+export function isD1SystemCallerContext(caller: D1CallerContext): caller is D1SystemCallerContext {
+  return caller.access === "system" && caller[SYSTEM_CALLER_BRAND] === true;
+}
 
 export type PlatformHotelSummary = {
   hotelName: string;

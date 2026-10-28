@@ -136,7 +136,7 @@ export const otaConnections = sqliteTable("ota_connections", {
   updatedAt: updatedAt(),
   createdAt: createdAt(),
   roomId: text("room_id").references(() => rooms.id, { onDelete: "set null" }),
-  icalExportToken: text("ical_export_token").notNull().$defaultFn(() => crypto.randomUUID().replaceAll("-", "")),
+  icalExportToken: text("ical_export_token").notNull().$defaultFn(() => crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "")),
   lastError: text("last_error"),
   roomTypeId: text("room_type_id").references(() => roomTypes.id, { onDelete: "set null" }),
 }, table => [

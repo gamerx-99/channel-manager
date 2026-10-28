@@ -13,7 +13,8 @@ describe("D1 exact-money migration", () => {
       db.exec("PRAGMA foreign_keys = ON");
       const migrations = readdirSync(migrationFolder).filter(file => file.endsWith(".sql")).sort();
       const moneyMigrations = migrations.filter(file => file.startsWith("20261028044"));
-      for (const file of migrations.filter(file => !moneyMigrations.includes(file))) {
+      const laterMigrations = migrations.filter(file => file.startsWith("2026102819"));
+      for (const file of migrations.filter(file => !moneyMigrations.includes(file) && !laterMigrations.includes(file))) {
         const source = readFileSync(resolve(migrationFolder, file), "utf8");
         for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) db.exec(statement);
       }
@@ -37,6 +38,11 @@ describe("D1 exact-money migration", () => {
       `);
 
       for (const file of moneyMigrations) {
+        const source = readFileSync(resolve(migrationFolder, file), "utf8");
+        for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) db.exec(statement);
+      }
+      // These migrations were created after the table rebuilds and must run afterward.
+      for (const file of laterMigrations) {
         const source = readFileSync(resolve(migrationFolder, file), "utf8");
         for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) db.exec(statement);
       }
