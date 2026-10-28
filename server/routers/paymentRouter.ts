@@ -259,7 +259,7 @@ export const paymentRouter = router({
           });
         }
 
-        const apiKey = decryptSlipOkKey(config.slipok_key_enc);
+        const apiKey = await decryptSlipOkKey(config.slipok_key_enc);
 
         // 8. Call SlipOK
         try {
