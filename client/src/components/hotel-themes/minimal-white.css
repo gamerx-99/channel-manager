@@ -94,6 +94,7 @@
 
 /* Booking */
 .theme-minimal-white .mw-booking { display: grid; gap: 32px; }
+.theme-minimal-white .mw-booking > * { min-width: 0; }
 .theme-minimal-white .mw-booking .button-quiet { background: transparent; color: var(--mw-text); border: 1px solid var(--mw-line); }
 
 /* Location */
