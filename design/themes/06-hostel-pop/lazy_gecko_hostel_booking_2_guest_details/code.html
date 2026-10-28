@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LAZY GECKO HOSTEL - Step 2: Guest Details</title>
+<!-- Google Fonts: Epilogue, Space Grotesk, Kanit -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&amp;family=Kanit:wght@600;700;800&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#ffd23f",
+            "surface-container": "#eeeeee",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#62edc9",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#e2e2e2",
+            "outline-variant": "#d1c5ad",
+            "on-secondary-fixed": "#3f0018",
+            "surface-dim": "#dadada",
+            "on-tertiary-container": "#006955",
+            "on-surface-variant": "#4d4634",
+            "inverse-primary": "#edc22e",
+            "surface": "#f9f9f9",
+            "on-secondary-container": "#62002a",
+            "on-primary-fixed-variant": "#574500",
+            "on-tertiary-fixed": "#002019",
+            "secondary-container": "#fd5c8e",
+            "secondary-fixed-dim": "#ffb1c2",
+            "error-container": "#ffdad6",
+            "tertiary": "#006b57",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#241a00",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed-variant": "#8f0040",
+            "surface-tint": "#745c00",
+            "on-background": "#1b1b1b",
+            "secondary": "#b32057",
+            "outline": "#7f7661",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9f9",
+            "tertiary-fixed-dim": "#4eddba",
+            "surface-container-low": "#f3f3f3",
+            "secondary-fixed": "#ffd9e0",
+            "on-tertiary-fixed-variant": "#005141",
+            "primary-fixed": "#ffe089",
+            "on-primary-container": "#725a00",
+            "primary-fixed-dim": "#edc22e",
+            "tertiary-fixed": "#6ffad5",
+            "on-surface": "#1b1b1b",
+            "inverse-surface": "#303030",
+            "inverse-on-surface": "#f1f1f1",
+            "background": "#f9f9f9",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#e8e8e8",
+            "primary": "#745c00",
+            "surface-container-highest": "#e2e2e2"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "margin": "2rem",
+            "gutter-mobile": "1rem",
+            "margin-mobile": "1rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Epilogue"],
+            "label-md": ["Space Grotesk"],
+            "body-md": ["Epilogue"],
+            "label-lg": ["Space Grotesk"],
+            "headline-md": ["Epilogue"],
+            "headline-sm": ["Epilogue"],
+            "headline-lg": ["Epilogue"],
+            "label-sticker": ["Space Grotesk"],
+            "body-lg": ["Epilogue"],
+            "display-hero-mobile": ["Epilogue"],
+            "display-hero": ["Epilogue"],
+            "body-sm": ["Epilogue"],
+            "kanit": ["Kanit", "sans-serif"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-md": ["13px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "700" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+            "label-lg": ["16px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+            "headline-sm": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+            "headline-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-sticker": ["12px", { "lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "500" }],
+            "display-hero-mobile": ["40px", { "lineHeight": "46px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+            "display-hero": ["64px", { "lineHeight": "72px", "letterSpacing": "-0.03em", "fontWeight": "900" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Neo-brutalist custom focus & utility styles */
+    .brutal-border {
+      border: 3px solid #000000;
+    }
+    .brutal-shadow-sm {
+      box-shadow: 3px 3px 0px #000000;
+    }
+    .brutal-shadow-md {
+      box-shadow: 4px 4px 0px #000000;
+    }
+    .brutal-shadow-lg {
+      box-shadow: 6px 6px 0px #000000;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col justify-between selection:bg-secondary-container selection:text-surface-container-lowest">
+<!-- Mobile Container Wrapper: 390px locked simulation centered on larger viewports -->
+<div class="w-full max-w-[390px] mx-auto min-h-screen bg-background border-x-[3px] border-black flex flex-col relative pb-32">
+<!-- Top Bar with Back Arrow & Hostel Name -->
+<header class="bg-primary-container brutal-border border-t-0 border-x-0 px-4 py-3 sticky top-0 z-40 flex items-center justify-between shadow-[0_4px_0_0_#000000]">
+<div class="flex items-center gap-3">
+<button aria-label="Go back to room selection" class="w-9 h-9 bg-surface-container-lowest brutal-border brutal-shadow-sm flex items-center justify-center hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all" type="button">
+<span class="material-symbols-outlined text-on-surface" data-icon="arrow_back">arrow_back</span>
+</button>
+<div>
+<span class="font-headline-sm text-headline-sm font-black tracking-tight text-on-surface block leading-none">LAZY GECKO</span>
+<span class="font-label-md text-[10px] tracking-widest text-on-surface font-extrabold uppercase">CHIANG MAI • HOSTEL</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-2 py-1 brutal-border brutal-shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-on-surface" data-icon="pets" data-weight="fill" style="font-variation-settings: 'FILL' 1;">pets</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">PODS</span>
+</div>
+</header>
+<!-- Step Indicator & Stepped Progress Bar -->
+<section class="px-4 pt-4 pb-2 bg-surface">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-md text-label-md tracking-wider font-extrabold text-on-surface uppercase">
+          STEP 2 OF 4: GUEST DETAILS
+        </span>
+<span class="bg-secondary-container text-surface-container-lowest px-2 py-0.5 brutal-border brutal-shadow-sm font-label-sticker text-label-sticker rotate-1">
+          50% READY
+        </span>
+</div>
+<!-- Segmented Neo-Brutalist Progress Bar -->
+<div class="w-full h-4 bg-surface-container-lowest brutal-border flex p-[2px] gap-1 brutal-shadow-sm">
+<div class="h-full bg-primary-container flex-1 brutal-border border-black"></div>
+<div class="h-full bg-primary-container flex-1 brutal-border border-black"></div>
+<div class="h-full bg-surface-container flex-1 border border-black/20"></div>
+<div class="h-full bg-surface-container flex-1 border border-black/20"></div>
+</div>
+</section>
+<!-- Main Content Canvas -->
+<main class="px-4 py-2 flex flex-col gap-4">
+<!-- Reservation Recap Mini-Card -->
+<section class="bg-primary-container brutal-border brutal-shadow-md p-3 relative">
+<div class="absolute -top-3 right-3 bg-secondary-container text-on-secondary px-2 py-0.5 brutal-border font-label-sticker text-label-sticker uppercase -rotate-2 brutal-shadow-sm">
+          CONFIRMED RATE
+        </div>
+<div class="flex items-start gap-2.5">
+<div class="w-8 h-8 rounded-none bg-surface-container-lowest brutal-border flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface text-[20px]" data-icon="bed">bed</span>
+</div>
+<div class="flex-1">
+<h1 class="font-headline-sm text-[16px] leading-tight font-extrabold text-on-surface">
+              8-Bed Mixed Pod Dorm
+            </h1>
+<p class="font-body-sm text-[13px] font-bold text-on-surface-variant mt-0.5">
+              15–18 Nov 2025 (3 Nights) • <span class="text-on-surface underline font-black">฿750 Total</span>
+</p>
+</div>
+</div>
+</section>
+<!-- Booking Form -->
+<form class="flex flex-col gap-4" onsubmit="event.preventDefault();">
+<!-- Full Name -->
+<div class="flex flex-col gap-1">
+<label class="font-kanit text-[15px] font-bold text-on-surface flex items-center gap-1" for="full-name">
+            Full Name <span class="text-secondary">*</span>
+</label>
+<input class="w-full bg-surface-container-lowest brutal-border brutal-shadow-sm px-3.5 py-2.5 font-body-md text-body-md font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-0 focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all" id="full-name" placeholder="Alex Miller" required="" type="text" value="Alex Miller"/>
+</div>
+<!-- Phone Number -->
+<div class="flex flex-col gap-1">
+<label class="font-kanit text-[15px] font-bold text-on-surface flex items-center gap-1" for="phone-number">
+            Phone Number <span class="text-secondary">*</span>
+</label>
+<div class="relative">
+<input class="w-full bg-tertiary-container/30 brutal-border brutal-shadow-sm px-3.5 py-2.5 font-body-md text-body-md font-bold text-on-surface focus:ring-0 focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all" id="phone-number" placeholder="+66 82 456 7890" required="" type="tel" value="+66 82 456 7890"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-on-surface" data-icon="phone">phone</span>
+</div>
+</div>
+<!-- Email Address -->
+<div class="flex flex-col gap-1">
+<label class="font-kanit text-[15px] font-bold text-on-surface flex items-center gap-1" for="email-address">
+            Email Address <span class="text-secondary">*</span>
+</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest brutal-border brutal-shadow-sm px-3.5 py-2.5 font-body-md text-body-md font-bold text-on-surface focus:ring-0 focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all" id="email-address" placeholder="alex.traveler@example.com" required="" type="email" value="alex.traveler@example.com"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-on-surface" data-icon="mail">mail</span>
+</div>
+</div>
+<!-- Nationality -->
+<div class="flex flex-col gap-1">
+<label class="font-kanit text-[15px] font-bold text-on-surface flex items-center gap-1" for="nationality">
+            Nationality <span class="text-secondary">*</span>
+</label>
+<div class="relative">
+<select class="w-full bg-tertiary-container/20 brutal-border brutal-shadow-sm px-3.5 py-2.5 font-body-md text-body-md font-bold text-on-surface appearance-none focus:ring-0 focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all pr-10" id="nationality" required="">
+<option selected="" value="Australian">Australian 🇦🇺</option>
+<option value="British">British 🇬🇧</option>
+<option value="Thai">Thai 🇹🇭</option>
+<option value="German">German 🇩🇪</option>
+<option value="American">American 🇺🇸</option>
+<option value="Other">Other Passport</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined pointer-events-none text-on-surface" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Guest Steppers Container -->
+<div class="bg-surface-container-lowest brutal-border brutal-shadow-md p-3.5 relative flex flex-col gap-3">
+<!-- Sticker Note overlapping border -->
+<div class="self-start -mt-6 ml-1 bg-tertiary-container text-on-surface brutal-border px-2.5 py-0.5 brutal-shadow-sm rotate-[-2deg] font-label-sticker text-label-sticker uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="warning">warning</span>
+            Hostel is 18+ only for dorms!
+          </div>
+<!-- Stepper: Adults (18+) -->
+<div class="flex items-center justify-between pt-1">
+<div>
+<span class="font-kanit text-[15px] font-bold text-on-surface block leading-none">Adults (18+)</span>
+<span class="font-body-sm text-[11px] text-on-surface-variant font-semibold">Standard dorm pod</span>
+</div>
+<div class="flex items-center gap-2">
+<button aria-label="Decrease adults count" class="w-8 h-8 bg-surface-container brutal-border brutal-shadow-sm flex items-center justify-center font-black text-on-surface active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all" type="button">
+                -
+              </button>
+<span class="w-7 text-center font-headline-sm text-[18px] font-black text-on-surface">1</span>
+<button aria-label="Increase adults count" class="w-8 h-8 bg-primary-container brutal-border brutal-shadow-sm flex items-center justify-center font-black text-on-surface active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all" type="button">
+                +
+              </button>
+</div>
+</div>
+<div class="w-full border-b-2 border-black/20"></div>
+<!-- Stepper: Children -->
+<div class="flex items-center justify-between opacity-80">
+<div>
+<span class="font-kanit text-[15px] font-bold text-on-surface block leading-none">Children</span>
+<span class="font-body-sm text-[11px] text-error font-bold">Strictly 0 allowed in dorms</span>
+</div>
+<div class="flex items-center gap-2">
+<button aria-label="Children cannot be added" class="w-8 h-8 bg-surface-container-high border-2 border-black/30 text-black/30 flex items-center justify-center font-black cursor-not-allowed" disabled="" type="button">
+                -
+              </button>
+<span class="w-7 text-center font-headline-sm text-[18px] font-black text-on-surface">0</span>
+<button aria-label="Children cannot be added" class="w-8 h-8 bg-surface-container-high border-2 border-black/30 text-black/30 flex items-center justify-center font-black cursor-not-allowed" disabled="" type="button">
+                +
+              </button>
+</div>
+</div>
+</div>
+<!-- Special Requests / Arrival notes -->
+<div class="flex flex-col gap-1">
+<label class="font-kanit text-[15px] font-bold text-on-surface flex items-center justify-between" for="special-requests">
+<span>Special Requests / Arrival Notes</span>
+<span class="font-label-sticker text-[11px] text-on-surface-variant font-bold">OPTIONAL</span>
+</label>
+<textarea class="w-full bg-surface-container-lowest brutal-border brutal-shadow-sm p-3 font-body-sm text-body-sm font-medium text-on-surface placeholder:text-outline focus:ring-0 focus:outline-none focus:translate-x-[1px] focus:translate-y-[1px] transition-all" id="special-requests" placeholder="Estimated arrival time from train station or airport..." rows="3"></textarea>
+</div>
+<!-- House Rules Checkbox -->
+<div class="bg-primary-fixed/30 brutal-border p-3 flex items-start gap-3 mt-1 brutal-shadow-sm">
+<input checked="" class="mt-1 w-5 h-5 bg-surface-container-lowest brutal-border rounded-none text-secondary focus:ring-0 cursor-pointer accent-secondary" id="house-rules" type="checkbox"/>
+<label class="font-body-sm text-[13px] font-bold leading-tight text-on-surface cursor-pointer select-none" for="house-rules">
+            I agree to hostel house rules &amp; respect dorm quiet hours <span class="bg-primary-container px-1 brutal-border border-[1.5px] border-black">(23:00 - 08:00)</span>.
+          </label>
+</div>
+</form>
+</main>
+<!-- Micro Footer Branding Note -->
+<div class="text-center py-4 px-4">
+<p class="font-label-md text-[11px] font-bold tracking-wider text-on-surface-variant uppercase">
+        Booking powered by hayhost • Chang Moi, Chiang Mai
+      </p>
+</div>
+<!-- Sticky Bottom Bar -->
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] bg-surface-container-lowest brutal-border border-b-0 border-x-0 p-3.5 z-50 shadow-[0_-4px_0_0_#000000] flex items-center justify-between gap-3">
+<!-- Total Price Block -->
+<div class="flex flex-col">
+<span class="font-label-sticker text-label-sticker text-on-surface-variant uppercase font-bold tracking-wider">
+          Total Payable
+        </span>
+<span class="font-headline-sm text-[22px] leading-tight font-black text-on-surface">
+          ฿750
+        </span>
+</div>
+<!-- Review Booking CTA Button (Chunky Hot Pink / Yellow Neo-Brutalist CTA) -->
+<button class="flex-1 bg-secondary-container hover:bg-primary-container text-on-surface brutal-border brutal-shadow-md py-3 px-4 flex items-center justify-center gap-2 font-label-lg text-label-lg font-black tracking-wide uppercase transition-all duration-100 hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none" type="button">
+<span>Review Booking</span>
+<span class="material-symbols-outlined text-[20px] font-black" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

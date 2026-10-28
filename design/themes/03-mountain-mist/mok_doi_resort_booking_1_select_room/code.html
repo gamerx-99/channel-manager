@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="light" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mok Doi Resort (หมอกดอย รีสอร์ท) - Step 1: Select Room</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@500;600;700&amp;family=Noto+Sans:wght@400;500;600&amp;family=Prompt:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error": "#ffffff",
+            "surface-container-high": "#e4e9e6",
+            "background": "#f5fbf8",
+            "error-container": "#ffdad6",
+            "outline-variant": "#c2c8c2",
+            "primary-fixed-dim": "#aeceba",
+            "primary": "#082519",
+            "secondary-container": "#c6e6bd",
+            "surface-container-low": "#eff5f2",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#304d3e",
+            "on-tertiary": "#ffffff",
+            "primary-container": "#1f3b2d",
+            "on-tertiary-fixed-variant": "#653e00",
+            "secondary": "#4a6545",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#334d2f",
+            "surface-container-highest": "#dee4e1",
+            "tertiary": "#311c00",
+            "surface-tint": "#486555",
+            "surface-dim": "#d5dbd8",
+            "inverse-on-surface": "#ecf2ef",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2a1700",
+            "surface-bright": "#f5fbf8",
+            "on-tertiary-container": "#cd9349",
+            "on-secondary-container": "#4c6847",
+            "on-primary-fixed": "#032014",
+            "on-secondary-fixed": "#072107",
+            "on-surface": "#171d1b",
+            "surface-container": "#e9efec",
+            "surface-variant": "#dee4e1",
+            "primary-fixed": "#caead6",
+            "secondary-fixed": "#cbebc2",
+            "tertiary-fixed-dim": "#fabb6c",
+            "error": "#ba1a1a",
+            "tertiary-fixed": "#ffddb8",
+            "on-surface-variant": "#424844",
+            "surface": "#f5fbf8",
+            "on-background": "#171d1b",
+            "on-primary-container": "#87a593",
+            "tertiary-container": "#4e2f00",
+            "on-error-container": "#93000a",
+            "outline": "#727973",
+            "inverse-primary": "#aeceba",
+            "inverse-surface": "#2b3230",
+            "secondary-fixed-dim": "#b0cfa7"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "2xl": "1.25rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "label-md": ["Noto Sans"],
+            "headline-lg": ["Epilogue"],
+            "headline-sm": ["Epilogue"],
+            "body-lg": ["Noto Sans"],
+            "label-lg": ["Noto Sans"],
+            "body-md": ["Noto Sans"],
+            "body-sm": ["Noto Sans"],
+            "headline-lg-mobile": ["Epilogue"],
+            "headline-xl": ["Epilogue"],
+            "label-sm": ["Noto Sans"],
+            "headline-md": ["Epilogue"],
+            "headline-xl-mobile": ["Epilogue"],
+            "prompt": ["Prompt", "sans-serif"]
+          },
+          "fontSize": {
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased font-body-md text-body-md flex justify-center min-h-screen">
+<!-- Mobile Viewport Frame (390px mobile canvas) -->
+<div class="w-full max-w-[390px] min-h-screen bg-background relative flex flex-col shadow-2xl pb-32">
+<!-- Mountain Mist Ambient Background Gradients -->
+<div class="fixed top-0 max-w-[390px] w-full h-80 bg-gradient-to-b from-[#caead6]/25 via-[#eff5f2]/40 to-transparent pointer-events-none -z-10"></div>
+<!-- Header (Mobile Top Shell) -->
+<header class="sticky top-0 z-40 bg-surface/85 backdrop-blur-md px-4 py-3.5 flex items-center justify-between border-b border-surface-variant/40 transition-colors">
+<button aria-label="Go back" class="w-9 h-9 rounded-full flex items-center justify-center text-primary-container bg-surface-container-low/80 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center text-center">
+<span class="font-prompt text-label-md font-semibold text-primary tracking-tight">Mok Doi Resort • หมอกดอย รีสอร์ท</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#E0A458]"></span>
+<span class="font-label-sm text-label-sm text-secondary font-medium tracking-wide">Step 1 of 4 • Select Cabin</span>
+</div>
+</div>
+<div class="w-9 h-9 rounded-full flex items-center justify-center bg-surface-container-low text-primary-container font-label-md font-bold text-label-sm">
+        1/4
+      </div>
+</header>
+<!-- Main Content Flow -->
+<main class="px-4 pt-3 flex flex-col gap-4">
+<!-- Ambient Cloud Status & Reservation Details Bar -->
+<section class="rounded-2xl bg-surface-container-lowest/80 backdrop-blur-md p-3.5 border border-[#DDE3E0]/70 shadow-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">calendar_month</span>
+<span class="font-label-md text-label-md font-semibold text-primary">18 Nov – 20 Nov 2025</span>
+</div>
+<button class="font-label-md text-label-md font-semibold text-[#1F3B2D] flex items-center gap-0.5 hover:underline" type="button">
+<span>Edit</span>
+<span class="material-symbols-outlined text-[14px]">edit</span>
+</button>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-surface-variant/40 font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#4F6B4A]">bed</span>
+<span>2 Nights</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-[15px] text-[#4F6B4A]">group</span>
+<span>2 Guests</span>
+</div>
+<span class="bg-[#4F6B4A]/10 text-primary-container px-2 py-0.5 rounded-full font-medium">Pang Mapha</span>
+</div>
+<!-- Sea of clouds live index indicator -->
+<div class="flex items-center justify-between mt-0.5 px-2.5 py-1.5 rounded-lg bg-surface-container-low/70 border border-surface-variant/30 text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[#E0A458] text-[16px]">wb_twilight</span>
+<span class="text-on-surface-variant font-medium">Sea of Clouds Forecast:</span>
+</div>
+<span class="font-semibold text-primary flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-[#E0A458] animate-pulse"></span>
+            95% Density (High)
+          </span>
+</div>
+</section>
+<!-- Section Title -->
+<div class="flex items-baseline justify-between pt-1 px-1">
+<h1 class="font-prompt text-headline-sm font-semibold text-primary tracking-tight">Available Cabins</h1>
+<span class="font-label-sm text-label-sm text-secondary">3 mountain retreats</span>
+</div>
+<!-- CABIN 01: Cloud Ridge Villa (Selected / Active) -->
+<article class="rounded-2xl bg-surface-container-lowest backdrop-blur-md overflow-hidden border-2 border-[#1F3B2D] shadow-md transition-all relative">
+<!-- Selected Badge -->
+<div class="absolute top-3 left-3 z-10 bg-[#1F3B2D] text-on-primary px-2.5 py-1 rounded-full text-label-sm font-semibold flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Selected Choice</span>
+</div>
+<div class="relative h-44 w-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="An ethereal wooden eco-luxury villa situated on the cliff ridge of Pang Mapha in northern Thailand, surrounded by drifting white morning mist and verdant pine forests. Warm soft dawn sunlight streams horizontally across a timber veranda furnished with local organic textiles. The atmosphere is serene, mist-shrouded, and deeply calming with natural pine green and warm amber lighting accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg_g7M5f8Fa46Fsh-mntt-7kNr_2qh_cA79lJLO7-ZjIzcATjUVm4MyMona5y42gTc7H3_koYOiL8aKE-Jqtyn4aczcfirbR4swEKHbC-u7nqhqcHgXEY3iDkdC5gzpuNZUEyd8lAry6ux0xbTiOMh_2JptvUB0nbLVuPybNi29YcF_OO75DsMYm62DwVZeT0xHzFpwkxmsG44w4CS7F-yt7pwxCTZddcP6AEJEEo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-on-primary">
+<span class="bg-[#1F3B2D]/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-label-sm font-medium">Cabin 01</span>
+<span class="text-label-sm font-medium bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-[#E0A458]">landscape</span>
+              Mountain Balcony
+            </span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<div>
+<div class="flex items-start justify-between">
+<div>
+<h2 class="font-prompt text-headline-sm font-semibold text-primary leading-snug">Cloud Ridge Villa</h2>
+<p class="font-prompt text-body-sm text-secondary font-medium">วิลล่าริมผาหมอก</p>
+</div>
+<div class="text-right">
+<span class="font-prompt text-headline-sm font-bold text-primary">฿1,500</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">/ night</span>
+</div>
+</div>
+<!-- Features -->
+<div class="flex flex-wrap gap-1.5 mt-2.5 font-label-sm text-label-sm">
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/40 text-on-secondary-container font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span> 2 Adults
+              </span>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/40 text-on-secondary-container font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">king_bed</span> King Bed
+              </span>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/40 text-on-secondary-container font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">deck</span> Mountain Balcony
+              </span>
+</div>
+</div>
+<!-- Total & Action Bar -->
+<div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+<div>
+<span class="text-label-sm text-on-surface-variant block">Stay Total (2 nights)</span>
+<span class="font-prompt text-label-lg font-bold text-primary">฿3,000</span>
+<span class="text-[11px] text-secondary block font-normal leading-tight">taxes &amp; fees included</span>
+</div>
+<!-- Amber Pill Button Active -->
+<button class="h-10 px-5 rounded-full bg-[#E0A458] text-[#1F3B2D] font-label-md font-bold flex items-center gap-1.5 shadow-[0_4px_16px_rgba(224,164,88,0.35)] active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+<span>Selected</span>
+</button>
+</div>
+</div>
+</article>
+<!-- CABIN 02: Pine Valley Cabin -->
+<article class="rounded-2xl bg-surface-container-lowest backdrop-blur-md overflow-hidden border border-[#DDE3E0] shadow-sm transition-all hover:border-[#4F6B4A]/50">
+<div class="relative h-40 w-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="A tranquil wooden mountain cabin nestled amidst dense high-altitude pine trees in Mae Hong Son highlands. Morning fog drifts quietly across the evergreen canopy, illuminated by the gentle golden rays of early morning daylight. The architecture features minimalist organic timber architecture and large glass windows reflecting natural foliage and distant mountain peaks." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAX-q5tomJZl36LVgoYehLOI1RodsXqAC1U5SEA8fgk7u-1lp3PS3bvi_C_d0DtlyQFp9xYpktsI8xzl6HwjOWjxlplBA5XSCzGwDUdn8ZMhHLWDc96MezgGtrmwO7gUNDmlbBT4Cob39LcNmu464wbi8Quvt6C-wKHYupyb0jTNlh9dHWSIQagpZtVAqdIelvVh3-AJKEKtW5rneUBkZrpTGCAbaze-eDiWTjxEzg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-on-primary">
+<span class="bg-[#1F3B2D]/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-label-sm font-medium">Cabin 02</span>
+<span class="text-label-sm font-medium bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-[#E0A458]">forest</span>
+              Valley Facing
+            </span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<div>
+<div class="flex items-start justify-between">
+<div>
+<h2 class="font-prompt text-headline-sm font-semibold text-primary leading-snug">Pine Valley Cabin</h2>
+<p class="font-prompt text-body-sm text-secondary font-medium">เคบินหุบเขาสน</p>
+</div>
+<div class="text-right">
+<span class="font-prompt text-headline-sm font-bold text-primary">฿1,800</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">/ night</span>
+</div>
+</div>
+<!-- Features -->
+<div class="flex flex-wrap gap-1.5 mt-2.5 font-label-sm text-label-sm">
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span> 2 Adults
+              </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">king_bed</span> King Bed
+              </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">forest</span> Valley Facing
+              </span>
+</div>
+</div>
+<!-- Total & Action Bar -->
+<div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+<div>
+<span class="text-label-sm text-on-surface-variant block">Stay Total (2 nights)</span>
+<span class="font-prompt text-label-lg font-bold text-primary">฿3,600</span>
+</div>
+<!-- Amber Pill Button -->
+<button class="h-10 px-5 rounded-full bg-[#E0A458] text-[#1F3B2D] font-label-md font-bold hover:shadow-[0_4px_16px_rgba(224,164,88,0.35)] active:scale-95 transition-all" type="button">
+              Select
+            </button>
+</div>
+</div>
+</article>
+<!-- CABIN 03: Sea of Mist Suite -->
+<article class="rounded-2xl bg-surface-container-lowest backdrop-blur-md overflow-hidden border border-[#DDE3E0] shadow-sm transition-all hover:border-[#4F6B4A]/50">
+<div class="relative h-40 w-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="An expansive luxury suite terrace opening directly into a vast sea of white clouds sweeping across the rugged ridges of Pang Mapha. Warm amber morning sunlight glints off polished organic wood decking, featuring outdoor daybeds surrounded by lush mountain mist and northern Thai pine crests. High key serene daylight with rich natural contrast and mist ambiance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnitfHfX15DZZPn8hAqg1NFgLmVrHdF0w1AOXSOaMDtv6CfNqLHIw7P3wTJou8wrjz3vW3lPgxU5zobbgy7D6EoxRLbu0fbBrGkwtXv6w5s6JsuyfuoRhrx4g9dITb-pG24fd9r_78w4085dLmBfy3YJ7Nw8ipJKNRYxzjt55w2_TRpX-6fQwr5qRsR26GrBFUwyfm58uQa9T_e530n0kWU8Y7ExOteNLigmDxczQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-on-primary">
+<span class="bg-[#1F3B2D]/75 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-label-sm font-medium">Cabin 03</span>
+<span class="text-label-sm font-medium bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-[#E0A458]">cloud</span>
+              Private Mist Deck
+            </span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<div>
+<div class="flex items-start justify-between">
+<div>
+<h2 class="font-prompt text-headline-sm font-semibold text-primary leading-snug">Sea of Mist Suite</h2>
+<p class="font-prompt text-body-sm text-secondary font-medium">สวีททะเลหมอก</p>
+</div>
+<div class="text-right">
+<span class="font-prompt text-headline-sm font-bold text-primary">฿2,400</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">/ night</span>
+</div>
+</div>
+<!-- Features -->
+<div class="flex flex-wrap gap-1.5 mt-2.5 font-label-sm text-label-sm">
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">groups</span> Up to 3 Guests
+              </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">bed</span> King Bed + Daybed
+              </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">wb_cloudy</span> Private Mist Deck
+              </span>
+</div>
+</div>
+<!-- Total & Action Bar -->
+<div class="pt-3 border-t border-surface-variant flex items-center justify-between">
+<div>
+<span class="text-label-sm text-on-surface-variant block">Stay Total (2 nights)</span>
+<span class="font-prompt text-label-lg font-bold text-primary">฿4,800</span>
+</div>
+<!-- Amber Pill Button -->
+<button class="h-10 px-5 rounded-full bg-[#E0A458] text-[#1F3B2D] font-label-md font-bold hover:shadow-[0_4px_16px_rgba(224,164,88,0.35)] active:scale-95 transition-all" type="button">
+              Select
+            </button>
+</div>
+</div>
+</article>
+<!-- Reservation Notes Card -->
+<section class="rounded-2xl bg-surface-container-low/80 backdrop-blur-md p-4 border border-[#DDE3E0]/80 shadow-sm mt-1 mb-2">
+<h3 class="font-prompt text-label-lg font-semibold text-primary flex items-center gap-1.5 mb-2.5">
+<span class="material-symbols-outlined text-secondary text-[18px]">info</span>
+          Reservation Policy &amp; Guidelines
+        </h3>
+<ul class="flex flex-col gap-2 font-body-sm text-body-sm text-on-surface-variant">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">verified_user</span>
+<span>Flexible cancellation up to <strong class="text-primary font-medium">7 days prior</strong> to check-in.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">schedule</span>
+<span>Check-in: <strong class="text-primary font-medium">14:00</strong> • Check-out: <strong class="text-primary font-medium">11:00</strong></span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">local_cafe</span>
+<span>Organic highland drip coffee and morning mist tea included.</span>
+</li>
+</ul>
+</section>
+<!-- Footer Credit (hayhost strictly) -->
+<footer class="py-4 text-center font-body-sm text-[12px] text-on-surface-variant border-t border-surface-variant/40">
+<p>Booking powered by hayhost</p>
+</footer>
+</main>
+<!-- Sticky Bottom Bar (Booking Flow Navigation) -->
+<aside class="fixed bottom-0 max-w-[390px] w-full bg-surface-container-lowest/95 backdrop-blur-xl border-t border-[#DDE3E0] px-4 py-3 z-50 shadow-[0_-8px_24px_rgba(8,37,25,0.06)]">
+<div class="flex items-center justify-between gap-3">
+<div class="flex flex-col">
+<span class="text-label-sm font-medium text-secondary truncate max-w-[150px]">Selected: Cloud Ridge Villa</span>
+<div class="flex items-baseline gap-1">
+<span class="font-prompt text-headline-sm font-bold text-primary leading-tight">฿3,000</span>
+<span class="text-label-sm text-on-surface-variant">Total</span>
+</div>
+</div>
+<button class="flex-1 h-12 px-4 rounded-full bg-[#E0A458] text-[#1F3B2D] font-label-lg font-bold flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(224,164,88,0.35)] active:scale-95 transition-all" type="button">
+<span>Continue to Details</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</aside>
+</div>
+</body></html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.ticket-cut{clip-path:polygon(0 6px,6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px));}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-container-lowest": "#ffffff", "on-tertiary-container": "#ffffff", "tertiary": "#7d5700", "primary-container": "#c2562e", "surface-container-high": "#f1e6e0", "on-background": "#1f1b17", "outline": "#8a726a", "tertiary-fixed": "#ffdeaa", "surface": "#fff8f5", "on-secondary-fixed-variant": "#00504e", "on-tertiary-fixed": "#271900", "primary": "#a23e18", "surface-container-low": "#fcf2eb", "surface-container": "#f6ece5", "on-surface": "#1f1b17", "on-surface-variant": "#57423b", "tertiary-fixed-dim": "#f5bd58", "surface-container-highest": "#ebe1da", "on-secondary-container": "#1d6f6d", "secondary-fixed": "#a5f0ed", "on-error": "#ffffff", "surface-dim": "#e2d8d2", "inverse-on-surface": "#f9efe8", "on-error-container": "#93000a", "on-primary-fixed-variant": "#822801", "surface-bright": "#fff8f5", "secondary-container": "#a5f0ed", "outline-variant": "#dec0b7", "surface-variant": "#ebe1da", "on-secondary": "#ffffff", "error-container": "#ffdad6", "on-primary": "#ffffff", "on-tertiary": "#ffffff", "on-tertiary-fixed-variant": "#5f4100", "surface-tint": "#a23f18", "inverse-surface": "#352f2b", "inverse-primary": "#ffb59c", "error": "#ba1a1a", "on-primary-container": "#ffffff", "primary-fixed-dim": "#ffb59c", "tertiary-container": "#9c6e07", "secondary": "#136967", "secondary-fixed-dim": "#89d3d1", "on-primary-fixed": "#390c00", "on-secondary-fixed": "#00201f", "primary-fixed": "#ffdbcf", "background": "#fff8f5" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-md": "1rem", "gutter": "1.5rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "margin": "3rem", "margin-mobile": "1.25rem", "gutter-mobile": "1rem", "space-lg": "1.5rem", "space-xl": "2.5rem" }, fontFamily: { "display-lg-mobile": ["Space Grotesk"], "label-md": ["Space Grotesk"], "body-sm": ["Be Vietnam Pro"], "headline-md": ["Space Grotesk"], "body-lg": ["Be Vietnam Pro"], "title-lg": ["Space Grotesk"], "headline-sm": ["Space Grotesk"], "headline-lg": ["Space Grotesk"], "display-lg": ["Space Grotesk"], "label-sm": ["Space Grotesk"], "label-lg": ["Space Grotesk"], "headline-lg-mobile": ["Space Grotesk"], "body-md": ["Be Vietnam Pro"] }, fontSize: { "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "600" }], "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "0.01em", "fontWeight": "700" }], "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "title-lg": ["18px", { "lineHeight": "24px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "0em", "fontWeight": "700" }], "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.08em", "fontWeight": "600" }], "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "700" }], "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="Rattana Guesthouse 1962 Vintage Stamp Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1U7JcqrH-PhR9hWX8Q_InzcBI8n2FWaIWqhv1wyiyv_w7Y1EpmCqSQg_zvoDdHunzxTvbKVtkANURTwiSo5n-sMhma4E6ze7CWHcQGv-qvlKzBjujYN1DG3iD-gcusxNpEktH5pccC3vhYhdh4XfP7xhve2LM-N7nzjkr5PoG3JWRZdM6oL_TPASulT88Ei_tYMiTeaXZ3C1SP8143kOe_FHMK1cNE4pTz-B4EOP5OUgw"/><div class="flex flex-col leading-none"><span class="font-title-lg text-title-lg tracking-wide uppercase text-on-surface">Rattana 1962</span><span class="font-label-sm text-label-sm uppercase text-on-surface-variant">รัตนา เกสต์เฮาส์</span></div></div><div class="flex items-center gap-space-sm"><button class="min-h-[44px] px-space-xs flex items-center gap-1 font-label-sm text-label-sm tracking-widest text-on-surface hover:text-primary transition-colors uppercase" type="button"><span class="font-bold text-primary">TH</span><span class="text-outline-variant">|</span><span>EN</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-24 bg-surface"><div class="w-full px-gutter-mobile pt-space-sm pb-space-xs"><span class="sr-only">Stay Overview</span></div><div class="flex flex-col w-full px-gutter-mobile space-y-space-lg">
+<!-- HERO: VINTAGE TRAVEL POSTER FRAME -->
+<section class="relative w-full bg-surface-container rounded-xl p-space-sm shadow-[3px_3px_0px_0px_#1f1b17] overflow-hidden">
+<!-- Outer Inset Decorative Double Line effect via background layering -->
+<div class="relative w-full bg-surface-container-lowest rounded-lg p-space-sm flex flex-col gap-space-sm overflow-hidden">
+<!-- Top Archival Header -->
+<div class="flex items-center justify-between text-on-surface-variant">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[16px] text-primary">local_post_office</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest font-bold">Mae Hong Son Post • No. 1962</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-tertiary">หมวดที่ ๑/๒๕๐๕</span>
+</div>
+<!-- Postal Image Frame -->
+<div class="relative w-full h-56 rounded-md overflow-hidden bg-surface-container-high shadow-inner">
+<img class="w-full h-full object-cover object-center brightness-95" data-alt="A sunlit 1960s Thai-colonial teak shophouse guesthouse in Mae Hong Son surrounded by misty mountain air, traditional wooden louvered shutters, potted tropical palms, warm morning golden glow, nostalgic travel photography with soft film grain in tones of faded mustard and aged parchment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXNveNIqoViGdlhXAIBhxTxdNZghhK8RvSakqsCYwhxSfJI_vpwad15Cgb3WnIme3cAX0crfSTlOg-EtCk1U_oVX1oHiTthTEvrM2qHJ-1MlxSSMxrAPqbLB9pB_RuWZ6cO_28Rq4m2iq_7Ua_IE0-7_2yGssdQ6Dqka6mX7chfDicIgjBJMa25SdtZt-jvdYpgVimDOCH2tSvvzKNlXkBemqqgcrBXExd1te-COHP"/>
+<!-- Distressed Circular Rubber Stamp (SINCE 1962) -->
+<div class="absolute top-2 right-2 rotate-[-6deg] w-16 h-16 rounded-full bg-secondary/85 text-on-secondary flex flex-col items-center justify-center p-1 text-center shadow-[1px_1px_0px_0px_#1f1b17]">
+<span class="font-label-sm text-[9px] uppercase tracking-tight font-bold">RATTANA GH</span>
+<span class="font-headline-sm text-[13px] leading-none font-bold tracking-tighter">1962</span>
+<span class="font-label-sm text-[8px] uppercase tracking-widest text-secondary-fixed">Mae Hong Son</span>
+</div>
+<!-- Postmark Arrival Seal Overlay -->
+<div class="absolute bottom-2 left-2 rotate-[4deg] bg-surface-container-lowest/90 px-space-xs py-0.5 rounded-sm shadow-[2px_2px_0px_0px_#1f1b17] flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[14px]">history_edu</span>
+<span class="font-label-sm text-label-sm uppercase text-on-surface font-bold">CHONG KHAM • EST. 2505</span>
+</div>
+</div>
+<!-- Poster Title & Thai Heritage Description -->
+<div class="flex flex-col pt-space-xs gap-1">
+<div class="flex items-baseline justify-between">
+<h2 class="font-headline-md text-headline-md tracking-tight uppercase text-on-surface">บ้านห้องแถวของคุณย่า</h2>
+<span class="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider">Five Rooms Only</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Our grandmother's shophouse, open to travellers since 1962. Five rooms, original floor tiles, the same morning market outside.
+        </p>
+<p class="font-body-sm text-body-sm text-outline italic">
+          “บ้านห้องแถวไม้สักของคุณย่า เปิดรับนักเดินทางตั้งแต่ปี ๒๕๐๕ กระเบื้องโบราณ และวิถีตลาดเช้าที่ยังคงเดิม”
+        </p>
+</div>
+</div>
+</section>
+<!-- BOOKING WIDGET: TICKET VOUCHER DESIGN -->
+<section class="w-full bg-surface-container-low rounded-xl p-space-md shadow-[3px_3px_0px_0px_#1f1b17] flex flex-col gap-space-md">
+<!-- Ticket Header Bar -->
+<div class="flex items-center justify-between pb-space-xs bg-surface-container-high rounded px-space-sm py-1">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary">confirmation_number</span>
+<span class="font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-surface">Boarding Voucher / สำรองที่พัก</span>
+</div>
+<div class="bg-secondary text-on-secondary px-2 py-0.5 rounded-sm font-label-sm text-[10px] uppercase font-bold tracking-widest">
+        PROMPTPAY VERIFIED
+      </div>
+</div>
+<!-- Ticket Inputs (Check-in, Check-out, Guests) -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="flex flex-col gap-1 bg-surface-container-lowest p-space-sm rounded-lg shadow-sm">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span class="font-label-sm text-label-sm uppercase font-bold">Check-in</span>
+</div>
+<input class="bg-transparent font-title-lg text-title-lg text-on-surface font-bold outline-none cursor-pointer w-full" type="date" value="2025-03-15"/>
+<span class="font-label-sm text-[10px] text-outline">เข้าพัก (เวลา ๑๔:๐๐ น.)</span>
+</div>
+<div class="flex flex-col gap-1 bg-surface-container-lowest p-space-sm rounded-lg shadow-sm">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">event_available</span>
+<span class="font-label-sm text-label-sm uppercase font-bold">Check-out</span>
+</div>
+<input class="bg-transparent font-title-lg text-title-lg text-on-surface font-bold outline-none cursor-pointer w-full" type="date" value="2025-03-17"/>
+<span class="font-label-sm text-[10px] text-outline">ออก (เวลา ๑๑:๐๐ น.)</span>
+</div>
+</div>
+<div class="flex items-center justify-between bg-surface-container-lowest p-space-sm rounded-lg shadow-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase font-bold text-on-surface">Guests / ผู้เข้าพัก</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Standard capacity</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="w-8 h-8 rounded bg-surface-container-high text-on-surface flex items-center justify-center font-bold shadow-sm" onclick="const g=document.getElementById('guest-cnt'); if(+g.innerText&gt;1) g.innerText=+g.innerText-1" type="button">-</button>
+<span class="font-headline-sm text-headline-sm font-bold text-primary px-1" id="guest-cnt">2</span>
+<button class="w-8 h-8 rounded bg-surface-container-high text-on-surface flex items-center justify-center font-bold shadow-sm" onclick="const g=document.getElementById('guest-cnt'); if(+g.innerText&lt;4) g.innerText=+g.innerText+1" type="button">+</button>
+</div>
+</div>
+<!-- Ticket Perforation Bar Effect -->
+<div class="relative w-full flex items-center justify-center py-1">
+<div class="w-full h-[2px] bg-outline-variant/60"></div>
+<span class="absolute px-space-sm bg-surface-container-low font-label-sm text-label-sm text-outline font-bold tracking-widest uppercase">Perforated stub</span>
+</div>
+<!-- PromptPay badge & Guaranteed Instant Slip -->
+<div class="flex items-center justify-between bg-surface-container-high p-space-sm rounded-lg">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[20px]">account_balance</span>
+<div class="flex flex-col leading-tight">
+<span class="font-label-sm text-label-sm font-bold text-on-surface">PromptPay &amp; QR Payment</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant">จองตรงพร้อมสลิปยืนยันทันที</span>
+</div>
+</div>
+<span class="font-label-sm text-[11px] text-primary font-bold uppercase tracking-wider">No Fees</span>
+</div>
+</section>
+<!-- ROOMS SECTION: 3 TICKETS WITH TEAR-OFF COUPON DESIGN -->
+<section class="flex flex-col gap-space-md w-full">
+<div class="flex items-end justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-bold tracking-widest text-primary uppercase">Accommodations • ห้องพัก</span>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface uppercase">Railway Pass Stubs</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-semibold">3 Types Available</span>
+</div>
+<!-- ROOM 1: Room No. 01 Heritage Teak Balcony -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-[3px_3px_0px_0px_#1f1b17] overflow-hidden flex flex-col">
+<!-- Main Pass Upper -->
+<div class="p-space-md flex flex-col gap-space-sm">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-bold tracking-widest text-tertiary">STUB NO. 01 • ชั้นบนวิวตลาด</span>
+<h4 class="font-title-lg text-title-lg text-on-surface">Heritage Teak Balcony</h4>
+</div>
+<span class="px-2 py-0.5 bg-primary-container text-on-primary-container rounded font-label-sm text-[10px] font-bold uppercase">Popular</span>
+</div>
+<div class="relative w-full h-40 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Interior of heritage Thai bedroom with vintage solid teak four poster bed, crisp cotton cream linens, authentic 1960s patterned encaustic floor tiles, retro shutter windows overlooking Chong Kham old street, muted warm earth tone lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApF3XYyAJ2qXha0bKqn7JUcMSHfxIpuHKskx_CNyGrZbhIpbc-D2OMe-PHyoPNxqLT8ZTEB3BNQPJ7l2hcD5dlO0eRM1SUMDemHOCeH79M12kQ7LlFLTdaWMBWA0mefuM75-mTGF4Xog61cogYj4VLvdYK84_iEr0WJe_DGJV3Vx4O6VL_sgNz_kpeikvTh0gVJoyE0FSXbW0SYVoP3uxyMvdo2ZWaAcbnsYkT1TlB"/>
+<div class="absolute bottom-2 right-2 bg-surface-container-lowest/90 px-2 py-0.5 rounded font-label-sm text-[10px] text-on-surface font-semibold">
+            Room 01 • 28 m²
+          </div>
+</div>
+<!-- Route & Details Grid -->
+<div class="grid grid-cols-2 gap-space-xs pt-1">
+<div class="bg-surface-container-low p-space-xs rounded flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Destination</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Chong Kham Lake View</span>
+</div>
+<div class="bg-surface-container-low p-space-xs rounded flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Passengers</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Max 2 Adults (1 Bed)</span>
+</div>
+</div>
+</div>
+<!-- Tear-off perforation cut -->
+<div class="relative flex items-center justify-between bg-surface-container-low px-space-md py-2">
+<div class="w-4 h-4 bg-surface rounded-full -ml-6 shadow-inner"></div>
+<div class="flex-1 h-[2px] bg-outline-variant/70 mx-2"></div>
+<div class="w-4 h-4 bg-surface rounded-full -mr-6 shadow-inner"></div>
+</div>
+<!-- Ticket Coupon Stub Lower -->
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant">Class Fare</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">฿1,250</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">/ night</span>
+</div>
+</div>
+<button class="ticket-cut px-space-md py-space-xs bg-primary text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shadow-[2px_2px_0px_0px_#1f1b17] hover:bg-primary-container transition-transform active:translate-x-0.5 active:translate-y-0.5" type="button">
+          Select Stub
+        </button>
+</div>
+</div>
+<!-- ROOM 2: Room No. 02 Ground Shophouse Twin -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-[3px_3px_0px_0px_#1f1b17] overflow-hidden flex flex-col">
+<div class="p-space-md flex flex-col gap-space-sm">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-bold tracking-widest text-secondary">STUB NO. 02 • ชั้นล่างเรือนกลาง</span>
+<h4 class="font-title-lg text-title-lg text-on-surface">Shophouse Courtyard Twin</h4>
+</div>
+<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant rounded font-label-sm text-[10px] font-bold uppercase">Quiet Wing</span>
+</div>
+<div class="relative w-full h-40 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Vintage Thai twin bedroom with twin wooden single beds, handcrafted woven northern Thai blankets, vintage brass reading lamps, exposed authentic plaster and brick walls, tranquil interior courtyard garden view outside the window." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSAgCQygJA2WPGvzzwppqdwXyAHIZflXrJO6C8-bPq1Ew7vrL6QUBdnbxqGVxA1dNJk_n_2u7mExZ2NhkM27o-FK5-QO1mCCFSYda66ztrgq5GsXF8Pcwb2nbTgGv-UWk9vm1UV5JSi7w_pWzVVgQ6W22A1lofQmtpSUk0aN-DstN2PgS0zAEpdCZ5FySTgMu7wSaSxI32Y6354QC8TMhLrsVW0aN7WXjm0cmhoICR"/>
+<div class="absolute bottom-2 right-2 bg-surface-container-lowest/90 px-2 py-0.5 rounded font-label-sm text-[10px] text-on-surface font-semibold">
+            Room 02 • 24 m²
+          </div>
+</div>
+<div class="grid grid-cols-2 gap-space-xs pt-1">
+<div class="bg-surface-container-low p-space-xs rounded flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Destination</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Inner Lotus Pond</span>
+</div>
+<div class="bg-surface-container-low p-space-xs rounded flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Passengers</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Max 2 Adults (2 Twin)</span>
+</div>
+</div>
+</div>
+<div class="relative flex items-center justify-between bg-surface-container-low px-space-md py-2">
+<div class="w-4 h-4 bg-surface rounded-full -ml-6 shadow-inner"></div>
+<div class="flex-1 h-[2px] bg-outline-variant/70 mx-2"></div>
+<div class="w-4 h-4 bg-surface rounded-full -mr-6 shadow-inner"></div>
+</div>
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant">Class Fare</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">฿950</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">/ night</span>
+</div>
+</div>
+<button class="ticket-cut px-space-md py-space-xs bg-primary text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shadow-[2px_2px_0px_0px_#1f1b17] hover:bg-primary-container transition-transform active:translate-x-0.5 active:translate-y-0.5" type="button">
+          Select Stub
+        </button>
+</div>
+</div>
+<!-- ROOM 3: Room No. 03 The Grandmother's Master Suite -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-[3px_3px_0px_0px_#1f1b17] overflow-hidden flex flex-col">
+<div class="p-space-md flex flex-col gap-space-sm">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-bold tracking-widest text-tertiary">STUB NO. 03 • ห้องคุณย่า ๑๙๖๒</span>
+<h4 class="font-title-lg text-title-lg text-on-surface">The 1962 Heritage Suite</h4>
+</div>
+<span class="px-2 py-0.5 bg-tertiary text-on-tertiary rounded font-label-sm text-[10px] font-bold uppercase">Original</span>
+</div>
+<div class="relative w-full h-40 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Expansive mid-century master bedroom in northern Thailand with original antique dark wood armoire, king bed with handmade local quilt, private antique writing bureau with old stamp collector books, high timber ceilings with gentle ceiling fan breeze." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTJNjGrKQZIZ2311CuWHRSxNpUaiAIO10o6panB_c7HYcppZ_Rbo5H8b4sj-l_czJ42UDQQF6-EKyn5ysJXCxB9rZZzHox_rRBQzDN566yk7C8-R8GRj7980jSD3yg08Hn1kclQUNmOHVaYf58rFaxoJRsV7yiUxQhVKTGqETCq1SSsF1OFybQUY7YJdhsSKyKbgDlWNHXjo_UlspjDeAEf5r8Bk8pCLpJi__1cHMc"/>
+<div class="absolute bottom-2 right-2 bg-surface-container-lowest/90 px-2 py-0.5 rounded font-label-sm text-[10px] text-on-surface font-semibold">
+            Room 03 • 38 m²
+          </div>
+</div>
+<div class="grid grid-cols-2 gap-space-xs pt-1">
+<div class="bg-surface-container-low p-space-xs rounded flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Destination</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Old Town &amp; Temple View</span>
+</div>
+<div class="bg-surface-container-low p-space-xs rounded flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Passengers</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Max 3 Adults (1K + 1S)</span>
+</div>
+</div>
+</div>
+<div class="relative flex items-center justify-between bg-surface-container-low px-space-md py-2">
+<div class="w-4 h-4 bg-surface rounded-full -ml-6 shadow-inner"></div>
+<div class="flex-1 h-[2px] bg-outline-variant/70 mx-2"></div>
+<div class="w-4 h-4 bg-surface rounded-full -mr-6 shadow-inner"></div>
+</div>
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant">Class Fare</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">฿1,600</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">/ night</span>
+</div>
+</div>
+<button class="ticket-cut px-space-md py-space-xs bg-primary text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider shadow-[2px_2px_0px_0px_#1f1b17] hover:bg-primary-container transition-transform active:translate-x-0.5 active:translate-y-0.5" type="button">
+          Select Stub
+        </button>
+</div>
+</div>
+</section>
+<!-- GALLERY: POSTCARD LAYOUT WITH WHITE BORDERS AND CAPTIONS -->
+<section class="flex flex-col gap-space-md w-full">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-bold tracking-widest text-primary uppercase">Postcard Archive • โปสการ์ดความทรงจำ</span>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface uppercase">Letters from 1962</h3>
+</div>
+<!-- Postcard Grid (5 Classic postcards with tactile white borders) -->
+<div class="flex flex-col gap-space-md">
+<!-- 1. Exterior -->
+<div class="bg-surface-container-lowest p-space-sm rounded-lg shadow-[3px_3px_0px_0px_#1f1b17] rotate-[-1deg] flex flex-col gap-space-xs">
+<div class="w-full h-48 bg-surface-container overflow-hidden rounded">
+<img class="w-full h-full object-cover" data-alt="Classic streetview postcard of a weathered wooden 1960s shophouse with old painted Thai lettering signboards, vintage bicycle parked by the entrance, serene morning light of Mae Hong Son." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARAV3DxHMsZciC6MIZvnmB1MVy6SHrDgr1tlsJKsIIBu6TLyLgqAHDxQaxD5blUHd9fPPDbAnuJR92Sp1EuuRN1FwiEht4a8_sofa4SofYgua-9XTVFDl-r8Lc_OlKoH-qEsEX6UUonYL2rymeAtNHDByVKklIkgszD4ewqo8UzM9dZPAtHqkpKd6KGnP9nfJoAQ9JjKu2aPGXnWTPFiWTR9ioA6wtypJ79qEasAtf"/>
+</div>
+<div class="flex justify-between items-center px-1 pt-1">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">[exterior] ซุ้มหน้าบ้านไม้สัก ๒๕๐๕</span>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider">Stamp 1962</span>
+</div>
+</div>
+<!-- 2. Room Interior -->
+<div class="bg-surface-container-lowest p-space-sm rounded-lg shadow-[3px_3px_0px_0px_#1f1b17] rotate-[1.5deg] flex flex-col gap-space-xs">
+<div class="w-full h-48 bg-surface-container overflow-hidden rounded">
+<img class="w-full h-full object-cover" data-alt="Warm intimate bedroom postcard capturing handmade embroidered pillows, open vintage teak window, soft dust motes in natural mountain morning sunlight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmLka6R9ytq9gFCDInvRE8lyGAr6crdeZl8BaLc0bwoZRGxkSBARkbiwk3jqWijkTfltoCYGqtvA3osF1W_Qs6MpfXj0pYDtuHXFrJiBSBbKjCqYmO18gOcYH3xx1hYAX-UT8O8sDuf4p7GZnrSt-8Uazd5up3n5hODFd5m-5aIbjnEe4Y899ftCQWjViV6BD0cXucDOTz7XZfCFV1r0x7AqqOz9p_q9HWtaCTf_LN"/>
+</div>
+<div class="flex justify-between items-center px-1 pt-1">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">[room] ห้องนอนกระเบื้องโบราณ</span>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider">Air Mail</span>
+</div>
+</div>
+<!-- 3. View -->
+<div class="bg-surface-container-lowest p-space-sm rounded-lg shadow-[3px_3px_0px_0px_#1f1b17] rotate-[-0.8deg] flex flex-col gap-space-xs">
+<div class="w-full h-48 bg-surface-container overflow-hidden rounded">
+<img class="w-full h-full object-cover" data-alt="Scenic vintage postcard perspective of Wat Chong Kham reflection on the misty lake during sunrise, surrounded by calm northern Thai hills in retro nostalgic hues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4TvLTc759pt_K7zLzYQFnQ3wyB2P9O8yExral2GddW9N0jm7ZfzCYMzw1YsuNUOdI_lK1dJ95PS3lL0MNHtWXHvWUhnvvOyYy2LxkV7hT8khwJZhiaXavNOQ8mpLBb4YcA9YzP_p-INMRi5Ehm4Hj3wa_NlY68r6utdpGtpeE0mK2uBF2mp2eDqb-wXLR7TWfzYSltjxO-V0cmsw9kjJ7kbs1eP7IQN6ZA9Vwb-4G"/>
+</div>
+<div class="flex justify-between items-center px-1 pt-1">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">[view] วิวทะเลสาบหนองจองคำยามเช้า</span>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider">Scenic No. 04</span>
+</div>
+</div>
+<!-- 4. Food -->
+<div class="bg-surface-container-lowest p-space-sm rounded-lg shadow-[3px_3px_0px_0px_#1f1b17] rotate-[1.2deg] flex flex-col gap-space-xs">
+<div class="w-full h-48 bg-surface-container overflow-hidden rounded">
+<img class="w-full h-full object-cover" data-alt="Traditional Shan style morning breakfast set served in vintage floral enamelware bowls: Shan noodles, fresh sticky rice cakes, steaming hot robusta coffee in retro glasses." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsNoOzqTyBgisw2f8-aXjgLWPB9Lr4atD-0JvRgV_Z35wOMoVzEx1y0IYZyrVmFVZNE9SnAWEGdQvMaPgxwHvMO0lydpPqJ4lFNOGsUslBbmgLnBKFrmka2ABCO-3kuUaviR0KLpIgVOGmC2w1c8nb-80sI8yodztiNH8rVc6jtr6wb0VDu6Z0vIeqljalEMu3qRj9tITgVGvRH226ImcR1FhrZP47MNKhGeTZ4oud"/>
+</div>
+<div class="flex justify-between items-center px-1 pt-1">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">[food] อาหารเช้าไทยใหญ่ตลาดโบราณ</span>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider">Fresh Daily</span>
+</div>
+</div>
+<!-- 5. Common Area -->
+<div class="bg-surface-container-lowest p-space-sm rounded-lg shadow-[3px_3px_0px_0px_#1f1b17] rotate-[-1.5deg] flex flex-col gap-space-xs">
+<div class="w-full h-48 bg-surface-container overflow-hidden rounded">
+<img class="w-full h-full object-cover" data-alt="Cozy common veranda living room with retro rattan armchairs, antique wall clock, bookshelf with vintage Thai novels, ceiling fan, and sun-dappled teak wooden flooring." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4j-3oD4-JmQvLQLO3RD_dmL8Oqi-45OT7UlWQyDhEpplCR_ScRCA1kMkLXbRn6IwsvsPv3SDp0tKTZC9vWUaYfTlMEKytOslNcxS2AvIAhVWmrAN5PUyYMEFotSSYf9RRlOkWXGNEFWmLqqMhNVB3hAapwR4-b3vMAkVAiTtNmlqZ2V2Fj00nb_WfcobvKxT8Qpi7kPo0cnkOeT5HL7Uz3pbK2AkmlS43JNi62zjU"/>
+</div>
+<div class="flex justify-between items-center px-1 pt-1">
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">[common area] ชานบ้านและห้องสมุดเก่า</span>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-wider">Lounge 1962</span>
+</div>
+</div>
+</div>
+</section>
+<!-- LOCATION: VINTAGE MAP CARD WITH STAMPED ADDRESS -->
+<section class="w-full bg-surface-container-lowest rounded-xl p-space-md shadow-[3px_3px_0px_0px_#1f1b17] flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-primary font-bold">Postal Destination</span>
+<h4 class="font-title-lg text-title-lg text-on-surface">Chong Kham Old Town</h4>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">explore</span>
+</div>
+</div>
+<!-- Map container with data-location for automated API injection -->
+<div class="w-full h-48 rounded-lg bg-surface-container-high relative overflow-hidden shadow-inner flex items-center justify-center" data-location="Chong Kham, Mueang Mae Hong Son, Thailand" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBIJJ89yUgtR61HxLa8g_I1pUBQ3lhzF8oRk-RGKCxuGzBFmZcjeHymJn7aD5mjeDuyTsp4BOeaQupKz6pxHLyQyzBJ97h1X0rZ1K54EMiqF0RFzzxt9bcCx8pAH0sPHrplxq6WA3Wp5pJ77ouWyiP8EHXHNiNflihccuokZAM8cSTLSbbVCowlToSxAs_aS09RUKg_lhd8OFHzTL5wgnt5SzMBvzMnPCYXYT0rA3OB')">
+<div class="bg-surface-container-lowest/90 px-space-sm py-1 rounded shadow flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[18px]">pin_drop</span>
+<span class="font-label-sm text-label-sm font-bold text-on-surface">Chong Kham Lake (50m walk)</span>
+</div>
+</div>
+<!-- Stamped Official Postal Address Box -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-1">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary">markunread_mailbox</span>
+<span class="font-label-sm text-label-sm uppercase font-bold tracking-wider">Registered Address / ที่อยู่จดทะเบียน</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface leading-snug font-medium">
+        Chong Kham, Mueang Mae Hong Son, Thailand 58000
+      </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+        ริมหนองจองคำ อำเภอเมือง จังหวัดแม่ฮ่องสอน (ติดกับตลาดเช้าเทศบาล)
+      </p>
+</div>
+</section>
+</div><footer class="w-full mt-space-xl px-gutter-mobile py-space-lg text-center bg-surface-container-low"><div class="flex flex-col items-center gap-1"><p class="font-title-lg text-title-lg uppercase text-on-surface">Rattana Guesthouse 1962</p><p class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Chong Kham, Mueang Mae Hong Son, Thailand</p><p class="font-label-sm text-label-sm tracking-widest uppercase text-tertiary mt-space-xs">Booking powered by hayhost</p></div></footer></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.06)]" data-active-classes="text-primary font-bold"><div class="h-20 px-gutter-mobile flex items-center justify-between gap-space-sm"><div class="flex flex-col justify-center min-w-0"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Standard Rate</span><div class="flex items-baseline gap-1"><span class="font-label-md text-label-md text-on-surface-variant">from</span><span class="font-headline-sm text-headline-sm text-primary">฿950</span><span class="font-label-sm text-label-sm text-on-surface-variant">/ night</span></div></div><a aria-current="page" class="ticket-cut min-h-[44px] px-space-md py-space-sm bg-primary-container flex items-center justify-center gap-space-xs hover:bg-primary transition-colors shadow-[3px_3px_0px_0px_#1f1b17] text-primary font-bold" data-path="stay-overview" href="#"><span class="material-symbols-outlined text-[18px]">confirmation_number</span><div class="flex flex-col items-start leading-tight"><span class="font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-primary-container">Check Availability</span><span class="font-label-sm text-label-sm opacity-90 text-on-primary-container">ตรวจสอบห้องว่าง</span></div></a></div></nav></body></html>

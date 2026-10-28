@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lazy Gecko Hostel - Select Room</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,400;0,500;0,700;0,800;0,900;1,700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#ffd23f",
+            "surface-container": "#eeeeee",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#62edc9",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#e2e2e2",
+            "outline-variant": "#d1c5ad",
+            "on-secondary-fixed": "#3f0018",
+            "surface-dim": "#dadada",
+            "on-tertiary-container": "#006955",
+            "on-surface-variant": "#4d4634",
+            "inverse-primary": "#edc22e",
+            "surface": "#f9f9f9",
+            "on-secondary-container": "#62002a",
+            "on-primary-fixed-variant": "#574500",
+            "on-tertiary-fixed": "#002019",
+            "secondary-container": "#fd5c8e",
+            "secondary-fixed-dim": "#ffb1c2",
+            "error-container": "#ffdad6",
+            "tertiary": "#006b57",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#241a00",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed-variant": "#8f0040",
+            "surface-tint": "#745c00",
+            "on-background": "#1b1b1b",
+            "secondary": "#b32057",
+            "outline": "#7f7661",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9f9",
+            "tertiary-fixed-dim": "#4eddba",
+            "surface-container-low": "#f3f3f3",
+            "secondary-fixed": "#ffd9e0",
+            "on-tertiary-fixed-variant": "#005141",
+            "primary-fixed": "#ffe089",
+            "on-primary-container": "#725a00",
+            "primary-fixed-dim": "#edc22e",
+            "tertiary-fixed": "#6ffad5",
+            "on-surface": "#1b1b1b",
+            "inverse-surface": "#303030",
+            "inverse-on-surface": "#f1f1f1",
+            "background": "#f9f9f9",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#e8e8e8",
+            "primary": "#745c00",
+            "surface-container-highest": "#e2e2e2"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "margin": "2rem",
+            "gutter-mobile": "1rem",
+            "margin-mobile": "1rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Epilogue"],
+            "label-md": ["Space Grotesk"],
+            "body-md": ["Epilogue"],
+            "label-lg": ["Space Grotesk"],
+            "headline-md": ["Epilogue"],
+            "headline-sm": ["Epilogue"],
+            "headline-lg": ["Epilogue"],
+            "label-sticker": ["Space Grotesk"],
+            "body-lg": ["Epilogue"],
+            "display-hero-mobile": ["Epilogue"],
+            "display-hero": ["Epilogue"],
+            "body-sm": ["Epilogue"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["32px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+            "label-md": ["13px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+            "label-lg": ["16px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+            "headline-md": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800"}],
+            "headline-sm": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+            "headline-lg": ["44px", {"lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+            "label-sticker": ["12px", {"lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "500"}],
+            "display-hero-mobile": ["40px", {"lineHeight": "46px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+            "display-hero": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.03em", "fontWeight": "900"}],
+            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .brutal-border { border: 3px solid #000000; }
+    .brutal-border-b { border-bottom: 3px solid #000000; }
+    .brutal-border-t { border-top: 3px solid #000000; }
+    .brutal-shadow { box-shadow: 4px 4px 0px #000000; }
+    .brutal-shadow-sm { box-shadow: 3px 3px 0px #000000; }
+    .brutal-shadow-btn { box-shadow: 4px 4px 0px #000000; }
+    .brutal-active:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px #000000; }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex justify-center selection:bg-primary-container selection:text-on-surface">
+<!-- Mobile Screen Shell (Max 390px viewport container) -->
+<div class="w-full max-w-[390px] bg-surface min-h-screen flex flex-col brutal-border relative shadow-[0_0_50px_rgba(0,0,0,0.08)] mb-24">
+<!-- Top Step Progress Anchor -->
+<div class="w-full bg-surface-container-lowest brutal-border-b px-4 py-2.5 flex flex-col gap-1.5 z-20">
+<div class="flex justify-between items-center">
+<span class="font-label-sticker text-label-sticker font-bold uppercase tracking-wider text-on-surface">STEP 1 OF 4: CHOOSE YOUR BED / ROOM</span>
+<span class="font-label-sticker text-label-sticker font-bold bg-primary-container brutal-border px-1.5 py-0.5">25%</span>
+</div>
+<!-- Progress Bar Track -->
+<div class="w-full h-3 bg-surface-container brutal-border relative overflow-hidden">
+<div class="h-full bg-primary-container border-r-[3px] border-black w-1/4"></div>
+</div>
+</div>
+<!-- Top App Bar (Task Context) -->
+<header class="w-full bg-primary-container px-3 py-3 brutal-border-b flex items-center justify-between z-10 sticky top-0 shadow-[0_4px_0_0_#000000]">
+<button aria-label="Go Back" class="w-9 h-9 bg-surface-container-lowest brutal-border brutal-shadow-sm flex items-center justify-center brutal-active transition-transform">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="font-headline-sm text-headline-sm font-black tracking-tight uppercase leading-none text-on-surface">
+          LAZY GECKO HOSTEL
+        </h1>
+<span class="font-label-sticker text-[10px] font-bold text-on-surface-variant tracking-widest mt-0.5">CHANG MOI • CHIANG MAI</span>
+</div>
+<!-- Language Switcher Chip -->
+<button class="bg-surface-container-lowest px-2 py-1 brutal-border brutal-shadow-sm font-label-md text-label-md font-bold tracking-tight text-on-surface flex items-center gap-1 brutal-active">
+<span>TH | EN</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-4 flex flex-col gap-5">
+<!-- Selected Dates Banner -->
+<section class="bg-tertiary-container brutal-border brutal-shadow p-3 relative flex items-center justify-between">
+<div class="flex items-start gap-2.5">
+<div class="w-8 h-8 bg-surface-container-lowest brutal-border flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</div>
+<div>
+<p class="font-label-lg text-label-lg font-bold text-on-surface leading-tight">15 Nov – 18 Nov 2025</p>
+<p class="font-body-sm text-body-sm text-on-tertiary-container font-medium">3 Nights • 1 Guest</p>
+</div>
+</div>
+<button class="bg-surface-container-lowest brutal-border px-3 py-1 font-label-md text-label-md font-bold uppercase brutal-shadow-sm brutal-active hover:bg-surface-container transition-all">
+          Edit
+        </button>
+</section>
+<!-- Section Title & Sticker -->
+<div class="flex items-center justify-between pt-1">
+<h2 class="font-headline-sm text-headline-sm font-black tracking-tight text-on-surface">
+          Available Rooms &amp; Dorms
+        </h2>
+<div class="bg-secondary-container brutal-border px-2 py-1 -rotate-2 brutal-shadow-sm">
+<span class="font-label-sticker text-label-sticker font-black uppercase text-on-secondary-container">POPULAR DATES!</span>
+</div>
+</div>
+<!-- ROOM CARD 1: 8-Bed Mixed Pod Dorm (SELECTED STATE) -->
+<article class="bg-surface-container-lowest brutal-border brutal-shadow relative flex flex-col">
+<!-- Floating Sticker -->
+<div class="absolute -top-3.5 right-3 bg-primary-container brutal-border px-2.5 py-0.5 rotate-2 z-10 brutal-shadow-sm">
+<span class="font-label-sticker text-label-sticker font-black uppercase text-on-surface tracking-wider">SELECTED BED</span>
+</div>
+<!-- Room Image Container with brutal separation -->
+<div class="relative w-full h-40 brutal-border-b overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A modern stylish hostel dorm room in Chiang Mai featuring sturdy wooden bunk beds with blackout privacy curtains, personal lockable storage drawers, warm reading lights, and energetic neo-brutalist interior decor elements with high natural ambient daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEIbP9lU7lUvNstNCXoBTcU3QHmuhOCNTM2sQsnrSe2kRhK-1l1T1QoAhBHXc6W2YYF0zxp47VJH9Tq0y10W7Io1knTVUMZeWtDxrgxTKVpOznfOaRHksCk6ZllS--6enH9TAOAaChCZ_vffYU77C_ZFv6JAS11OTE3MC2o5JGmFrDIkLzBwBGOPyEWW0E2R2FA70aFfLvESbJZGlafuiQanEzxLWJFcWVfOApoCc"/>
+<div class="absolute bottom-2 left-2 bg-surface-container-lowest brutal-border px-2 py-0.5 text-xs font-bold font-label-md">
+            POD #04 ASSIGNED
+          </div>
+</div>
+<!-- Card Body -->
+<div class="p-3.5 flex flex-col gap-3">
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm font-black text-on-surface leading-snug">8-Bed Mixed Pod Dorm</h3>
+</div>
+<!-- Amenities Badges -->
+<div class="flex flex-wrap gap-1.5 mt-2">
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">curtains</span> Privacy Curtains
+              </span>
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span> Locker Included
+              </span>
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">ac_unit</span> 24h AC
+              </span>
+</div>
+</div>
+<!-- Divider -->
+<div class="border-b-[2px] border-dashed border-on-surface my-0.5"></div>
+<!-- Price & Action -->
+<div class="flex items-end justify-between">
+<div>
+<p class="font-headline-md text-headline-md font-black text-on-surface leading-none">฿250 <span class="font-body-sm text-body-sm font-bold text-on-surface-variant">/ night</span></p>
+<p class="font-label-md text-label-md font-bold text-secondary mt-1">฿750 total (3 nights)</p>
+</div>
+<button class="bg-primary-container brutal-border px-4 py-2 font-label-lg text-label-lg font-black tracking-wider uppercase brutal-shadow-btn brutal-active flex items-center gap-1.5">
+<span>SELECTED</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+</div>
+</article>
+<!-- ROOM CARD 2: 4-Bed Female Sanctuary -->
+<article class="bg-surface-container-lowest brutal-border brutal-shadow relative flex flex-col">
+<!-- Floating Sticker -->
+<div class="absolute -top-3.5 right-3 bg-secondary-container brutal-border px-2.5 py-0.5 -rotate-2 z-10 brutal-shadow-sm">
+<span class="font-label-sticker text-label-sticker font-black uppercase text-on-secondary-container tracking-wider">GIRLS ONLY</span>
+</div>
+<!-- Room Image Container -->
+<div class="relative w-full h-36 brutal-border-b overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean, cozy four-bed female dormitory room at a boutique hostel with timber frame bunk pods, chic vanity mirrors, personal lockers, and vibrant tropical accents with bright morning light coming through a balcony window." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClEhsxn_lh1ZtCCaGLxL2DHw5Iuub4vxgXrEaau4Yucb-yIdz2UbJN2RwCbWDXARqAJA0xCzqa4B6nBALH0QY67HJE7K8tEfmwyqgYNePLzubQZznHEhhSl9GVaG5RFYhy0GHZ9qHfxY1yJYdF-W1pvFUx8SDtd0oRPzmJvgNWgib0JsL5XVtXH6V67C9dvWo6AY-em-HtCYij0T6jxCYPv35_ZbFHTt7t_75tgBo"/>
+<div class="absolute bottom-2 left-2 bg-surface-container-lowest brutal-border px-2 py-0.5 text-xs font-bold font-label-md">
+            2 BEDS LEFT
+          </div>
+</div>
+<!-- Card Body -->
+<div class="p-3.5 flex flex-col gap-3">
+<div>
+<h3 class="font-headline-sm text-headline-sm font-black text-on-surface leading-snug">4-Bed Female Sanctuary</h3>
+<div class="flex flex-wrap gap-1.5 mt-2">
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">female</span> Ensuite Shower
+              </span>
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">security</span> Keycard Access
+              </span>
+</div>
+</div>
+<!-- Divider -->
+<div class="border-b-[2px] border-dashed border-on-surface my-0.5"></div>
+<!-- Price & Action -->
+<div class="flex items-end justify-between">
+<div>
+<p class="font-headline-md text-headline-md font-black text-on-surface leading-none">฿320 <span class="font-body-sm text-body-sm font-bold text-on-surface-variant">/ night</span></p>
+<p class="font-label-md text-label-md font-bold text-on-surface-variant mt-1">฿960 total</p>
+</div>
+<button class="bg-tertiary-container brutal-border px-5 py-2 font-label-lg text-label-lg font-black tracking-wider uppercase brutal-shadow-btn brutal-active hover:bg-tertiary-fixed transition-all">
+              SELECT
+            </button>
+</div>
+</div>
+</article>
+<!-- ROOM CARD 3: Private Double Ensuite -->
+<article class="bg-surface-container-lowest brutal-border brutal-shadow relative flex flex-col">
+<!-- Floating Sticker -->
+<div class="absolute -top-3.5 right-3 bg-primary-fixed brutal-border px-2.5 py-0.5 rotate-1 z-10 brutal-shadow-sm">
+<span class="font-label-sticker text-label-sticker font-black uppercase text-on-surface tracking-wider">SUNSET BALCONY</span>
+</div>
+<!-- Room Image Container -->
+<div class="relative w-full h-36 brutal-border-b overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A sunlit private ensuite double hotel room in a trendy Chiang Mai design hostel with a queen size mattress, concrete accent wall, sliding glass doors leading out to a terrace balcony overlooking the rooftops." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcrxgAh70doEZ7K6ETah89lABPP5TnoNdDgS_2z6mzJ5xDI96u-yVUT-d97eVENtmrhwGAM7KKLXjgD5GC9JMcUgPlEjY6bp_g8gyIya85Tkmf74aI-B8GhCoXlfD_irCWBPDT3gjKOmsG7l7SzJn1W5euaEpKwknQnklcyZElfEmrYJrnZRLBgh6pKd9XWNLBbRhnBJrktW7_ogn6ZlLapfMv3EaaSyyRxwc96gs"/>
+<div class="absolute bottom-2 left-2 bg-surface-container-lowest brutal-border px-2 py-0.5 text-xs font-bold font-label-md">
+            1 ROOM AVAILABLE
+          </div>
+</div>
+<!-- Card Body -->
+<div class="p-3.5 flex flex-col gap-3">
+<div>
+<h3 class="font-headline-sm text-headline-sm font-black text-on-surface leading-snug">Private Double Ensuite</h3>
+<div class="flex flex-wrap gap-1.5 mt-2">
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">king_bed</span> Queen Bed
+              </span>
+<span class="bg-surface-container brutal-border px-2 py-0.5 font-label-md text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">balcony</span> Private Balcony
+              </span>
+</div>
+</div>
+<!-- Divider -->
+<div class="border-b-[2px] border-dashed border-on-surface my-0.5"></div>
+<!-- Price & Action -->
+<div class="flex items-end justify-between">
+<div>
+<p class="font-headline-md text-headline-md font-black text-on-surface leading-none">฿750 <span class="font-body-sm text-body-sm font-bold text-on-surface-variant">/ night</span></p>
+<p class="font-label-md text-label-md font-bold text-on-surface-variant mt-1">฿2,250 total</p>
+</div>
+<button class="bg-secondary-container text-on-surface brutal-border px-5 py-2 font-label-lg text-label-lg font-black tracking-wider uppercase brutal-shadow-btn brutal-active hover:bg-secondary-fixed transition-all">
+              SELECT
+            </button>
+</div>
+</div>
+</article>
+<!-- Channel Manager & Hostel House Rules Card -->
+<section class="bg-surface-container-low brutal-border brutal-shadow p-3.5 flex flex-col gap-2.5 my-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<h4 class="font-label-lg text-label-lg font-black uppercase text-on-surface tracking-tight">Hostel &amp; Payment Guidelines</h4>
+</div>
+<div class="grid grid-cols-1 gap-2 text-xs">
+<div class="flex items-center gap-2 bg-surface-container-lowest p-2 brutal-border">
+<span class="material-symbols-outlined text-on-surface text-[18px]">qr_code_2</span>
+<span class="font-body-sm text-body-sm font-medium">PromptPay QR &amp; Cards: <strong>Instant Auto-Confirmation</strong></span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-lowest p-2 brutal-border">
+<span class="material-symbols-outlined text-on-surface text-[18px]">schedule</span>
+<span class="font-body-sm text-body-sm font-medium">Check-in: <strong>14:00 - 22:00</strong> • Checkout: <strong>11:00</strong></span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-lowest p-2 brutal-border">
+<span class="material-symbols-outlined text-on-surface text-[18px]">bedtime</span>
+<span class="font-body-sm text-body-sm font-medium">Dorm Quiet Hours from <strong>23:00</strong> nightly</span>
+</div>
+</div>
+</section>
+<!-- Sub-footer Booking attribution -->
+<div class="text-center py-2">
+<p class="font-label-md text-label-md font-bold text-on-surface-variant uppercase tracking-wider">
+          Booking powered by hayhost
+        </p>
+</div>
+</main>
+<!-- Sticky Bottom Checkout Bar (390px fixed anchor) -->
+<div class="fixed bottom-0 max-w-[390px] w-full bg-surface-container-lowest brutal-border-t p-3.5 z-40 shadow-[0_-4px_0_0_#000000] flex flex-col gap-2.5">
+<!-- Mini summary pill -->
+<div class="flex items-center justify-between px-1">
+<span class="font-body-sm text-body-sm font-bold text-on-surface">Selected: 8-Bed Mixed Pod</span>
+<span class="font-headline-sm text-headline-sm font-black text-on-surface">฿750 Total</span>
+</div>
+<!-- Main CTA Button -->
+<button class="w-full bg-primary-container brutal-border py-3.5 px-4 brutal-shadow-btn brutal-active flex items-center justify-center gap-2 hover:bg-primary-fixed transition-transform">
+<span class="font-label-lg text-label-lg font-black tracking-wider uppercase text-on-surface">
+          Continue to Guest Details
+        </span>
+<span class="material-symbols-outlined text-[20px] font-bold">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" width="290" height="290">
+  <!-- hayhost brand mark, traced from .brand-mark in client/src/index.css (29px box) -->
+  <rect width="29" height="29" rx="8" fill="#954831"/>
+  <rect x="5" y="5" width="11" height="11" fill="#fff6f2"/>
+  <path d="M9 9.5H17.5V18" fill="none" stroke="#fff6f2" stroke-width="1"/>
+</svg>

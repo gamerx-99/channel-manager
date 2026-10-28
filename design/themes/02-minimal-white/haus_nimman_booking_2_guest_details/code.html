@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HAUS NIMMAN — Guest Details</title>
+<!-- IBM Plex Sans / Thai Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Sans+Thai:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed": "#121f0e",
+            "on-secondary-container": "#636262",
+            "on-primary-container": "#f8ffef",
+            "on-error": "#ffffff",
+            "surface-variant": "#e2e3e1",
+            "tertiary-container": "#747571",
+            "outline": "#757870",
+            "primary-fixed": "#d7e7cd",
+            "on-secondary": "#ffffff",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#e4e2de",
+            "secondary": "#5f5e5e",
+            "secondary-container": "#e2dfde",
+            "background": "#f9f9f7",
+            "surface-container": "#eeeeec",
+            "surface-tint": "#54624d",
+            "surface-bright": "#f9f9f7",
+            "error": "#ba1a1a",
+            "surface-dim": "#dadad8",
+            "on-error-container": "#93000a",
+            "on-tertiary": "#ffffff",
+            "inverse-primary": "#bccbb2",
+            "surface-container-highest": "#e2e3e1",
+            "on-secondary-fixed": "#1b1b1c",
+            "secondary-fixed-dim": "#c8c6c5",
+            "surface": "#f9f9f7",
+            "primary-fixed-dim": "#bccbb2",
+            "primary": "#52604b",
+            "surface-container-high": "#e8e8e6",
+            "inverse-surface": "#2f3130",
+            "surface-container-low": "#f4f4f2",
+            "outline-variant": "#c5c8be",
+            "on-primary-fixed-variant": "#3d4b37",
+            "on-background": "#1a1c1b",
+            "on-tertiary-fixed": "#1b1c19",
+            "secondary-fixed": "#e5e2e1",
+            "on-tertiary-container": "#fefcf7",
+            "on-secondary-fixed-variant": "#474746",
+            "primary-container": "#6a7963",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed-dim": "#c7c6c2",
+            "on-surface-variant": "#444841",
+            "on-tertiary-fixed-variant": "#464744",
+            "inverse-on-surface": "#f1f1ef",
+            "on-surface": "#1a1c1b",
+            "error-container": "#ffdad6",
+            "tertiary": "#5c5c59"
+          },
+          "borderRadius": {
+            "DEFAULT": "0px",
+            "none": "0px",
+            "lg": "0px",
+            "xl": "0px",
+            "full": "0px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "gutter-desktop": "2.5rem",
+            "space-md": "1rem",
+            "space-lg": "1.75rem",
+            "margin-tablet": "2.5rem",
+            "margin-desktop": "4rem",
+            "margin": "1.25rem",
+            "space-xl": "3rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "headline-sm": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "headline-md": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "body-md": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "label-uppercase": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "headline-lg": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "display-lg-mobile": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "headline-lg-mobile": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "label-md": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "body-sm": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"],
+            "display-lg": ["IBM Plex Sans", "IBM Plex Sans Thai", "sans-serif"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["22px", { "lineHeight": "30px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "body-md": ["15px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-uppercase": ["11px", { "lineHeight": "16px", "letterSpacing": "0.12em", "fontWeight": "500" }],
+            "headline-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "300" }],
+            "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "300" }],
+            "headline-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "0em", "fontWeight": "300" }],
+            "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "body-sm": ["13px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "300" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* Enforce rectilinear geometry strictly across inputs */
+    input, select, textarea, button {
+      border-radius: 0px !important;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased selection:bg-surface-variant flex justify-center min-h-screen">
+<!-- Mobile Viewport Canvas strictly 390px wide -->
+<main class="w-full max-w-[390px] bg-surface-container-lowest min-h-screen relative flex flex-col justify-between border-x border-surface-container pb-28">
+<!-- Top Bar Navigation (Task-Focused Booking Flow) -->
+<header class="w-full bg-surface-container-lowest px-5 pt-6 pb-4 border-b border-surface-container-high sticky top-0 z-40">
+<div class="flex items-center justify-between mb-4">
+<a aria-label="Return to suite selection" class="text-on-surface p-1 -ml-1 transition-colors hover:text-primary" href="#">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</a>
+<div class="text-center">
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary block uppercase">
+            HAUS NIMMAN • เฮาส์ นิมมาน
+          </span>
+</div>
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-widest">
+          2 / 4
+        </span>
+</div>
+<div class="flex items-end justify-between pt-1">
+<div>
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary block uppercase mb-1">
+            Step 2 of 4
+          </span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-light tracking-tight">
+            Guest Details
+          </h1>
+</div>
+<div class="text-right pb-1">
+<span class="font-body-sm text-body-sm text-secondary block font-normal">
+            ข้อมูลผู้เข้าพัก
+          </span>
+</div>
+</div>
+</header>
+<!-- Scrollable Booking Content Canvas -->
+<div class="px-5 pt-6 flex-1 space-y-6">
+<!-- Brief Booking Summary Recap -->
+<section aria-label="Booking Recap" class="border border-surface-container-high bg-surface-container-low p-4">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="font-label-uppercase text-label-uppercase text-primary font-medium tracking-widest block uppercase">
+              Sanctuary Reservation
+            </span>
+<p class="font-body-md text-body-md text-on-surface font-medium">
+              Room 01: Standard King
+            </p>
+<p class="font-body-sm text-body-sm text-secondary">
+              14–17 Nov 2025 • 3 Nights (3 คืน)
+            </p>
+</div>
+<div class="text-right pl-2 border-l border-surface-container-high">
+<span class="font-label-uppercase text-label-uppercase text-secondary block tracking-wider">Plan</span>
+<span class="font-body-sm text-body-sm text-on-surface">Slow Tea Incl.</span>
+</div>
+</div>
+</section>
+<!-- Guest Details Form -->
+<form class="space-y-5" id="guest-form" onsubmit="event.preventDefault();">
+<!-- 1. Full Name -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-baseline">
+<label class="font-label-uppercase text-label-uppercase tracking-widest text-secondary uppercase" for="fullName">
+              Full Name <span class="text-primary">*</span>
+</label>
+<span class="font-body-sm text-body-sm text-secondary opacity-70">ชื่อ-นามสกุล</span>
+</div>
+<input class="w-full bg-surface-container-lowest border border-surface-container-high text-on-surface px-3.5 py-3 font-body-md text-body-md focus:border-on-surface transition-colors placeholder:text-secondary-fixed-dim" id="fullName" name="fullName" placeholder="e.g. Kasidit Wongsuwan" required="" type="text" value="Kasidit Wongsuwan"/>
+</div>
+<!-- 2. Phone Number -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-baseline">
+<label class="font-label-uppercase text-label-uppercase tracking-widest text-secondary uppercase" for="phoneNumber">
+              Phone Number <span class="text-primary">*</span>
+</label>
+<span class="font-body-sm text-body-sm text-secondary opacity-70">เบอร์โทรศัพท์</span>
+</div>
+<input class="w-full bg-surface-container-lowest border border-surface-container-high text-on-surface px-3.5 py-3 font-body-md text-body-md focus:border-on-surface transition-colors placeholder:text-secondary-fixed-dim" id="phoneNumber" name="phoneNumber" placeholder="+66 81 234 5678" required="" type="tel" value="+66 81 234 5678"/>
+</div>
+<!-- 3. Email Address -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-baseline">
+<label class="font-label-uppercase text-label-uppercase tracking-widest text-secondary uppercase" for="email">
+              Email Address <span class="text-primary">*</span>
+</label>
+<span class="font-body-sm text-body-sm text-secondary opacity-70">อีเมล</span>
+</div>
+<input class="w-full bg-surface-container-lowest border border-surface-container-high text-on-surface px-3.5 py-3 font-body-md text-body-md focus:border-on-surface transition-colors placeholder:text-secondary-fixed-dim" id="email" name="email" placeholder="kasidit@example.com" required="" type="email" value="kasidit@example.com"/>
+</div>
+<!-- 4. Nationality Selector -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-baseline">
+<label class="font-label-uppercase text-label-uppercase tracking-widest text-secondary uppercase" for="nationality">
+              Nationality <span class="text-primary">*</span>
+</label>
+<span class="font-body-sm text-body-sm text-secondary opacity-70">สัญชาติ</span>
+</div>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-surface-container-high text-on-surface px-3.5 py-3 font-body-md text-body-md focus:border-on-surface transition-colors pr-10 cursor-pointer" id="nationality" name="nationality">
+<option selected="" value="TH">Thai / สัญชาติไทย</option>
+<option value="INTL">International / ชาวต่างชาติ</option>
+<option value="JP">Japanese / ญี่ปุ่น</option>
+<option value="SG">Singaporean / สิงคโปร์</option>
+<option value="OTHER">Other / อื่นๆ</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-secondary">
+<span class="material-symbols-outlined" data-icon="keyboard_arrow_down">keyboard_arrow_down</span>
+</div>
+</div>
+</div>
+<!-- 5. Guests Party Matrix -->
+<div class="space-y-2 pt-2">
+<div class="flex justify-between items-baseline">
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary uppercase">
+              Guests In Sanctuary
+            </span>
+<span class="font-body-sm text-body-sm text-secondary opacity-70">จำนวนผู้เข้าพัก</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<!-- Number of Adults -->
+<div class="border border-surface-container-high p-3 bg-surface-container-low flex flex-col justify-between">
+<div>
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-wider block">Adults (ผู้ใหญ่)</span>
+<span class="font-body-sm text-body-sm text-secondary opacity-80 block">Age 12+</span>
+</div>
+<div class="flex items-center justify-between mt-3 pt-2 border-t border-surface-container-high">
+<button aria-label="Decrease adults" class="w-7 h-7 flex items-center justify-center border border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+<span class="font-body-md text-body-md font-medium text-on-surface px-2">2</span>
+<button aria-label="Increase adults" class="w-7 h-7 flex items-center justify-center border border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<!-- Number of Children -->
+<div class="border border-surface-container-high p-3 bg-surface-container-low flex flex-col justify-between">
+<div>
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-wider block">Children (เด็ก)</span>
+<span class="font-body-sm text-body-sm text-secondary opacity-80 block">Age 0–11</span>
+</div>
+<div class="flex items-center justify-between mt-3 pt-2 border-t border-surface-container-high">
+<button aria-label="Decrease children" class="w-7 h-7 flex items-center justify-center border border-surface-container-high bg-surface-container-lowest text-secondary opacity-40 cursor-not-allowed" type="button">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+<span class="font-body-md text-body-md font-medium text-on-surface px-2">0</span>
+<button aria-label="Increase children" class="w-7 h-7 flex items-center justify-center border border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- 6. Special Requests / Check-in Notes -->
+<div class="space-y-1.5 pt-1">
+<div class="flex justify-between items-baseline">
+<label class="font-label-uppercase text-label-uppercase tracking-widest text-secondary uppercase" for="specialRequests">
+              Special Requests &amp; Notes (Optional)
+            </label>
+<span class="font-body-sm text-body-sm text-secondary opacity-70">คำขอพิเศษ</span>
+</div>
+<textarea class="w-full bg-surface-container-lowest border border-surface-container-high text-on-surface px-3.5 py-3 font-body-sm text-body-sm focus:border-on-surface transition-colors placeholder:text-secondary-fixed-dim resize-none" id="specialRequests" name="specialRequests" placeholder="Estimated arrival time, bedding preferences, or silent check-in preference..." rows="3"></textarea>
+</div>
+<!-- Editorial Policy Note -->
+<div class="py-2">
+<div class="flex items-start gap-2.5">
+<div class="w-4 h-4 mt-0.5 border border-on-surface flex items-center justify-center bg-on-surface shrink-0">
+<span class="material-symbols-outlined text-surface-container-lowest text-xs" data-icon="check">check</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-tight">
+              I agree to the quiet sanctuary guidelines and smoke-free policy at Haus Nimman.
+            </p>
+</div>
+</div>
+</form>
+</div>
+<!-- Sticky Bottom Action Bar strictly locked to 390px canvas -->
+<div class="fixed bottom-0 w-full max-w-[390px] bg-surface-container-lowest border-t border-surface-container-high px-5 py-4 z-50">
+<div class="flex items-center justify-between mb-3">
+<div>
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary block uppercase">
+            3 Nights Total
+          </span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-light">
+            ฿5,400
+          </span>
+</div>
+<div class="text-right">
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-wider block">Taxes &amp; Fees</span>
+<span class="font-body-sm text-body-sm text-primary">Included</span>
+</div>
+</div>
+<!-- Primary Action CTA Button (Sage Solid #7C8B74 / 0px radius) -->
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-6 font-label-uppercase text-label-uppercase tracking-widest uppercase transition-colors flex items-center justify-center space-x-2 border-0 active:opacity-95" type="button">
+<span>Review booking</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 29" width="500" height="145">
+  <!-- Mark + wordmark as in the app sidebar. The text uses the DM Sans font
+       (Google Fonts); install it, or convert the text to outlines in a design tool. -->
+  <rect width="29" height="29" rx="8" fill="#954831"/>
+  <rect x="5" y="5" width="11" height="11" fill="#fff6f2"/>
+  <path d="M9 9.5H17.5V18" fill="none" stroke="#fff6f2" stroke-width="1"/>
+  <text x="39" y="19.5" font-family="'DM Sans', sans-serif" font-size="16" fill="#1b1c1c"><tspan font-weight="700" letter-spacing="-0.64">hay</tspan><tspan font-weight="400" font-size="13" letter-spacing="0.26" fill="#954831">host</tspan></text>
+</svg>

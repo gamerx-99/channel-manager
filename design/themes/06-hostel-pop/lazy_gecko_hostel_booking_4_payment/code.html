@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Payment - Step 4 of 4 | Lazy Gecko Hostel</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,400;0,500;0,700;0,800;0,900;1,800&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config Verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#ffd23f",
+            "surface-container": "#eeeeee",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#62edc9",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#e2e2e2",
+            "outline-variant": "#d1c5ad",
+            "on-secondary-fixed": "#3f0018",
+            "surface-dim": "#dadada",
+            "on-tertiary-container": "#006955",
+            "on-surface-variant": "#4d4634",
+            "inverse-primary": "#edc22e",
+            "surface": "#f9f9f9",
+            "on-secondary-container": "#62002a",
+            "on-primary-fixed-variant": "#574500",
+            "on-tertiary-fixed": "#002019",
+            "secondary-container": "#fd5c8e",
+            "secondary-fixed-dim": "#ffb1c2",
+            "error-container": "#ffdad6",
+            "tertiary": "#006b57",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#241a00",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed-variant": "#8f0040",
+            "surface-tint": "#745c00",
+            "on-background": "#1b1b1b",
+            "secondary": "#b32057",
+            "outline": "#7f7661",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9f9",
+            "tertiary-fixed-dim": "#4eddba",
+            "surface-container-low": "#f3f3f3",
+            "secondary-fixed": "#ffd9e0",
+            "on-tertiary-fixed-variant": "#005141",
+            "primary-fixed": "#ffe089",
+            "on-primary-container": "#725a00",
+            "primary-fixed-dim": "#edc22e",
+            "tertiary-fixed": "#6ffad5",
+            "on-surface": "#1b1b1b",
+            "inverse-surface": "#303030",
+            "inverse-on-surface": "#f1f1f1",
+            "background": "#f9f9f9",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#e8e8e8",
+            "primary": "#745c00",
+            "surface-container-highest": "#e2e2e2"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "margin": "2rem",
+            "gutter-mobile": "1rem",
+            "margin-mobile": "1rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Epilogue"],
+            "label-md": ["Space Grotesk"],
+            "body-md": ["Epilogue"],
+            "label-lg": ["Space Grotesk"],
+            "headline-md": ["Epilogue"],
+            "headline-sm": ["Epilogue"],
+            "headline-lg": ["Epilogue"],
+            "label-sticker": ["Space Grotesk"],
+            "body-lg": ["Epilogue"],
+            "display-hero-mobile": ["Epilogue"],
+            "display-hero": ["Epilogue"],
+            "body-sm": ["Epilogue"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-md": ["13px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "700" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+            "label-lg": ["16px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+            "headline-sm": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+            "headline-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-sticker": ["12px", { "lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "500" }],
+            "display-hero-mobile": ["40px", { "lineHeight": "46px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+            "display-hero": ["64px", { "lineHeight": "72px", "letterSpacing": "-0.03em", "fontWeight": "900" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Brutalist tactile offsets */
+    .neo-border {
+      border: 3px solid #000000;
+    }
+    .neo-shadow-sm {
+      box-shadow: 3px 3px 0px #000000;
+    }
+    .neo-shadow-md {
+      box-shadow: 4px 4px 0px #000000;
+    }
+    .neo-shadow-lg {
+      box-shadow: 6px 6px 0px #000000;
+    }
+    .neo-press-action:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0px 0px 0px #000000 !important;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex justify-center selection:bg-primary-container selection:text-on-surface">
+<!-- Mobile Viewport Canvas Container (390px Mobile Frame) -->
+<main class="w-full max-w-[390px] min-h-screen bg-background border-x-4 border-on-surface flex flex-col justify-between pb-6 relative overflow-x-hidden">
+<!-- TOP PROGRESS BAR & HEADER -->
+<header class="w-full bg-surface-container-lowest border-b-4 border-on-surface sticky top-0 z-40">
+<!-- Step 4 Bar Progress Segment -->
+<div class="w-full bg-surface-container h-3 border-b-2 border-on-surface relative">
+<div class="h-full bg-primary-container border-r-2 border-on-surface w-full"></div>
+</div>
+<!-- Stepper Indicator & Badge Header -->
+<div class="px-4 py-2 bg-surface flex justify-between items-center border-b-2 border-on-surface">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 bg-primary-container neo-border"></span>
+<span class="font-label-md text-label-md tracking-wider text-on-surface uppercase font-black">
+            STEP 4 OF 4: PAYMENT
+          </span>
+</div>
+<span class="bg-tertiary-container neo-border px-2 py-0.5 font-label-sticker text-label-sticker neo-shadow-sm uppercase">
+          FINAL STEP
+        </span>
+</div>
+<!-- Action Top Navigation Bar -->
+<div class="px-4 py-3 flex items-center justify-between bg-surface-container-lowest">
+<button aria-label="Go back" class="bg-surface-container-lowest neo-border w-10 h-10 flex items-center justify-center neo-shadow-sm neo-press-action hover:bg-surface-container transition-transform" type="button">
+<span class="material-symbols-outlined text-on-surface font-bold text-xl">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-black tracking-tight text-on-surface">PAYMENT</span>
+</div>
+<!-- PromptPay Header Badge -->
+<div class="bg-secondary-fixed neo-border px-2.5 py-1 neo-shadow-sm flex items-center gap-1.5 transform rotate-1">
+<span class="material-symbols-outlined text-secondary text-sm">qr_code_scanner</span>
+<span class="font-label-sticker text-label-sticker font-black text-secondary tracking-widest uppercase">PROMPTPAY</span>
+</div>
+</div>
+</header>
+<!-- CONTENT BODY (FLOW CARDS) -->
+<div class="px-4 py-5 flex flex-col gap-5 flex-grow">
+<!-- 1. RESERVATION REFERENCE & AMOUNT DUE (Electric Yellow Card) -->
+<section class="bg-primary-container neo-border neo-shadow-lg p-4 relative overflow-hidden">
+<!-- Background decorative dot grid accent -->
+<div class="absolute -right-5 -bottom-5 w-24 h-24 bg-on-surface/5 rounded-full pointer-events-none"></div>
+<!-- Booking Ref Sticker -->
+<div class="flex justify-between items-start mb-2">
+<div class="inline-flex items-center gap-1 bg-surface-container-lowest neo-border px-2.5 py-1 neo-shadow-sm transform -rotate-1">
+<span class="font-label-sticker text-label-sticker text-on-surface-variant uppercase">REF:</span>
+<span class="font-label-md text-label-md font-black text-on-surface tracking-wider">#LG-2511-402</span>
+</div>
+<span class="bg-on-surface text-surface-container-lowest font-label-sticker text-label-sticker px-2 py-0.5 rounded-none font-bold uppercase">
+            RESERVED
+          </span>
+</div>
+<!-- Big Amount Indicator -->
+<div class="my-3 border-y-2 border-on-surface py-2 bg-surface-container-lowest/40 px-2 neo-border">
+<span class="block font-label-sticker text-label-sticker uppercase tracking-widest text-on-surface-variant font-bold">TOTAL AMOUNT DUE</span>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-black text-on-surface tracking-tight leading-none">฿750</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">THB</span>
+</div>
+</div>
+<!-- Details Info -->
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-on-surface text-base">hotel</span>
+<p class="font-body-sm text-body-sm font-bold text-on-surface">
+            8-Bed Mixed Pod Dorm • 3 Nights
+          </p>
+</div>
+</section>
+<!-- 2. COUNTDOWN TIMER BANNER (Hot Pink Banner) -->
+<section class="bg-secondary-container neo-border neo-shadow-md p-3 relative transform rotate-[-0.5deg]">
+<div class="flex items-center gap-2 mb-1.5">
+<div class="bg-surface-container-lowest neo-border p-1 flex items-center justify-center neo-shadow-sm">
+<span class="material-symbols-outlined text-secondary font-bold text-base" data-weight="fill" style="font-variation-settings: 'FILL' 1;">alarm</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm font-black text-on-secondary-container tracking-tight">
+            LOCKING YOUR BED: 14:58 REMAINING
+          </h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-secondary-container font-medium border-t-2 border-on-surface pt-1.5 leading-snug">
+          Complete transfer before the 15:00 timer expires to hold your dorm bed.
+        </p>
+</section>
+<!-- 3. THAI PROMPTPAY QR PAYMENT BOX -->
+<section class="bg-surface-container-lowest neo-border neo-shadow-lg p-4 flex flex-col items-center relative">
+<!-- Top Tape Header Sticker -->
+<div class="absolute -top-3.5 bg-tertiary-container neo-border px-3 py-0.5 neo-shadow-sm transform rotate-1">
+<span class="font-label-md text-label-md font-black text-on-surface tracking-wider uppercase">THAI PROMPTPAY QR</span>
+</div>
+<!-- PromptPay Header Bar -->
+<div class="w-full bg-[#003d6b] neo-border p-2 mt-2 mb-3 flex items-center justify-center gap-2 shadow-sm text-white">
+<span class="material-symbols-outlined text-white text-lg">payments</span>
+<span class="font-label-md text-label-md text-white font-black tracking-widest">PROMPTPAY • พร้อมเพย์</span>
+</div>
+<!-- QR Display Canvas Box -->
+<div class="bg-surface-container-lowest neo-border p-3 neo-shadow-md flex flex-col items-center justify-center relative w-56 h-56 mb-3">
+<!-- Stylized Mock QR Code with Central Thai PromptPay Emblem -->
+<svg class="w-full h-full text-on-surface" fill="currentColor" viewbox="0 0 100 100">
+<!-- Position Detection Patterns (Top-Left, Top-Right, Bottom-Left) -->
+<rect fill="#000" height="22" width="22" x="5" y="5"></rect>
+<rect fill="#fff" height="16" width="16" x="8" y="8"></rect>
+<rect fill="#000" height="10" width="10" x="11" y="11"></rect>
+<rect fill="#000" height="22" width="22" x="73" y="5"></rect>
+<rect fill="#fff" height="16" width="16" x="76" y="8"></rect>
+<rect fill="#000" height="10" width="10" x="79" y="11"></rect>
+<rect fill="#000" height="22" width="22" x="5" y="73"></rect>
+<rect fill="#fff" height="16" width="16" x="8" y="76"></rect>
+<rect fill="#000" height="10" width="10" x="11" y="79"></rect>
+<!-- Structural Data Grids -->
+<rect height="5" width="5" x="32" y="7"></rect>
+<rect height="4" width="10" x="42" y="7"></rect>
+<rect height="6" width="6" x="57" y="7"></rect>
+<rect height="6" width="8" x="32" y="17"></rect>
+<rect height="7" width="6" x="45" y="16"></rect>
+<rect height="5" width="10" x="56" y="18"></rect>
+<rect height="4" width="14" x="32" y="27"></rect>
+<rect height="6" width="15" x="51" y="26"></rect>
+<!-- Middle Columns -->
+<rect height="8" width="6" x="7" y="32"></rect>
+<rect height="5" width="9" x="18" y="32"></rect>
+<rect height="6" width="15" x="7" y="45"></rect>
+<rect height="10" width="8" x="7" y="56"></rect>
+<rect height="7" width="8" x="19" y="54"></rect>
+<rect height="6" width="10" x="73" y="32"></rect>
+<rect height="8" width="7" x="88" y="32"></rect>
+<rect height="9" width="7" x="73" y="43"></rect>
+<rect height="6" width="10" x="85" y="45"></rect>
+<rect height="8" width="12" x="73" y="57"></rect>
+<!-- Bottom Data Columns -->
+<rect height="6" width="10" x="32" y="65"></rect>
+<rect height="6" width="18" x="47" y="64"></rect>
+<rect height="6" width="8" x="70" y="68"></rect>
+<rect height="6" width="12" x="83" y="67"></rect>
+<rect height="6" width="14" x="32" y="76"></rect>
+<rect height="12" width="7" x="51" y="75"></rect>
+<rect height="6" width="12" x="63" y="78"></rect>
+<rect height="8" width="15" x="80" y="78"></rect>
+<rect height="8" width="8" x="32" y="87"></rect>
+<rect height="5" width="18" x="45" y="90"></rect>
+<rect height="6" width="12" x="68" y="89"></rect>
+<rect height="5" width="10" x="85" y="90"></rect>
+</svg>
+<!-- Mascot / Brand Center Logo Badge -->
+<div class="absolute inset-0 m-auto w-10 h-10 bg-primary-container neo-border flex items-center justify-center neo-shadow-sm pointer-events-none">
+<span class="material-symbols-outlined text-on-surface text-xl">pets</span>
+</div>
+</div>
+<!-- Biller ID Module with Copy Action -->
+<div class="w-full bg-surface-container-low neo-border p-2.5 mb-2.5">
+<div class="flex items-center justify-between">
+<div>
+<span class="block font-label-sticker text-label-sticker text-on-surface-variant uppercase">BILLER ID / PROMPTPAY ID</span>
+<span class="font-headline-sm text-headline-sm font-black text-on-surface tracking-wider">0-5055-6600-7711</span>
+</div>
+<button class="bg-surface-container-lowest neo-border px-2.5 py-1 neo-shadow-sm neo-press-action flex items-center gap-1 font-label-md text-label-md text-on-surface uppercase" id="copy-btn" type="button">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+<span>COPY</span>
+</button>
+</div>
+</div>
+<!-- Account Holder Details -->
+<div class="w-full text-left bg-surface-container-lowest border-t-2 border-on-surface pt-2 mb-2">
+<span class="font-label-sticker text-label-sticker text-on-surface-variant uppercase block">ACCOUNT NAME</span>
+<p class="font-body-md text-body-md font-bold text-on-surface leading-tight">
+            Lazy Gecko Hostel Co., Ltd. <br/>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-normal">(บจก. เลซี่ เก็คโค่ โฮสเทล)</span>
+</p>
+</div>
+<!-- Scan Instruction Memo -->
+<div class="w-full bg-surface-container neo-border p-2 flex items-start gap-2">
+<span class="material-symbols-outlined text-on-surface text-base mt-0.5">info</span>
+<p class="font-body-sm text-body-sm text-on-surface leading-tight">
+            Scan using any Thai Mobile Banking app (<strong class="font-bold">K PLUS, SCB EASY, Krungthai NEXT, Bangkok Bank</strong>, etc.).
+          </p>
+</div>
+</section>
+<!-- 4. PAYMENT SLIP UPLOAD MODULE -->
+<section class="bg-surface-container-lowest neo-border neo-shadow-lg p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-on-surface font-bold text-lg">receipt_long</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface uppercase">PROOF OF PAYMENT</h2>
+</div>
+<span class="bg-primary-container neo-border px-2 py-0.5 font-label-sticker text-label-sticker font-bold neo-shadow-sm uppercase">REQUIRED</span>
+</div>
+<!-- Dropzone Area (Neo-Brutalist 3px dashed line) -->
+<div class="border-[3px] border-dashed border-on-surface p-3 bg-surface-container-low flex flex-col items-center justify-center text-center gap-2 cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-2xl text-on-surface">upload_file</span>
+<span class="font-label-md text-label-md font-black text-on-surface uppercase">UPLOAD PAYMENT SLIP</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Tap to browse gallery or capture via camera</span>
+</div>
+<!-- Attached State Banner (Mock uploaded image) -->
+<div class="bg-surface-container-lowest neo-border p-2.5 neo-shadow-md flex items-center justify-between border-l-8 border-l-tertiary">
+<div class="flex items-center gap-2.5 overflow-hidden">
+<div class="bg-tertiary-container neo-border w-8 h-8 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary text-lg font-bold">check_circle</span>
+</div>
+<div class="truncate">
+<span class="block font-label-md text-label-md font-bold text-on-surface truncate">slip_transfer_750.jpg</span>
+<span class="font-label-sticker text-label-sticker text-on-surface-variant">980 KB • SLIP DETECTED</span>
+</div>
+</div>
+<button class="bg-surface-container neo-border px-2.5 py-1 neo-shadow-sm neo-press-action font-label-sticker text-label-sticker uppercase text-on-surface hover:bg-surface-variant" type="button">
+            Change
+          </button>
+</div>
+</section>
+<!-- 5. WAITING FOR VERIFICATION STATE BOX (Cyan / Light Green Card) -->
+<section class="bg-tertiary-container neo-border neo-shadow-md p-3.5 relative">
+<div class="flex items-start gap-2 mb-1.5">
+<div class="bg-surface-container-lowest neo-border p-1 flex items-center justify-center neo-shadow-sm shrink-0">
+<span class="material-symbols-outlined text-on-tertiary-container font-black text-base animate-pulse">autorenew</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-tertiary-container leading-tight">
+              WAITING FOR VERIFICATION
+            </h3>
+<span class="font-body-sm text-body-sm text-on-tertiary-container font-semibold block">
+              (สถานะ: รอการตรวจสอบสลิป)
+            </span>
+</div>
+</div>
+<div class="border-t-2 border-on-surface mt-2 pt-2">
+<p class="font-body-sm text-body-sm text-on-tertiary-container leading-relaxed">
+            Our front desk verifies transfers automatically within <strong class="font-bold underline">2–5 minutes</strong>. Instant confirmation and hostel door code will be sent via SMS / WhatsApp.
+          </p>
+</div>
+</section>
+</div>
+<!-- STICKY BOTTOM SUBMIT ACTION -->
+<div class="px-4 pt-2 pb-4 bg-surface-container-lowest border-t-4 border-on-surface sticky bottom-0 z-40">
+<button class="w-full bg-primary-container neo-border neo-shadow-lg py-3.5 px-4 flex items-center justify-center gap-2 neo-press-action group transition-transform" type="button">
+<span class="font-label-lg text-label-lg font-black text-on-surface tracking-wider uppercase">Confirm &amp; Send Slip</span>
+<span class="material-symbols-outlined text-on-surface font-black group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<!-- Powered by hayhost footer label -->
+<footer class="text-center mt-3">
+<p class="font-label-sticker text-label-sticker text-on-surface-variant uppercase tracking-wider">
+          Booking powered by <span class="font-black text-on-surface underline">hayhost</span>
+</p>
+</footer>
+</div>
+</main>
+<!-- Interactive feedback micro-script -->
+<script>
+    document.getElementById('copy-btn')?.addEventListener('click', function() {
+      const originalText = this.innerHTML;
+      navigator.clipboard?.writeText('0-5055-6600-7711');
+      this.innerHTML = '<span class="material-symbols-outlined text-sm text-tertiary">done</span><span class="text-tertiary font-black">COPIED</span>';
+      setTimeout(() => {
+        this.innerHTML = originalText;
+      }, 1800);
+    });
+  </script>
+</body></html>

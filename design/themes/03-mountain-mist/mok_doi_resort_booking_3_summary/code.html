@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mok Doi Resort (หมอกดอย รีสอร์ท) - Booking Summary</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@500;600;700&amp;family=Noto+Sans:wght@400;500;600;700&amp;family=Prompt:wght@500;600;700&amp;family=Noto+Sans+Thai:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error": "#ffffff",
+            "surface-container-high": "#e4e9e6",
+            "background": "#f5fbf8",
+            "error-container": "#ffdad6",
+            "outline-variant": "#c2c8c2",
+            "primary-fixed-dim": "#aeceba",
+            "primary": "#082519",
+            "secondary-container": "#c6e6bd",
+            "surface-container-low": "#eff5f2",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#304d3e",
+            "on-tertiary": "#ffffff",
+            "primary-container": "#1f3b2d",
+            "on-tertiary-fixed-variant": "#653e00",
+            "secondary": "#4a6545",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#334d2f",
+            "surface-container-highest": "#dee4e1",
+            "tertiary": "#311c00",
+            "surface-tint": "#486555",
+            "surface-dim": "#d5dbd8",
+            "inverse-on-surface": "#ecf2ef",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2a1700",
+            "surface-bright": "#f5fbf8",
+            "on-tertiary-container": "#cd9349",
+            "on-secondary-container": "#4c6847",
+            "on-primary-fixed": "#032014",
+            "on-secondary-fixed": "#072107",
+            "on-surface": "#171d1b",
+            "surface-container": "#e9efec",
+            "surface-variant": "#dee4e1",
+            "primary-fixed": "#caead6",
+            "secondary-fixed": "#cbebc2",
+            "tertiary-fixed-dim": "#fabb6c",
+            "error": "#ba1a1a",
+            "tertiary-fixed": "#ffddb8",
+            "on-surface-variant": "#424844",
+            "surface": "#f5fbf8",
+            "on-background": "#171d1b",
+            "on-primary-container": "#87a593",
+            "tertiary-container": "#4e2f00",
+            "on-error-container": "#93000a",
+            "outline": "#727973",
+            "inverse-primary": "#aeceba",
+            "inverse-surface": "#2b3230",
+            "secondary-fixed-dim": "#b0cfa7",
+            "forest-moss": "#4F6B4A",
+            "amber-gold": "#E0A458",
+            "mist-border": "#DDE3E0"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "card": "20px",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "prompt": ["Prompt", "Epilogue", "sans-serif"],
+            "thai": ["Noto Sans Thai", "Noto Sans", "sans-serif"],
+            "label-md": ["Noto Sans"],
+            "headline-lg": ["Epilogue"],
+            "headline-sm": ["Epilogue"],
+            "body-lg": ["Noto Sans"],
+            "label-lg": ["Noto Sans"],
+            "body-md": ["Noto Sans"],
+            "body-sm": ["Noto Sans"],
+            "headline-lg-mobile": ["Epilogue"],
+            "headline-xl": ["Epilogue"],
+            "label-sm": ["Noto Sans"],
+            "headline-md": ["Epilogue"],
+            "headline-xl-mobile": ["Epilogue"]
+          },
+          "fontSize": {
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .frosted-mist {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(221, 227, 224, 0.75);
+    }
+    .frosted-pill {
+      background: rgba(243, 245, 244, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased font-thai min-h-screen flex justify-center selection:bg-amber-gold/30">
+<!-- Mobile Screen Canvas (390px viewport container) -->
+<main class="w-full max-w-[390px] min-h-screen bg-background relative flex flex-col shadow-2xl border-x border-surface-container-high overflow-x-hidden pb-12">
+<!-- Atmospheric Ambient Mist Glow Layer -->
+<div class="absolute top-0 inset-x-0 h-72 bg-gradient-to-b from-[#caead6]/35 via-surface-container-low/60 to-transparent pointer-events-none -z-0"></div>
+<!-- Header Navigation (Task-Focused / Linear Checkout Step) -->
+<header class="sticky top-0 z-40 px-5 pt-3 pb-3 bg-surface/85 backdrop-blur-md transition-all">
+<div class="flex items-center justify-between">
+<button aria-label="Go back" class="w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center text-primary-container hover:bg-surface-container transition-colors duration-150 active:scale-95" type="button">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<!-- Brand Headline & Step Tracker -->
+<div class="text-center flex-1 px-1">
+<h1 class="font-prompt font-semibold text-primary text-[17px] leading-tight tracking-tight">
+            Mok Doi Resort
+          </h1>
+<p class="font-thai text-[11px] font-medium text-secondary tracking-wide mt-0.5">
+            Step 3 of 4 • Booking Summary
+          </p>
+</div>
+<!-- Language indicator -->
+<span class="text-xs font-semibold text-secondary px-2 py-1 rounded-full bg-surface-container-low border border-mist-border/60">
+          TH | EN
+        </span>
+</div>
+<!-- Linear Step Progress Bar -->
+<div class="w-full grid grid-cols-4 gap-1.5 mt-3 px-1">
+<div class="h-1 rounded-full bg-forest-moss"></div>
+<div class="h-1 rounded-full bg-forest-moss"></div>
+<div class="h-1 rounded-full bg-amber-gold shadow-sm"></div>
+<div class="h-1 rounded-full bg-surface-variant"></div>
+</div>
+</header>
+<!-- Scrollable Screen Content -->
+<div class="px-4 pt-3 flex flex-col gap-4 relative z-10">
+<!-- Property & Highland Location Banner -->
+<section class="flex items-center justify-between px-1">
+<div>
+<div class="flex items-center gap-1.5 text-forest-moss text-[12px] font-medium">
+<span class="material-symbols-outlined text-[15px] text-forest-moss">location_on</span>
+<span>Pang Mapha, Mae Hong Son</span>
+</div>
+<h2 class="font-prompt text-[19px] font-semibold text-primary tracking-tight mt-0.5">
+            หมอกดอย รีสอร์ท
+          </h2>
+</div>
+<!-- Sea of clouds weather pill -->
+<div class="flex items-center gap-1 bg-surface-container-lowest/80 px-2.5 py-1 rounded-full border border-mist-border shadow-xs">
+<span class="material-symbols-outlined text-[14px] text-amber-gold" style="font-variation-settings: 'FILL' 1;">wb_twilight</span>
+<span class="text-[11px] font-medium text-primary">Mist 95%</span>
+</div>
+</section>
+<!-- Stay Overview Card (Frosted Glass with Villa Thumbnail) -->
+<section class="frosted-mist rounded-[20px] p-4 shadow-sm relative overflow-hidden">
+<div class="flex gap-3.5 items-start">
+<!-- Villa Image Thumbnail with atmospheric mist gradient -->
+<div class="relative w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-surface-container shadow-inner">
+<img class="w-full h-full object-cover" data-alt="Modern eco-luxury wooden villa bungalow positioned over misty mountain cliff peaks during sunrise in northern Thailand highlands, enveloped by ethereal cool fog and morning pine trees in soft warm dawn light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7Nt89vuPtwb7B1NuwXAdSUrZiK89LeaIG_yOyi5TiXjvGZNSn-OKoaJhav1iMtMzozg_Ua3WSM2ZiA9dHQ-zaolHpQnVM2ZJHGa05KLAFY1fJBsFAh920vE2Bx72W1aPJ_AFOmZWhWCBcYaK63KkSq_aTgCYTQRg8Z_rWFYVM4bVbyz3igy5GBF2GNsPRjeY39gHXb7huaB7EzEMPpuRpRyseosWytG72GCwvguk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
+</div>
+<!-- Cabin Name & Specs -->
+<div class="flex-1 min-w-0">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-secondary-container/70 text-on-secondary-container">
+              Highland Eco Villa
+            </span>
+<h3 class="font-prompt font-semibold text-primary text-[16px] leading-snug mt-1 truncate">
+              Cloud Ridge Villa
+            </h3>
+<p class="font-thai text-[12px] text-on-surface-variant truncate">
+              วิลล่าริมผาหมอก
+            </p>
+<div class="mt-2 flex items-center gap-2 text-[12px] text-forest-moss font-medium">
+<span class="inline-flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">bed</span> King Bed
+              </span>
+<span>•</span>
+<span class="inline-flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">landscape</span> Ridge View
+              </span>
+</div>
+</div>
+</div>
+<div class="w-full h-[1px] bg-mist-border/70 my-3.5"></div>
+<!-- Schedule & Guest Details Grid -->
+<div class="grid grid-cols-2 gap-3 bg-surface-container-lowest/70 p-3 rounded-xl border border-mist-border/50">
+<div>
+<span class="text-[11px] uppercase tracking-wider text-outline font-medium block">Check-in</span>
+<p class="font-semibold text-primary text-[13px] mt-0.5">18 Nov 2025</p>
+<span class="text-[11px] text-on-surface-variant block mt-0.5">From 14:00</span>
+</div>
+<div class="border-l border-mist-border/60 pl-3">
+<span class="text-[11px] uppercase tracking-wider text-outline font-medium block">Check-out</span>
+<p class="font-semibold text-primary text-[13px] mt-0.5">20 Nov 2025</p>
+<span class="text-[11px] text-on-surface-variant block mt-0.5">Until 11:00</span>
+</div>
+</div>
+<div class="mt-3 flex flex-col gap-2 pt-1 text-[13px]">
+<div class="flex items-center justify-between text-on-surface">
+<span class="flex items-center gap-1.5 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[16px] text-forest-moss">schedule</span>
+              Length of stay
+            </span>
+<span class="font-medium text-primary">2 Nights</span>
+</div>
+<div class="flex items-center justify-between text-on-surface">
+<span class="flex items-center gap-1.5 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[16px] text-forest-moss">group</span>
+              Guests
+            </span>
+<span class="font-medium text-primary">2 Adults, 0 Children</span>
+</div>
+<div class="flex items-center justify-between text-on-surface pt-1 border-t border-mist-border/40">
+<span class="flex items-center gap-1.5 text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[16px] text-forest-moss">person</span>
+              Primary Guest
+            </span>
+<div class="text-right">
+<span class="font-medium text-primary block leading-tight">Thanawat Suksomboon</span>
+<span class="text-[11px] text-on-surface-variant block mt-0.5">+66 89 555 4321</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Price Breakdown Card -->
+<section class="frosted-mist rounded-[20px] p-4 shadow-sm border border-mist-border">
+<h4 class="font-prompt text-[15px] font-semibold text-primary tracking-tight mb-3 flex items-center justify-between">
+<span>Price Breakdown</span>
+<span class="text-[11px] font-normal text-forest-moss bg-secondary-container/50 px-2 py-0.5 rounded-full">Highland Standard</span>
+</h4>
+<div class="space-y-2 text-[13px]">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">Cabin Rate (2 nights × ฿1,500)</span>
+<span class="font-medium text-on-surface">฿3,000</span>
+</div>
+<div class="flex justify-between items-center text-forest-moss">
+<span class="flex items-center gap-1">
+<span>Taxes &amp; highland service fee</span>
+<span class="material-symbols-outlined text-[14px]">info</span>
+</span>
+<span class="font-medium">Included (฿0)</span>
+</div>
+</div>
+<div class="w-full h-[1px] bg-mist-border my-3"></div>
+<div class="flex justify-between items-baseline pt-0.5">
+<div>
+<span class="font-prompt text-[16px] font-bold text-primary block leading-tight">Total Price</span>
+<span class="text-[11px] text-on-surface-variant">Inclusive of all environmental taxes</span>
+</div>
+<div class="text-right">
+<span class="font-prompt text-[22px] font-bold text-primary tracking-tight">฿3,000</span>
+<span class="text-[11px] font-medium text-forest-moss block">THB</span>
+</div>
+</div>
+</section>
+<!-- Authentic Channel Manager Cancellation Note -->
+<section class="bg-surface-container-low/90 rounded-[20px] p-3.5 border border-mist-border text-[12px] leading-relaxed relative">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[17px] text-forest-moss mt-0.5 flex-shrink-0">verified_user</span>
+<div>
+<p class="font-semibold text-primary text-[12.5px] mb-1">
+              Cancellation Policy &amp; Mountain Guarantee
+            </p>
+<p class="text-on-surface-variant font-thai text-[11.5px] leading-normal">
+              Cancellation Policy: Free cancellation up to 7 days before arrival. For cancellations made within 7 days of check-in, 50% of the total amount is charged. Non-refundable within 48 hours of check-in. In the event of mountain road closures or extreme weather, dates may be modified once without fee.
+            </p>
+</div>
+</div>
+</section>
+<!-- Trust Badge -->
+<section class="flex items-center justify-center gap-2 py-2 px-3 bg-white/70 rounded-full border border-mist-border/80 text-[11.5px] text-forest-moss font-medium shadow-xs">
+<span class="material-symbols-outlined text-[16px] text-amber-gold" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>Direct PromptPay booking • Instant automated slip verification</span>
+</section>
+<!-- Action Buttons Cluster -->
+<div class="pt-2 flex flex-col gap-2.5">
+<!-- Primary Action (Sunrise Amber Pill) -->
+<button class="w-full py-3.5 px-6 rounded-full bg-[#E0A458] text-[#1F3B2D] font-prompt font-semibold text-[15px] flex items-center justify-center gap-2 shadow-sm hover:shadow-[0_4px_16px_rgba(224,164,88,0.35)] transition-all duration-200 active:scale-[0.98]" type="button">
+<span>Proceed to Payment (฿3,000)</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<!-- Secondary Outline Action -->
+<button class="w-full py-3 px-6 rounded-full bg-white/60 border border-forest-moss text-[#1F3B2D] font-thai font-medium text-[14px] flex items-center justify-center gap-1.5 hover:bg-white/90 transition-all duration-150 active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[16px] text-forest-moss">edit</span>
+<span>Modify Details</span>
+</button>
+</div>
+</div>
+<!-- Booking Engine Brand Footer -->
+<footer class="mt-8 pt-4 pb-2 border-t border-surface-container-high text-center px-4">
+<p class="font-thai text-[11px] text-outline">
+        Booking powered by hayhost
+      </p>
+<p class="font-thai text-[10px] text-outline-variant mt-1">
+        © Mok Doi Resort, Pang Mapha, Mae Hong Son, Thailand.
+      </p>
+</footer>
+</main>
+</body></html>

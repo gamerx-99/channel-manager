@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HAUS NIMMAN | เฮาส์ นิมมาน — Boutique Hotel Chiang Mai</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@200;300;400;500&amp;family=IBM+Plex+Sans:wght@200;300;400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed": "#121f0e",
+            "on-secondary-container": "#636262",
+            "on-primary-container": "#f8ffef",
+            "on-error": "#ffffff",
+            "surface-variant": "#e2e3e1",
+            "tertiary-container": "#747571",
+            "outline": "#757870",
+            "primary-fixed": "#d7e7cd",
+            "on-secondary": "#ffffff",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#e4e2de",
+            "secondary": "#5f5e5e",
+            "secondary-container": "#e2dfde",
+            "background": "#f9f9f7",
+            "surface-container": "#eeeeec",
+            "surface-tint": "#54624d",
+            "surface-bright": "#f9f9f7",
+            "error": "#ba1a1a",
+            "surface-dim": "#dadad8",
+            "on-error-container": "#93000a",
+            "on-tertiary": "#ffffff",
+            "inverse-primary": "#bccbb2",
+            "surface-container-highest": "#e2e3e1",
+            "on-secondary-fixed": "#1b1b1c",
+            "secondary-fixed-dim": "#c8c6c5",
+            "surface": "#f9f9f7",
+            "primary-fixed-dim": "#bccbb2",
+            "primary": "#52604b",
+            "surface-container-high": "#e8e8e6",
+            "inverse-surface": "#2f3130",
+            "surface-container-low": "#f4f4f2",
+            "outline-variant": "#c5c8be",
+            "on-primary-fixed-variant": "#3d4b37",
+            "on-background": "#1a1c1b",
+            "on-tertiary-fixed": "#1b1c19",
+            "secondary-fixed": "#e5e2e1",
+            "on-tertiary-container": "#fefcf7",
+            "on-secondary-fixed-variant": "#474746",
+            "primary-container": "#6a7963",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed-dim": "#c7c6c2",
+            "on-surface-variant": "#444841",
+            "on-tertiary-fixed-variant": "#464744",
+            "inverse-on-surface": "#f1f1ef",
+            "on-surface": "#1a1c1b",
+            "error-container": "#ffdad6",
+            "tertiary": "#5c5c59"
+          },
+          "borderRadius": {
+            "DEFAULT": "0px",
+            "none": "0px",
+            "sm": "0px",
+            "md": "0px",
+            "lg": "0px",
+            "xl": "0px",
+            "full": "0px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "gutter-desktop": "2.5rem",
+            "space-md": "1rem",
+            "space-lg": "1.75rem",
+            "margin-tablet": "2.5rem",
+            "margin-desktop": "4rem",
+            "margin": "1.25rem",
+            "space-xl": "3rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "headline-sm": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "headline-md": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "body-md": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "label-uppercase": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "headline-lg": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "display-lg-mobile": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "headline-lg-mobile": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "label-md": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "body-sm": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"],
+            "display-lg": ["IBM Plex Sans Thai", "IBM Plex Sans", "sans-serif"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["22px", { "lineHeight": "30px", "letterSpacing": "0em", "fontWeight": "300" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.005em", "fontWeight": "300" }],
+            "body-md": ["15px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-uppercase": ["11px", { "lineHeight": "16px", "letterSpacing": "0.14em", "fontWeight": "500" }],
+            "headline-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "300" }],
+            "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "300" }],
+            "headline-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "0em", "fontWeight": "300" }],
+            "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "body-sm": ["13px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "300" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    * {
+      border-radius: 0px !important;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 20;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar (Shared Component Anchor) -->
+<header class="sticky top-0 z-50 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex justify-between items-center w-full px-margin md:px-margin-desktop py-4 max-w-[1360px] mx-auto">
+<!-- Brand Logo Anchor -->
+<a class="font-label-uppercase text-label-uppercase tracking-widest text-on-surface flex items-baseline gap-2" href="#">
+<span class="font-medium text-on-surface">HAUS NIMMAN</span>
+<span class="text-secondary font-light">เฮาส์ นิมมาน</span>
+</a>
+<!-- Desktop Navigation Links -->
+<nav class="hidden md:flex items-center gap-8 font-label-uppercase text-label-uppercase tracking-widest">
+<a class="text-secondary hover:text-on-surface transition-colors duration-150 pb-1" href="#rooms">Rooms</a>
+<a class="text-secondary hover:text-on-surface transition-colors duration-150 pb-1" href="#gallery">Gallery</a>
+<a class="text-secondary hover:text-on-surface transition-colors duration-150 pb-1" href="#location">Location</a>
+</nav>
+<!-- Trailing Controls & CTAs -->
+<div class="flex items-center gap-6">
+<!-- Language Switcher -->
+<div class="hidden sm:flex items-center gap-2 font-label-uppercase text-label-uppercase text-secondary tracking-widest">
+<span class="text-on-surface font-medium border-b border-primary pb-0.5">EN</span>
+<span class="text-outline-variant">|</span>
+<button class="hover:text-on-surface transition-colors duration-150" type="button">TH</button>
+</div>
+<!-- Reserve CTA Button -->
+<a class="bg-primary text-on-primary font-label-uppercase text-label-uppercase tracking-widest px-5 py-2.5 hover:bg-primary-container transition-colors duration-150" href="#reserve">
+          Reserve
+        </a>
+</div>
+</div>
+</header>
+<!-- Hero Section: Split Screen 40% Left / 60% Right -->
+<section class="w-full border-b border-outline-variant" id="hero">
+<div class="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-65px)]">
+<!-- Left Column: Content & Booking Module (5 cols ~ 41%) -->
+<div class="lg:col-span-5 bg-surface-container-lowest px-margin md:px-margin-desktop py-16 lg:py-24 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-outline-variant">
+<div>
+<!-- Subtle Subtitle Tag -->
+<div class="font-label-uppercase text-label-uppercase text-secondary tracking-widest mb-6">
+            SANCTUARY / นิมมานเหมินท์ ซอย 1
+          </div>
+<!-- Editorial Hotel Typography -->
+<h1 class="font-display-lg text-display-lg font-light text-on-surface leading-tight tracking-tight mb-4">
+            Haus Nimman<br/>
+<span class="font-light text-secondary text-headline-lg">เฮาส์ นิมมาน</span>
+</h1>
+<!-- Minimalist Intro copy -->
+<p class="font-body-md text-body-md text-secondary max-w-sm mt-8 leading-relaxed">
+            Six white rooms on a quiet soi off Nimmanhaemin. Concrete, linen, morning light, nothing extra.
+          </p>
+</div>
+<!-- Date Picker Widget & Direct Note -->
+<div class="mt-16 pt-8 border-t border-outline-variant" id="reserve">
+<form class="space-y-4">
+<div class="grid grid-cols-2 gap-px bg-outline-variant border border-outline-variant">
+<!-- Check-In Input -->
+<div class="bg-surface-container-lowest p-3">
+<label class="block font-label-uppercase text-label-uppercase text-secondary tracking-wider mb-1" for="checkin">Check-in</label>
+<input class="w-full p-0 bg-transparent border-0 font-body-sm text-body-sm text-on-surface focus:ring-0 cursor-pointer" id="checkin" readonly="" type="text" value="14 Nov 2025"/>
+</div>
+<!-- Check-Out Input -->
+<div class="bg-surface-container-lowest p-3">
+<label class="block font-label-uppercase text-label-uppercase text-secondary tracking-wider mb-1" for="checkout">Check-out</label>
+<input class="w-full p-0 bg-transparent border-0 font-body-sm text-body-sm text-on-surface focus:ring-0 cursor-pointer" id="checkout" readonly="" type="text" value="17 Nov 2025"/>
+</div>
+<!-- Guests Selector -->
+<div class="bg-surface-container-lowest p-3 col-span-2 border-t border-outline-variant flex justify-between items-center">
+<div>
+<span class="block font-label-uppercase text-label-uppercase text-secondary tracking-wider">Guests</span>
+<span class="font-body-sm text-body-sm text-on-surface">2 Adults, 0 Children</span>
+</div>
+<span class="material-symbols-outlined text-secondary" data-icon="unfold_more">unfold_more</span>
+</div>
+</div>
+<!-- Check Availability Action -->
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-label-uppercase text-label-uppercase tracking-widest py-3.5 px-6 transition-colors duration-150" type="button">
+              Check availability
+            </button>
+</form>
+<!-- PromptPay QR Direct Note -->
+<div class="mt-4 flex items-center justify-between text-secondary">
+<span class="font-label-uppercase text-label-uppercase tracking-wider text-secondary">Direct booking</span>
+<span class="font-body-sm text-body-sm text-secondary">PromptPay QR &amp; Direct Wire accepted</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Hero Architecture Edge-to-Edge Photo (7 cols ~ 59%) -->
+<div class="lg:col-span-7 relative min-h-[500px] lg:min-h-full bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Sunlit architectural interior of a minimalist boutique hotel suite in Chiang Mai Thailand, with textured off-white limewash walls, natural linen bedding on a low-slung platform bed, polished pale concrete floors, and soft warm morning rays slanting through tall sheer floor-to-ceiling windows. Japandi design aesthetic with serene visual stillness, quiet earthen undertones, and sharp rectilinear angles." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMbBc8PII0AeeFrt447lFkEuJkBiL_cEsFjsSBc7TpNWuHVihDyOTIZO2a9E2KiqAdtxuLSfIOq-bERtOsjLfQxga8Pohf-z_TuAYB_w8uHQjVArkHXmvYd6z4IXcUgC7KSsPoOZ1Jd0NXrNqt8JhRMxZpBc1WyeT1UXZdqv6fexxYDSSGmnpVKmsj1cEu5HwZ_WBILR8Lrj0V1QIyLZ9CtEmC4795IhCKdWFQfyg"/>
+<!-- Photo Caption Badge -->
+<div class="absolute bottom-6 right-6 bg-surface-container-lowest/90 px-3 py-1.5 border border-outline-variant font-label-uppercase text-label-uppercase text-secondary tracking-widest">
+          Suite 01 / Morning Light
+        </div>
+</div>
+</div>
+</section>
+<!-- Rooms Section: 120px Vertical Spacing, No Card Boxes, Minimalist 3-Column Grid -->
+<section class="py-[120px] max-w-[1360px] mx-auto px-margin md:px-margin-desktop" id="rooms">
+<!-- Section Header -->
+<div class="flex items-baseline justify-between mb-12 border-b border-outline-variant pb-4">
+<h2 class="font-headline-lg text-headline-lg font-light text-on-surface tracking-tight">
+        Rooms <span class="font-light text-secondary text-headline-sm">/ ห้องพัก</span>
+</h2>
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-widest">01 — 03 of 06</span>
+</div>
+<!-- 3-Column Square Image Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Room 01 -->
+<div class="group">
+<div class="aspect-square bg-surface-container-low overflow-hidden border border-outline-variant mb-4">
+<img class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" data-alt="Quiet Japandi king bedroom suite with crisp off-white tailored bedsheets, handcrafted light ash wood headboard, natural linen throws, and soft morning sunlight casting linear geometric shadows on bare pale concrete walls. Architectural photography, minimal luxury style, clean flat composition without ornament." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfQn8REGyxFJwnjBQ4YAi5zDPmVkX1NbxAJIZ9d9alJVToobUqFekTYE05Mj2z-aTiaGcbRFRS8ZOlRwmaRF4Pi6Y_VTYIzp2XfvZXtbTTHghMvDnWIYlZKvQJPefyLt9gWCeOp5tKu2E29LT1Bs3BZH7AgbDvfnvPTZF1uY6AH_9vYwlmT0qVixDWo6OiL3e92QBOyCJWkGcb0vtICrevJTJ69mmPaRYpLcOru0M"/>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline justify-between">
+<h3 class="font-body-lg text-body-lg text-on-surface">Room 01: Standard King</h3>
+<span class="font-label-uppercase text-label-uppercase text-secondary">Up to 2 guests</span>
+</div>
+<p class="font-body-md text-body-md text-secondary">from ฿1,800 / night</p>
+</div>
+</div>
+<!-- Room 02 -->
+<div class="group">
+<div class="aspect-square bg-surface-container-low overflow-hidden border border-outline-variant mb-4">
+<img class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" data-alt="Modern minimalist hotel studio suite opening onto an enclosed private stone terrace framed by raw concrete walls. Featuring crisp linen low furnishings, light wood sliding screens, and a lush solitary green fern in a clay pot under muted diffuse daylight. Pure Scandinavian and Japanese interior design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKqnFmg8yzIAMy3QqAtKK5VeLWmplZy7VyF01IPrf8mA4C8x_OC4iwRrMRmsUCOWdxeA8Ab6rsDY7BCTmdUOUyMp0kzgGZYX1bwK5woc_5i2QlbBNVAkV65OGO6xdcRRE1dhDDTYG1Q3PFdbvHG0UtWNE6SAzIMDSyu8KGkpFAA86AR5DZSoBrnRy2j6_jq141t-FKalBp-hhHB6XF6c8WEHlzlVrqdj9vJXxZEQ4"/>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline justify-between">
+<h3 class="font-body-lg text-body-lg text-on-surface">Room 02: Studio Terrace</h3>
+<span class="font-label-uppercase text-label-uppercase text-secondary">Up to 2 guests</span>
+</div>
+<p class="font-body-md text-body-md text-secondary">from ฿2,200 / night</p>
+</div>
+</div>
+<!-- Room 03 -->
+<div class="group">
+<div class="aspect-square bg-surface-container-low overflow-hidden border border-outline-variant mb-4">
+<img class="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" data-alt="Architectural double-height loft hotel suite with white plaster walls, raw steel straight staircase, washed oak flooring, and high mezzanine bed dressed in oatmeal colored textiles. Soft natural ambient lighting pouring through minimalist rectangular skylight. Serene, spacious, and uncluttered composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkQEGKHt5qntX9BnY8RV_ox_dmJbB_pRESEr-LCCHvgdtKTKMFksoGzSNZQmr7B-ShQJRRJGUgiLxOvkwh92Is1no5CAzIr8SbvXL4dtVV8GUx8JQwwGtr0KN5RgwMbVT75yOoUF462VqiHwwUEsZ81QEfwfNa_g-SLscwyGbq7zW5rbVuMwp49wfGBVCJQDf8qERSamlu5lrYQIG-x7U7DYBHVng4kUtsgIrEKJA"/>
+</div>
+<div class="space-y-1">
+<div class="flex items-baseline justify-between">
+<h3 class="font-body-lg text-body-lg text-on-surface">Room 03: Loft Suite</h3>
+<span class="font-label-uppercase text-label-uppercase text-secondary">Up to 3 guests</span>
+</div>
+<p class="font-body-md text-body-md text-secondary">from ฿2,800 / night</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Gallery Section: 120px Vertical Spacing, Horizontal Scroll Strip 01-08 -->
+<section class="py-[120px] border-t border-outline-variant bg-surface-container-low" id="gallery">
+<div class="max-w-[1360px] mx-auto px-margin md:px-margin-desktop mb-8 flex items-baseline justify-between">
+<h2 class="font-headline-lg text-headline-lg font-light text-on-surface tracking-tight">
+        Gallery <span class="font-light text-secondary text-headline-sm">/ ภาพบรรยากาศ</span>
+</h2>
+<div class="font-label-uppercase text-label-uppercase text-secondary tracking-widest hidden sm:block">
+        Scroll horizontal [ 01 — 08 ]
+      </div>
+</div>
+<!-- Scrollable Photo Strip -->
+<div class="overflow-x-auto no-scrollbar px-margin md:px-margin-desktop flex gap-6 pb-4">
+<!-- 01 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Exterior street view of a boutique white architectural building in Chiang Mai Nimman soi, with geometric concrete facade lines, deep recessed square windows, and a solitary tropical tree casting delicate shadow on pristine white stucco. High-key light daytime photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApIVCQk8K99z3dbt-uHjaVRt0kKaf4FU3ySV5NGiZFq9PO2mj0ch8jAgYCILvRwWIVWneKbka7BTMefiF48A73vFGnYY_E1QnR3d2cduRB7hBDvtAcfNFS-XDF55YFNLgNsm2N7c_sGzVk4IIAd4G59Cb1dJ-TjZyLMZSCo2SPstZ1MXShMl58t-ZIuzpZEhFkOGzBfKsBKk7Xusj34KyLd469SDeUTzgmJB4I-9s"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">01. Exterior Façade (exterior)</div>
+</div>
+<!-- 02 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Quiet hotel lobby common corner featuring an unfinished raw oak bench, single minimalist ceramic vessel, smooth cast concrete floor, and linear morning sunlight slicing across an eggshell white wall. Tranquil Japandi atmosphere with strict rectilinear order." src="https://lh3.googleusercontent.com/aida-public/AB6AXuANIvDil3Eq_XlDqXxMD-4J32y6Sr_gkt_My19VGTI8mCiusjtiDJLGI_uhkxR2yXngnru0eLe_2JsgtIqDJR2UdsxeiR_7OOl_ucA6KjY-aAhtW_dmdmM7nRPjp78O9Rn8ZhoZ7lSsrF0FaR_UzqqXC3fTG6BjH3J8lHEEEaQ3tTXT8kVjKM1TkVWiJMb0Ve3A8EeJI05phzr55E5qgCZ7djC0FCI_QpiWLsdUHs0"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">02. Morning Light Corner (common area)</div>
+</div>
+<!-- 03 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Detailed interior perspective of a tranquil hotel bedroom showing heavy flax linen curtain draped beside a textured cement column, washed cotton duvet cover, and warm morning diffused luminescence. Tactile organic textures in pure muted earth and white tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA13GEvr1J-eRtfHS3j-WqGitOgN8ygIA5Dva-s7czP0-mUNynU8qx1QrIsXLP-O0EzMU6HhEo5U48bcfQqaY0-5OBymP1VfSFSU1_45c58J2vFlkA5MvOVWDNqOmZXdyC1g6AHcw85VHd1_Cg4qqARXLl3lXkXFpPn0pxTSZr1L_LBFhGfgZdqs8GOhY4M66uLuh4rtJDsGgPPoXvO9PVTk2TAP6pkVFjVW630_Mw"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">03. Linen &amp; Concrete Studio (room)</div>
+</div>
+<!-- 04 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Intimate interior minimalist courtyard with pale grey pea gravel bed, smooth slate stepping stones, high whitewashed enclosing walls, and a solitary Japanese maple bonsai in a square ceramic planter under open Chiang Mai sky." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7hiVeVWEy05WCE3LLEr5POJEjr4ZmrGLxCAaKBm3DO4VZ5fzs3uYftFTReyy4BP-YZRSeZK6AcH8_MUrjX2x3IhacHsgfzIKIppOwgb1FIlNclMAjvNPCTdgM-6k9GPIrMFkNMOp-Ay2L9N_tG60JTkmaW0Mu1a14Irp3CA2GGkn9WLlxv6VlWDwz2edWV2u_6NWTzwwwUs6N8VEXfuKgdC9Nkpcc17Vadtrghrw"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">04. Minimal Courtyard (view)</div>
+</div>
+<!-- 05 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Minimal breakfast arrangement on a light birch wood table: clear glass pour-over coffee carafe with black coffee, handcrafted beige ceramic cup, and a slice of toasted artisanal sourdough on unglazed stoneware plate. Quiet morning sunlight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiY5SLo9P9FBJDh7ZTyzK3FXx6FNqjXZbznRw4gulT4YVwmJM9BqcX9dWJlq4B5Oc7EltxLZcAbLYe4m2Mu3Lj59bebGCqLknrTcxI3miicM2YL1KtP3ktnsS0sH9R6vbnI8maUhMMMyZ59d-kuj5f00WljAbx6o0FgU89F3KBqye4Qo5wBNqkEZQqi6bnYxWIJGeIONf1_QxzcvzEvQJOyWTCUb2sHj0RFudZcr0"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">05. Pour-over Coffee &amp; Sourdough (food)</div>
+</div>
+<!-- 06 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Monolithic white terrazzo bathroom with seamless walk-in rain shower, matte graphite plumbing fixtures, frameless rectangular mirror reflecting clean lines, and soft skylight above. Uncluttered architectural stillness without any bottles or plastic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVpg3mj_fMd5Z0DuEnzZBxnE34soJ09uKnxm3HzGDvKAiiotZBpelMms2d-TdxFqLusr9W1B-6pt9VBsks4u3s55syj-4lc3lxQ0CDHevW0nc5PZm03qwxhQNN2xE-j2dWMZaEHuZWZW77FUzIuFH4ZNq1uz0WRljYFgJ4ht6B3_wkL50vqFcBz6sF9BaVsZ0AxCQZgHVxC7GTXN3dJK0KN9ddVLq-JN4if3uKm3o"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">06. Minimalist Bathroom (room)</div>
+</div>
+<!-- 07 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Serene twilight view from a rooftop terrace looking toward the Doi Suthep mountain silhouette at dusk. Clean parapet wall in pale concrete, simple wooden bench, and soft purple-grey sky. Subtle atmospheric architectural moment in northern Thailand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHWKW1ApH1RST1KE96l-426K90SEaEprhjYGHaflSo_uvmqwZeltpdBa1FER7281xoOfbTuHlO_IOVUAs0AwOtvTrZ_vYRL-vcCATlQS9tXtjmIRt5-JdEO2UFoi02pOamCRUlS_oJa33vQpmrOSGutC2qeeOJk0A4wxxcmDeh0grNlSOpNgv--_zASLUoPm0iGuxC9qyLMRboQKO08SdpHPCa4nPB72kVn4XgyTY"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">07. Twilight Rooftop (view)</div>
+</div>
+<!-- 08 -->
+<div class="flex-none w-[360px]">
+<div class="h-[460px] bg-surface-container-lowest border border-outline-variant overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="Quiet residential soi lane in Nimman Chiang Mai leading to the unassuming crisp entrance of the boutique hotel. Soft morning shadow, white perimeter wall with discreet engraved lettering, potted greenery, and still neighborhood ambience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbRqZE3MWWVs5cognoXRIU8btkQe-ZiSX3Fkk0arUxoWmge15bjczUfOlzOtqLR0Samwix7ISo7Cq5AGp6fsrlkg-W7xvlxmEcwO7CWiwkSh31e_OpdLpnE86imHr2MOhqJO3btYmLl1bxOHFPInE3Aueyy-lu9UcXDceXKR-HHKDWhbA-eSHMNvkVKkdYRBlW2mwLzz83nclSJivXaJQ5KqC2KMOIoh2agr0K-oo"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">08. Quiet Soi Entrance (exterior)</div>
+</div>
+</div>
+</section>
+<!-- Location Section: 120px Vertical Spacing, Plain Text on Left, Grayscale Map on Right -->
+<section class="py-[120px] max-w-[1360px] mx-auto px-margin md:px-margin-desktop" id="location">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+<!-- Left Column: Plain Text Address & Walking Distance Note (5 cols) -->
+<div class="lg:col-span-5 space-y-8">
+<div>
+<h2 class="font-headline-lg text-headline-lg font-light text-on-surface tracking-tight mb-2">
+            Location <span class="font-light text-secondary text-headline-sm">/ ที่ตั้ง</span>
+</h2>
+<div class="font-label-uppercase text-label-uppercase text-secondary tracking-widest">
+            NIMMAN SOI 1, CHIANG MAI
+          </div>
+</div>
+<div class="border-t border-outline-variant pt-6 space-y-4">
+<div>
+<div class="font-label-uppercase text-label-uppercase text-secondary tracking-wider mb-1">Address</div>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+              Nimman Soi 1, Suthep, Mueang Chiang Mai, 50200 Thailand<br/>
+<span class="text-secondary">ถนนนิมมานเหมินท์ ตำบลสุเทพ อำเภอเมือง เชียงใหม่</span>
+</p>
+</div>
+<div class="pt-4 border-t border-outline-variant">
+<div class="font-label-uppercase text-label-uppercase text-secondary tracking-wider mb-1">Walking distance</div>
+<p class="font-body-md text-body-md text-secondary leading-relaxed">
+              2 minutes walk to One Nimman and Nimmanhaemin Main Road.<br/>
+              12 minutes drive from Chiang Mai International Airport (CNX).<br/>
+              Tucked at the tranquil end of Soi 1 away from street traffic.
+            </p>
+</div>
+</div>
+</div>
+<!-- Right Column: Minimalist Grayscale Map Placeholder (7 cols) -->
+<div class="lg:col-span-7 bg-surface-container-low border border-outline-variant relative overflow-hidden aspect-[16/10]">
+<!-- Map Canvas Graphic Area -->
+<img class="w-full h-full object-cover grayscale contrast-75 brightness-105" data-alt="Clean minimalist grayscale cartographic map depicting Nimmanhaemin Soi 1 and Suthep district in Chiang Mai Thailand. Black and white editorial line art cartography showing street grid intersections with a subtle geometric pin marker highlighting Haus Nimman location. No colored labels, purely architectural." data-location="Chiang Mai" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAm4wCMPRCbMOFJ0E2fjR9yl8pn_z12tBMIDc6urcIz8dg1fWj0XzPBWE14ahTU-t18hz7B3k0NPi2sZRDpIg4WaB7sfh5hA1Mwo17MZOj49mdraDS0XEanWB4bFVGX9nC65ETfsHbiaTqe52su1Gc8RkOu5PfAUu5TSPV1vaG7jZ_u8rart2-Obl0qXFG3NZyDEO2CBPpLYpofKMbetwA1SmsuKvzTXgvu66fRWbk"/>
+<!-- Minimalist Pin Label Card -->
+<div class="absolute bottom-6 left-6 bg-surface-container-lowest p-4 border border-outline-variant max-w-xs">
+<div class="font-label-uppercase text-label-uppercase text-on-surface tracking-widest font-medium mb-1">HAUS NIMMAN</div>
+<p class="font-body-sm text-body-sm text-secondary">Quiet end of Soi 1, Suthep</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer (Shared Component Anchor) -->
+<footer class="bg-surface-container-low border-t border-outline-variant">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin md:px-margin-desktop py-8 max-w-[1360px] mx-auto gap-4">
+<!-- Brand & Address Summary -->
+<div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-6 text-center sm:text-left">
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-on-surface font-medium uppercase">
+          Haus Nimman
+        </span>
+<span class="hidden sm:inline text-outline-variant">|</span>
+<span class="font-body-sm text-body-sm text-secondary">
+          Nimman Soi 1, Suthep, Mueang Chiang Mai
+        </span>
+</div>
+<!-- Powered Note & Copyright -->
+<div class="font-body-sm text-body-sm text-secondary text-center md:text-right">
+        Booking powered by hayhost.
+      </div>
+</div>
+</footer>
+<!-- BottomNavBar (Mobile Shell Destination Anchor: 4 Items) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 md:hidden bg-surface-container-lowest border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center text-primary font-medium" href="#rooms">
+<span class="material-symbols-outlined text-[20px]" data-icon="bed">bed</span>
+<span class="font-label-uppercase text-[10px] tracking-wider mt-1">Suites</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary" href="#reserve">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-uppercase text-[10px] tracking-wider mt-1">Reserve</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary" href="#gallery">
+<span class="material-symbols-outlined text-[20px]" data-icon="spa">spa</span>
+<span class="font-label-uppercase text-[10px] tracking-wider mt-1">Amenities</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary" href="#location">
+<span class="material-symbols-outlined text-[20px]" data-icon="support_agent">support_agent</span>
+<span class="font-label-uppercase text-[10px] tracking-wider mt-1">Concierge</span>
+</a>
+</nav>
+</body></html>

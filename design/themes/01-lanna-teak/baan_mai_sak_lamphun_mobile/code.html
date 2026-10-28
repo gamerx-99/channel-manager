@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+
+<html class="light" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Baan Mai Sak Lamphun | บ้านไม้สัก ลำพูน</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&amp;family=Noto+Serif+Thai:wght@400;500;600;700&amp;family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=Sarabun:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-surface": "#382e28",
+            "surface-dim": "#e8d7cd",
+            "tertiary": "#3a2800",
+            "primary-container": "#5b3a21",
+            "error": "#ba1a1a",
+            "on-secondary-container": "#700509",
+            "secondary-container": "#ff7265",
+            "on-primary": "#ffffff",
+            "background": "#fff8f5",
+            "surface": "#fff8f5",
+            "on-secondary": "#ffffff",
+            "outline": "#82746c",
+            "surface-container": "#fcebe1",
+            "outline-variant": "#d4c3b9",
+            "on-secondary-fixed": "#410002",
+            "surface-tint": "#7c563b",
+            "on-secondary-fixed-variant": "#891c18",
+            "on-tertiary-fixed": "#261900",
+            "on-background": "#221a14",
+            "primary-fixed": "#ffdcc5",
+            "surface-container-high": "#f6e5db",
+            "on-tertiary-container": "#cea860",
+            "on-surface-variant": "#50443d",
+            "inverse-primary": "#eebd9b",
+            "tertiary-container": "#563d00",
+            "on-primary-fixed": "#2e1502",
+            "surface-container-lowest": "#ffffff",
+            "on-error-container": "#93000a",
+            "surface-container-low": "#fff1e9",
+            "inverse-on-surface": "#ffede3",
+            "error-container": "#ffdad6",
+            "secondary-fixed-dim": "#ffb4ab",
+            "on-tertiary-fixed-variant": "#5d4200",
+            "secondary": "#aa342d",
+            "on-primary-container": "#d3a484",
+            "on-error": "#ffffff",
+            "surface-container-highest": "#f0dfd5",
+            "primary-fixed-dim": "#eebd9b",
+            "tertiary-fixed": "#ffdea4",
+            "on-primary-fixed-variant": "#613f26",
+            "tertiary-fixed-dim": "#e8c176",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#ffdad6",
+            "on-surface": "#221a14",
+            "surface-variant": "#f0dfd5",
+            "primary": "#41240d",
+            "surface-bright": "#fff8f5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "margin": "3rem",
+            "gutter-mobile": "1rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-2xl": "4rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem",
+            "margin-mobile": "1.25rem",
+            "gutter": "1.5rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Sarabun", "Be Vietnam Pro"],
+            "headline-md": ["Noto Serif Thai", "Cormorant Garamond", "Noto Serif"],
+            "body-sm": ["Sarabun", "Be Vietnam Pro"],
+            "headline-hero": ["Cormorant Garamond", "Noto Serif Thai", "Noto Serif"],
+            "headline-hero-mobile": ["Cormorant Garamond", "Noto Serif Thai", "Noto Serif"],
+            "headline-sm": ["Noto Serif Thai", "Cormorant Garamond", "Noto Serif"],
+            "label-sm": ["Be Vietnam Pro", "Sarabun"],
+            "title-lg": ["Noto Serif Thai", "Cormorant Garamond", "Noto Serif"],
+            "label-lg": ["Be Vietnam Pro", "Sarabun"],
+            "headline-lg-mobile": ["Noto Serif Thai", "Cormorant Garamond", "Noto Serif"],
+            "label-md": ["Be Vietnam Pro", "Sarabun"],
+            "headline-lg": ["Noto Serif Thai", "Cormorant Garamond", "Noto Serif"],
+            "title-md": ["Be Vietnam Pro", "Sarabun"],
+            "body-md": ["Sarabun", "Be Vietnam Pro"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", {"lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "headline-md": ["28px", {"lineHeight": "36px", "letterSpacing": "0em", "fontWeight": "500"}],
+            "body-sm": ["13px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+            "headline-hero": ["48px", {"lineHeight": "58px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "headline-hero-mobile": ["30px", {"lineHeight": "38px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "headline-sm": ["22px", {"lineHeight": "30px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.12em", "fontWeight": "600"}],
+            "title-lg": ["18px", {"lineHeight": "26px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.06em", "fontWeight": "600"}],
+            "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "500"}],
+            "headline-lg": ["36px", {"lineHeight": "46px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "body-md": ["15px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#F4ECDD] text-[#2A211B] antialiased selection:bg-[#C9A45C]/30 flex justify-center min-h-screen">
+<!-- Mobile Viewport Wrapper (390px Max Standard) -->
+<div class="w-full max-w-[390px] bg-[#FAF6EF] shadow-2xl relative min-h-screen pb-24 overflow-x-hidden border-x border-[#EFE6D5]">
+<!-- Shared Component: TopNavBar Header (Mobile Layout) -->
+<header class="sticky top-0 z-40 bg-[#FAF6EF]/95 backdrop-blur-md border-b border-[#EFE6D5] px-4 py-3 flex items-center justify-between transition-all duration-200">
+<div class="flex flex-col">
+<a class="font-headline-sm text-headline-sm text-[#5B3A21] tracking-wide leading-tight flex items-baseline gap-1.5" href="#hero">
+<span>Baan Mai Sak</span>
+</a>
+<span class="font-body-sm text-[11px] text-[#5B3A21]/70 leading-none">บ้านไม้สัก ลำพูน</span>
+</div>
+<div class="flex items-center gap-2.5">
+<!-- Language Switcher -->
+<span class="font-label-sm text-label-sm tracking-wider text-[#5B3A21]/80 px-1 py-0.5 border border-[#C9A45C]/40 rounded-[2px] bg-[#F4ECDD]/50">
+          TH | EN
+        </span>
+<!-- Compact Book Button -->
+<a class="bg-[#9E2B25] hover:bg-[#80201B] text-[#FAF6EF] font-label-md text-label-md px-3 py-1.5 rounded-[4px] shadow-sm transition-all duration-150" href="#booking-form">
+          Book
+        </a>
+</div>
+</header>
+<main class="w-full" id="hero">
+<!-- HERO SECTION -->
+<section class="relative w-full">
+<!-- Exterior Photo -->
+<div class="relative w-full h-[320px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover brightness-[0.92]" data-alt="An atmospheric wide exterior photograph of a majestic 90-year-old traditional Lanna teakwood stilt house in Lamphun Thailand. Warm golden hour sunlight filters through leafy tropical tamarind branches casting intricate geometric shadows onto the dark hand-carved timber facade and terracotta roof shingles. The aesthetic is authentic, heritage luxury, with warm cream, teak brown, and gold undertones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU4n288r96j621SreiD9hlauV428iRUaS904NmsW2tIH_f40QhknhtF-HfB5ZSA9tZC9joHzms-n-aRBlc6W83VUP8Ix4sxfqIo27m-7zP_g4e99qOuKa_DgGODUImtsZGOKUSZVdWeFQqj-trRgtiwkyiZy6WsRbwwbl-xQ5nn6WmKsMkW3dJt9G0JpwoyBREKISJyssYmLgLNnUTTIOscmF2AkQo5-s6Ki8HvsY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#2A211B]/60 via-transparent to-black/20"></div>
+<!-- Heritage Pill Badge -->
+<div class="absolute top-3 left-4 bg-[#FAF6EF]/90 backdrop-blur-sm border border-[#C9A45C] px-2.5 py-1 rounded-[4px] shadow-sm">
+<span class="font-label-sm text-[10px] text-[#5B3A21] uppercase tracking-widest font-semibold">EST. 1934 • HERITAGE TEAK</span>
+</div>
+</div>
+<!-- Lower-third Centered Arched Card -->
+<div class="-mt-12 relative z-10 mx-3">
+<div class="bg-[#FAF6EF] rounded-t-[36px] rounded-b-[4px] p-5 border border-[#C9A45C]/40 shadow-[0_8px_24px_rgba(42,33,27,0.08)] text-center">
+<!-- Arch Finial Decorative Accent -->
+<div class="flex justify-center items-center gap-2 mb-2">
+<span class="w-6 h-[1px] bg-[#C9A45C]"></span>
+<span class="text-[#C9A45C] text-xs">◈</span>
+<span class="w-6 h-[1px] bg-[#C9A45C]"></span>
+</div>
+<!-- Titles -->
+<h1 class="font-headline-hero-mobile text-headline-hero-mobile text-[#5B3A21] tracking-tight mb-0.5">
+              Baan Mai Sak Lamphun
+            </h1>
+<p class="font-headline-sm text-[17px] text-[#5B3A21]/80 font-normal mb-4">
+              บ้านไม้สัก ลำพูน
+            </p>
+<!-- Compact Date & Guest Selector -->
+<div class="bg-[#F4ECDD]/70 border border-[#EFE6D5] p-3 rounded-[4px] text-left space-y-2.5 mb-3" id="booking-form">
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="block font-label-sm text-[10px] text-[#5B3A21] font-semibold uppercase tracking-wider mb-1">Check-in</label>
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] px-2.5 py-2 text-xs text-[#2A211B] flex items-center justify-between">
+<span class="font-body-sm text-xs">15 Mar 2025</span>
+<span class="material-symbols-outlined text-[16px] text-[#C9A45C]" data-icon="calendar_today">calendar_today</span>
+</div>
+</div>
+<div>
+<label class="block font-label-sm text-[10px] text-[#5B3A21] font-semibold uppercase tracking-wider mb-1">Check-out</label>
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] px-2.5 py-2 text-xs text-[#2A211B] flex items-center justify-between">
+<span class="font-body-sm text-xs">16 Mar 2025</span>
+<span class="material-symbols-outlined text-[16px] text-[#C9A45C]" data-icon="calendar_today">calendar_today</span>
+</div>
+</div>
+</div>
+<div>
+<label class="block font-label-sm text-[10px] text-[#5B3A21] font-semibold uppercase tracking-wider mb-1">Guests</label>
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] px-2.5 py-2 text-xs text-[#2A211B] flex items-center justify-between">
+<span class="font-body-sm text-xs">2 Adults, 1 Room</span>
+<span class="material-symbols-outlined text-[18px] text-[#C9A45C]" data-icon="group">group</span>
+</div>
+</div>
+<button class="w-full bg-[#9E2B25] hover:bg-[#80201B] active:scale-[0.99] text-[#FAF6EF] font-label-lg text-label-lg py-2.5 rounded-[4px] shadow-[0_4px_14px_rgba(158,43,37,0.25)] transition-all flex items-center justify-center gap-1.5">
+<span>Check availability</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- PromptPay Note -->
+<div class="flex items-center justify-center gap-1.5 text-[#5B3A21]/75 font-body-sm text-xs">
+<span class="material-symbols-outlined text-[15px] text-[#C9A45C]" data-icon="qr_code_2">qr_code_2</span>
+<span>Direct booking • Thai PromptPay QR</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ABOUT SECTION -->
+<section class="px-4 pt-10 pb-6 text-center">
+<!-- Temple Window Arch Photo -->
+<div class="relative mx-auto w-full max-w-[320px] rounded-t-[60px] rounded-b-[4px] overflow-hidden border-2 border-[#C9A45C]/50 shadow-md bg-[#FAF6EF] p-1 mb-6">
+<div class="rounded-t-[56px] rounded-b-[2px] overflow-hidden h-[240px]">
+<img class="w-full h-full object-cover" data-alt="An intimate serene vignette of an antique Lanna teak veranda with hand-polished wooden floorboards, soft diffused morning sunshine streaming through classic temple-style louvered windows, and antique brass flower vessels. The palette features earthy teak wood, warm parchment whites, and soft gold tones reflecting quiet northern Thai slow-living craftsmanship." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBd0DfRrwReDxCxUi5H4XpudjertuvhqHv8IGDyBOjtUBDMsWYMHeDDBMIV7XeVP1hG9oab-jnDrAla2iCPklyZF-fDamFLo7avyIsA_yBg3CFRece3cyTL9OpV_T8gMrlR98Qw6w5Cug7AFJ4iYO0Dn-J8xg2SNJ7jZilq3ifFg24Z01p2-azVLitjaAM-Ghkms2pdq_D5S6iJ-ZXSBUXkqJo85A1-WavYkJtHj6U"/>
+</div>
+</div>
+<!-- Location Badge -->
+<div class="inline-flex items-center gap-1.5 bg-[#EFE6D5] border border-[#C9A45C]/40 px-3 py-1 rounded-[4px] mb-3">
+<span class="material-symbols-outlined text-[15px] text-[#9E2B25]" data-icon="location_on">location_on</span>
+<span class="font-label-sm text-label-sm text-[#5B3A21] uppercase tracking-wider">Nai Mueang, Lamphun</span>
+</div>
+<!-- Intro Text -->
+<p class="font-body-lg text-body-lg text-[#2A211B] leading-relaxed px-2 font-normal">
+          A 90-year-old teak house turned into four quiet rooms, five minutes’ walk from Wat Phra That Hariphunchai.
+        </p>
+<!-- Kanok / Filigree Gold Motif Divider -->
+<div class="flex items-center justify-center gap-3 my-8">
+<div class="h-[1px] w-16 bg-[#C9A45C]/40"></div>
+<div class="flex items-center gap-1 text-[#C9A45C]">
+<span class="text-xs">✦</span>
+<span class="text-base font-serif">❦</span>
+<span class="text-xs">✦</span>
+</div>
+<div class="h-[1px] w-16 bg-[#C9A45C]/40"></div>
+</div>
+</section>
+<!-- ROOMS SECTION -->
+<section class="px-4 py-4">
+<div class="text-center mb-6">
+<span class="font-label-sm text-label-sm text-[#9E2B25] uppercase tracking-widest font-semibold">ACCOMMODATION</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-[#5B3A21] mt-0.5">
+            Our Rooms
+          </h2>
+<p class="font-headline-sm text-sm text-[#5B3A21]/75">
+            ห้องพักเรือนไม้สัก
+          </p>
+</div>
+<!-- Stacked Room Cards -->
+<div class="space-y-5">
+<!-- Room 1: Grand Heritage Teak Suite -->
+<article class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] overflow-hidden shadow-[0_4px_16px_rgba(42,33,27,0.05)]">
+<div class="relative h-[190px] w-full overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="An expansive master teak bedroom suite in a northern Thai heritage home with a king four-poster bed wrapped in sheer ivory mosquito netting, hand-carved teak wall paneling, heirloom woven silk cushions in deep lacquer red, and golden atmospheric lighting coming through classic shuttered windows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_ZDpMymj5e8aoYCJef-mWMhtHmJxbMcR8JVFq9aE-R8vDbUmIFmf7-vvnZGrc4BnouujfaeUACVMlSGkLz-ppB-GdxQ7N8SsxxLBWV3sXXSca4s7lIRgoQVW_nWr-9mVDGFX19DHu02BZWY3uTY1e8xsLM5jCSv3RVVhpn8GBqcp0PJKwFS0RIJr__IF7in2m8mkUuDyLaviJX2taRbrtORQCGWRz65XpkKcf1lY"/>
+<span class="absolute top-2.5 right-2.5 bg-[#FAF6EF]/90 border border-[#C9A45C] text-[#5B3A21] text-[10px] font-label-sm uppercase px-2 py-0.5 rounded-[2px]">
+                Master Suite
+              </span>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-[19px] text-[#5B3A21] mb-1">Grand Heritage Teak Suite</h3>
+<p class="font-body-sm text-xs text-[#5B3A21]/80 mb-3 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#C9A45C]" data-icon="person">person</span>
+                Up to 2 guests • King teak bed • En-suite bath
+              </p>
+<div class="flex items-center justify-between pt-2 border-t border-[#EFE6D5]">
+<div>
+<span class="font-label-sm text-[10px] text-[#5B3A21]/70 block uppercase">Nightly Rate</span>
+<span class="font-headline-sm text-[17px] text-[#2A211B] font-semibold">From ฿1,800 <span class="font-body-sm text-xs font-normal text-[#5B3A21]/70">/ night</span></span>
+</div>
+<button class="bg-[#9E2B25] hover:bg-[#80201B] text-[#FAF6EF] font-label-md text-label-md px-4 py-1.5 rounded-[4px] transition-colors">
+                  Select
+                </button>
+</div>
+</div>
+</article>
+<!-- Room 2: Veranda Teak Room -->
+<article class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] overflow-hidden shadow-[0_4px_16px_rgba(42,33,27,0.05)]">
+<div class="relative h-[190px] w-full overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="A sunlit traditional teak hotel room opening onto an expansive shaded wooden veranda overlooking tropical garden foliage. Features a comfortable queen-size bed dressed in natural unbleached cotton linen, woven bamboo floor mats, and hand-carved floral wall moldings in aged golden teakwood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdpag85jV3ifcRB9fhV-zOMQgt2GToOZ5qtaLmbdvF6TNwpCAaV6V7Hypsb8rS5INGXds9AVxGT-fiVDOfN9xOfBzGdTGnSzMq6L6U1qgJx8kCjxbsn-qO5Uzo2CnIeeR1TAd05Qd5qVZLUpKHir3QDQIiuDtY-u7gg91O4eTOHGTuTgZ0TY3nsTycYRI3hXGIU4WLmeUQgMb2RXkjxQRC4B8RsIyAObVn3WRrHms"/>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-[19px] text-[#5B3A21] mb-1">Veranda Teak Room</h3>
+<p class="font-body-sm text-xs text-[#5B3A21]/80 mb-3 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#C9A45C]" data-icon="person">person</span>
+                Up to 2 guests • Queen bed • Veranda access
+              </p>
+<div class="flex items-center justify-between pt-2 border-t border-[#EFE6D5]">
+<div>
+<span class="font-label-sm text-[10px] text-[#5B3A21]/70 block uppercase">Nightly Rate</span>
+<span class="font-headline-sm text-[17px] text-[#2A211B] font-semibold">From ฿1,400 <span class="font-body-sm text-xs font-normal text-[#5B3A21]/70">/ night</span></span>
+</div>
+<button class="bg-[#9E2B25] hover:bg-[#80201B] text-[#FAF6EF] font-label-md text-label-md px-4 py-1.5 rounded-[4px] transition-colors">
+                  Select
+                </button>
+</div>
+</div>
+</article>
+<!-- Room 3: Courtyard Twin Room -->
+<article class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] overflow-hidden shadow-[0_4px_16px_rgba(42,33,27,0.05)]">
+<div class="relative h-[190px] w-full overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="A peaceful heritage bedroom featuring two separate single handcrafted teak beds with crisp warm cream bedding and hand-loomed northern Thai textile runners. Soft garden courtyard views visible through carved wooden screens, surrounded by earthy teak wood paneling and gentle ambient light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArgs03HBDKvRYE7G8inUsa-OgM2dJ0KzegmQcZzbm7uCFTqQ5FS2jqI8vmu5fsDMyKAB7gRo5QtrHD7lI_fws808LH_6OvJNjYbnOfP8rk3hOfNVtyk7LJkeNB0dj4a6B-28DOAzIhHFLX3yCf0p7ZNgO6yG7dXytlk0ReUvBHpvYtSWPYPsff2PTOXxfMjYA6S1MSB5L2qL7od4QTDkNsGMUYPsSCHlxoDqnlE0c"/>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-[19px] text-[#5B3A21] mb-1">Courtyard Twin Room</h3>
+<p class="font-body-sm text-xs text-[#5B3A21]/80 mb-3 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#C9A45C]" data-icon="person">person</span>
+                Up to 2 guests • 2 Single teak beds • Garden view
+              </p>
+<div class="flex items-center justify-between pt-2 border-t border-[#EFE6D5]">
+<div>
+<span class="font-label-sm text-[10px] text-[#5B3A21]/70 block uppercase">Nightly Rate</span>
+<span class="font-headline-sm text-[17px] text-[#2A211B] font-semibold">From ฿1,200 <span class="font-body-sm text-xs font-normal text-[#5B3A21]/70">/ night</span></span>
+</div>
+<button class="bg-[#9E2B25] hover:bg-[#80201B] text-[#FAF6EF] font-label-md text-label-md px-4 py-1.5 rounded-[4px] transition-colors">
+                  Select
+                </button>
+</div>
+</div>
+</article>
+<!-- Room 4: Family Attic Studio -->
+<article class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] overflow-hidden shadow-[0_4px_16px_rgba(42,33,27,0.05)]">
+<div class="relative h-[190px] w-full overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="A cozy, spacious attic bedroom studio under traditional pitched timber eaves in a Lanna teak mansion. Multiple plush beds arranged for family stays with exposed dark teak roof trusses, vintage terracotta floor tiles, and golden light filtering through dormer gable windows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjyv4C2aRXxKIgmhiL7HcRuARAYatO7iTlypXmSZuvIiU3ahPGB8kl9flWstA_sNymo-R_bohxcT3zjqu9OMCrohL1Dk5clCOybSkr9kUJw-cNnYyVSrp-JWYZtHBYkSYWAXb_uIadPqTey6CavxfJnZ1a_Qwo-_mxjYH9v64XTuLsJVErgQ5Hrn-bxJix5iPEOKqQc2tUm6gEpyGSA2RX5FaH7qGbDsKb0dmhfFQ"/>
+<span class="absolute top-2.5 right-2.5 bg-[#FAF6EF]/90 border border-[#C9A45C] text-[#5B3A21] text-[10px] font-label-sm uppercase px-2 py-0.5 rounded-[2px]">
+                Family Retreat
+              </span>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-[19px] text-[#5B3A21] mb-1">Family Attic Studio</h3>
+<p class="font-body-sm text-xs text-[#5B3A21]/80 mb-3 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#C9A45C]" data-icon="group">group</span>
+                Up to 4 guests • King + 2 Singles • Upper level
+              </p>
+<div class="flex items-center justify-between pt-2 border-t border-[#EFE6D5]">
+<div>
+<span class="font-label-sm text-[10px] text-[#5B3A21]/70 block uppercase">Nightly Rate</span>
+<span class="font-headline-sm text-[17px] text-[#2A211B] font-semibold">From ฿2,200 <span class="font-body-sm text-xs font-normal text-[#5B3A21]/70">/ night</span></span>
+</div>
+<button class="bg-[#9E2B25] hover:bg-[#80201B] text-[#FAF6EF] font-label-md text-label-md px-4 py-1.5 rounded-[4px] transition-colors">
+                  Select
+                </button>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- GALLERY SECTION -->
+<section class="px-4 pt-10 pb-6">
+<div class="text-center mb-6">
+<span class="font-label-sm text-label-sm text-[#9E2B25] uppercase tracking-widest font-semibold">ARCHIVAL GLIMPSE</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-[#5B3A21] mt-0.5">
+            Estate Gallery
+          </h2>
+<p class="font-body-sm text-xs text-[#5B3A21]/80">
+            ภาพบรรยากาศบ้านไม้สักและวิถีลำพูน
+          </p>
+</div>
+<!-- 8 Photos stacked in a neat 2-column grid with visible captions -->
+<div class="grid grid-cols-2 gap-3">
+<!-- 1. [exterior] Historic Teak Façade -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="Architectural portrait of the historic 90-year-old teak wood exterior facade of Baan Mai Sak Lamphun, showcasing traditional Lanna woodwork, dark aged timber patinas, and intricately carved eaves framed by flowering bougainvillea." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArrTa3m2GGgAuvmniPsUYT-L5BtyiZYWL4M39at5ry3fFF1qhuriNLzkf9jIO-vWEsQb20oa46_oyDgzzWu_fPnZVX8wr6Wh1eCL1NrbM3mC-OxeFSjydL5cwhs_viucKDfamRuzaEOUUr9BVf_dF8PLOZGp7gS0cSj7QMHGsmWoGcIvQamj9ItEefU9RZmpyxX27ViTOG4C0a5u9I6iGTIcGOomexdHIFKiACdSY"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Historic Teak Façade
+            </p>
+</div>
+<!-- 2. [room] Heritage Suite -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="Interior shot of the Heritage Suite bedroom with hand-carved headboard, amber reading lamp, polished timber walls, and cream linens reflecting high-end cultural hospitality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD0gWsKOCXQi4w9ELHC5OTukPI2pskGCGLg_lxRlYpDYnZeMnAwm2ea2PtmPXCLBo7uXMGuyk9h2e3suAAh6K8pXTtsu3UrOOgtHZl4841EcKpskXnbGwRoyx-W9W00XH9fTwAt58u1DDX0RRdyWOKnY0f7rYWN4BTGZ7ZJLczF9FlqJOzYGOghzGLTDDm2CtPys48vKqsudzc0BIYD8jlZY_Fkp7tYJM4MM-1KDQ"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Heritage Suite
+            </p>
+</div>
+<!-- 3. [common area] Shaded Veranda -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="A tranquil shaded wooden veranda with wicker armchairs, low wooden coffee table with tea set, overlooking peaceful garden greens in Northern Thailand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjLw5ZcFkWOvTeRYAQffCTbd5AbBtqeiNH3l_1Mjqb4qPTXk9JRkA-WqmCwRFrwZxHMMz0OMPJEyS724TeGZeKLqmP2bffglI6GhnWJLKLn33xq8Px9kR67yUCmukaPpezexPC1-oACQHhlhOpf1FyFoyMzdDyy8P1vKYX_qBsSI2jFHPBDpm3fe9KXDGTMLc71MZTrH8iwCA8ERec84tY9XdcXP6RAESrjxyvTMo"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Shaded Veranda
+            </p>
+</div>
+<!-- 4. [food] Northern Breakfast -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="An artisanal Northern Thai breakfast spread served in celadon ceramic bowls and woven rattan trays, featuring sticky rice, local herbal delicacies, seasonal tropical fruits, and fresh pour-over coffee on a teak table." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADcJNHMCQv5tEP9qcPxFSicB_4pBfosLRN7G_2ARowNExrnsVHA6sixLKc_vEyrQMl-iOMj82lEd8bFnW-EWqACLir-_z_E0k3J1HJsM5pG44WUFWHJMAa2kcq2lIJeEoSbyCjTmsZXVGUJgp9uf0b19oEZ5Jp5NoIGKZyO6YjcIvoeHH5s11Vv8CM8CspLC4eV955fd1cY_s7loIhgVinDAxv9vmKFvz-DKtPzZ0"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Northern Breakfast
+            </p>
+</div>
+<!-- 5. [view] Hariphunchai Spire -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="View of the gilded golden spire of Wat Phra That Hariphunchai gleaming in the afternoon sky, framed by temple trees and quiet historic alleyways of Lamphun city." src="https://lh3.googleusercontent.com/aida-public/AB6AXuANHdLmjeOx-Nw30uZjMzFGQp17Z5-jZkkkp4y6lb_NIwwhdH_e4u7xwufAbgg0_Pjg2s7Yk3oDZ-QNGgQ7pCUz4g_c9N7xW-gRw1Efr0vAnJJcUDYh0JyMjxb8I7WCH5hj4M6K6sUcPYKTEQa15CjKhM1twIjyHSgilh46vY2DvOHg7kDAZrlbcLi2U1YftwVPRwBlmJ81BMeovSG9TwqYXFmfuEZyBJVceKFaQO8"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Hariphunchai Spire
+            </p>
+</div>
+<!-- 6. [room] Sunlit Reading Nook -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="Cozy sunlit reading nook beside a hand-lathed teak window with a cushioned daybed, Thai triangle pillows in red and gold brocade, and soft rays of sunlight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfPTfHa22fC5b3NnP7zK8cMO5g6WjFvCbzcFsmbHLVj7eZf3G_EJAJaI5KI7ByYxHR5ZH63NQTkfhYXKHZAxd3MyDymkQkBwG7neg1-d8kJV7zL9e8FTfp3Ki0A86BlK3VAgujdtNOBF5FaxD_QVkuC9YDOKsEE-fO81eDVTNs5hkHiYgxfiSw8bh1iVTnWG4HHgw0mx_BCw_NTVKLSk8Q1I9VbOBp9AMYorVSrfU"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Sunlit Reading Nook
+            </p>
+</div>
+<!-- 7. [common area] Lanna Carvings -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="Macro close-up photography of authentic Lanna wood carvings on a teak lintel, depicting intricate floral and kanok motifs with subtle gold leaf patina and age-old artisan craftsmanship." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAes4d0dZ_ZXgyF8OOr0GFVv-9YiU_pA77Zn2-QrmGk8A5DvFOguf4ij181VMPciQH4e30txc6-c0Z_G12-z2Gk5WXAPVGo-LtWa7JIa5kPI20XuJI2T8elWl1mG1_U9D4-ybzr-x4c29Rz-_u2A9PmEuE1ffYNesFHNFRN7dR4m7sEEDHR1SBd950PHZXF5qknwZ_eN0TgsoQC-QSrTPydpOiaV0czUbUP32yCKrI"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Lanna Carvings
+            </p>
+</div>
+<!-- 8. [exterior] Evening Lanterns -->
+<div class="bg-[#FAF6EF] border border-[#EFE6D5] rounded-[4px] p-1.5">
+<div class="h-28 w-full rounded-[2px] overflow-hidden bg-[#2A211B]">
+<img class="w-full h-full object-cover" data-alt="Night ambiance at Baan Mai Sak Lamphun with warm yellow paper lanterns hanging from the eaves of the dark teak homestead, illuminating the pebble courtyard in romantic glow." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPGiWH4-kH0TODMO5dWubmy2TMlNrUNMlMGJKAbDJkdS7E1Xd2KupUMySgfrYMqBdNFqPLhALBDqdizDa1gqQMUFAJoDY8Gy6fSnFe43rsFUQNNNEh1APUbE28uZtgdhBUuwtFOhBrTQwfNms4l1isDxqRDMWm3BzpLKN29n4868Ah521TKX7kTuOqrXcvBU1aqJICTWDLiU3-MvN650Av7bXXbUmfudYkGPwCcc8"/>
+</div>
+<p class="font-label-md text-[11px] text-[#5B3A21] mt-1.5 font-medium leading-tight">
+              Evening Lanterns
+            </p>
+</div>
+</div>
+</section>
+<!-- LOCATION SECTION -->
+<section class="px-4 pt-4 pb-8">
+<div class="text-center mb-4">
+<span class="font-label-sm text-label-sm text-[#9E2B25] uppercase tracking-widest font-semibold">NEIGHBORHOOD</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-[#5B3A21]">
+            Location
+          </h2>
+</div>
+<!-- Address Card on Sepia Map Placeholder -->
+<div class="relative rounded-[4px] overflow-hidden border border-[#C9A45C]/50 shadow-sm bg-[#FAF6EF]">
+<!-- Sepia Map Canvas Placeholder -->
+<div class="h-44 w-full relative overflow-hidden bg-[#e8d7cd]">
+<img class="w-full h-full object-cover sepia opacity-85" data-alt="An artistic antique sepia-toned vintage illustrated cartographic map of old town Lamphun Thailand showing the Kuang River and the iconic Wat Phra That Hariphunchai grounds in warm earthen tones." data-location="Lamphun, Thailand" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxMytLv-LmVUWSRDJ8UJJNzhPpdyMge4UNT_2UKj9CxcAdKccs_ZKiPjP8Jvi0jYiHQsdhSsDwsggbgpjlAZNcAjvTP2q_GcJSztlPPGQ3qd37d7FOU67hI2VAXFdf7XrBsCGFKNZIJKDwiIblxEytZxPhKDKM-0oBdN1yyUjE3XsWDm5LbzVaCOooESnXL2VI9y2RSPbcVKLLtz2OV9q2bch0hb3vA0lZX9e8MFw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#FAF6EF] via-transparent to-transparent"></div>
+<!-- Pin Badge on Map -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+<span class="material-symbols-outlined text-[32px] text-[#9E2B25] drop-shadow-md" data-icon="pin_drop">pin_drop</span>
+<span class="bg-[#FAF6EF] text-[#5B3A21] text-[10px] font-label-sm px-2 py-0.5 rounded shadow border border-[#C9A45C]">Baan Mai Sak</span>
+</div>
+</div>
+<!-- Address Info Details -->
+<div class="p-4 bg-[#FAF6EF] -mt-2 relative z-10">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-[#9E2B25] shrink-0 mt-0.5" data-icon="distance">distance</span>
+<div>
+<p class="font-title-md text-title-md text-[#2A211B] leading-snug">
+                  Nai Mueang, Lamphun, Thailand
+                </p>
+<p class="font-body-sm text-xs text-[#5B3A21]/80 mt-1">
+                  (5 mins walk to Wat Phra That Hariphunchai)
+                </p>
+<div class="mt-2.5 pt-2 border-t border-[#EFE6D5] flex items-center justify-between text-xs text-[#5B3A21]">
+<span>ใจกลางเมืองเก่าลำพูน • บรรยากาศเงียบสงบ</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Shared Component: Footer -->
+<footer class="bg-surface-container-high border-t border-outline-variant/40 px-6 py-8 text-center">
+<!-- Logo & Title -->
+<h4 class="font-headline-sm text-headline-sm text-primary tracking-wide mb-1">
+          Baan Mai Sak Lamphun
+        </h4>
+<p class="font-body-sm text-xs text-on-surface-variant mb-4">
+          Nai Mueang, Mueang Lamphun District, Lamphun 51000
+        </p>
+<!-- Navigation Links from JSON Anchor -->
+<div class="flex justify-center items-center gap-6 mb-6">
+<a class="text-on-surface-variant hover:text-secondary font-body-sm text-body-sm transition-colors duration-150" href="#hero">Rooms</a>
+<span class="text-[#C9A45C] text-xs">•</span>
+<a class="text-on-surface-variant hover:text-secondary font-body-sm text-body-sm transition-colors duration-150" href="#hero">Gallery</a>
+<span class="text-[#C9A45C] text-xs">•</span>
+<a class="text-on-surface-variant hover:text-secondary font-body-sm text-body-sm transition-colors duration-150" href="#hero">Location</a>
+</div>
+<div class="w-12 h-[1px] bg-[#C9A45C]/50 mx-auto mb-4"></div>
+<!-- Mandatory Copyright Text from Shared Components JSON -->
+<p class="font-label-sm text-label-sm text-on-surface-variant/80 uppercase tracking-wider">
+          Booking powered by hayhost
+        </p>
+</footer>
+</main>
+<!-- CRITICAL MOBILE REQUIREMENT: STICKY BOTTOM BAR -->
+<div class="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+<div class="w-full max-w-[390px] pointer-events-auto bg-[#FAF6EF]/95 backdrop-blur-md border-t border-[#C9A45C]/40 px-4 py-3 shadow-[0_-6px_20px_rgba(42,33,27,0.12)] flex items-center justify-between">
+<!-- Left Price Anchor -->
+<div class="flex flex-col">
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-[#5B3A21]/70 leading-none">Starting from</span>
+<div class="font-headline-sm text-[18px] text-[#2A211B] font-bold leading-tight mt-0.5">
+            ฿1,200 <span class="font-body-sm text-xs font-normal text-[#5B3A21]/80">/ night</span>
+</div>
+</div>
+<!-- Right CTA Button -->
+<a class="bg-[#9E2B25] hover:bg-[#80201B] active:scale-[0.98] text-[#FAF6EF] font-label-md text-label-md px-4 py-2.5 rounded-[4px] shadow-[0_4px_12px_rgba(158,43,37,0.3)] transition-all flex items-center gap-1.5" href="#booking-form">
+<span>Check availability</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="calendar_month">calendar_month</span>
+</a>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Guest Details - Mok Doi Resort (หมอกดอย รีสอร์ท)</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@500;600;700&amp;family=Noto+Sans:wght@400;500;600&amp;family=Prompt:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error": "#ffffff",
+            "surface-container-high": "#e4e9e6",
+            "background": "#f5fbf8",
+            "error-container": "#ffdad6",
+            "outline-variant": "#c2c8c2",
+            "primary-fixed-dim": "#aeceba",
+            "primary": "#082519",
+            "secondary-container": "#c6e6bd",
+            "surface-container-low": "#eff5f2",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#304d3e",
+            "on-tertiary": "#ffffff",
+            "primary-container": "#1f3b2d",
+            "on-tertiary-fixed-variant": "#653e00",
+            "secondary": "#4a6545",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#334d2f",
+            "surface-container-highest": "#dee4e1",
+            "tertiary": "#311c00",
+            "surface-tint": "#486555",
+            "surface-dim": "#d5dbd8",
+            "inverse-on-surface": "#ecf2ef",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2a1700",
+            "surface-bright": "#f5fbf8",
+            "on-tertiary-container": "#cd9349",
+            "on-secondary-container": "#4c6847",
+            "on-primary-fixed": "#032014",
+            "on-secondary-fixed": "#072107",
+            "on-surface": "#171d1b",
+            "surface-container": "#e9efec",
+            "surface-variant": "#dee4e1",
+            "primary-fixed": "#caead6",
+            "secondary-fixed": "#cbebc2",
+            "tertiary-fixed-dim": "#fabb6c",
+            "error": "#ba1a1a",
+            "tertiary-fixed": "#ffddb8",
+            "on-surface-variant": "#424844",
+            "surface": "#f5fbf8",
+            "on-background": "#171d1b",
+            "on-primary-container": "#87a593",
+            "tertiary-container": "#4e2f00",
+            "on-error-container": "#93000a",
+            "outline": "#727973",
+            "inverse-primary": "#aeceba",
+            "inverse-surface": "#2b3230",
+            "secondary-fixed-dim": "#b0cfa7",
+            "sunrise-amber": "#E0A458",
+            "forest-moss": "#4F6B4A"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin-sm": "1.25rem",
+            "gutter-sm": "1rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "gutter": "1.5rem",
+            "margin": "3rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "label-md": ["Noto Sans", "sans-serif"],
+            "headline-lg": ["Prompt", "Epilogue", "sans-serif"],
+            "headline-sm": ["Prompt", "Epilogue", "sans-serif"],
+            "body-lg": ["Noto Sans", "sans-serif"],
+            "label-lg": ["Noto Sans", "sans-serif"],
+            "body-md": ["Noto Sans", "sans-serif"],
+            "body-sm": ["Noto Sans", "sans-serif"],
+            "headline-lg-mobile": ["Prompt", "Epilogue", "sans-serif"],
+            "headline-xl": ["Prompt", "Epilogue", "sans-serif"],
+            "label-sm": ["Noto Sans", "sans-serif"],
+            "headline-md": ["Prompt", "Epilogue", "sans-serif"],
+            "headline-xl-mobile": ["Prompt", "Epilogue", "sans-serif"]
+          },
+          "fontSize": {
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Custom subtle frosted glass blur */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.76);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(221, 227, 224, 0.7);
+      box-shadow: 0 4px 24px -2px rgba(31, 59, 45, 0.04);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex justify-center selection:bg-secondary-container selection:text-primary">
+<!-- Mobile Viewport Frame (390px width layout) -->
+<main class="w-full max-w-[390px] min-h-screen bg-background relative flex flex-col pb-36 border-x border-outline-variant/20 shadow-xl overflow-x-hidden">
+<!-- Atmospheric Mountain Mist Background Glow -->
+<div class="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-surface-container-high/60 via-surface-container-low/40 to-transparent pointer-events-none -z-10"></div>
+<div class="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-secondary-fixed/30 blur-3xl pointer-events-none -z-10"></div>
+<!-- Top Step Bar & Navigation Anchor -->
+<header class="sticky top-0 z-40 bg-surface/85 backdrop-blur-md px-4 pt-3 pb-3">
+<div class="flex items-center justify-between">
+<button aria-label="Go back" class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-container-highest/60 transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-[22px]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<span class="font-headline-sm text-label-sm tracking-tight text-primary font-bold">Mok Doi Resort • หมอกดอย รีสอร์ท</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Pang Mapha, Mae Hong Son</span>
+</div>
+<div class="w-10 flex justify-end items-center">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-container-highest text-primary font-label-md text-label-sm font-semibold">
+            2 / 4
+          </span>
+</div>
+</div>
+<!-- Step Progress Bar -->
+<div class="w-full bg-surface-container-high h-1 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary-container h-full rounded-full transition-all duration-300" style="width: 50%;"></div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="px-4 pt-4 space-y-4">
+<!-- Page Title -->
+<div>
+<h1 class="font-headline-md text-headline-md text-primary tracking-tight font-semibold">Guest Details</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">ข้อมูลผู้เข้าพักสำหรับการยืนยันการจอง</p>
+</div>
+<!-- Selected Cabin Summary Card -->
+<section aria-label="Selected Reservation Summary" class="glass-card rounded-[20px] p-3.5 relative overflow-hidden">
+<div class="flex items-start gap-3">
+<!-- Room Thumbnail -->
+<div class="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative bg-surface-variant">
+<img class="w-full h-full object-cover" data-alt="Modern eco-luxury wooden villa perched on a lush highland ridge overlooking cascading sea of clouds at dawn with soft mist and warm morning ambient light in northern Thailand" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvuA_n3vP-j5fkfnVSCIYjp7p-q58_rxi0PSUtKg2xQ43jyH8ylTqbzC5Nqr0vVydzJdOf_2-Fst2wdTqXaAbR5f9sT5oMatQd-9t4er7beKJlKjwRqQBZs7TJBVc1NmYUlLQafsRJ_T8B7WkoPy1W-_-LZGatC6Mt8EKnXuYqWwCErabJnKZ0PQieXkjpQWEfp4iNNjhIznerJLSjemfjmHAk4CgUeqwb8czfE8U"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 text-primary font-label-sm text-label-sm font-semibold mb-1">
+<span class="material-symbols-outlined text-[13px] text-forest-moss">filter_drama</span>
+<span>Sea of Clouds 95%</span>
+</div>
+<h2 class="font-headline-sm text-body-md text-primary font-semibold truncate leading-tight">
+              Cloud Ridge Villa
+            </h2>
+<p class="font-body-sm text-label-sm text-on-surface-variant">วิลล่าริมผาหมอก</p>
+<div class="mt-2 flex items-center justify-between text-on-surface-variant pt-1 border-t border-outline-variant/30">
+<span class="font-label-md text-label-sm">18–20 Nov 2025 • 2 Nights (2 คืน)</span>
+<span class="font-headline-sm text-label-lg font-bold text-primary">฿3,000</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Guest Form -->
+<form class="space-y-4" onsubmit="event.preventDefault();">
+<!-- Primary Contact Fields Card -->
+<section class="glass-card rounded-[20px] p-4 space-y-3.5">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[18px]">badge</span>
+<span class="font-label-lg text-label-lg text-primary font-semibold">Primary Guest / ข้อมูลผู้ติดต่อหลัก</span>
+</div>
+<!-- Full Name -->
+<div>
+<label class="block font-label-md text-label-sm text-on-surface-variant mb-1" for="fullName">
+              Full Name * <span class="text-label-sm font-normal text-outline">(ชื่อ-นามสกุล)</span>
+</label>
+<div class="relative">
+<input class="w-full rounded-2xl bg-surface-container-low/60 border border-outline-variant px-3.5 py-2.5 font-body-md text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-forest-moss transition-colors" id="fullName" required="" type="text" value="Thanawat Suksomboon"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-secondary text-[20px]" style="font-variation-settings: 'FILL' 1;">
+                check_circle
+              </span>
+</div>
+</div>
+<!-- Phone Number -->
+<div>
+<label class="block font-label-md text-label-sm text-on-surface-variant mb-1" for="phone">
+              Phone Number * <span class="text-label-sm font-normal text-outline">(เบอร์โทรศัพท์)</span>
+</label>
+<div class="relative">
+<input class="w-full rounded-2xl bg-surface-container-low/60 border border-outline-variant px-3.5 py-2.5 font-body-md text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-forest-moss transition-colors" id="phone" required="" type="tel" value="+66 89 555 4321"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-outline text-[20px]">
+                phone_iphone
+              </span>
+</div>
+</div>
+<!-- Email Address -->
+<div>
+<label class="block font-label-md text-label-sm text-on-surface-variant mb-1" for="email">
+              Email Address * <span class="text-label-sm font-normal text-outline">(อีเมล)</span>
+</label>
+<div class="relative">
+<input class="w-full rounded-2xl bg-surface-container-low/60 border border-outline-variant px-3.5 py-2.5 font-body-md text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-forest-moss transition-colors" id="email" required="" type="email" value="thanawat@example.com"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-outline text-[20px]">
+                mail
+              </span>
+</div>
+</div>
+<!-- Nationality -->
+<div>
+<label class="block font-label-md text-label-sm text-on-surface-variant mb-1" for="nationality">
+              Nationality * <span class="text-label-sm font-normal text-outline">(สัญชาติ)</span>
+</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-2xl bg-surface-container-low/60 border border-outline-variant px-3.5 py-2.5 pr-10 font-body-md text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-forest-moss transition-colors" id="nationality">
+<option selected="">Thai / สัญชาติไทย</option>
+<option>Other / ชาวต่างชาติ (International)</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-3 top-2.5 text-on-surface-variant text-[20px]">
+                expand_more
+              </span>
+</div>
+</div>
+</section>
+<!-- Stepper: Number of Guests -->
+<section class="glass-card rounded-[20px] p-4 space-y-3.5">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">group</span>
+<span class="font-label-lg text-label-lg text-primary font-semibold">Guests / จำนวนผู้เข้าพัก</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Max 3 guests</span>
+</div>
+<!-- Adults Stepper -->
+<div class="flex items-center justify-between py-1.5 border-b border-outline-variant/30">
+<div>
+<p class="font-headline-sm text-body-md text-primary font-semibold">Adults</p>
+<p class="font-body-sm text-label-sm text-on-surface-variant">ผู้ใหญ่ (12+ ปี)</p>
+</div>
+<div class="flex items-center gap-3">
+<button aria-label="Decrease adult count" class="w-8 h-8 rounded-full border border-forest-moss/40 flex items-center justify-center text-primary hover:bg-surface-container-high transition-colors active:scale-95" type="button">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="font-headline-sm text-body-md font-semibold text-primary w-4 text-center">2</span>
+<button aria-label="Increase adult count" class="w-8 h-8 rounded-full bg-forest-moss text-surface-container-lowest flex items-center justify-center hover:opacity-90 transition-opacity active:scale-95 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Children Stepper -->
+<div class="flex items-center justify-between py-1.5">
+<div>
+<p class="font-headline-sm text-body-md text-primary font-semibold">Children</p>
+<p class="font-body-sm text-label-sm text-on-surface-variant">เด็ก (อายุ 0–11 ปี)</p>
+</div>
+<div class="flex items-center gap-3">
+<button aria-label="Decrease child count" class="w-8 h-8 rounded-full border border-outline-variant/50 flex items-center justify-center text-outline cursor-not-allowed opacity-60" type="button">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="font-headline-sm text-body-md font-semibold text-primary w-4 text-center">0</span>
+<button aria-label="Increase child count" class="w-8 h-8 rounded-full border border-forest-moss/40 flex items-center justify-center text-primary hover:bg-surface-container-high transition-colors active:scale-95" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Special Requests -->
+<section class="glass-card rounded-[20px] p-4 space-y-2">
+<label class="flex items-center justify-between" for="specialRequests">
+<span class="flex items-center gap-2 font-label-lg text-label-lg text-primary font-semibold">
+<span class="material-symbols-outlined text-primary text-[18px]">edit_note</span>
+              Special Requests (optional)
+            </span>
+<span class="font-label-sm text-label-sm text-outline">คำขอพิเศษ</span>
+</label>
+<textarea class="w-full rounded-2xl bg-surface-container-low/60 border border-outline-variant p-3 font-body-sm text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-forest-moss transition-colors resize-none placeholder:text-outline/70" id="specialRequests" placeholder="Estimated arrival time or mountain dietary notes (เช่น เวลาถึงโดยประมาณ หรือแพ้อาหาร)..." rows="3"></textarea>
+<p class="font-label-sm text-label-sm text-on-surface-variant italic">
+            * We will do our best to arrange based on highland retreat conditions.
+          </p>
+</section>
+<!-- Retreat Guidelines Agreement Checkbox -->
+<div class="p-3 bg-surface-container-low/50 rounded-2xl border border-outline-variant/40 flex items-start gap-3">
+<input checked="" class="mt-1 w-4 h-4 rounded text-forest-moss focus:ring-primary border-outline-variant cursor-pointer accent-[#1F3B2D]" id="guidelines" required="" type="checkbox"/>
+<label class="font-body-sm text-body-sm text-on-surface leading-snug cursor-pointer select-none" for="guidelines">
+            I agree to the highland retreat guidelines and quiet hours <span class="font-semibold text-primary">(21:00 - 07:00)</span>.
+            <span class="block text-label-sm text-on-surface-variant mt-0.5">ยินยอมปฏิบัติตามกฎระเบียบของที่พักและช่วงเวลางดใช้เสียง</span>
+</label>
+</div>
+</form>
+<!-- Sub-Footer Attribution -->
+<div class="pt-2 pb-6 text-center">
+<p class="font-body-sm text-label-sm text-on-surface-variant">
+          Booking powered by hayhost
+        </p>
+<p class="font-label-sm text-label-sm text-outline mt-0.5">
+          © Mok Doi Resort, Pang Mapha, Mae Hong Son, Thailand
+        </p>
+</div>
+</div>
+<!-- Sticky Bottom Confirmation Bar -->
+<div class="fixed bottom-0 inset-x-0 max-w-[390px] mx-auto z-50 bg-surface/90 backdrop-blur-md px-4 py-3 border-t border-surface-variant/40 shadow-lg">
+<div class="flex items-center justify-between gap-3">
+<!-- Price Breakout -->
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Total (รวมทั้งสิ้น)</span>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-headline-md text-headline-md font-bold text-primary leading-none">฿3,000</span>
+</div>
+<span class="font-label-sm text-[10px] text-outline leading-tight">Taxes &amp; fees included</span>
+</div>
+<!-- Primary Action Amber Pill Button -->
+<button class="flex-1 max-w-[200px] h-12 rounded-full bg-sunrise-amber text-primary font-headline-sm text-body-md font-bold flex items-center justify-center gap-1.5 shadow-[0_4px_16px_rgba(224,164,88,0.35)] hover:brightness-105 active:scale-95 transition-all duration-150" type="button">
+<span>Review Booking</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Payment - Haus Nimman (เฮาส์ นิมมาน)</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- IBM Plex Sans (Design System Typography) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed": "#121f0e",
+            "on-secondary-container": "#636262",
+            "on-primary-container": "#f8ffef",
+            "on-error": "#ffffff",
+            "surface-variant": "#e2e3e1",
+            "tertiary-container": "#747571",
+            "outline": "#757870",
+            "primary-fixed": "#d7e7cd",
+            "on-secondary": "#ffffff",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#e4e2de",
+            "secondary": "#5f5e5e",
+            "secondary-container": "#e2dfde",
+            "background": "#f9f9f7",
+            "surface-container": "#eeeeec",
+            "surface-tint": "#54624d",
+            "surface-bright": "#f9f9f7",
+            "error": "#ba1a1a",
+            "surface-dim": "#dadad8",
+            "on-error-container": "#93000a",
+            "on-tertiary": "#ffffff",
+            "inverse-primary": "#bccbb2",
+            "surface-container-highest": "#e2e3e1",
+            "on-secondary-fixed": "#1b1b1c",
+            "secondary-fixed-dim": "#c8c6c5",
+            "surface": "#f9f9f7",
+            "primary-fixed-dim": "#bccbb2",
+            "primary": "#52604b",
+            "surface-container-high": "#e8e8e6",
+            "inverse-surface": "#2f3130",
+            "surface-container-low": "#f4f4f2",
+            "outline-variant": "#c5c8be",
+            "on-primary-fixed-variant": "#3d4b37",
+            "on-background": "#1a1c1b",
+            "on-tertiary-fixed": "#1b1c19",
+            "secondary-fixed": "#e5e2e1",
+            "on-tertiary-container": "#fefcf7",
+            "on-secondary-fixed-variant": "#474746",
+            "primary-container": "#6a7963",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed-dim": "#c7c6c2",
+            "on-surface-variant": "#444841",
+            "on-tertiary-fixed-variant": "#464744",
+            "inverse-on-surface": "#f1f1ef",
+            "on-surface": "#1a1c1b",
+            "error-container": "#ffdad6",
+            "tertiary": "#5c5c59"
+          },
+          "borderRadius": {
+            "DEFAULT": "0px",
+            "lg": "0px",
+            "xl": "0px",
+            "full": "0px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "gutter-desktop": "2.5rem",
+            "space-md": "1rem",
+            "space-lg": "1.75rem",
+            "margin-tablet": "2.5rem",
+            "margin-desktop": "4rem",
+            "margin": "1.25rem",
+            "space-xl": "3rem",
+            "gutter": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "label-uppercase": ["IBM Plex Sans"],
+            "headline-lg": ["IBM Plex Sans"],
+            "display-lg-mobile": ["IBM Plex Sans"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "label-md": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "display-lg": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["22px", { "lineHeight": "30px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "body-md": ["15px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-uppercase": ["11px", { "lineHeight": "16px", "letterSpacing": "0.12em", "fontWeight": "500" }],
+            "headline-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "300" }],
+            "display-lg-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "300" }],
+            "headline-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "0em", "fontWeight": "300" }],
+            "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "body-sm": ["13px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "300" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    @keyframes subtle-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.92); }
+    }
+    .animate-subtle-pulse {
+      animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex justify-center selection:bg-primary selection:text-on-primary">
+<!-- Mobile Viewport Frame (390px specified context) -->
+<main class="w-full max-w-[390px] min-h-screen bg-surface-container-lowest flex flex-col relative pb-32">
+<!-- Top Navigation Header (Linear Focused Sub-step: Close/Back with no global navbar) -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest px-margin py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button aria-label="Return to previous step" class="text-on-surface hover:text-primary transition-colors flex items-center justify-center p-1 -ml-1" type="button">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<div>
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary block">Step 4 of 4</span>
+<h1 class="font-headline-sm text-headline-sm tracking-tight text-on-surface">Payment</h1>
+</div>
+</div>
+<button aria-label="Cancel and close reservation" class="text-secondary hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</header>
+<div class="px-margin flex flex-col gap-6 pt-2">
+<!-- Step Indicator Bar -->
+<div class="w-full bg-surface-container h-0.5 flex">
+<div class="h-full bg-primary w-full transition-all duration-300"></div>
+</div>
+<!-- Booking Reference & Amount Due Card -->
+<section class="bg-surface-container-low p-5 flex flex-col gap-3">
+<div class="flex justify-between items-baseline">
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary">Reservation Ref</span>
+<span class="font-label-md text-label-md text-on-surface font-mono tracking-wide">#HN-2511-049</span>
+</div>
+<div class="h-px bg-outline-variant w-full my-1"></div>
+<div class="flex justify-between items-baseline">
+<div>
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary block">Total Amount Due</span>
+<span class="font-body-sm text-body-sm text-secondary">Deluxe Courtyard Suite (1 Night)</span>
+</div>
+<div class="text-right">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-light tracking-tight">฿5,400</span>
+</div>
+</div>
+</section>
+<!-- Dynamic Room Hold Countdown Timer -->
+<section aria-live="polite" class="p-4 bg-surface-container-lowest flex items-center gap-3.5" role="timer">
+<div class="w-8 h-8 bg-surface-container-low flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="schedule">schedule</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-secondary">Holding Room Until</span>
+<span class="font-label-md text-label-md text-primary font-mono font-medium" id="countdown">14:48</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">Complete transfer before timer expires to guarantee rate.</p>
+</div>
+</section>
+<!-- PromptPay Thai QR Payment Card -->
+<section class="bg-surface-container-lowest p-6 flex flex-col items-center">
+<!-- Thai QR Header -->
+<div class="w-full flex items-center justify-between pb-4">
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 bg-on-surface flex items-center justify-center text-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]" data-icon="qr_code_scanner">qr_code_scanner</span>
+</div>
+<span class="font-label-uppercase text-label-uppercase tracking-widest text-on-surface font-semibold">Thai QR Payment</span>
+</div>
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-widest">PromptPay</span>
+</div>
+<!-- High-Contrast Stylized QR Code Component -->
+<div class="my-5 p-4 bg-surface-container-lowest flex flex-col items-center justify-center">
+<svg aria-label="PromptPay QR Code" class="w-48 h-48 text-on-surface" fill="currentColor" viewbox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+<!-- Corner Position Markers -->
+<path d="M10 10h40v40h-40z m6 6v28h28v-28z m6 6h16v16h-16z"></path>
+<path d="M110 10h40v40h-40z m6 6v28h28v-28z m6 6h16v16h-16z"></path>
+<path d="M10 110h40v40h-40z m6 6v28h28v-28z m6 6h16v16h-16z"></path>
+<!-- Alignment Grid & Data Modules (Strict Japandi rectilinear blocks) -->
+<rect height="8" width="8" x="60" y="10"></rect>
+<rect height="16" width="8" x="76" y="10"></rect>
+<rect height="8" width="8" x="92" y="10"></rect>
+<rect height="8" width="16" x="60" y="26"></rect>
+<rect height="8" width="16" x="84" y="26"></rect>
+<rect height="8" width="8" x="60" y="42"></rect>
+<rect height="8" width="24" x="76" y="42"></rect>
+<!-- Center Patterns -->
+<rect height="8" width="16" x="10" y="60"></rect>
+<rect height="16" width="8" x="34" y="60"></rect>
+<rect height="8" width="16" x="50" y="60"></rect>
+<rect height="12" width="12" x="74" y="58"></rect>
+<rect height="8" width="16" x="94" y="60"></rect>
+<rect height="16" width="8" x="118" y="60"></rect>
+<rect height="8" width="16" x="134" y="60"></rect>
+<!-- Bottom Matrix Modules -->
+<rect height="24" width="8" x="60" y="76"></rect>
+<rect height="8" width="16" x="76" y="84"></rect>
+<rect height="8" width="20" x="100" y="76"></rect>
+<rect height="16" width="8" x="128" y="76"></rect>
+<rect height="8" width="16" x="60" y="108"></rect>
+<rect height="24" width="8" x="84" y="100"></rect>
+<rect height="8" width="12" x="100" y="92"></rect>
+<rect height="8" width="16" x="120" y="100"></rect>
+<rect height="16" width="6" x="144" y="100"></rect>
+<rect height="26" width="8" x="60" y="124"></rect>
+<rect height="8" width="16" x="76" y="132"></rect>
+<rect height="8" width="24" x="100" y="124"></rect>
+<rect height="8" width="18" x="132" y="124"></rect>
+<rect height="8" width="8" x="76" y="142"></rect>
+<rect height="8" width="24" x="92" y="142"></rect>
+<rect height="10" width="26" x="124" y="140"></rect>
+</svg>
+</div>
+<!-- Account Credentials & Scan Guidance -->
+<div class="w-full text-center space-y-1 pt-1">
+<p class="font-label-uppercase text-label-uppercase tracking-widest text-secondary">Biller ID / PromptPay</p>
+<p class="font-body-md text-body-md text-on-surface font-mono tracking-wider select-all font-medium">0-5055-6600-1422</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant pt-2">
+            Haus Nimman Co., Ltd. (เฮาส์ นิมมาน)
+          </p>
+<p class="font-body-sm text-body-sm text-secondary pt-0.5">
+            Scan via any Thai Mobile Banking application.
+          </p>
+</div>
+</section>
+<!-- Slip Upload Action Area -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<h2 class="font-label-uppercase text-label-uppercase tracking-widest text-on-surface">Payment Evidence</h2>
+<span class="font-label-uppercase text-label-uppercase text-primary font-medium">Required</span>
+</div>
+<!-- Hairline Drop / Selected File State -->
+<div class="bg-surface-container-lowest p-4 transition-all duration-150">
+<!-- Attached Preview Card State -->
+<div class="flex items-center justify-between bg-surface-container-low p-3.5">
+<div class="flex items-center gap-3 overflow-hidden">
+<div class="w-10 h-10 bg-surface-container-highest flex items-center justify-center flex-shrink-0 text-on-surface">
+<span class="material-symbols-outlined text-[20px]" data-icon="image">image</span>
+</div>
+<div class="overflow-hidden">
+<p class="font-body-sm text-body-sm text-on-surface font-mono truncate">slip_transfer_5400.jpg</p>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 bg-primary"></span>
+<span class="font-label-uppercase text-label-uppercase text-primary tracking-wider">Attached (1.4 MB)</span>
+</div>
+</div>
+</div>
+<button aria-label="Change attached slip" class="text-secondary hover:text-on-surface transition-colors p-2 -mr-1" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="swap_horiz">swap_horiz</span>
+</button>
+</div>
+<!-- Upload / Retake Button (Graphite Outline, 0px radius) -->
+<div class="mt-3">
+<label class="w-full flex items-center justify-center gap-2 bg-transparent text-on-surface px-4 py-3 cursor-pointer hover:bg-on-surface hover:text-surface-container-lowest transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]" data-icon="photo_camera">photo_camera</span>
+<span class="font-label-uppercase text-label-uppercase tracking-widest uppercase">Upload payment slip</span>
+<input accept="image/*" class="hidden" type="file"/>
+</label>
+</div>
+</div>
+</section>
+<!-- Verification Status Badge & Explanatory Notice -->
+<section class="bg-surface-container-low p-4 flex gap-3.5 items-start">
+<!-- Understated amber/grey pulsing indicator -->
+<div class="mt-1 flex items-center justify-center flex-shrink-0">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-subtle-pulse absolute inline-flex h-full w-full bg-outline opacity-75"></span>
+<span class="relative inline-flex h-2.5 w-2.5 bg-tertiary"></span>
+</span>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-baseline justify-between">
+<h3 class="font-label-uppercase text-label-uppercase tracking-widest text-on-surface font-semibold">
+              Waiting for verification
+            </h3>
+<span class="font-label-uppercase text-label-uppercase text-secondary tracking-normal font-normal">
+              สถานะ: รอการตรวจสอบสลิป
+            </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+            Our front desk verifies transfers manually within 5 minutes. Instant confirmation and door code will be issued via SMS/Email.
+          </p>
+</div>
+</section>
+<!-- Support & Sanctuary Contact Assistance -->
+<div class="pt-2 pb-6 flex items-center justify-between text-secondary">
+<span class="font-label-uppercase text-label-uppercase tracking-wider">Assistance required?</span>
+<a class="font-label-uppercase text-label-uppercase tracking-widest text-on-surface hover:text-primary transition-colors flex items-center gap-1.5" href="tel:+6653215888">
+<span class="material-symbols-outlined text-[15px]" data-icon="call">call</span>
+<span>Concierge Desk</span>
+</a>
+</div>
+</div>
+<!-- Sticky Bottom Confirmation Bar -->
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] bg-surface-container-lowest p-margin z-50">
+<button class="w-full bg-primary-container text-on-primary-container py-3.5 px-6 font-label-uppercase text-label-uppercase tracking-widest hover:bg-primary transition-colors duration-150 flex items-center justify-center gap-2" type="button">
+<span>Confirm &amp; send slip</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<!-- Quiet Subtext Brand Anchor -->
+<p class="font-label-uppercase text-label-uppercase tracking-widest text-secondary text-center mt-2.5">
+        Booking powered by hayhost
+      </p>
+</div>
+</main>
+<!-- Countdown Micro-interaction Script -->
+<script>
+    (function initTimer() {
+      let remainingSeconds = 14 * 60 + 48; // 14:48 as specified in prompt
+      const timerDisplay = document.getElementById('countdown');
+
+      if (!timerDisplay) return;
+
+      const interval = setInterval(() => {
+        if (remainingSeconds <= 0) {
+          clearInterval(interval);
+          timerDisplay.textContent = "00:00";
+          return;
+        }
+        remainingSeconds--;
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        timerDisplay.textContent = 
+          String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      }, 1000);
+    })();
+  </script>
+</body></html>

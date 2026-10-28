@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" width="290" height="290">
+  <!-- Inverted variant used on the public hotel site header (.public-brand .brand-mark) -->
+  <rect width="29" height="29" rx="8" fill="#f2e9da"/>
+  <rect x="5" y="5" width="11" height="11" fill="#954831"/>
+  <path d="M9 9.5H17.5V18" fill="none" stroke="#954831" stroke-width="1"/>
+</svg>
