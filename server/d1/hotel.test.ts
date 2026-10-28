@@ -98,4 +98,16 @@ describe("D1 hotel repository", () => {
     await expect(getPublicHotel(db, publicCaller, "b-slug")).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(getPublicHotel(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+
+  it("returns managed hotels newest first", async () => {
+    await db.insert(hotels).values([
+      { id: "older", name: "Older", slug: "older", address: "A", ownerContact: "owner@example.test", publicEnabled: false, createdAt: new Date("2026-01-01T00:00:00Z") },
+      { id: "newer", name: "Newer", slug: "newer", address: "A", ownerContact: "owner@example.test", publicEnabled: false, createdAt: new Date("2026-02-01T00:00:00Z") },
+    ]);
+    await db.insert(hotelUsers).values([
+      { id: "m-older", hotelId: "older", userId: "owner", role: "hotel_owner", permissionGrants: [], permissionRevokes: [] },
+      { id: "m-newer", hotelId: "newer", userId: "owner", role: "hotel_owner", permissionGrants: [], permissionRevokes: [] },
+    ]);
+    expect((await listManagedHotels(db, { userId: "owner" })).map(hotel => hotel.id)).toEqual(["newer", "older"]);
+  });
 });
