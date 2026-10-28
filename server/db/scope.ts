@@ -14,7 +14,7 @@ type D1Client = {
 export type D1ScopedDatabase = DrizzleD1Database<typeof d1Schema> & { $client: D1Client };
 
 /** Construct this context from the verified server identity, never from client input. */
-export type D1CallerContext = { userId: string; roles?: readonly AppRole[] };
+export type D1CallerContext = { userId: string; roles?: readonly AppRole[]; access?: "authenticated" | "public" };
 
 export type PlatformHotelSummary = {
   hotelName: string;
@@ -43,7 +43,7 @@ async function resolveScope(
   action: string,
   now: Date,
 ): Promise<Scope> {
-  if (!caller.userId) forbidden();
+  if (!caller.userId || caller.access === "public") forbidden();
   if (caller.roles?.includes("super_admin")) {
     resolveMembershipPermissions("super_admin");
     forbidden();
@@ -138,10 +138,20 @@ export async function authorizePlatformAction(
   caller: D1CallerContext,
   permission: Permission,
 ) {
-  if (!caller.userId) forbidden();
+  if (!caller.userId || caller.access === "public") forbidden();
   const memberships = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
   if (!caller.roles?.includes("super_admin") && !memberships.some(row => row.role === "super_admin")) forbidden();
   if (!resolveMembershipPermissions("super_admin").includes(permission)) forbidden();
+}
+
+/** Resolve public-facing records only for server-created public request contexts. */
+export async function requirePublicHotel(db: D1ScopedDatabase, caller: D1CallerContext, slug: string) {
+  if (caller.access !== "public") forbidden();
+  const [hotel] = await db.select().from(hotels).where(and(
+    eq(hotels.slug, slug), eq(hotels.publicEnabled, true),
+  )).limit(1);
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found or not published." });
+  return hotel;
 }
 
 export async function listHotelBookings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {

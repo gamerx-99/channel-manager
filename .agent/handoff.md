@@ -1325,3 +1325,9 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **What changed**: Added `server/d1/auth.ts`. Super-admin status reads only the caller's own D1 membership; legacy template OAuth lookup/write functions remain inert while Better Auth is deferred to 13-05.
 - **Verification**: `pnpm exec vitest run server/d1/auth.test.ts`: 2 tests passed. `pnpm check`: PASS.
 - **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 site config and hotel media repository (in progress)
+- **What changed**: Added `server/d1/siteConfig.ts` for persisted config, media CRUD, and hero selection. Authenticated operations enforce `property.manage_profile`; public config lookup requires a server-created `access: public` context and a published hotel. Failed writes throw instead of returning a fabricated success record.
+- **Verification**: `pnpm exec vitest run server/d1/siteConfig.test.ts`: 4 tests passed for hotel isolation, public visibility, media hero behavior, invalid persisted data, and transactional hero replacement. `pnpm check`: PASS.
+- **Review follow-up**: Hero clear+insert now execute in one D1 transaction. Tests verify insert failure rolls back the clear, concurrent hero creates leave exactly one hero, and cross-hotel media creation is denied.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
