@@ -276,16 +276,16 @@ export function BookingFlow({ slug, hotelName, roomTypes, accentColor, preferred
             />
             <div style={{ width: "min(100%, 520px)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
               <label style={{ color: tone.text, fontSize: 12, fontWeight: 600 }}>{t("publicHotel.adultsLabel")}
-                <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} />
+                <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} style={inputStyle} />
               </label>
               <label style={{ color: tone.text, fontSize: 12, fontWeight: 600 }}>{t("publicHotel.childrenLabel")}
-                <select aria-label={t("publicHotel.childrenLabel")} value={children.length} disabled={!childRulesConfigured} onChange={event => setChildren(Array.from({ length: Number(event.target.value) }, (_, index) => children[index] ?? ""))}>
+                <select aria-label={t("publicHotel.childrenLabel")} value={children.length} disabled={!childRulesConfigured} onChange={event => setChildren(Array.from({ length: Number(event.target.value) }, (_, index) => children[index] ?? ""))} style={inputStyle}>
                   {Array.from({ length: 11 }, (_, count) => <option key={count} value={count}>{count}</option>)}
                 </select>
               </label>
               {!childRulesConfigured && <p style={{ gridColumn: "1 / -1", margin: 0, color: tone.muted }}>{t("publicHotel.childRuleNotConfigured")}</p>}
               {children.map((value, index) => <label key={index} style={{ gridColumn: "1 / -1", color: tone.text }}>{t("publicHotel.childMeasurementLabel", { index: index + 1, measure: propertyChildRule === "age" ? t("publicHotel.childAgeUnit") : t("publicHotel.childHeightUnit") })}
-                <input type="number" min="0" max={propertyChildRule === "age" ? 17 : 250} step={propertyChildRule === "age" ? 1 : 0.5} value={value} onChange={event => setChildren(current => current.map((child, childIndex) => childIndex === index ? event.target.value : child))} />
+                <input type="number" min="0" max={propertyChildRule === "age" ? 17 : 250} step={propertyChildRule === "age" ? 1 : 0.5} value={value} onChange={event => setChildren(current => current.map((child, childIndex) => childIndex === index ? event.target.value : child))} style={inputStyle} />
               </label>)}
             </div>
 
@@ -506,9 +506,9 @@ export function BookingFlow({ slug, hotelName, roomTypes, accentColor, preferred
               <div><strong>{t("publicHotel.summaryProperty")}</strong> {hotelName}</div>
               <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
               <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
-              <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
+              <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({(heldBooking?.nights ?? 0) > 1 ? t("publicHotel.confirmedNightsPlural", { count: heldBooking?.nights ?? 0 }) : t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
               <div><strong>{t("publicHotel.summaryGuests")}</strong> {t("publicHotel.adultsLabel")}: {adults}, {t("publicHotel.childrenLabel")}: {children.length}</div>
-              <div><strong>{t("publicHotel.fullName")}</strong> {guestName.trim()}</div>
+              <div><strong>{t("publicHotel.summaryGuestName")}</strong> {guestName.trim()}</div>
             </div>
             {services.some((s) => (selectedServiceQty[s.id] ?? 0) > 0) && (
               <div style={{ marginBottom: "16px" }}>
