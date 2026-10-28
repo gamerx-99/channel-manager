@@ -194,10 +194,16 @@ export async function listActiveHotelServicesBySlug(db: D1ScopedDatabase, caller
 export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerContext, slug: string) {
   const hotel = await requirePublicHotel(db, caller, slug);
   const [hotelRoomTypes, media] = await Promise.all([
-    db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id)).orderBy(asc(roomTypes.basePrice)),
+    db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id)),
     db.select({ id: hotelMedia.id, url: hotelMedia.url, caption: hotelMedia.caption, is_hero: hotelMedia.isHero, display_order: hotelMedia.displayOrder })
       .from(hotelMedia).where(eq(hotelMedia.hotelId, hotel.id)).orderBy(asc(hotelMedia.displayOrder)),
   ]);
+  hotelRoomTypes.sort((left, right) => {
+    const leftPrice = moneyToSatang(left.basePrice);
+    const rightPrice = moneyToSatang(right.basePrice);
+    const priceOrder = leftPrice === rightPrice ? 0 : leftPrice < rightPrice ? -1 : 1;
+    return priceOrder || left.id.localeCompare(right.id);
+  });
   return {
     hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, created_at: hotel.createdAt },
     roomTypes: hotelRoomTypes,

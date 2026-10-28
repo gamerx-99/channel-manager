@@ -112,4 +112,17 @@ describe("D1 hotel repository", () => {
     ]);
     expect((await listManagedHotels(db, { userId: "owner" })).map(hotel => hotel.id)).toEqual(["newer", "older"]);
   });
+
+  it("orders public room types by numeric money value and stable id", async () => {
+    await seedHotel("a", "owner-a");
+    await db.update(roomTypes).set({ basePrice: "500.00" }).where(eq(roomTypes.id, "rt-a"));
+    await db.insert(roomTypes).values([
+      { id: "rt-1000", hotelId: "a", name: "One thousand", capacity: 2, basePrice: "1000.00" },
+      { id: "rt-95b", hotelId: "a", name: "Ninety five B", capacity: 2, basePrice: "95.50" },
+      { id: "rt-95a", hotelId: "a", name: "Ninety five A", capacity: 2, basePrice: "95.50" },
+    ]);
+    const result = await getPublicHotel(db, { userId: "", access: "public" }, "a-slug");
+    expect(result.roomTypes.map(row => row.basePrice)).toEqual(["95.50", "95.50", "500.00", "1000.00"]);
+    expect(result.roomTypes.map(row => row.id)).toEqual(["rt-95a", "rt-95b", "rt-a", "rt-1000"]);
+  });
 });
