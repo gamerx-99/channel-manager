@@ -238,7 +238,7 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
     setSaved(false);
     const result = await triggerStepUp();
     if (result === "needs_enroll") {
-      setSaveError("MFA enrollment required. Set up an authenticator first.");
+      setSaveError(t("financials.mfaEnrollmentRequired"));
       return;
     }
     if (result !== "verified" && mfaState.status !== "verified") {

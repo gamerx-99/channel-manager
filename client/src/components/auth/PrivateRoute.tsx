@@ -8,12 +8,16 @@ import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
 import { type AppRole } from "@shared/authorization";
 import { AppShell } from "../layout/AppShell";
+import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
   const [location, navigate] = useLocation();
   const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery();
   const completeSignup = trpc.channelManager.completeHotelOwnerSignup.useMutation();
+  const utils = trpc.useUtils();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
   const {
     data: visibleHotels,
@@ -59,9 +63,17 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     completeSignup.mutateAsync({ token }).then(() => {
       if (cancelled) return;
       try { localStorage.removeItem("hayhost.pendingSignupToken"); } catch { /* ignore */ }
-    }).catch(() => {
+      void utils.channelManager.hotels.invalidate();
+      void utils.auth.me.invalidate();
+    }).catch((error) => {
       if (cancelled) return;
-      try { localStorage.removeItem("hayhost.pendingSignupToken"); } catch { /* ignore */ }
+      toast.error(t("auth.pendingSignupFailed", { error: String((error as { message?: string } | null)?.message ?? error ?? "") }));
+      const code = (error as { data?: { code?: string }; code?: string } | null)?.data?.code
+        ?? (error as { code?: string } | null)?.code;
+      const isNetworkError = !code;
+      if (!isNetworkError) {
+        try { localStorage.removeItem("hayhost.pendingSignupToken"); } catch { /* ignore */ }
+      }
     });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
