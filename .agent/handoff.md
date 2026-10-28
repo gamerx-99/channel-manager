@@ -1308,3 +1308,9 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **What changed**: Added `server/d1/notification.ts`. Hotel list/read/write operations require hotel-scoped `property.view` or booking-management permission; global list/mark-all requires the explicit platform permission. Notification writes constrain both notification ID and hotel ID.
 - **Verification**: `pnpm exec vitest run server/d1/notification.test.ts`: 2 tests passed for hotel isolation, global denial, global platform access, and insert/mark flows. `pnpm check`: PASS.
 - **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 housekeeping repository (in progress)
+- **What changed**: Added `server/d1/housekeeping.ts` with scoped create/list/status update/full update functions. Rooms, linked bookings, and assignees are verified against the hotel before use; cross-hotel task IDs stay hidden behind the hotel filter.
+- **Verification**: `pnpm exec vitest run server/d1/housekeeping.test.ts`: 3 tests passed for all operation paths, booking-derived due dates, assignee membership, invalid booking scope, missing tasks, and preserving hotel scope if the room moves before update. `pnpm check`: PASS.
+- **Review follow-up**: Ensured linked bookings are validated even when a due date is supplied; task updates now retain the hotel predicate in the write statement. Added regression coverage for both findings.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
