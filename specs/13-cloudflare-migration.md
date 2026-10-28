@@ -80,15 +80,19 @@ external piece (see Q1).
   `.agent/OPEN_QUESTIONS.md`. The owner moved `server/db/booking.ts` to 13-04a because its public
   booking/availability behavior depends on SQL functions ported in 13-04. Live callers remain
   unchanged until 13-07/13-08.
+- [x] **13-04a Booking, availability, and pricing service** (DONE locally, 2026-10-28): ported
+  `is_published_hotel`, `get_public_hotel`, `get_public_room_type_availability`,
+  `get_public_room_type_availability_for_guests`, `update_room_type_with_occupancy_config`, and
+  `transition_booking_status` into scoped D1 services. Added `server/d1/booking.ts` matching all
+  ten exports in `server/db/booking.ts`; `getStayDates` remains a pure helper and the other nine
+  take `D1CallerContext`. Booking creation uses atomic `INSERT … SELECT … WHERE NOT EXISTS` with
+  `changes()` gating for guest/service/status-audit rows; money is kept in integer satang. Tests
+  cover month-boundary/check-out-exclusive dates, pricing, hold/expiry, add-ons, transitions,
+  cancellation inventory release, rollback, last-room concurrency and hotel isolation. Targeted
+  tests: 12 passed. Full `pnpm test`: 681 passed, 7 known Supabase-credential failures, 3 skipped;
+  `pnpm check` and `pnpm build` passed (Vite chunk-size advisory only).
 - **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered
-  migrations supersede earlier definitions. Split into:
-  - **13-04a Booking, availability, and pricing service**: `is_published_hotel`,
-    `get_public_hotel`, `get_public_room_type_availability`,
-    `get_public_room_type_availability_for_guests`, `update_room_type_with_occupancy_config`,
-    and `transition_booking_status`; add the D1 `server/db/booking.ts` equivalent with matching
-    all ten source exports and transactional overlap protection. `getStayDates` is a pure helper
-    without caller context; the remaining nine exports take `D1CallerContext`. See the resolved
-    owner answer in `.agent/OPEN_QUESTIONS.md`.
+  migrations supersede earlier definitions. Remaining sub-tickets:
   - **13-04b iCal sync and export**: `sync_ota_ical_blocks`, `get_ota_ical_export`, and
     `ota_connection_room_same_hotel` (including its same-hotel trigger enforcement).
   - **13-04c Remaining service and trigger behaviors**: `is_super_admin`, `is_platform_admin`,
