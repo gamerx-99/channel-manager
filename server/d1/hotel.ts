@@ -12,6 +12,22 @@ function canonicalMoney(value: string | number): string {
   return satangToMoney(satang);
 }
 
+function canonicalThreshold(value: string | number): string {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Child height limit must be a nonnegative finite number." });
+  if (numeric === 0) return "0";
+  const raw = String(numeric);
+  if (!/[eE]/.test(raw)) return raw;
+  const [mantissa, exponentText] = raw.toLowerCase().split("e");
+  const exponent = Number(exponentText);
+  const [whole, fraction = ""] = mantissa!.split(".");
+  const digits = whole! + fraction;
+  const decimalIndex = whole!.length + exponent;
+  if (decimalIndex <= 0) return `0.${"0".repeat(-decimalIndex)}${digits}`;
+  if (decimalIndex >= digits.length) return `${digits}${"0".repeat(decimalIndex - digits.length)}`;
+  return `${digits.slice(0, decimalIndex)}.${digits.slice(decimalIndex)}`;
+}
+
 export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
   const memberships = await db.select({ hotelId: hotelUsers.hotelId }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
@@ -101,7 +117,7 @@ export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1Call
     (id, hotel_id, name, capacity, base_price, base_occupancy, max_occupancy, occupancy_pricing, child_rule, child_rule_limit, child_rates, children_count_toward_max)
     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(roomTypeId, input.hotel_id, input.name, maxOccupancy, basePrice, baseOccupancy, maxOccupancy,
-      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalMoney(childRuleLimit), JSON.stringify(childRates), input.children_count_toward_max ?? true)];
+      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), input.children_count_toward_max ?? true)];
   for (let index = 0; index < input.quantity; index++) {
     batch.push(db.$client.prepare("insert into rooms (id, hotel_id, room_type_id, room_number) values (?, ?, ?, ?)")
       .bind(crypto.randomUUID(), input.hotel_id, roomTypeId, String(startNumber + index).padStart(3, "0")));
@@ -124,7 +140,7 @@ export async function updateManagedRoomType(db: D1ScopedDatabase, caller: D1Call
   if (input.base_occupancy !== undefined) patch.baseOccupancy = input.base_occupancy;
   if (input.occupancy_pricing !== undefined) patch.occupancyPricing = input.occupancy_pricing;
   if (input.child_rule !== undefined) patch.childRule = input.child_rule;
-  if (input.child_rule_limit !== undefined) patch.childRuleLimit = input.child_rule_limit == null ? null : canonicalMoney(input.child_rule_limit);
+  if (input.child_rule_limit !== undefined) patch.childRuleLimit = input.child_rule_limit == null ? null : canonicalThreshold(input.child_rule_limit);
   if (input.child_rates !== undefined) patch.childRates = input.child_rates;
   if (input.children_count_toward_max !== undefined) patch.childrenCountTowardMax = input.children_count_toward_max;
   const [row] = await db.update(roomTypes).set(patch).where(and(

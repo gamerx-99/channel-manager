@@ -24,6 +24,10 @@ const nonnegativeMoney = (value: SQLWrapper) => sql`typeof(${value}) = 'text' an
   and (instr(${value}, '.') = 0 or (instr(${value}, '.') > 1
     and length(substr(${value}, instr(${value}, '.') + 1)) between 1 and 2))
   and cast(${value} as numeric) >= 0`;
+const nonnegativeDecimalText = (value: SQLWrapper) => sql`typeof(${value}) = 'text' and ${value} <> ''
+  and ${value} not glob '*[^0-9.]*' and ${value} not glob '*.*.*'
+  and (instr(${value}, '.') = 0 or instr(${value}, '.') > 1)
+  and cast(${value} as numeric) >= 0`;
 const maxSupportGrantMs = Math.max(...SUPPORT_GRANT_DURATION_HOURS) * 60 * 60 * 1000;
 
 export const agents = sqliteTable("agents", {
@@ -96,13 +100,13 @@ export const roomTypes = sqliteTable("room_types", {
   maxOccupancy: integer("max_occupancy").notNull().default(2),
   occupancyPricing: json<Record<string, unknown>>("occupancy_pricing").notNull().default(sql`'{}'`),
   childRule: text("child_rule").notNull().default("age"),
-  childRuleLimit: money("child_rule_limit"),
+  childRuleLimit: text("child_rule_limit"),
   childRates: json<Record<string, unknown>>("child_rates").notNull().default(sql`'{"infant":{"mode":"free","value":0},"age_groups":[],"height":{"mode":"free","value":0}}'`),
   childrenCountTowardMax: integer("children_count_toward_max", { mode: "boolean" }).notNull().default(true),
 }, table => [
   check("room_types_capacity_check", sql`${table.capacity} > 0`),
   check("room_types_base_price_check", nonnegativeMoney(table.basePrice)),
-  check("room_types_occupancy_values_check", sql`${table.baseOccupancy} >= 1 and ${table.maxOccupancy} >= ${table.baseOccupancy} and json_valid(${table.occupancyPricing}) = 1 and json_type(${table.occupancyPricing}) = 'object' and ${table.childRule} in ('age', 'height') and (${table.childRuleLimit} is null or (${nonnegativeMoney(table.childRuleLimit)}))`),
+  check("room_types_occupancy_values_check", sql`${table.baseOccupancy} >= 1 and ${table.maxOccupancy} >= ${table.baseOccupancy} and json_valid(${table.occupancyPricing}) = 1 and json_type(${table.occupancyPricing}) = 'object' and ${table.childRule} in ('age', 'height') and (${table.childRuleLimit} is null or (${nonnegativeDecimalText(table.childRuleLimit)}))`),
   index("idx_room_types_hotel_id").on(table.hotelId),
 ]);
 

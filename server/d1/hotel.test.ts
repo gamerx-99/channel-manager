@@ -73,6 +73,7 @@ describe("D1 hotel repository", () => {
     const roomType = await createManagedRoomType(db, caller, { hotel_id: "a", name: "Family", capacity: 4, base_price: 150.25, quantity: 2 });
     expect(roomType).toMatchObject({ hotelId: "a", basePrice: "150.25", capacity: 4 });
     expect((await db.select().from(rooms).where(eq(rooms.roomTypeId, roomType.id))).map(room => room.roomNumber)).toEqual(["002", "003"]);
+    await expect(updateManagedRoomType(db, caller, { hotel_id: "a", room_type_id: roomType.id, child_rule: "height", child_rule_limit: 160.125 })).resolves.toMatchObject({ childRuleLimit: "160.125" });
     await expect(createManagedRoomType(db, caller, { hotel_id: "b", name: "No", capacity: 2, base_price: 120, quantity: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(updateManagedRoomType(db, caller, { hotel_id: "b", room_type_id: "rt-b", name: "No", capacity: 2, base_price: 110 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(updateManagedRoomType(db, caller, { hotel_id: "a", room_type_id: roomType.id, name: "Family+", base_price: 160.50 })).resolves.toMatchObject({ name: "Family+", basePrice: "160.50" });
