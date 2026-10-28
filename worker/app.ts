@@ -1,8 +1,14 @@
 import { Hono } from "hono";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { D1Database, Fetcher, R2Bucket } from "@cloudflare/workers-types/index.ts";
+import { TRPCError } from "@trpc/server";
+import { drizzle } from "drizzle-orm/d1";
 import { appRouter } from "../server/routers";
 import { createContextFromRequest } from "../server/_core/context";
+import type { D1CallerContext, D1ScopedDatabase } from "../server/db/scope";
+import { authorizeHotelAction } from "../server/db/scope";
+import { d1Schema } from "../drizzle/d1-schema";
+import { deleteHotelMediaFromR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload } from "../server/d1/media";
 import { buildIcalExport } from "../server/icalFeed";
 import { loadIcalExport } from "../server/otaIcalRoutes";
 
@@ -13,18 +19,167 @@ export type WorkerEnv = {
   MEDIA: R2Bucket;
 };
 
-export function createWorkerApp() {
+type WorkerAppDependencies = {
+  createContext?: typeof createContextFromRequest;
+  createDatabase?: (binding: D1Database) => D1ScopedDatabase;
+};
+
+const MAX_UPLOAD_REQUEST_BYTES = 7 * 1024 * 1024;
+
+function defaultDatabase(binding: D1Database): D1ScopedDatabase {
+  return drizzle(binding, { schema: d1Schema }) as unknown as D1ScopedDatabase;
+}
+
+function httpStatus(error: unknown) {
+  if (!(error instanceof TRPCError)) return 500;
+  if (error.code === "UNAUTHORIZED") return 401;
+  if (error.code === "FORBIDDEN") return 403;
+  if (error.code === "NOT_FOUND") return 404;
+  if (error.code === "BAD_REQUEST") return error.message.includes("MiB") || error.message.includes("too large") ? 413 : 400;
+  return 500;
+}
+
+async function readBoundedJson(request: Request) {
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_REQUEST_BYTES) throw new TRPCError({ code: "BAD_REQUEST", message: "Upload request is too large." });
+  if (!request.body) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image upload." });
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_UPLOAD_REQUEST_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Upload request is too large." });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  try {
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid object");
+    return parsed as Record<string, unknown>;
+  } catch {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image upload." });
+  }
+}
+
+function decodeBase64(value: string) {
+  try {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return bytes;
+  } catch {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image data." });
+  }
+}
+
+function mediaJson(media: { id: string; hotelId: string; url: string; caption: string | null; isHero: boolean; displayOrder: number; createdAt: Date }) {
+  return {
+    id: media.id,
+    hotel_id: media.hotelId,
+    url: media.url,
+    caption: media.caption,
+    is_hero: media.isHero,
+    display_order: media.displayOrder,
+    created_at: media.createdAt.toISOString(),
+  };
+}
+
+export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
   const app = new Hono<{ Bindings: WorkerEnv }>();
+  const createContext = dependencies.createContext ?? createContextFromRequest;
+  const createDatabase = dependencies.createDatabase ?? defaultDatabase;
+  const requestContext = (authorization: string | undefined, clientIp: string | undefined) => createContext(authorization, clientIp);
 
   app.all("/api/trpc/*", c =>
     fetchRequestHandler({
       endpoint: "/api/trpc",
       req: c.req.raw,
       router: appRouter,
-      createContext: () =>
-        createContextFromRequest(c.req.header("authorization"), c.req.header("cf-connecting-ip")),
+      createContext: () => requestContext(c.req.header("authorization"), c.req.header("cf-connecting-ip")),
     })
   );
+
+  app.post("/api/media/:hotelId", async c => {
+    const context = await requestContext(c.req.header("authorization"), c.req.header("cf-connecting-ip"));
+    if (!context.user) return c.json({ error: "Authentication required." }, 401);
+    const hotelId = c.req.param("hotelId");
+    const caller: D1CallerContext = { userId: context.user.id };
+    const db = createDatabase(c.env.DB);
+    try {
+      await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel_media.upload");
+      const input = await readBoundedJson(c.req.raw);
+      const filename = typeof input.filename === "string" ? input.filename : "";
+      const caption = typeof input.caption === "string" ? input.caption : null;
+      const encoded = typeof input.base64 === "string" ? input.base64 : "";
+      const dataUrl = encoded.match(/^data:([^;,]+);base64,([\s\S]*)$/);
+      const contentType = dataUrl?.[1] ?? (typeof input.content_type === "string" ? input.content_type : "");
+      const base64 = dataUrl?.[2] ?? encoded;
+      if (!filename || filename.length > 255 || (caption !== null && caption.length > 1_000) || !base64) {
+        return c.json({ error: "Invalid image upload." }, 400);
+      }
+      validateHotelMediaUpload(new Uint8Array(), contentType, filename);
+      const data = decodeBase64(base64);
+      if (data.byteLength > MAX_HOTEL_MEDIA_BYTES) return c.json({ error: "Images must be 5 MiB or smaller." }, 413);
+      const media = await uploadHotelMediaToR2(db, caller, c.env.MEDIA, {
+        hotel_id: hotelId,
+        filename,
+        content_type: contentType,
+        data,
+        caption,
+      });
+      return c.json(mediaJson(media), 201);
+    } catch (error) {
+      const status = httpStatus(error);
+      const message = status === 500 ? "Media upload failed." : error instanceof Error ? error.message : "Media upload failed.";
+      return new Response(JSON.stringify({ error: message }), { status, headers: { "Content-Type": "application/json; charset=UTF-8" } });
+    }
+  });
+
+  app.delete("/api/media/:hotelId/:mediaId", async c => {
+    const context = await requestContext(c.req.header("authorization"), c.req.header("cf-connecting-ip"));
+    if (!context.user) return c.json({ error: "Authentication required." }, 401);
+    const db = createDatabase(c.env.DB);
+    try {
+      const result = await deleteHotelMediaFromR2(db, { userId: context.user.id }, c.env.MEDIA, c.req.param("hotelId"), c.req.param("mediaId"));
+      if (!result) return c.json({ error: "Hotel media not found." }, 404);
+      return c.json(result);
+    } catch (error) {
+      const status = httpStatus(error);
+      const message = status === 500 ? "Media delete failed." : error instanceof Error ? error.message : "Media delete failed.";
+      return new Response(JSON.stringify({ error: message }), { status, headers: { "Content-Type": "application/json; charset=UTF-8" } });
+    }
+  });
+
+  app.get("/media/:hotelId/:file", async c => {
+    const hotelId = c.req.param("hotelId");
+    let key: string;
+    try { key = validateHotelMediaObjectKey(hotelId, `${hotelId}/${c.req.param("file")}`); }
+    catch { return c.text("Not found.", 404); }
+    try {
+      const object = await c.env.MEDIA.get(key);
+      if (!object) return c.text("Not found.", 404);
+      const headers = new Headers({
+        "Content-Type": object.httpMetadata?.contentType ?? "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff",
+      });
+      if (object.httpEtag) headers.set("ETag", object.httpEtag);
+      return new Response(object.body as unknown as BodyInit, { status: 200, headers });
+    } catch {
+      return c.text("Media is temporarily unavailable.", 500);
+    }
+  });
 
   // Public: OTAs poll this URL; the token is the only credential. Mirrors handleIcalExport.
   app.get("/api/ical/:file", async c => {

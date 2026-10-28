@@ -1,5 +1,5 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, and 13-06a are implemented locally.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, 13-06a, and 13-06b are implemented locally.
 Live Supabase callers remain unchanged until 13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
@@ -119,8 +119,11 @@ external piece (see Q1).
     streamed body cap, safe failure status/logs, and a 15-minute D1 system-caller cron in staging
     and production. ASSUMPTION: Workers cannot reach private networks, so there is no DoH resolver;
     see `.agent/OPEN_QUESTIONS.md`.
-  - **13-06b R2 hotel media upload/serve**: permission-scoped R2 upload/delete and public immutable
-    media serving; preserve hero promotion and reject unsafe object keys.
+  - [x] **13-06b R2 hotel media upload/serve** (DONE locally, 2026-10-28): permission-scoped
+    Worker API upload/delete uses server-generated `<hotel_id>/<uuid>.<ext>` keys and the existing
+    5 MiB/image MIME limits; public media serving returns content type, immutable cache headers,
+    and ETag. Delete is restricted to the caller's hotel prefix and preserves hero auto-promotion.
+    Live Supabase callers and the Website Builder client remain unchanged until 13-07/13-08.
   - **13-06c later, not started**: SlipOK AES-GCM via WebCrypto and TM.30 template bundled as an
     asset (no `node:fs`).
 - **13-07 Client**: replace `@supabase/supabase-js` auth calls in the client with the new auth
