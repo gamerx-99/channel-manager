@@ -116,6 +116,18 @@ async function resolveScope(
   return scope;
 }
 
+/** Shared authorization entry point for the D1 repositories. */
+export async function authorizeHotelAction(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  hotelId: string,
+  permission: Permission,
+  action: string,
+  now = new Date(),
+) {
+  return resolveScope(db, caller, hotelId, permission, action, now);
+}
+
 export async function listHotelBookings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   const scope = await resolveScope(db, caller, hotelId, "operations.view_bookings", "bookings.read", now);
   return db.select().from(bookings).where(eq(bookings.hotelId, scope.hotelId));
