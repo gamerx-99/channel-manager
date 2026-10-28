@@ -1,5 +1,7 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, and 13-02b are implemented locally; 13-03 is in progress.
+Status: IN PROGRESS — 13-01, 13-02, and 13-02b are implemented locally. 13-03 D1 scoped
+repository porting is in progress; the owner confirmed new D1 modules while live Supabase callers
+remain unchanged until 13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
 `.agent/WORK_SPLIT.md`).
@@ -69,6 +71,13 @@ external piece (see Q1).
 - **13-03 Scoped data layer**: `db/scope.ts` — repositories take a verified `HotelScope`
   (`hotelId`, role, permissions) and always filter by it; platform scope is explicit. Port
   `server/db/*` onto it. Tenancy test suite (every repository × foreign hotel = denied/empty).
+  D1 scope gates cover booking reads, guest PII, booking value, cancellation, staff permission
+  edits, and the restricted platform summary. Port each `server/db/*` module into a corresponding
+  `server/d1/*` module with equivalent exports and happy-path plus cross-hotel denial tests; keep
+  Supabase callers unchanged until 13-07/13-08. Do not port `channelPerformance` or
+  `saveHotelSiteConfig`'s synthetic-success fallback. Platform summary `plan` and
+  `payment_status` stay null until spec 12 billing exists. See the resolved scope decision in
+  `.agent/OPEN_QUESTIONS.md`.
 - **13-04 Port SQL functions to services**: the final definitions of the 24 distinct
   functions (the earlier count of 32 includes superseded definitions) (booking state transitions,
   occupancy pricing, public availability, `sync_ota_ical_blocks`, `get_ota_ical_export`,

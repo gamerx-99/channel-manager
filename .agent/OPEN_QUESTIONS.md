@@ -72,6 +72,14 @@ answer noted.
 
 ## Resolved
 
+- [x] Spec 13-03 scope and platform summary fields. ANSWER (owner, 2026-10-28): port every
+      `server/db/*` repository into new `server/d1/*` modules with equivalent exports, D1 scope
+      checks, and happy-path plus cross-hotel tests. Keep live Supabase callers unchanged until
+      13-07/13-08. Do not port `channelPerformance` or `saveHotelSiteConfig`'s synthetic-success
+      fallback. Platform summary `plan` and `payment_status` stay null until spec 12 billing
+      exists; never use guest payment data as a substitute. Port modules in separate commits and
+      stop for any module that cannot be faithfully ported, documenting the reason.
+
 - [x] Spec 13 Q3: launch domain. ANSWER (human, 2026-10-27): **www.hayhostth.com** (brand
       "hayhost"; the "th" signals a Thai business). Register on Cloudflare before ticket 13-08.
 - [x] Spec 13 Q4: Cloudflare account. ANSWER (human, 2026-10-27): the account under
