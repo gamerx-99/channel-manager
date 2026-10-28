@@ -9,14 +9,14 @@ CREATE TABLE `booking_nights` (
 CREATE INDEX `idx_booking_nights_booking_id` ON `booking_nights` (`booking_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `uq_booking_nights_room_night` ON `booking_nights` (`room_id`,`night`);
 --> statement-breakpoint
--- ASSUMPTION: migrations have no trustworthy runtime clock, so backfill only holds with no expiry.
 WITH RECURSIVE occupied_nights (room_id, night, booking_id, check_out) AS (
   SELECT room_id, check_in, id, check_out
   FROM bookings
   WHERE room_id IS NOT NULL
     AND (
       status IN ('confirmed', 'checked_in')
-      OR (status IN ('held', 'pending_payment', 'pending_verification') AND expires_at IS NULL)
+      OR (status IN ('held', 'pending_payment', 'pending_verification')
+        AND (expires_at IS NULL OR expires_at >= unixepoch('now') * 1000))
     )
   UNION ALL
   SELECT room_id, date(night, '+1 day'), booking_id, check_out
