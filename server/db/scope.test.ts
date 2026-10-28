@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveMembershipPermissions } from "@shared/permissions";
-import { bookings, d1Schema, guests, hotelUsers, hotels, otaConnections, roomTypes, rooms, supportAccessGrants, supportAccessLog } from "../../drizzle/d1-schema";
+import { bookingStatusLog, bookings, d1Schema, guests, hotelUsers, hotels, otaConnections, roomTypes, rooms, supportAccessGrants, supportAccessLog } from "../../drizzle/d1-schema";
 import {
   cancelHotelBooking,
   getHotelBookingValueSatang,
@@ -44,7 +44,26 @@ beforeEach(() => {
     }
     return { rows: statement.all(...params) };
   }, { schema: d1Schema });
-  db = proxy as unknown as D1ScopedDatabase;
+  const testDb = proxy as unknown as D1ScopedDatabase;
+  testDb.$client = {
+    prepare: query => ({ bind: (...params) => ({ query, params }) }),
+    batch: async statements => {
+      sqlite.exec("BEGIN");
+      try {
+        const results = statements.map(statement => {
+          const { query, params } = statement as { query: string; params: unknown[] };
+          const result = sqlite.prepare(query).run(...params);
+          return { meta: { changes: Number(result.changes) } };
+        });
+        sqlite.exec("COMMIT");
+        return results;
+      } catch (error) {
+        sqlite.exec("ROLLBACK");
+        throw error;
+      }
+    },
+  };
+  db = testDb;
 });
 
 afterEach(() => sqlite.close());
@@ -121,12 +140,29 @@ describe("D1 hotel scope and authorization", () => {
     await seedMembership({ hotelId: "b", userId: "owner-b", role: "hotel_owner" });
     await seedBooking("booking-a", "a");
     await seedBooking("booking-b", "b");
+    await db.update(bookings).set({ status: "checked_in" }).where(eq(bookings.id, "booking-a"));
     const caller = { userId: "owner-a" };
 
     expect((await listHotelBookings(db, caller, "a", fixedNow)).map(row => row.id)).toEqual(["booking-a"]);
     await expect(listHotelBookings(db, caller, "b", fixedNow)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(cancelHotelBooking(db, caller, "b", "booking-b", fixedNow)).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect((await db.select().from(bookings).where(eq(bookings.id, "booking-b")))[0].status).toBe("confirmed");
+    await expect(cancelHotelBooking(db, caller, "a", "booking-a", fixedNow, "guest request")).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, "booking-a")))).toHaveLength(0);
+    await db.update(bookings).set({ status: "confirmed" }).where(eq(bookings.id, "booking-a"));
+    await expect(cancelHotelBooking(db, caller, "a", "booking-a", fixedNow, "guest request")).resolves.toEqual({ id: "booking-a" });
+    expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, "booking-a"))).map(row => [row.fromStatus, row.toStatus, row.reason])).toEqual([["confirmed", "cancelled", "guest request"]]);
+  });
+
+  it("rolls back cancellation if its audit row cannot be written", async () => {
+    await seedHotel("a");
+    await seedMembership({ hotelId: "a", userId: "owner-a", role: "hotel_owner" });
+    await seedBooking("booking-a", "a");
+    sqlite.exec(`create trigger fail_booking_audit before insert on booking_status_log
+      begin select raise(abort, 'audit unavailable'); end`);
+    await expect(cancelHotelBooking(db, { userId: "owner-a" }, "a", "booking-a", fixedNow))
+      .rejects.toThrow("audit unavailable");
+    expect((await db.select().from(bookings).where(eq(bookings.id, "booking-a")))[0].status).toBe("confirmed");
   });
 
   it("denies a staff member after the booking-view toggle is revoked", async () => {
