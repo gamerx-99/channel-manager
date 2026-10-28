@@ -1,5 +1,5 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, 13-06a, and 13-06b are implemented locally.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, 13-04c, 13-06a, and 13-06b are implemented locally.
 Live Supabase callers remain unchanged until 13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
@@ -104,7 +104,16 @@ external piece (see Q1).
     `.agent/OPEN_QUESTIONS.md`. Exports are token-scoped, opaque iCal without guest data. Tests
     cover identity boundaries, idempotency, staff and legacy cancellation, restoration, conflicts,
     same-hotel trigger rules, and room/room-type export behavior.
-  - **13-04c Remaining service and trigger behaviors**: `is_super_admin`, `is_platform_admin`,
+  - [x] **13-04c D1 inventory and payment hardening** (DONE locally, 2026-10-29): added the D1
+    `booking_nights` unique `(room_id, night)` inventory backstop and transactional maintenance
+    across D1 booking, OTA, cancellation, expiry, and check-in/out writes. The migration backfills
+    occupying bookings and active holds, and fails on existing overlaps; 13-08 must perform the same
+    backfill after importing Supabase data and report overlaps before cutover. Payment config reads
+    now expose only client-safe settings; SlipOK credentials have a separate verification-only
+    server repository read.
+  - **13-04d Remaining service and trigger behaviors** (NOT STARTED): the SQL helpers/triggers
+    originally grouped under 13-04c remain outstanding:
+    `is_super_admin`, `is_platform_admin`,
     `is_hotel_member`, `current_user_has_role`, `can_manage_property`, `can_manage_staff`,
     `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`, `can_manage_ical`,
     `transfer_hotel_admin`, `prevent_notification_content_changes`,
