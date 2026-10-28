@@ -25,7 +25,6 @@ const HOTEL_ROUTE_PATTERN = /^\/hotels\/([^/]+)/i;
 export function getRequiredRoutePermission(pathname: string): Permission | null {
   if (pathname.startsWith("/settings/admin-users")) return "platform.manage_users";
   if (pathname === "/hotels") return "platform.view_all_hotels";
-  if (pathname.startsWith("/dashboard/channels")) return "property.view_reports";
   if (pathname.startsWith("/dashboard/pricing")) return "revenue.manage_pricing_rules";
   if (pathname.startsWith("/dashboard/financials")) return "property.view_financials";
   if (pathname.startsWith("/communications")) return "operations.view_bookings";
