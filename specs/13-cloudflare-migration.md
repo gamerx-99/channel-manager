@@ -1,7 +1,8 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, 13-02b, and 13-03 are implemented locally. 13-04 service
-porting is in progress; the owner confirmed new D1 modules while live Supabase callers remain
-unchanged until 13-07/13-08.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, and 13-04a are implemented locally. 13-04b
+is paused because the new OTA-cancellation owner policy conflicts with the final Postgres
+function definition; see `.agent/OPEN_QUESTIONS.md`. Live Supabase callers remain unchanged until
+13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
 `.agent/WORK_SPLIT.md`).
@@ -89,14 +90,16 @@ external piece (see Q1).
   `changes()` gating for guest/service/status-audit rows; money is kept in integer satang. Tests
   cover month-boundary/check-out-exclusive dates, pricing, hold/expiry, add-ons, transitions,
   cancellation inventory release, rollback, last-room concurrency and hotel isolation. Targeted
-  tests: 12 passed. Public add-ons are selected by active hotel-service IDs and priced server-side.
+  tests: 15 passed. Public add-ons are selected by active hotel-service IDs and priced server-side.
   Staff booking creation validates the status against the final Postgres lifecycle CHECK list.
-  Full `pnpm test`: 681 passed, 7 known Supabase-credential failures, 3 skipped;
+  Full `pnpm test`: 685 passed, 7 known Supabase-credential failures, 3 skipped;
   `pnpm check` and `pnpm build` passed (Vite chunk-size advisory only).
 - **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered
   migrations supersede earlier definitions. Remaining sub-tickets:
-  - **13-04b iCal sync and export**: `sync_ota_ical_blocks`, `get_ota_ical_export`, and
-    `ota_connection_room_same_hotel` (including its same-hotel trigger enforcement).
+  - **13-04b iCal sync and export** (PAUSED pending owner resolution): `sync_ota_ical_blocks`,
+    `get_ota_ical_export`, and `ota_connection_room_same_hotel` (including its same-hotel trigger
+    enforcement). The owner must resolve whether the new cancellation rule supersedes the final
+    SQL function's current behavior before implementation continues.
   - **13-04c Remaining service and trigger behaviors**: `is_super_admin`, `is_platform_admin`,
     `is_hotel_member`, `current_user_has_role`, `can_manage_property`, `can_manage_staff`,
     `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`, `can_manage_ical`,

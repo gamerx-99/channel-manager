@@ -6,6 +6,14 @@ answer noted.
 
 ## Open
 
+- [ ] 13-04b OTA cancellation semantics conflict: the current request says a staff-cancelled OTA
+      booking must remain cancelled, the feed UID must be skipped and reported, and no replacement
+      block should be created; however, the final SQL in `20261026_ota_ical_room_type_mode.sql`
+      updates an existing cancelled row back to `confirmed` when its UID remains in the feed. The
+      referenced `specs/15` file is not present in this checkout (specs currently end at 14).
+      Because the ticket requires stopping when prompt/spec/SQL disagree, confirm that the new
+      owner policy supersedes the SQL contract and should be implemented as an explicit exception
+      with a `skipped_uids` result/log field. Raised 2026-10-28; 13-04b implementation paused.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.
