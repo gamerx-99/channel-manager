@@ -21,11 +21,11 @@ export const HOTEL_THEMES: Record<HotelThemeId, HotelThemeDefinition> = {
   },
   "lanna-teak": {
     fontHref: "https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=Noto+Serif+Thai:wght@400;600&family=Be+Vietnam+Pro:wght@300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500;600&display=swap",
-    primary: "#6b3f1d",
+    primary: "#5b3a21",
   },
   "cafe-homestay": {
     fontHref: "https://fonts.googleapis.com/css2?family=Epilogue:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
-    primary: "#b5532f",
+    primary: "#4a3426",
   },
 };
 

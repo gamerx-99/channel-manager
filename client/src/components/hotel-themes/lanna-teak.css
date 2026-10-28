@@ -1,0 +1,145 @@
+/* Theme 01 Lanna Teak (spec 16-03). Every rule is scoped under .theme-lanna-teak. */
+.theme-lanna-teak {
+  --lt-bg: #fff8f5;
+  --lt-surface: #ffffff;
+  --lt-surface-low: #fff1e9;
+  --lt-text: #221a14;
+  --lt-muted: #6b5a4e;
+  --lt-line: #d4c3b9;
+  --lt-teak: #41240d;
+  --lt-red: #aa342d;
+  --lt-gold: #c99a6b;
+  --lt-serif: "Noto Serif", "Noto Serif Thai", serif;
+  --lt-sans: "Be Vietnam Pro", "Noto Sans Thai", sans-serif;
+
+  /* Shared BookingFlow tokens */
+  --t-font-body: var(--lt-sans);
+  --t-font-heading: var(--lt-serif);
+  --t-flow-text: var(--lt-text);
+  --t-flow-muted: var(--lt-muted);
+  --t-flow-heading: var(--lt-teak);
+  --t-flow-panel-bg: var(--lt-surface);
+  --t-flow-panel-border: var(--lt-line);
+  --t-flow-note-bg: var(--lt-surface-low);
+  --t-card-bg: var(--lt-bg);
+  --t-card-text: var(--lt-text);
+  --t-card-border: var(--lt-line);
+  --t-card-muted: var(--lt-muted);
+  --t-price: var(--lt-red);
+  --t-on-primary: #ffffff;
+  --t-radius: 12px;
+
+  min-height: 100vh;
+  background: var(--lt-bg);
+  color: var(--lt-text);
+  font-family: var(--lt-sans);
+}
+.theme-lanna-teak a { color: inherit; text-decoration: none; }
+.theme-lanna-teak .lt-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.theme-lanna-teak .lt-eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; color: var(--lt-red); }
+.theme-lanna-teak[lang="th"] .lt-eyebrow { letter-spacing: 0.02em; }
+.theme-lanna-teak .lt-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--t-primary); color: #fff; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 14px/20px var(--lt-sans); padding: 12px 24px;
+}
+.theme-lanna-teak .lt-button:hover { filter: brightness(1.15); }
+/* Kanok-inspired divider: a gold rule with a small diamond in the middle. */
+.theme-lanna-teak .lt-divider { display: flex; align-items: center; gap: 12px; color: var(--lt-gold); margin: 16px auto; max-width: 220px; }
+.theme-lanna-teak .lt-divider::before, .theme-lanna-teak .lt-divider::after { content: ""; flex: 1; height: 1px; background: currentColor; }
+.theme-lanna-teak .lt-divider span { width: 8px; height: 8px; transform: rotate(45deg); border: 1px solid currentColor; }
+
+/* Header */
+.theme-lanna-teak .lt-header { position: sticky; top: 0; z-index: 40; background: rgba(255, 248, 245, 0.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--lt-line); }
+.theme-lanna-teak .lt-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+.theme-lanna-teak .lt-brand { font-family: var(--lt-serif); font-size: 20px; font-weight: 600; color: var(--lt-teak); }
+.theme-lanna-teak .lt-nav { display: none; gap: 28px; font-size: 14px; font-weight: 500; }
+.theme-lanna-teak .lt-nav a:hover { color: var(--lt-red); }
+.theme-lanna-teak .lt-header-actions { display: flex; align-items: center; gap: 12px; }
+.theme-lanna-teak .lt-lang { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--lt-muted); }
+.theme-lanna-teak .lt-lang button { background: none; border: 0; cursor: pointer; font: inherit; color: inherit; padding: 2px; }
+.theme-lanna-teak .lt-lang button[aria-pressed="true"] { color: var(--lt-teak); font-weight: 700; }
+.theme-lanna-teak .lt-header .lt-button { padding: 9px 16px; font-size: 13px; }
+
+/* Hero: full-bleed photo with an arch-topped card in the lower third */
+.theme-lanna-teak .lt-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 560px; padding: 160px 16px 40px; background: var(--lt-surface-low); overflow: hidden; }
+.theme-lanna-teak .lt-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.theme-lanna-teak .lt-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(34, 26, 20, 0) 30%, rgba(34, 26, 20, 0.45)); }
+.theme-lanna-teak .lt-hero.lt-no-photo { min-height: 0; padding-top: 56px; }
+.theme-lanna-teak .lt-hero.lt-no-photo::after { display: none; }
+.theme-lanna-teak .lt-arch { position: relative; z-index: 1; width: min(100%, 640px); background: var(--lt-bg); border: 1px solid var(--lt-line); border-radius: 320px 320px 16px 16px; padding: 72px 24px 28px; text-align: center; box-shadow: 0 18px 40px rgba(34, 26, 20, 0.18); }
+.theme-lanna-teak .lt-arch h1 { margin: 6px 0 0; font-family: var(--lt-serif); font-weight: 600; font-size: 32px; line-height: 40px; color: var(--lt-teak); overflow-wrap: anywhere; }
+.theme-lanna-teak .lt-arch-address { margin: 8px 0 0; font-size: 14px; color: var(--lt-muted); }
+.theme-lanna-teak .lt-arch-cta { display: grid; gap: 10px; justify-items: center; margin-top: 8px; }
+.theme-lanna-teak .lt-arch-cta .lt-price { font-family: var(--lt-serif); font-size: 18px; color: var(--lt-red); }
+.theme-lanna-teak .lt-arch-cta .lt-button { width: min(100%, 320px); }
+.theme-lanna-teak .lt-promptpay { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--lt-muted); }
+.theme-lanna-teak .lt-promptpay::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lt-gold); }
+
+/* Sections */
+.theme-lanna-teak .lt-section { padding: 72px 0; }
+.theme-lanna-teak .lt-section-alt { background: var(--lt-surface-low); border-top: 1px solid var(--lt-line); border-bottom: 1px solid var(--lt-line); }
+.theme-lanna-teak .lt-section-head { text-align: center; margin-bottom: 40px; }
+.theme-lanna-teak .lt-section-head h2 { margin: 0; font-family: var(--lt-serif); font-weight: 600; font-size: 30px; line-height: 38px; color: var(--lt-teak); }
+
+/* Intro: arch-framed photo + the owner's text */
+.theme-lanna-teak .lt-intro { display: grid; gap: 40px; align-items: center; }
+.theme-lanna-teak .lt-intro-photo { aspect-ratio: 4 / 5; max-width: 420px; width: 100%; margin: 0 auto; border-radius: 999px 999px 16px 16px; overflow: hidden; border: 6px solid var(--lt-surface); box-shadow: 0 0 0 1px var(--lt-line); }
+.theme-lanna-teak .lt-intro-photo img { width: 100%; height: 100%; object-fit: cover; }
+.theme-lanna-teak .lt-intro p { margin: 0; font-family: var(--lt-serif); font-size: 20px; line-height: 32px; color: var(--lt-text); white-space: pre-line; }
+
+/* Rooms: horizontal cards */
+.theme-lanna-teak .lt-rooms { display: grid; gap: 24px; }
+.theme-lanna-teak .lt-room { display: grid; background: var(--lt-surface); border: 1px solid var(--lt-line); border-radius: 16px; overflow: hidden; }
+.theme-lanna-teak .lt-room-photo { aspect-ratio: 4 / 3; overflow: hidden; }
+.theme-lanna-teak .lt-room-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms ease; }
+.theme-lanna-teak .lt-room:hover .lt-room-photo img { transform: scale(1.04); }
+.theme-lanna-teak .lt-room-body { padding: 24px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.theme-lanna-teak .lt-room h3 { margin: 0; font-family: var(--lt-serif); font-weight: 600; font-size: 22px; line-height: 30px; color: var(--lt-teak); }
+.theme-lanna-teak .lt-room-meta { font-size: 14px; color: var(--lt-muted); }
+.theme-lanna-teak .lt-room-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 8px; padding-top: 16px; border-top: 1px dashed var(--lt-line); }
+.theme-lanna-teak .lt-room-price { font-family: var(--lt-serif); font-size: 18px; color: var(--lt-red); }
+
+/* Gallery */
+.theme-lanna-teak .lt-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.theme-lanna-teak .lt-gallery figure { margin: 0; }
+.theme-lanna-teak .lt-gallery-photo { aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; background: var(--lt-surface); }
+.theme-lanna-teak .lt-gallery img { width: 100%; height: 100%; object-fit: cover; }
+.theme-lanna-teak .lt-gallery figcaption { margin-top: 8px; font-size: 13px; color: var(--lt-muted); text-align: center; }
+
+/* Booking */
+.theme-lanna-teak .lt-booking { max-width: 820px; margin: 0 auto; }
+.theme-lanna-teak .lt-booking .button { border-radius: 999px; }
+.theme-lanna-teak .lt-booking .button-quiet { background: transparent; color: var(--lt-teak); border: 1px solid var(--lt-line); }
+
+/* Location */
+.theme-lanna-teak .lt-location { display: grid; gap: 28px; align-items: center; }
+.theme-lanna-teak .lt-location-card { background: var(--lt-surface); border: 1px solid var(--lt-line); border-radius: 16px; padding: 24px; }
+.theme-lanna-teak .lt-location-card strong { display: block; font-family: var(--lt-serif); font-size: 20px; color: var(--lt-teak); margin-bottom: 6px; }
+.theme-lanna-teak .lt-location-card p { margin: 0; line-height: 24px; }
+.theme-lanna-teak .lt-map { width: 100%; aspect-ratio: 16 / 10; border: 0; border-radius: 16px; display: block; background: var(--lt-surface-low); }
+
+/* Footer */
+.theme-lanna-teak .lt-footer { background: var(--lt-teak); color: #f3e3d6; padding: 40px 0 104px; text-align: center; }
+.theme-lanna-teak .lt-footer strong { display: block; font-family: var(--lt-serif); font-size: 20px; color: #fff; margin-bottom: 6px; }
+.theme-lanna-teak .lt-footer p { margin: 4px 0 0; font-size: 13px; }
+
+/* Mobile sticky booking bar (no other bottom navigation) */
+.theme-lanna-teak .lt-mobile-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--lt-bg); border-top: 1px solid var(--lt-line); font-family: var(--lt-serif); color: var(--lt-red); }
+
+@media (min-width: 768px) {
+  .theme-lanna-teak .lt-wrap { padding: 0 48px; }
+  .theme-lanna-teak .lt-nav { display: flex; }
+  .theme-lanna-teak .lt-hero { min-height: 760px; }
+  .theme-lanna-teak .lt-arch { padding: 96px 48px 36px; }
+  .theme-lanna-teak .lt-arch h1 { font-size: 46px; line-height: 56px; }
+  .theme-lanna-teak .lt-section { padding: 96px 0; }
+  .theme-lanna-teak .lt-intro { grid-template-columns: 5fr 7fr; gap: 64px; }
+  .theme-lanna-teak .lt-room { grid-template-columns: 2fr 3fr; }
+  .theme-lanna-teak .lt-room-photo { aspect-ratio: auto; min-height: 260px; }
+  .theme-lanna-teak .lt-room-body { padding: 32px 40px; }
+  .theme-lanna-teak .lt-gallery { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .theme-lanna-teak .lt-location { grid-template-columns: 2fr 3fr; }
+  .theme-lanna-teak .lt-footer { padding-bottom: 40px; }
+  .theme-lanna-teak .lt-mobile-bar { display: none; }
+}

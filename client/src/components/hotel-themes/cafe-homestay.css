@@ -1,0 +1,161 @@
+/* Theme 04 Cafe Homestay (spec 16-03). Every rule is scoped under .theme-cafe-homestay. */
+.theme-cafe-homestay {
+  --ch-bg: #fff8f0;
+  --ch-surface: #ffffff;
+  --ch-surface-low: #f9f3ea;
+  --ch-surface-mid: #f1e9de;
+  --ch-text: #1e1b16;
+  --ch-muted: #6e5a4c;
+  --ch-line: #d3c3bc;
+  --ch-coffee: #321f12;
+  --ch-caramel: #7a573d;
+  --ch-peach: #fdcead;
+  --ch-sage: #dfe8cf;
+  --ch-display: "Epilogue", "Noto Sans Thai", sans-serif;
+  --ch-body: "Be Vietnam Pro", "Noto Sans Thai", sans-serif;
+
+  /* Shared BookingFlow tokens */
+  --t-font-body: var(--ch-body);
+  --t-font-heading: var(--ch-display);
+  --t-flow-text: var(--ch-text);
+  --t-flow-muted: var(--ch-muted);
+  --t-flow-heading: var(--ch-coffee);
+  --t-flow-panel-bg: var(--ch-surface);
+  --t-flow-panel-border: var(--ch-line);
+  --t-flow-note-bg: var(--ch-surface-low);
+  --t-card-bg: var(--ch-surface-low);
+  --t-card-text: var(--ch-text);
+  --t-card-border: var(--ch-line);
+  --t-card-muted: var(--ch-muted);
+  --t-price: var(--ch-caramel);
+  --t-on-primary: #ffffff;
+  --t-radius: 18px;
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--ch-bg);
+  color: var(--ch-text);
+  font-family: var(--ch-body);
+  overflow-x: clip;
+}
+.theme-cafe-homestay a { color: inherit; text-decoration: none; }
+.theme-cafe-homestay .ch-wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+.theme-cafe-homestay .ch-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--ch-surface-mid); color: var(--ch-caramel); font-size: 13px; font-weight: 600; }
+.theme-cafe-homestay .ch-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--t-primary); color: #fff; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 15px/20px var(--ch-body); padding: 14px 26px; box-shadow: 0 6px 16px rgba(50, 31, 18, 0.18);
+  transition: transform 150ms ease;
+}
+.theme-cafe-homestay .ch-button:hover { transform: translateY(-1px) scale(1.02); }
+
+/* Header */
+.theme-cafe-homestay .ch-header { position: sticky; top: 0; z-index: 40; background: rgba(255, 248, 240, 0.92); backdrop-filter: blur(8px); }
+.theme-cafe-homestay .ch-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+.theme-cafe-homestay .ch-brand { font-family: var(--ch-display); font-weight: 800; font-size: 20px; color: var(--ch-coffee); letter-spacing: -0.01em; }
+.theme-cafe-homestay .ch-nav { display: none; gap: 8px; }
+.theme-cafe-homestay .ch-nav a { padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 500; }
+.theme-cafe-homestay .ch-nav a:hover { background: var(--ch-surface-mid); }
+.theme-cafe-homestay .ch-header-actions { display: flex; align-items: center; gap: 10px; }
+.theme-cafe-homestay .ch-lang { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--ch-surface-mid); font-size: 12px; }
+.theme-cafe-homestay .ch-lang span { display: none; }
+.theme-cafe-homestay .ch-lang button { background: none; border: 0; border-radius: 999px; padding: 4px 9px; cursor: pointer; font: 600 12px/16px var(--ch-body); color: var(--ch-muted); }
+.theme-cafe-homestay .ch-lang button[aria-pressed="true"] { background: var(--ch-surface); color: var(--ch-coffee); box-shadow: 0 1px 3px rgba(50, 31, 18, 0.15); }
+.theme-cafe-homestay .ch-header .ch-button { padding: 9px 16px; font-size: 13px; box-shadow: none; }
+
+/* Hero */
+.theme-cafe-homestay .ch-hero { position: relative; padding: 32px 0 56px; }
+.theme-cafe-homestay .ch-blob { position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; z-index: 0; }
+.theme-cafe-homestay .ch-blob-a { width: 320px; height: 320px; top: -60px; left: -80px; background: rgba(253, 206, 173, 0.55); }
+.theme-cafe-homestay .ch-blob-b { width: 420px; height: 420px; top: 30%; right: -120px; background: rgba(223, 232, 207, 0.6); }
+.theme-cafe-homestay .ch-hero-grid { position: relative; z-index: 1; display: grid; gap: 40px; align-items: center; }
+.theme-cafe-homestay .ch-hero h1 { margin: 16px 0 0; font-family: var(--ch-display); font-weight: 800; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: var(--ch-coffee); overflow-wrap: anywhere; }
+.theme-cafe-homestay .ch-hero-intro { margin: 18px 0 0; max-width: 32rem; font-size: 17px; line-height: 28px; color: var(--ch-muted); white-space: pre-line; }
+.theme-cafe-homestay .ch-address { margin-top: 18px; display: inline-flex; }
+
+/* Polaroid collage (only the photos the hotel uploaded, up to 3) */
+.theme-cafe-homestay .ch-collage { position: relative; min-height: 340px; }
+.theme-cafe-homestay .ch-polaroid { position: absolute; background: var(--ch-surface); padding: 12px 12px 18px; border-radius: 10px; box-shadow: 0 10px 24px rgba(50, 31, 18, 0.14); transition: transform 300ms ease; }
+.theme-cafe-homestay .ch-polaroid:hover { transform: rotate(0deg) scale(1.04) !important; z-index: 5; }
+.theme-cafe-homestay .ch-polaroid img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 4px; }
+.theme-cafe-homestay .ch-polaroid figcaption { margin-top: 10px; font-size: 13px; text-align: center; color: var(--ch-muted); }
+.theme-cafe-homestay .ch-polaroid::before { content: ""; position: absolute; top: -10px; left: 50%; width: 64px; height: 20px; transform: translateX(-50%) rotate(-2deg); background: rgba(253, 206, 173, 0.8); border-radius: 3px; }
+.theme-cafe-homestay .ch-polaroid-0 { width: 58%; left: 0; top: 24px; transform: rotate(-3deg); z-index: 1; }
+.theme-cafe-homestay .ch-polaroid-1 { width: 52%; right: 4%; top: 0; transform: rotate(2deg); z-index: 2; }
+.theme-cafe-homestay .ch-polaroid-2 { width: 44%; right: 0; bottom: 0; transform: rotate(-2deg); z-index: 3; }
+.theme-cafe-homestay .ch-collage-1 { min-height: 0; }
+.theme-cafe-homestay .ch-collage-1 .ch-polaroid-0 { position: relative; width: min(100%, 380px); margin: 0 auto; top: 0; }
+
+/* Booking bar */
+.theme-cafe-homestay .ch-bar { position: relative; z-index: 1; margin-top: 40px; background: var(--ch-surface); border-radius: 28px; padding: 18px; box-shadow: 0 10px 28px rgba(50, 31, 18, 0.1); display: grid; gap: 14px; align-items: center; }
+.theme-cafe-homestay .ch-bar-price { padding: 10px 18px; border-radius: 18px; background: var(--ch-surface-low); }
+.theme-cafe-homestay .ch-bar-price small { display: block; font-size: 12px; color: var(--ch-muted); }
+.theme-cafe-homestay .ch-bar-price strong { font-family: var(--ch-display); font-size: 20px; color: var(--ch-coffee); }
+.theme-cafe-homestay .ch-bar-note { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ch-muted); }
+.theme-cafe-homestay .ch-bar-note b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ch-peach); color: var(--ch-coffee); font-size: 12px; }
+
+/* Sections */
+.theme-cafe-homestay .ch-section { position: relative; padding: 64px 0; }
+.theme-cafe-homestay .ch-section-alt { background: var(--ch-surface-low); }
+.theme-cafe-homestay .ch-section-head { margin-bottom: 32px; }
+.theme-cafe-homestay .ch-section-head h2 { margin: 12px 0 0; font-family: var(--ch-display); font-weight: 800; font-size: 30px; line-height: 38px; letter-spacing: -0.01em; color: var(--ch-coffee); }
+
+/* Rooms */
+.theme-cafe-homestay .ch-rooms { display: grid; gap: 20px; }
+.theme-cafe-homestay .ch-room { background: var(--ch-surface); border-radius: 24px; padding: 12px; box-shadow: 0 4px 14px rgba(50, 31, 18, 0.06); display: flex; flex-direction: column; }
+.theme-cafe-homestay .ch-room-photo { aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; }
+.theme-cafe-homestay .ch-room-photo img { width: 100%; height: 100%; object-fit: cover; }
+.theme-cafe-homestay .ch-room-body { padding: 14px 8px 6px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.theme-cafe-homestay .ch-room h3 { margin: 0; font-family: var(--ch-display); font-weight: 700; font-size: 20px; color: var(--ch-coffee); }
+.theme-cafe-homestay .ch-room-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.theme-cafe-homestay .ch-room-price { font-weight: 600; color: var(--ch-caramel); }
+.theme-cafe-homestay .ch-room .ch-button { padding: 10px 18px; font-size: 14px; box-shadow: none; }
+
+/* Gallery: polaroid grid */
+.theme-cafe-homestay .ch-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.theme-cafe-homestay .ch-gallery figure { margin: 0; background: var(--ch-surface); padding: 10px 10px 14px; border-radius: 10px; box-shadow: 0 6px 16px rgba(50, 31, 18, 0.1); }
+.theme-cafe-homestay .ch-gallery figure:nth-child(odd) { transform: rotate(-1.2deg); }
+.theme-cafe-homestay .ch-gallery figure:nth-child(even) { transform: rotate(1deg); }
+.theme-cafe-homestay .ch-gallery img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 4px; }
+.theme-cafe-homestay .ch-gallery figcaption { margin-top: 8px; font-size: 13px; text-align: center; color: var(--ch-muted); }
+
+/* Booking */
+.theme-cafe-homestay .ch-booking { max-width: 860px; }
+.theme-cafe-homestay .ch-booking .button { border-radius: 999px; }
+.theme-cafe-homestay .ch-booking .button-quiet { background: var(--ch-surface-mid); color: var(--ch-coffee); border: 0; }
+
+/* Location */
+.theme-cafe-homestay .ch-location { display: grid; gap: 24px; align-items: stretch; }
+.theme-cafe-homestay .ch-location-card { background: var(--ch-surface); border-radius: 24px; padding: 24px; box-shadow: 0 4px 14px rgba(50, 31, 18, 0.06); }
+.theme-cafe-homestay .ch-location-card strong { display: block; font-family: var(--ch-display); font-size: 20px; color: var(--ch-coffee); margin-bottom: 6px; }
+.theme-cafe-homestay .ch-location-card p { margin: 0; line-height: 24px; color: var(--ch-muted); }
+.theme-cafe-homestay .ch-map { width: 100%; min-height: 280px; height: 100%; border: 0; border-radius: 24px; display: block; background: var(--ch-surface-mid); }
+
+/* Footer */
+.theme-cafe-homestay .ch-footer { background: var(--ch-coffee); color: #ecdccf; padding: 36px 0 104px; }
+.theme-cafe-homestay .ch-footer-row { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.theme-cafe-homestay .ch-footer strong { font-family: var(--ch-display); font-size: 20px; color: #fff; }
+
+/* Mobile sticky booking bar (no other bottom navigation) */
+.theme-cafe-homestay .ch-mobile-bar { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 18px; border-radius: 999px; background: var(--ch-surface); box-shadow: 0 10px 28px rgba(50, 31, 18, 0.2); font-weight: 600; color: var(--ch-coffee); font-size: 14px; }
+.theme-cafe-homestay .ch-mobile-bar .ch-button { padding: 10px 16px; font-size: 14px; box-shadow: none; }
+
+@media (min-width: 768px) {
+  .theme-cafe-homestay .ch-wrap { padding: 0 40px; }
+  .theme-cafe-homestay .ch-nav { display: flex; }
+  .theme-cafe-homestay .ch-hero { padding: 56px 0 80px; }
+  .theme-cafe-homestay .ch-hero h1 { font-size: 58px; }
+  .theme-cafe-homestay .ch-collage { min-height: 460px; }
+  .theme-cafe-homestay .ch-bar { grid-template-columns: auto 1fr auto; padding: 14px 14px 14px 14px; }
+  .theme-cafe-homestay .ch-rooms { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .theme-cafe-homestay .ch-gallery { grid-template-columns: repeat(4, 1fr); gap: 22px; }
+  .theme-cafe-homestay .ch-location { grid-template-columns: 2fr 3fr; }
+  .theme-cafe-homestay .ch-section { padding: 88px 0; }
+  .theme-cafe-homestay .ch-footer { padding-bottom: 36px; }
+  .theme-cafe-homestay .ch-footer-row { flex-direction: row; justify-content: space-between; align-items: center; }
+  .theme-cafe-homestay .ch-mobile-bar { display: none; }
+}
+@media (min-width: 1024px) {
+  .theme-cafe-homestay .ch-hero-grid { grid-template-columns: 1fr 1fr; gap: 56px; }
+  .theme-cafe-homestay .ch-hero-grid.ch-no-photo { grid-template-columns: 1fr; }
+}

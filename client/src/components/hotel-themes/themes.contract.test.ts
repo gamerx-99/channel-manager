@@ -9,6 +9,8 @@ const read = (file: string) => readFileSync(resolve(dir, file), 'utf8');
 // Theme id → [component file, stylesheet, Thai font family the theme must load]
 const THEME_FILES = {
   'minimal-white': ['MinimalWhiteLanding.tsx', 'minimal-white.css', 'IBM+Plex+Sans+Thai'],
+  'lanna-teak': ['LannaTeakLanding.tsx', 'lanna-teak.css', 'Noto+Serif+Thai'],
+  'cafe-homestay': ['CafeHomestayLanding.tsx', 'cafe-homestay.css', 'Noto+Sans+Thai'],
 } as const;
 
 // Things the hotel never provided or we cannot promise (spec 16 never-render list).

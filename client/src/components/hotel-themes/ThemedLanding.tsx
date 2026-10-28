@@ -5,6 +5,8 @@ import type { HotelThemeLandingProps } from "./shared";
 // Each theme (and its CSS) is a separate chunk, loaded only when that theme is requested.
 const THEME_COMPONENTS = {
   "minimal-white": lazy(() => import("./MinimalWhiteLanding")),
+  "lanna-teak": lazy(() => import("./LannaTeakLanding")),
+  "cafe-homestay": lazy(() => import("./CafeHomestayLanding")),
 } satisfies Partial<Record<HotelThemeId, unknown>>;
 
 export function hasThemeComponent(themeId: HotelThemeId): themeId is keyof typeof THEME_COMPONENTS {
