@@ -97,24 +97,39 @@ export async function savePromptPaySettings(
   throwOnError(error);
 }
 
-/** Get PromptPay ID and SlipOK key (encrypted) for a hotel. Returns null if not configured. */
+/** Get client-safe payment settings. Never select key, hash, or branch credentials here. */
 export async function getHotelPaymentConfig(
   client: SupabaseClient,
   hotelId: string,
 ): Promise<{
   promptpay_id: string | null;
-  slipok_key_enc: string | null;
-  slipok_branch_id: string | null;
   slipok_enabled: boolean;
   payment_timeout_minutes: number;
 } | null> {
   const { data, error } = await client
     .from('hotel_payment_settings')
-    .select('promptpay_id,slipok_key_enc,slipok_branch_id,slipok_enabled,payment_timeout_minutes')
+    .select('promptpay_id,slipok_enabled,payment_timeout_minutes')
     .eq('hotel_id', hotelId)
     .maybeSingle();
   throwOnError(error);
-  return data ?? null;
+  if (!data) return null;
+  return { promptpay_id: data.promptpay_id, slipok_enabled: data.slipok_enabled, payment_timeout_minutes: data.payment_timeout_minutes ?? 15 };
+}
+
+/** Server-only; the result must never be returned from a procedure. */
+export async function getSlipOkCredentialsForVerification(
+  client: SupabaseClient,
+  hotelId: string,
+): Promise<{ slipok_key_enc: string | null; slipok_branch_id: string | null } | null> {
+  const { data, error } = await client
+    .from('hotel_payment_settings')
+    .select('slipok_key_enc,slipok_branch_id')
+    .eq('hotel_id', hotelId)
+    .eq('slipok_enabled', true)
+    .maybeSingle();
+  throwOnError(error);
+  if (!data) return null;
+  return { slipok_key_enc: data.slipok_key_enc, slipok_branch_id: data.slipok_branch_id };
 }
 
 /** Create a new payment session. Returns the created session. */

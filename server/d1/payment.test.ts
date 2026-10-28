@@ -5,7 +5,7 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookings, d1Schema, hotelPaymentSettings, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createPaymentSession, finalizePaymentSession, getHotelPaymentConfig, getLatestPaymentSession, getSlipOkSettings, removeSlipOkKey, savePromptPaySettings, saveSlipOkSettings, updateBookingPaymentStatus, updatePaymentSessionStatus } from "./payment";
+import { createPaymentSession, finalizePaymentSession, getHotelPaymentConfig, getLatestPaymentSession, getSlipOkCredentialsForVerification, getSlipOkSettings, removeSlipOkKey, savePromptPaySettings, saveSlipOkSettings, updateBookingPaymentStatus, updatePaymentSessionStatus } from "./payment";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -37,13 +37,20 @@ async function seed() {
 describe("D1 payment repository", () => {
   it("scopes settings, sessions and booking payment updates to hotel", async () => {
     await seed(); const caller = { userId: "ua" };
-    await saveSlipOkSettings(db, caller, "a", "encrypted", "hash", "branch");
-    await expect(getSlipOkSettings(db, caller, "a")).resolves.toEqual({ configured: true, enabled: true, branchId: "branch" });
+    await saveSlipOkSettings(db, caller, "a", "SENTINEL_ENC_KEY", "SENTINEL_HASH", "SENTINEL_BRANCH");
+    await expect(getSlipOkSettings(db, caller, "a")).resolves.toEqual({ configured: true, enabled: true, branchId: "SENTINEL_BRANCH" });
     await savePromptPaySettings(db, caller, "a", "prompt", 30);
-    await expect(getHotelPaymentConfig(db, caller, "a")).resolves.toMatchObject({ promptpay_id: "prompt", payment_timeout_minutes: 30 });
+    const config = await getHotelPaymentConfig(db, caller, "a");
+    expect(config).toEqual({ promptpay_id: "prompt", slipok_enabled: true, payment_timeout_minutes: 30 });
+    expect(Object.keys(config!).sort()).toEqual(["payment_timeout_minutes", "promptpay_id", "slipok_enabled"]);
+    expect(config).not.toHaveProperty("slipok_key_enc");
+    expect(config).not.toHaveProperty("slipok_key_hash");
+    expect(config).not.toHaveProperty("slipok_branch_id");
+    await expect(getSlipOkCredentialsForVerification(db, caller, "a")).resolves.toEqual({ slipok_key_enc: "SENTINEL_ENC_KEY", slipok_branch_id: "SENTINEL_BRANCH" });
     await saveSlipOkSettings(db, caller, "b", "x", "y", "z").then(() => { throw Error("expected denial"); }, error => expect(error.code).toBe("FORBIDDEN"));
     await removeSlipOkKey(db, caller, "a");
     await expect(getSlipOkSettings(db, caller, "a")).resolves.toMatchObject({ configured: false, enabled: false });
+    await expect(getSlipOkCredentialsForVerification(db, caller, "a")).resolves.toBeNull();
     const session = await createPaymentSession(db, caller, { booking_id: "ba", hotel_id: "a", amount: 100.25, qr_reference: "qr", qr_string: "data", expires_at: "2026-11-01T00:00:00.000Z" });
     expect(session.amount).toBe("100.25");
     await expect(createPaymentSession(db, caller, { booking_id: "bb", hotel_id: "a", amount: 10, qr_reference: "x", qr_string: "x", expires_at: "2026-11-01T00:00:00.000Z" })).rejects.toMatchObject({ code: "NOT_FOUND" });

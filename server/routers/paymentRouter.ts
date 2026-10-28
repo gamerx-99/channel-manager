@@ -4,6 +4,7 @@ import { rateLimitedProcedure, protectedProcedure, router } from '../_core/trpc'
 import { createSupabaseAdminClient } from '../supabase';
 import {
   getHotelPaymentConfig,
+  getSlipOkCredentialsForVerification,
   getLatestPaymentSession,
   createPaymentSession,
   updateBookingPaymentStatus,
@@ -251,8 +252,8 @@ export const paymentRouter = router({
         });
 
         // 7. Hotel SlipOK config (hotel comes from the verified session, not the caller)
-        const config = await getHotelPaymentConfig(client, session.hotel_id);
-        if (!config?.slipok_key_enc || !config.slipok_branch_id || !config.slipok_enabled) {
+        const config = await getSlipOkCredentialsForVerification(client, session.hotel_id);
+        if (!config?.slipok_key_enc || !config.slipok_branch_id) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message: 'Slip verification is not available for this hotel. Please contact the hotel directly.',

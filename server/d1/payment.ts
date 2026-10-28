@@ -40,9 +40,26 @@ export async function savePromptPaySettings(db: D1ScopedDatabase, caller: D1Call
 
 export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.config.read", now);
-  const [row] = await db.select().from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  const [row] = await db.select({
+    promptpayId: hotelPaymentSettings.promptpayId,
+    slipokEnabled: hotelPaymentSettings.slipokEnabled,
+    paymentTimeoutMinutes: hotelPaymentSettings.paymentTimeoutMinutes,
+  }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
   if (!row) return null;
-  return { promptpay_id: row.promptpayId, slipok_key_enc: row.slipokKeyEnc, slipok_branch_id: row.slipokBranchId, slipok_enabled: row.slipokEnabled, payment_timeout_minutes: row.paymentTimeoutMinutes };
+  return { promptpay_id: row.promptpayId, slipok_enabled: row.slipokEnabled, payment_timeout_minutes: row.paymentTimeoutMinutes };
+}
+
+/** Server-only; the result must never be returned from a procedure. */
+export async function getSlipOkCredentialsForVerification(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "payment.slipok.verify_credentials", now);
+  const [row] = await db.select({
+    slipokKeyEnc: hotelPaymentSettings.slipokKeyEnc,
+    slipokBranchId: hotelPaymentSettings.slipokBranchId,
+  }).from(hotelPaymentSettings).where(and(
+    eq(hotelPaymentSettings.hotelId, hotelId),
+    eq(hotelPaymentSettings.slipokEnabled, true),
+  )).limit(1);
+  return row ? { slipok_key_enc: row.slipokKeyEnc, slipok_branch_id: row.slipokBranchId } : null;
 }
 
 export async function createPaymentSession(db: D1ScopedDatabase, caller: D1CallerContext, input: CreatePaymentSessionInput, now = new Date()) {
