@@ -65,7 +65,10 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
 });
 
 describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
-  const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+  // Spec 16-01 moved the wizard into the shared BookingFlow component that PublicHotel renders,
+  // so the same assertions run against both files together.
+  const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8')
+    + readFileSync(resolve(process.cwd(), 'client/src/components/booking/BookingFlow.tsx'), 'utf8');
   const dbSource = readFileSync(resolve(process.cwd(), 'server/db/booking.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const bookingRouterText = readFileSync(resolve(process.cwd(), 'server/routers/bookingRouter.ts'), 'utf8');
