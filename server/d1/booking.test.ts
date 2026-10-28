@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelUsers, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelServices, hotelUsers, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { cancelHotelBooking } from "../db/scope";
 import { getStayDates, createBookingWithGuests, createPublicBooking, confirmBookingDetails, expireBookingIfPast, getPublicHotelAvailability, holdRoomType, listBookingsForHotel, logBookingStatusChange } from "./booking";
@@ -152,12 +152,38 @@ describe("D1 booking repositories", () => {
 
   it("confirms a hold with exact add-on totals and a same-batch status audit", async () => {
     await seedHotel("a", "owner-a");
+    await db.insert(hotelServices).values([
+      { id: "breakfast-a", hotelId: "a", name: "Breakfast", pricingModel: "PER_PERSON_PER_NIGHT", unitPrice: "10.25", isActive: true },
+      { id: "transfer-a", hotelId: "a", name: "Transfer", pricingModel: "ONE_TIME", unitPrice: "25.50", isActive: true },
+    ]);
     const now = new Date("2026-10-28T00:00:00Z");
     const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-03", adults: 2, children: [] }, now);
-    await expect(confirmBookingDetails(db, publicCaller, { booking_id: hold.booking_id, hotel_id: "a", guest_name: "Confirmed Guest", services: [{ service_name: "Breakfast", pricing_model: "PER_PERSON_PER_NIGHT", unit_price: "10.25", quantity: 2 }, { service_name: "Transfer", pricing_model: "ONE_TIME", unit_price: "25.50", quantity: 1 }] }, now)).resolves.toMatchObject({ amount: "266.50" });
+    await expect(confirmBookingDetails(db, publicCaller, { booking_id: hold.booking_id, hotel_id: "a", guest_name: "Confirmed Guest", services: [
+      { hotel_service_id: "breakfast-a", quantity: 2, unit_price: "0", service_name: "Free Breakfast", pricing_model: "ONE_TIME" },
+      { hotel_service_id: "transfer-a", quantity: 1 },
+    ] as any }, now)).resolves.toMatchObject({ amount: "266.50" });
     expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.price).toBe("266.50");
-    expect(await db.select().from(bookingServices).where(eq(bookingServices.bookingId, hold.booking_id))).toHaveLength(2);
+    expect(await db.select().from(bookingServices).where(eq(bookingServices.bookingId, hold.booking_id))).toMatchObject([
+      { serviceName: "Breakfast", pricingModel: "PER_PERSON_PER_NIGHT", unitPrice: "10.25", totalPrice: "41.00" },
+      { serviceName: "Transfer", pricingModel: "ONE_TIME", unitPrice: "25.50", totalPrice: "25.50" },
+    ]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, hold.booking_id))).at(-1)?.toStatus).toBe("pending_payment");
+  });
+
+  it("rejects add-on service IDs belonging to another hotel", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await db.insert(hotelServices).values({ id: "service-b", hotelId: "b", name: "Other hotel", pricingModel: "ONE_TIME", unitPrice: "1.00", isActive: true });
+    const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] });
+    await expect(confirmBookingDetails(db, publicCaller, { booking_id: hold.booking_id, hotel_id: "a", guest_name: "Guest", services: [{ hotel_service_id: "service-b", quantity: 1 }] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("held");
+  });
+
+  it("rejects inactive add-on service IDs", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(hotelServices).values({ id: "inactive-service", hotelId: "a", name: "Inactive", pricingModel: "ONE_TIME", unitPrice: "1.00", isActive: false });
+    const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] });
+    await expect(confirmBookingDetails(db, publicCaller, { booking_id: hold.booking_id, hotel_id: "a", guest_name: "Guest", services: [{ hotel_service_id: "inactive-service", quantity: 1 }] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("held");
   });
 
   it("transitions check-in/out with scoped audit and denies cross-hotel ids", async () => {

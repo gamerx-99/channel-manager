@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, gt, inArray, lt, ne } from "drizzle-orm";
-import { bookings, bookingServices, bookingStatusLog, guests as guestTable, hotelPaymentSettings, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookings, bookingServices, bookingStatusLog, guests as guestTable, hotelPaymentSettings, hotelServices, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { assertValidTransition, type BookingStatus } from "@shared/bookingLifecycle";
 import type { ChildMeasurement, OccupancyPricingRules } from "@shared/occupancyPricing";
 import type { BookingRecord, BookingServiceRecord, CreatePublicBookingInput, GuestRecord } from "../db/types";
@@ -188,7 +188,7 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   return { booking_id: bookingId, hotel_id: hotel.id, room_id: created!.roomId!, expires_at: expiresAt.toISOString(), room_type_name: roomType.name, room_number: room.roomNumber, total_price: satangToMoney(result.pricing.totalPrice), nights: dates.length };
 }
 
-export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1CallerContext, input: { booking_id: string; hotel_id: string; guest_name: string; guest_email?: string | null; guest_phone?: string | null; special_requests?: string | null; services?: Array<{ service_name: string; pricing_model: "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME"; unit_price: string | number; quantity: number }> }, now = new Date()) {
+export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1CallerContext, input: { booking_id: string; hotel_id: string; guest_name: string; guest_email?: string | null; guest_phone?: string | null; special_requests?: string | null; services?: Array<{ hotel_service_id: string; quantity: number }> }, now = new Date()) {
   publicContext(caller);
   const [hotel] = await db.select({ id: hotels.id, slug: hotels.slug, publicEnabled: hotels.publicEnabled }).from(hotels).where(and(eq(hotels.id, input.hotel_id), eq(hotels.publicEnabled, true))).limit(1);
   if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
@@ -197,7 +197,22 @@ export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1Call
   const expired = await expireBookingIfPast(db, caller, input.booking_id, input.hotel_id, now);
   if (!expired || expired.status !== "held") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This room hold has expired or is no longer available. Please start again." });
   const nights = getStayDates(booking.checkIn, booking.checkOut).length;
-  const services = input.services ?? [];
+  const requestedServices = input.services ?? [];
+  const services = [];
+  for (const requested of requestedServices) {
+    const [service] = await db.select().from(hotelServices).where(and(
+      eq(hotelServices.id, requested.hotel_service_id),
+      eq(hotelServices.hotelId, booking.hotelId),
+      eq(hotelServices.isActive, true),
+    )).limit(1);
+    if (!service) throw new TRPCError({ code: "BAD_REQUEST", message: "One or more selected add-on services are unavailable." });
+    services.push({
+      service_name: service.name,
+      pricing_model: service.pricingModel as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
+      unit_price: service.unitPrice,
+      quantity: requested.quantity,
+    });
+  }
   const serviceAmounts = services.map(service => calculateServiceTotalSatang(service, nights));
   const serviceTotal = serviceAmounts.reduce((sum, value) => sum + value, BigInt(0));
   const total = moneyToSatang(booking.price) + serviceTotal;

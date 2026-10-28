@@ -1356,3 +1356,7 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Tests**: D1 SQLite coverage includes all ten export names, checkout-exclusive/month-boundary dates, pricing, last-room concurrent inserts, adjacent dates, rollback, hold expiry, confirmation add-ons/audit, transition, cancellation freeing inventory, redaction and cross-hotel denial.
 - **Verification**: `pnpm test`: 681 passed, 7 failed due missing Supabase credentials (4 `inviteAuthUser`, 3 credential tests), 3 skipped. `pnpm check`: PASS. `pnpm build`: PASS (Vite chunk-size advisory only). No `.env` file was read.
 - **Scope**: Live Supabase routers/callers remain unchanged. No push or deploy. 13-04a is marked done locally; continue with the separate 13-04b iCal service ticket.
+
+## [2026-10-28] 13-04a review fix: server-priced public add-ons
+- **Finding/fix**: `confirmBookingDetails` now accepts only `hotel_service_id` and `quantity` for public add-ons. It resolves an active service under the booking's hotel and uses persisted name, model, and price; unknown, inactive, and foreign-hotel IDs fail with `BAD_REQUEST`. Caller-sent price/name/model fields cannot set the charge. The 13-07 client migration must send IDs. No changes to `server/db/booking.ts` or `client/`.
+- **Verification**: `pnpm exec vitest run server/d1/booking.test.ts`: 14 passed; `pnpm check`: PASS. Added cases for client-sent zero price, foreign hotel, inactive service, and server-calculated booking total.

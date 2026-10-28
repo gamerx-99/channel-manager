@@ -89,7 +89,8 @@ external piece (see Q1).
   `changes()` gating for guest/service/status-audit rows; money is kept in integer satang. Tests
   cover month-boundary/check-out-exclusive dates, pricing, hold/expiry, add-ons, transitions,
   cancellation inventory release, rollback, last-room concurrency and hotel isolation. Targeted
-  tests: 12 passed. Full `pnpm test`: 681 passed, 7 known Supabase-credential failures, 3 skipped;
+  tests: 12 passed. Public add-ons are selected by active hotel-service IDs and priced server-side.
+  Full `pnpm test`: 681 passed, 7 known Supabase-credential failures, 3 skipped;
   `pnpm check` and `pnpm build` passed (Vite chunk-size advisory only).
 - **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered
   migrations supersede earlier definitions. Remaining sub-tickets:
