@@ -6,15 +6,6 @@ answer noted.
 
 ## Open
 
-- [ ] Spec 13-03 repository port: `server/db/booking.ts` (697 lines, nine exported functions)
-      is the sole unported `server/db/*` repository. It combines public availability pricing,
-      room holds, booking confirmation, guest/service writes, expiry transitions and status
-      audits. A faithful D1 port must convert all monetary calculations to exact satang and make
-      room selection + booking insert + status audit atomic, including stale-hold expiry and
-      service/guest writes; the concurrent `INSERT ... SELECT ... WHERE NOT EXISTS` guard and
-      repeat-overlap test are not yet implemented. Do not mark 13-03 DONE or rewire callers until
-      this module is completed and reviewed. Other scoped D1 repositories are committed. Raised
-      2026-10-28.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.
@@ -88,6 +79,13 @@ answer noted.
       fallback. Platform summary `plan` and `payment_status` stay null until spec 12 billing
       exists; never use guest payment data as a substitute. Port modules in separate commits and
       stop for any module that cannot be faithfully ported, documenting the reason.
+
+- [x] Spec 13-03 booking repository allocation. ANSWER (owner, 2026-10-28): move
+      `server/db/booking.ts` to ticket 13-04a because it depends on the Postgres RPC behaviors
+      `get_public_room_type_availability_for_guests`, `transition_booking_status`, and
+      `get_public_hotel`, whose TypeScript/D1 replacements belong to 13-04. Close 13-03 with the
+      other D1 scoped repositories complete; port booking once in 13-04a. This narrows the earlier
+      13-03 repository-port scope specifically for booking. Live callers remain unchanged.
 
 - [x] Spec 13 Q3: launch domain. ANSWER (human, 2026-10-27): **www.hayhostth.com** (brand
       "hayhost"; the "th" signals a Thai business). Register on Cloudflare before ticket 13-08.

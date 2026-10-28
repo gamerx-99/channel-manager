@@ -1,7 +1,7 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, and 13-02b are implemented locally. 13-03 D1 scoped
-repository porting is in progress; the owner confirmed new D1 modules while live Supabase callers
-remain unchanged until 13-07/13-08.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, and 13-03 are implemented locally. 13-04 service
+porting is in progress; the owner confirmed new D1 modules while live Supabase callers remain
+unchanged until 13-07/13-08.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
 `.agent/WORK_SPLIT.md`).
@@ -68,7 +68,7 @@ external piece (see Q1).
 - [x] **13-02b Schema additions** (2026-10-28, `agent-c/d1-schema`): hotel acquisition source,
   referral hotel and agent links, `agents`, and public-booking marketing consent. Added as a new
   D1 migration; initial migration remains unchanged.
-- **13-03 Scoped data layer**: `db/scope.ts` — repositories take a verified `HotelScope`
+- [x] **13-03 Scoped data layer** (DONE locally, 2026-10-28): `db/scope.ts` — repositories take a verified `HotelScope`
   (`hotelId`, role, permissions) and always filter by it; platform scope is explicit. Port
   `server/db/*` onto it. Tenancy test suite (every repository × foreign hotel = denied/empty).
   D1 scope gates cover booking reads, guest PII, booking value, cancellation, staff permission
@@ -77,13 +77,24 @@ external piece (see Q1).
   Supabase callers unchanged until 13-07/13-08. Do not port `channelPerformance` or
   `saveHotelSiteConfig`'s synthetic-success fallback. Platform summary `plan` and
   `payment_status` stay null until spec 12 billing exists. See the resolved scope decision in
-  `.agent/OPEN_QUESTIONS.md`. Status remains IN PROGRESS: `server/db/booking.ts` is the only
-  unported repository and is recorded in OPEN_QUESTIONS with its fidelity/atomicity requirements.
-- **13-04 Port SQL functions to services**: the final definitions of the 24 distinct
-  functions (the earlier count of 32 includes superseded definitions) (booking state transitions,
-  occupancy pricing, public availability, `sync_ota_ical_blocks`, `get_ota_ical_export`,
-  `transfer_hotel_admin`, signup links, etc.) become TS services with unit + D1 integration
-  tests; the double-booking guard implemented as described above.
+  `.agent/OPEN_QUESTIONS.md`. The owner moved `server/db/booking.ts` to 13-04a because its public
+  booking/availability behavior depends on SQL functions ported in 13-04. Live callers remain
+  unchanged until 13-07/13-08.
+- **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered
+  migrations supersede earlier definitions. Split into:
+  - **13-04a Booking, availability, and pricing service**: `is_published_hotel`,
+    `get_public_hotel`, `get_public_room_type_availability`,
+    `get_public_room_type_availability_for_guests`, `update_room_type_with_occupancy_config`,
+    and `transition_booking_status`; add the D1 `server/db/booking.ts` equivalent with the same
+    nine exports and transactional overlap protection.
+  - **13-04b iCal sync and export**: `sync_ota_ical_blocks`, `get_ota_ical_export`, and
+    `ota_connection_room_same_hotel` (including its same-hotel trigger enforcement).
+  - **13-04c Remaining service and trigger behaviors**: `is_super_admin`, `is_platform_admin`,
+    `is_hotel_member`, `current_user_has_role`, `can_manage_property`, `can_manage_staff`,
+    `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`, `can_manage_ical`,
+    `transfer_hotel_admin`, `prevent_notification_content_changes`,
+    `update_hotel_payment_settings_updated_at`, `update_payment_sessions_updated_at`, and
+    `update_hotel_services_updated_at`.
 - **13-05 Auth**: Better Auth on D1, TOTP 2FA (replaces `auth.mfa` flows incl. step-up),
   staff invites and hotel-owner signup links, session cookies; `getSupabaseIdentity` replaced by a
   `getIdentity` with the same shape so routers barely change.
