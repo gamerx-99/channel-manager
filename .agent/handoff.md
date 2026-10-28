@@ -1314,3 +1314,9 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Verification**: `pnpm exec vitest run server/d1/housekeeping.test.ts`: 3 tests passed for all operation paths, booking-derived due dates, assignee membership, invalid booking scope, missing tasks, and preserving hotel scope if the room moves before update. `pnpm check`: PASS.
 - **Review follow-up**: Ensured linked bookings are validated even when a due date is supplied; task updates now retain the hotel predicate in the write statement. Added regression coverage for both findings.
 - **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 messaging repository (in progress)
+- **What changed**: Added `server/d1/messaging.ts` with hotel-scoped thread/message create and list functions. Linked bookings and thread ownership are checked; message sender identity comes from the verified caller, and message bodies are validated.
+- **Verification**: `pnpm exec vitest run server/d1/messaging.test.ts`: 4 tests passed for happy paths, cross-hotel denials, linked-booking scope, sender identity, invalid body handling, and ownership changes between authorization and message queries. `pnpm check`: PASS.
+- **Review follow-up**: Message insert is conditional on the thread still belonging to the hotel, and message reads join the thread with the hotel predicate in the query. Added race tests for both paths.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
