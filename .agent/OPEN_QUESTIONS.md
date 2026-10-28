@@ -6,13 +6,6 @@ answer noted.
 
 ## Open
 
-- [ ] Spec 13-04a booking export contract: the prompt says `server/db/booking.ts` has nine exports,
-      but the current source has ten: `listBookingsForHotel`, `getStayDates`,
-      `getPublicHotelAvailability`, `createPublicBooking`, `logBookingStatusChange`,
-      `transitionBookingStatus`, `expireBookingIfPast`, `holdRoomType`, `confirmBookingDetails`,
-      and `createBookingWithGuests`. Should 13-04a port all ten exports, or omit one? The source
-      file is the contract unless the owner names an exception. No D1 booking implementation has
-      started while this API scope is unresolved. Raised 2026-10-28.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.
@@ -93,6 +86,12 @@ answer noted.
       `get_public_hotel`, whose TypeScript/D1 replacements belong to 13-04. Close 13-03 with the
       other D1 scoped repositories complete; port booking once in 13-04a. This narrows the earlier
       13-03 repository-port scope specifically for booking. Live callers remain unchanged.
+
+- [x] Spec 13-04a booking export count. ANSWER (owner, 2026-10-28): the prompt's count of nine
+      was wrong; port all ten current exports from `server/db/booking.ts`. `getStayDates` remains a
+      pure date helper without D1 context and gets the same check-out-exclusive/month-boundary
+      unit tests. The other nine take `D1CallerContext`, enforce scope, and follow the 13-04a
+      money, transaction, lifecycle, and tenancy requirements.
 
 - [x] Spec 13 Q3: launch domain. ANSWER (human, 2026-10-27): **www.hayhostth.com** (brand
       "hayhost"; the "th" signals a Thai business). Register on Cloudflare before ticket 13-08.

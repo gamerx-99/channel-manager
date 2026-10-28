@@ -1347,6 +1347,6 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Verification before 13-04a**: `pnpm test`: 670 passed, 7 failed (the four known `inviteAuthUser` and three missing Supabase credential tests), 3 skipped. `pnpm check`: PASS. `pnpm build`: PASS (Vite chunk-size warning only). `pnpm exec vitest run server/d1/hotel.test.ts`: 4 passed.
 - **Next**: Implement 13-04a as a new D1 service and `server/d1/booking.ts`; preserve exact satang arithmetic, public access gates, hold expiry, audit atomicity, and the overlap/back-to-back tests. Do not rewire live callers.
 
-## [2026-10-28] Ticket 13-04a paused on source/prompt export-count mismatch
+## [2026-10-28] Ticket 13-04a export-count question resolved
 - **Finding**: The user prompt describes nine exports in `server/db/booking.ts`; the checked-in source exposes ten (`listBookingsForHotel`, `getStayDates`, `getPublicHotelAvailability`, `createPublicBooking`, `logBookingStatusChange`, `transitionBookingStatus`, `expireBookingIfPast`, `holdRoomType`, `confirmBookingDetails`, `createBookingWithGuests`).
-- **Action**: No booking code was written. Recorded the question in `.agent/OPEN_QUESTIONS.md` and marked the contract unresolved in spec 13. Wait for the owner to confirm whether to port all ten or exclude one.
+- **Resolution (owner, 2026-10-28)**: Port all ten. `getStayDates` stays pure with no D1 context; the other nine require `D1CallerContext`. The decision is recorded as resolved in `.agent/OPEN_QUESTIONS.md` and spec 13.
