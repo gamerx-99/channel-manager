@@ -35,11 +35,12 @@ const postgresPublicTables = [
   "support_access_grants",
   "support_access_log",
 ].sort();
+const d1OnlyTables = ["booking_nights"];
 
 describe("D1 schema parity", () => {
   it("contains every app-owned Postgres table and no Supabase-internal tables", () => {
     const d1Tables = Object.values(d1Schema).map(table => getTableName(table)).sort();
-    expect(d1Tables).toEqual(postgresPublicTables);
+    expect(d1Tables).toEqual([...postgresPublicTables, ...d1OnlyTables].sort());
   });
 
   it("includes acquisition, agent, and booking-consent schema additions", () => {

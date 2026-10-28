@@ -7,6 +7,7 @@ import { authorizeHotelAction, requirePublicHotel, type D1CallerContext, type D1
 import { moneyToSatang, satangToMoney } from "../db/money";
 import { getRequiredMinStayNights } from "../pricing";
 import { getStayDates } from "@shared/stayDates";
+import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const HOLD_STATUSES = ["held", "pending_payment", "pending_verification"] as const;
 const INVENTORY_STATUSES = ["confirmed", "checked_in", ...HOLD_STATUSES] as const;
@@ -225,15 +226,24 @@ export async function transitionBookingStatus(
 ) {
   await authorizeHotelAction(db, caller, input.hotel_id, "operations.manage_checkin_checkout", "bookings.transition", now);
   if (input.to_status !== "checked_in" && input.to_status !== "checked_out") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Unsupported booking status transition." });
-  const [booking] = await db.select({ status: bookings.status }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
+  const [booking] = await db.select({ status: bookings.status, roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
   if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
   try { assertValidTransition(booking.status as BookingStatus, input.to_status); }
   catch { throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Booking must be confirmed before check-in and checked in before check-out." }); }
-  const [updated, audit] = await db.$client.batch([
+  let results: Awaited<ReturnType<typeof db.$client.batch>>;
+  try { results = await db.$client.batch([
+    releaseExpiredHoldNightsStatement(db, { roomId: booking.roomId ?? "" }, now),
     db.$client.prepare("update bookings set status = ? where id = ? and hotel_id = ? and status = ?").bind(input.to_status, input.booking_id, input.hotel_id, booking.status),
     db.$client.prepare(`insert into booking_status_log (id, booking_id, from_status, to_status, changed_by, reason)
       select ?, ?, ?, ?, ?, ? where changes() = 1`).bind(crypto.randomUUID(), input.booking_id, booking.status, input.to_status, caller.userId, input.to_status === "checked_in" ? "front_desk_check_in" : "front_desk_check_out"),
-  ]);
+    addNightsStatement(db, input.booking_id, getStayDates(booking.checkIn, booking.checkOut), now),
+    releaseNightsStatement(db, input.booking_id, now),
+  ]); } catch (error) {
+    if (isBookingNightsUniqueConflict(error)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected room is no longer available for the requested dates." });
+    throw error;
+  }
+  const updated = results[1]!;
+  const audit = results[2]!;
   if (updated.meta.changes !== 1) throw new TRPCError({ code: "CONFLICT", message: "Booking status changed; reload and try again." });
   if (audit.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking status audit was not written." });
   return { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: booking.status, to_status: input.to_status };

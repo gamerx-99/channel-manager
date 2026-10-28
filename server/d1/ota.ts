@@ -4,6 +4,8 @@ import { bookingStatusLog, bookings, hotels, otaConnections, otaSyncLogs, roomTy
 import { buildIcalExport, parseIcalEvents, type IcalEvent } from "../icalFeed";
 import { authorizeHotelAction, isD1SystemCallerContext, type D1CallerContext, type D1ScopedDatabase, type D1SystemCallerContext } from "../db/scope";
 import { ICAL_FETCH_ERROR, fetchPublicIcalFeed } from "./icalUrl";
+import { getStayDates } from "@shared/stayDates";
+import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const ACTIVE_HOLD_STATUSES = ["held", "pending_payment", "pending_verification"] as const;
 const OCCUPYING_STATUSES = ["confirmed", "checked_in", ...ACTIVE_HOLD_STATUSES] as const;
@@ -177,6 +179,9 @@ export async function syncOtaIcalBlocks(
     let placed = false;
     for (const roomId of candidates) {
       if (existing) {
+        const staleHoldCleanup = releaseExpiredHoldNightsStatement(db, { roomId }, now);
+        // Persist lazy hold cleanup even if this candidate later loses the unique night key race.
+        await db.$client.batch([staleHoldCleanup]);
         const update = db.$client.prepare(`UPDATE bookings
           SET check_in = ?, check_out = ?, room_id = ?, guest_name = ?, status = 'confirmed'
           WHERE id = ? AND hotel_id = ? AND ota_connection_id = ? AND external_uid = ? AND status = ?
@@ -188,19 +193,33 @@ export async function syncOtaIcalBlocks(
                   (b.status IN ('held', 'pending_payment', 'pending_verification') AND (b.expires_at IS NULL OR b.expires_at >= ?)))
             )`)
           .bind(start, end, roomId, eventLabel, existing.id, connection.hotelId, connection.id, uid, existing.status, connection.id, connection.hotelId, roomId, existing.id, end, start, now.getTime());
-        const statements = [update];
+        const statements = [
+          releaseExpiredHoldNightsStatement(db, { roomId }, now),
+          db.$client.prepare("DELETE FROM booking_nights WHERE booking_id = ?").bind(existing.id),
+          update,
+        ];
         if (isRevive) statements.push(db.$client.prepare(`INSERT INTO booking_status_log
           (id, booking_id, from_status, to_status, changed_by, reason)
           SELECT ?, ?, 'cancelled', 'confirmed', NULL, 'ota_ical_restored' WHERE changes() = 1`)
           .bind(crypto.randomUUID(), existing.id));
-        const outcomes = await db.$client.batch(statements);
-        if (outcomes[0]?.meta.changes === 1) {
-          if (isRevive && outcomes[1]?.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "OTA restore audit was not written." });
+        statements.push(
+          addNightsStatement(db, existing.id, getStayDates(start, end), now),
+          releaseNightsStatement(db, existing.id, now),
+        );
+        let outcomes: Awaited<ReturnType<typeof db.$client.batch>>;
+        try { outcomes = await db.$client.batch(statements); }
+        catch (error) { if (isBookingNightsUniqueConflict(error)) continue; throw error; }
+        if (outcomes[2]?.meta.changes === 1) {
+          if (isRevive && outcomes[3]?.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "OTA restore audit was not written." });
           placed = true;
           result.updated += 1;
           break;
         }
       } else {
+        const staleHoldCleanup = releaseExpiredHoldNightsStatement(db, { roomId }, now);
+        // Persist lazy hold cleanup even if this candidate later loses the unique night key race.
+        await db.$client.batch([staleHoldCleanup]);
+        const bookingId = crypto.randomUUID();
         const insert = db.$client.prepare(`INSERT INTO bookings
           (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, ota_connection_id, external_uid)
           SELECT ?, ?, ?, ?, ?, ?, '0.00', 'ota_ical', 'confirmed', ?, ?
@@ -213,8 +232,17 @@ export async function syncOtaIcalBlocks(
                   (b.status IN ('held', 'pending_payment', 'pending_verification') AND (b.expires_at IS NULL OR b.expires_at >= ?)))
             )
             AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.ota_connection_id = ? AND b.external_uid = ?)`)
-          .bind(crypto.randomUUID(), connection.hotelId, roomId, eventLabel, start, end, connection.id, uid, connection.id, connection.hotelId, roomId, end, start, now.getTime(), connection.id, uid);
-        const [outcome] = await db.$client.batch([insert]);
+          .bind(bookingId, connection.hotelId, roomId, eventLabel, start, end, connection.id, uid, connection.id, connection.hotelId, roomId, end, start, now.getTime(), connection.id, uid);
+        let outcomes: Awaited<ReturnType<typeof db.$client.batch>>;
+        try {
+          outcomes = await db.$client.batch([
+            releaseExpiredHoldNightsStatement(db, { roomId }, now),
+            insert,
+            addNightsStatement(db, bookingId, getStayDates(start, end), now),
+            releaseNightsStatement(db, bookingId, now),
+          ]);
+        } catch (error) { if (isBookingNightsUniqueConflict(error)) continue; throw error; }
+        const outcome = outcomes[1];
         if (outcome?.meta.changes === 1) {
           placed = true;
           result.inserted += 1;
@@ -232,21 +260,26 @@ export async function syncOtaIcalBlocks(
     if (!placed) result.conflicts.push({ uid, start, end });
   }
 
-  const obsolete = await db.select({ id: bookings.id, status: bookings.status }).from(bookings).where(and(
+  const obsolete = await db.select({ id: bookings.id, status: bookings.status, roomId: bookings.roomId }).from(bookings).where(and(
     eq(bookings.hotelId, connection.hotelId), eq(bookings.otaConnectionId, connection.id),
     eq(bookings.status, "confirmed"), gt(bookings.checkOut, today),
   ));
   for (const row of obsolete) {
     const [booking] = await db.select({ id: bookings.id, externalUid: bookings.externalUid }).from(bookings).where(eq(bookings.id, row.id)).limit(1);
     if (!booking?.externalUid || seenUids.has(booking.externalUid)) continue;
-    const [updated, audit] = await db.$client.batch([
+    const outcomes = await db.$client.batch([
+      releaseExpiredHoldNightsStatement(db, { roomId: row.roomId ?? "" }, now),
       db.$client.prepare(`UPDATE bookings SET status = 'cancelled'
         WHERE id = ? AND hotel_id = ? AND ota_connection_id = ? AND status = 'confirmed' AND check_out > ?`)
         .bind(row.id, connection.hotelId, connection.id, today),
       db.$client.prepare(`INSERT INTO booking_status_log (id, booking_id, from_status, to_status, changed_by, reason)
         SELECT ?, ?, 'confirmed', 'cancelled', NULL, 'ota_ical_removed_from_feed' WHERE changes() = 1`)
         .bind(crypto.randomUUID(), row.id),
+      addNightsStatement(db, row.id, [], now),
+      releaseNightsStatement(db, row.id, now),
     ]);
+    const updated = outcomes[1]!;
+    const audit = outcomes[2]!;
     if (updated?.meta.changes === 1) {
       if (audit?.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "OTA removal audit was not written." });
       result.cancelled += 1;

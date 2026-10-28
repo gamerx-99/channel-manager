@@ -4,12 +4,14 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelServices, hotelUsers, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingNights, bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelServices, hotelUsers, hotels, otaConnections, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { cancelHotelBooking } from "../db/scope";
+import { cancelHotelBooking, createD1SystemCallerContext } from "../db/scope";
 import { getStayDates, createBookingWithGuests, createPublicBooking, confirmBookingDetails, expireBookingIfPast, getPublicHotelAvailability, holdRoomType, listBookingsForHotel, logBookingStatusChange } from "./booking";
 import * as bookingRepository from "./booking";
 import { transitionBookingStatus, updateRoomTypeWithOccupancyConfig, calculateNightPriceSatang, calculateServiceTotalSatang, priceStayForRoomType } from "./bookingService";
+import { addNightsStatement } from "./bookingNights";
+import { syncOtaIcalBlocks } from "./ota";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -64,6 +66,17 @@ async function seedHotel(id: string, owner: string, options: { published?: boole
 
 const guest = { first_name: "Test", middle_name: null, last_name: "Person", gender: null as const, passport_no: "TEST-123", nationality_code: "THA", birth_date: "1990-01-01", phone_no: null };
 
+async function assertBookingNightsInvariant(now: Date) {
+  const rows = await db.select({ id: bookings.id, roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings);
+  const expected = rows.flatMap(row => {
+    const held = ["held", "pending_payment", "pending_verification"].includes(row.status);
+    const occupies = row.status === "confirmed" || row.status === "checked_in" || (held && (row.expiresAt === null || row.expiresAt.getTime() >= now.getTime()));
+    return row.roomId && occupies ? getStayDates(row.checkIn, row.checkOut).map(night => `${row.roomId}|${night}|${row.id}`) : [];
+  }).sort();
+  const actual = (await db.select().from(bookingNights)).map(row => `${row.roomId}|${row.night}|${row.bookingId}`).sort();
+  expect(actual).toEqual(expected);
+}
+
 describe("D1 booking repositories", () => {
   it("preserves every source booking export", () => {
     expect(Object.keys(bookingRepository).sort()).toEqual([
@@ -77,6 +90,36 @@ describe("D1 booking repositories", () => {
     expect(getStayDates("2026-01-31", "2026-02-02")).toEqual(["2026-01-31", "2026-02-01"]);
     expect(getStayDates("2026-02-02", "2026-02-02")).toEqual([]);
     expect(getStayDates("invalid", "2026-02-02")).toEqual([]);
+  });
+
+  it("enforces the unique room-night key and blocks an overlapping raw insert without the old guard", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(bookings).values([
+      { id: "night-owner", hotelId: "a", roomId: "room-a-1", guestName: "A", checkIn: "2026-11-01", checkOut: "2026-11-03", price: "100.00", source: "manual", status: "confirmed" },
+      { id: "night-contender", hotelId: "a", roomId: "room-a-1", guestName: "B", checkIn: "2026-11-01", checkOut: "2026-11-03", price: "100.00", source: "manual", status: "confirmed" },
+    ]);
+    await db.insert(bookingNights).values({ roomId: "room-a-1", night: "2026-11-01", bookingId: "night-owner" });
+    await expect(db.insert(bookingNights).values({ roomId: "room-a-1", night: "2026-11-01", bookingId: "night-contender" }))
+      .rejects.toThrow(/Failed query: insert into "booking_nights"/);
+
+    await expect(db.$client.batch([
+      db.$client.prepare(`INSERT INTO bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status)
+        VALUES ('raw-contender', 'a', 'room-a-1', 'Raw', '2026-11-01', '2026-11-03', '100.00', 'manual', 'confirmed')`).bind(),
+      addNightsStatement(db, "raw-contender", getStayDates("2026-11-01", "2026-11-03"), new Date("2026-10-28T00:00:00Z")),
+    ])).rejects.toThrow(/UNIQUE constraint failed: booking_nights/);
+    expect(await db.select().from(bookings)).toHaveLength(2);
+    expect((await db.select().from(bookings)).some(row => row.id === "raw-contender")).toBe(false);
+  });
+
+  it("creates one row per occupied night and creates none for roomless or non-occupying bookings", async () => {
+    await seedHotel("a", "owner-a", { quantity: 2 });
+    const active = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-04"), []);
+    expect((await db.select().from(bookingNights).where(eq(bookingNights.bookingId, active.id))).map(row => row.night).sort())
+      .toEqual(["2026-11-01", "2026-11-02", "2026-11-03"]);
+    const checkedOut = await createBookingWithGuests(db, ownerA, { ...bookingInput("a", "room-a-2", "confirmed", "2026-11-01", "2026-11-04"), status: "checked_out" }, []);
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, checkedOut.id))).toEqual([]);
+    const noRoom = await createBookingWithGuests(db, ownerA, bookingInput("a", null, "confirmed", "2026-11-01", "2026-11-04"), []);
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, noRoom.id))).toEqual([]);
   });
 
   it("calculates all prices exactly in satang, including occupancy, child and service rules", async () => {
@@ -136,6 +179,7 @@ describe("D1 booking repositories", () => {
     const cancellationId = "cancel-me";
     await db.insert(bookings).values({ id: cancellationId, hotelId: "a", roomId: "room-a-1", guestName: "Cancel", checkIn: "2026-11-05", checkOut: "2026-11-06", price: "100.00", source: "manual", status: "confirmed" });
     await expect(cancelHotelBooking(db, ownerA, "a", cancellationId, new Date(), "Guest request")).resolves.toEqual({ id: cancellationId });
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, cancellationId))).toEqual([]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, cancellationId)))[0]?.reason).toBe("Guest request");
     await expect(createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-05", "2026-11-06"), [])).resolves.toMatchObject({ check_in: "2026-11-05" });
   });
@@ -152,8 +196,75 @@ describe("D1 booking repositories", () => {
     const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] }, now);
     await expect(createPublicBooking(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", guest_name: "Blocked Guest", check_in: "2026-11-01", check_out: "2026-11-02" }, now)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(expireBookingIfPast(db, publicCaller, hold.booking_id, "a", new Date(now.getTime() + 16 * 60_000))).resolves.toMatchObject({ status: "expired" });
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, hold.booking_id))).toEqual([]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, hold.booking_id))).map(row => row.toStatus)).toEqual(["held", "expired"]);
     await expect(createPublicBooking(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", guest_name: "Available Guest", check_in: "2026-11-01", check_out: "2026-11-02" }, now)).resolves.toMatchObject({ success: true });
+  });
+
+  it("cleans an expired-but-still-held row before a new hold without waiting for lazy expiry", async () => {
+    await seedHotel("a", "owner-a");
+    const now = new Date("2026-10-28T00:00:00Z");
+    const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-03", adults: 2, children: [] }, now);
+    const later = new Date(now.getTime() + 16 * 60_000);
+    const replacement = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-03", adults: 2, children: [] }, later);
+    expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("held");
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, hold.booking_id))).toEqual([]);
+    expect((await db.select().from(bookingNights).where(eq(bookingNights.bookingId, replacement.booking_id))).map(row => row.night).sort())
+      .toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
+  it("rolls back the booking and dependent rows when booking_nights rejects the write", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(bookings).values({ id: "cancelled-owner", hotelId: "a", roomId: "room-a-1", guestName: "Old", checkIn: "2026-11-01", checkOut: "2026-11-02", price: "100.00", source: "manual", status: "cancelled" });
+    await db.insert(bookingNights).values({ roomId: "room-a-1", night: "2026-11-01", bookingId: "cancelled-owner" });
+    const error = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1"), [guest], [{ service_name: "Breakfast", pricing_model: "ONE_TIME", unit_price: "10.00", quantity: 1, total_price: "10.00" }])
+      .then(() => null, caught => caught);
+    expect(error).toMatchObject({ code: "BAD_REQUEST" });
+    expect(error.message).not.toMatch(/UNIQUE constraint failed/);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(guests)).toEqual([]);
+    expect(await db.select().from(bookingServices)).toEqual([]);
+    expect(await db.select().from(bookingStatusLog)).toEqual([]);
+  });
+
+  it("keeps booking_nights equal to the occupancy invariant through a seeded 40-operation sequence", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(otaConnections).values({ id: "ota-a", hotelId: "a", provider: "Trip", status: "connected", roomId: "room-a-1", icalExportToken: "a".repeat(64) });
+    let now = new Date("2026-10-28T05:00:00Z");
+    let operations = 0;
+    const verify = async () => { operations += 1; await assertBookingNightsInvariant(now); };
+    for (let cycle = 0; cycle < 4; cycle += 1) {
+      const day = (offset: number) => new Date(Date.UTC(2026, 10, 1 + cycle * 4 + offset)).toISOString().slice(0, 10);
+      const occupied = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", day(0), day(1)), [] , [], now);
+      await verify();
+      await transitionBookingStatus(db, ownerA, { booking_id: occupied.id, hotel_id: "a", to_status: "checked_in" }, now);
+      await verify();
+      await transitionBookingStatus(db, ownerA, { booking_id: occupied.id, hotel_id: "a", to_status: "checked_out" }, now);
+      await verify();
+
+      const cancelled = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", day(1), day(2)), [], [], now);
+      await verify();
+      await cancelHotelBooking(db, ownerA, "a", cancelled.id, now, "sequence cancellation");
+      await verify();
+
+      const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: day(2), check_out: day(3), adults: 2, children: [] }, now);
+      await verify();
+      now = new Date(now.getTime() + 16 * 60_000);
+      await expireBookingIfPast(db, publicCaller, hold.booking_id, "a", now);
+      await verify();
+
+      const start = new Date(Date.UTC(2026, 10, 17 + cycle * 3)).toISOString().slice(0, 10);
+      const end = new Date(Date.UTC(2026, 10, 19 + cycle * 3)).toISOString().slice(0, 10);
+      const event = { uid: `sequence-${cycle}`, start, end };
+      await syncOtaIcalBlocks(db, createD1SystemCallerContext(), "ota-a", [event], {}, now);
+      await verify();
+      const moved = { ...event, start: new Date(Date.parse(`${start}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10), end: new Date(Date.parse(`${end}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10) };
+      await syncOtaIcalBlocks(db, createD1SystemCallerContext(), "ota-a", [moved], {}, now);
+      await verify();
+      await syncOtaIcalBlocks(db, createD1SystemCallerContext(), "ota-a", [], {}, now);
+      await verify();
+    }
+    expect(operations).toBeGreaterThanOrEqual(30);
   });
 
   it("confirms a hold with exact add-on totals and a same-batch status audit", async () => {
@@ -198,7 +309,11 @@ describe("D1 booking repositories", () => {
     await db.insert(bookings).values({ id: "confirmed-b", hotelId: "b", roomId: "room-b-1", guestName: "Guest", checkIn: "2026-11-01", checkOut: "2026-11-02", price: "100.00", source: "manual", status: "confirmed" });
     await expect(transitionBookingStatus(db, ownerA, { booking_id: "confirmed-b", hotel_id: "b", to_status: "checked_in" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(transitionBookingStatus(db, ownerA, { booking_id: "confirmed-a", hotel_id: "a", to_status: "checked_in" })).resolves.toMatchObject({ from_status: "confirmed" });
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "confirmed-a"))).toHaveLength(1);
     await expect(transitionBookingStatus(db, ownerA, { booking_id: "confirmed-a", hotel_id: "a", to_status: "checked_out" })).resolves.toMatchObject({ from_status: "checked_in" });
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "confirmed-a"))).toEqual([]);
+    await expect(createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-02"), []))
+      .resolves.toMatchObject({ check_in: "2026-11-01" });
     expect(await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, "confirmed-a"))).toHaveLength(2);
   });
 

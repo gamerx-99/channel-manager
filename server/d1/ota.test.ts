@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { bookingStatusLog, bookings, d1Schema, hotelUsers, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingNights, bookingStatusLog, bookings, d1Schema, hotelUsers, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { createD1SystemCallerContext, isD1SystemCallerContext } from "../db/scope";
 import { createBookingWithGuests } from "./booking";
@@ -94,6 +94,7 @@ describe("D1 OTA iCal services", () => {
     expect(first).toMatchObject({ inserted: 1, updated: 0, conflicts: [], skipped_uids: [] });
     expect(second).toMatchObject({ inserted: 0, unchanged: 1, conflicts: [], skipped_uids: [] });
     expect(await db.select().from(bookings)).toHaveLength(1);
+    expect((await db.select().from(bookingNights)).map(row => row.night).sort()).toEqual(["2026-11-10", "2026-11-11"]);
     expect(await db.select().from(bookingStatusLog)).toHaveLength(0);
     expect(await db.select().from(otaSyncLogs)).toHaveLength(1);
   });
@@ -175,17 +176,35 @@ describe("D1 OTA iCal services", () => {
 
   it("cancels a removed block and revives it only after the same UID returns", async () => {
     await seedHotel("a", "owner-a"); await seedOtaBooking("revive-me", feedEvent.uid, "confirmed");
+    await db.insert(bookingNights).values([
+      { roomId: "room-a", night: "2026-11-10", bookingId: "revive-me" },
+      { roomId: "room-a", night: "2026-11-11", bookingId: "revive-me" },
+    ]);
     const removed = await syncOtaIcalBlocks(db, system(), "ota-a", [], {}, NOW);
     expect(removed.cancelled).toBe(1);
     expect((await db.select().from(bookings))[0]?.status).toBe("cancelled");
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "revive-me"))).toEqual([]);
     const restored = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
     expect(restored).toMatchObject({ updated: 1, conflicts: [], skipped_uids: [] });
     expect((await db.select().from(bookings))[0]?.status).toBe("confirmed");
+    expect((await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "revive-me"))).map(row => row.night).sort()).toEqual(["2026-11-10", "2026-11-11"]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, "revive-me")))
       .map(row => ({ to: row.toStatus, changedBy: row.changedBy, reason: row.reason }))).toEqual([
         { to: "cancelled", changedBy: null, reason: "ota_ical_removed_from_feed" },
         { to: "confirmed", changedBy: null, reason: "ota_ical_restored" },
       ]);
+  });
+
+  it("frees an OTA-removed block for a direct booking on the same dates", async () => {
+    await seedHotel("a", "owner-a");
+    await expect(syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW)).resolves.toMatchObject({ inserted: 1 });
+    await expect(syncOtaIcalBlocks(db, system(), "ota-a", [], {}, NOW)).resolves.toMatchObject({ cancelled: 1 });
+    expect(await db.select().from(bookingNights)).toEqual([]);
+    await expect(createBookingWithGuests(db, ownerA, {
+      hotel_id: "a", room_id: "room-a", guest_name: "Direct guest", check_in: feedEvent.start, check_out: feedEvent.end,
+      price: "100.00", source: "manual", status: "confirmed", payment_status: "unpaid", created_at: NOW.toISOString(),
+      rooms: null, guests: [], adults_count: 1,
+    }, [], [], NOW)).resolves.toMatchObject({ guest_name: "Direct guest" });
   });
 
   it("does not touch checked-in or checked-out OTA bookings", async () => {
@@ -207,18 +226,34 @@ describe("D1 OTA iCal services", () => {
     expect(await db.select().from(otaSyncLogs)).toHaveLength(1);
   });
 
+  it("turns a booking_nights unique clash into an OTA conflict instead of throwing", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(bookings).values({ id: "stale-night-owner", hotelId: "a", roomId: "room-a", guestName: "Old", checkIn: feedEvent.start, checkOut: feedEvent.end, price: "100.00", source: "manual", status: "cancelled" });
+    await db.insert(bookingNights).values({ roomId: "room-a", night: feedEvent.start, bookingId: "stale-night-owner" });
+    await expect(syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW)).resolves.toMatchObject({
+      inserted: 0, conflicts: [{ uid: feedEvent.uid, start: feedEvent.start, end: feedEvent.end }],
+    });
+    expect((await db.select().from(bookings)).some(row => row.otaConnectionId === "ota-a")).toBe(false);
+  });
+
   it("places room-type blocks on available rooms, retries another candidate, and conflicts when full", async () => {
     await seedHotel("a", "owner-a");
     await db.insert(rooms).values({ id: "room-a-2", hotelId: "a", roomTypeId: "type-a", roomNumber: "002" });
     await db.update(otaConnections).set({ roomId: null, roomTypeId: "type-a" }).where(eq(otaConnections.id, "ota-a"));
     await db.insert(bookings).values({ id: "direct-one", hotelId: "a", roomId: "room-a", guestName: "Direct one", checkIn: feedEvent.start, checkOut: feedEvent.end, price: "100.00", source: "manual", status: "confirmed" });
     expect(await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW)).toMatchObject({ inserted: 1, conflicts: [] });
-    expect((await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid)))[0]?.roomId).toBe("room-a-2");
+    const original = (await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid)))[0]!;
+    expect(original.roomId).toBe("room-a-2");
+    expect((await db.select().from(bookingNights).where(eq(bookingNights.bookingId, original.id))).map(row => row.night).sort())
+      .toEqual(["2026-11-10", "2026-11-11"]);
 
     await db.insert(bookings).values({ id: "direct-two", hotelId: "a", roomId: "room-a-2", guestName: "Direct two", checkIn: "2026-11-15", checkOut: "2026-11-16", price: "100.00", source: "manual", status: "confirmed" });
     const moved = { ...feedEvent, start: "2026-11-15", end: "2026-11-16" };
     expect(await syncOtaIcalBlocks(db, system(), "ota-a", [moved], {}, NOW)).toMatchObject({ updated: 1, conflicts: [] });
-    expect((await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid)))[0]?.roomId).toBe("room-a");
+    const movedBooking = (await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid)))[0]!;
+    expect(movedBooking.roomId).toBe("room-a");
+    expect((await db.select().from(bookingNights).where(eq(bookingNights.bookingId, movedBooking.id))).map(row => `${row.roomId}|${row.night}`).sort())
+      .toEqual(["room-a|2026-11-15"]);
 
     const full = await syncOtaIcalBlocks(db, system(), "ota-a", [{ ...moved, uid: "another-uid" }], {}, NOW);
     expect(full.conflicts).toEqual([{ uid: "another-uid", start: moved.start, end: moved.end }]);

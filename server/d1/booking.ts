@@ -8,8 +8,13 @@ import { moneyToSatang, satangToMoney } from "../db/money";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { calculateServiceTotalSatang, getPublicHotelBySlug, getPublicRoomTypeAvailabilityForGuests, priceBaseStaySatang, priceStayForRoomType, roundAverageNightlySatang, transitionBookingStatus } from "./bookingService";
 import { getRequiredMinStayNights } from "../pricing";
+import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const noAvailability = () => new TRPCError({ code: "BAD_REQUEST", message: "The selected room type is no longer available for the requested dates. Please choose another date or room type." });
+async function runBookingBatch(db: D1ScopedDatabase, statements: Parameters<D1ScopedDatabase["$client"]["batch"]>[0]) {
+  try { return await db.$client.batch(statements); }
+  catch (error) { if (isBookingNightsUniqueConflict(error)) throw noAvailability(); throw error; }
+}
 const holdStatuses = ["held", "pending_payment", "pending_verification"] as const;
 const BOOKING_STATUSES = ["held", "pending_payment", "pending_verification", "confirmed", "expired", "payment_rejected", "cancelled", "refund_pending", "refunded", "checked_in", "checked_out"] as const satisfies readonly BookingStatus[];
 
@@ -116,13 +121,13 @@ export async function createPublicBooking(db: D1ScopedDatabase, caller: D1Caller
   const parts = guestName.split(/\s+/);
   const bookingId = crypto.randomUUID();
   const guest = { first_name: parts[0] || "Guest", last_name: parts.slice(1).join(" ") || "-", middle_name: null, gender: null, passport_no: "DIRECT-BOOKING", nationality_code: "THA", birth_date: "2000-01-01", phone_no: input.guest_phone || null } as Omit<GuestRecord, "id" | "booking_id">;
-  const [inserted] = await atomicInsert(db, {
+  const insertResult = await atomicInsert(db, {
     id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id,
     guestName, checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(amount),
     source: "walk-in", status: "confirmed", expiresAt: null, adults: null, children: null,
     public: true, guests: [guest], services: [], changedBy: caller.userId || null, reason: null,
   }, now);
-  if (inserted.meta.changes !== 1) throw noAvailability();
+  if (insertResult[1]!.meta.changes !== 1) throw noAvailability();
   const [created] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
   if (!created?.roomId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking insert did not return a room." });
   const [[assignedRoom], [payment]] = await Promise.all([
@@ -155,11 +160,16 @@ export async function expireBookingIfPast(db: D1ScopedDatabase, caller: D1Caller
   const expiresAt = iso(row.expiresAt);
   if (!holdStatuses.includes(status as typeof holdStatuses[number]) || row.expiresAt == null || row.expiresAt.getTime() >= now.getTime()) return { status, expires_at: expiresAt };
   try { assertValidTransition(status, "expired"); } catch { throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Booking cannot expire from status ${status}.` }); }
-  const [updated, audit] = await db.$client.batch([
+  const results = await runBookingBatch(db, [
+    releaseExpiredHoldNightsStatement(db, { roomId: row.roomId ?? "" }, now),
     db.$client.prepare("update bookings set status = 'expired' where id = ? and hotel_id = ? and status = ? and expires_at < ?").bind(bookingId, hotelId, status, now.getTime()),
     db.$client.prepare(`insert into booking_status_log (id, booking_id, from_status, to_status, reason)
       select ?, ?, ?, 'expired', 'timer_expired' where changes() = 1`).bind(crypto.randomUUID(), bookingId, status),
+    addNightsStatement(db, bookingId, getStayDates(row.checkIn, row.checkOut), now),
+    releaseNightsStatement(db, bookingId, now),
   ]);
+  const updated = results[1]!;
+  const audit = results[2]!;
   if (updated.meta.changes !== 1 || audit.meta.changes !== 1) {
     const [latest] = await db.select({ status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(and(eq(bookings.id, bookingId), eq(bookings.hotelId, hotelId))).limit(1);
     return latest ? { status: latest.status as BookingStatus, expires_at: iso(latest.expiresAt) } : null;
@@ -181,8 +191,8 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   const [settings] = await db.select({ holdTimeoutMinutes: hotelPaymentSettings.holdTimeoutMinutes }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotel.id)).limit(1);
   const expiresAt = new Date(now.getTime() + (settings?.holdTimeoutMinutes ?? 15) * 60_000);
   const bookingId = crypto.randomUUID();
-  const [inserted] = await atomicInsert(db, { id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id, guestName: "", checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(result.pricing.totalPrice), source: "manual", status: "held", expiresAt, adults: input.adults, children: input.children.length, public: true, guests: [], services: [], changedBy: caller.userId || null, reason: "public_hold_created" }, now);
-  if (inserted.meta.changes !== 1) throw noAvailability();
+  const insertResult = await atomicInsert(db, { id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id, guestName: "", checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(result.pricing.totalPrice), source: "manual", status: "held", expiresAt, adults: input.adults, children: input.children.length, public: true, guests: [], services: [], changedBy: caller.userId || null, reason: "public_hold_created" }, now);
+  if (insertResult[1]!.meta.changes !== 1) throw noAvailability();
   const [created] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
   const [room] = created?.roomId ? await db.select({ roomNumber: rooms.roomNumber }).from(rooms).where(eq(rooms.id, created.roomId)).limit(1) : [];
   if (!room) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking hold insert did not return an assigned room." });
@@ -219,7 +229,7 @@ export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1Call
   const total = moneyToSatang(booking.price) + serviceTotal;
   const [settings] = await db.select({ paymentTimeoutMinutes: hotelPaymentSettings.paymentTimeoutMinutes }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, input.hotel_id)).limit(1);
   const expiresAt = new Date(now.getTime() + (settings?.paymentTimeoutMinutes ?? 15) * 60_000);
-  const statements = [db.$client.prepare(`update bookings set guest_name = ?, status = 'pending_payment', expires_at = ?, price = ?
+  const statements = [releaseExpiredHoldNightsStatement(db, { roomId: booking.roomId ?? "" }, now), db.$client.prepare(`update bookings set guest_name = ?, status = 'pending_payment', expires_at = ?, price = ?
       where id = ? and hotel_id = ? and status = 'held' and (expires_at is null or expires_at >= ?)`)
     .bind(input.guest_name.trim(), expiresAt.getTime(), satangToMoney(total), input.booking_id, input.hotel_id, now.getTime())];
   services.forEach((service, index) => statements.push(db.$client.prepare(`insert into booking_services
@@ -229,9 +239,15 @@ export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1Call
   statements.push(db.$client.prepare(`insert into booking_status_log (id, booking_id, from_status, to_status, changed_by, reason)
       select ?, ?, 'held', 'pending_payment', ?, 'guest_details_confirmed' where changes() = 1`)
     .bind(crypto.randomUUID(), input.booking_id, caller.userId || null));
-  const results = await db.$client.batch(statements);
-  const update = results[0];
-  const audit = results.at(-1)!;
+  statements.push(
+    addNightsStatement(db, input.booking_id, getStayDates(booking.checkIn, booking.checkOut), now),
+    releaseNightsStatement(db, input.booking_id, now),
+  );
+  let results: Awaited<ReturnType<typeof db.$client.batch>>;
+  try { results = await db.$client.batch(statements); }
+  catch (error) { if (isBookingNightsUniqueConflict(error)) throw noAvailability(); throw error; }
+  const update = results[1]!;
+  const audit = results.at(-3)!;
   if (update.meta.changes !== 1) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This room hold has expired or is no longer available. Please start again." });
   if (audit.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking confirmation audit was not written." });
   return { booking_id: input.booking_id, hotel_id: input.hotel_id, status: "pending_payment" as const, expires_at: expiresAt.toISOString(), amount: satangToMoney(total) };
@@ -261,7 +277,7 @@ export async function createBookingWithGuests(
   if (!(BOOKING_STATUSES as readonly string[]).includes(status)) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking status is invalid." });
   const id = crypto.randomUUID();
   const result = await atomicInsert(db, { id, hotelId: booking.hotel_id, roomId: booking.room_id, roomTypeId: null, guestName: booking.guest_name, checkIn: booking.check_in, checkOut: booking.check_out, price: canonicalBookingPrice(booking.price), source: booking.source, status, expiresAt: null, adults: booking.adults_count ?? null, children: booking.children_count ?? null, public: false, guests: guestInputs, services, changedBy: caller.userId || null, reason: "booking_created" }, now);
-  if (result[0]!.meta.changes !== 1) throw noAvailability();
+  if (result[1]!.meta.changes !== 1) throw noAvailability();
   const [row] = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
   if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking insert did not return a record." });
   return { id: row.id, hotel_id: row.hotelId, room_id: row.roomId, guest_name: row.guestName, check_in: row.checkIn, check_out: row.checkOut, price: row.price, source: row.source, status: row.status, created_at: row.createdAt.toISOString() };
@@ -295,7 +311,7 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
           and (? is null or not exists (select 1 from bookings b where b.room_id = ? and b.check_in < ? and b.check_out > ?
             and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?)))))`)
       .bind(input.id, input.hotelId, input.roomId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.hotelId, input.roomId, input.roomId, input.hotelId, input.roomId, input.roomId, input.checkOut, input.checkIn, now.getTime());
-  const statements = [bookingInsert];
+  const statements = [releaseExpiredHoldNightsStatement(db, input.public ? { hotelId: input.hotelId } : { roomId: input.roomId ?? "" }, now), bookingInsert];
   for (const guest of input.guests) statements.push(db.$client.prepare(`insert into guests (id, booking_id, first_name, middle_name, last_name, gender, passport_no, nationality_code, birth_date, phone_no)
       select ?, ?, ?, ?, ?, ?, ?, ?, ?, ? where changes() = 1`)
     .bind(crypto.randomUUID(), input.id, guest.first_name, guest.middle_name, guest.last_name, guest.gender, guest.passport_no, guest.nationality_code, guest.birth_date, guest.phone_no));
@@ -305,6 +321,10 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
   statements.push(db.$client.prepare(`insert into booking_status_log (id, booking_id, from_status, to_status, changed_by, reason)
       select ?, ?, null, ?, ?, ? where changes() = 1`)
     .bind(crypto.randomUUID(), input.id, input.status, input.changedBy, input.reason));
-  return db.$client.batch(statements);
+  statements.push(
+    addNightsStatement(db, input.id, getStayDates(input.checkIn, input.checkOut), now),
+    releaseNightsStatement(db, input.id, now),
+  );
+  return runBookingBatch(db, statements);
 }
 

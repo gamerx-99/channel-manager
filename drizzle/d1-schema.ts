@@ -6,6 +6,7 @@ import {
   integer,
   sqliteTable,
   text,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { SUPPORT_GRANT_DURATION_HOURS } from "../shared/permissions";
@@ -181,6 +182,15 @@ export const bookings = sqliteTable("bookings", {
   index("idx_bookings_room_dates").on(table.roomId, table.checkIn, table.checkOut),
   index("idx_bookings_expires_at").on(table.expiresAt).where(sql`${table.expiresAt} is not null`),
   uniqueIndex("idx_bookings_ota_external_uid").on(table.otaConnectionId, table.externalUid).where(sql`${table.otaConnectionId} is not null`),
+]);
+
+export const bookingNights = sqliteTable("booking_nights", {
+  roomId: text("room_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
+  night: text("night").notNull(),
+  bookingId: text("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
+}, table => [
+  unique("uq_booking_nights_room_night").on(table.roomId, table.night),
+  index("idx_booking_nights_booking_id").on(table.bookingId),
 ]);
 
 export const guests = sqliteTable("guests", {
@@ -482,6 +492,7 @@ export const d1Schema = {
   roomTypes,
   rooms,
   bookings,
+  bookingNights,
   guests,
   availability,
   hotelDomains,

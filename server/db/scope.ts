@@ -6,6 +6,8 @@ import { PERMISSIONS, type AppRole, type Permission, isAppRole } from "@shared/a
 import { bookings, d1Schema, guests, hotelUsers, hotels, otaConnections, rooms, supportAccessGrants, supportAccessLog } from "../../drizzle/d1-schema";
 import { sumMoneyInSatang } from "./money";
 import { assertValidTransition, type BookingStatus } from "@shared/bookingLifecycle";
+import { getStayDates } from "@shared/stayDates";
+import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "../d1/bookingNights";
 
 type D1Client = {
   prepare(query: string): { bind(...values: unknown[]): unknown };
@@ -210,7 +212,7 @@ export async function cancelHotelBooking(
   db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, bookingId: string, now = new Date(), reason: string | null = null,
 ) {
   const scope = await resolveScope(db, caller, hotelId, "operations.cancel_bookings", "bookings.cancel", now);
-  const [current] = await db.select({ id: bookings.id, status: bookings.status }).from(bookings).where(and(
+  const [current] = await db.select({ id: bookings.id, status: bookings.status, roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut }).from(bookings).where(and(
     eq(bookings.id, bookingId), eq(bookings.hotelId, scope.hotelId),
   )).limit(1);
   if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
@@ -219,14 +221,23 @@ export async function cancelHotelBooking(
   } catch {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Booking cannot be cancelled from status ${current.status}.` });
   }
-  const [updated, audit] = await db.$client.batch([
+  let results: Awaited<ReturnType<typeof db.$client.batch>>;
+  try { results = await db.$client.batch([
+    releaseExpiredHoldNightsStatement(db, { roomId: current.roomId ?? "" }, now),
     db.$client.prepare("update bookings set status = ? where id = ? and hotel_id = ? and status = ?")
       .bind("cancelled", bookingId, scope.hotelId, current.status),
     db.$client.prepare(`insert into booking_status_log
       (id, booking_id, from_status, to_status, changed_by, reason)
       select ?, ?, ?, 'cancelled', ?, ? where changes() = 1`)
       .bind(crypto.randomUUID(), bookingId, current.status, caller.userId, reason),
-  ]);
+    addNightsStatement(db, bookingId, getStayDates(current.checkIn, current.checkOut), now),
+    releaseNightsStatement(db, bookingId, now),
+  ]); } catch (error) {
+    if (isBookingNightsUniqueConflict(error)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected room is no longer available for the requested dates." });
+    throw error;
+  }
+  const updated = results[1]!;
+  const audit = results[2]!;
   if (updated.meta.changes !== 1) throw new TRPCError({ code: "CONFLICT", message: "Booking status changed; reload and try again." });
   if (audit.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking cancellation audit was not written." });
   return { id: bookingId };
