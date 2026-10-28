@@ -1,4 +1,4 @@
-import { ChevronRight, ExternalLink, MoreHorizontal, Pencil, Plus, Sparkles, Users } from 'lucide-react';
+import { ChevronRight, ExternalLink, Plus, Sparkles, Users } from 'lucide-react';
 import { Link } from 'wouter';
 import { FormEvent, useState } from 'react';
 import {
@@ -44,7 +44,6 @@ export default function HotelServices({ id }: { id: string }) {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [propertyActionsOpen, setPropertyActionsOpen] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState(emptyServiceForm);
   const [serviceError, setServiceError] = useState<string | null>(null);
@@ -193,21 +192,12 @@ export default function HotelServices({ id }: { id: string }) {
           <p>{hotel.address}</p>
           <div className="property-meta"><span><Users size={15} /> {t('hotelDetail.accessControlled')}</span><span><ExternalLink size={15} /> /{hotel.slug}</span></div>
         </div>
-        <div className="property-actions">
-          <button className="button button-quiet" disabled title={t('hotelDetail.editPropertyTooltip')}><Pencil size={15} /> {t('hotelDetail.editProperty')}</button>
-          <div className="dropdown-anchor property-action-menu">
-            <button className="icon-button bordered" type="button" aria-label={t('hotelDetail.morePropertyActionsAria')} aria-haspopup="menu" aria-expanded={propertyActionsOpen} onClick={() => setPropertyActionsOpen(open => !open)}><MoreHorizontal size={17} /></button>
-            {propertyActionsOpen && <div className="menu-surface menu-surface--property-actions" role="menu" aria-label={t('hotelDetail.propertyActionsRoleAria')}><button className="menu-surface-item" type="button" disabled title={t('hotelDetail.editPropertyTooltip')}><Pencil size={14} /> {t('hotelDetail.editProperty')} <span className="menu-surface-note">{t('hotelDetail.comingSoon')}</span></button></div>}
-          </div>
-        </div>
       </section>
       <nav className="detail-tabs">
         <Link href={`/hotels/${hotel.id}`}>{t('hotelDetail.tabRoomTypes')}</Link>
         <Link href={`/hotels/${hotel.id}/bookings`}>{t('hotelDetail.tabBookings')}</Link>
         <Link href={`/hotels/${hotel.id}/calendar`}>{t('hotelDetail.tabAvailability')}</Link>
         <Link href={`/hotels/${hotel.id}/services`} className="active">{t('hotelDetail.tabServices')}</Link>
-        <a href="#" onClick={event => event.preventDefault()}>{t('hotelDetail.tabImages')}</a>
-        <a href="#" onClick={event => event.preventDefault()}>{t('hotelDetail.tabDomains')}</a>
       </nav>
       <section className="panel room-types-panel">
         <div className="panel-heading">

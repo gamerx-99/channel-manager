@@ -4,7 +4,6 @@ import {
   ChevronDown,
   Menu,
   Plus,
-  Search,
 } from "lucide-react";
 import ProfileMenu from "../ProfileMenu";
 import NotificationBell from "../NotificationBell";
@@ -19,7 +18,6 @@ const BREADCRUMB_EXACT_KEYS: Record<string, TranslationKey> = {
 };
 
 const BREADCRUMB_PREFIX_KEYS: Array<[string, TranslationKey]> = [
-  ["/dashboard/channels", "breadcrumb.channelAnalytics"],
   ["/dashboard/pricing", "breadcrumb.advancedPricing"],
   ["/dashboard/financials", "breadcrumb.financials"],
   ["/housekeeping", "breadcrumb.housekeeping"],
@@ -101,11 +99,6 @@ export function Topbar({
         <span className="current-crumb">{t(getBreadcrumbKey(location))}</span>
       </div>
       <div className="topbar-actions">
-        <label className="topbar-search">
-          <Search size={15} aria-hidden="true" />
-          <span className="sr-only">{t("topbar.searchSystemSr")}</span>
-          <input placeholder={t("topbar.searchSystem")} aria-label={t("topbar.searchSystemSr")} />
-        </label>
         {isSuperAdmin && (
           <div className="dropdown-anchor">
             <button

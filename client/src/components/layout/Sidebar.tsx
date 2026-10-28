@@ -4,7 +4,6 @@ import {
   BedDouble,
   Bell,
   CalendarDays,
-  FileSpreadsheet,
   Globe,
   Hotel,
   LayoutDashboard,
@@ -78,7 +77,6 @@ export function Sidebar({
     : [];
   const navItems = [
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
-    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: t("sidebar.channelAnalytics"), icon: BarChart3 }] : []),
     ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: t("sidebar.hotelsManagement"), icon: Hotel }] : []),
     ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: t("sidebar.adminUsers"), icon: ShieldCheck }] : []),
     ...hotelNavItems,
@@ -146,10 +144,6 @@ export function Sidebar({
             <span>{t("sidebar.financials")}</span>
           </Link>
         )}
-        {isSuperAdmin && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info(t("sidebar.paymentsComingSoon"))}>
-          <FileSpreadsheet size={17} strokeWidth={1.8} />
-          <span>{t("sidebar.payments")}</span>
-        </button>}
         {communicationsEnabled && can("operations.view_bookings") && (
           <Link
             href="/communications"
@@ -204,10 +198,6 @@ export function Sidebar({
           </Link>
         )}
         <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>
-        {can("operations.export_tm30") && <a className="nav-link" href="#" onClick={(event) => { event.preventDefault(); toast.info(t("sidebar.exportsPrompt")); }}>
-          <FileSpreadsheet size={17} strokeWidth={1.8} />
-          <span>{t("sidebar.exports")}</span>
-        </a>}
         {can("platform.manage_users") && (
           <Link
             href="/settings/admin-users"
@@ -232,7 +222,7 @@ export function Sidebar({
           <div className="user-avatar">{initials}</div>
           <div>
             <strong>{userName}</strong>
-            <span>{userEmail ?? t("sidebar.supabaseUser")}</span>
+            <span>{userEmail ?? t("sidebar.accountLabel")}</span>
           </div>
           <button
             className="icon-button"

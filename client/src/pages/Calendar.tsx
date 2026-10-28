@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Edit3, Info, Save, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit3, Info, Save } from "lucide-react";
 import { Link } from "wouter";
 import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -267,7 +267,6 @@ export default function Calendar({ id }: { id: string }) {
       <section className="page-intro intro-split">
         <div><div className="eyebrow">{t("availability.eyebrow")}</div><h1>{t("availability.title")}<span className="title-mark">.</span></h1><p className="lede">{t("availability.lede")}</p></div>
         <div className="intro-actions">
-          <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>
           {editing ? (
             <button className="button button-primary" type="button" disabled={updateAvailability.isPending || !selectedDates.length} onClick={() => void saveCalendar()}>
               <Save size={15} /> {updateAvailability.isPending ? t("availability.saving") : t("availability.saveChanges")}
@@ -424,7 +423,7 @@ export default function Calendar({ id }: { id: string }) {
 
         <div className="calendar-footer">
           <span>{t("availability.inventoryFooter")}</span>
-          <span className="signal-text"><i /> {t("availability.rlsProtected")}</span>
+          <span className="signal-text"><i /> {t("availability.accessProtected")}</span>
         </div>
       </section>
 
