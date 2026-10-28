@@ -6,6 +6,15 @@ answer noted.
 
 ## Open
 
+- [ ] Spec 16-01: the Supabase `confirmBookingDetails` schema still takes priced add-on lines
+      (`service_name`/`pricing_model`/`unit_price`), so the live server trusts client prices.
+      The D1 port (13-04a, a3aa447) already takes `hotel_service_id` + `quantity`.
+      ASSUMPTION: BookingFlow keeps the current payload and does not change the server; the
+      owner decides between a live hotfix now and waiting for the cutover. Raised 2026-10-28.
+- [ ] Spec 16: no persisted theme field on `hotel_site_config`. ASSUMPTION: the theme comes
+      from `?theme=<id>` (sales demos); a stored field + WebsiteBuilder picker follows the
+      13-08 cutover. Raised 2026-10-28.
+
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.
