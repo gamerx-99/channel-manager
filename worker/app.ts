@@ -128,9 +128,9 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       if (!filename || filename.length > 255 || (caption !== null && caption.length > 1_000) || !base64) {
         return c.json({ error: "Invalid image upload." }, 400);
       }
-      validateHotelMediaUpload(new Uint8Array(), contentType, filename);
       const data = decodeBase64(base64);
       if (data.byteLength > MAX_HOTEL_MEDIA_BYTES) return c.json({ error: "Images must be 5 MiB or smaller." }, 413);
+      try { validateHotelMediaUpload(data, contentType, filename); } catch (error) { return c.json({ error: error instanceof Error ? error.message : "Invalid image upload." }, 400); }
       const media = await uploadHotelMediaToR2(db, caller, c.env.MEDIA, {
         hotel_id: hotelId,
         filename,
@@ -173,6 +173,8 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
         "Content-Type": object.httpMetadata?.contentType ?? "application/octet-stream",
         "Cache-Control": "public, max-age=31536000, immutable",
         "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
+        "Cross-Origin-Resource-Policy": "cross-origin",
       });
       if (object.httpEtag) headers.set("ETag", object.httpEtag);
       return new Response(object.body as unknown as BodyInit, { status: 200, headers });

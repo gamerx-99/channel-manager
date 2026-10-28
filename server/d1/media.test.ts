@@ -96,7 +96,7 @@ describe("D1 hotel media on R2", () => {
     expect(validateHotelMediaUpload(bytes, "image/png", "photo.png")).toEqual({ contentType: "image/png", extension: "png" });
     expect(() => validateHotelMediaUpload(new Uint8Array(MAX_HOTEL_MEDIA_BYTES + 1), "image/png", "large.png"))
       .toThrow("Images must be 5 MiB or smaller.");
-    expect(() => validateHotelMediaUpload(bytes, "text/plain", "photo.txt")).toThrow("Only image files can be uploaded.");
+    expect(() => validateHotelMediaUpload(new Uint8Array([0x3c, 0x68, 0x74, 0x6d, 0x6c]), "text/plain", "photo.txt")).toThrow("Only image files can be uploaded.");
   });
 
   it("creates a server-generated hotel-prefixed key and makes the first upload the hero", async () => {

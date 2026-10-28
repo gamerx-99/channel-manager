@@ -7,22 +7,28 @@ import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } fro
 export const MAX_HOTEL_MEDIA_BYTES = 5 * 1024 * 1024;
 export const HOTEL_MEDIA_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
+const IMAGE_SIGNATURES: Array<{ mime: string; extension: string; test: (data: Uint8Array) => boolean }> = [
+  { mime: "image/png", extension: "png", test: d => d.length >= 4 && d[0] === 0x89 && d[1] === 0x50 && d[2] === 0x4e && d[3] === 0x47 },
+  { mime: "image/jpeg", extension: "jpg", test: d => d.length >= 3 && d[0] === 0xff && d[1] === 0xd8 && d[2] === 0xff },
+  { mime: "image/gif", extension: "gif", test: d => d.length >= 4 && d[0] === 0x47 && d[1] === 0x49 && d[2] === 0x46 && d[3] === 0x38 },
+  { mime: "image/webp", extension: "webp", test: d => d.length >= 12 && d[0] === 0x52 && d[1] === 0x49 && d[2] === 0x46 && d[3] === 0x46 && d[8] === 0x57 && d[9] === 0x45 && d[10] === 0x42 && d[11] === 0x50 },
+  { mime: "image/avif", extension: "avif", test: d => d.length >= 12 && d[4] === 0x66 && d[5] === 0x74 && d[6] === 0x79 && d[7] === 0x70 && d[8] === 0x61 && d[9] === 0x76 && d[10] === 0x69 && d[11] === 0x66 },
+];
+
+export function detectImageType(data: Uint8Array): { mime: string; extension: string } | null {
+  for (const sig of IMAGE_SIGNATURES) if (sig.test(data)) return { mime: sig.mime, extension: sig.extension };
+  return null;
+}
+
 export function validateHotelMediaUpload(data: Uint8Array, contentType: string, filename: string) {
-  const normalizedType = contentType.split(";")[0]!.trim().toLowerCase();
   if (data.byteLength > MAX_HOTEL_MEDIA_BYTES) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Images must be 5 MiB or smaller." });
   }
-  if (!/^image\/[a-z0-9][a-z0-9.+-]*$/.test(normalizedType)) {
+  const detected = detectImageType(data);
+  if (!detected) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Only image files can be uploaded." });
   }
-  const suppliedExtension = filename.split(/[./\\]/).pop()?.toLowerCase() ?? "";
-  const mimeExtension = normalizedType.slice("image/".length).split("+")[0]!.split(".").pop() ?? "";
-  const extension = /^[a-z0-9]{1,10}$/.test(suppliedExtension)
-    ? suppliedExtension
-    : normalizedType === "image/jpeg" ? "jpg"
-      : normalizedType === "image/svg+xml" ? "svg"
-        : /^[a-z0-9]{1,10}$/.test(mimeExtension) ? mimeExtension : "img";
-  return { contentType: normalizedType, extension };
+  return { contentType: detected.mime, extension: detected.extension };
 }
 
 /** Validate a stored/object path and return its canonical hotel-prefixed R2 key. */
