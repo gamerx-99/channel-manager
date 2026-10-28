@@ -2,6 +2,13 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq, lt, gt, sql } from "drizzle-orm";
 import { availability, bookings, rateOverrides, roomTypes } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
+import { moneyToSatang } from "../db/money";
+
+function canonicalMoney(value: string): string {
+  const satang = moneyToSatang(value);
+  if (satang < BigInt(0)) throw new TRPCError({ code: "BAD_REQUEST", message: "Price cannot be negative." });
+  return `${satang / BigInt(100)}.${String(satang % BigInt(100)).padStart(2, "0")}`;
+}
 
 export async function listBookingOccupancyForHotel(
   db: D1ScopedDatabase,
@@ -43,15 +50,15 @@ export async function listAvailabilityForHotel(db: D1ScopedDatabase, caller: D1C
 export async function updateAvailability(
   db: D1ScopedDatabase,
   caller: D1CallerContext,
-  input: { hotelId: string; roomTypeId: string; date: string; price: number; roomsAvailable: number },
+  input: { hotelId: string; roomTypeId: string; date: string; price: string; roomsAvailable: number },
   now = new Date(),
 ) {
   await authorizeRoomType(db, caller, input.hotelId, input.roomTypeId, "availability.update", now);
   const [row] = await db.insert(availability).values({
-    roomTypeId: input.roomTypeId, date: input.date, price: input.price, roomsAvailable: input.roomsAvailable,
+    roomTypeId: input.roomTypeId, date: input.date, price: canonicalMoney(input.price), roomsAvailable: input.roomsAvailable,
   }).onConflictDoUpdate({
     target: [availability.roomTypeId, availability.date],
-    set: { price: input.price, roomsAvailable: input.roomsAvailable },
+    set: { price: canonicalMoney(input.price), roomsAvailable: input.roomsAvailable },
   }).returning();
   return row;
 }
@@ -99,13 +106,13 @@ export async function listRateOverrides(db: D1ScopedDatabase, caller: D1CallerCo
 export async function createRateOverride(
   db: D1ScopedDatabase,
   caller: D1CallerContext,
-  input: { hotelId: string; roomTypeId: string; startDate: string; endDate: string; overridePrice: number; minStayNights: number | null },
+  input: { hotelId: string; roomTypeId: string; startDate: string; endDate: string; overridePrice: string; minStayNights: number | null },
   now = new Date(),
 ) {
   await authorizeRoomType(db, caller, input.hotelId, input.roomTypeId, "rate_overrides.create", now);
   const id = crypto.randomUUID();
   const rows = await db.all(sql`insert into rate_overrides (id, room_type_id, start_date, end_date, override_price, min_stay_nights)
-    select ${id}, ${input.roomTypeId}, ${input.startDate}, ${input.endDate}, ${input.overridePrice}, ${input.minStayNights}
+    select ${id}, ${input.roomTypeId}, ${input.startDate}, ${input.endDate}, ${canonicalMoney(input.overridePrice)}, ${input.minStayNights}
     where not exists (select 1 from rate_overrides where room_type_id = ${input.roomTypeId}
       and start_date <= ${input.endDate} and end_date >= ${input.startDate})
     returning id, room_type_id as roomTypeId, start_date as startDate, end_date as endDate,

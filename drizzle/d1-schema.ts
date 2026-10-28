@@ -1,10 +1,9 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQLWrapper } from "drizzle-orm";
 import {
   check,
   foreignKey,
   index,
   integer,
-  numeric,
   sqliteTable,
   text,
   uniqueIndex,
@@ -17,7 +16,14 @@ const createdAt = (name = "created_at") =>
 const updatedAt = (name = "updated_at") =>
   integer(name, { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`);
 const json = <T>(name: string) => text(name, { mode: "json" }).$type<T>();
-const money = (name: string) => numeric(name, { mode: "number" });
+// SQLite NUMERIC coerces decimal strings to binary floating point. Keep amounts
+// as canonical decimal text; calculations must use shared/db/money.ts.
+const money = (name: string) => text(name);
+const nonnegativeMoney = (value: SQLWrapper) => sql`typeof(${value}) = 'text' and ${value} <> ''
+  and ${value} not glob '*[^0-9.]*' and ${value} not glob '*.*.*'
+  and (instr(${value}, '.') = 0 or (instr(${value}, '.') > 1
+    and length(substr(${value}, instr(${value}, '.') + 1)) between 1 and 2))
+  and cast(${value} as numeric) >= 0`;
 const maxSupportGrantMs = Math.max(...SUPPORT_GRANT_DURATION_HOURS) * 60 * 60 * 1000;
 
 export const agents = sqliteTable("agents", {
@@ -95,8 +101,8 @@ export const roomTypes = sqliteTable("room_types", {
   childrenCountTowardMax: integer("children_count_toward_max", { mode: "boolean" }).notNull().default(true),
 }, table => [
   check("room_types_capacity_check", sql`${table.capacity} > 0`),
-  check("room_types_base_price_check", sql`${table.basePrice} >= 0`),
-  check("room_types_occupancy_values_check", sql`${table.baseOccupancy} >= 1 and ${table.maxOccupancy} >= ${table.baseOccupancy} and json_valid(${table.occupancyPricing}) = 1 and json_type(${table.occupancyPricing}) = 'object' and json_valid(${table.childRates}) = 1 and json_type(${table.childRates}) = 'object' and ${table.childRule} in ('age', 'height') and (${table.childRuleLimit} is null or ${table.childRuleLimit} >= 0)`),
+  check("room_types_base_price_check", nonnegativeMoney(table.basePrice)),
+  check("room_types_occupancy_values_check", sql`${table.baseOccupancy} >= 1 and ${table.maxOccupancy} >= ${table.baseOccupancy} and json_valid(${table.occupancyPricing}) = 1 and json_type(${table.occupancyPricing}) = 'object' and ${table.childRule} in ('age', 'height') and (${table.childRuleLimit} is null or (${nonnegativeMoney(table.childRuleLimit)}))`),
   index("idx_room_types_hotel_id").on(table.hotelId),
 ]);
 
@@ -161,7 +167,7 @@ export const bookings = sqliteTable("bookings", {
   marketingConsentAt: text("marketing_consent_at"),
 }, table => [
   check("bookings_valid_dates_check", sql`${table.checkOut} > ${table.checkIn}`),
-  check("bookings_price_check", sql`${table.price} >= 0`),
+  check("bookings_price_check", nonnegativeMoney(table.price)),
   check("bookings_source_check", sql`${table.source} in ('manual', 'walk-in', 'phone', 'ota_ical')`),
   check("bookings_status_check", sql`${table.status} in ('held', 'pending_payment', 'pending_verification', 'confirmed', 'expired', 'payment_rejected', 'cancelled', 'refund_pending', 'refunded', 'checked_in', 'checked_out')`),
   check("bookings_payment_status_check", sql`${table.paymentStatus} in ('unpaid', 'pending', 'verified', 'failed')`),
@@ -198,7 +204,7 @@ export const availability = sqliteTable("availability", {
   price: money("price").notNull(),
   roomsAvailable: integer("rooms_available").notNull(),
 }, table => [
-  check("availability_price_check", sql`${table.price} >= 0`),
+  check("availability_price_check", nonnegativeMoney(table.price)),
   check("availability_rooms_available_check", sql`${table.roomsAvailable} >= 0`),
   uniqueIndex("unique_room_type_date").on(table.roomTypeId, table.date),
   index("idx_availability_room_type_date").on(table.roomTypeId, table.date),
@@ -294,7 +300,7 @@ export const rateOverrides = sqliteTable("rate_overrides", {
   minStayNights: integer("min_stay_nights"),
   createdAt: createdAt(),
 }, table => [
-  check("rate_overrides_price_check", sql`${table.overridePrice} >= 0`),
+  check("rate_overrides_price_check", nonnegativeMoney(table.overridePrice)),
   check("rate_overrides_min_stay_check", sql`${table.minStayNights} is null or ${table.minStayNights} > 0`),
   check("valid_rate_override_dates", sql`${table.endDate} >= ${table.startDate}`),
   index("idx_rate_overrides_room_type_id").on(table.roomTypeId),
@@ -380,9 +386,9 @@ export const bookingServices = sqliteTable("booking_services", {
   createdAt: createdAt(),
 }, table => [
   check("booking_services_pricing_model_check", sql`${table.pricingModel} in ('PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME')`),
-  check("booking_services_unit_price_check", sql`${table.unitPrice} >= 0`),
+  check("booking_services_unit_price_check", nonnegativeMoney(table.unitPrice)),
   check("booking_services_quantity_check", sql`${table.quantity} >= 1`),
-  check("booking_services_total_price_check", sql`${table.totalPrice} >= 0`),
+  check("booking_services_total_price_check", nonnegativeMoney(table.totalPrice)),
   index("idx_booking_services_booking_id").on(table.bookingId),
 ]);
 
@@ -402,7 +408,7 @@ export const paymentSessions = sqliteTable("payment_sessions", {
   rawResponse: json<unknown>("raw_response"),
   verifiedTransactionRef: text("verified_transaction_ref"),
 }, table => [
-  check("payment_sessions_amount_check", sql`${table.amount} > 0`),
+  check("payment_sessions_amount_check", sql`${nonnegativeMoney(table.amount)} and cast(${table.amount} as numeric) > 0`),
   check("payment_sessions_status_check", sql`${table.status} in ('pending', 'paid', 'expired', 'failed')`),
   index("idx_payment_sessions_booking_id").on(table.bookingId),
   index("idx_payment_sessions_hotel_id").on(table.hotelId),
@@ -424,13 +430,13 @@ export const hotelServices = sqliteTable("hotel_services", {
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   pricingModel: text("pricing_model").notNull(),
-  unitPrice: numeric("unit_price", { mode: "number" }).notNull(),
+  unitPrice: money("unit_price").notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, table => [
   check("hotel_services_pricing_model_check", sql`${table.pricingModel} in ('PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME')`),
-  check("hotel_services_unit_price_check", sql`${table.unitPrice} >= 0`),
+  check("hotel_services_unit_price_check", nonnegativeMoney(table.unitPrice)),
   index("idx_hotel_services_hotel_id").on(table.hotelId),
 ]);
 
