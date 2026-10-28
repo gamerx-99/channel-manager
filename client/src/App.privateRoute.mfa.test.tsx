@@ -43,8 +43,8 @@ vi.mock("@/lib/trpc", () => ({
       hotels: { useQuery: () => mocks.useHotelsQuery() },
       completeHotelOwnerSignup: { useMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue({ success: true }) }) },
     },
+    useUtils: () => ({ channelManager: { hotels: { invalidate: vi.fn() } }, auth: { me: { invalidate: vi.fn() } } }),
   },
-  useUtils: () => ({ channelManager: { hotels: { invalidate: vi.fn() } } }),
 }));
 
 // The route-scope decision (which nav/hotel a role may open) is unrelated to

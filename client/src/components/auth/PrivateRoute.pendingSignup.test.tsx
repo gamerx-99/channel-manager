@@ -31,7 +31,7 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 
-vi.mock("./_core/hooks/useAuth", () => ({
+vi.mock("../../_core/hooks/useAuth", () => ({
   useAuth: () => ({
     user: { id: "user-1", email: "owner@example.com", name: "Owner" },
     loading: false,
