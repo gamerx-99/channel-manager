@@ -1320,3 +1320,8 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Verification**: `pnpm exec vitest run server/d1/messaging.test.ts`: 4 tests passed for happy paths, cross-hotel denials, linked-booking scope, sender identity, invalid body handling, and ownership changes between authorization and message queries. `pnpm check`: PASS.
 - **Review follow-up**: Message insert is conditional on the thread still belonging to the hotel, and message reads join the thread with the hotel predicate in the query. Added race tests for both paths.
 - **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 auth compatibility repository (in progress)
+- **What changed**: Added `server/d1/auth.ts`. Super-admin status reads only the caller's own D1 membership; legacy template OAuth lookup/write functions remain inert while Better Auth is deferred to 13-05.
+- **Verification**: `pnpm exec vitest run server/d1/auth.test.ts`: 2 tests passed. `pnpm check`: PASS.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
