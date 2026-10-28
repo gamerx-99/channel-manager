@@ -6,6 +6,15 @@ answer noted.
 
 ## Open
 
+- [ ] Spec 13-03 repository port: `server/db/booking.ts` (697 lines, nine exported functions)
+      is the sole unported `server/db/*` repository. It combines public availability pricing,
+      room holds, booking confirmation, guest/service writes, expiry transitions and status
+      audits. A faithful D1 port must convert all monetary calculations to exact satang and make
+      room selection + booking insert + status audit atomic, including stale-hold expiry and
+      service/guest writes; the concurrent `INSERT ... SELECT ... WHERE NOT EXISTS` guard and
+      repeat-overlap test are not yet implemented. Do not mark 13-03 DONE or rewire callers until
+      this module is completed and reviewed. Other scoped D1 repositories are committed. Raised
+      2026-10-28.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.

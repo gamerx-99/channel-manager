@@ -77,7 +77,8 @@ external piece (see Q1).
   Supabase callers unchanged until 13-07/13-08. Do not port `channelPerformance` or
   `saveHotelSiteConfig`'s synthetic-success fallback. Platform summary `plan` and
   `payment_status` stay null until spec 12 billing exists. See the resolved scope decision in
-  `.agent/OPEN_QUESTIONS.md`.
+  `.agent/OPEN_QUESTIONS.md`. Status remains IN PROGRESS: `server/db/booking.ts` is the only
+  unported repository and is recorded in OPEN_QUESTIONS with its fidelity/atomicity requirements.
 - **13-04 Port SQL functions to services**: the final definitions of the 24 distinct
   functions (the earlier count of 32 includes superseded definitions) (booking state transitions,
   occupancy pricing, public availability, `sync_ota_ical_blocks`, `get_ota_ical_export`,
