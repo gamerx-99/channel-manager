@@ -453,7 +453,8 @@ export const supportAccessGrants = sqliteTable("support_access_grants", {
 
 export const supportAccessLog = sqliteTable("support_access_log", {
   id: id(),
-  grantId: text("grant_id").notNull().references(() => supportAccessGrants.id, { onDelete: "restrict" }),
+  // Null links allow denied support attempts with no grant to be audited too.
+  grantId: text("grant_id").references(() => supportAccessGrants.id, { onDelete: "set null" }),
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
   supportUserId: text("support_user_id").notNull(),
   action: text("action").notNull(),

@@ -15,6 +15,13 @@
       "when": 1793130548392,
       "tag": "20261027194908_add_hotel_acquisition_agents_marketing_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793131068613,
+      "tag": "20261027195748_allow_ungranted_support_access_audit",
+      "breakpoints": true
     }
   ]
 }
