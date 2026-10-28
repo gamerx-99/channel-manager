@@ -1303,3 +1303,8 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Review finding**: Directly writing `cancelled` bypassed the shared transition rules and omitted the booking status audit row.
 - **Fix**: Validate with `assertValidTransition`, guard the update against stale status, require the booking to belong to the scoped hotel, and write `booking_status_log` in the same D1 batch transaction as the status update.
 - **Verification**: `pnpm exec vitest run server/db/scope.test.ts`: 12 tests pass, including invalid checked-in cancellation, successful cancellation audit, and rollback if the audit insert fails. `pnpm check`: PASS.
+
+## [2026-10-28] Ticket 13-03: D1 notification repository (in progress)
+- **What changed**: Added `server/d1/notification.ts`. Hotel list/read/write operations require hotel-scoped `property.view` or booking-management permission; global list/mark-all requires the explicit platform permission. Notification writes constrain both notification ID and hotel ID.
+- **Verification**: `pnpm exec vitest run server/d1/notification.test.ts`: 2 tests passed for hotel isolation, global denial, global platform access, and insert/mark flows. `pnpm check`: PASS.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.

@@ -133,6 +133,17 @@ export async function authorizeHotelAction(
   return resolveScope(db, caller, hotelId, permission, action, now);
 }
 
+export async function authorizePlatformAction(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  permission: Permission,
+) {
+  if (!caller.userId) forbidden();
+  const memberships = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  if (!caller.roles?.includes("super_admin") && !memberships.some(row => row.role === "super_admin")) forbidden();
+  if (!resolveMembershipPermissions("super_admin").includes(permission)) forbidden();
+}
+
 export async function listHotelBookings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   const scope = await resolveScope(db, caller, hotelId, "operations.view_bookings", "bookings.read", now);
   return db.select().from(bookings).where(eq(bookings.hotelId, scope.hotelId));
