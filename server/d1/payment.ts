@@ -49,7 +49,9 @@ export async function createPaymentSession(db: D1ScopedDatabase, caller: D1Calle
   await authorizeHotelAction(db, caller, input.hotel_id, "operations.manage_bookings", "payment_session.create", now);
   const [booking] = await db.select({ id: bookings.id }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
   if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
-  const [row] = await db.insert(paymentSessions).values({ bookingId: input.booking_id, hotelId: input.hotel_id, amount: canonicalAmount(input.amount), qrReference: input.qr_reference, qrString: input.qr_string, expiresAt: new Date(input.expires_at) }).returning();
+  const expiresAt = new Date(input.expires_at);
+  if (!Number.isFinite(expiresAt.getTime())) throw new TRPCError({ code: "BAD_REQUEST", message: "Payment expiry must be a valid date." });
+  const [row] = await db.insert(paymentSessions).values({ bookingId: input.booking_id, hotelId: input.hotel_id, amount: canonicalAmount(input.amount), qrReference: input.qr_reference, qrString: input.qr_string, expiresAt }).returning();
   if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Payment session insert returned no record." });
   return sessionRecord(row);
 }

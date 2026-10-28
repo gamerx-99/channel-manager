@@ -22,7 +22,10 @@ export async function listHotelUserAssignments(db: D1ScopedDatabase, caller: D1C
     try {
       await authorizeHotelAction(db, caller, membership.hotelId, "property.manage_staff", "staff.assignments.list");
       hotelIds.add(membership.hotelId);
-    } catch { /* inaccessible membership is intentionally omitted */ }
+    } catch (error) {
+      if (error instanceof TRPCError && error.code === "FORBIDDEN") continue;
+      throw error;
+    }
   }
   const rows = await db.select().from(hotelUsers).orderBy(desc(hotelUsers.createdAt));
   return Promise.all(rows.filter(row => hotelIds.has(row.hotelId) && ASSIGNABLE_STAFF_ROLES.includes(row.role as typeof ASSIGNABLE_STAFF_ROLES[number])).map(row => assignmentWithHotel(db, row)));
@@ -83,8 +86,10 @@ export async function transferHotelAdmin(db: D1ScopedDatabase, caller: D1CallerC
   if (!current || current.id === target.id) return null;
   const [previousAdminMembershipId, previousAdminUserId, newAdminMembershipId, newAdminUserId] = [current.id, current.userId, target.id, target.userId];
   const [updateResult, newAdminResult, auditResult] = await db.$client.batch([
-    db.$client.prepare("update hotel_users set role = ?, permission_grants = ?, permission_revokes = ? where id = ? and hotel_id = ? and role = ?")
-      .bind(target.role, JSON.stringify(target.permissionGrants), JSON.stringify(target.permissionRevokes), current.id, input.hotel_id, "hotel_owner"),
+    db.$client.prepare(`update hotel_users set role = ?, permission_grants = ?, permission_revokes = ?
+      where id = ? and hotel_id = ? and role = 'hotel_owner'
+        and exists (select 1 from hotel_users target where target.id = ? and target.hotel_id = ? and target.role = ?)`)
+      .bind(target.role, JSON.stringify(target.permissionGrants), JSON.stringify(target.permissionRevokes), current.id, input.hotel_id, target.id, input.hotel_id, target.role),
     db.$client.prepare("update hotel_users set role = 'hotel_owner', permission_grants = '[]', permission_revokes = '[]' where id = ? and hotel_id = ? and role = ? and changes() = 1")
       .bind(target.id, input.hotel_id, target.role),
     db.$client.prepare(`insert into hotel_admin_audit_logs (id, hotel_id, actor_user_id, actor_email, action, previous_admin_membership_id, previous_admin_user_id, new_admin_membership_id, new_admin_user_id, details)

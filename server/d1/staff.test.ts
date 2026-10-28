@@ -61,4 +61,17 @@ describe("D1 staff repository", () => {
     await expect(listHotelAdminAuditLogs(db, owner, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(listHotelAdminAuditLogs(db, { userId: "new" }, "a")).resolves.toHaveLength(1);
   });
+
+  it("does not partially demote an owner when the transfer target changes during the transaction", async () => {
+    await seed();
+    const target = await createHotelUserAssignment(db, { userId: "ua" }, { hotel_id: "a", user_id: "new", role: "housekeeping" });
+    const originalBatch = db.$client.batch.bind(db.$client);
+    db.$client.batch = async statements => {
+      sqlite.prepare("update hotel_users set role = 'front_desk' where id = ?").run(target.id);
+      return originalBatch(statements);
+    };
+    await expect(transferHotelAdmin(db, { userId: "ua" }, { hotel_id: "a", target_membership_id: target.id })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(await db.select({ role: hotelUsers.role }).from(hotelUsers).where((await import("drizzle-orm")).eq(hotelUsers.id, "owner-a"))).toMatchObject([{ role: "hotel_owner" }]);
+    expect(await db.select().from(hotelAdminAuditLogs)).toHaveLength(0);
+  });
 });
