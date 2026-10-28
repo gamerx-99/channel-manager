@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-10-28] UI-01 mock cleanup (branch `agent-a/next`)
+- **What changed**: Removed dead controls, fake status panels, ChannelPerformance page, topbar search, toast-only menu items; deferred pending owner signup; MFA message i18n; replaced developer jargon in i18n; added contract tests.
+- **Counts**: passed 629 → 636? (UI tests). Only 7 known credential-env failures.
+- **Assertion changed**: removed routeScope channels assertion (page deleted by owner decision 2026-10-28).
+- **Commits**: f2b091d, 33e8be8, abdec70, df54412, 1b1bc34.
+
 ## [2026-10-27] Spec 14 ticket 14-03a (review fixes): pending signup, MFA promptpay, tests (branch `agent-a/next`)
 - **What happened**: Fixed email-confirmation regression (token stored in localStorage, redeemed after first login), added MFA step-up to PromptPay settings, hid no-op mark-as-read button, added 6+ regression/contract tests.
 - **Verification**: `pnpm test`: 99 passed files | 4 failed (inviteAuthUser x4 + 3 credential env) | 2 skipped; 629 passed | 7 failed | 3 skipped. `pnpm check`: 0 errors. `pnpm build`: OK.
