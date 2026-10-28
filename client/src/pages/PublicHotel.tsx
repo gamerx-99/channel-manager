@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { BookingFlow } from "@/components/booking/BookingFlow";
+import { HOTEL_THEMES, resolveHotelTheme } from "@/components/hotel-themes/registry";
+import { ThemedLanding, hasThemeComponent } from "@/components/hotel-themes/ThemedLanding";
 import { useTranslation } from "@/lib/i18n";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
@@ -35,6 +37,23 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const accentColor = siteConfig?.accent_color ?? DEFAULT_ACCENT_COLOR;
   const visibleSections = siteConfig?.visible_sections ?? null;
   const isVisible = (key: string) => visibleSections == null || visibleSections[key] !== false;
+
+  const themeId = resolveHotelTheme(window.location.search);
+  if (themeId && hasThemeComponent(themeId)) {
+    return (
+      <ThemedLanding
+        themeId={themeId}
+        fallback={<div className="public-page"><main className="public-loading">{t("publicHotel.loadingHotelDetails")}</main></div>}
+        slug={slug}
+        hotel={hotel}
+        roomTypes={roomTypes}
+        media={media}
+        heroCopy={siteConfig?.hero_copy ?? null}
+        primary={siteConfig?.accent_color ?? HOTEL_THEMES[themeId].primary}
+        showBooking={isVisible("booking")}
+      />
+    );
+  }
 
   const handleSelectRoom = (roomTypeId: string) => {
     setPreferredRoomTypeId(roomTypeId);

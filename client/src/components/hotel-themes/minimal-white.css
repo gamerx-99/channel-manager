@@ -1,0 +1,139 @@
+/* Theme 02 Minimal White (spec 16-02). Every rule is scoped under .theme-minimal-white. */
+.theme-minimal-white {
+  --mw-bg: #ffffff;
+  --mw-surface-low: #f4f4f2;
+  --mw-text: #1a1c1b;
+  --mw-muted: #5f5e5e;
+  --mw-line: #c5c8be;
+  --mw-font: "IBM Plex Sans", "IBM Plex Sans Thai", sans-serif;
+
+  /* Shared BookingFlow tokens */
+  --t-font-body: var(--mw-font);
+  --t-font-heading: var(--mw-font);
+  --t-flow-text: var(--mw-text);
+  --t-flow-muted: var(--mw-muted);
+  --t-flow-heading: var(--mw-text);
+  --t-flow-panel-bg: var(--mw-bg);
+  --t-flow-panel-border: var(--mw-line);
+  --t-flow-note-bg: var(--mw-surface-low);
+  --t-card-bg: var(--mw-bg);
+  --t-card-text: var(--mw-text);
+  --t-card-border: var(--mw-line);
+  --t-card-muted: var(--mw-muted);
+  --t-price: var(--mw-text);
+  --t-on-primary: #ffffff;
+  --t-radius: 0px;
+
+  min-height: 100vh;
+  background: var(--mw-bg);
+  color: var(--mw-text);
+  font-family: var(--mw-font);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+.theme-minimal-white * { border-radius: 0; }
+.theme-minimal-white a { color: inherit; text-decoration: none; }
+.theme-minimal-white .mw-wrap { max-width: 1360px; margin: 0 auto; padding: 0 20px; }
+.theme-minimal-white .mw-label { font-size: 11px; line-height: 16px; letter-spacing: 0.14em; font-weight: 500; text-transform: uppercase; color: var(--mw-muted); }
+.theme-minimal-white .mw-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--t-primary); color: #fff; border: 0; cursor: pointer;
+  font: 500 11px/16px var(--mw-font); letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 12px 20px;
+}
+.theme-minimal-white .mw-button:hover { filter: brightness(1.12); }
+
+/* Header */
+.theme-minimal-white .mw-header { position: sticky; top: 0; z-index: 40; background: var(--mw-bg); border-bottom: 1px solid var(--mw-line); }
+.theme-minimal-white .mw-header-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 16px; padding-bottom: 16px; }
+.theme-minimal-white .mw-brand { font-size: 13px; letter-spacing: 0.14em; font-weight: 500; text-transform: uppercase; }
+.theme-minimal-white .mw-nav { display: none; gap: 32px; }
+.theme-minimal-white .mw-nav a:hover { color: var(--mw-text); }
+.theme-minimal-white .mw-header-actions { display: flex; align-items: center; gap: 20px; }
+.theme-minimal-white .mw-lang { display: flex; align-items: center; gap: 8px; }
+.theme-minimal-white .mw-lang button { background: none; border: 0; padding: 0 0 2px; cursor: pointer; color: var(--mw-muted); font: inherit; letter-spacing: inherit; }
+.theme-minimal-white .mw-lang button[aria-pressed="true"] { color: var(--mw-text); border-bottom: 1px solid var(--t-primary); }
+.theme-minimal-white .mw-lang span { color: var(--mw-line); }
+
+/* Hero */
+.theme-minimal-white .mw-hero { border-bottom: 1px solid var(--mw-line); }
+.theme-minimal-white .mw-hero-grid { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 1fr; }
+.theme-minimal-white .mw-hero-copy { padding: 56px 20px 48px; display: flex; flex-direction: column; justify-content: space-between; gap: 48px; }
+.theme-minimal-white .mw-hero h1 { margin: 16px 0 0; font-size: 36px; line-height: 44px; font-weight: 300; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.theme-minimal-white .mw-hero-intro { margin: 28px 0 0; max-width: 26rem; font-size: 15px; line-height: 24px; color: var(--mw-muted); white-space: pre-line; }
+.theme-minimal-white .mw-reserve { border-top: 1px solid var(--mw-line); padding-top: 28px; }
+.theme-minimal-white .mw-reserve-price { font-size: 22px; line-height: 30px; font-weight: 300; margin: 8px 0 20px; }
+.theme-minimal-white .mw-reserve .mw-button { width: 100%; padding: 14px 24px; }
+.theme-minimal-white .mw-reserve-note { margin-top: 16px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--mw-muted); }
+.theme-minimal-white .mw-hero-photo { position: relative; min-height: 360px; background: var(--mw-surface-low); overflow: hidden; }
+.theme-minimal-white .mw-hero-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* Sections */
+.theme-minimal-white .mw-section { padding: 72px 0; }
+.theme-minimal-white .mw-section-alt { background: var(--mw-surface-low); border-top: 1px solid var(--mw-line); border-bottom: 1px solid var(--mw-line); }
+.theme-minimal-white .mw-section-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--mw-line); padding-bottom: 16px; margin-bottom: 40px; }
+.theme-minimal-white .mw-section-head h2 { margin: 0; font-size: 28px; line-height: 36px; font-weight: 300; letter-spacing: -0.005em; }
+
+/* Rooms */
+.theme-minimal-white .mw-rooms { display: grid; grid-template-columns: 1fr; gap: 40px; }
+.theme-minimal-white .mw-room-photo { aspect-ratio: 1 / 1; overflow: hidden; border: 1px solid var(--mw-line); background: var(--mw-surface-low); margin-bottom: 16px; }
+.theme-minimal-white .mw-room-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 300ms ease-out; }
+.theme-minimal-white .mw-room:hover .mw-room-photo img { transform: scale(1.02); }
+.theme-minimal-white .mw-room-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.theme-minimal-white .mw-room h3 { margin: 0; font-size: 18px; line-height: 28px; font-weight: 400; }
+.theme-minimal-white .mw-room p { margin: 4px 0 0; font-size: 15px; line-height: 24px; color: var(--mw-muted); }
+.theme-minimal-white .mw-room-book { margin-top: 12px; background: none; border: 0; border-bottom: 1px solid var(--mw-text); padding: 0 0 2px; cursor: pointer; font: 500 11px/16px var(--mw-font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mw-text); }
+
+/* Gallery */
+.theme-minimal-white .mw-gallery { display: flex; gap: 24px; overflow-x: auto; padding: 0 20px 16px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+.theme-minimal-white .mw-gallery::-webkit-scrollbar { display: none; }
+.theme-minimal-white .mw-gallery figure { flex: none; width: min(78vw, 360px); margin: 0; scroll-snap-align: start; }
+.theme-minimal-white .mw-gallery-photo { height: min(100vw, 460px); border: 1px solid var(--mw-line); background: var(--mw-bg); overflow: hidden; margin-bottom: 12px; }
+.theme-minimal-white .mw-gallery img { width: 100%; height: 100%; object-fit: cover; }
+.theme-minimal-white .mw-gallery figcaption { font-size: 13px; line-height: 20px; color: var(--mw-muted); }
+
+/* Booking */
+.theme-minimal-white .mw-booking { display: grid; gap: 32px; }
+.theme-minimal-white .mw-booking .button-quiet { background: transparent; color: var(--mw-text); border: 1px solid var(--mw-line); }
+
+/* Location */
+.theme-minimal-white .mw-location { display: grid; gap: 40px; align-items: start; }
+.theme-minimal-white .mw-location p { margin: 4px 0 0; font-size: 15px; line-height: 24px; }
+.theme-minimal-white .mw-map { width: 100%; aspect-ratio: 16 / 10; border: 1px solid var(--mw-line); background: var(--mw-surface-low); display: block; }
+
+/* Footer */
+.theme-minimal-white .mw-footer { background: var(--mw-surface-low); border-top: 1px solid var(--mw-line); padding: 32px 0 96px; }
+.theme-minimal-white .mw-footer-row { display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--mw-muted); }
+.theme-minimal-white .mw-footer-row strong { color: var(--mw-text); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px; }
+
+/* Mobile sticky booking bar: only price + Check availability (no Amenities/Concierge items). */
+.theme-minimal-white .mw-mobile-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; background: var(--mw-bg); border-top: 1px solid var(--mw-line); font-size: 13px; }
+
+/* Wide tracking reads well in uppercase Latin but breaks up Thai words. */
+.theme-minimal-white[lang="th"] .mw-label,
+.theme-minimal-white[lang="th"] .mw-button,
+.theme-minimal-white[lang="th"] .mw-room-book { letter-spacing: 0.02em; }
+
+@media (max-width: 400px) {
+  .theme-minimal-white .mw-header-actions { gap: 12px; }
+  .theme-minimal-white .mw-header .mw-button { padding: 10px 12px; }
+}
+@media (min-width: 768px) {
+  .theme-minimal-white .mw-wrap { padding: 0 64px; }
+  .theme-minimal-white .mw-nav { display: flex; }
+  .theme-minimal-white .mw-rooms { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .theme-minimal-white .mw-gallery { padding: 0 64px 16px; }
+  .theme-minimal-white .mw-footer { padding-bottom: 32px; }
+  .theme-minimal-white .mw-footer-row { flex-direction: row; justify-content: space-between; align-items: center; }
+  .theme-minimal-white .mw-mobile-bar { display: none; }
+  .theme-minimal-white .mw-section { padding: 120px 0; }
+}
+@media (min-width: 1024px) {
+  .theme-minimal-white .mw-hero-grid { grid-template-columns: 5fr 7fr; min-height: calc(100vh - 65px); }
+  .theme-minimal-white .mw-hero-grid.mw-no-photo { grid-template-columns: minmax(0, 720px); justify-content: center; min-height: 0; }
+  .theme-minimal-white .mw-hero-copy { padding: 96px 64px; border-right: 1px solid var(--mw-line); }
+  .theme-minimal-white .mw-no-photo .mw-hero-copy { border-right: 0; }
+  .theme-minimal-white .mw-hero h1 { font-size: 56px; line-height: 64px; letter-spacing: -0.02em; }
+  .theme-minimal-white .mw-booking { grid-template-columns: 4fr 8fr; }
+  .theme-minimal-white .mw-location { grid-template-columns: 5fr 7fr; gap: 48px; }
+}
