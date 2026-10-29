@@ -195,7 +195,6 @@ export async function syncOtaIcalBlocks(
           .bind(start, end, roomId, eventLabel, existing.id, connection.hotelId, connection.id, uid, existing.status, connection.id, connection.hotelId, roomId, existing.id, end, start, now.getTime());
         const statements = [
           releaseExpiredHoldNightsStatement(db, { roomId }, now),
-          db.$client.prepare("DELETE FROM booking_nights WHERE booking_id = ?").bind(existing.id),
           update,
         ];
         if (isRevive) statements.push(db.$client.prepare(`INSERT INTO booking_status_log
@@ -203,14 +202,20 @@ export async function syncOtaIcalBlocks(
           SELECT ?, ?, 'cancelled', 'confirmed', NULL, 'ota_ical_restored' WHERE changes() = 1`)
           .bind(crypto.randomUUID(), existing.id));
         statements.push(
+          db.$client.prepare(`DELETE FROM booking_nights
+            WHERE booking_id = ?
+              AND EXISTS (
+                SELECT 1 FROM bookings
+                WHERE id = ? AND check_in = ? AND check_out = ? AND room_id = ? AND status = 'confirmed'
+              )`).bind(existing.id, existing.id, start, end, roomId),
           addNightsStatement(db, existing.id, getStayDates(start, end), now),
           releaseNightsStatement(db, existing.id, now),
         );
         let outcomes: Awaited<ReturnType<typeof db.$client.batch>>;
         try { outcomes = await db.$client.batch(statements); }
         catch (error) { if (isBookingNightsUniqueConflict(error)) continue; throw error; }
-        if (outcomes[2]?.meta.changes === 1) {
-          if (isRevive && outcomes[3]?.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "OTA restore audit was not written." });
+        if (outcomes[1]?.meta.changes === 1) {
+          if (isRevive && outcomes[2]?.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "OTA restore audit was not written." });
           placed = true;
           result.updated += 1;
           break;

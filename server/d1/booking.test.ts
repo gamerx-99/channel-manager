@@ -261,6 +261,18 @@ describe("D1 booking repositories", () => {
       const moved = { ...event, start: new Date(Date.parse(`${start}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10), end: new Date(Date.parse(`${end}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10) };
       await syncOtaIcalBlocks(db, createD1SystemCallerContext(), "ota-a", [moved], {}, now);
       await verify();
+
+      // OTA update-conflict case: attempting to move the existing OTA booking to dates blocked by another confirmed booking
+      const conflictBlocker = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", day(3), day(4)), [], [], now);
+      await verify();
+      const conflictAttempt = { ...event, start: day(3), end: day(4) };
+      const conflictOutcome = await syncOtaIcalBlocks(db, createD1SystemCallerContext(), "ota-a", [conflictAttempt], {}, now);
+      expect(conflictOutcome.conflicts).toEqual([{ uid: conflictAttempt.uid, start: day(3), end: day(4) }]);
+      // Invariant holds: the existing OTA booking retained its nights from moved
+      await verify();
+      await cancelHotelBooking(db, ownerA, "a", conflictBlocker.id, now, "conflict blocker removal");
+      await verify();
+
       await syncOtaIcalBlocks(db, createD1SystemCallerContext(), "ota-a", [], {}, now);
       await verify();
     }
@@ -333,5 +345,47 @@ describe("D1 booking repositories", () => {
     await expect(updateRoomTypeWithOccupancyConfig(db, ownerA, { hotel_id: "a", room_type_id: "type-a", name: "Updated", capacity: 2, base_price: "101.25", occupancy_config: { child_rule: "height", child_rule_limit: "1.601234567890123456789e2" } })).resolves.toMatchObject({ childRule: "height", childRuleLimit: "160.1234567890123456789" });
     const [sibling] = await db.select().from(roomTypes).where(eq(roomTypes.id, "type-a-sibling"));
     expect(sibling?.childRule).toBe("age"); expect(sibling?.childRuleLimit).toBe("10");
+  });
+
+  it("proves that a non-applied booking statement still adds no nights", async () => {
+    await seedHotel("a", "owner-a");
+    const now = new Date("2026-10-28T00:00:00Z");
+
+    // Case 1: Non-applied INSERT statement
+    const failedInsert = db.$client.prepare(`INSERT INTO bookings
+      (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status)
+      SELECT 'never-inserted', 'a', 'room-a-1', 'Ghost', '2026-11-01', '2026-11-03', '100.00', 'manual', 'confirmed'
+      WHERE 1 = 0`).bind();
+    await db.$client.batch([
+      failedInsert,
+      addNightsStatement(db, "never-inserted", getStayDates("2026-11-01", "2026-11-03"), now),
+    ]);
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "never-inserted"))).toEqual([]);
+
+    // Case 2: Existing confirmed booking with a non-applied UPDATE statement
+    const created = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-03"), []);
+    expect((await db.select().from(bookingNights).where(eq(bookingNights.bookingId, created.id))).map(r => r.night).sort())
+      .toEqual(["2026-11-01", "2026-11-02"]);
+
+    // Attempt non-applied update to new dates 2026-11-10..2026-11-12
+    const failedUpdate = db.$client.prepare(`UPDATE bookings
+      SET check_in = '2026-11-10', check_out = '2026-11-12'
+      WHERE id = ? AND 1 = 0`).bind(created.id);
+    const conditionalDelete = db.$client.prepare(`DELETE FROM booking_nights
+      WHERE booking_id = ?
+        AND EXISTS (
+          SELECT 1 FROM bookings
+          WHERE id = ? AND check_in = '2026-11-10' AND check_out = '2026-11-12' AND room_id = 'room-a-1' AND status = 'confirmed'
+        )`).bind(created.id, created.id);
+
+    await db.$client.batch([
+      failedUpdate,
+      conditionalDelete,
+      addNightsStatement(db, created.id, getStayDates("2026-11-10", "2026-11-12"), now),
+    ]);
+
+    // Nights for 2026-11-10..2026-11-12 are NOT added; original nights remain intact
+    const afterNights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, created.id));
+    expect(afterNights.map(r => r.night).sort()).toEqual(["2026-11-01", "2026-11-02"]);
   });
 });

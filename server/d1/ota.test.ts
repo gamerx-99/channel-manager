@@ -288,4 +288,90 @@ describe("D1 OTA iCal services", () => {
     expect(full).toContain("DTEND;VALUE=DATE:20261121");
     expect(full).not.toContain("P1");
   });
+
+  it("keeps booking_nights unchanged and reports conflict when all candidate rooms are blocked for an OTA update", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(rooms).values({ id: "room-a-2", hotelId: "a", roomTypeId: "type-a", roomNumber: "002" });
+    await db.update(otaConnections).set({ roomId: null, roomTypeId: "type-a" }).where(eq(otaConnections.id, "ota-a"));
+
+    const initial = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(initial).toMatchObject({ inserted: 1, conflicts: [] });
+    const [booking] = await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid));
+    expect(booking).toBeDefined();
+    const initialNights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, booking!.id));
+    expect(initialNights.map(r => r.night).sort()).toEqual(["2026-11-10", "2026-11-11"]);
+
+    await db.insert(bookings).values([
+      { id: "direct-block-1", hotelId: "a", roomId: "room-a", guestName: "Block 1", checkIn: "2026-11-15", checkOut: "2026-11-17", price: "100.00", source: "manual", status: "confirmed" },
+      { id: "direct-block-2", hotelId: "a", roomId: "room-a-2", guestName: "Block 2", checkIn: "2026-11-15", checkOut: "2026-11-17", price: "100.00", source: "manual", status: "confirmed" },
+    ]);
+
+    const moved = { ...feedEvent, start: "2026-11-15", end: "2026-11-17" };
+    const result = await syncOtaIcalBlocks(db, system(), "ota-a", [moved], {}, NOW);
+    expect(result.conflicts).toEqual([{ uid: feedEvent.uid, start: "2026-11-15", end: "2026-11-17" }]);
+
+    const [after] = await db.select().from(bookings).where(eq(bookings.id, booking!.id));
+    expect(after?.checkIn).toBe("2026-11-10");
+    expect(after?.checkOut).toBe("2026-11-12");
+    expect(after?.status).toBe("confirmed");
+
+    const preservedNights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, booking!.id));
+    expect(preservedNights.map(r => r.night).sort()).toEqual(["2026-11-10", "2026-11-11"]);
+  });
+
+  it("applies date move to 2nd candidate room when 1st candidate room is blocked, swapping booking_nights", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(rooms).values({ id: "room-a-2", hotelId: "a", roomTypeId: "type-a", roomNumber: "002" });
+    await db.update(otaConnections).set({ roomId: null, roomTypeId: "type-a" }).where(eq(otaConnections.id, "ota-a"));
+
+    await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    const [booking] = await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid));
+    expect(booking?.roomId).toBe("room-a");
+
+    await db.insert(bookings).values({
+      id: "block-room-a", hotelId: "a", roomId: "room-a", guestName: "Blocker", checkIn: "2026-11-15", checkOut: "2026-11-17", price: "100.00", source: "manual", status: "confirmed",
+    });
+
+    const moved = { ...feedEvent, start: "2026-11-15", end: "2026-11-17" };
+    const result = await syncOtaIcalBlocks(db, system(), "ota-a", [moved], {}, NOW);
+    expect(result).toMatchObject({ updated: 1, conflicts: [] });
+
+    const [updatedBooking] = await db.select().from(bookings).where(eq(bookings.id, booking!.id));
+    expect(updatedBooking?.roomId).toBe("room-a-2");
+    expect(updatedBooking?.checkIn).toBe("2026-11-15");
+    expect(updatedBooking?.checkOut).toBe("2026-11-17");
+
+    const nights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, booking!.id));
+    expect(nights.map(r => `${r.roomId}|${r.night}`).sort()).toEqual([
+      "room-a-2|2026-11-15",
+      "room-a-2|2026-11-16",
+    ]);
+  });
+
+  it("keeps the same booking_nights when an OTA booking is updated with unchanged dates and room", async () => {
+    await seedHotel("a", "owner-a");
+    await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    const [booking] = await db.select().from(bookings).where(eq(bookings.externalUid, feedEvent.uid));
+    expect(booking).toBeDefined();
+
+    // 1. Resyncing unchanged dates/room preserves nights
+    const resync = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(resync).toMatchObject({ unchanged: 1, conflicts: [] });
+    const nights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, booking!.id));
+    expect(nights.map(r => `${r.roomId}|${r.night}`).sort()).toEqual([
+      "room-a|2026-11-10",
+      "room-a|2026-11-11",
+    ]);
+
+    // 2. Reviving a removed block with the same dates and room reconstructs the same nights
+    await syncOtaIcalBlocks(db, system(), "ota-a", [], {}, NOW);
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, booking!.id))).toEqual([]);
+    const restored = await syncOtaIcalBlocks(db, system(), "ota-a", [feedEvent], {}, NOW);
+    expect(restored).toMatchObject({ updated: 1, conflicts: [] });
+    const restoredNights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, booking!.id));
+    expect(restoredNights.map(r => `${r.roomId}|${r.night}`).sort()).toEqual([
+      "room-a|2026-11-10",
+      "room-a|2026-11-11",
+    ]);
+  });
 });

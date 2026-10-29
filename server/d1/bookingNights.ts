@@ -26,7 +26,7 @@ export function addNightsStatement(db: D1ScopedDatabase, bookingId: string, nigh
   return db.$client.prepare(`INSERT INTO booking_nights (room_id, night, booking_id)
     SELECT b.room_id, j.value, b.id FROM bookings b, json_each(?) j
     WHERE b.id = ? AND b.room_id IS NOT NULL AND ${occupiedWhere}
-      AND changes() = 1
+      AND b.check_in <= j.value AND b.check_out > j.value
       AND NOT EXISTS (
         SELECT 1 FROM booking_nights n
         WHERE n.room_id = b.room_id AND n.night = j.value AND n.booking_id = b.id
