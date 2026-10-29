@@ -13,7 +13,6 @@ import {
   listManagedHotelsForFinancials as d1ListManagedHotelsForFinancials,
 } from '../d1/hotel';
 import { getGlobalOtaSummary, getUpdatedItemCount } from '../otaSync';
-import { buildChannelPerformanceSummary } from '../channelPerformance';
 import { buildFinancialsSummary } from '../financials';
 import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
 
@@ -30,12 +29,12 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
       ? (await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
           ...h,
           created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
-          bookings: h.bookings.map(b => ({
+          bookings: h.bookings.map((b: any) => ({
             ...b,
             source: b.source as any,
             status: b.status as any,
             payment_status: null as string | null,
-            price: String(b.price),
+            price: b.price,
           })),
         }))
       : await listManagedHotels(rlsClient(ctx.user.accessToken));
@@ -59,34 +58,6 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   }
 });
 
-// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
-// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
-export const channelPerformance = protectedProcedure.query(async ({ ctx }) => {
-  try {
-    if (ctx.db) {
-      const hotels = (await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
-        ...h,
-        created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
-        bookings: h.bookings.map(b => ({
-          ...b,
-          source: b.source as any,
-          status: b.status as any,
-          payment_status: null as string | null,
-          price: String(b.price),
-        })),
-      }));
-      return buildChannelPerformanceSummary(hotels as any, []);
-    }
-    const client = rlsClient(ctx.user.accessToken);
-    const [hotels, otaSummary] = await Promise.all([
-      listManagedHotels(client),
-      getGlobalOtaSummary(ctx.user.accessToken),
-    ]);
-    return buildChannelPerformanceSummary(hotels, otaSummary);
-  } catch (error) {
-    return rethrowDomainError(error);
-  }
-});
 
 export const financials = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'property.view_financials');
@@ -94,7 +65,7 @@ export const financials = protectedProcedure.query(async ({ ctx }) => {
     const hotels = ctx.db
       ? (await d1ListManagedHotelsForFinancials(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
           ...h,
-          bookings: h.bookings.map(b => ({
+          bookings: h.bookings.map((b: any) => ({
             ...b,
             status: b.status as any,
             rooms: b.rooms ? { room_types: b.rooms.room_types } : { room_types: null },

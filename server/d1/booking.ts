@@ -283,8 +283,8 @@ export async function createBookingWithGuests(
   return { id: row.id, hotel_id: row.hotelId, room_id: row.roomId, guest_name: row.guestName, check_in: row.checkIn, check_out: row.checkOut, price: row.price, source: row.source, status: row.status, created_at: row.createdAt.toISOString() };
 }
 
-function canonicalBookingPrice(value: string | number) {
-  const satang = moneyToSatang(String(value));
+function canonicalBookingPrice(value: string | number | null) {
+  const satang = moneyToSatang(String(value ?? 0));
   if (satang < BigInt(0)) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking price cannot be negative." });
   return satangToMoney(satang);
 }

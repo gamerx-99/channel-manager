@@ -106,7 +106,7 @@ export type BookingRecord = {
   guest_name: string;
   check_in: string;
   check_out: string;
-  price: number | string;
+  price: number | string | null;
   /** 'ota_ical' rows are dates blocked by an OTA calendar feed (price 0, no guests). */
   source: 'manual' | 'walk-in' | 'phone' | 'ota_ical';
   status: BookingStatus;

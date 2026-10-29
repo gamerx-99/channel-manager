@@ -8,7 +8,6 @@ import {
   createBookingWithGuests,
   getManagedHotel,
   getPublicHotelAvailability,
-  createPublicBooking as dbCreatePublicBooking,
   holdRoomType as dbHoldRoomType,
   confirmBookingDetails as dbConfirmBookingDetails,
   listBookingsForHotel,
@@ -246,13 +245,7 @@ export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAva
  * Use holdRoomType + confirmBookingDetails flow instead.
  * Kept for reference but not exposed in the router.
  */
-export const createPublicBooking = rateLimitedProcedure.input(createPublicBookingSchema).mutation(async ({ input }) => {
-  try {
-    return await dbCreatePublicBooking(createSupabaseAdminClient(), input);
-  } catch (error) {
-    return rethrowDomainError(error);
-  }
-});
+// REMOVED (S1): createPublicBooking retired in favour of hold flow.
 
 export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutation(async ({ input }) => {
   try {

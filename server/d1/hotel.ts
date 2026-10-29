@@ -36,6 +36,10 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
     const [hotel] = await db.select().from(hotels).where(eq(hotels.id, hotelId)).limit(1);
     if (!hotel) continue;
+    const canViewFinancials = await (async () => {
+      try { await authorizeHotelAction(db, caller, hotelId, "property.view_financials", "hotels.list.price", new Date()); return true; }
+      catch { return false; }
+    })();
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
       db.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
       db.select({ id: rooms.id, status: rooms.status }).from(rooms).where(eq(rooms.hotelId, hotelId)),
@@ -45,7 +49,8 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     output.push({
       id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address,
       public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
-      room_types: hotelRoomTypes, rooms: hotelRooms, bookings: hotelBookings,
+      room_types: hotelRoomTypes, rooms: hotelRooms,
+      bookings: hotelBookings.map(b => ({ ...b, price: canViewFinancials ? b.price : null })) as any,
     });
   }
   return output.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());

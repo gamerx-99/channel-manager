@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, like } from "drizzle-orm";
 import { hotelUsers, hotels } from "../../drizzle/d1-schema";
 import { user, verification, account } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
@@ -208,7 +208,7 @@ export async function acceptStaffInvite(
   // to prevent race conditions on concurrent acceptance requests.
   const [record] = await db
     .delete(verification)
-    .where(and(eq(verification.value, input.token), gt(verification.expiresAt, now)))
+    .where(and(eq(verification.value, input.token), gt(verification.expiresAt, now), like(verification.identifier, "invite:%")))
     .returning();
 
   if (!record || !record.identifier.startsWith("invite:")) {

@@ -207,12 +207,12 @@ export const hotels = protectedProcedure.query(async ({ ctx }) => {
       return rows.map(h => ({
         ...h,
         created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
-        bookings: h.bookings.map(b => ({
+        bookings: h.bookings.map((b: any) => ({
           ...b,
           source: b.source as BookingRecord['source'],
           status: b.status as BookingRecord['status'],
           payment_status: null as string | null,
-          price: String(b.price),
+          price: b.price,
         })),
       }));
     }

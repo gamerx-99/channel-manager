@@ -7,7 +7,6 @@ import { slipokRouter } from './routers/slipokRouter';
 import { otaRouter } from './routers/otaRouter';
 import {
   dashboard,
-  channelPerformance,
   financials,
   dashboardCalendar,
 } from './routers/dashboardRouter';
@@ -78,7 +77,6 @@ import {
   previewTm30,
   createBooking,
   publicHotelAvailability,
-  createPublicBooking,
   holdRoomType,
   confirmBookingDetails,
 } from './routers/bookingRouter';
@@ -90,8 +88,7 @@ export const appRouter = router({
   staff: staffRouter,
   channelManager: router({
     dashboard,
-    channelPerformance,
-    financials,
+      financials,
     dashboardCalendar,
     hotels,
     canCreateHotel,
@@ -141,8 +138,7 @@ export const appRouter = router({
     publicHotel,
     publicHotelAvailability,
     listPublicHotelServices,
-    createPublicBooking,
-    holdRoomType,
+      holdRoomType,
     confirmBookingDetails,
     getHotelSiteConfig,
     getHotelSiteConfigByHotelId,
