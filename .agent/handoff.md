@@ -1465,5 +1465,34 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Commit**:
   - `1481276 fix(d1): keep OTA booking nights when the update does not apply (13-04c)`
 
-### Section D: 13-05 follow-ups
-- **Status**: **SKIPPED** per instructions ("SKIP this section unless the owner wrote 'D: go' when pasting this prompt").
+### Section D: 13-05 and 13-07 Follow-ups
+
+#### 1. Better Auth D1 Migration (13-05)
+- **What changed**:
+  - Moved Better Auth DDL from `drizzle/pending/13-05-better-auth.sql` into real D1 migration `drizzle/d1/20261029010000_better_auth.sql`.
+  - Added `drizzle/auth-schema.ts` to schema array in `drizzle.d1.config.ts` and updated `drizzle/d1/meta/_journal.json` and `20261029010000_snapshot.json`.
+  - Deleted `drizzle/pending/13-05-better-auth.sql`.
+  - Updated in-memory test harness in `server/auth.better.test.ts` to execute all D1 migrations directly from `drizzle/d1/`.
+  - Added test verifying that the migration harness creates `user`, `session`, `account`, `verification`, and `two_factor` tables: **DONE**
+- **Commit**: `36ca155 fix(auth): ship Better Auth schema as a D1 migration (13-05)`
+
+#### 2. Hybrid Identity Boundary Audit & Verification
+- **Worker vs Express identity resolution**:
+  - `server/_core/context.ts` checks whether `db` is provided in options.
+  - **Worker Context**: In Cloudflare Worker (`worker/app.ts`), `env.DB` is bound and passed as `db`. When `db` is present, authentication is resolved **strictly via Better Auth** (`auth.api.getSession({ headers })`). If session resolution fails (e.g. invalid session or a raw Supabase Bearer token is provided), it returns `user: null` and `caller: { userId: "", roles: [], access: "public" }`. It **never** invokes or falls through to `getSupabaseIdentity`.
+  - **Node/Express Context**: In Express runtime without `db`, `createContextFromRequest` falls back to legacy `getSupabaseIdentity(authHeader)` to maintain compatibility with live Supabase auth until complete cutover.
+  - Added tests in `server/auth.better.test.ts` and `worker/app.test.ts` proving that on Worker, a Supabase bearer token alone never yields a user with hotel permissions: **DONE**
+  - **Reporting**: No Worker path accepts a Supabase token when `env.DB` is bound. The legacy Supabase path remains active only for Express/Node until 13-08 cutover.
+
+#### 3. Environment Variables & Secrets Required (Names Only)
+- `BETTER_AUTH_SECRET`: Signing secret for Better Auth sessions and tokens.
+- `BETTER_AUTH_URL` / `PUBLIC_APP_URL`: Base application URL for cookie domain and auth endpoints.
+- `RESEND_API_KEY`: Delivery API key for transactional emails (staff invitations, verification).
+
+#### 4. Verification Status
+- **Verified**: Unit and integration test suites passing in-memory (887 passed). TypeScript type checking clean. Vite and Cloudflare Worker builds passing dry-run.
+- **Not yet verified**: Real end-to-end login flow against deployed staging Worker and live Cloudflare D1 (pending `wrangler d1 migrations apply` on staging environment).
+
+#### 5. Spec & Documentation Updates
+- Updated `specs/13-cloudflare-migration.md` Status line to include 13-05, 13-06c, and 13-07, and checked off their status entries: **DONE**
+- **Commit**: `docs(spec-13): record 13-05/13-07 status`

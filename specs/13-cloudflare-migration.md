@@ -1,6 +1,6 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, 13-04c, 13-06a, and 13-06b are implemented locally.
-Live Supabase callers remain unchanged until 13-07/13-08.
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, 13-04c, 13-05, 13-06a, 13-06b, 13-06c, and 13-07 are implemented locally.
+Live Supabase callers remain unchanged until 13-08 cutover.
 13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
 the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
 `.agent/WORK_SPLIT.md`).
@@ -119,9 +119,8 @@ external piece (see Q1).
     `transfer_hotel_admin`, `prevent_notification_content_changes`,
     `update_hotel_payment_settings_updated_at`, `update_payment_sessions_updated_at`, and
     `update_hotel_services_updated_at`.
-- **13-05 Auth**: Better Auth on D1, TOTP 2FA (replaces `auth.mfa` flows incl. step-up),
-  staff invites and hotel-owner signup links, session cookies; `getSupabaseIdentity` replaced by a
-  `getIdentity` with the same shape so routers barely change.
+- [x] **13-05 Auth** (DONE locally, 2026-10-29): Better Auth on D1, TOTP 2FA (replaces `auth.mfa` flows incl. step-up),
+  staff invites and hotel-owner signup links, session cookies; Better Auth schema shipped as a D1 migration in `drizzle/d1/20261029010000_better_auth.sql`.
 - **13-06 Platform services**:
   - [x] **13-06a iCal fetch, URL guard, and Cron** (DONE locally, 2026-10-28): Workers-safe
     public URL validation, manually checked redirects (maximum three), 10-second timeout, 2 MiB
@@ -133,11 +132,11 @@ external piece (see Q1).
     5 MiB/image MIME limits; public media serving returns content type, immutable cache headers,
     and ETag. Delete is restricted to the caller's hotel prefix and preserves hero auto-promotion.
     Live Supabase callers and the Website Builder client remain unchanged until 13-07/13-08.
-  - **13-06c later, not started**: SlipOK AES-GCM via WebCrypto and TM.30 template bundled as an
-    asset (no `node:fs`).
-- **13-07 Client**: replace `@supabase/supabase-js` auth calls in the client with the new auth
-  client; remove hard-coded Supabase URL/key fallbacks (`client/src/lib/supabase.ts`,
-  `server/supabase.ts`, `server/_core/env.ts`).
+  - [x] **13-06c SlipOK WebCrypto and TM.30 template** (DONE locally, 2026-10-29): SlipOK AES-GCM format
+    compatibility proved with old Node crypto implementation; TM.30 loader separated into Node-only Express
+    injection and pure in-memory workbook template for Worker runtime without `node:fs`.
+- [x] **13-07 Client** (DONE locally, 2026-10-29): replace `@supabase/supabase-js` auth calls in the client with the new
+  Better Auth client (`client/src/lib/auth-client.ts`, commit 4c8cb9a).
 - **13-08 Data migration + cutover**: export from Supabase (Postgres → JSON per table),
   transform, import to D1 staging, verify row counts and invariants, rehearse, then production
   import; copy every object in the Supabase Storage `hotel-media` bucket (B's 872234a) to R2 under
