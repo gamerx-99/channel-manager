@@ -30,7 +30,8 @@ describe('WebsiteBuilder contract — Phase 06', () => {
   it('WebsiteBuilder validates file size (5 MB) and type before uploading', () => {
     // Note: Updated per Rule 6 to match translation dictionary keys used in WebsiteBuilder.tsx
     expect(wbSource).toContain('5 * 1024 * 1024');
-    expect(wbSource).toContain("startsWith(\"image/\")");
+    expect(wbSource).toContain('accept="image/jpeg,image/png,image/webp,image/gif,image/avif"');
+    expect(wbSource).toContain('allowedTypes');
     expect(wbSource).toContain('websiteBuilder.errorFileTooLarge');
     expect(wbSource).toContain('websiteBuilder.errorOnlyImages');
   });
