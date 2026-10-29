@@ -20,8 +20,8 @@ describe("AcceptInvite contract", () => {
     expect(acceptInviteIndex).toBeLessThan(firstPrivateRouteUsage);
   });
 
-  it("calls supabase.auth.updateUser to set password and navigates to dashboard", () => {
-    expect(component).toContain("supabase.auth.updateUser");
+  it("calls acceptStaffInvite to set password and navigates to dashboard", () => {
+    expect(component).toContain("acceptStaffInvite");
     expect(component).toContain('navigate("/dashboard")');
     expect(component).toContain("password !== confirmPassword");
     expect(component).toContain("password.length < 8");
@@ -31,7 +31,6 @@ describe("AcceptInvite contract", () => {
     expect(component).toContain("<PageState");
     expect(component).toContain('tone="loading"');
     expect(component).toContain('tone="error"');
-    expect(component).toContain("onAuthStateChange");
-    expect(component).toContain("getSession");
+    expect(component).toContain("searchParams.get");
   });
 });

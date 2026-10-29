@@ -10,9 +10,9 @@ export const ENV = {
   supabaseUrl:
     process.env.SUPABASE_URL ??
     process.env.VITE_SUPABASE_URL ??
-    "https://roznxbvhflwrfvybmhtm.supabase.co",
+    "",
   supabaseAnonKey:
     process.env.SUPABASE_ANON_KEY ??
     process.env.VITE_SUPABASE_ANON_KEY ??
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvem54YnZoZmx3cmZ2eWJtaHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MDM3OTAsImV4cCI6MjEwMzA3OTc5MH0.83pUMuyqSh8Bit6GkwbGcJDTZg2Zmaot0XiASrfbMwU",
+    "",
 };

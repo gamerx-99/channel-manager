@@ -1,7 +1,8 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useLocation } from "wouter";
-import { supabase } from "@/lib/supabase";
+import { authClient } from "@/lib/auth-client";
+import { trpc } from "@/lib/trpc";
 import { PageState } from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
 
@@ -9,7 +10,11 @@ export default function AcceptInvite() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
 
+  // Support trpc.staff.acceptStaffInvite or trpc.channelManager.acceptStaffInvite
+  const acceptInviteMutation = (trpc.staff?.acceptStaffInvite ?? trpc.channelManager.acceptStaffInvite).useMutation();
+
   const [authStatus, setAuthStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  const [token, setToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,17 +22,16 @@ export default function AcceptInvite() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Check if URL has error parameters from Supabase (e.g. #error=access_denied&error_description=...)
+    const search = typeof window !== "undefined" && window.location.search ? window.location.search : "";
     const hash = typeof window !== "undefined" && window.location.hash ? window.location.hash.substring(1) : "";
-    const search = typeof window !== "undefined" && window.location.search ? window.location.search.substring(1) : "";
-    const hashParams = new URLSearchParams(hash);
     const searchParams = new URLSearchParams(search);
+    const hashParams = new URLSearchParams(hash);
 
     const errorDesc =
-      hashParams.get("error_description") ||
       searchParams.get("error_description") ||
-      hashParams.get("error") ||
-      searchParams.get("error");
+      hashParams.get("error_description") ||
+      searchParams.get("error") ||
+      hashParams.get("error");
 
     if (errorDesc) {
       setError(errorDesc);
@@ -35,43 +39,20 @@ export default function AcceptInvite() {
       return;
     }
 
-    let isMounted = true;
+    const inviteToken = searchParams.get("token") || hashParams.get("token");
+    if (!inviteToken) {
+      setError(t("acceptInvite.invalidDesc") || "Missing invitation token.");
+      setAuthStatus("unauthenticated");
+      return;
+    }
 
-    // Listen to auth state changes (e.g. SIGNED_IN from detectSessionInUrl)
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return;
-      if (session?.user) {
-        setUserEmail(session.user.email ?? null);
-        setAuthStatus("authenticated");
-      }
-    });
-
-    // Also check current session directly
-    supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
-      if (!isMounted) return;
-      if (sessionError) {
-        setError(sessionError.message);
-        setAuthStatus("unauthenticated");
-        return;
-      }
-      if (session?.user) {
-        setUserEmail(session.user.email ?? null);
-        setAuthStatus("authenticated");
-      }
-    });
-
-    // Timeout fallback: if no session detected after 4 seconds, mark as unauthenticated
-    const timer = setTimeout(() => {
-      if (!isMounted) return;
-      setAuthStatus((current) => (current === "loading" ? "unauthenticated" : current));
-    }, 4000);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-      authListener?.subscription?.unsubscribe();
-    };
-  }, []);
+    setToken(inviteToken);
+    const emailParam = searchParams.get("email") || hashParams.get("email");
+    if (emailParam) {
+      setUserEmail(emailParam);
+    }
+    setAuthStatus("authenticated");
+  }, [t]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -87,17 +68,34 @@ export default function AcceptInvite() {
       return;
     }
 
-    setSubmitting(true);
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-
-    if (updateError) {
-      setSubmitting(false);
-      setError(updateError.message);
+    if (!token) {
+      setError(t("acceptInvite.invalidDesc") || "Invitation token is missing.");
+      setAuthStatus("unauthenticated");
       return;
     }
 
-    setSubmitting(false);
-    navigate("/dashboard");
+    setSubmitting(true);
+    try {
+      const result = await acceptInviteMutation.mutateAsync({
+        token,
+        password,
+      });
+
+      const email = result.user?.email || userEmail;
+      if (email) {
+        await authClient.signIn.email({
+          email,
+          password,
+        });
+      }
+
+      setSubmitting(false);
+      navigate("/dashboard");
+    } catch (err) {
+      setSubmitting(false);
+      const message = err instanceof Error ? err.message : t("acceptInvite.invalidDesc");
+      setError(message);
+    }
   }
 
   return (

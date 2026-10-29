@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../../_core/hooks/useAuth";
 import { trpc } from "../../lib/trpc";
-import { supabase } from "@/lib/supabase";
 import { shouldRedirectToMfaEnroll, MFA_ENROLL_PATH } from "@/lib/mfa";
 import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
@@ -20,43 +19,28 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     isError: hotelsError,
   } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user) });
 
-  // T09-04's blocking MFA gate previously only ran once, inline in Login.tsx's
-  // submit handler — an already-open tab, a refreshed page, or Supabase silently
-  // restoring a persisted session never re-ran it, so a platform admin without a
-  // verified factor was never redirected or signed out. Re-check on every mount
-  // of a protected route instead, so the gate actually holds for the life of the
-  // session, not just the moment of sign-in.
-  const authRolesKey = authRoles.join(",");
-  const [mfaChecked, setMfaChecked] = useState(false);
-  const [needsMfaEnroll, setNeedsMfaEnroll] = useState(false);
+  // Derives MFA requirement from Better Auth session / tRPC authMe without raw Supabase calls.
+  const twoFactorEnabled = Boolean(authMe?.twoFactorEnabled);
+  const needsMfaEnroll = Boolean(
+    isAuthenticated &&
+    user &&
+    !roleLoading &&
+    !roleError &&
+    shouldRedirectToMfaEnroll(authRoles, twoFactorEnabled),
+  );
 
   useEffect(() => {
-    if (!isAuthenticated || !user || roleLoading) return;
-    let cancelled = false;
-    setMfaChecked(false);
-    (async () => {
-      try {
-        const { data: factorData } = await supabase.auth.mfa.listFactors();
-        if (cancelled) return;
-        setNeedsMfaEnroll(shouldRedirectToMfaEnroll(authRolesKey ? authRolesKey.split(",") : [], factorData));
-      } catch {
-        // Fail open, matching Login.tsx's existing behavior — a transient MFA
-        // check failure shouldn't lock a user out of their own dashboard.
-        if (!cancelled) setNeedsMfaEnroll(false);
-      } finally {
-        if (!cancelled) setMfaChecked(true);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isAuthenticated, user, roleLoading, authRolesKey]);
+    if (needsMfaEnroll) {
+      navigate(MFA_ENROLL_PATH);
+    }
+  }, [needsMfaEnroll, navigate]);
 
-  if (loading || roleLoading || hotelsLoading || !mfaChecked) return <main className="auth-loading">Checking your secure session…</main>;
+  if (loading || roleLoading || hotelsLoading) return <main className="auth-loading">Checking your secure session…</main>;
   if (!isAuthenticated || !user) return null;
   if (roleError || hotelsError) {
     return <main className="auth-loading">Unable to verify your property access. Please try again.</main>;
   }
   if (needsMfaEnroll) {
-    navigate(MFA_ENROLL_PATH);
     return null;
   }
 
@@ -84,7 +68,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   return (
     <HotelProvider hotels={visibleHotels} isLoading={hotelsLoading} isError={hotelsError}>
-      <AppShell userName={user.name ?? user.email ?? "Supabase user"} userEmail={user.email} roles={authRoles} onLogout={() => void logout()}>
+      <AppShell userName={user.name ?? user.email ?? "User"} userEmail={user.email} roles={authRoles} onLogout={() => void logout()}>
         {children}
       </AppShell>
     </HotelProvider>

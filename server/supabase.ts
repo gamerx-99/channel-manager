@@ -2,38 +2,32 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { APP_ROLES, getHighestRole, isAppRole, isHumanRole, type AppRole, type HumanRole, type Permission } from '@shared/authorization';
 import { resolveMembershipPermissions } from '@shared/permissions';
 
-// The configured VITE values are the approved publishable browser credentials.
-// Keep the same URL/key pair on the server so request-scoped clients remain
-// RLS-constrained and never fall back to a service role credential.
-const DEFAULT_SUPABASE_URL = "https://roznxbvhflwrfvybmhtm.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvem54YnZoZmx3cmZ2eWJtaHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MDM3OTAsImV4cCI6MjEwMzA3OTc5MH0.83pUMuyqSh8Bit6GkwbGcJDTZg2Zmaot0XiASrfbMwU";
-
-function getSupabaseUrl(): string {
+function getSupabaseUrl(): string | undefined {
   return (
     process.env.CHANNEL_MANAGER_SUPABASE_URL ??
     process.env.VITE_SUPABASE_URL ??
     process.env.SUPABASE_URL ??
-    DEFAULT_SUPABASE_URL
+    (process.env.VITEST ? "http://127.0.0.1:54321" : undefined)
   );
 }
 
-function getSupabaseAnonKey(): string {
+function getSupabaseAnonKey(): string | undefined {
   return (
     process.env.CHANNEL_MANAGER_SUPABASE_ANON_KEY ??
     process.env.VITE_SUPABASE_ANON_KEY ??
     process.env.SUPABASE_ANON_KEY ??
-    DEFAULT_SUPABASE_ANON_KEY
+    (process.env.VITEST ? "mock-anon-key" : undefined)
   );
 }
 
-function assertSupabaseConfig() {
+function assertSupabaseConfig(): { url: string; anonKey: string } {
   const url = getSupabaseUrl();
   const anonKey = getSupabaseAnonKey();
   if (!url || !anonKey) {
     console.error("[Auth] Supabase URL and anon key must be configured.");
     throw new Error("Supabase URL and anon key must be configured.");
   }
+  return { url, anonKey };
 }
 
 /**
@@ -43,9 +37,7 @@ function assertSupabaseConfig() {
  * migration. Never use a service-role client for request-scoped hotel data.
  */
 export function createRlsSupabaseClient(accessToken?: string) {
-  assertSupabaseConfig();
-  const url = getSupabaseUrl();
-  const anonKey = getSupabaseAnonKey();
+  const { url, anonKey } = assertSupabaseConfig();
 
   return createClient(url, anonKey, {
     auth: {
@@ -196,15 +188,16 @@ export async function getSupabaseIdentity(authorization: string | null | undefin
 }
 
 function getSupabaseServiceRoleKey(): string | undefined {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? (process.env.VITEST ? "mock-service-role-key" : undefined);
 }
 
-function assertSupabaseAdminConfig() {
+function assertSupabaseAdminConfig(): { url: string; serviceRoleKey: string } {
   const url = getSupabaseUrl();
   const serviceRoleKey = getSupabaseServiceRoleKey();
   if (!url || !serviceRoleKey) {
     throw new Error("Supabase server administration credentials are not configured.");
   }
+  return { url, serviceRoleKey };
 }
 
 /**
@@ -213,9 +206,7 @@ function assertSupabaseAdminConfig() {
  * for Auth user administration, which cannot be performed with an anon client.
  */
 export function createSupabaseAdminClient() {
-  assertSupabaseAdminConfig();
-  const url = getSupabaseUrl();
-  const serviceRoleKey = getSupabaseServiceRoleKey()!;
+  const { url, serviceRoleKey } = assertSupabaseAdminConfig();
 
   return createClient(url, serviceRoleKey, {
     auth: {

@@ -7,9 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const navigate = vi.fn();
 
 const mocks = vi.hoisted(() => ({
-  getSession: vi.fn(),
-  onAuthStateChange: vi.fn(),
-  updateUser: vi.fn(),
+  signInEmail: vi.fn(),
+  mutateAsync: vi.fn(),
 }));
 
 vi.mock("wouter", async () => {
@@ -20,37 +19,49 @@ vi.mock("wouter", async () => {
   };
 });
 
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    auth: {
-      getSession: mocks.getSession,
-      onAuthStateChange: mocks.onAuthStateChange,
-      updateUser: mocks.updateUser,
+vi.mock("@/lib/auth-client", () => ({
+  authClient: {
+    signIn: {
+      email: mocks.signInEmail,
+    },
+  },
+}));
+
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    staff: {
+      acceptStaffInvite: {
+        useMutation: () => ({
+          mutateAsync: mocks.mutateAsync,
+        }),
+      },
+    },
+    channelManager: {
+      acceptStaffInvite: {
+        useMutation: () => ({
+          mutateAsync: mocks.mutateAsync,
+        }),
+      },
     },
   },
 }));
 
 import AcceptInvite from "./AcceptInvite";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  window.history.pushState({}, "", "/accept-invite");
+});
 
 beforeEach(() => {
   navigate.mockReset();
-  mocks.getSession.mockReset();
-  mocks.onAuthStateChange.mockReset();
-  mocks.updateUser.mockReset();
-
-  mocks.onAuthStateChange.mockReturnValue({
-    data: { subscription: { unsubscribe: vi.fn() } },
-  });
+  mocks.mutateAsync.mockReset();
+  mocks.signInEmail.mockReset();
 });
 
 describe("AcceptInvite component", () => {
-  it("renders set-password form when user session is detected", async () => {
-    mocks.getSession.mockResolvedValue({
-      data: { session: { user: { email: "staff@example.com" } } },
-      error: null,
-    });
+  it("renders set-password form when invite token is present in URL", async () => {
+    window.history.pushState({}, "", "/accept-invite?token=valid-token&email=staff@example.com");
 
     render(<AcceptInvite />);
 
@@ -60,12 +71,9 @@ describe("AcceptInvite component", () => {
     });
   });
 
-  it("validates password length and match before calling updateUser", async () => {
+  it("validates password length and match before calling acceptStaffInvite", async () => {
     const user = userEvent.setup();
-    mocks.getSession.mockResolvedValue({
-      data: { session: { user: { email: "staff@example.com" } } },
-      error: null,
-    });
+    window.history.pushState({}, "", "/accept-invite?token=valid-token&email=staff@example.com");
 
     render(<AcceptInvite />);
 
@@ -78,7 +86,7 @@ describe("AcceptInvite component", () => {
     await user.type(screen.getByLabelText(/^Confirm new password$/i), "short");
     await user.click(screen.getByRole("button", { name: /Set password/i }));
 
-    expect(mocks.updateUser).not.toHaveBeenCalled();
+    expect(mocks.mutateAsync).not.toHaveBeenCalled();
 
     // Mismatch
     await user.clear(screen.getByLabelText(/^New password$/i));
@@ -87,17 +95,19 @@ describe("AcceptInvite component", () => {
     await user.type(screen.getByLabelText(/^Confirm new password$/i), "different123");
     await user.click(screen.getByRole("button", { name: /Set password/i }));
 
-    expect(mocks.updateUser).not.toHaveBeenCalled();
+    expect(mocks.mutateAsync).not.toHaveBeenCalled();
     expect(screen.getByRole("alert").textContent).toContain("Passwords do not match");
   });
 
-  it("updates password and navigates to dashboard on valid submission", async () => {
+  it("updates password, signs in, and navigates to dashboard on valid submission", async () => {
     const user = userEvent.setup();
-    mocks.getSession.mockResolvedValue({
-      data: { session: { user: { email: "staff@example.com" } } },
-      error: null,
+    window.history.pushState({}, "", "/accept-invite?token=valid-token&email=staff@example.com");
+
+    mocks.mutateAsync.mockResolvedValue({
+      success: true,
+      user: { id: "user-123", email: "staff@example.com" },
     });
-    mocks.updateUser.mockResolvedValue({ data: { user: {} }, error: null });
+    mocks.signInEmail.mockResolvedValue({ data: { user: {} }, error: null });
 
     render(<AcceptInvite />);
 
@@ -110,8 +120,25 @@ describe("AcceptInvite component", () => {
     await user.click(screen.getByRole("button", { name: /Set password/i }));
 
     await waitFor(() => {
-      expect(mocks.updateUser).toHaveBeenCalledWith({ password: "secret12345" });
+      expect(mocks.mutateAsync).toHaveBeenCalledWith({
+        token: "valid-token",
+        password: "secret12345",
+      });
+      expect(mocks.signInEmail).toHaveBeenCalledWith({
+        email: "staff@example.com",
+        password: "secret12345",
+      });
       expect(navigate).toHaveBeenCalledWith("/dashboard");
+    });
+  });
+
+  it("displays error state when token is missing from URL", async () => {
+    window.history.pushState({}, "", "/accept-invite");
+
+    render(<AcceptInvite />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Invitation link is invalid or expired/i)).toBeTruthy();
     });
   });
 });

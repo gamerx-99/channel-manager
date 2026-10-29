@@ -39,7 +39,7 @@ describe("Hotel owner signup link contract", () => {
 
   it("handles the invalid/expired-or-used link state without leaking which", () => {
     expect(component).toContain("This signup link is no longer valid");
-    expect(component).toContain("supabase.auth.signUp");
+    expect(component).toContain("authClient.signUp.email");
     expect(component).toContain("completeHotelOwnerSignup");
   });
 
