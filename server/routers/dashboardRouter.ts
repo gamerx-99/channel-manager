@@ -8,6 +8,10 @@ import {
   listManagedHotelsForFinancials,
   listBookingOccupancyForHotel,
 } from '../db';
+import {
+  listManagedHotels as d1ListManagedHotels,
+  listManagedHotelsForFinancials as d1ListManagedHotelsForFinancials,
+} from '../d1/hotel';
 import { getGlobalOtaSummary, getUpdatedItemCount } from '../otaSync';
 import { buildChannelPerformanceSummary } from '../channelPerformance';
 import { buildFinancialsSummary } from '../financials';
@@ -22,7 +26,19 @@ export const dashboardCalendarSchema = z.object({
 // (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   try {
-    const hotels = await listManagedHotels(rlsClient(ctx.user.accessToken));
+    const hotels: Awaited<ReturnType<typeof listManagedHotels>> = ctx.db
+      ? (await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
+          ...h,
+          created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
+          bookings: h.bookings.map(b => ({
+            ...b,
+            source: b.source as any,
+            status: b.status as any,
+            payment_status: null as string | null,
+            price: String(b.price),
+          })),
+        }))
+      : await listManagedHotels(rlsClient(ctx.user.accessToken));
     const today = new Date().toISOString().slice(0, 10);
     const confirmedBookings = hotels.flatMap(hotel => hotel.bookings).filter(booking => booking.status === 'confirmed');
     return {
@@ -47,6 +63,20 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
 // (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const channelPerformance = protectedProcedure.query(async ({ ctx }) => {
   try {
+    if (ctx.db) {
+      const hotels = (await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
+        ...h,
+        created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
+        bookings: h.bookings.map(b => ({
+          ...b,
+          source: b.source as any,
+          status: b.status as any,
+          payment_status: null as string | null,
+          price: String(b.price),
+        })),
+      }));
+      return buildChannelPerformanceSummary(hotels as any, []);
+    }
     const client = rlsClient(ctx.user.accessToken);
     const [hotels, otaSummary] = await Promise.all([
       listManagedHotels(client),
@@ -61,7 +91,16 @@ export const channelPerformance = protectedProcedure.query(async ({ ctx }) => {
 export const financials = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'property.view_financials');
   try {
-    const hotels = await listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken));
+    const hotels = ctx.db
+      ? (await d1ListManagedHotelsForFinancials(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
+          ...h,
+          bookings: h.bookings.map(b => ({
+            ...b,
+            status: b.status as any,
+            rooms: b.rooms ? { room_types: b.rooms.room_types } : { room_types: null },
+          })),
+        }))
+      : await listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken));
     return buildFinancialsSummary(hotels);
   } catch (error) {
     return rethrowDomainError(error);

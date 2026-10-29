@@ -24,6 +24,8 @@ import {
   deleteHotelMedia as dbDeleteHotelMedia,
   setHotelMediaHero as dbSetHotelMediaHero,
 } from '../db';
+import { listManagedHotels as d1ListManagedHotels } from '../d1/hotel';
+import type { BookingRecord } from '../db/types';
 import { uploadHotelMediaToStorage, deleteHotelMediaFromStorage } from '../storage';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
@@ -200,6 +202,20 @@ export const setHotelMediaHeroSchema = z.object({
 // no single hotel to check. Platform admins see every hotel via is_hotel_member().
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
   try {
+    if (ctx.db) {
+      const rows = await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id });
+      return rows.map(h => ({
+        ...h,
+        created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
+        bookings: h.bookings.map(b => ({
+          ...b,
+          source: b.source as BookingRecord['source'],
+          status: b.status as BookingRecord['status'],
+          payment_status: null as string | null,
+          price: String(b.price),
+        })),
+      }));
+    }
     return await listManagedHotels(rlsClient(ctx.user.accessToken));
   } catch (error) {
     return rethrowDomainError(error);
@@ -208,6 +224,10 @@ export const hotels = protectedProcedure.query(async ({ ctx }) => {
 
 export const canCreateHotel = protectedProcedure.query(async ({ ctx }) => {
   try {
+    if (ctx.db) {
+      const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+      return roles.includes('super_admin');
+    }
     return await isSuperAdmin(rlsClient(ctx.user.accessToken));
   } catch (error) {
     return rethrowDomainError(error);

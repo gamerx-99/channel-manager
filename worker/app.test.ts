@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createContextFromRequest } from "../server/_core/context";
@@ -59,6 +59,27 @@ describe("createContextFromRequest", () => {
       user: null,
       clientIp: "unknown",
     });
+  });
+
+  it("uses the request origin when resolving Better Auth session", async () => {
+    let sessionChecked = false;
+    const req = new Request("https://hayhost-staging.lannatc.workers.dev/api/trpc/auth.me", {
+      headers: { cookie: "__Secure-better-auth.session_token=test-token" },
+    });
+    const ctx = await createContextFromRequest({
+      req,
+      auth: {
+        api: {
+          getSession: async () => {
+            sessionChecked = true;
+            return null;
+          },
+        },
+      } as any,
+      db: {} as any,
+    });
+    expect(sessionChecked).toBe(true);
+    expect(ctx.user).toBeNull();
   });
 });
 

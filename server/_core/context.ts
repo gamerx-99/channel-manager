@@ -130,7 +130,13 @@ export async function createContextFromRequest(
   // If DB is available, resolve via Better Auth
   if (db) {
     try {
-      const auth = authOverride ?? createAuth(db);
+      const origin =
+        (req?.url && req.url.startsWith("http") ? new URL(req.url).origin : undefined) ||
+        (headers.get("origin") ?? undefined) ||
+        (headers.get("x-forwarded-proto") && headers.get("host")
+          ? `${headers.get("x-forwarded-proto")}://${headers.get("host")}`
+          : undefined);
+      const auth = authOverride ?? createAuth({ db, baseURL: origin });
       const sessionResult = await auth.api.getSession({ headers });
 
       if (sessionResult && sessionResult.user && sessionResult.session) {

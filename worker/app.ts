@@ -132,12 +132,20 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
   const createDatabase = dependencies.createDatabase ?? defaultDatabase;
   const getAuth = dependencies.createAuthInstance ?? ((db, baseURL) => createAuth({ db, baseURL }));
 
-  const requestContext = (req: Request, clientIp?: string, db?: D1ScopedDatabase) =>
-    createContext({
+  const requestContext = (
+    req: Request,
+    clientIp?: string,
+    db?: D1ScopedDatabase,
+    dbRaw?: D1Database,
+  ) => {
+    const origin = req.url && req.url.startsWith("http") ? new URL(req.url).origin : undefined;
+    return createContext({
       req,
       clientIp,
       db,
+      auth: dbRaw && origin ? getAuth(dbRaw, origin) : undefined,
     });
+  };
 
   app.all("/api/trpc/*", async c => {
     const db = c.env?.DB ? createDatabase(c.env.DB) : undefined;
@@ -150,6 +158,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
           c.req.raw,
           c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
           db,
+          c.env?.DB,
         ),
     });
   });
@@ -160,6 +169,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       c.req.raw,
       c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       db,
+      c.env?.DB,
     );
     if (!context.user) return c.json({ error: "Authentication required." }, 401);
     if (!db) return c.json({ error: "Database unavailable." }, 500);
@@ -216,6 +226,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       c.req.raw,
       c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       db,
+      c.env?.DB,
     );
     if (!context.user) return c.json({ error: "Authentication required." }, 401);
     if (!db) return c.json({ error: "Database unavailable." }, 500);
