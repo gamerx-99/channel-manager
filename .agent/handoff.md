@@ -1,4 +1,4 @@
-# Handoff log
+﻿# Handoff log
 
 ## [2026-10-27] Spec 14 ticket 14-03a: server-side security fixes (branch `agent-a/next`)
 - **What happened**: Seven server-side fixes landed, each as its own commit:
@@ -1407,3 +1407,63 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Migration correction**: Active holds with non-null `expires_at` are backfilled when expiry is at or after SQLite's current epoch time. The prior null-only treatment omitted currently occupying holds. A targeted migration test proves confirmed, active, and no-expiry holds are backfilled, expired and checked-out bookings are excluded, and duplicate occupied nights fail the plain insert.
 - **Final verification**: `pnpm test`: 752 passed, 7 failed (the known credential-only failures: four `inviteAuthUser` plus three Supabase credential tests), 3 skipped. `pnpm check`: passed. `pnpm build`: passed; existing Vite large-chunk advisory. Targeted migration/schema parity tests: 4 passed. `git diff --check`: passed. No `.env` was read.
 - **Commits**: `b8c909b` booking-night guard, `3a241aa` SlipOK credential read split; follow-up migration and documentation changes are recorded in separate commits.
+
+## [
+
+## [2026-10-29] Codex #1 Review Fixes: 13-06b-fix, 13-06c, and 13-04c
+
+### Section A: 13-06b-fix (media upload and serve hardening, website-builder restriction)
+- **Serve route (`worker/app.ts`)**:
+  - Derived Content-Type directly from key extension via fixed map (jpg->image/jpeg, png, webp, gif, avif); never uses `object.httpMetadata.contentType`: **DONE**
+  - Any extension outside the allowed image set returns 404 before touching R2: **DONE**
+  - CSP set to exact string: `default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox`: **DONE**
+  - Cross-Origin-Resource-Policy set to `same-site` (ASSUMPTION: public hotel pages are served from our own site): **DONE**
+  - `X-Content-Type-Options: nosniff` kept: **DONE**
+- **Validation (`server/d1/media.ts`)**:
+  - `validateHotelMediaObjectKey` filename regex strictly allows only `\.(jpg|png|webp|gif|avif)$`: **DONE**
+  - `validateHotelMediaUpload` rejects with 400 when declared content type (normalised, before semicolon) does not match detected magic byte type (`image/jpg` accepted as `image/jpeg`): **DONE**
+  - Brand `avis` accepted at bytes 8-11 for AVIF: **DONE**
+  - Deletion order in `deleteHotelMediaFromR2` modified to delete DB row first, then R2 object. If R2 delete throws, logs without key or secret, returns success (ASSUMPTION: orphaned R2 object is harmless, row pointing to missing object is broken image): **DONE**
+- **Website Builder (`client/src/pages/WebsiteBuilder.tsx`)**:
+  - Restricts image picker `accept` attribute to raster types `image/jpeg,image/png,image/webp,image/gif,image/avif` with matching pre-upload MIME check: **DONE**
+  - Updated string-contract test in `WebsiteBuilder.contract.test.ts`: **DONE**
+- **Tests**:
+  - Added 5 new tests in `server/d1/media.test.ts` (SVG rejection, HTML-as-PNG rejection, PNG-as-JPEG rejection, x.html with PNG bytes producing .png key, 404 on SVG/HTML keys before touching R2, response headers with sandbox and CORP same-site, DB row deletion when R2 delete fails): **DONE**
+- **Commits**:
+  - `cdaa03a fix(media): complete upload/serve hardening (13-06b-fix)`
+  - `50f21e5 fix(website-builder): restrict image picker to raster types`
+
+### Section B: 13-06c (SlipOK WebCrypto test compatibility and Node TM.30 loader)
+- **SlipOK WebCrypto format compatibility tests (`server/slipokCrypto.compat.test.ts`)**:
+  - Inlined copy of old Node crypto implementation (`createCipheriv('aes-256-gcm')`, `iv:ct:tag` hex) in test only: **DONE**
+  - Proved bi-directional compatibility: old encrypt -> new decrypt, new encrypt -> old decrypt: **DONE**
+  - Fixed known-answer test vector (`00112233445566778899aabb:ce2a45e1678ae03cfe90d27674fc512f8e0e49f629d9970422cdb4:3071b5dd389e21434c495cbc32251b85`): **DONE**
+  - Tampered ciphertext and tag reject: **DONE**
+  - Wrong-length key throws with error message never leaking key: **DONE**
+  - SHA-256 hash matches old `createHash('sha256')`: **DONE**
+- **TM.30 workbook template loader**:
+  - Preserved `TM30_TEMPLATE_PATH` functionality for Node runtime via `server/tm30Node.ts`, injected during Node server bootstrap (`server/_core/index.ts`): **DONE**
+  - `server/tm30.ts` remains pure and free of `node:fs` and `node:path`, falling back to `createMappedTemplateWorkbook`: **DONE**
+  - Added tests in `server/tm30.test.ts` comparing parsed cell values against commit 9915c6a and asserting absence of `node:fs` in `server/tm30.ts`: **DONE**
+- **Commit**:
+  - `4e36e2c test(slipok): prove WebCrypto format compatibility; restore Node TM.30 path (13-06c)`
+
+### Section C: 13-04c (OTA booking nights preservation during update conflicts)
+- **Database logic (`server/d1/ota.ts`)**:
+  - Reordered batch: stale-hold cleanup, guarded UPDATE, (revive audit gated `changes() = 1`), conditional DELETE, `addNightsStatement`, `releaseNightsStatement`: **DONE**
+  - Gated old nights deletion with `WHERE booking_id = ? AND EXISTS (SELECT 1 FROM bookings WHERE id = ? AND check_in = ? AND check_out = ? AND room_id = ? AND status = 'confirmed')` bound to new values: **DONE**
+- **Booking nights helper (`server/d1/bookingNights.ts`)**:
+  - Dropped `changes() = 1` from `addNightsStatement` so it operates correctly after multi-row DELETEs: **DONE**
+  - Added `AND b.check_in <= j.value AND b.check_out > j.value` to guarantee nights can only be inserted for the booking's actual dates in `bookings`: **DONE**
+  - Audited all callers of `addNightsStatement`: **DONE**
+- **Tests**:
+  - Proved all candidate rooms blocked leaves OTA booking nights unchanged and invariant intact: **DONE**
+  - Proved date move applying on 2nd candidate room deletes old nights and places new nights on 2nd room: **DONE**
+  - Proved booking that keeps same dates and room retains exact same nights: **DONE**
+  - Proved non-applied booking statement (failed insert or update) adds no nights: **DONE**
+  - Added OTA update-conflict case to the seeded invariant sequence in `server/d1/booking.test.ts`: **DONE**
+- **Commit**:
+  - `1481276 fix(d1): keep OTA booking nights when the update does not apply (13-04c)`
+
+### Section D: 13-05 follow-ups
+- **Status**: **SKIPPED** per instructions ("SKIP this section unless the owner wrote 'D: go' when pasting this prompt").
