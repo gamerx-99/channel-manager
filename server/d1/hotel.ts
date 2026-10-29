@@ -30,9 +30,10 @@ function canonicalThreshold(value: string | number): string {
 
 export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
-  const memberships = await db.select({ hotelId: hotelUsers.hotelId }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  const safeMemberships = memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
   const output = [];
-  for (const { hotelId } of memberships) {
+  for (const { hotelId } of safeMemberships) {
     await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
     const [hotel] = await db.select().from(hotels).where(eq(hotels.id, hotelId)).limit(1);
     if (!hotel) continue;

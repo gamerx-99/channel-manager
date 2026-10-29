@@ -246,7 +246,7 @@ const en = {
     latestConfirmedBookings: "Latest confirmed bookings",
     recordedBookingValue: "Recorded booking value",
     bookingValueDesc: "Calculated from the latest RLS-visible confirmed booking records.",
-    supabaseData: "Operational data",
+    supabaseData: "Live data",
     live: "Live",
     statusConfirmed: "Confirmed",
     statusCheckedIn: "Checked in",

@@ -7,7 +7,8 @@ import { appRouter } from "../server/routers";
 import { createContextFromRequest } from "../server/_core/context";
 import type { D1CallerContext, D1ScopedDatabase } from "../server/db/scope";
 import { authorizeHotelAction } from "../server/db/scope";
-import { d1Schema } from "../drizzle/d1-schema";
+import { d1Schema, hotels } from "../drizzle/d1-schema";
+import { eq } from "drizzle-orm";
 import {
   deleteHotelMediaFromR2,
   MAX_HOTEL_MEDIA_BYTES,
@@ -267,6 +268,14 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
     let key: string;
     try {
       key = validateHotelMediaObjectKey(hotelId, `${hotelId}/${file}`);
+    } catch {
+      return c.text("Not found.", 404);
+    }
+    // Only serve media for published hotels (S6). Unpublished properties require an authenticated preview URL.
+    try {
+      const db = createDatabase(c.env.DB)!;
+      const [hotel] = await db.select({ publicEnabled: hotels.publicEnabled }).from(hotels).where(eq(hotels.id, hotelId)).limit(1);
+      if (!hotel?.publicEnabled) return c.text("Not found.", 404);
     } catch {
       return c.text("Not found.", 404);
     }

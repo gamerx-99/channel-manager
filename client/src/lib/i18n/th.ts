@@ -248,7 +248,7 @@ const th: TranslationDictionary = {
     latestConfirmedBookings: "การจองที่ยืนยันล่าสุด",
     recordedBookingValue: "มูลค่าการจองที่บันทึก",
     bookingValueDesc: "คำนวณจากรายการจองที่ยืนยันล่าสุดที่มองเห็นได้ตามสิทธิ์ RLS",
-    supabaseData: "ข้อมูลระบบ",
+    supabaseData: "ข้อมูลสด",
     live: "สด",
     statusConfirmed: "ยืนยันแล้ว",
     statusCheckedIn: "เช็คอินแล้ว",
