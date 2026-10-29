@@ -1,4 +1,4 @@
-﻿# Handoff log
+# Handoff log
 
 ## [2026-10-27] Spec 14 ticket 14-03a: server-side security fixes (branch `agent-a/next`)
 - **What happened**: Seven server-side fixes landed, each as its own commit:
@@ -1496,3 +1496,34 @@ Write every entry so someone who has never seen this session can pick up the wor
 #### 5. Spec & Documentation Updates
 - Updated `specs/13-cloudflare-migration.md` Status line to include 13-05, 13-06c, and 13-07, and checked off their status entries: **DONE**
 - **Commit**: `docs(spec-13): record 13-05/13-07 status`
+
+
+---
+
+### Ticket 13-08 Data Migration & Cutover Preparation (2026-10-29)
+
+#### 1. What was done
+- **Transformation Layer (`shared/migration/dataTransforms.ts`)**:
+  - Implemented pure conversion and validation utilities for migrating Supabase (PostgreSQL) data to Cloudflare D1 (SQLite):
+    - `toTimestampMs`: Converts Date objects, ISO strings, and second-based unix timestamps to epoch milliseconds integer for D1 `timestamp_ms` mode.
+    - `toBooleanInt`: Converts boolean truthy/falsy values to SQLite `1`/`0`.
+    - `toJsonText`: Serializes arrays and objects to JSON text with `json_valid() = 1` conformity.
+    - `toMoneyText` & `isValidMoneyText`: Normalizes and validates money columns against D1 check constraints (`nonnegativeMoney`).
+    - `rewriteMediaUrl`: Rewrites Supabase Storage public URLs to `/media/<hotel_id>/<file>` format while strictly validating image extensions.
+    - `expandBookingNights`: Expands confirmed bookings and active holds into discrete `(room_id, night)` rows, and detects overlapping conflicts in memory before insertion (enforcing 13-04c invariant).
+    - `transformRecordForD1`: Config-driven transformer covering all 29 database tables + Better Auth identities.
+- **Migration CLI Tooling (`scripts/migrate-supabase-to-d1.ts`)**:
+  - Automated extraction from Supabase PostgreSQL (via `pg`) or offline JSON dumps.
+  - Generates D1-compatible batched SQL bundles with `PRAGMA foreign_keys = OFF;`, batched `INSERT OR REPLACE`, and final `PRAGMA foreign_keys = ON; PRAGMA foreign_key_check;`.
+  - Automatically derives and validates `booking_nights` backfill.
+- **Media Migration CLI Tooling (`scripts/sync-supabase-storage-to-r2.ts`)**:
+  - Streams objects from Supabase Storage `hotel-media` bucket into Cloudflare R2 bucket (`hayhost-media-staging` or `hayhost-media`) with dry-run support.
+- **Operator Runbook (`specs/13-08-data-migration-runbook.md`)**:
+  - Full staging rehearsal, post-migration invariant queries, production cutover checklist, and rollback contingency plan.
+- **Test Suite (`shared/migration/dataTransforms.test.ts`)**:
+  - 23 unit tests covering all conversions, validation edge cases, media URL rewriting, and overlap detection.
+
+#### 2. Verification Evidence
+- `pnpm check`: Passed (0 errors).
+- `pnpm vitest run`: Passed 910 tests (23 new tests), exactly 5 expected environment-only failures (4 Supabase credentials + otaSummary timeout), 0 regressions.
+- Bundle generation verified: Generated SQL bundle tested cleanly with correct epoch ms timestamps, booleans, money text formatting, and `booking_nights` backfill.
