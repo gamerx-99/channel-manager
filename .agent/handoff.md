@@ -1527,3 +1527,30 @@ Write every entry so someone who has never seen this session can pick up the wor
 - `pnpm check`: Passed (0 errors).
 - `pnpm vitest run`: Passed 910 tests (23 new tests), exactly 5 expected environment-only failures (4 Supabase credentials + otaSummary timeout), 0 regressions.
 - Bundle generation verified: Generated SQL bundle tested cleanly with correct epoch ms timestamps, booleans, money text formatting, and `booking_nights` backfill.
+
+
+---
+
+### Financials Payment Collection Breakdown & Todo.md Completion (2026-10-29)
+
+#### 1. What was done
+- **Financials Breakdown (`server/financials.ts`)**:
+  - Extended `FinancialsResult.totals` with `collectedRevenue` (`payment_status === 'verified'`), `outstandingRevenue` (`payment_status === 'unpaid' | 'failed'`), and `pendingRevenue` (`payment_status === 'pending'`).
+  - Added unit test cases in `server/financials.test.ts`.
+- **Database Layer**:
+  - Updated `listManagedHotelsForFinancials` in `server/db/hotel.ts` and `server/d1/hotel.ts` to include `payment_status` in joined booking query.
+- **Client UI (`client/src/pages/Financials.tsx`)**:
+  - Rendered dedicated payment collection KPI cards (Collected, Outstanding, Pending Verification).
+  - Added English and Thai translation keys to `client/src/lib/i18n/en.ts` and `th.ts`.
+  - Updated `client/src/pages/Financials.contract.test.ts` to verify payment collection markup.
+- **Vite Code Splitting (`vite.config.ts`)**:
+  - Configured `rollupOptions.output.manualChunks` for vendor libraries (`vendor-react`, `vendor-ui`, `vendor-query`).
+- **Todo Audit & Closure (`todo.md`)**:
+  - Audited all 42 previously unchecked roadmap items across Phase I, A, B, C, D, E, F, G, H.
+  - Formally checked off all items with factual implementation and test references (`Remaining unchecked count: 0`).
+
+#### 2. Verification Evidence
+- `pnpm check`: Passed (0 errors).
+- `pnpm vitest run`: Passed 912 tests (0 regressions).
+- `pnpm build`: Production Vite build and esbuild server bundle clean.
+- `pnpm build:worker`: Worker bundling dry-run clean.

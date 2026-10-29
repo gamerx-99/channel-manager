@@ -17,6 +17,7 @@ export async function listManagedHotels(client: SupabaseClient) {
       id: string;
       source: BookingRecord["source"];
       status: BookingRecord["status"];
+      payment_status?: string | null;
       check_in: string;
       check_out: string;
       price: number | string;
@@ -28,7 +29,7 @@ export async function listManagedHotels(client: SupabaseClient) {
 export async function listManagedHotelsForFinancials(client: SupabaseClient) {
   const { data, error } = await client
     .from("hotels")
-    .select("id,bookings(id,status,check_in,check_out,price,rooms(room_types(name)))")
+    .select("id,bookings(id,status,payment_status,check_in,check_out,price,rooms(room_types(name)))")
     .order("created_at", { ascending: false });
   throwOnError(error);
   return (data ?? []) as unknown as Array<{

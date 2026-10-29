@@ -1,6 +1,7 @@
 import type { BookingRecord } from './db';
 
 type BookingRow = Pick<BookingRecord, 'id' | 'status' | 'check_in' | 'check_out' | 'price'> & {
+  payment_status?: string | null;
   rooms: { room_types: { name: string } | null } | null;
 };
 
@@ -34,6 +35,9 @@ export type FinancialsResult = {
     averageBookingValue: number;
     occupancyNights: number;
     hotelCount: number;
+    collectedRevenue: number;
+    outstandingRevenue: number;
+    pendingRevenue: number;
   };
   trend: FinancialsTrendPoint[];
   roomTypeBreakdown: FinancialsRoomTypeBreakdown[];
@@ -71,6 +75,19 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
   const activeBookings = periodBookings.filter(booking => booking.status !== 'cancelled');
   const cancelledBookings = periodBookings.filter(booking => booking.status === 'cancelled');
   const revenue = activeBookings.reduce((total, booking) => total + toMoney(booking.price), 0);
+  let collectedRevenue = 0;
+  let outstandingRevenue = 0;
+  let pendingRevenue = 0;
+  for (const booking of activeBookings) {
+    const amount = toMoney(booking.price);
+    if (booking.payment_status === "verified") {
+      collectedRevenue += amount;
+    } else if (booking.payment_status === "pending") {
+      pendingRevenue += amount;
+    } else {
+      outstandingRevenue += amount;
+    }
+  }
 
   const trend = Array.from({ length: 30 }, (_, index) => {
     const date = addDays(periodStart, index);
@@ -114,6 +131,9 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
         0,
       ),
       hotelCount: hotels.length,
+      collectedRevenue,
+      outstandingRevenue,
+      pendingRevenue,
     },
     trend,
     roomTypeBreakdown,
