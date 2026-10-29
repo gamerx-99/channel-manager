@@ -72,6 +72,42 @@ answer noted.
 
 ## Resolved
 
+- [x] 13-06a private-network DNS protection. ASSUMPTION (2026-10-28): Cloudflare Workers cannot
+      reach private networks, so the Worker iCal guard validates literal IP ranges and local
+      hostname forms without DNS-over-HTTPS. Revalidate every redirect target; do not add a DNS
+      resolver.
+
+- [x] 13-04b OTA cancellation semantics versus `20261026_ota_ical_room_type_mode.sql`. ANSWER
+      (owner, 2026-10-28): the owner policy supersedes the SQL for staff-cancelled bookings. A
+      cancelled OTA row is sync-cancelled only when its latest status-log row has
+      `to_status='cancelled'`, `changed_by IS NULL`, and reason `ota_ical_removed_from_feed`; only
+      that row may revive to `confirmed` when its UID returns, with reason `ota_ical_restored`.
+      Other cancelled rows, including legacy rows with no status log, remain cancelled and are
+      reported in `skipped_uids` without counting as conflicts or creating a replacement block.
+      The missing-log behavior is an explicit safe-side ASSUMPTION in code. This is the tested
+      exception to the SQL function's broader cancelled-row revive behavior.
+
+- [x] Spec 13-03 scope and platform summary fields. ANSWER (owner, 2026-10-28): port every
+      `server/db/*` repository into new `server/d1/*` modules with equivalent exports, D1 scope
+      checks, and happy-path plus cross-hotel tests. Keep live Supabase callers unchanged until
+      13-07/13-08. Do not port `channelPerformance` or `saveHotelSiteConfig`'s synthetic-success
+      fallback. Platform summary `plan` and `payment_status` stay null until spec 12 billing
+      exists; never use guest payment data as a substitute. Port modules in separate commits and
+      stop for any module that cannot be faithfully ported, documenting the reason.
+
+- [x] Spec 13-03 booking repository allocation. ANSWER (owner, 2026-10-28): move
+      `server/db/booking.ts` to ticket 13-04a because it depends on the Postgres RPC behaviors
+      `get_public_room_type_availability_for_guests`, `transition_booking_status`, and
+      `get_public_hotel`, whose TypeScript/D1 replacements belong to 13-04. Close 13-03 with the
+      other D1 scoped repositories complete; port booking once in 13-04a. This narrows the earlier
+      13-03 repository-port scope specifically for booking. Live callers remain unchanged.
+
+- [x] Spec 13-04a booking export count. ANSWER (owner, 2026-10-28): the prompt's count of nine
+      was wrong; port all ten current exports from `server/db/booking.ts`. `getStayDates` remains a
+      pure date helper without D1 context and gets the same check-out-exclusive/month-boundary
+      unit tests. The other nine take `D1CallerContext`, enforce scope, and follow the 13-04a
+      money, transaction, lifecycle, and tenancy requirements.
+
 - [x] Spec 13 Q3: launch domain. ANSWER (human, 2026-10-27): **www.hayhostth.com** (brand
       "hayhost"; the "th" signals a Thai business). Register on Cloudflare before ticket 13-08.
 - [x] Spec 13 Q4: Cloudflare account. ANSWER (human, 2026-10-27): the account under

@@ -655,4 +655,36 @@ body { background: var(--paper); color: var(--ink); }
 .booking-calendar .rdp-button_previous,.booking-calendar .rdp-button_next{border:1px solid var(--rule);border-radius:6px;background:var(--white);color:var(--ink);}
 .booking-calendar .rdp-caption_label{font-weight:700;font-size:13px;color:var(--ink);}
 
+.calendar-month-cell.is-selected{outline:2px solid var(--pine);outline-offset:-2px;background:var(--pine-soft)}
+.calendar-selected-day{border-top:1px solid var(--rule);padding:18px 20px}
+.calendar-selected-day-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.calendar-selected-day-heading h2{font-family:'Fraunces',serif;font-size:22px;font-weight:500;letter-spacing:-.04em;margin:3px 0 0}
+.calendar-selected-room{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,260px);align-items:center;border-top:1px solid var(--rule);min-height:84px}
+.calendar-selected-room .calendar-room-label{height:auto;min-height:70px;padding-top:20px;padding-bottom:16px}
+.calendar-selected-room .availability-cell{height:auto;min-width:0;padding:12px 4px;text-align:right}
+.calendar-selected-room .availability-cell>strong{margin-top:5px}
+@media(max-width:600px){.calendar-selected-room{grid-template-columns:minmax(120px,1fr) minmax(145px,1fr)}.calendar-selected-room .availability-cell{padding-right:0}.calendar-selected-day{padding:15px 12px}}
+.calendar-month-cell.has-booking{background:#292b2e;color:#fff}
+.calendar-month-cell.has-booking:hover{background:#1f2124}
+.calendar-month-cell.has-booking .month-cell-day,.calendar-month-cell.has-booking .month-cell-status,.calendar-month-cell.has-booking .month-cell-price{color:#fff}
+.calendar-month-cell.has-booking .month-cell-platforms{display:block;color:#f4f4f5;font-size:9px;font-weight:700;line-height:1.25;margin-top:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#111214;border-radius:4px;padding:3px 5px}
+.month-cell-platforms{display:none}
+.calendar-booking-legend{width:10px;height:10px;border-radius:3px;background:#292b2e;display:inline-block}
+.calendar-month-cell.is-selected{background:#e3eee8}
+.calendar-month-cell.has-booking.is-selected{background:#292b2e;outline:2px solid #9fd0b5}
+.calendar-selected-day-heading{gap:14px;flex-wrap:wrap}
+.calendar-selected-day-heading p{font-size:11px;color:var(--ink-muted);margin:5px 0 0}
+.calendar-range-actions,.calendar-room-actions{display:flex;align-items:center;gap:8px}
+.calendar-room-controls{display:flex;align-items:center;justify-content:space-between;gap:14px;min-width:0}
+.calendar-booked-state{font-size:10px;color:var(--ink-muted);line-height:1.4}
+.calendar-booked-state.is-booked{color:#292b2e;background:#e6e6e6;border-radius:5px;padding:5px 7px;font-weight:700}
+.calendar-inout-button{border:1px solid #d6d6d6;background:white;color:#292b2e;border-radius:5px;padding:6px 10px;font-size:10px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+.calendar-inout-button.is-active{background:#292b2e;border-color:#292b2e;color:white}
+.calendar-inout-button:disabled{opacity:.45;cursor:not-allowed}
+.calendar-price-edit{display:block;min-width:105px;font-size:9px;color:var(--ink-muted);text-align:left}
+.calendar-price-edit .cell-price-input{margin:3px 0 0;text-align:right}
+.calendar-selected-room .calendar-room-actions .availability-cell{min-width:90px;text-align:right;padding:8px 0}
+.calendar-selected-room .calendar-room-actions .cell-available{justify-content:flex-end}
+@media(max-width:720px){.calendar-selected-day-heading{align-items:flex-start}.calendar-range-actions{width:100%}.calendar-range-actions button{margin-left:0}.calendar-room-controls{align-items:flex-end;flex-direction:column}.calendar-room-actions{width:100%;justify-content:flex-end}.calendar-selected-room{grid-template-columns:minmax(120px,1fr) minmax(145px,1fr)}}
+
 

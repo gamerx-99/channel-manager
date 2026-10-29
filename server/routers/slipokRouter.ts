@@ -47,8 +47,8 @@ export const slipokRouter = router({
       requireRecentMfaVerification(ctx.user);
       const client = rlsClient(ctx.user.accessToken);
       try {
-        const encryptedKey = encryptSlipOkKey(input.api_key);
-        const keyHash = hashSlipOkKey(input.api_key);
+        const encryptedKey = await encryptSlipOkKey(input.api_key);
+        const keyHash = await hashSlipOkKey(input.api_key);
         await saveSlipOkSettings(client, input.hotel_id, encryptedKey, keyHash, input.branch_id);
         return { success: true as const };
       } catch (error) {
@@ -83,6 +83,7 @@ export const slipokRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+      requireRecentMfaVerification(ctx.user);
       const client = rlsClient(ctx.user.accessToken);
       try {
         await savePromptPaySettings(client, input.hotel_id, input.promptpay_id, input.payment_timeout_minutes);

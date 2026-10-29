@@ -11,7 +11,7 @@ export async function listBookingOccupancyForHotel(
 ) {
   const { data, error } = await client
     .from('bookings')
-    .select('room_id,check_in,check_out,status,expires_at')
+    .select('room_id,check_in,check_out,status,expires_at,source,guest_name')
     .eq('hotel_id', hotelId)
     .lt('check_in', checkOut)
     .gt('check_out', checkIn);
@@ -22,6 +22,8 @@ export async function listBookingOccupancyForHotel(
     check_out: string;
     status: BookingStatus;
     expires_at: string | null;
+    source: string;
+    guest_name: string | null;
   }>;
 }
 
@@ -161,7 +163,27 @@ export async function createRateOverride(
 export async function deleteRateOverride(
   client: SupabaseClient,
   rateOverrideId: string,
+  hotelId?: string,
 ) {
+  // When a hotel is supplied, confirm the override belongs to that hotel (via
+  // room_types.hotel_id) before deleting, so a cross-hotel id cannot remove
+  // another property's override.
+  if (hotelId) {
+    const { data: override, error: lookupError } = await client
+      .from('rate_overrides')
+      .select('id, room_type_id')
+      .eq('id', rateOverrideId)
+      .maybeSingle();
+    throwOnError(lookupError);
+    if (!override) return null;
+    const { data: roomType, error: roomTypeError } = await client
+      .from('room_types')
+      .select('hotel_id')
+      .eq('id', override.room_type_id as string)
+      .maybeSingle();
+    throwOnError(roomTypeError);
+    if (!roomType || roomType.hotel_id !== hotelId) return null;
+  }
   const { data, error } = await client
     .from('rate_overrides')
     .delete()

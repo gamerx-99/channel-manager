@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { enrollTotpFactor } from "@/lib/mfa";
+import React, { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { trpc } from "@/lib/trpc";
+import { generateTotpQrDataUrl } from "@/lib/qr";
 
 type MfaFactor = {
   id: string;
@@ -15,58 +16,68 @@ type EnrollData = {
 };
 
 export default function MfaSettings() {
-  const [factors, setFactors] = useState<MfaFactor[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const trpcUtils = trpc.useUtils();
+  const { data: authMe, isLoading: loading, error: authError } = trpc.auth.me.useQuery();
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const [enrollData, setEnrollData] = useState<EnrollData | null>(null);
-  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [enrollPassword, setEnrollPassword] = useState("");
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [activeFactorId, setActiveFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
-  async function refreshFactors() {
-    setLoading(true);
+  const isEnabled = Boolean(authMe?.twoFactorEnabled);
+  const verifiedFactors: MfaFactor[] = isEnabled
+    ? [{ id: "totp-authenticator", status: "verified", factor_type: "totp", friendly_name: "Authenticator" }]
+    : [];
+  const hasVerified = verifiedFactors.length > 0;
+
+  async function handleStartEnroll() {
     setError(null);
-    try {
-      const { data, error: listError } = await supabase.auth.mfa.listFactors();
-      if (listError) {
-        setError(listError.message);
-        setFactors([]);
-        return;
-      }
-      const totp = (data?.totp ?? []) as MfaFactor[];
-      setFactors(totp);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load MFA factors");
-      setFactors([]);
-    } finally {
-      setLoading(false);
+    setSuccess(null);
+    const password = window.prompt("Enter your account password to enable two-factor authentication:") ?? enrollPassword;
+    if (!password) {
+      setShowPasswordPrompt(true);
+      return;
     }
+    await executeEnroll(password);
   }
 
-  useEffect(() => {
-    void refreshFactors();
-  }, []);
-
-  async function handleEnroll() {
+  async function executeEnroll(password: string) {
     setError(null);
     setSuccess(null);
     setBusy("enroll");
+
     try {
-      const res = await enrollTotpFactor();
-      if (!res.ok) {
-        if (res.alreadyVerified) {
-          await refreshFactors();
+      const res = await authClient.twoFactor.enable({ password });
+      if (res?.error) {
+        if (res.error.code === "TOTP_ALREADY_ENABLED") {
+          await trpcUtils.auth.me.invalidate();
         } else {
-          setError(res.error);
+          setError(res.error.message || "Enrollment failed");
         }
         return;
       }
-      setEnrollData(res.data);
-      setActiveFactorId(res.data.id);
-      setChallengeId(null);
+
+      if (!res.data || res.data.method !== "totp") {
+        setError("Failed to generate TOTP secret");
+        return;
+      }
+
+      const totpURI = res.data.totpURI;
+      const secret = new URL(totpURI).searchParams.get("secret") || "";
+      const qr_code = generateTotpQrDataUrl(totpURI);
+
+      setEnrollData({
+        id: "totp-authenticator",
+        totp: { qr_code, secret, uri: totpURI },
+      });
+      setActiveFactorId("totp-authenticator");
+      setShowPasswordPrompt(false);
+      setEnrollPassword("");
       setCode("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Enrollment failed");
@@ -75,29 +86,11 @@ export default function MfaSettings() {
     }
   }
 
-  async function handleChallenge(factorId: string) {
+  function handleChallenge(factorId: string) {
     setError(null);
     setSuccess(null);
-    setBusy("challenge");
-    try {
-      const { data, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
-      if (challengeError) {
-        setError(challengeError.message);
-        return;
-      }
-      if (!data) {
-        setError("Challenge failed: no data");
-        return;
-      }
-      const id = (data as { id: string }).id;
-      setChallengeId(id);
-      setActiveFactorId(factorId);
-      setCode("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Challenge failed");
-    } finally {
-      setBusy(null);
-    }
+    setActiveFactorId(factorId);
+    setCode("");
   }
 
   async function handleVerify() {
@@ -109,76 +102,53 @@ export default function MfaSettings() {
     setSuccess(null);
     setBusy("verify");
 
-    // Always create a fresh challenge — Supabase treats each challenge as single-use
-    // (even a failed verify consumes it, so we must re-challenge on every attempt)
-    let cid: string | null = null;
     try {
-      const { data: chData, error: chErr } = await supabase.auth.mfa.challenge({ factorId: activeFactorId });
-      if (chErr) {
-        setError(chErr.message);
-        setBusy(null);
-        return;
-      }
-      cid = (chData as { id: string }).id;
-      setChallengeId(cid);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Challenge failed");
-      setBusy(null);
-      return;
-    }
-
-    try {
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: activeFactorId,
-        challengeId: cid,
+      const { error: verifyError } = await authClient.twoFactor.verifyTotp({
         code: code.trim(),
       });
+
       if (verifyError) {
-        // Reset challengeId so the next attempt will create a fresh challenge
-        setChallengeId(null);
-        // Provide friendlier message for the common wrong-code case
-        const msg = verifyError.message.toLowerCase().includes("invalid")
+        const msg = verifyError.message?.toLowerCase().includes("invalid")
           ? "Incorrect code — please wait for the next 6-digit code and try again"
           : verifyError.message;
-        setError(msg);
+        setError(msg || "Verification failed");
         return;
       }
+
       setSuccess(enrollData ? "Authenticator enrolled and verified" : "Code verified successfully");
       setEnrollData(null);
-      setChallengeId(null);
       setActiveFactorId(null);
       setCode("");
-      await refreshFactors();
+      await trpcUtils.auth.me.invalidate();
     } catch (e) {
-      setChallengeId(null);
       setError(e instanceof Error ? e.message : "Verification failed");
     } finally {
       setBusy(null);
     }
   }
 
-  async function handleUnenroll(factorId: string) {
+  async function handleUnenroll(_factorId: string) {
+    const password = window.prompt("Enter your account password to disable two-factor authentication:");
+    if (!password) return;
+
     setError(null);
     setSuccess(null);
     setBusy("unenroll");
+
     try {
-      const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId });
+      const { error: unenrollError } = await authClient.twoFactor.disable({ password });
       if (unenrollError) {
-        setError(unenrollError.message);
+        setError(unenrollError.message || "Unenroll failed");
         return;
       }
       setSuccess("Authenticator removed");
-      await refreshFactors();
+      await trpcUtils.auth.me.invalidate();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unenroll failed");
     } finally {
       setBusy(null);
     }
   }
-
-  const verifiedFactors = factors?.filter((f) => f.status === "verified") ?? [];
-  const hasVerified = verifiedFactors.length > 0;
-  const primaryFactor = verifiedFactors[0] ?? factors?.[0] ?? null;
 
   return (
     <section className="panel mfa-settings" aria-labelledby="mfa-heading">
@@ -203,9 +173,9 @@ export default function MfaSettings() {
         </p>
       )}
 
-      {error && (
+      {(error || authError) && (
         <div className="form-error page-alert" role="alert">
-          {error}
+          {error || authError?.message}
           <button type="button" className="icon-button" onClick={() => setError(null)} aria-label="Dismiss error">
             ×
           </button>
@@ -234,9 +204,9 @@ export default function MfaSettings() {
                       type="button"
                       className="button button-primary button-small"
                       disabled={busy === "challenge"}
-                      onClick={() => void handleChallenge(f.id)}
+                      onClick={() => handleChallenge(f.id)}
                     >
-                      {busy === "challenge" ? "Creating challenge…" : "Verify with code"}
+                      Verify with code
                     </button>
                     <button
                       type="button"
@@ -254,7 +224,7 @@ export default function MfaSettings() {
                 </div>
               ))}
 
-              {challengeId && activeFactorId && (
+              {activeFactorId && !enrollData && (
                 <div className="panel" style={{ marginTop: 12, padding: 12 }} data-testid="mfa-verify-panel">
                   <h3>Enter verification code</h3>
                   <p className="lede">Enter the 6-digit code from your authenticator app.</p>
@@ -284,7 +254,6 @@ export default function MfaSettings() {
                       type="button"
                       className="button button-quiet"
                       onClick={() => {
-                        setChallengeId(null);
                         setActiveFactorId(null);
                         setCode("");
                         setError(null);
@@ -299,22 +268,61 @@ export default function MfaSettings() {
           ) : (
             <div data-testid="mfa-not-enrolled">
               <p>No authenticator enrolled yet.</p>
-              {!enrollData ? (
+
+              {showPasswordPrompt && !enrollData && (
+                <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+                  <h3>Confirm password</h3>
+                  <p className="lede">Please enter your current password to begin TOTP enrollment.</p>
+                  <label>
+                    Account Password
+                    <input
+                      type="password"
+                      value={enrollPassword}
+                      onChange={(e) => setEnrollPassword(e.target.value)}
+                      placeholder="Enter password"
+                      autoComplete="current-password"
+                    />
+                  </label>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      disabled={busy === "enroll" || !enrollPassword}
+                      onClick={() => void executeEnroll(enrollPassword)}
+                    >
+                      {busy === "enroll" ? "Enrolling…" : "Confirm & Enroll"}
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-quiet"
+                      onClick={() => {
+                        setShowPasswordPrompt(false);
+                        setEnrollPassword("");
+                        setError(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!enrollData && !showPasswordPrompt && (
                 <button
                   type="button"
                   className="button button-primary"
                   disabled={busy === "enroll"}
-                  onClick={() => void handleEnroll()}
+                  onClick={() => void handleStartEnroll()}
                 >
                   {busy === "enroll" ? "Enrolling…" : "Enroll authenticator"}
                 </button>
-              ) : (
+              )}
+
+              {enrollData && (
                 <div className="panel" style={{ marginTop: 12, padding: 12 }} data-testid="mfa-enroll-panel">
                   <h3>Scan QR code</h3>
                   <p className="lede">Scan this QR code in your authenticator app, or enter the secret manually.</p>
                   {enrollData.totp.qr_code && (
-                    // Supabase returns qr_code as data:image/svg+xml;utf-8,...
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={enrollData.totp.qr_code}
                       alt="MFA QR code"
@@ -357,7 +365,6 @@ export default function MfaSettings() {
                       onClick={() => {
                         setEnrollData(null);
                         setActiveFactorId(null);
-                        setChallengeId(null);
                         setCode("");
                         setError(null);
                       }}
@@ -368,12 +375,6 @@ export default function MfaSettings() {
                 </div>
               )}
             </div>
-          )}
-
-          {primaryFactor && !hasVerified && !enrollData && (
-            <p style={{ marginTop: 12 }}>
-              <small>Unverified factor {primaryFactor.id.slice(0, 8)}… — complete verification to activate.</small>
-            </p>
           )}
         </>
       )}

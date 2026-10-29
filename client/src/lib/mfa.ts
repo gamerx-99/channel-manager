@@ -1,9 +1,12 @@
 import { PLATFORM_ROLES, type AppRole } from "@shared/authorization";
 import { useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { authClient } from "@/lib/auth-client";
 
 /** Blocking enroll path for platform roles without an MFA factor. */
 export const MFA_ENROLL_PATH = "/mfa/enroll";
+
+/** Default step-up validity window: 10 minutes (matching server/mfa.ts). */
+export const MFA_STEP_UP_WINDOW_MS = 10 * 60 * 1000;
 
 type FactorLike = {
   status?: string;
@@ -17,8 +20,7 @@ type ListFactorsData = {
 } | null | undefined;
 
 /**
- * Returns true if the Supabase MFA factor list contains at least one verified TOTP factor.
- * Supabase returns verified TOTP factors under `totp` (factor_type === 'totp') with status === 'verified'.
+ * Returns true if the factor list or factor payload contains at least one verified TOTP factor.
  */
 export function hasVerifiedTotpFactor(data: ListFactorsData): boolean {
   if (!data) return false;
@@ -39,11 +41,17 @@ export function shouldEnforceMfaForRoles(roles: readonly string[] | null | undef
 }
 
 /**
- * Convenience: given roles and a factor payload, returns true if the session must be
- * redirected to the blocking enroll flow.
+ * Convenience: given roles and either a factor payload or boolean twoFactorEnabled status,
+ * returns true if the session must be redirected to the blocking enroll flow.
  */
-export function shouldRedirectToMfaEnroll(roles: readonly string[] | null | undefined, factorData: ListFactorsData): boolean {
+export function shouldRedirectToMfaEnroll(
+  roles: readonly string[] | null | undefined,
+  factorData?: boolean | ListFactorsData,
+): boolean {
   if (!shouldEnforceMfaForRoles(roles)) return false;
+  if (typeof factorData === "boolean") {
+    return !factorData;
+  }
   return !hasVerifiedTotpFactor(factorData);
 }
 
@@ -54,43 +62,11 @@ export type CleanupFactorsResult = {
 };
 
 /**
- * Removes all unverified TOTP factors for the current user.
- * Surfaces explicit errors if listing or unenrolling fails.
+ * Compatibility helper for Better Auth runtime:
+ * Better Auth manages TOTP via the twoFactor table; unverified factors do not block enrollment.
  */
 export async function cleanupUnverifiedFactors(): Promise<CleanupFactorsResult> {
-  const { data, error } = await supabase.auth.mfa.listFactors();
-  if (error) {
-    return {
-      success: false,
-      error: `Failed to list MFA factors: ${error.message}`,
-      removedCount: 0,
-    };
-  }
-
-  const factors = ((data?.all?.length ? data.all : data?.totp) ?? []) as Array<{
-    id?: string;
-    status?: string;
-    factor_type?: string;
-  }>;
-  const unverified = factors.filter(
-    f => f.status === "unverified" || (f.factor_type === "totp" && f.status !== "verified")
-  );
-
-  let removedCount = 0;
-  for (const factor of unverified) {
-    if (!factor.id) continue;
-    const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
-    if (unenrollError) {
-      return {
-        success: false,
-        error: `Failed to remove stale unverified factor (${factor.id}): ${unenrollError.message}`,
-        removedCount,
-      };
-    }
-    removedCount++;
-  }
-
-  return { success: true, removedCount };
+  return { success: true, removedCount: 0 };
 }
 
 export type PrepareEnrollmentResult =
@@ -98,79 +74,23 @@ export type PrepareEnrollmentResult =
   | { ok: false; alreadyVerified?: boolean; error: string };
 
 /**
- * Prepares the user's account for TOTP enrollment:
- * 1. Checks if a verified TOTP factor already exists (blocks enrollment if so).
- * 2. Unenrolls all unverified TOTP factors and surfaces errors if unenroll fails.
- * 3. Re-fetches factors and explicitly verifies that no unverified or verified factor blocks new enrollment.
- * 4. If a stale unverified factor remains, returns an actionable error.
+ * Compatibility helper for Better Auth runtime:
+ * Checks whether the current user is already 2FA-enabled before allowing new enrollment.
  */
 export async function prepareTotpEnrollment(): Promise<PrepareEnrollmentResult> {
-  const { data, error } = await supabase.auth.mfa.listFactors();
-  if (error) {
-    return { ok: false, error: `Failed to check existing MFA factors: ${error.message}` };
-  }
-
-  // Prevent enrollment if a verified authenticator already exists
-  if (hasVerifiedTotpFactor(data)) {
-    return {
-      ok: false,
-      alreadyVerified: true,
-      error: "An authenticator is already active and verified for this account.",
-    };
-  }
-
-  const factors = ((data?.all?.length ? data.all : data?.totp) ?? []) as Array<{
-    id?: string;
-    status?: string;
-    factor_type?: string;
-  }>;
-  const unverified = factors.filter(
-    f => f.status === "unverified" || (f.factor_type === "totp" && f.status !== "verified")
-  );
-
-  if (unverified.length > 0) {
-    for (const factor of unverified) {
-      if (!factor.id) continue;
-      const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
-      if (unenrollError) {
-        return {
-          ok: false,
-          error: `Failed to remove stale unverified factor (${factor.id}): ${unenrollError.message}`,
-        };
-      }
-    }
-
-    // Re-fetch factors and explicitly verify that stale unverified factors were removed
-    const { data: recheckData, error: recheckError } = await supabase.auth.mfa.listFactors();
-    if (recheckError) {
-      return { ok: false, error: `Failed to verify MFA factors after cleanup: ${recheckError.message}` };
-    }
-
-    if (hasVerifiedTotpFactor(recheckData)) {
+  try {
+    const sessionResult = await authClient.getSession();
+    if (sessionResult.data?.user && (sessionResult.data.user as { twoFactorEnabled?: boolean }).twoFactorEnabled) {
       return {
         ok: false,
         alreadyVerified: true,
         error: "An authenticator is already active and verified for this account.",
       };
     }
-
-    const remaining = ((recheckData?.all?.length ? recheckData.all : recheckData?.totp) ?? []) as Array<{
-      id?: string;
-      status?: string;
-      factor_type?: string;
-    }>;
-    const remainingUnverified = remaining.filter(
-      f => f.status === "unverified" || (f.factor_type === "totp" && f.status !== "verified")
-    );
-    if (remainingUnverified.length > 0) {
-      return {
-        ok: false,
-        error: "A stale unverified authenticator is still present. Please refresh or remove it before enrolling.",
-      };
-    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to prepare MFA enrollment." };
   }
-
-  return { ok: true };
 }
 
 export type EnrollTotpResult =
@@ -178,46 +98,12 @@ export type EnrollTotpResult =
   | { ok: false; alreadyVerified?: boolean; error: string };
 
 /**
- * High-level helper for TOTP enrollment:
- * Performs preparation (checking verified status, cleaning up stale unverified factors, re-verifying cleanup),
- * and then calls supabase.auth.mfa.enroll({ factorType: "totp" }).
+ * Compatibility helper: delegates to Better Auth twoFactor client.
  */
 export async function enrollTotpFactor(): Promise<EnrollTotpResult> {
-  const prep = await prepareTotpEnrollment();
-  if (!prep.ok) {
-    return prep;
-  }
-
-  // Supabase requires a factor's friendly_name to be unique per user across
-  // ALL factors (verified or not). The default name ("Authenticator") is the
-  // same every time, so any leftover factor under that name — one this
-  // session's cleanup above didn't manage to remove, e.g. from before that
-  // cleanup existed, or a timing/consistency gap between listFactors() and
-  // enroll() — causes a hard "friendly name already exists" failure on every
-  // retry. A unique name per attempt sidesteps the whole failure class.
-  //
-  // `issuer` must be set explicitly: per the otpauth Key URI format, the QR
-  // label is "issuer:accountName" (accountName = the user's email, filled in
-  // server-side). Without an explicit issuer, GoTrue emits a bare label with
-  // no issuer prefix, and several authenticator apps then show only that
-  // single string as the entry's title with no separate account/email line —
-  // indistinguishable when one person has enrolled multiple accounts.
-  const { data, error } = await supabase.auth.mfa.enroll({
-    factorType: "totp",
-    friendlyName: `Authenticator-${Date.now().toString(36)}`,
-    issuer: "hayhost",
-  });
-
-  if (error || !data) {
-    return {
-      ok: false,
-      error: error?.message ?? "Unable to start MFA enrollment.",
-    };
-  }
-
   return {
-    ok: true,
-    data: data as unknown as { id: string; totp: { qr_code: string; secret: string; uri: string } },
+    ok: false,
+    error: "Please use authClient.twoFactor.enable({ password }) for Better Auth TOTP enrollment.",
   };
 }
 
@@ -225,84 +111,165 @@ export type MfaStepUpState =
   | { status: "idle" }
   | { status: "pending" }
   | { status: "needs_enroll" }
-  | { status: "needs_challenge"; factorId: string }
+  | { status: "needs_challenge"; factorId?: string; error?: string }
   | { status: "verified" }
   | { status: "error"; message: string };
 
 /**
- * Hook that manages client-side MFA step-up for sensitive actions (Phase 01: SlipOK).
+ * Hook that manages client-side MFA step-up for sensitive actions (Phase 01: SlipOK)
+ * using Better Auth TOTP verification and session freshness tracking.
+ *
  * Usage:
- *   const { mfaState, triggerStepUp, submitTotp } = useMfaStepUp();
+ *   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
  *   // When user clicks a sensitive action:
- *   await triggerStepUp();  // will set state to needs_challenge or needs_enroll
- *   // Then render a TOTP input and call:
- *   await submitTotp(code);  // verifies and sets state to verified
+ *   const step = await triggerStepUp(); // "verified" | "needs_enroll" | "needs_challenge" | "error"
+ *   // If "needs_challenge", render TOTP input and call:
+ *   const ok = await submitTotp(code);  // verifies TOTP and sets state to verified
  */
-export function useMfaStepUp() {
+export function useMfaStepUp(options?: { windowMs?: number }) {
+  const windowMs = options?.windowMs ?? MFA_STEP_UP_WINDOW_MS;
   const [mfaState, setMfaState] = useState<MfaStepUpState>({ status: "idle" });
-  const [challengeId, setChallengeId] = useState<string | null>(null);
-  const [factorId, setFactorId] = useState<string | null>(null);
+  const [lastVerifiedAt, setLastVerifiedAt] = useState<number | null>(null);
 
-  const triggerStepUp = useCallback(async () => {
-    setMfaState({ status: "pending" });
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      const aal = (session?.session as unknown as { user?: { aal?: string } } | null)?.user?.aal;
-      // Check AAL from JWT via getAuthenticatorAssuranceLevel
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData?.currentLevel === "aal2") {
-        setMfaState({ status: "verified" });
-        return "verified" as const;
-      }
-      // Need to challenge
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const totpFactor = (factors?.totp ?? []).find(f => f.status === "verified");
-      if (!totpFactor) {
-        setMfaState({ status: "needs_enroll" });
-        return "needs_enroll" as const;
-      }
-      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId: totpFactor.id,
-      });
-      if (challengeError || !challenge) {
-        setMfaState({ status: "error", message: challengeError?.message ?? "Failed to start MFA challenge." });
-        return "error" as const;
-      }
-      setFactorId(totpFactor.id);
-      setChallengeId(challenge.id);
-      setMfaState({ status: "needs_challenge", factorId: totpFactor.id });
-      return "needs_challenge" as const;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error";
-      setMfaState({ status: "error", message: msg });
-      return "error" as const;
-    }
-  }, []);
+  /**
+   * Evaluates whether the current session has verified TOTP within the allowable time window.
+   */
+  const checkFreshness = useCallback(
+    (session: unknown, verifiedTimestamp: number | null): boolean => {
+      const now = Date.now();
 
-  const submitTotp = useCallback(async (code: string) => {
-    if (!factorId || !challengeId) {
-      setMfaState({ status: "error", message: "No active MFA challenge." });
+      // 1. Check local verification timestamp from this hook instance
+      if (verifiedTimestamp && now - verifiedTimestamp < windowMs) {
+        return true;
+      }
+
+      // 2. Check session attributes from Better Auth (twoFactorVerifiedAt / twoFactorVerified)
+      if (session && typeof session === "object") {
+        const s = session as {
+          twoFactorVerified?: boolean | null;
+          twoFactorVerifiedAt?: string | number | Date | null;
+          createdAt?: string | number | Date | null;
+        };
+
+        const isExplicitlyVerified =
+          s.twoFactorVerified !== false &&
+          (s.twoFactorVerified === true ||
+            (s.twoFactorVerifiedAt != null && s.twoFactorVerifiedAt !== ""));
+
+        if (!isExplicitlyVerified) {
+          return false;
+        }
+
+        const rawTime =
+          s.twoFactorVerifiedAt ??
+          (s.twoFactorVerified === true ? s.createdAt : null);
+
+        if (rawTime) {
+          const verifiedTimeMs = new Date(rawTime).getTime();
+          if (!Number.isNaN(verifiedTimeMs) && verifiedTimeMs > 0) {
+            if (now - verifiedTimeMs < windowMs) {
+              return true;
+            }
+          }
+        }
+      }
+
       return false;
-    }
+    },
+    [windowMs],
+  );
+
+  const triggerStepUp = useCallback(async (): Promise<
+    "verified" | "needs_enroll" | "needs_challenge" | "error"
+  > => {
     setMfaState({ status: "pending" });
     try {
-      const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code });
-      if (error) {
-        setMfaState({ status: "needs_challenge", factorId });
+      const sessionResult = await authClient.getSession();
+      if (sessionResult.error || !sessionResult.data?.user) {
+        const msg = sessionResult.error?.message ?? "Authentication required.";
+        setMfaState({ status: "error", message: msg });
+        return "error";
+      }
+
+      const { user, session } = sessionResult.data;
+      const twoFactorEnabled = Boolean(
+        (user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled,
+      );
+
+      // User has not enrolled 2FA -> must enroll first
+      if (!twoFactorEnabled) {
+        setMfaState({ status: "needs_enroll" });
+        return "needs_enroll";
+      }
+
+      // Session is already verified within freshness window
+      if (checkFreshness(session, lastVerifiedAt)) {
+        setMfaState({ status: "verified" });
+        return "verified";
+      }
+
+      // User has 2FA enrolled but needs to complete TOTP challenge
+      setMfaState({ status: "needs_challenge", factorId: "totp" });
+      return "needs_challenge";
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error during MFA step-up.";
+      setMfaState({ status: "error", message: msg });
+      return "error";
+    }
+  }, [checkFreshness, lastVerifiedAt]);
+
+  const submitTotp = useCallback(
+    async (code: string): Promise<boolean> => {
+      const cleanCode = code?.trim() ?? "";
+      if (cleanCode.length !== 6) {
+        setMfaState({
+          status: "needs_challenge",
+          factorId: "totp",
+          error: "Please enter a valid 6-digit authenticator code.",
+        });
         return false;
       }
-      setMfaState({ status: "verified" });
-      return true;
-    } catch (e) {
-      setMfaState({ status: "error", message: e instanceof Error ? e.message : "Verification failed." });
-      return false;
-    }
-  }, [factorId, challengeId]);
+
+      setMfaState({ status: "pending" });
+      try {
+        const { error } = await authClient.twoFactor.verifyTotp({
+          code: cleanCode,
+        });
+
+        if (error) {
+          const message =
+            error.message?.toLowerCase().includes("invalid")
+              ? "Incorrect code — please wait for the next 6-digit code and try again."
+              : error.message || "Verification failed.";
+
+          setMfaState({
+            status: "needs_challenge",
+            factorId: "totp",
+            error: message,
+          });
+          return false;
+        }
+
+        const now = Date.now();
+        setLastVerifiedAt(now);
+        setMfaState({ status: "verified" });
+        return true;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Verification failed.";
+        setMfaState({
+          status: "needs_challenge",
+          factorId: "totp",
+          error: msg,
+        });
+        return false;
+      }
+    },
+    [],
+  );
 
   const reset = useCallback(() => {
     setMfaState({ status: "idle" });
-    setChallengeId(null);
-    setFactorId(null);
+    setLastVerifiedAt(null);
   }, []);
 
   return { mfaState, triggerStepUp, submitTotp, reset };

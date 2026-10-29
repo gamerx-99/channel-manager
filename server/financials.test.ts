@@ -67,6 +67,27 @@ describe('financials summary', () => {
     ]);
   });
 
+
+  it('correctly categorizes collected, pending, and outstanding revenue based on payment_status', () => {
+    const result = buildFinancialsSummary([
+      {
+        id: 'hotel-1',
+        bookings: [
+          { id: 'b1', status: 'confirmed', payment_status: 'verified', check_in: '2026-08-20', check_out: '2026-08-21', price: 1000, rooms: null },
+          { id: 'b2', status: 'confirmed', payment_status: 'pending', check_in: '2026-08-19', check_out: '2026-08-20', price: 500, rooms: null },
+          { id: 'b3', status: 'confirmed', payment_status: 'unpaid', check_in: '2026-08-18', check_out: '2026-08-19', price: 300, rooms: null },
+          { id: 'b4', status: 'confirmed', check_in: '2026-08-17', check_out: '2026-08-18', price: 200, rooms: null },
+          { id: 'b-cancel', status: 'cancelled', payment_status: 'unpaid', check_in: '2026-08-16', check_out: '2026-08-17', price: 900, rooms: null },
+        ],
+      },
+    ], now);
+
+    expect(result.totals.revenue).toBe(2000);
+    expect(result.totals.collectedRevenue).toBe(1000);
+    expect(result.totals.pendingRevenue).toBe(500);
+    expect(result.totals.outstandingRevenue).toBe(500); // 300 unpaid + 200 undefined
+  });
+
   it('creates one daily trend point for every day in the period', () => {
     const result = buildFinancialsSummary([{
       id: 'hotel-1',

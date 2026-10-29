@@ -1,7 +1,7 @@
+import React, { FormEvent, useState } from "react";
 import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
-import { FormEvent, useState } from "react";
 import { useLocation } from "wouter";
-import { supabase } from "@/lib/supabase";
+import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { PageState } from "@/components/PageState";
 
@@ -31,21 +31,22 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
       return;
     }
     setSubmitting(true);
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
-    if (signUpError || !data.user) {
+    const name = email.split("@")[0] || "Hotel Owner";
+    const { data, error: signUpError } = await authClient.signUp.email({ email, password, name });
+    if (signUpError || !data?.user) {
       setSubmitting(false);
       setError(signUpError?.message ?? "Could not create your account.");
       return;
     }
     try {
-      await completeSignup.mutateAsync({ token, userId: data.user.id });
+      await completeSignup.mutateAsync({ token });
     } catch (mutationError) {
       setSubmitting(false);
       setError(mutationError instanceof Error ? mutationError.message : "Could not finish setting up your hotel account.");
       return;
     }
     setSubmitting(false);
-    if (data.session) {
+    if (data?.user) {
       navigate("/dashboard");
     } else {
       setPendingEmailConfirmation(true);
@@ -107,7 +108,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
           <button className="button button-primary login-button" type="submit" disabled={submitting}>
             {submitting ? "Creating account…" : "Create account"} <ArrowRight size={16} />
           </button>
-          <div className="login-security"><ShieldCheck size={15} /><span>Your hotel data is scoped by Supabase Row Level Security.</span></div>
+          <div className="login-security"><ShieldCheck size={15} /><span>Your hotel data is scoped by hayhost scoped authorization.</span></div>
         </form>
         <div className="login-footer"><span><LockKeyhole size={13} /> Private workspace</span><span>Need help? Contact support</span></div>
       </main>

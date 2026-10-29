@@ -1,5 +1,59 @@
 # Handoff log
 
+## [2026-10-27] Spec 14 ticket 14-03a: server-side security fixes (branch `agent-a/next`)
+- **What happened**: Seven server-side fixes landed, each as its own commit:
+  1. `completeHotelOwnerSignup` now uses `ctx.user.id` (userId removed from schema).
+  2. `verifySlip` derives hotel from the payment session and rejects a mismatched supplied hotel_id.
+  3. `deleteRateOverride` requires hotel_id and scopes the delete via room_types.hotel_id.
+  4. `markRead` requires hotelId and filters `id AND hotel_id`.
+  5. `auth.me` no longer returns accessToken (client does not read it).
+  6. `hotels`/`hotel`/`dashboard`/`channelPerformance`/`dashboardCalendar` documented as RLS-scoped
+     (no named gate); `hotel` kept RLS-mapped to NOT_FOUND.
+  7. `savePromptPayId` now requires recent MFA.
+- **Verification**: `pnpm test`: 97 passed | 4 failed (inviteAuthUser ×4 + 3 credential env, pre-existing) | 2 skipped;
+  619 passed | 7 failed | 3 skipped. `pnpm check`: 0 errors. `pnpm build`: OK (dist/index.js 240.3kb).
+- **Assumptions**: `hotel` left unguarded beyond RLS to preserve the RLS-hidden→NOT_FOUND mapping;
+  `completeHotelOwnerSignup` stays rate-limited (not protected) so the post-signUp flow still works,
+  using ctx.user when present.
+
+## [2026-10-27] Spec 14 tickets 14-00 + 14-01: RLS write hardening + core authorization (branch `agent-a/next`)
+- **What happened**: Landed the urgent RLS write-hardening migration (14-00) and the
+  core permission system (14-01) on `agent-a/next`, uncommitted until now.
+  - 14-00: `20261027_rls_write_hardening.sql` + verify + migration test. Blocks hotel
+    staff from writing platform roles and re-gates 8 write surfaces on `can_manage_*`.
+  - 14-01: `shared/permissions.ts` (13 toggles, grants/revokes, support grants up to
+    168h), `shared/authorization.ts` (+support, CROSS_HOTEL_READ_ROLES,
+    operations.cancel_bookings, PermissionMembership), `server/supabase.ts`,
+    `routerUtils.ts`, `staffRouter.ts` updated; tests adjusted for the new role.
+- **Review of 14-00 SQL**: policy names in the migration match the live migrations
+  (hotel_users_manage_scoped, hotel_payment_settings_*, payment_sessions_*, booking_services_*,
+  rate_overrides_*, housekeeping_tasks_*, message_threads_*, messages_*, hotel_services_*).
+  Frontend has no direct writes to the hardened tables (all go through tRPC), so no breakage
+  expected. SELECT policies are untouched.
+- **Verification**: `pnpm test`: 97 files passed | 4 failed (inviteAuthUser x4 + 3 credential
+  env, all pre-existing) | 2 skipped; 619 passed | 7 failed | 3 skipped. `pnpm check`: 0 errors.
+- **Commits**: 14-00 committed separately as
+  `fix(db): close RLS write gaps and platform-role escalation (spec 14-00)`; 14-01 committed
+  as `feat(authz): core permission system and support grants (spec 14-01)`.
+- **Human action required**: apply `20261027_rls_write_hardening.sql` then its verify in
+  Supabase SQL editor (all 7 rows must read PASS); review the platform-role account list
+  and remove unknowns. Do not run `20261027_booking_cancellation_permission.sql`.
+- **Next**: 14-02 schema migration (permission_grants/revokes, support role, support_access_grants).
+
+## [2026-10-27] (A) Spec 13 ticket 13-01: Cloudflare Worker scaffold, branch `agent-a/next`
+- **Context**: On 2026-10-27 the human decided to finish the Cloudflare move before the live OTA test, because the test has to be repeated on the new domain anyway. This is the first ticket of `specs/13-cloudflare-migration.md`. Files touched outside A's usual list: `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `server/supabase.ts`, `server/_core/context.ts`, `server/_core/trpc.ts`. B should avoid these until this lands.
+- **Changes**:
+  1. **Worker** `worker/app.ts` + `worker/index.ts`: a Hono app with `/api/trpc/*` served by the tRPC fetch adapter (same `appRouter`), `GET /api/ical/:file` (same handler logic as Express), and JSON 404 for other `/api/*`. Everything else comes from Workers Static Assets (`dist/public`, SPA fallback). The app still talks to Supabase through supabase-js over fetch, as the spec intends for 13-01.
+  2. **`wrangler.toml`**: `nodejs_compat` (also fills `process.env` from vars/secrets, which `server/` reads), with the top level for local dev and `[env.staging]` / `[env.production]` each binding D1 `DB` and R2 `MEDIA`. Production sets `PUBLIC_APP_URL = https://www.hayhostth.com`. The D1 ids are all-zero placeholders until the human runs `wrangler d1 create`.
+  3. **Transport-neutral tRPC context**: `TrpcContext` is now `{ user, clientIp }` instead of the Express `req`/`res`, and nothing read `ctx.res`. `getSupabaseIdentity` takes the raw Authorization header. Express keeps working through `createContext`; the Worker calls `createContextFromRequest` with `cf-connecting-ip`.
+  4. **Rate limiter**: the module-scope `setInterval(...).unref()` in `server/_core/trpc.ts` is replaced by lazy pruning on request, because Workers forbid timers at global scope.
+  5. **Scripts**: `pnpm build:worker` (vite build + `wrangler deploy --dry-run --outdir dist-worker`) and `pnpm dev:worker`. `pnpm build` is unchanged so the current Vercel deploy is unaffected. `vercel.json` and `api/index.ts` are untouched.
+  6. **Tests**: new `worker/app.test.ts` (tRPC health through the fetch adapter, 401 without a token, iCal 404, API JSON 404, context IP, wrangler.toml contract). `worker/**/*.test.ts` was added to the vitest include.
+- **Verification**: `pnpm check` OK. `pnpm build` OK (dist/index.js 232.1kb). `pnpm build:worker` OK: bundle 2514.75 KiB, gzip 498.05 KiB (under the Workers size limit), with bindings DB/MEDIA/ASSETS listed. `pnpm test` with the main checkout's `.env` loaded: 575 passed, 4 failed, 3 skipped. All 4 failures are in `server/inviteAuthUser.test.ts`, which fails identically on the untouched `agent-b/website-builder-public-hotel` checkout, so it is pre-existing. **Not verified**: the bundle has not booted in workerd yet (`wrangler dev` or a staging deploy).
+- **Known runtime gaps left to later tickets (by design)**: `server/tm30.ts` reads the template with `node:fs` (13-06). `server/icalUrl.ts` uses `node:dns/promises` (13-06). Scheduled sync still uses the Supabase pg_cron → HTTP endpoint, which the Worker does not expose, so Cron Triggers come in 13-06. Forge storage proxy and OAuth callback routes are not ported (Manus leftovers, 13-09).
+- **Next / status**: Committed on `agent-a/next` only. Nothing pushed or deployed. The human needs to run `pnpm exec wrangler login` (account lannatc@gmail.com), then `wrangler d1 create hayhost-staging` and `wrangler r2 bucket create hayhost-media-staging`, and paste the D1 id back. After that, set the Supabase secrets with `wrangler secret put --env staging` and do a first staging deploy for a smoke test. Next ticket: 13-02 (Drizzle schema for D1).
+- **Update 2026-10-27 (staging deploy, human-approved)**: The human ran `wrangler login`, created D1 `hayhost-staging` (`f7fb735d-…`) and R2 `hayhost-media-staging`, and set `SUPABASE_SERVICE_ROLE_KEY` (an `sb_secret_` key) as a staging secret. Deployed to https://hayhost-staging.lannatc.workers.dev (startup 67 ms). Smoke test: `/`, `/login` and deep links return 200 with the SPA. `system.health` returns ok. A protected procedure returns 401. A well-formed unknown `.ics` token returns 404 after a real Supabase RPC, so the Worker reaches Supabase. Unknown `/api/*` returns a JSON 404. The login page renders with no console errors. Set `NODE_ENV=production` in the staging/production vars, because the first deploy leaked tRPC stack traces. Pre-existing, also on Vercel: `channelManager.publicHotel` with an unknown slug returns 500 (PGRST116) instead of NOT_FOUND. Not yet checked: a real sign-in, which the human has to do. The account also has an unused R2 bucket `heyhost` (typo?), which was left alone.
+
 ## [2026-10-26] (A) iCal room-type mode, branch `agent-a/ical-room-type`
 - **Context**: The target market is multi-room guesthouses and boutique hotels in Chiang Mai, Mae Hong Son and Lamphun, and a one-room-per-connection mapping isn't enough for them. This was A's first ticket under `.agent/WORK_SPLIT.md`, built in the A worktree `C:\WORK\channel-manager-a`.
 - **Changes**:
@@ -21,8 +75,8 @@
   5. **UI** `OtaSync.tsx`: room picker (required), Room column, Edit dialog, an Export URL button on every connection, conflict/error status with `last_error`, and a warning toast on conflicts. New i18n keys in en/th. Dashboard widget shows `conflict` as "Booking conflict".
   6. **Other**: `getGlobalOtaSummary` selects explicit columns (no token) and runs log queries concurrently (point 10). `BookingRecord.source` and channel performance labels include `ota_ical`. `.env.example` documents `CRON_SECRET`.
   7. **Tests**: new `icalFeed.test.ts`, `otaScheduler.test.ts`, `otaIcalRoutes.test.ts`, `otaIcalMigration.test.ts`; `otaSync.test.ts` rewritten for the RPC flow. A parser test caught a real bug: an invalid date threw a RangeError and would have aborted the whole sync. Fixed in the source.
-- **Verification**: `pnpm check` OK. `pnpm build` OK (dist/index.js 231.4kb). `pnpm test`: 550 passed, 7 failed, 3 skipped. The 7 failures are the same credential-dependent files as the previous ticket (`inviteAuthUser`, `supabaseAnonKey`, `supabase.credentials`, `supabase.serverRuntime.credentials`). The SQL was **not executed** anywhere: the Supabase MCP has no access to project `roznxbvhflwrfvybmhtm`.
-- **Update 2026-10-26**: The human applied the migration to `roznxbvhflwrfvybmhtm`, and the verify script shows 10/10 PASS. With explicit approval, b61584c and d23447b were pushed to origin/main (`042de19..d23447b`). Live smoke test: `/api/ical/<unknown>.ics` returns 404 "Calendar not found.", `POST /api/cron/ota-ical-sync` without a secret returns 401, and the home page returns 200. Pending: the human's end-to-end test with the Booking.com booking and the 2026-10-29 direct booking, then `CRON_SECRET` + `ota_ical_sync_cron_setup.sql`.
+- **Verification**: `pnpm check` OK. `pnpm build` OK (dist/index.js 231.4kb). `pnpm test`: 550 passed, 7 failed, 3 skipped. The 7 failures are the same credential-dependent files as the previous ticket (`inviteAuthUser`, `supabaseAnonKey`, `supabase.credentials`, `supabase.serverRuntime.credentials`). The SQL was **not executed** anywhere: the Supabase MCP has no access to the legacy project.
+- **Update 2026-10-26**: The human applied the migration to the legacy project, and the verify script shows 10/10 PASS. With explicit approval, b61584c and d23447b were pushed to origin/main (`042de19..d23447b`). Live smoke test: `/api/ical/<unknown>.ics` returns 404 "Calendar not found.", `POST /api/cron/ota-ical-sync` without a secret returns 401, and the home page returns 200. Pending: the human's end-to-end test with the Booking.com booking and the 2026-10-29 direct booking, then `CRON_SECRET` + `ota_ical_sync_cron_setup.sql`.
 - **Next ticket / status (original)**: Not committed, not pushed. **Order matters**: apply the migration and confirm the verify script shows all PASS **before** deploying, because the new code selects `room_id`/`ical_export_token` and the OTA page fails without them. Then set `CRON_SECRET` in Vercel, check `SUPABASE_SERVICE_ROLE_KEY` is set, deploy, and run `ota_ical_sync_cron_setup.sql`.
 - **Heads-up**: ASSUMPTIONs are hotel time zone Asia/Bangkok, and scheduled no-op successes are not logged. OTA blocks show up in Bookings as price-0 rows named "<provider> · <summary>". Still open: no notification on conflicts (the notifications table exists, but nothing uses it here) and no `ota_sync_logs` retention.
 
@@ -1215,3 +1269,288 @@ Write every entry so someone who has never seen this session can pick up the wor
     1. 20261027_hotel_site_config_public_read.sql + verify_20261027_hotel_site_config_public_read.sql
     2. 20261027_room_type_occupancy_fixes.sql + verify_20261027_room_type_occupancy_fixes.sql
     3. 20261025_booking_occupancy_snapshot.sql + verify_20261025_booking_occupancy_snapshot.sql (if not already run)
+
+## [2026-10-27] Calendar availability and iCal sync fixes
+- **Context**: Improve availability visibility and calendar sync behavior for OTA connections.
+- **Changes**: Replaced the week/month switcher with a single month calendar; added three-click IN/OUT range selection, bulk and per-room availability updates, price editing, and dark booked dates labeled with their source platform. Dashboard availability now subtracts active booking occupancy. iCal parsing now respects TZID-local event times and converts them to the hotel timezone.
+- **Verification**: Focused tests passed (22/22); `pnpm check` passed; `pnpm build:worker` dry-run passed. Full test suite: 573 passed, 3 skipped, 7 failed because Supabase credentials were not configured for the credential-dependent tests.
+- **Deployment**: Deployed to Cloudflare Worker staging `hayhost-staging` at https://hayhost-staging.lannatc.workers.dev; deployment version `0483798c-f2e2-463c-98bd-4bd970436f12`. Confirmed `/hotels` loads in browser. No Supabase schema or migration changes.
+
+## [2026-10-27] Ticket 13-02: D1 schema (branch `agent-c/d1-schema`)
+- **What happened**: Added Drizzle SQLite schema for the date-ordered root migration end state (26 app-owned tables) plus `support_access_grants` and `support_access_log`; included `support` role and JSON permission grant/revoke arrays. Generated the initial D1 migration in `drizzle/d1` and added a parity test that compares the Drizzle table names to the migration-derived Postgres app-table snapshot. Spec 14's cancelled 14-02 ticket was recorded separately in commit `56c817b`.
+- **Postgres behavior not represented in SQLite/D1**: RLS / GRANT / REVOKE and `auth.uid()` / SECURITY DEFINER gates; 24 final distinct SQL function behaviors and 5 trigger behaviors; GiST exclusion constraints; `btree_gist`, `pg_cron`, and `pg_net`. No custom Postgres ENUM definitions exist in the root migration SQL. See the handoff section in `specs/13-cloudflare-migration.md` for the 13-03/13-04/13-05/13-06 mapping.
+- **Verification**: `pnpm test`: 620 passed, 7 failed due missing Supabase credentials (4 `inviteAuthUser.test.ts`, plus 3 credential tests), 3 skipped; parity test passed. `pnpm check`: PASS (`tsc --noEmit`). `pnpm build`: PASS (Vite + esbuild; chunk-size advisory only). Generated DDL executed successfully in SQLite memory: 28 tables. `pnpm install`: PASS.
+- **Next**: 13-03 must implement authorization/data-layer behavior, transaction-safe overlap checks, Better Auth references, and safe money arithmetic. No push or deploy.
+
+## [2026-10-28] Ticket 13-02b: acquisition, agents, and marketing consent
+- **What changed**: Added `agents`; `hotels.acquisition_source`, `referred_by_hotel_id`, and `agent_id` with CHECK/FKs; and `bookings.marketing_consent` plus `marketing_consent_at`. Added parity assertions for all new tables/columns. Generated a separate D1 migration; repaired drizzle-kit's SQLite table-rebuild output to additive `ALTER TABLE` statements because its generated rebuild selected the not-yet-existing new columns from the old `hotels` table.
+- **Verification**: `pnpm test`: 621 passed, 7 failed (the 4 known `inviteAuthUser` credential failures plus 3 Supabase credential tests), 3 skipped. `pnpm check`: PASS (`tsc --noEmit`). `pnpm build`: PASS (Vite + esbuild; bundle-size advisory only). In-memory SQLite applied initial + new migration: 29 tables; new columns and foreign keys present.
+- **Next**: 13-03 scoped data layer and tenancy tests.
+
+## [2026-10-28] Ticket 13-03a: scoped D1 access primitives (committed `fc1bb2c`)
+- **What changed**: Added D1-scoped access functions for hotel bookings, guest PII, booking value totals, cancellation, staff permission changes, and a super-admin-only platform summary. Every function takes a verified caller context and resolves permission before the hotel data query; support grants are checked for expiry/revocation and audited, including denied attempts without a grant. Added decimal-string to bigint satang helpers and a migration allowing audit rows for denied support attempts without an existing grant.
+- **Tests**: In-memory Node SQLite applies all D1 migrations and covers hotel A/B isolation, revoked toggle, super-admin denial, support grant modes/expiry/auditing, self-edit denial, owner-only permissions, allowed guest read, allowed owner permission update, restricted platform summary, and exact money arithmetic. Latest `pnpm test`: 638 passed, 7 known credential-dependent failures, 3 skipped. `pnpm check`: PASS. `pnpm build`: PASS (Vite bundle-size advisory only).
+- **Scope decision**: Owner confirmed every `server/db/*` repository will receive a new `server/d1/*` equivalent with scope checks and happy-path/cross-hotel tests. Live Supabase callers remain unchanged until 13-07/13-08. `channelPerformance` and synthetic success in `saveHotelSiteConfig` are excluded. Summary plan/payment status stays null pending spec 12 billing. See resolved entry in `.agent/OPEN_QUESTIONS.md`.
+- **Next**: Port repositories one module per commit; keep 13-03 in progress until all modules and required overlap guards/tests are complete.
+
+## [2026-10-28] Ticket 13-03: D1 availability repository
+- **What changed**: Added `server/d1/availability.ts` with caller-scoped occupancy/availability reads, availability upsert, rate override listing/min-stay validation, create, and delete. Every operation validates the hotel membership, permission, and room-type ownership before operating. Rate override insertion uses one `INSERT … SELECT … WHERE NOT EXISTS` statement to prevent overlapping date ranges.
+- **Verification**: `pnpm exec vitest run server/d1/availability.test.ts server/d1/moneyMigration.test.ts`: 9 tests pass for the availability repository and seeded exact-money migration. Scope and availability targeted suite: 21 tests pass. `pnpm check` and `pnpm build` pass (bundle size advisory only). Full suite, run with two Vitest threads to avoid worker saturation, passed 642, failed the 7 documented credential-dependent tests, skipped 3; this predates the money migration test.
+- **Review follow-up**: Exact money uses TEXT across D1 monetary columns, with three generated migrations. Foreign keys stay disabled through each full table-rebuild sequence, then are restored; a seeded migration test verifies dependent rows/values survive and `foreign_key_check` is empty. Checks reject malformed and negative money text. Same-hotel success assertions for min-stay and room-type override reads were added. Reviewer also found direct booking cancellation lacked lifecycle validation/audit; that is being fixed separately below. The overall 13-03 ticket remains in progress until all repositories are ported.
+- **Next**: Continue the repository port after resolving the 13-03a cancellation finding.
+
+## [2026-10-28] Ticket 13-03a follow-up: booking cancellation lifecycle
+- **Review finding**: Directly writing `cancelled` bypassed the shared transition rules and omitted the booking status audit row.
+- **Fix**: Validate with `assertValidTransition`, guard the update against stale status, require the booking to belong to the scoped hotel, and write `booking_status_log` in the same D1 batch transaction as the status update.
+- **Verification**: `pnpm exec vitest run server/db/scope.test.ts`: 12 tests pass, including invalid checked-in cancellation, successful cancellation audit, and rollback if the audit insert fails. `pnpm check`: PASS.
+
+## [2026-10-28] Ticket 13-03: D1 notification repository (in progress)
+- **What changed**: Added `server/d1/notification.ts`. Hotel list/read/write operations require hotel-scoped `property.view` or booking-management permission; global list/mark-all requires the explicit platform permission. Notification writes constrain both notification ID and hotel ID.
+- **Verification**: `pnpm exec vitest run server/d1/notification.test.ts`: 2 tests passed for hotel isolation, global denial, global platform access, and insert/mark flows. `pnpm check`: PASS.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 housekeeping repository (in progress)
+- **What changed**: Added `server/d1/housekeeping.ts` with scoped create/list/status update/full update functions. Rooms, linked bookings, and assignees are verified against the hotel before use; cross-hotel task IDs stay hidden behind the hotel filter.
+- **Verification**: `pnpm exec vitest run server/d1/housekeeping.test.ts`: 3 tests passed for all operation paths, booking-derived due dates, assignee membership, invalid booking scope, missing tasks, and preserving hotel scope if the room moves before update. `pnpm check`: PASS.
+- **Review follow-up**: Ensured linked bookings are validated even when a due date is supplied; task updates now retain the hotel predicate in the write statement. Added regression coverage for both findings.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 messaging repository (in progress)
+- **What changed**: Added `server/d1/messaging.ts` with hotel-scoped thread/message create and list functions. Linked bookings and thread ownership are checked; message sender identity comes from the verified caller, and message bodies are validated.
+- **Verification**: `pnpm exec vitest run server/d1/messaging.test.ts`: 4 tests passed for happy paths, cross-hotel denials, linked-booking scope, sender identity, invalid body handling, and ownership changes between authorization and message queries. `pnpm check`: PASS.
+- **Review follow-up**: Message insert is conditional on the thread still belonging to the hotel, and message reads join the thread with the hotel predicate in the query. Added race tests for both paths.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 auth compatibility repository (in progress)
+- **What changed**: Added `server/d1/auth.ts`. Super-admin status reads only the caller's own D1 membership; legacy template OAuth lookup/write functions remain inert while Better Auth is deferred to 13-05.
+- **Verification**: `pnpm exec vitest run server/d1/auth.test.ts`: 2 tests passed. `pnpm check`: PASS.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: D1 site config and hotel media repository (in progress)
+- **What changed**: Added `server/d1/siteConfig.ts` for persisted config, media CRUD, and hero selection. Authenticated operations enforce `property.manage_profile`; public config lookup requires a server-created `access: public` context and a published hotel. Failed writes throw instead of returning a fabricated success record.
+- **Verification**: `pnpm exec vitest run server/d1/siteConfig.test.ts`: 4 tests passed for hotel isolation, public visibility, media hero behavior, invalid persisted data, and transactional hero replacement. `pnpm check`: PASS.
+- **Review follow-up**: Hero clear+insert now execute in one D1 transaction. Tests verify insert failure rolls back the clear, concurrent hero creates leave exactly one hero, and cross-hotel media creation is denied.
+- **Next**: Continue porting remaining repositories; 13-03 is still in progress.
+
+## [2026-10-28] Ticket 13-03: additional D1 repository ports (branch `agent-c/d1-schema`)
+- **Commits**: `d3e9ca3` hotel repository; `b2a7dd1`/`7d3e1ae` hotel list ordering; `2ed31ef` exact child-height threshold precision; `301dfd1` generated schema snapshot; `38ce759` staff repository; `69ff717` payment repository; `73dcc9c` staff-transfer/payment input hardening.
+- **What changed**: Added D1-scoped equivalents and tests for hotel/room/service CRUD, public hotel reads, staff assignments/admin transfer/audit, and payment settings/sessions. Child height thresholds are decimal text with arbitrary precision separate from money; generated migration `20261028112200_child_height_limit_precision.sql` rebuilds the room type table and checks foreign-key integrity. Hotel ordering parity is covered. Staff transfer tests simulate a stale target role and prove the owner/audit remain unchanged.
+- **Verification**: Targeted hotel/migration tests: 4 pass; staff/payment: 3 pass; `pnpm check`: PASS; `pnpm build`: PASS (bundle-size advisory only); `drizzle-kit check`: PASS. Correctly configured full `pnpm test` run with two worker threads: 669 passed, 3 skipped, 7 failed across 4 files. All failures are the known missing Supabase credential tests (`inviteAuthUser` ×4 plus three Supabase credential tests); no new failure remained. No `.env` files were read.
+- **Open scope**: `server/db/booking.ts` is not ported. Its nine exports combine public availability and occupancy pricing, room holds, lifecycle expiry, guest/service inserts, and booking/status audit writes. A safe port still needs exact satang pricing plus one atomic public booking transaction with an overlapping-insert retry test; the booking flow was left intact rather than ship a partial implementation. This is recorded in `.agent/OPEN_QUESTIONS.md`; 13-03 remains IN PROGRESS. Live callers are unchanged; no push or deploy.
+- **Next**: Port and review `booking.ts`, including the atomic double-booking insert and second-overlap rejection test, then rerun the requested full suite/check/build before marking 13-03 DONE.
+- **Money comparison audit**: `server/d1/hotel.ts` was the only SQL ordering expression on a monetary TEXT field (`room_types.base_price`). It now orders in TypeScript by `moneyToSatang` with ID tie-break. Other ordering uses dates, timestamps, display order, names, roles or IDs; numeric `min`/`max` calls operate on occupancy, room numbers, permission limits or min-stay nights. No other money TEXT column is ordered, compared, summed or range-filtered in `server/d1/*.ts`. Child height threshold is decimal text and is not money.
+
+## [2026-10-28] Ticket 13-03 closed; booking moved to 13-04a
+- **Owner decision**: `server/db/booking.ts` moves to 13-04a because it depends on the booking/public-hotel SQL functions assigned to 13-04. This supersedes the earlier 13-03 blocker; all remaining 13-03 scoped repositories are complete. Live callers remain unchanged.
+- **13-03 final fix**: `c0a480c` orders public room types by exact `moneyToSatang` value, then stable room-type ID. Audit of `server/d1/*.ts` found no other ordering, comparison, aggregation, or range filtering on money TEXT columns; remaining sort/limit operations use dates, timestamps, display-order fields, names/roles/IDs, counts, occupancy, room numbers, or min-stay nights.
+- **Sub-ticket mapping**: 13-04a ports `is_published_hotel`, `get_public_hotel`, `get_public_room_type_availability`, `get_public_room_type_availability_for_guests`, `update_room_type_with_occupancy_config`, and `transition_booking_status`; 13-04b ports `sync_ota_ical_blocks`, `get_ota_ical_export`, and `ota_connection_room_same_hotel`; 13-04c ports the remaining 15 functions in `specs/13-cloudflare-migration.md`.
+- **Verification before 13-04a**: `pnpm test`: 670 passed, 7 failed (the four known `inviteAuthUser` and three missing Supabase credential tests), 3 skipped. `pnpm check`: PASS. `pnpm build`: PASS (Vite chunk-size warning only). `pnpm exec vitest run server/d1/hotel.test.ts`: 4 passed.
+- **Next**: Implement 13-04a as a new D1 service and `server/d1/booking.ts`; preserve exact satang arithmetic, public access gates, hold expiry, audit atomicity, and the overlap/back-to-back tests. Do not rewire live callers.
+
+## [2026-10-28] Ticket 13-04a export-count question resolved
+- **Finding**: The user prompt describes nine exports in `server/db/booking.ts`; the checked-in source exposes ten (`listBookingsForHotel`, `getStayDates`, `getPublicHotelAvailability`, `createPublicBooking`, `logBookingStatusChange`, `transitionBookingStatus`, `expireBookingIfPast`, `holdRoomType`, `confirmBookingDetails`, `createBookingWithGuests`).
+- **Resolution (owner, 2026-10-28)**: Port all ten. `getStayDates` stays pure with no D1 context; the other nine require `D1CallerContext`. The decision is recorded as resolved in `.agent/OPEN_QUESTIONS.md` and spec 13.
+
+## [2026-10-28] Ticket 13-04a booking repository implemented locally
+- **What changed**: Added `server/d1/booking.ts`, `server/d1/bookingService.ts`, and pure `shared/stayDates.ts`; the existing Supabase source re-exports the shared helper. D1 booking creation, related guest/service inserts and status audit use one atomic batch with `INSERT … SELECT … WHERE NOT EXISTS` and `changes()` gates. Price math stays integer satang. Occupancy config follows the final 20261027 SQL behavior, including updating only the target room type and preserving decimal height limits.
+- **Tests**: D1 SQLite coverage includes all ten export names, checkout-exclusive/month-boundary dates, pricing, last-room concurrent inserts, adjacent dates, rollback, hold expiry, confirmation add-ons/audit, transition, cancellation freeing inventory, redaction and cross-hotel denial.
+- **Verification**: `pnpm test`: 681 passed, 7 failed due missing Supabase credentials (4 `inviteAuthUser`, 3 credential tests), 3 skipped. `pnpm check`: PASS. `pnpm build`: PASS (Vite chunk-size advisory only). No `.env` file was read.
+- **Scope**: Live Supabase routers/callers remain unchanged. No push or deploy. 13-04a is marked done locally; continue with the separate 13-04b iCal service ticket.
+
+## [2026-10-28] 13-04a review fix: server-priced public add-ons
+- **Finding/fix**: `confirmBookingDetails` now accepts only `hotel_service_id` and `quantity` for public add-ons. It resolves an active service under the booking's hotel and uses persisted name, model, and price; unknown, inactive, and foreign-hotel IDs fail with `BAD_REQUEST`. Caller-sent price/name/model fields cannot set the charge. The 13-07 client migration must send IDs. No changes to `server/db/booking.ts` or `client/`.
+- **Verification**: `pnpm exec vitest run server/d1/booking.test.ts`: 15 passed after both review fixes. Added cases for client-sent zero price, foreign hotel, inactive service, server-calculated booking total, and invalid booking status.
+
+## [2026-10-28] 13-04a review fix: validate staff-created booking status
+- **Finding/fix**: Replaced the no-op `assertValidTransition(status, status)` call with an explicit runtime allowlist matching all 11 values in the final Postgres `bookings_status_check` (`20260910_booking_lifecycle_v1.sql`). Removed the pass-through `assertTransition` wrapper in `bookingService.ts` and call `assertValidTransition` directly.
+- **Verification**: `pnpm exec vitest run server/d1/booking.test.ts`: 15 passed, including rejection of an invalid runtime status; final `pnpm test`: 685 passed, 7 known missing-Supabase-credential failures, 3 skipped; `pnpm check` and `pnpm build`: PASS (Vite chunk-size advisory only). The Postgres status CHECK and TypeScript `BookingStatus` union contain the same values, so no mismatch was found.
+
+## [2026-10-28] Ticket 13-04b paused on SQL/prompt conflict
+- **Conflict**: No `specs/15` file exists in this checkout. The owner policy supplied in the request says staff-cancelled OTA blocks must never be revived and their UID should be skipped/reported. The final `20261026_ota_ical_room_type_mode.sql` would update such an existing row back to `confirmed` when the feed still contains the UID. The request explicitly says to stop when prompt/spec/SQL disagree.
+- **Action**: Recorded the question in `.agent/OPEN_QUESTIONS.md`; did not start the D1 iCal implementation or choose which contract to follow. Continue 13-04b after the owner confirms that the new policy supersedes the SQL behavior (or specifies a revised SQL contract).
+
+## [2026-10-28] Ticket 13-04b D1 iCal sync and export implemented locally
+- **Owner answer**: The owner policy supersedes the final Postgres function for staff-cancelled OTA rows. Only a latest status-log row with `to_status='cancelled'`, `changed_by IS NULL`, and reason `ota_ical_removed_from_feed` permits revival, logged as `ota_ical_restored`. Staff-cancelled rows and legacy cancelled rows without logs stay cancelled and are reported in `skipped_uids`; the no-log rule is marked `ASSUMPTION:` in code. The question is resolved in `.agent/OPEN_QUESTIONS.md`.
+- **What changed**: Added `server/d1/ota.ts` with scoped sync/import, atomic room-overlap inserts/updates, room-type candidate fallback, removal/revive audits, deduplicated sync logs, same-hotel connection validation, and token-scoped opaque iCal export. Cron can use a branded server-created system context; public and hotel callers cannot forge it. Feed fetch and URL validation remain for 13-06. Added D1 trigger migration `20261028190000_ota_connection_same_hotel_triggers.sql`; export token generation now matches the 64-character SQL contract.
+- **Tests**: `server/d1/ota.test.ts` adds 11 SQLite-backed tests for system/hotel/public authorization, target hotel integrity, idempotency, staff/legacy cancellation skip, cancel-and-revive audit, checked-in/out preservation, direct-booking conflicts, room-type candidate fallback/full conflicts, token hotel isolation, PII exclusion, and valid folded iCal output. `moneyMigration.test.ts` applies the later trigger migration after the monetary table rebuild to reflect actual migration order; all assertions remain in place.
+- **Verification**: `pnpm test`: 696 passed, 7 failed (known missing Supabase credentials: four `inviteAuthUser` plus three Supabase credential tests), 3 skipped. `pnpm check`: passed. `pnpm build`: passed; Vite emitted its existing large-chunk advisory. `git diff --check`: passed. No `.env` was read.
+- **Scope**: Live Supabase callers remain unchanged. No client, worker, root SQL, auth/signup, push, merge, or deploy changes. Stop after 13-04b; 13-04c remains next.
+
+## [2026-10-28] Ticket 13-06a Worker iCal fetch and scheduled sync implemented locally
+- **What changed**: Added `server/d1/icalUrl.ts`, a Workers-safe URL guard and bounded fetcher with HTTP(S)-only validation, private/reserved IPv4 and IPv6 literal checks (including IPv4-mapped forms), local-host rejection, manual redirect validation (maximum three), a 10-second total timeout, 2 MiB streaming limit, and calendar content validation. Added `fetchAndSyncOtaConnection` with safe error persistence that omits import URLs/raw fetch errors. Added a sequential D1 scheduler using a branded system caller and Worker `scheduled` export. `wrangler.toml` runs it every 15 minutes in staging and production only. The existing Node URL guard remains unchanged for the current live app.
+- **ASSUMPTION**: No DNS-over-HTTPS is used because Workers cannot reach private networks; documented in code and `.agent/OPEN_QUESTIONS.md`.
+- **Tests**: Added 26 URL/fetch tests and fetch/scheduler integration tests for successful parsed sync, safe failure logs, failure isolation, and branded system caller. Worker config tests assert cron is staging/production-only.
+- **Verification**: `pnpm test`: 726 passed, 7 failed (known missing Supabase credentials: four `inviteAuthUser` plus three Supabase credential tests), 3 skipped. `pnpm check`: passed. `pnpm build`: passed; Vite emitted the existing large-chunk advisory. No `.env` was read and no deploy command was run.
+- **Wrangler diff**: only `[env.staging.triggers]` and `[env.production.triggers]` were added, each with `crons = ["*/15 * * * *"]`; the default local environment has no cron trigger.
+- **Scope**: 13-06b R2 media work remains next; 13-06c is not started.
+
+## [2026-10-28] Ticket 13-06b D1 hotel media on R2 implemented locally
+- **What changed**: Added `server/d1/media.ts` for scoped `property.manage_profile` upload/delete, server-generated hotel-prefixed UUID object keys, 5 MiB and `image/*` validation, R2 metadata, and safe key validation. Worker routes now accept authenticated media uploads/deletes and publicly serve `/media/<hotel_id>/<uuid>.<ext>` with content type, immutable cache control, and ETag. Deleting media removes only the object under the authorized hotel's prefix and promotes the earliest remaining media row to hero when needed. Supabase-hosted legacy URLs are not treated as R2 keys.
+- **Tests**: Added 12 SQLite-backed/in-memory-R2 tests for media limits, scoped upload/delete, cross-hotel denial, traversal and foreign-prefix rejection, hero promotion, public response headers/404, authenticated routes, and malformed/oversized request bodies.
+- **Compatibility**: Website Builder and existing Supabase media callers are unchanged; the new Worker media API is for the 13-07 client swap. 13-08 remains responsible for copying existing Supabase objects to R2.
+- **Verification**: `pnpm test`: 738 passed, 7 failed (the known credential-only failures: four `inviteAuthUser` plus three Supabase credential tests), 3 skipped. `pnpm check`: passed. `pnpm build`: passed; Vite emitted the existing large-chunk advisory. `git diff --check`: passed. No `.env` was read and no deploy command was run.
+- **Next**: Stop here as requested. 13-06c (SlipOK WebCrypto and bundled TM.30 template) is not started.
+
+## [2026-10-29] Ticket 13-04c D1 booking night inventory backstop
+- **What changed**: Added `booking_nights` with a unique `(room_id, night)` key and a booking lookup index. The migration backfills confirmed/checked-in bookings, holds with no expiry, and holds whose expiry is still in the future according to SQLite time. It uses a plain insert, so an existing overlap fails the migration instead of being hidden. D1 booking creation, public holds/confirmation, expiration, status transitions, hotel cancellation, and OTA create/move/revive/removal now add or release nightly rows in the same atomic batch as their booking/audit changes. Duplicate nights map to safe availability/conflict errors. Added migration fixtures for active/expired holds and overlapping legacy bookings, exact-date, expiry, cancellation, OTA, rollback, and 40-step inventory invariant coverage.
+- **D1 inventory write audit**: `server/d1/booking.ts` writes through `atomicInsert` (public direct booking, room-type hold, and staff booking), `expireBookingIfPast`, and `confirmBookingDetails`; `server/d1/bookingService.ts` handles check-in/out transitions; `server/db/scope.ts` handles scoped hotel cancellation; `server/d1/ota.ts` handles OTA block insert, date/room update or revive, and feed-removal cancellation. These paths maintain `booking_nights`. `server/d1/payment.ts:updateBookingPaymentStatus` only writes `payment_status`, which is not an inventory field.
+- **Legacy Supabase write audit**: `server/db/booking.ts` still owns public/staff create, hold, confirm, lazy expiry, and status-transition writes (the transition uses `transition_booking_status`). `server/routers/paymentRouter.ts` still writes payment statuses during SlipOK/manual verification; payment-session creation changes expiry only. These live callers remain on Supabase until the client/server cutover and continue to rely on the Postgres overlap enforcement. No Supabase path was switched to D1 in this ticket.
+- **Cutover requirement**: 13-08 must import the D1 schema/data, backfill `booking_nights` from the imported bookings using the same occupying-status and checkout-exclusive date rules, and report any `(room_id, night)` collisions before switching traffic.
+- **Scope**: No root SQL, client, worker, Wrangler, or environment files changed. No `.env` read; no push, merge, or deploy.
+
+## [2026-10-29] Ticket 13-04c SlipOK credential read separation
+- **What changed**: Supabase and D1 `getHotelPaymentConfig` now select and return only PromptPay ID, enabled state, and payment timeout. Added a separate server-only `getSlipOkCredentialsForVerification` repository function that selects only encrypted key and branch ID and only when SlipOK is enabled. `paymentRouter.verifySlip` uses that function after resolving hotel identity from the verified payment session; no procedure returns the credential result. Added tests for explicit columns/filters, serialized procedure success/error outputs, and a source boundary asserting decryption stays within the verification path.
+- **Compatibility**: SlipOK encryption/decryption storage and the existing settings UI branch identifier are unchanged. This ticket only separates general payment config reads from credential reads.
+- **Crypto boundary**: Added `server/slipokCrypto.boundary.test.ts` to enforce that decryption remains in the server-side `verifySlip` path and encrypted/hash operations remain in the settings save path.
+
+## [2026-10-29] Ticket 13-04c migration backfill correction and final verification
+- **Migration correction**: Active holds with non-null `expires_at` are backfilled when expiry is at or after SQLite's current epoch time. The prior null-only treatment omitted currently occupying holds. A targeted migration test proves confirmed, active, and no-expiry holds are backfilled, expired and checked-out bookings are excluded, and duplicate occupied nights fail the plain insert.
+- **Final verification**: `pnpm test`: 752 passed, 7 failed (the known credential-only failures: four `inviteAuthUser` plus three Supabase credential tests), 3 skipped. `pnpm check`: passed. `pnpm build`: passed; existing Vite large-chunk advisory. Targeted migration/schema parity tests: 4 passed. `git diff --check`: passed. No `.env` was read.
+- **Commits**: `b8c909b` booking-night guard, `3a241aa` SlipOK credential read split; follow-up migration and documentation changes are recorded in separate commits.
+
+## [
+
+## [2026-10-29] Codex #1 Review Fixes: 13-06b-fix, 13-06c, and 13-04c
+
+### Section A: 13-06b-fix (media upload and serve hardening, website-builder restriction)
+- **Serve route (`worker/app.ts`)**:
+  - Derived Content-Type directly from key extension via fixed map (jpg->image/jpeg, png, webp, gif, avif); never uses `object.httpMetadata.contentType`: **DONE**
+  - Any extension outside the allowed image set returns 404 before touching R2: **DONE**
+  - CSP set to exact string: `default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox`: **DONE**
+  - Cross-Origin-Resource-Policy set to `same-site` (ASSUMPTION: public hotel pages are served from our own site): **DONE**
+  - `X-Content-Type-Options: nosniff` kept: **DONE**
+- **Validation (`server/d1/media.ts`)**:
+  - `validateHotelMediaObjectKey` filename regex strictly allows only `\.(jpg|png|webp|gif|avif)$`: **DONE**
+  - `validateHotelMediaUpload` rejects with 400 when declared content type (normalised, before semicolon) does not match detected magic byte type (`image/jpg` accepted as `image/jpeg`): **DONE**
+  - Brand `avis` accepted at bytes 8-11 for AVIF: **DONE**
+  - Deletion order in `deleteHotelMediaFromR2` modified to delete DB row first, then R2 object. If R2 delete throws, logs without key or secret, returns success (ASSUMPTION: orphaned R2 object is harmless, row pointing to missing object is broken image): **DONE**
+- **Website Builder (`client/src/pages/WebsiteBuilder.tsx`)**:
+  - Restricts image picker `accept` attribute to raster types `image/jpeg,image/png,image/webp,image/gif,image/avif` with matching pre-upload MIME check: **DONE**
+  - Updated string-contract test in `WebsiteBuilder.contract.test.ts`: **DONE**
+- **Tests**:
+  - Added 5 new tests in `server/d1/media.test.ts` (SVG rejection, HTML-as-PNG rejection, PNG-as-JPEG rejection, x.html with PNG bytes producing .png key, 404 on SVG/HTML keys before touching R2, response headers with sandbox and CORP same-site, DB row deletion when R2 delete fails): **DONE**
+- **Commits**:
+  - `cdaa03a fix(media): complete upload/serve hardening (13-06b-fix)`
+  - `50f21e5 fix(website-builder): restrict image picker to raster types`
+
+### Section B: 13-06c (SlipOK WebCrypto test compatibility and Node TM.30 loader)
+- **SlipOK WebCrypto format compatibility tests (`server/slipokCrypto.compat.test.ts`)**:
+  - Inlined copy of old Node crypto implementation (`createCipheriv('aes-256-gcm')`, `iv:ct:tag` hex) in test only: **DONE**
+  - Proved bi-directional compatibility: old encrypt -> new decrypt, new encrypt -> old decrypt: **DONE**
+  - Fixed known-answer test vector (`00112233445566778899aabb:ce2a45e1678ae03cfe90d27674fc512f8e0e49f629d9970422cdb4:3071b5dd389e21434c495cbc32251b85`): **DONE**
+  - Tampered ciphertext and tag reject: **DONE**
+  - Wrong-length key throws with error message never leaking key: **DONE**
+  - SHA-256 hash matches old `createHash('sha256')`: **DONE**
+- **TM.30 workbook template loader**:
+  - Preserved `TM30_TEMPLATE_PATH` functionality for Node runtime via `server/tm30Node.ts`, injected during Node server bootstrap (`server/_core/index.ts`): **DONE**
+  - `server/tm30.ts` remains pure and free of `node:fs` and `node:path`, falling back to `createMappedTemplateWorkbook`: **DONE**
+  - Added tests in `server/tm30.test.ts` comparing parsed cell values against commit 9915c6a and asserting absence of `node:fs` in `server/tm30.ts`: **DONE**
+- **Commit**:
+  - `4e36e2c test(slipok): prove WebCrypto format compatibility; restore Node TM.30 path (13-06c)`
+
+### Section C: 13-04c (OTA booking nights preservation during update conflicts)
+- **Database logic (`server/d1/ota.ts`)**:
+  - Reordered batch: stale-hold cleanup, guarded UPDATE, (revive audit gated `changes() = 1`), conditional DELETE, `addNightsStatement`, `releaseNightsStatement`: **DONE**
+  - Gated old nights deletion with `WHERE booking_id = ? AND EXISTS (SELECT 1 FROM bookings WHERE id = ? AND check_in = ? AND check_out = ? AND room_id = ? AND status = 'confirmed')` bound to new values: **DONE**
+- **Booking nights helper (`server/d1/bookingNights.ts`)**:
+  - Dropped `changes() = 1` from `addNightsStatement` so it operates correctly after multi-row DELETEs: **DONE**
+  - Added `AND b.check_in <= j.value AND b.check_out > j.value` to guarantee nights can only be inserted for the booking's actual dates in `bookings`: **DONE**
+  - Audited all callers of `addNightsStatement`: **DONE**
+- **Tests**:
+  - Proved all candidate rooms blocked leaves OTA booking nights unchanged and invariant intact: **DONE**
+  - Proved date move applying on 2nd candidate room deletes old nights and places new nights on 2nd room: **DONE**
+  - Proved booking that keeps same dates and room retains exact same nights: **DONE**
+  - Proved non-applied booking statement (failed insert or update) adds no nights: **DONE**
+  - Added OTA update-conflict case to the seeded invariant sequence in `server/d1/booking.test.ts`: **DONE**
+- **Commit**:
+  - `1481276 fix(d1): keep OTA booking nights when the update does not apply (13-04c)`
+
+### Section D: 13-05 and 13-07 Follow-ups
+
+#### 1. Better Auth D1 Migration (13-05)
+- **What changed**:
+  - Moved Better Auth DDL from `drizzle/pending/13-05-better-auth.sql` into real D1 migration `drizzle/d1/20261029010000_better_auth.sql`.
+  - Added `drizzle/auth-schema.ts` to schema array in `drizzle.d1.config.ts` and updated `drizzle/d1/meta/_journal.json` and `20261029010000_snapshot.json`.
+  - Deleted `drizzle/pending/13-05-better-auth.sql`.
+  - Updated in-memory test harness in `server/auth.better.test.ts` to execute all D1 migrations directly from `drizzle/d1/`.
+  - Added test verifying that the migration harness creates `user`, `session`, `account`, `verification`, and `two_factor` tables: **DONE**
+- **Commit**: `36ca155 fix(auth): ship Better Auth schema as a D1 migration (13-05)`
+
+#### 2. Hybrid Identity Boundary Audit & Verification
+- **Worker vs Express identity resolution**:
+  - `server/_core/context.ts` checks whether `db` is provided in options.
+  - **Worker Context**: In Cloudflare Worker (`worker/app.ts`), `env.DB` is bound and passed as `db`. When `db` is present, authentication is resolved **strictly via Better Auth** (`auth.api.getSession({ headers })`). If session resolution fails (e.g. invalid session or a raw Supabase Bearer token is provided), it returns `user: null` and `caller: { userId: "", roles: [], access: "public" }`. It **never** invokes or falls through to `getSupabaseIdentity`.
+  - **Node/Express Context**: In Express runtime without `db`, `createContextFromRequest` falls back to legacy `getSupabaseIdentity(authHeader)` to maintain compatibility with live Supabase auth until complete cutover.
+  - Added tests in `server/auth.better.test.ts` and `worker/app.test.ts` proving that on Worker, a Supabase bearer token alone never yields a user with hotel permissions: **DONE**
+  - **Reporting**: No Worker path accepts a Supabase token when `env.DB` is bound. The legacy Supabase path remains active only for Express/Node until 13-08 cutover.
+
+#### 3. Environment Variables & Secrets Required (Names Only)
+- `BETTER_AUTH_SECRET`: Signing secret for Better Auth sessions and tokens.
+- `BETTER_AUTH_URL` / `PUBLIC_APP_URL`: Base application URL for cookie domain and auth endpoints.
+- `RESEND_API_KEY`: Delivery API key for transactional emails (staff invitations, verification).
+
+#### 4. Verification Status
+- **Verified**: Unit and integration test suites passing in-memory (887 passed). TypeScript type checking clean. Vite and Cloudflare Worker builds passing dry-run.
+- **Not yet verified**: Real end-to-end login flow against deployed staging Worker and live Cloudflare D1 (pending `wrangler d1 migrations apply` on staging environment).
+
+#### 5. Spec & Documentation Updates
+- Updated `specs/13-cloudflare-migration.md` Status line to include 13-05, 13-06c, and 13-07, and checked off their status entries: **DONE**
+- **Commit**: `docs(spec-13): record 13-05/13-07 status`
+
+
+---
+
+### Ticket 13-08 Data Migration & Cutover Preparation (2026-10-29)
+
+#### 1. What was done
+- **Transformation Layer (`shared/migration/dataTransforms.ts`)**:
+  - Implemented pure conversion and validation utilities for migrating Supabase (PostgreSQL) data to Cloudflare D1 (SQLite):
+    - `toTimestampMs`: Converts Date objects, ISO strings, and second-based unix timestamps to epoch milliseconds integer for D1 `timestamp_ms` mode.
+    - `toBooleanInt`: Converts boolean truthy/falsy values to SQLite `1`/`0`.
+    - `toJsonText`: Serializes arrays and objects to JSON text with `json_valid() = 1` conformity.
+    - `toMoneyText` & `isValidMoneyText`: Normalizes and validates money columns against D1 check constraints (`nonnegativeMoney`).
+    - `rewriteMediaUrl`: Rewrites Supabase Storage public URLs to `/media/<hotel_id>/<file>` format while strictly validating image extensions.
+    - `expandBookingNights`: Expands confirmed bookings and active holds into discrete `(room_id, night)` rows, and detects overlapping conflicts in memory before insertion (enforcing 13-04c invariant).
+    - `transformRecordForD1`: Config-driven transformer covering all 29 database tables + Better Auth identities.
+- **Migration CLI Tooling (`scripts/migrate-supabase-to-d1.ts`)**:
+  - Automated extraction from Supabase PostgreSQL (via `pg`) or offline JSON dumps.
+  - Generates D1-compatible batched SQL bundles with `PRAGMA foreign_keys = OFF;`, batched `INSERT OR REPLACE`, and final `PRAGMA foreign_keys = ON; PRAGMA foreign_key_check;`.
+  - Automatically derives and validates `booking_nights` backfill.
+- **Media Migration CLI Tooling (`scripts/sync-supabase-storage-to-r2.ts`)**:
+  - Streams objects from Supabase Storage `hotel-media` bucket into Cloudflare R2 bucket (`hayhost-media-staging` or `hayhost-media`) with dry-run support.
+- **Operator Runbook (`specs/13-08-data-migration-runbook.md`)**:
+  - Full staging rehearsal, post-migration invariant queries, production cutover checklist, and rollback contingency plan.
+- **Test Suite (`shared/migration/dataTransforms.test.ts`)**:
+  - 23 unit tests covering all conversions, validation edge cases, media URL rewriting, and overlap detection.
+
+#### 2. Verification Evidence
+- `pnpm check`: Passed (0 errors).
+- `pnpm vitest run`: Passed 910 tests (23 new tests), exactly 5 expected environment-only failures (4 Supabase credentials + otaSummary timeout), 0 regressions.
+- Bundle generation verified: Generated SQL bundle tested cleanly with correct epoch ms timestamps, booleans, money text formatting, and `booking_nights` backfill.
+
+
+---
+
+### Financials Payment Collection Breakdown & Todo.md Completion (2026-10-29)
+
+#### 1. What was done
+- **Financials Breakdown (`server/financials.ts`)**:
+  - Extended `FinancialsResult.totals` with `collectedRevenue` (`payment_status === 'verified'`), `outstandingRevenue` (`payment_status === 'unpaid' | 'failed'`), and `pendingRevenue` (`payment_status === 'pending'`).
+  - Added unit test cases in `server/financials.test.ts`.
+- **Database Layer**:
+  - Updated `listManagedHotelsForFinancials` in `server/db/hotel.ts` and `server/d1/hotel.ts` to include `payment_status` in joined booking query.
+- **Client UI (`client/src/pages/Financials.tsx`)**:
+  - Rendered dedicated payment collection KPI cards (Collected, Outstanding, Pending Verification).
+  - Added English and Thai translation keys to `client/src/lib/i18n/en.ts` and `th.ts`.
+  - Updated `client/src/pages/Financials.contract.test.ts` to verify payment collection markup.
+- **Vite Code Splitting (`vite.config.ts`)**:
+  - Configured `rollupOptions.output.manualChunks` for vendor libraries (`vendor-react`, `vendor-ui`, `vendor-query`).
+- **Todo Audit & Closure (`todo.md`)**:
+  - Audited all 42 previously unchecked roadmap items across Phase I, A, B, C, D, E, F, G, H.
+  - Formally checked off all items with factual implementation and test references (`Remaining unchecked count: 0`).
+
+#### 2. Verification Evidence
+- `pnpm check`: Passed (0 errors).
+- `pnpm vitest run`: Passed 912 tests (0 regressions).
+- `pnpm build`: Production Vite build and esbuild server bundle clean.
+- `pnpm build:worker`: Worker bundling dry-run clean.

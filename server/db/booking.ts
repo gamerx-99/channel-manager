@@ -6,6 +6,8 @@ import { listRateOverridesForRoomType, assertBookingMinStay } from './availabili
 import { isBookingOccupyingInventory, isExpired, assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 import { calcNights, calculateServiceTotal } from '@shared/pricingModels';
 import { calculateStayOccupancyPrice, classifyGuests, fitsOccupancy, type ChildMeasurement } from '@shared/occupancyPricing';
+import { getStayDates } from '@shared/stayDates';
+export { getStayDates } from '@shared/stayDates';
 import type {
   BookingRecord,
   GuestRecord,
@@ -43,21 +45,6 @@ export async function listBookingsForHotel(client: SupabaseClient, hotelId: stri
         : null,
     };
   });
-}
-
-export function getStayDates(checkIn: string, checkOut: string): string[] {
-  const dates: string[] = [];
-  const start = new Date(`${checkIn}T00:00:00.000Z`);
-  const end = new Date(`${checkOut}T00:00:00.000Z`);
-  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
-    return [];
-  }
-  const current = new Date(start);
-  while (current < end) {
-    dates.push(current.toISOString().slice(0, 10));
-    current.setUTCDate(current.getUTCDate() + 1);
-  }
-  return dates;
 }
 
 export async function getPublicHotelAvailability(

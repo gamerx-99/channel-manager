@@ -141,7 +141,7 @@ export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOv
   requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_pricing_rules');
   const client = rlsClient(ctx.user.accessToken);
   try {
-    const removed = await dbDeleteRateOverride(client, input.rate_override_id);
+    const removed = await dbDeleteRateOverride(client, input.rate_override_id, input.hotel_id);
     if (!removed) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This rate override was not found.' });
     }

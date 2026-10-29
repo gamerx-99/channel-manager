@@ -1,6 +1,9 @@
 # 13 Move the whole platform to Cloudflare (Workers + D1 + R2), before launch
-Status: TODO — approved direction (human, 2026-10-26); blocked only on the questions below for
-the tickets that need them. Owner: A (cross-cutting; B coordinates per `.agent/WORK_SPLIT.md`).
+Status: IN PROGRESS — 13-01, 13-02, 13-02b, 13-03, 13-04a, 13-04b, 13-04c, 13-05, 13-06a, 13-06b, 13-06c, and 13-07 are implemented locally.
+Live Supabase callers remain unchanged until 13-08 cutover.
+13-01 staging deployment remains pending. Approved direction (human, 2026-10-26), blocked only on
+the questions below for the tickets that need them. Owner: A (cross-cutting; B coordinates per
+`.agent/WORK_SPLIT.md`).
 Depends on: — (supersedes the hosting/Supabase assumptions in `CLAUDE.md` once complete)
 Owner-tier: worker-code
 
@@ -52,31 +55,88 @@ external piece (see Q1).
 - iCal export never contains guest data; cron sync stays idempotent.
 
 ## Ticket plan (each = one concern = one commit, in this order)
-- **13-01 Scaffold**: `wrangler.toml`, Worker entry (Hono + tRPC fetch adapter + static
+- [x] **13-01 Scaffold** (2026-10-27, staging deploy pending `wrangler login`): `wrangler.toml`, Worker entry (Hono + tRPC fetch adapter + static
   assets), local dev via `wrangler dev`, staging + production environments, D1 + R2 bindings,
   CI-able `pnpm build`. App still talks to Supabase at this point (Hyperdrive or supabase-js over
   fetch) so the Worker can serve the current app end-to-end on a preview URL.
-- **13-02 Schema**: Drizzle schema for every table that exists after all 24 migrations
-  (constraints, CHECKs, unique and partial indexes), generated D1 migrations, a schema test that
-  lists every Postgres table/column and fails if one is missing in D1.
-- **13-03 Scoped data layer**: `db/scope.ts` — repositories take a verified `HotelScope`
+- [x] **13-02 Schema** (2026-10-27, `agent-c/d1-schema`): Drizzle SQLite schema for all
+  26 app-owned tables in the root migration end state plus `support_access_grants` and
+  `support_access_log`; `hotel_users` includes `support`, `permission_grants`, and
+  `permission_revokes`. Generated D1 migration under `drizzle/d1`; parity test checks the
+  Postgres application-table snapshot against D1. Supabase-internal tables are excluded.
+- [x] **13-02b Schema additions** (2026-10-28, `agent-c/d1-schema`): hotel acquisition source,
+  referral hotel and agent links, `agents`, and public-booking marketing consent. Added as a new
+  D1 migration; initial migration remains unchanged.
+- [x] **13-03 Scoped data layer** (DONE locally, 2026-10-28): `db/scope.ts` — repositories take a verified `HotelScope`
   (`hotelId`, role, permissions) and always filter by it; platform scope is explicit. Port
   `server/db/*` onto it. Tenancy test suite (every repository × foreign hotel = denied/empty).
-- **13-04 Port SQL functions to services**: the 32 functions (booking state transitions,
-  occupancy pricing, public availability, `sync_ota_ical_blocks`, `get_ota_ical_export`,
-  `transfer_hotel_admin`, signup links, etc.) become TS services with unit + D1 integration
-  tests; the double-booking guard implemented as described above.
-- **13-05 Auth**: Better Auth on D1, TOTP 2FA (replaces `auth.mfa` flows incl. step-up),
-  staff invites and hotel-owner signup links, session cookies; `getSupabaseIdentity` replaced by a
-  `getIdentity` with the same shape so routers barely change.
-- **13-06 Platform services**: R2 media upload/serve (replaces Forge `storagePut`, and B's
-  planned Supabase Storage work), Cron Triggers for iCal sync (15 min) and later billing,
-  SlipOK AES-GCM via WebCrypto, TM.30 template bundled as an asset (no `node:fs`), iCal URL
-  guard without `node:dns` (Workers cannot reach private networks; keep the literal/hostname
-  checks, resolve via DoH if still needed).
-- **13-07 Client**: replace `@supabase/supabase-js` auth calls in the client with the new auth
-  client; remove hard-coded Supabase URL/key fallbacks (`client/src/lib/supabase.ts`,
-  `server/supabase.ts`, `server/_core/env.ts`).
+  D1 scope gates cover booking reads, guest PII, booking value, cancellation, staff permission
+  edits, and the restricted platform summary. Port each `server/db/*` module into a corresponding
+  `server/d1/*` module with equivalent exports and happy-path plus cross-hotel denial tests; keep
+  Supabase callers unchanged until 13-07/13-08. Do not port `channelPerformance` or
+  `saveHotelSiteConfig`'s synthetic-success fallback. Platform summary `plan` and
+  `payment_status` stay null until spec 12 billing exists. See the resolved scope decision in
+  `.agent/OPEN_QUESTIONS.md`. The owner moved `server/db/booking.ts` to 13-04a because its public
+  booking/availability behavior depends on SQL functions ported in 13-04. Live callers remain
+  unchanged until 13-07/13-08.
+- [x] **13-04a Booking, availability, and pricing service** (DONE locally, 2026-10-28): ported
+  `is_published_hotel`, `get_public_hotel`, `get_public_room_type_availability`,
+  `get_public_room_type_availability_for_guests`, `update_room_type_with_occupancy_config`, and
+  `transition_booking_status` into scoped D1 services. Added `server/d1/booking.ts` matching all
+  ten exports in `server/db/booking.ts`; `getStayDates` remains a pure helper and the other nine
+  take `D1CallerContext`. Booking creation uses atomic `INSERT … SELECT … WHERE NOT EXISTS` with
+  `changes()` gating for guest/service/status-audit rows; money is kept in integer satang. Tests
+  cover month-boundary/check-out-exclusive dates, pricing, hold/expiry, add-ons, transitions,
+  cancellation inventory release, rollback, last-room concurrency and hotel isolation. Targeted
+  tests: 15 passed. Public add-ons are selected by active hotel-service IDs and priced server-side.
+  Staff booking creation validates the status against the final Postgres lifecycle CHECK list.
+  Full `pnpm test`: 685 passed, 7 known Supabase-credential failures, 3 skipped;
+  `pnpm check` and `pnpm build` passed (Vite chunk-size advisory only).
+- **13-04 Port SQL functions to services**: port the final definitions only; later date-ordered
+  migrations supersede earlier definitions. Remaining sub-tickets:
+  - [x] **13-04b iCal sync and export** (DONE locally, 2026-10-28): `sync_ota_ical_blocks`,
+    `get_ota_ical_export`, and `ota_connection_room_same_hotel` (including its same-hotel trigger
+    enforcement). `server/d1/ota.ts` accepts parsed events or raw iCal; network fetch and URL
+    validation remain in 13-06. Sync requires a branded server-created system context for Cron or
+    an authorized hotel caller. Feed removals write an audit reason; only the latest sync-removal
+    audit permits revival. Staff-cancelled and legacy rows without audit remain cancelled and are
+    returned in `skipped_uids`, per the resolved owner exception recorded in
+    `.agent/OPEN_QUESTIONS.md`. Exports are token-scoped, opaque iCal without guest data. Tests
+    cover identity boundaries, idempotency, staff and legacy cancellation, restoration, conflicts,
+    same-hotel trigger rules, and room/room-type export behavior.
+  - [x] **13-04c D1 inventory and payment hardening** (DONE locally, 2026-10-29): added the D1
+    `booking_nights` unique `(room_id, night)` inventory backstop and transactional maintenance
+    across D1 booking, OTA, cancellation, expiry, and check-in/out writes. The migration backfills
+    occupying bookings and active holds, and fails on existing overlaps; 13-08 must perform the same
+    backfill after importing Supabase data and report overlaps before cutover. Payment config reads
+    now expose only client-safe settings; SlipOK credentials have a separate verification-only
+    server repository read.
+  - **13-04d Remaining service and trigger behaviors** (NOT STARTED): the SQL helpers/triggers
+    originally grouped under 13-04c remain outstanding:
+    `is_super_admin`, `is_platform_admin`,
+    `is_hotel_member`, `current_user_has_role`, `can_manage_property`, `can_manage_staff`,
+    `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`, `can_manage_ical`,
+    `transfer_hotel_admin`, `prevent_notification_content_changes`,
+    `update_hotel_payment_settings_updated_at`, `update_payment_sessions_updated_at`, and
+    `update_hotel_services_updated_at`.
+- [x] **13-05 Auth** (DONE locally, 2026-10-29): Better Auth on D1, TOTP 2FA (replaces `auth.mfa` flows incl. step-up),
+  staff invites and hotel-owner signup links, session cookies; Better Auth schema shipped as a D1 migration in `drizzle/d1/20261029010000_better_auth.sql`.
+- **13-06 Platform services**:
+  - [x] **13-06a iCal fetch, URL guard, and Cron** (DONE locally, 2026-10-28): Workers-safe
+    public URL validation, manually checked redirects (maximum three), 10-second timeout, 2 MiB
+    streamed body cap, safe failure status/logs, and a 15-minute D1 system-caller cron in staging
+    and production. ASSUMPTION: Workers cannot reach private networks, so there is no DoH resolver;
+    see `.agent/OPEN_QUESTIONS.md`.
+  - [x] **13-06b R2 hotel media upload/serve** (DONE locally, 2026-10-28): permission-scoped
+    Worker API upload/delete uses server-generated `<hotel_id>/<uuid>.<ext>` keys and the existing
+    5 MiB/image MIME limits; public media serving returns content type, immutable cache headers,
+    and ETag. Delete is restricted to the caller's hotel prefix and preserves hero auto-promotion.
+    Live Supabase callers and the Website Builder client remain unchanged until 13-07/13-08.
+  - [x] **13-06c SlipOK WebCrypto and TM.30 template** (DONE locally, 2026-10-29): SlipOK AES-GCM format
+    compatibility proved with old Node crypto implementation; TM.30 loader separated into Node-only Express
+    injection and pure in-memory workbook template for Worker runtime without `node:fs`.
+- [x] **13-07 Client** (DONE locally, 2026-10-29): replace `@supabase/supabase-js` auth calls in the client with the new
+  Better Auth client (`client/src/lib/auth-client.ts`, commit 4c8cb9a).
 - **13-08 Data migration + cutover**: export from Supabase (Postgres → JSON per table),
   transform, import to D1 staging, verify row counts and invariants, rehearse, then production
   import; copy every object in the Supabase Storage `hotel-media` bucket (B's 872234a) to R2 under
@@ -86,6 +146,42 @@ external piece (see Q1).
   `server/_core/vite.ts`, `@supabase/*`, `pg`, `mysql2`, Manus/Forge leftovers), archive the
   Supabase project after a retention window, update `CLAUDE.md` (stack, commands, migrations
   section) and `.agent/BANNED_ZONE.md`.
+
+## PostgreSQL behavior handed to 13-03 / 13-04
+
+SQLite/D1 has no PostgreSQL function or RPC execution model, RLS, trigger functions, custom
+ENUM type, GiST exclusion constraint, or `btree_gist`/`pg_cron`/`pg_net` extension support.
+No `CREATE TYPE ... ENUM` appears in the root SQL; categorical values are text columns guarded
+by CHECK constraints and those checks are represented in D1.
+
+- **13-03 scoped data layer**: replace all RLS/`GRANT`/`REVOKE` behavior, `auth.uid()` and
+  `SECURITY DEFINER`/`row_security` gates with verified `HotelScope` checks and support grant
+  validation. `20261027_rls_write_hardening.sql`'s write boundaries are part of this work.
+  Replace `prevent_double_booking` and `prevent_rate_override_overlap` GiST exclusion
+  constraints with transactional application checks and concurrency tests. The OTA
+  same-hotel trigger also needs repository validation.
+- **13-04 service layer**: port these final function behaviors: `is_super_admin`,
+  `is_platform_admin`, `is_hotel_member`, `current_user_has_role`, `can_manage_property`,
+  `can_manage_staff`, `can_manage_rates`, `can_manage_bookings`, `can_manage_housekeeping`,
+  `can_manage_ical`, `is_published_hotel`, `get_public_hotel`,
+  `get_public_room_type_availability`, `get_public_room_type_availability_for_guests`,
+  `update_room_type_with_occupancy_config`, `transition_booking_status`,
+  `transfer_hotel_admin`, `sync_ota_ical_blocks`, `get_ota_ical_export`,
+  `prevent_notification_content_changes`, `update_hotel_payment_settings_updated_at`,
+  `update_payment_sessions_updated_at`, `update_hotel_services_updated_at`, and
+  `ota_connection_room_same_hotel`. Later definitions in the date-ordered SQL replace earlier
+  versions; port the final definitions only.
+- **Triggers**: `notifications_content_immutable`, `hotel_payment_settings_updated_at`,
+  `payment_sessions_updated_at`, `hotel_services_updated_at`, and
+  `trg_ota_connection_room_same_hotel` need service/repository equivalents.
+- **13-05 identity boundary**: UUIDs are stored as text and generated in the application;
+  Supabase `auth.users` references (`hotel_users.user_id`, booking actor IDs, assigned staff,
+  and support grant actors) become Better Auth relationships in 13-05. PostgreSQL `uuid`,
+  `timestamptz`, `date`, and `jsonb` are represented as text/epoch-milliseconds/ISO-date/JSON
+  text respectively. SQLite NUMERIC has no fixed decimal precision; 13-03 must use a safe
+  money representation when porting calculations.
+- **13-06 scheduled work**: `pg_cron`/`pg_net` are replaced by Workers Cron Triggers as already
+  scoped in 13-06; they are not installed in D1.
 
 ## Coordination with B (Antigravity)
 - B's in-flight work that targets Supabase specifically (Supabase Storage upload, a new RLS

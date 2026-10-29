@@ -157,7 +157,10 @@ export default function WebsiteBuilder() {
       setFormError(t("websiteBuilder.errorFileTooLarge"));
       return;
     }
-    if (!file.type.startsWith("image/")) {
+        const rawType = (file.type || "").split(";")[0].trim().toLowerCase();
+    const normalizedType = rawType === "image/jpg" ? "image/jpeg" : rawType;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+    if (!allowedTypes.includes(normalizedType)) {
       setFormError(t("websiteBuilder.errorOnlyImages"));
       return;
     }
@@ -341,7 +344,7 @@ export default function WebsiteBuilder() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                   className="hidden"
                   onChange={e => {
                     const file = e.target.files?.[0];

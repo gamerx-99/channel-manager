@@ -173,6 +173,9 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                 </button>
                 <button type="button" onClick={() => { reset(); setTotpCode(""); }} className="rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-[#f6faf7]">Cancel</button>
               </div>
+              {"error" in mfaState && mfaState.error && (
+                <p className="text-xs text-red-600">{mfaState.error}</p>
+              )}
             </div>
           )}
 

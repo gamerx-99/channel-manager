@@ -1,0 +1,69 @@
+﻿{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793057771087,
+      "tag": "20261026233611_initial_d1_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793130548392,
+      "tag": "20261027194908_add_hotel_acquisition_agents_marketing_consent",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793131068613,
+      "tag": "20261027195748_allow_ungranted_support_access_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793158996889,
+      "tag": "20261028044335_money_as_text",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793159060225,
+      "tag": "20261028044420_money_text_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793159219182,
+      "tag": "20261028044540_validate_money_text",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793161405868,
+      "tag": "20261028112200_child_height_limit_precision",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793212575102,
+      "tag": "20261029000000_booking_nights_overlap_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793251264066,
+      "tag": "20261029010000_better_auth",
+      "breakpoints": true
+    }
+  ]
+}

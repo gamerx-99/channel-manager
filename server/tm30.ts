@@ -1,24 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
 import type { BookingStatus } from "@shared/bookingLifecycle";
 import * as XLSX from "xlsx";
 
-const configuredTemplatePath = process.env.TM30_TEMPLATE_PATH?.trim();
-const defaultTemplatePath = resolve(
-  process.cwd(),
-  "server/assets/Template-InformAccom-ImportExcel.xlsx"
-);
-
 /**
- * Optional path to the approved Immigration template. The path is configurable
- * so the export works on Windows, Linux, local development, and deployment
- * environments without relying on `/home/ubuntu/upload`.
+ * Cloudflare Workers have no filesystem. The approved template is represented by
+ * the header mapping below, so TM.30 export works on the edge without node:fs.
  */
-export const TM30_TEMPLATE_PATH = configuredTemplatePath
-  ? isAbsolute(configuredTemplatePath)
-    ? configuredTemplatePath
-    : resolve(process.cwd(), configuredTemplatePath)
-  : defaultTemplatePath;
+export const TM30_TEMPLATE_PATH = "";
 
 export const TM30_HEADERS = [
   "ชื่อ\nFirst Name *",
@@ -120,11 +107,18 @@ export function buildTm30Rows(bookings: Tm30Booking[]): Tm30ExportRow[] {
   return rows;
 }
 
-function createMappedTemplateWorkbook(): XLSX.WorkBook {
+export function createMappedTemplateWorkbook(): XLSX.WorkBook {
   const workbook = XLSX.utils.book_new();
   const sheet = XLSX.utils.aoa_to_sheet([[...TM30_HEADERS]]);
   XLSX.utils.book_append_sheet(workbook, sheet, "TM.30");
   return workbook;
+}
+
+export type Tm30TemplateLoader = () => XLSX.WorkBook;
+let customTemplateLoader: Tm30TemplateLoader | null = null;
+
+export function registerTm30TemplateLoader(loader: Tm30TemplateLoader | null) {
+  customTemplateLoader = loader;
 }
 
 /**
@@ -134,19 +128,10 @@ function createMappedTemplateWorkbook(): XLSX.WorkBook {
  * missing file an explicit configuration error instead of silently falling back.
  */
 export function loadTm30Template(): XLSX.WorkBook {
-  if (!existsSync(TM30_TEMPLATE_PATH)) {
-    if (configuredTemplatePath) {
-      throw new Error(
-        `TM.30 template not found at "${TM30_TEMPLATE_PATH}". Set TM30_TEMPLATE_PATH to a readable .xls/.xlsx file.`
-      );
-    }
-    return createMappedTemplateWorkbook();
+  if (customTemplateLoader) {
+    return customTemplateLoader();
   }
-
-  return XLSX.read(readFileSync(TM30_TEMPLATE_PATH), {
-    type: "buffer",
-    cellStyles: true,
-  });
+  return createMappedTemplateWorkbook();
 }
 
 function writeTextCell(sheet: XLSX.WorkSheet, address: string, value: string) {

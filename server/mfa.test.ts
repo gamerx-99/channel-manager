@@ -252,3 +252,81 @@ describe('requireRecentMfaVerification', () => {
     }
   });
 });
+
+describe('checkMfaStepUpStatus with Better Auth sessions (regression prevention)', () => {
+  const nowMs = 1700000000000;
+
+  it('rejects fresh password-only session without explicit 2FA verification (prevents AAL2 bypass)', () => {
+    const freshPasswordSessionTarget = {
+      id: 'u-pw-only',
+      twoFactorEnabled: true,
+      session: {
+        id: 's-fresh',
+        createdAt: new Date(nowMs - 30_000), // Created 30 seconds ago
+      },
+    };
+
+    const status = checkMfaStepUpStatus(freshPasswordSessionTarget, { nowMs });
+    expect(status).toEqual({
+      status: 'needs_challenge',
+      reason: 'aal1',
+      aal: 'aal1',
+      verifiedAtMs: null,
+      expiresAtMs: null,
+      windowMinutes: 10,
+    });
+
+    expect(() => requireRecentMfaVerification(freshPasswordSessionTarget, { nowMs })).toThrowError(
+      /MFA verification required: please complete TOTP challenge to elevate to AAL2\./,
+    );
+  });
+
+  it('rejects older password-only session as aal1 rather than false expired aal2', () => {
+    const oldPasswordSessionTarget = {
+      id: 'u-pw-old',
+      twoFactorEnabled: true,
+      session: {
+        id: 's-old',
+        createdAt: new Date(nowMs - 1200_000), // Created 20 minutes ago
+      },
+    };
+
+    const status = checkMfaStepUpStatus(oldPasswordSessionTarget, { nowMs });
+    expect(status.status).toBe('needs_challenge');
+    expect((status as any).reason).toBe('aal1');
+    expect(status.aal).toBe('aal1');
+  });
+
+  it('verifies session with explicit twoFactorVerifiedAt within 10-minute window', () => {
+    const verifiedTarget = {
+      id: 'u-verified-at',
+      twoFactorEnabled: true,
+      session: {
+        id: 's-verified',
+        twoFactorVerifiedAt: new Date(nowMs - 180_000), // 3 minutes ago
+      },
+    };
+
+    const status = checkMfaStepUpStatus(verifiedTarget, { nowMs });
+    expect(status.status).toBe('verified');
+    expect(status.aal).toBe('aal2');
+    expect(() => requireRecentMfaVerification(verifiedTarget, { nowMs })).not.toThrow();
+  });
+
+  it('requires challenge with reason expired when twoFactorVerifiedAt exceeds 10-minute window', () => {
+    const expiredTarget = {
+      id: 'u-expired-at',
+      twoFactorEnabled: true,
+      session: {
+        id: 's-expired',
+        twoFactorVerifiedAt: new Date(nowMs - 720_000), // 12 minutes ago
+      },
+    };
+
+    const status = checkMfaStepUpStatus(expiredTarget, { nowMs });
+    expect(status.status).toBe('needs_challenge');
+    expect((status as any).reason).toBe('expired');
+    expect(status.aal).toBe('aal2');
+  });
+});
+

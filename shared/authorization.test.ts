@@ -16,6 +16,7 @@ describe("seven-role authorization matrix", () => {
     expect(APP_ROLES).toEqual([
       "super_admin",
       "admin",
+      "support",
       "hotel_owner",
       "revenue_manager",
       "front_desk",
@@ -25,6 +26,7 @@ describe("seven-role authorization matrix", () => {
     expect(HUMAN_ROLES).toEqual([
       "super_admin",
       "admin",
+      "support",
       "hotel_owner",
       "revenue_manager",
       "front_desk",
@@ -35,7 +37,7 @@ describe("seven-role authorization matrix", () => {
   });
 
   it("separates platform roles from the roles a property may assign to its staff", () => {
-    expect(PLATFORM_ROLES).toEqual(["super_admin", "admin"]);
+    expect(PLATFORM_ROLES).toEqual(["super_admin", "admin", "support"]);
     expect(ASSIGNABLE_STAFF_ROLES).toEqual([
       "hotel_owner",
       "revenue_manager",

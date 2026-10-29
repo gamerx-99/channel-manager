@@ -1,76 +1,124 @@
-import { supabase } from '@/lib/supabase';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { authClient } from "@/lib/auth-client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type UseAuthOptions = {
+export type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
 };
 
-type AppUser = {
+export type AppUser = {
   id: string;
   email: string | null;
   name: string | null;
+  twoFactorEnabled?: boolean;
 };
 
-export type SupabaseLogoutResult = {
+export type LogoutResult = {
   error: Error | null;
   clearUser: boolean;
 };
 
-/** Runs the browser-owned session revocation that Supabase Auth requires. */
-export async function signOutCurrentSupabaseSession(): Promise<SupabaseLogoutResult> {
-  const { error } = await supabase.auth.signOut();
-  return { error: error ?? null, clearUser: !error };
+/** Compatibility alias for legacy consumers */
+export type SupabaseLogoutResult = LogoutResult;
+
+/**
+ * Revokes the current session via Better Auth client.
+ */
+export async function signOutCurrentSession(): Promise<LogoutResult> {
+  try {
+    const res = await authClient.signOut();
+    if (res?.error) {
+      const err = res.error instanceof Error
+        ? res.error
+        : new Error((res.error as { message?: string }).message || "Failed to sign out");
+      return {
+        error: err,
+        clearUser: false,
+      };
+    }
+    return { error: null, clearUser: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error : new Error(String(error)),
+      clearUser: false,
+    };
+  }
 }
 
-function toAppUser(user: { id: string; email?: string; user_metadata?: Record<string, unknown> }): AppUser {
-  const fullName = user.user_metadata?.full_name;
-  const name = user.user_metadata?.name;
+/**
+ * Backward compatibility alias for existing consumers and test suites.
+ */
+export const signOutCurrentSupabaseSession = signOutCurrentSession;
+
+function toAppUser(user: {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  twoFactorEnabled?: boolean | null;
+}): AppUser {
   return {
     id: user.id,
     email: user.email ?? null,
-    name: typeof fullName === 'string' ? fullName : typeof name === 'string' ? name : user.email ?? null,
+    name: user.name ?? user.email ?? null,
+    twoFactorEnabled: Boolean(user.twoFactorEnabled),
   };
 }
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = '/login' } = options ?? {};
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { redirectOnUnauthenticated = false, redirectPath = "/login" } = options ?? {};
+  const { data: sessionData, isPending, error: sessionError, refetch } = authClient.useSession();
+  const [logoutError, setLogoutError] = useState<Error | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const user: AppUser | null = useMemo(() => {
+    if (!sessionData?.user) return null;
+    return toAppUser(sessionData.user);
+  }, [sessionData]);
+
+  const loading = isPending || isLoggingOut;
+
+  const error: Error | null = useMemo(() => {
+    if (logoutError) return logoutError;
+    if (sessionError) return new Error(sessionError.message || "Session error");
+    return null;
+  }, [logoutError, sessionError]);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    const { data, error: sessionError } = await supabase.auth.getSession();
-    setError(sessionError ?? null);
-    setUser(data.session?.user ? toAppUser(data.session.user) : null);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? toAppUser(session.user) : null);
-      setLoading(false);
-    });
-    return () => subscription.subscription.unsubscribe();
-  }, [refresh]);
+    try {
+      await refetch();
+    } catch {
+      // Session query state is updated automatically
+    }
+  }, [refetch]);
 
   const logout = useCallback(async () => {
-    setLoading(true);
-    const logoutResult = await signOutCurrentSupabaseSession();
-    setError(logoutResult.error);
-    if (logoutResult.clearUser) setUser(null);
-    setLoading(false);
-  }, []);
+    setIsLoggingOut(true);
+    setLogoutError(null);
+    try {
+      const result = await signOutCurrentSession();
+      if (result.error) {
+        setLogoutError(result.error);
+      }
+      await refetch();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [refetch]);
 
   useEffect(() => {
-    if (!redirectOnUnauthenticated || loading || user || typeof window === 'undefined') return;
+    if (!redirectOnUnauthenticated || loading || user || typeof window === "undefined") return;
     if (window.location.pathname !== redirectPath) window.location.assign(redirectPath);
   }, [loading, redirectOnUnauthenticated, redirectPath, user]);
 
   return useMemo(
-    () => ({ user, loading, error, isAuthenticated: Boolean(user), refresh, logout }),
-    [error, loading, refresh, logout, user],
+    () => ({
+      user,
+      loading,
+      error,
+      isAuthenticated: Boolean(user),
+      refresh,
+      logout,
+    }),
+    [user, loading, error, refresh, logout],
   );
 }

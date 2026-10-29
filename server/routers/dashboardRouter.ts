@@ -6,19 +6,39 @@ import {
   getManagedHotel,
   listAvailabilityForHotel,
   listManagedHotelsForFinancials,
+  listBookingOccupancyForHotel,
 } from '../db';
+import {
+  listManagedHotels as d1ListManagedHotels,
+  listManagedHotelsForFinancials as d1ListManagedHotelsForFinancials,
+} from '../d1/hotel';
 import { getGlobalOtaSummary, getUpdatedItemCount } from '../otaSync';
 import { buildChannelPerformanceSummary } from '../channelPerformance';
 import { buildFinancialsSummary } from '../financials';
+import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
 
 export const dashboardCalendarSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
   days: z.number().int().min(7).max(31),
 }).optional();
 
+// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
+// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   try {
-    const hotels = await listManagedHotels(rlsClient(ctx.user.accessToken));
+    const hotels: Awaited<ReturnType<typeof listManagedHotels>> = ctx.db
+      ? (await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
+          ...h,
+          created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
+          bookings: h.bookings.map(b => ({
+            ...b,
+            source: b.source as any,
+            status: b.status as any,
+            payment_status: null as string | null,
+            price: String(b.price),
+          })),
+        }))
+      : await listManagedHotels(rlsClient(ctx.user.accessToken));
     const today = new Date().toISOString().slice(0, 10);
     const confirmedBookings = hotels.flatMap(hotel => hotel.bookings).filter(booking => booking.status === 'confirmed');
     return {
@@ -39,8 +59,24 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   }
 });
 
+// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
+// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const channelPerformance = protectedProcedure.query(async ({ ctx }) => {
   try {
+    if (ctx.db) {
+      const hotels = (await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
+        ...h,
+        created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
+        bookings: h.bookings.map(b => ({
+          ...b,
+          source: b.source as any,
+          status: b.status as any,
+          payment_status: null as string | null,
+          price: String(b.price),
+        })),
+      }));
+      return buildChannelPerformanceSummary(hotels as any, []);
+    }
     const client = rlsClient(ctx.user.accessToken);
     const [hotels, otaSummary] = await Promise.all([
       listManagedHotels(client),
@@ -55,13 +91,24 @@ export const channelPerformance = protectedProcedure.query(async ({ ctx }) => {
 export const financials = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'property.view_financials');
   try {
-    const hotels = await listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken));
+    const hotels = ctx.db
+      ? (await d1ListManagedHotelsForFinancials(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({
+          ...h,
+          bookings: h.bookings.map(b => ({
+            ...b,
+            status: b.status as any,
+            rooms: b.rooms ? { room_types: b.rooms.room_types } : { room_types: null },
+          })),
+        }))
+      : await listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken));
     return buildFinancialsSummary(hotels);
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
+// Intentionally unguarded by a named permission: aggregates the caller's own hotels only
+// (listManagedHotels is RLS-scoped), so there is no single hotel to gate on.
 export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchema).query(async ({ ctx, input }) => {
   try {
     const startDate = input?.startDate ?? todayIso();
@@ -74,9 +121,11 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
     ]);
 
     const hotelCalendars = await Promise.all(hotels.map(async (hotel) => {
-      const [hotelDetail, availability] = await Promise.all([
+      const occupancyEndDate = addIsoDays(dates[dates.length - 1], 1);
+      const [hotelDetail, availability, occupancy] = await Promise.all([
         getManagedHotel(client, hotel.id),
         listAvailabilityForHotel(client, hotel.id),
+        listBookingOccupancyForHotel(client, hotel.id, dates[0], occupancyEndDate),
       ]);
       if (!hotelDetail) return null;
 
@@ -105,13 +154,24 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
         })),
         days: dates.map(date => ({
           date,
-          bookings: hotel.bookings.filter(booking => booking.status !== 'cancelled' && booking.check_in <= date && booking.check_out > date).length,
+          bookings: occupancy.filter(booking =>
+            booking.check_in <= date && booking.check_out > date && isBookingOccupyingInventory(booking),
+          ).length,
           roomTypes: hotelDetail.room_types.map(roomType => {
             const saved = availabilityByKey.get(`${roomType.id}:${date}`);
             const totalRooms = roomCountByType[roomType.id] ?? 0;
-            const available = saved?.rooms_available ?? (date === todayIso()
-              ? hotelDetail.rooms.filter(room => room.room_type_id === roomType.id && room.status === 'available').length
-              : totalRooms);
+            const roomIds = new Set(hotelDetail.rooms
+              .filter(room => room.room_type_id === roomType.id)
+              .map(room => room.id));
+            const bookedRoomIds = new Set(occupancy
+              .filter(booking => booking.room_id !== null
+                && roomIds.has(booking.room_id)
+                && booking.check_in <= date
+                && booking.check_out > date
+                && isBookingOccupyingInventory(booking))
+              .map(booking => booking.room_id));
+            const allotment = Math.min(totalRooms, saved?.rooms_available ?? totalRooms);
+            const available = Math.max(0, allotment - bookedRoomIds.size);
             return {
               roomTypeId: roomType.id,
               available,

@@ -4,6 +4,7 @@ import { rateLimitedProcedure, protectedProcedure, router } from '../_core/trpc'
 import { createSupabaseAdminClient } from '../supabase';
 import {
   getHotelPaymentConfig,
+  getSlipOkCredentialsForVerification,
   getLatestPaymentSession,
   createPaymentSession,
   updateBookingPaymentStatus,
@@ -176,7 +177,7 @@ export const paymentRouter = router({
   verifySlip: rateLimitedProcedure
     .input(z.object({
       booking_id: z.string().uuid(),
-      hotel_id: z.string().uuid(),
+      hotel_id: z.string().uuid().optional(),
       session_id: z.string().uuid(),
       /** Base64 encoded slip image */
       slip_data: z.string().min(1).max(5_000_000), // ~3.7MB image limit
@@ -188,6 +189,11 @@ export const paymentRouter = router({
         const session = await getLatestPaymentSession(client, input.booking_id);
         if (!session || session.id !== input.session_id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
+        }
+        // The session is the source of truth for which hotel this payment belongs to.
+        // Reject a caller-supplied hotel_id that disagrees (defense in depth).
+        if (input.hotel_id && input.hotel_id !== session.hotel_id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment session does not belong to the supplied hotel.' });
         }
 
         // 2. Lazy-expire the underlying booking first
@@ -245,16 +251,16 @@ export const paymentRouter = router({
           reason: 'slip_submitted',
         });
 
-        // 7. Hotel SlipOK config
-        const config = await getHotelPaymentConfig(client, input.hotel_id);
-        if (!config?.slipok_key_enc || !config.slipok_branch_id || !config.slipok_enabled) {
+        // 7. Hotel SlipOK config (hotel comes from the verified session, not the caller)
+        const config = await getSlipOkCredentialsForVerification(client, session.hotel_id);
+        if (!config?.slipok_key_enc || !config.slipok_branch_id) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message: 'Slip verification is not available for this hotel. Please contact the hotel directly.',
           });
         }
 
-        const apiKey = decryptSlipOkKey(config.slipok_key_enc);
+        const apiKey = await decryptSlipOkKey(config.slipok_key_enc);
 
         // 8. Call SlipOK
         try {

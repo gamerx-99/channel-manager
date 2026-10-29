@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const navigate = vi.fn();
 
 const mocks = vi.hoisted(() => ({
-  listFactors: vi.fn(),
   useAuthMeQuery: vi.fn(),
   useHotelsQuery: vi.fn(),
 }));
@@ -18,14 +17,6 @@ vi.mock("wouter", async () => {
     useLocation: () => ["/dashboard", navigate],
   };
 });
-
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    auth: {
-      mfa: { listFactors: mocks.listFactors },
-    },
-  },
-}));
 
 vi.mock("./_core/hooks/useAuth", () => ({
   useAuth: () => ({
@@ -43,11 +34,6 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-// The route-scope decision (which nav/hotel a role may open) is unrelated to
-// the MFA gate under test here. Short-circuit it to "restricted" so a
-// non-blocked render stops at PrivateRoute's own restricted-access message
-// instead of mounting the full AppShell (NotificationBell, WorkspaceMenu,
-// LanguageContext, etc.) that this focused test has no reason to stand up.
 vi.mock("./lib/routeScope", () => ({
   getRouteScopeDecision: () => ({ allowed: false, reason: "permission_required" as const }),
 }));
@@ -58,7 +44,6 @@ afterEach(() => cleanup());
 
 beforeEach(() => {
   navigate.mockReset();
-  mocks.listFactors.mockReset();
   mocks.useAuthMeQuery.mockReset();
   mocks.useHotelsQuery.mockReset();
   mocks.useHotelsQuery.mockReturnValue({ data: [], isLoading: false, isError: false });
@@ -67,11 +52,10 @@ beforeEach(() => {
 describe("PrivateRoute MFA enforcement (persistent, not just at login)", () => {
   it("redirects an already-open super_admin session without a verified factor to /mfa/enroll", async () => {
     mocks.useAuthMeQuery.mockReturnValue({
-      data: { role: "super_admin", roles: ["super_admin"] },
+      data: { role: "super_admin", roles: ["super_admin"], twoFactorEnabled: false },
       isLoading: false,
       isError: false,
     });
-    mocks.listFactors.mockResolvedValue({ data: { totp: [], all: [] }, error: null });
 
     render(
       <PrivateRoute>
@@ -85,11 +69,10 @@ describe("PrivateRoute MFA enforcement (persistent, not just at login)", () => {
 
   it("does not redirect a hotel_owner session without a factor (opt-in only)", async () => {
     mocks.useAuthMeQuery.mockReturnValue({
-      data: { role: "hotel_owner", roles: ["hotel_owner"] },
+      data: { role: "hotel_owner", roles: ["hotel_owner"], twoFactorEnabled: false },
       isLoading: false,
       isError: false,
     });
-    mocks.listFactors.mockResolvedValue({ data: { totp: [], all: [] }, error: null });
 
     render(
       <PrivateRoute>
@@ -101,13 +84,12 @@ describe("PrivateRoute MFA enforcement (persistent, not just at login)", () => {
     expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
-  it("fails open (does not redirect to enroll) when the MFA factor check itself errors", async () => {
+  it("does not redirect an enrolled super_admin session", async () => {
     mocks.useAuthMeQuery.mockReturnValue({
-      data: { role: "super_admin", roles: ["super_admin"] },
+      data: { role: "super_admin", roles: ["super_admin"], twoFactorEnabled: true },
       isLoading: false,
       isError: false,
     });
-    mocks.listFactors.mockRejectedValue(new Error("network down"));
 
     render(
       <PrivateRoute>
@@ -116,6 +98,23 @@ describe("PrivateRoute MFA enforcement (persistent, not just at login)", () => {
     );
 
     await waitFor(() => expect(screen.getByText(/Access restricted/i)).toBeTruthy());
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
+  });
+
+  it("fails open (does not redirect to enroll) when the role check itself errors", async () => {
+    mocks.useAuthMeQuery.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: true,
+    });
+
+    render(
+      <PrivateRoute>
+        <div data-testid="protected-content">Secret dashboard</div>
+      </PrivateRoute>,
+    );
+
+    await waitFor(() => expect(screen.getByText(/Unable to verify your property access/i)).toBeTruthy());
     expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 });

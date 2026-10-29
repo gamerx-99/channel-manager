@@ -97,7 +97,7 @@ export default function NotificationBell({ hotelId }: NotificationBellProps) {
                       className="icon-button"
                       title="Mark as read"
                       aria-label="Mark as read"
-                      onClick={() => markRead.mutate({ hotelId: effectiveHotelId, notificationId: n.id })}
+                      onClick={() => { if (effectiveHotelId) markRead.mutate({ hotelId: effectiveHotelId, notificationId: n.id }); }}
                       disabled={markRead.isPending}
                     >
                       <Check size={14} />

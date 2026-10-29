@@ -125,6 +125,12 @@ export default function Financials() {
         <MetricCard label={t("financials.properties")} value={formatCompactNumber(data.totals.hotelCount)} detail={t("financials.includedInReport")} icon={BarChart3} tone="pine" />
       </section>
 
+      <section className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
+        <MetricCard label={t("financials.collectedRevenue")} value={formatCurrency(data.totals.collectedRevenue ?? 0)} detail={t("financials.collectedRevenueDetail")} icon={CircleDollarSign} tone="pine" />
+        <MetricCard label={t("financials.outstandingRevenue")} value={formatCurrency(data.totals.outstandingRevenue ?? 0)} detail={t("financials.outstandingRevenueDetail")} icon={Clock3} tone="amber" />
+        <MetricCard label={t("financials.pendingRevenue")} value={formatCurrency(data.totals.pendingRevenue ?? 0)} detail={t("financials.pendingRevenueDetail")} icon={QrCode} tone="slate" />
+      </section>
+
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardHeader className="border-b border-[#edf2ee] pb-4">

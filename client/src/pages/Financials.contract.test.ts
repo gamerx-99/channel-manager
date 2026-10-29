@@ -40,4 +40,11 @@ describe("Financials dashboard contract", () => {
     expect(component).toContain("downloadRoomTypeCsv");
     expect(component).toContain('actionLabel={t("financials.tryAgain")}');
   });
+
+  it("includes collected, outstanding, and pending payment collection breakdown", () => {
+    expect(component).toContain('t("financials.paymentCollectionAria")');
+    expect(component).toContain('t("financials.collectedRevenue")');
+    expect(component).toContain('t("financials.outstandingRevenue")');
+    expect(component).toContain('t("financials.pendingRevenue")');
+  });
 });

@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment jsdom
+import { act, cleanup, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   hasVerifiedTotpFactor,
   MFA_ENROLL_PATH,
@@ -6,41 +8,33 @@ import {
   shouldRedirectToMfaEnroll,
   cleanupUnverifiedFactors,
   prepareTotpEnrollment,
-  enrollTotpFactor,
+  useMfaStepUp,
 } from "./mfa";
 
-const mocks = vi.hoisted(() => {
-  const listFactors = vi.fn();
-  const enroll = vi.fn();
-  const unenroll = vi.fn();
-  const challenge = vi.fn();
-  const verify = vi.fn();
-  return { listFactors, enroll, unenroll, challenge, verify };
-});
+const authClientMocks = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  verifyTotp: vi.fn(),
+}));
 
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    auth: {
-      mfa: {
-        listFactors: mocks.listFactors,
-        enroll: mocks.enroll,
-        unenroll: mocks.unenroll,
-        challenge: mocks.challenge,
-        verify: mocks.verify,
-      },
+vi.mock("@/lib/auth-client", () => ({
+  authClient: {
+    getSession: authClientMocks.getSession,
+    twoFactor: {
+      verifyTotp: authClientMocks.verifyTotp,
     },
   },
 }));
 
-beforeEach(() => {
-  mocks.listFactors.mockReset();
-  mocks.enroll.mockReset();
-  mocks.unenroll.mockReset();
-  mocks.challenge.mockReset();
-  mocks.verify.mockReset();
+afterEach(() => {
+  cleanup();
 });
 
-describe("mfa helpers", () => {
+beforeEach(() => {
+  authClientMocks.getSession.mockReset();
+  authClientMocks.verifyTotp.mockReset();
+});
+
+describe("mfa pure helpers", () => {
   it("exposes the blocking enroll path", () => {
     expect(MFA_ENROLL_PATH).toBe("/mfa/enroll");
   });
@@ -67,136 +61,209 @@ describe("mfa helpers", () => {
     expect(shouldRedirectToMfaEnroll(["super_admin"], { totp: [] })).toBe(true);
     expect(shouldRedirectToMfaEnroll(["super_admin"], { totp: [{ status: "verified" }] })).toBe(false);
     expect(shouldRedirectToMfaEnroll(["hotel_owner"], { totp: [] })).toBe(false);
-  });
-});
-
-describe("MFA Enrollment and Cleanup flow", () => {
-  it("successfully performs clean enrollment when no factors exist", async () => {
-    mocks.listFactors.mockResolvedValueOnce({ data: { totp: [], all: [] }, error: null });
-    mocks.enroll.mockResolvedValueOnce({
-      data: {
-        id: "factor-clean",
-        totp: { qr_code: "data:image/svg+xml;clean", secret: "CLEAN_SECRET", uri: "otpauth://clean" },
-      },
-      error: null,
-    });
-
-    const res = await enrollTotpFactor();
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.data.id).toBe("factor-clean");
-      expect(res.data.totp.secret).toBe("CLEAN_SECRET");
-    }
-    expect(mocks.listFactors).toHaveBeenCalledTimes(1);
-    expect(mocks.unenroll).not.toHaveBeenCalled();
-    expect(mocks.enroll).toHaveBeenCalledWith({
-      factorType: "totp",
-      friendlyName: expect.stringMatching(/^Authenticator-/),
-      issuer: "hayhost",
-    });
+    expect(shouldRedirectToMfaEnroll(["super_admin"], false)).toBe(true);
+    expect(shouldRedirectToMfaEnroll(["super_admin"], true)).toBe(false);
   });
 
-  it("successfully removes stale unverified factors before enrollment", async () => {
-    // 1. Initial listFactors in prepareTotpEnrollment -> shows stale unverified factor
-    mocks.listFactors.mockResolvedValueOnce({
-      data: { totp: [{ id: "factor-stale-1", status: "unverified", factor_type: "totp" }] },
-      error: null,
-    });
-    // 2. unenroll succeeds
-    mocks.unenroll.mockResolvedValueOnce({ data: {}, error: null });
-    // 3. Re-fetch factors after cleanup -> empty
-    mocks.listFactors.mockResolvedValueOnce({
-      data: { totp: [], all: [] },
-      error: null,
-    });
-    // 4. Enroll succeeds
-    mocks.enroll.mockResolvedValueOnce({
-      data: {
-        id: "factor-new",
-        totp: { qr_code: "data:image/svg+xml;new", secret: "NEW_SECRET", uri: "otpauth://new" },
-      },
-      error: null,
-    });
-
-    const res = await enrollTotpFactor();
-    expect(res.ok).toBe(true);
-    if (res.ok) {
-      expect(res.data.id).toBe("factor-new");
-    }
-    expect(mocks.unenroll).toHaveBeenCalledWith({ factorId: "factor-stale-1" });
-    expect(mocks.enroll).toHaveBeenCalledWith({
-      factorType: "totp",
-      friendlyName: expect.stringMatching(/^Authenticator-/),
-      issuer: "hayhost",
-    });
+  it("cleanupUnverifiedFactors safely returns success in Better Auth runtime", async () => {
+    const res = await cleanupUnverifiedFactors();
+    expect(res.success).toBe(true);
+    expect(res.removedCount).toBe(0);
   });
 
-  it("surfaces unenroll failure and prevents enrollment", async () => {
-    mocks.listFactors.mockResolvedValueOnce({
-      data: { totp: [{ id: "factor-stale-2", status: "unverified", factor_type: "totp" }] },
+  it("prepareTotpEnrollment checks existing 2FA enablement", async () => {
+    authClientMocks.getSession.mockResolvedValueOnce({
+      data: { user: { id: "u-1", twoFactorEnabled: true }, session: {} },
       error: null,
     });
-    mocks.unenroll.mockResolvedValueOnce({
-      data: null,
-      error: { message: "Database connection failed" },
-    });
-
-    const res = await enrollTotpFactor();
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.error).toContain("Failed to remove stale unverified factor (factor-stale-2)");
-      expect(res.error).toContain("Database connection failed");
-    }
-    expect(mocks.enroll).not.toHaveBeenCalled();
-  });
-
-  it("prevents enrollment if a verified authenticator already exists", async () => {
-    mocks.listFactors.mockResolvedValueOnce({
-      data: { totp: [{ id: "factor-verified-existing", status: "verified", factor_type: "totp" }] },
-      error: null,
-    });
-
-    const res = await enrollTotpFactor();
+    const res = await prepareTotpEnrollment();
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.alreadyVerified).toBe(true);
-      expect(res.error).toContain("already active and verified");
     }
-    expect(mocks.unenroll).not.toHaveBeenCalled();
-    expect(mocks.enroll).not.toHaveBeenCalled();
-  });
 
-  it("fails with actionable error if stale factor is still present after cleanup", async () => {
-    // 1. Initial listFactors
-    mocks.listFactors.mockResolvedValueOnce({
-      data: { totp: [{ id: "factor-stale-stubborn", status: "unverified", factor_type: "totp" }] },
+    authClientMocks.getSession.mockResolvedValueOnce({
+      data: { user: { id: "u-2", twoFactorEnabled: false }, session: {} },
       error: null,
     });
-    // 2. unenroll returns ok
-    mocks.unenroll.mockResolvedValueOnce({ data: {}, error: null });
-    // 3. Re-fetch STILL shows the unverified factor (e.g. replica lag or persistence failure)
-    mocks.listFactors.mockResolvedValueOnce({
-      data: { totp: [{ id: "factor-stale-stubborn", status: "unverified", factor_type: "totp" }] },
-      error: null,
-    });
+    const res2 = await prepareTotpEnrollment();
+    expect(res2.ok).toBe(true);
+  });
+});
 
-    const res = await enrollTotpFactor();
-    expect(res.ok).toBe(false);
-    if (!res.ok) {
-      expect(res.error).toContain("stale unverified authenticator is still present");
-    }
-    expect(mocks.enroll).not.toHaveBeenCalled();
+describe("useMfaStepUp Hook with Better Auth", () => {
+  it("initializes with idle state", () => {
+    const { result } = renderHook(() => useMfaStepUp());
+    expect(result.current.mfaState).toEqual({ status: "idle" });
   });
 
-  it("cleanupUnverifiedFactors surfaces list failure", async () => {
-    mocks.listFactors.mockResolvedValueOnce({
+  it("returns error when user is unauthenticated", async () => {
+    authClientMocks.getSession.mockResolvedValueOnce({
       data: null,
-      error: { message: "Network timeout" },
+      error: { message: "No active session" },
     });
 
-    const res = await cleanupUnverifiedFactors();
-    expect(res.success).toBe(false);
-    expect(res.error).toContain("Failed to list MFA factors: Network timeout");
-    expect(res.removedCount).toBe(0);
+    const { result } = renderHook(() => useMfaStepUp());
+
+    let step: string = "";
+    await act(async () => {
+      step = await result.current.triggerStepUp();
+    });
+
+    expect(step).toBe("error");
+    expect(result.current.mfaState.status).toBe("error");
+    if (result.current.mfaState.status === "error") {
+      expect(result.current.mfaState.message).toContain("No active session");
+    }
+  });
+
+  it("returns needs_enroll when user has not enabled 2FA", async () => {
+    authClientMocks.getSession.mockResolvedValueOnce({
+      data: { user: { id: "u-no-mfa", twoFactorEnabled: false }, session: { id: "s-1" } },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useMfaStepUp());
+
+    let step: string = "";
+    await act(async () => {
+      step = await result.current.triggerStepUp();
+    });
+
+    expect(step).toBe("needs_enroll");
+    expect(result.current.mfaState).toEqual({ status: "needs_enroll" });
+  });
+
+  it("returns needs_challenge when user has 2FA enabled but unverified session", async () => {
+    authClientMocks.getSession.mockResolvedValueOnce({
+      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-unverified" } },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useMfaStepUp());
+
+    let step: string = "";
+    await act(async () => {
+      step = await result.current.triggerStepUp();
+    });
+
+    expect(step).toBe("needs_challenge");
+    expect(result.current.mfaState.status).toBe("needs_challenge");
+  });
+
+  it("returns verified directly if session already has fresh twoFactorVerifiedAt", async () => {
+    authClientMocks.getSession.mockResolvedValueOnce({
+      data: {
+        user: { id: "u-mfa", twoFactorEnabled: true },
+        session: {
+          id: "s-fresh",
+          twoFactorVerifiedAt: new Date(Date.now() - 60_000).toISOString(),
+        },
+      },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useMfaStepUp());
+
+    let step: string = "";
+    await act(async () => {
+      step = await result.current.triggerStepUp();
+    });
+
+    expect(step).toBe("verified");
+    expect(result.current.mfaState).toEqual({ status: "verified" });
+  });
+
+  it("submits TOTP code and updates state to verified upon success", async () => {
+    authClientMocks.getSession.mockResolvedValue({
+      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-1" } },
+      error: null,
+    });
+    authClientMocks.verifyTotp.mockResolvedValueOnce({
+      data: { user: { id: "u-mfa" } },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useMfaStepUp());
+
+    await act(async () => {
+      await result.current.triggerStepUp();
+    });
+    expect(result.current.mfaState.status).toBe("needs_challenge");
+
+    let ok: boolean = false;
+    await act(async () => {
+      ok = await result.current.submitTotp("123456");
+    });
+
+    expect(ok).toBe(true);
+    expect(authClientMocks.verifyTotp).toHaveBeenCalledWith({ code: "123456" });
+    expect(result.current.mfaState).toEqual({ status: "verified" });
+
+    // Subsequent triggerStepUp within freshness window immediately returns verified
+    let secondStep: string = "";
+    await act(async () => {
+      secondStep = await result.current.triggerStepUp();
+    });
+    expect(secondStep).toBe("verified");
+  });
+
+  it("handles invalid TOTP submission gracefully", async () => {
+    authClientMocks.getSession.mockResolvedValue({
+      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-1" } },
+      error: null,
+    });
+    authClientMocks.verifyTotp.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Invalid verification code" },
+    });
+
+    const { result } = renderHook(() => useMfaStepUp());
+
+    await act(async () => {
+      await result.current.triggerStepUp();
+    });
+
+    let ok: boolean = true;
+    await act(async () => {
+      ok = await result.current.submitTotp("999999");
+    });
+
+    expect(ok).toBe(false);
+    expect(result.current.mfaState.status).toBe("needs_challenge");
+    if (result.current.mfaState.status === "needs_challenge") {
+      expect(result.current.mfaState.error).toContain("Incorrect code");
+    }
+  });
+
+  it("resets state and clears verification timestamp upon reset()", async () => {
+    authClientMocks.getSession.mockResolvedValue({
+      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-1" } },
+      error: null,
+    });
+    authClientMocks.verifyTotp.mockResolvedValue({
+      data: { user: { id: "u-mfa" } },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useMfaStepUp());
+
+    await act(async () => {
+      await result.current.triggerStepUp();
+      await result.current.submitTotp("123456");
+    });
+    expect(result.current.mfaState.status).toBe("verified");
+
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.mfaState).toEqual({ status: "idle" });
+
+    // After reset, triggerStepUp requires challenge again
+    let stepAfterReset: string = "";
+    await act(async () => {
+      stepAfterReset = await result.current.triggerStepUp();
+    });
+    expect(stepAfterReset).toBe("needs_challenge");
   });
 });

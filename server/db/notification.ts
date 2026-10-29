@@ -23,11 +23,13 @@ export async function listAllNotifications(client: SupabaseClient) {
   return (data || []) as NotificationRecord[];
 }
 
-export async function markNotificationRead(client: SupabaseClient, notificationId: string) {
-  const { data, error } = await client
+export async function markNotificationRead(client: SupabaseClient, notificationId: string, hotelId?: string) {
+  let query = client
     .from('notifications')
     .update({ is_read: true })
-    .eq('id', notificationId)
+    .eq('id', notificationId);
+  if (hotelId) query = query.eq('hotel_id', hotelId);
+  const { data, error } = await query
     .select()
     .maybeSingle();
   throwOnError(error);

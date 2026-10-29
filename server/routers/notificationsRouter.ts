@@ -33,15 +33,11 @@ export const notificationsRouter = router({
       }
     }),
   markRead: protectedProcedure
-    .input(z.object({ hotelId: z.string().uuid().optional(), notificationId: z.string().uuid() }))
+    .input(z.object({ hotelId: z.string().uuid(), notificationId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        if (!input.hotelId) {
-          if (ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
-          return await markNotificationRead(createSupabaseAdminClient(), input.notificationId);
-        }
         await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-        return await markNotificationRead(rlsClient(ctx.user.accessToken), input.notificationId);
+        return await markNotificationRead(rlsClient(ctx.user.accessToken), input.notificationId, input.hotelId);
       } catch (error) {
         return rethrowDomainError(error);
       }

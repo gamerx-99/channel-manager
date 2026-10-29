@@ -4,10 +4,9 @@ import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
-import { getAvailableRoomCount, getBookedRoomCountForDate } from "./calendarAvailability";
+import { getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
-type CalendarViewMode = "week" | "month";
 
 function toIsoDate(date: Date) {
   const year = date.getFullYear();
@@ -22,26 +21,8 @@ function addDays(date: Date, amount: number) {
   return next;
 }
 
-function weekLabel(days: Date[]) {
-  const first = days[0];
-  const last = days[days.length - 1];
-  const month = new Intl.DateTimeFormat("en-GB", { month: "long" });
-  return first.getMonth() === last.getMonth()
-    ? `${first.getDate()}–${last.getDate()} ${month.format(first)} ${first.getFullYear()}`
-    : `${first.getDate()} ${month.format(first)}–${last.getDate()} ${month.format(last)} ${last.getFullYear()}`;
-}
-
 function monthLabel(date: Date) {
   return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(date);
-}
-
-function getMonday(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
 }
 
 function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: boolean }> {
@@ -78,12 +59,12 @@ const MONTH_WEEKDAY_KEYS = ["weekdaySun", "weekdayMon", "weekdayTue", "weekdayWe
 
 export default function Calendar({ id }: { id: string }) {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
-  const [weekStart, setWeekStart] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  const [inDate, setInDate] = useState<string | null>(null);
+  const [outDate, setOutDate] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -91,9 +72,15 @@ export default function Calendar({ id }: { id: string }) {
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id);
   const availabilityQuery = trpc.channelManager.availability.useQuery(id);
-  const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart]);
   const monthDays = useMemo(() => getMonthDays(monthAnchor), [monthAnchor]);
-  const occupancyDates = viewMode === "week" ? days : monthDays.map(day => day.date);
+  const selectedDates = useMemo(() => {
+    if (!inDate) return [];
+    if (!outDate || outDate === inDate) return [inDate];
+    const dates: string[] = [];
+    for (let date = inDate; date < outDate; date = toIsoDate(addDays(new Date(`${date}T12:00:00`), 1))) dates.push(date);
+    return dates;
+  }, [inDate, outDate]);
+  const occupancyDates = monthDays.map(day => day.date);
   const occupancyRange = {
     hotel_id: id,
     check_in: toIsoDate(occupancyDates[0]),
@@ -154,6 +141,28 @@ export default function Calendar({ id }: { id: string }) {
     setDraft(current => ({ ...current, [key]: { ...draftCell(roomTypeId, date, fallbackAvailable, fallbackPrice), ...update } }));
   }
 
+  function setInventoryForScope(roomTypeId: string | null, isIn: boolean) {
+    const targetTypes = hotel.room_types.filter(roomType => roomTypeId === null || roomType.id === roomTypeId);
+    setDraft(current => {
+      const next = { ...current };
+      for (const roomType of targetTypes) {
+        const totalRooms = roomCountByType[roomType.id] ?? 0;
+        for (const date of selectedDates) {
+          const key = `${roomType.id}:${date}`;
+          const savedCell = availabilityByKey.get(key);
+          const currentDraft = next[key];
+          next[key] = {
+            available: isIn ? totalRooms : 0,
+            price: currentDraft?.price ?? Number(savedCell?.price ?? roomType.base_price),
+          };
+        }
+      }
+      return next;
+    });
+    setSaved(false);
+    setSaveError(null);
+  }
+
   async function saveCalendar() {
     const changes = Object.entries(draft);
     if (!changes.length) {
@@ -177,31 +186,36 @@ export default function Calendar({ id }: { id: string }) {
   }
 
   const handlePrev = () => {
-    if (viewMode === "week") {
-      setWeekStart(current => addDays(current, -7));
-    } else {
-      setMonthAnchor(current => new Date(current.getFullYear(), current.getMonth() - 1, 1));
-    }
+    const previous = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() - 1, 1);
+    setMonthAnchor(previous);
   };
 
   const handleNext = () => {
-    if (viewMode === "week") {
-      setWeekStart(current => addDays(current, 7));
-    } else {
-      setMonthAnchor(current => new Date(current.getFullYear(), current.getMonth() + 1, 1));
-    }
+    const next = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 1);
+    setMonthAnchor(next);
   };
 
   const handleToday = () => {
     const now = new Date();
-    setWeekStart(now);
     setMonthAnchor(new Date(now.getFullYear(), now.getMonth(), 1));
+    setInDate(toIsoDate(now));
+    setOutDate(null);
   };
 
   const handleMonthDayClick = (dayDate: Date) => {
-    const monday = getMonday(dayDate);
-    setWeekStart(monday);
-    setViewMode("week");
+    const date = toIsoDate(dayDate);
+    if (!inDate || outDate) {
+      setInDate(date);
+      setOutDate(null);
+    } else if (date < inDate) {
+      setInDate(date);
+      setOutDate(null);
+    } else {
+      setOutDate(date);
+    }
+    if (dayDate.getMonth() !== monthAnchor.getMonth() || dayDate.getFullYear() !== monthAnchor.getFullYear()) {
+      setMonthAnchor(new Date(dayDate.getFullYear(), dayDate.getMonth(), 1));
+    }
   };
 
   const getDayAggregate = (dayDate: Date) => {
@@ -209,6 +223,7 @@ export default function Calendar({ id }: { id: string }) {
     let dayTotalAvailable = 0;
     let dayTotalRooms = 0;
     let dayMinPrice: number | null = null;
+    const bookingPlatforms = new Set<string>();
 
     for (const roomType of hotel.room_types) {
       const total = roomCountByType[roomType.id] ?? 0;
@@ -217,6 +232,10 @@ export default function Calendar({ id }: { id: string }) {
       const fallbackAvailable = editing ? allotment : getEffectiveAvailability(roomType.id, dateStr, total);
       const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
       const cell = draftCell(roomType.id, dateStr, fallbackAvailable, fallbackPrice);
+
+      for (const booking of getBookingsForRoomTypeAndDate(roomType.id, dateStr, hotel.rooms, occupancy)) {
+        bookingPlatforms.add(getBookingPlatform(booking));
+      }
 
       dayTotalRooms += total;
       dayTotalAvailable += cell.available;
@@ -238,6 +257,7 @@ export default function Calendar({ id }: { id: string }) {
       totalRooms: dayTotalRooms,
       minPrice: dayMinPrice,
       status,
+      bookingPlatforms: Array.from(bookingPlatforms),
     };
   };
 
@@ -249,21 +269,21 @@ export default function Calendar({ id }: { id: string }) {
         <div className="intro-actions">
           <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>
           {editing ? (
-            <button className="button button-primary" type="button" disabled={updateAvailability.isPending} onClick={() => void saveCalendar()}>
+            <button className="button button-primary" type="button" disabled={updateAvailability.isPending || !selectedDates.length} onClick={() => void saveCalendar()}>
               <Save size={15} /> {updateAvailability.isPending ? t("availability.saving") : t("availability.saveChanges")}
             </button>
           ) : (
             <button
               className="button button-primary"
               type="button"
+              disabled={!selectedDates.length}
               onClick={() => {
-                if (viewMode === "month") setViewMode("week");
                 setEditing(true);
                 setSaved(false);
                 setSaveError(null);
               }}
             >
-              <Edit3 size={15} /> {t("availability.editCalendar")}
+              <Edit3 size={15} /> {t("availability.editPrices")}
             </button>
           )}
         </div>
@@ -277,21 +297,21 @@ export default function Calendar({ id }: { id: string }) {
             className="icon-button bordered"
             type="button"
             onClick={handlePrev}
-            aria-label={viewMode === "week" ? "Previous week" : "Previous month"}
-            title={viewMode === "week" ? "Previous week" : "Previous month"}
+            aria-label="Previous month"
+            title="Previous month"
           >
             <ChevronLeft size={16} />
           </button>
           <div>
-            <strong>{viewMode === "week" ? weekLabel(days) : monthLabel(monthAnchor)}</strong>
-            <span>{viewMode === "week" ? t("availability.liveInventoryNote") : t("availability.monthOverviewNote")}</span>
+            <strong>{monthLabel(monthAnchor)}</strong>
+            <span>{t("availability.monthOverviewNote")}</span>
           </div>
           <button
             className="icon-button bordered"
             type="button"
             onClick={handleNext}
-            aria-label={viewMode === "week" ? "Next week" : "Next month"}
-            title={viewMode === "week" ? "Next week" : "Next month"}
+            aria-label="Next month"
+            title="Next month"
           >
             <ChevronRight size={16} />
           </button>
@@ -300,92 +320,18 @@ export default function Calendar({ id }: { id: string }) {
           </button>
         </div>
 
-        <div className="view-mode-toggle" role="group" aria-label={t("availability.viewModeAria")}>
-          <button
-            type="button"
-            className={`view-mode-option ${viewMode === "week" ? "view-mode-option--active" : ""}`}
-            onClick={() => setViewMode("week")}
-            aria-pressed={viewMode === "week"}
-          >
-            {t("availability.weekView")}
-          </button>
-          <span className="view-mode-divider" aria-hidden="true" />
-          <button
-            type="button"
-            className={`view-mode-option ${viewMode === "month" ? "view-mode-option--active" : ""}`}
-            onClick={() => setViewMode("month")}
-            aria-pressed={viewMode === "month"}
-          >
-            {t("availability.monthView")}
-          </button>
-        </div>
       </section>
 
       <section className="panel calendar-panel">
-        <div className="calendar-legend">
+      <div className="calendar-legend">
           <span><i className="dot pine" /> {t("availability.healthyInventory")}</span>
           <span><i className="dot amber" /> {t("availability.lowInventory")}</span>
           <span><i className="dot slate" /> {t("availability.closedInventory")}</span>
+          <span><i className="calendar-booking-legend" /> {t("availability.bookedLegend")}</span>
           <span className="calendar-info"><Info size={14} /> {t("availability.pricesInThb")}</span>
         </div>
 
-        {viewMode === "week" ? (
-          <>
-            <p className="mobile-scroll-hint" role="note">{t("availability.mobileScrollHint")}</p>
-            <div className="calendar-scroll">
-              <table className="availability-table">
-                <thead>
-                  <tr>
-                    <th className="room-type-heading">{t("availability.roomTypeHeading")}</th>
-                    {days.map(day => (
-                      <th key={toIsoDate(day)}>
-                        <span>{day.getDate()}</span>
-                        <small>{new Intl.DateTimeFormat("en", { weekday: "short" }).format(day)}</small>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {hotel.room_types.length ? hotel.room_types.map((roomType, index) => (
-                    <tr className="sub-row" key={roomType.id}>
-                      <td>
-                        <div className="calendar-room-label">
-                          <span className={`room-type-bar ${index % 3 === 0 ? "pine" : index % 3 === 1 ? "slate" : "amber"}`} />
-                          <strong>{roomType.name}</strong>
-                          <small>{roomCountByType[roomType.id] ?? 0} rooms</small>
-                        </div>
-                      </td>
-                      {days.map(day => {
-                        const date = toIsoDate(day);
-                        const savedCell = availabilityByKey.get(`${roomType.id}:${date}`);
-                        const totalRooms = roomCountByType[roomType.id] ?? 0;
-                        const allotment = savedCell?.rooms_available ?? totalRooms;
-                        const fallbackAvailable = editing ? allotment : getEffectiveAvailability(roomType.id, date, totalRooms);
-                        const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
-                        const cell = draftCell(roomType.id, date, fallbackAvailable, fallbackPrice);
-                        return (
-                          <td key={date}>
-                            <AvailabilityCell
-                              available={cell.available}
-                              price={cell.price}
-                              editing={editing}
-                              onChange={update => updateDraft(roomType.id, date, update, fallbackAvailable, fallbackPrice)}
-                            />
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan={8} className="empty-cell">No room types configured yet. Add a room type before editing availability.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <div className="calendar-month-scroll">
+        <div className="calendar-month-scroll">
             <div className="calendar-month-grid">
               {MONTH_WEEKDAY_KEYS.map(weekdayKey => (
                 <div className="calendar-month-header" key={weekdayKey}>
@@ -395,7 +341,7 @@ export default function Calendar({ id }: { id: string }) {
               {monthDays.map(cell => {
                 const agg = getDayAggregate(cell.date);
                 const isToday = agg.dateStr === todayIso;
-                const statusDotClass = agg.status === "closed" ? "slate" : agg.status === "low" ? "amber" : "pine";
+                const statusDotClass = agg.bookingPlatforms.length > 0 || agg.status === "closed" ? "slate" : agg.status === "low" ? "amber" : "pine";
                 const statusLabelText = agg.status === "closed" ? t("availability.statusClosed") : agg.status === "low" ? t("availability.statusLow") : t("availability.statusHealthy");
                 const priceSuffix = agg.minPrice !== null ? t("availability.startingFromPrice", { price: "฿" + agg.minPrice.toLocaleString() }) : "";
 
@@ -403,14 +349,14 @@ export default function Calendar({ id }: { id: string }) {
                   <button
                     key={agg.dateStr}
                     type="button"
-                    className={`calendar-month-cell ${cell.isCurrentMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`}
+                    className={`calendar-month-cell ${cell.isCurrentMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""} ${agg.dateStr === inDate || agg.dateStr === outDate || (inDate && outDate && agg.dateStr > inDate && agg.dateStr < outDate) ? "is-selected" : ""} ${agg.bookingPlatforms.length > 0 ? "has-booking" : ""}`}
                     onClick={() => handleMonthDayClick(cell.date)}
                     aria-label={t("availability.monthCellAriaLabel", { date: agg.dateStr, available: String(agg.totalAvailable), total: String(agg.totalRooms), status: statusLabelText }) + priceSuffix}
                     title={t("availability.monthCellTitle", { date: agg.dateStr, status: statusLabelText, available: String(agg.totalAvailable), total: String(agg.totalRooms) })}
                   >
                     <div className="month-cell-top">
                       <span className="month-cell-day">{cell.date.getDate()}</span>
-                      <span className="month-cell-hint">{t("availability.monthViewHint")}</span>
+                      <span className="month-cell-hint">{agg.dateStr === inDate ? "IN" : agg.dateStr === outDate ? "OUT" : t("availability.monthViewHint")}</span>
                     </div>
                     <span className="month-cell-status">
                       <i className={`dot ${statusDotClass}`} aria-hidden="true" />
@@ -421,12 +367,60 @@ export default function Calendar({ id }: { id: string }) {
                     ) : (
                       <span className="month-cell-empty">—</span>
                     )}
+                    {agg.bookingPlatforms.length > 0 && <span className="month-cell-platforms" title={agg.bookingPlatforms.join(", ")}>{agg.bookingPlatforms.join(", ")}</span>}
                   </button>
                 );
               })}
             </div>
+        </div>
+
+        <div className="calendar-selected-day">
+            <div className="calendar-selected-day-heading">
+            <div>
+              <div className="eyebrow">{t("availability.selectedDates")}</div>
+              <h2>{inDate ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${inDate}T12:00:00`)) : t("availability.selectStartDate")}{outDate ? ` – ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${outDate}T12:00:00`))}` : ""}</h2>
+              <p>{outDate ? t("availability.rangeSelected", { count: String(selectedDates.length) }) : t("availability.clickForOut")}</p>
+            </div>
+            <div className="calendar-range-actions">
+              <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, true)}>{t("availability.setAllIn")}</button>
+              <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, false)}>{t("availability.setAllOut")}</button>
+            </div>
           </div>
-        )}
+          {hotel.room_types.length ? hotel.room_types.map((roomType, index) => {
+            const totalRooms = roomCountByType[roomType.id] ?? 0;
+            const selectedDay = inDate ?? todayIso;
+            const savedCell = availabilityByKey.get(`${roomType.id}:${selectedDay}`);
+            const allotment = Math.min(totalRooms, draft[`${roomType.id}:${selectedDay}`]?.available ?? savedCell?.rooms_available ?? totalRooms);
+            const fallbackAvailable = getEffectiveAvailability(roomType.id, selectedDay, totalRooms);
+            const fallbackPrice = Number(draft[`${roomType.id}:${selectedDay}`]?.price ?? savedCell?.price ?? roomType.base_price);
+            const cell = draftCell(roomType.id, selectedDay, fallbackAvailable, fallbackPrice);
+            const bookings = getBookingsForRoomTypeAndDate(roomType.id, selectedDay, hotel.rooms, occupancy);
+            const platforms = Array.from(new Set(bookings.map(getBookingPlatform)));
+            return <div className="calendar-selected-room" key={roomType.id}>
+              <div className="calendar-room-label">
+                <span className={`room-type-bar ${index % 3 === 0 ? "pine" : index % 3 === 1 ? "slate" : "amber"}`} />
+                <strong>{roomType.name}</strong>
+                <small>{totalRooms} rooms</small>
+              </div>
+              <div className="calendar-room-controls">
+                <span className={`calendar-booked-state ${bookings.length ? "is-booked" : ""}`}>
+                  {bookings.length ? `${t("availability.bookedFrom")}: ${platforms.join(", ")}` : `${t("availability.availableRoomsLabel")}: ${fallbackAvailable}/${totalRooms}`}
+                </span>
+                <div className="calendar-room-actions">
+                  <button className={`calendar-inout-button ${allotment > 0 ? "is-active" : ""}`} type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(roomType.id, allotment === 0)}>{allotment > 0 ? "IN" : "OUT"}</button>
+                  <AvailabilityCell
+                    available={fallbackAvailable}
+                    price={cell.price}
+                    editing={editing}
+                    onChange={update => {
+                      for (const date of selectedDates) updateDraft(roomType.id, date, update, getAllotment(roomType.id, date, totalRooms), Number(availabilityByKey.get(`${roomType.id}:${date}`)?.price ?? roomType.base_price));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>;
+          }) : <p className="empty-cell">No room types configured yet. Add a room type before editing availability.</p>}
+        </div>
 
         <div className="calendar-footer">
           <span>{t("availability.inventoryFooter")}</span>
@@ -438,9 +432,7 @@ export default function Calendar({ id }: { id: string }) {
         <div>
           <div className="eyebrow">{t("availability.howItWorks")}</div>
           <p>
-            {viewMode === "week"
-              ? t("availability.howItWorksWeek")
-              : t("availability.howItWorksMonth")}
+            {t("availability.howItWorksMonth")}
           </p>
         </div>
         <Link href={`/hotels/${hotel.id}/bookings`} className="text-link">{t("availability.goToBookings")} <ChevronRight size={14} /></Link>
@@ -453,7 +445,7 @@ function AvailabilityCell({ available, price, editing, onChange }: { available: 
   const { t } = useTranslation();
   const isLow = available <= 2;
   if (editing) {
-    return <div className={`availability-cell ${isLow ? "low" : ""}`}><input className="cell-input" value={available} min="0" type="number" aria-label={t("availability.availableInputAria")} onChange={event => onChange({ available: Math.max(0, Number(event.target.value)) })} /><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></div>;
+    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span><label className="calendar-price-edit"><span>{t("availability.priceInputAria")}</span><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></label></div>;
   }
   return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "pine"}`} />{t("availability.roomsCount", { count: available })}</span><strong>฿{price.toLocaleString()}</strong></div>;
 }

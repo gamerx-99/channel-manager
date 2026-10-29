@@ -7,7 +7,7 @@ import App from "./App";
 import { supabase } from "./lib/supabase";
 import "./index.css";
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
@@ -23,31 +23,50 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-const trpcClient = trpc.createClient({
-  links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      async headers() {
-        const { data } = await supabase.auth.getSession();
-        return data.session?.access_token
-          ? { Authorization: `Bearer ${data.session.access_token}` }
-          : {};
-      },
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
-      },
-    }),
-  ],
-});
+/**
+ * Resolves request headers for tRPC client.
+ * Null-safe when VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are missing.
+ * Better Auth session cookies are transmitted automatically via credentials: "include".
+ */
+export async function getTrpcHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token
+      ? { Authorization: `Bearer ${data.session.access_token}` }
+      : {};
+  } catch {
+    return {};
+  }
+}
 
-createRoot(document.getElementById("root")!).render(
-  <trpc.Provider client={trpcClient} queryClient={queryClient}>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </trpc.Provider>
-);
+export function createTrpcClient() {
+  return trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        headers: getTrpcHeaders,
+        fetch(input, init) {
+          return globalThis.fetch(input, {
+            ...(init ?? {}),
+            credentials: "include",
+          });
+        },
+      }),
+    ],
+  });
+}
+
+export const trpcClient = createTrpcClient();
+
+const rootElement = typeof document !== "undefined" ? document.getElementById("root") : null;
+if (rootElement) {
+  createRoot(rootElement).render(
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
+}
