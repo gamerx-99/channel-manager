@@ -58,7 +58,7 @@ PUBLIC_APP_URL = "https://www.hayhostth.com"
 binding = "DB"
 database_name = "hayhost-production"
 # Replace with the id printed by `wrangler d1 create hayhost-production`.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "97f19e0b-d3f1-4b08-9abf-7992600a6bd3"
 migrations_dir = "drizzle/d1"
 
 [[env.production.r2_buckets]]
