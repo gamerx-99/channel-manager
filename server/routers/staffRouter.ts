@@ -29,6 +29,18 @@ import {
 } from '../supabase';
 import { generateSignupToken, deriveSignupLinkStatus } from '../signupLinks';
 import {
+  createSignupLink as d1CreateSignupLink,
+  listSignupLinksForHotel as d1ListSignupLinksForHotel,
+  getValidSignupLink as d1GetValidSignupLink,
+  redeemSignupLink as d1RedeemSignupLink,
+  createHotelOwnerMembership as d1CreateHotelOwnerMembership,
+} from '../d1/signupLinks';
+import {
+  inviteStaffUser as d1InviteStaffUser,
+  acceptStaffInvite as d1AcceptStaffInvite,
+} from '../d1/invites';
+import { createEmailSender } from '../email';
+import {
   requirePermission,
   requireHotelPermission,
   requireSuperAdmin,
@@ -133,6 +145,20 @@ export const listHotelAdminAuditLogs = protectedProcedure.input(hotelAdminAuditL
 
 export const inviteHotelStaff = protectedProcedure.input(hotelStaffInviteSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
+  if (ctx.db) {
+    try {
+      const emailSender = createEmailSender();
+      return await d1InviteStaffUser(
+        ctx.db,
+        ctx.caller ?? { userId: ctx.user.id },
+        emailSender,
+        input,
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      return rethrowDomainError(error);
+    }
+  }
   const client = rlsClient(ctx.user.accessToken);
   try {
     const hotel = await assertHotelExists(client, input.hotel_id);
@@ -174,6 +200,18 @@ export const createSignupLink = protectedProcedure.input(z.object({
   expiresInHours: z.number().int().min(1).max(720),
 })).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
+  if (ctx.db) {
+    try {
+      return await d1CreateSignupLink(
+        ctx.db,
+        ctx.caller ?? { userId: ctx.user.id },
+        input,
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      return rethrowDomainError(error);
+    }
+  }
   const client = rlsClient(ctx.user.accessToken);
   try {
     const hotel = await assertHotelExists(client, input.hotel_id);
@@ -190,6 +228,18 @@ export const createSignupLink = protectedProcedure.input(z.object({
 
 export const listSignupLinks = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
+  if (ctx.db) {
+    try {
+      return await d1ListSignupLinksForHotel(
+        ctx.db,
+        ctx.caller ?? { userId: ctx.user.id },
+        input.hotel_id,
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      return rethrowDomainError(error);
+    }
+  }
   try {
     const links = await listSignupLinksForHotel(input.hotel_id);
     return links.map(link => ({ ...link, status: deriveSignupLinkStatus(link) }));
@@ -198,7 +248,12 @@ export const listSignupLinks = protectedProcedure.input(z.object({ hotel_id: hot
   }
 });
 
-export const validateSignupLink = rateLimitedProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ input }) => {
+export const validateSignupLink = rateLimitedProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ ctx, input }) => {
+  if (ctx.db) {
+    const link = await d1GetValidSignupLink(ctx.db, input.token);
+    if (!link) return { valid: false as const };
+    return { valid: true as const, hotelName: link.hotelName };
+  }
   const link = await getValidSignupLink(input.token);
   if (!link) return { valid: false as const };
   return { valid: true as const, hotelName: link.hotelName };
@@ -211,6 +266,19 @@ export const completeHotelOwnerSignup = rateLimitedProcedure.input(z.object({
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required to complete signup.' });
   }
   const userId = ctx.user.id;
+  if (ctx.db) {
+    const redeemed = await d1RedeemSignupLink(ctx.db, input.token, userId);
+    if (!redeemed) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'This signup link is no longer valid.' });
+    }
+    try {
+      await d1CreateHotelOwnerMembership(ctx.db, redeemed.hotel_id, userId);
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      return rethrowDomainError(error);
+    }
+    return { success: true as const };
+  }
   const redeemed = await redeemSignupLink(input.token, userId);
   if (!redeemed) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'This signup link is no longer valid.' });
@@ -221,6 +289,17 @@ export const completeHotelOwnerSignup = rateLimitedProcedure.input(z.object({
     return rethrowDomainError(error);
   }
   return { success: true as const };
+});
+
+export const acceptStaffInvite = rateLimitedProcedure.input(z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+  name: z.string().optional(),
+})).mutation(async ({ ctx, input }) => {
+  if (!ctx.db) {
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required for accepting invites.' });
+  }
+  return await d1AcceptStaffInvite(ctx.db, input);
 });
 
 export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchema).mutation(async ({ ctx, input }) => {
@@ -408,6 +487,7 @@ export const staffRouter = router({
   listSignupLinks,
   validateSignupLink,
   completeHotelOwnerSignup,
+  acceptStaffInvite,
   updateHotelStaffRole,
   transferHotelAdmin,
   removeHotelStaff,

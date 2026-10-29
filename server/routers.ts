@@ -23,6 +23,8 @@ import {
   sendMessage,
 } from './routers/messagingRouter';
 import {
+  staffRouter,
+  acceptStaffInvite,
   adminUsers,
   hotelStaff,
   listHotelAdminAuditLogs,
@@ -85,6 +87,7 @@ export const appRouter = router({
   system: systemRouter,
   notifications: notificationsRouter,
   auth: authRouter,
+  staff: staffRouter,
   channelManager: router({
     dashboard,
     channelPerformance,
@@ -100,6 +103,7 @@ export const appRouter = router({
     listSignupLinks,
     validateSignupLink,
     completeHotelOwnerSignup,
+    acceptStaffInvite,
     updateHotelStaffRole,
     transferHotelAdmin,
     removeHotelStaff,

@@ -1,45 +1,13 @@
 import { decodeJwt } from 'jose';
 import { TRPCError } from '@trpc/server';
 
-/**
- * T09-03 — MFA step-up check for SlipOK (Phase 01 gate).
- *
- * Supabase Auth MFA uses Authenticator Assurance Levels (AAL):
- *  - `aal1` — single factor (password / magic link) only
- *  - `aal2` — MFA verified this session (TOTP / phone OTP)
- *
- * The Supabase JWT exposes this as claims:
- *  - `aal: 'aal1' | 'aal2'`
- *  - `amr: Array<{ method: string; timestamp: number }>`  (timestamp is seconds since epoch)
- *
- * See Supabase docs: `supabase.auth.mfa.getAuthenticatorAssuranceLevel()` and JWT `aal`/`amr` claims.
- * We decode the access token (already verified via `auth.getUser()` in `server/supabase.ts`)
- * so we stay stateless — no extra DB table needed, per spec 09.
- *
- * Freshness window: step-up means "MFA verified within the last N minutes", not just
- * "ever enrolled". Default is 10 minutes; callers may override via `windowMinutes`.
- * This mirrors the spec's two distinct error paths:
- *  - no-factor → prompt to enroll (not a silent block)
- *  - expired / aal1 → prompt to challenge (re-enter TOTP)
- */
-
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-/** Default freshness window for step-up: MFA must have been verified within this many minutes. */
 export const DEFAULT_MFA_STEP_UP_WINDOW_MINUTES = 10;
 
-/** Machine-readable reasons surfaced via TRPCError.cause / check result for client routing. */
 export type MfaStepUpReason = 'no_factor' | 'aal1' | 'expired' | 'no_mfa_method' | 'invalid_token';
-
-// ---------------------------------------------------------------------------
-// Decoded JWT shape
-// ---------------------------------------------------------------------------
 
 export type JwtAmrEntry = {
   method: string;
-  timestamp: number; // seconds since epoch, per Supabase JWT
+  timestamp: number;
 };
 
 export type DecodedMfaClaims = {
@@ -50,11 +18,6 @@ export type DecodedMfaClaims = {
   raw: Record<string, unknown>;
 };
 
-/**
- * Decode the Supabase access token JWT without verifying the signature
- * (signature was already verified by `supabase.auth.getUser(accessToken)` on the
- * request path via `getSupabaseIdentity`). Returns `null` on malformed token.
- */
 export function decodeMfaClaims(accessToken: string): DecodedMfaClaims | null {
   if (!accessToken || typeof accessToken !== 'string') return null;
   try {
@@ -71,7 +34,7 @@ export function decodeMfaClaims(accessToken: string): DecodedMfaClaims | null {
           .map(entry => ({
             method: String((entry as Record<string, unknown>)['method']),
             timestamp: typeof (entry as Record<string, unknown>)['timestamp'] === 'number'
-              ? (entry as Record<string, unknown>)['timestamp'] as number
+              ? ((entry as Record<string, unknown>)['timestamp'] as number)
               : 0,
           }))
       : [];
@@ -83,33 +46,16 @@ export function decodeMfaClaims(accessToken: string): DecodedMfaClaims | null {
   }
 }
 
-// ---------------------------------------------------------------------------
-// MFA method detection
-// ---------------------------------------------------------------------------
-
-/**
- * Returns true if the `amr[].method` represents an MFA second factor.
- * Supabase uses `mfa/totp`, `mfa/phone`, `otp`, `totp` depending on the flow;
- * we match broadly to avoid brittle exact-string checks.
- */
 export function isMfaAmrMethod(method: string): boolean {
   const normalized = method.toLowerCase();
   return normalized.includes('mfa') || normalized === 'otp' || normalized === 'totp';
 }
 
-/**
- * Find the most recent MFA entry in `amr`, if any.
- * If multiple MFA entries exist, the newest timestamp wins.
- */
 export function getMostRecentMfaEntry(amr: JwtAmrEntry[]): JwtAmrEntry | null {
   const mfaEntries = amr.filter(entry => isMfaAmrMethod(entry.method) && typeof entry.timestamp === 'number' && entry.timestamp > 0);
   if (mfaEntries.length === 0) return null;
   return mfaEntries.reduce((latest, cur) => (cur.timestamp > latest.timestamp ? cur : latest));
 }
-
-// ---------------------------------------------------------------------------
-// Step-up status (pure, no throw)
-// ---------------------------------------------------------------------------
 
 export type MfaStepUpStatus =
   | {
@@ -145,30 +91,45 @@ export type MfaStepUpStatus =
     };
 
 export type CheckMfaStepUpOptions = {
-  /** Freshness window in minutes; defaults to DEFAULT_MFA_STEP_UP_WINDOW_MINUTES (10). */
   windowMinutes?: number;
-  /** Override for `Date.now()` in tests. */
   nowMs?: number;
 };
 
-/**
- * Pure check: does the supplied access token represent a *recently* MFA-verified
- * (AAL2) session? Does not throw — returns a discriminated status so callers
- * can branch to enroll vs challenge vs allow.
- *
- * ASSUMPTION: `amr[].timestamp` is seconds since epoch (Supabase JWT contract).
- * If Supabase ever changes this shape, this function is the single place to adapt.
- */
+export type BetterAuthUserIdentity = {
+  id: string;
+  email?: string | null;
+  twoFactorEnabled?: boolean | null;
+  session?: unknown;
+  accessToken?: string | null;
+  [key: string]: unknown;
+};
+
+export type BetterAuthSessionShape = {
+  id?: string;
+  userId?: string;
+  token?: string;
+  createdAt?: Date | number | string;
+  twoFactorVerifiedAt?: Date | number | string | null;
+  twoFactorVerified?: boolean | null;
+  [key: string]: unknown;
+};
+
+export type CheckMfaTarget =
+  | string
+  | BetterAuthUserIdentity
+  | { user?: BetterAuthUserIdentity | null; session?: BetterAuthSessionShape | null; accessToken?: string | null }
+  | null
+  | undefined;
+
 export function checkMfaStepUpStatus(
-  accessToken: string,
+  target: CheckMfaTarget,
   opts: CheckMfaStepUpOptions = {},
 ): MfaStepUpStatus {
   const windowMinutes = opts.windowMinutes ?? DEFAULT_MFA_STEP_UP_WINDOW_MINUTES;
   const windowMs = windowMinutes * 60 * 1000;
   const nowMs = opts.nowMs ?? Date.now();
 
-  const claims = decodeMfaClaims(accessToken);
-  if (!claims) {
+  if (!target) {
     return {
       status: 'error',
       reason: 'invalid_token',
@@ -179,46 +140,169 @@ export function checkMfaStepUpStatus(
     };
   }
 
-  const { aal, amr } = claims;
-  const mfaEntry = getMostRecentMfaEntry(amr);
+  // 1. JWT string or object wrapping a JWT string
+  const rawToken =
+    typeof target === 'string'
+      ? target
+      : typeof target === 'object' && 'accessToken' in target && typeof target.accessToken === 'string'
+        ? target.accessToken
+        : null;
 
-  // No MFA method in amr → user has no enrolled/verified factor this session.
-  // Spec requires guiding to enroll, not silent block.
-  if (!mfaEntry) {
-    // Distinguish "no_factor" (no MFA method at all) from "aal1 but factor exists".
-    // If amr is empty and aal1, it's almost certainly no_factor. We surface no_factor
-    // so the UI can route to `supabase.auth.mfa.enroll()`.
+  if (rawToken && rawToken.includes('.')) {
+    const claims = decodeMfaClaims(rawToken);
+    if (!claims) {
+      return {
+        status: 'error',
+        reason: 'invalid_token',
+        aal: null,
+        verifiedAtMs: null,
+        expiresAtMs: null,
+        windowMinutes,
+      };
+    }
+
+    const { aal, amr } = claims;
+    const mfaEntry = getMostRecentMfaEntry(amr);
+
+    if (!mfaEntry) {
+      return {
+        status: 'needs_enroll',
+        reason: 'no_factor',
+        aal,
+        verifiedAtMs: null,
+        expiresAtMs: null,
+        windowMinutes,
+      };
+    }
+
+    const verifiedAtMs = mfaEntry.timestamp * 1000;
+    const expiresAtMs = verifiedAtMs + windowMs;
+    const isExpired = nowMs - verifiedAtMs > windowMs;
+    const isAal2 = aal === 'aal2';
+
+    if (!isAal2) {
+      return {
+        status: 'needs_challenge',
+        reason: 'aal1',
+        aal,
+        verifiedAtMs,
+        expiresAtMs,
+        windowMinutes,
+      };
+    }
+
+    if (isExpired) {
+      return {
+        status: 'needs_challenge',
+        reason: 'expired',
+        aal,
+        verifiedAtMs,
+        expiresAtMs,
+        windowMinutes,
+      };
+    }
+
     return {
-      status: 'needs_enroll',
-      reason: 'no_factor',
-      aal,
-      verifiedAtMs: null,
-      expiresAtMs: null,
-      windowMinutes,
-    };
-  }
-
-  const verifiedAtMs = mfaEntry.timestamp * 1000;
-  const expiresAtMs = verifiedAtMs + windowMs;
-  const isExpired = nowMs - verifiedAtMs > windowMs;
-  const isAal2 = aal === 'aal2';
-
-  if (!isAal2) {
-    return {
-      status: 'needs_challenge',
-      reason: 'aal1',
-      aal,
+      status: 'verified',
+      aal: aal!,
       verifiedAtMs,
       expiresAtMs,
       windowMinutes,
     };
   }
 
+  // 2. Better Auth User / Session object inspection
+  const user =
+    typeof target === 'object' && target !== null && 'user' in target
+      ? (target as { user?: BetterAuthUserIdentity | null }).user
+      : typeof target === 'object' && target !== null && 'id' in target
+        ? (target as BetterAuthUserIdentity)
+        : null;
+
+  const session =
+    typeof target === 'object' && target !== null && 'session' in target
+      ? (target as { session?: BetterAuthSessionShape | null }).session
+      : user && 'session' in user
+        ? (user.session as BetterAuthSessionShape | null)
+        : null;
+
+  if (!user || !user.id) {
+    return {
+      status: 'error',
+      reason: 'invalid_token',
+      aal: null,
+      verifiedAtMs: null,
+      expiresAtMs: null,
+      windowMinutes,
+    };
+  }
+
+  // 2FA not enabled on user -> must enroll
+  if (!user.twoFactorEnabled) {
+    return {
+      status: 'needs_enroll',
+      reason: 'no_factor',
+      aal: 'aal1',
+      verifiedAtMs: null,
+      expiresAtMs: null,
+      windowMinutes,
+    };
+  }
+
+  // 2FA enabled: require explicit proof of 2FA verification on the session.
+  // Never fall back to session.createdAt for unverified sessions (AAL1 password-only bypass prevention).
+  const isExplicitlyVerified =
+    session?.twoFactorVerified !== false &&
+    (session?.twoFactorVerified === true ||
+      (session?.twoFactorVerifiedAt != null && session.twoFactorVerifiedAt !== ''));
+
+  if (!isExplicitlyVerified) {
+    return {
+      status: 'needs_challenge',
+      reason: 'aal1',
+      aal: 'aal1',
+      verifiedAtMs: null,
+      expiresAtMs: null,
+      windowMinutes,
+    };
+  }
+
+  // 2FA genuinely verified: resolve timestamp to determine freshness
+  const rawVerifiedTime =
+    session?.twoFactorVerifiedAt ??
+    (session?.twoFactorVerified === true ? session?.createdAt : null);
+
+  if (!rawVerifiedTime) {
+    return {
+      status: 'needs_challenge',
+      reason: 'aal1',
+      aal: 'aal1',
+      verifiedAtMs: null,
+      expiresAtMs: null,
+      windowMinutes,
+    };
+  }
+
+  const verifiedAtMs = new Date(rawVerifiedTime).getTime();
+  if (Number.isNaN(verifiedAtMs) || verifiedAtMs <= 0) {
+    return {
+      status: 'needs_challenge',
+      reason: 'aal1',
+      aal: 'aal1',
+      verifiedAtMs: null,
+      expiresAtMs: null,
+      windowMinutes,
+    };
+  }
+
+  const expiresAtMs = verifiedAtMs + windowMs;
+  const isExpired = nowMs - verifiedAtMs > windowMs;
+
   if (isExpired) {
     return {
       status: 'needs_challenge',
       reason: 'expired',
-      aal,
+      aal: 'aal2',
       verifiedAtMs,
       expiresAtMs,
       windowMinutes,
@@ -227,80 +311,54 @@ export function checkMfaStepUpStatus(
 
   return {
     status: 'verified',
-    aal: aal!,
+    aal: 'aal2',
     verifiedAtMs,
     expiresAtMs,
     windowMinutes,
   };
 }
 
-// Backwards-compatible alias for callers that prefer `getMfaStepUpStatus`.
 export const getMfaStepUpStatus = checkMfaStepUpStatus;
 
-// ---------------------------------------------------------------------------
-// Throwing guard — use at the top of any sensitive tRPC procedure
-// ---------------------------------------------------------------------------
+export type RequireMfaInput = CheckMfaTarget;
 
-export type RequireMfaInput = string | { accessToken?: string | null } | null | undefined;
-
-/**
- * Resolve the raw access token string from either a plain string or a
- * `SupabaseIdentity`-like object (`{ accessToken }`).
- */
-function resolveAccessToken(input: RequireMfaInput): string | null {
-  if (!input) return null;
-  if (typeof input === 'string') return input;
-  if (typeof input === 'object' && 'accessToken' in input) {
-    const token = (input as { accessToken?: string | null }).accessToken;
-    return typeof token === 'string' && token.length > 0 ? token : null;
-  }
-  return null;
-}
-
-/**
- * Throwing step-up guard for tRPC procedures.
- *
- * Usage (Phase 01 SlipOK integration — server/routers.ts):
- * ```ts
- * // at the top of getSlipOkSettings / saveSlipOkSettings
- * requireRecentMfaVerification(ctx.user, { windowMinutes: 10 });
- * // or with raw token:
- * requireRecentMfaVerification(ctx.user.accessToken);
- * ```
- *
- * Behavior:
- *  - `verified` → returns silently (request may proceed)
- *  - `needs_enroll` (no factor) → throws PRECONDITION_FAILED "MFA enrollment required"
- *    → client should route to `supabase.auth.mfa.enroll()` + `verify()`
- *  - `needs_challenge` (aal1 or expired) → throws PRECONDITION_FAILED "MFA verification required"
- *    → client should route to `supabase.auth.mfa.challenge()` + `verify()`
- *  - `invalid_token` / missing token → throws UNAUTHORIZED
- *
- * The thrown `TRPCError.cause` carries `{ reason, aal, verifiedAtMs, expiresAtMs }`
- * so client code can branch without parsing the message string.
- */
 export function requireRecentMfaVerification(
-  input: RequireMfaInput,
-  opts: CheckMfaStepUpOptions = {},
+  target: CheckMfaTarget,
+  opts?: CheckMfaStepUpOptions,
+): void;
+export function requireRecentMfaVerification(
+  user: BetterAuthUserIdentity | null,
+  session: BetterAuthSessionShape | null,
+  opts?: CheckMfaStepUpOptions,
+): void;
+export function requireRecentMfaVerification(
+  targetOrUser: CheckMfaTarget | BetterAuthUserIdentity | null,
+  sessionOrOpts?: BetterAuthSessionShape | CheckMfaStepUpOptions | null,
+  maybeOpts?: CheckMfaStepUpOptions,
 ): void {
-  const accessToken = resolveAccessToken(input);
+  let target: CheckMfaTarget;
+  let opts: CheckMfaStepUpOptions | undefined;
 
-  if (!accessToken) {
-    throw new TRPCError({
-      code: 'UNAUTHORIZED',
-      message: 'Authentication required for MFA step-up check.',
-      cause: { reason: 'invalid_token' as MfaStepUpReason },
-    });
+  if (
+    sessionOrOpts &&
+    typeof sessionOrOpts === 'object' &&
+    ('id' in sessionOrOpts || 'createdAt' in sessionOrOpts || 'twoFactorVerifiedAt' in sessionOrOpts)
+  ) {
+    target = { user: targetOrUser as BetterAuthUserIdentity | null, session: sessionOrOpts as BetterAuthSessionShape };
+    opts = maybeOpts;
+  } else {
+    target = targetOrUser as CheckMfaTarget;
+    opts = sessionOrOpts as CheckMfaStepUpOptions | undefined;
   }
 
-  const result = checkMfaStepUpStatus(accessToken, opts);
+  const result = checkMfaStepUpStatus(target, opts);
 
   if (result.status === 'verified') return;
 
   if (result.status === 'error') {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
-      message: 'Invalid or malformed session token for MFA step-up check.',
+      message: 'Authentication required for MFA step-up check.',
       cause: { reason: result.reason, aal: result.aal },
     });
   }
@@ -308,8 +366,6 @@ export function requireRecentMfaVerification(
   if (result.status === 'needs_enroll') {
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
-      // Keep message prefix stable so client string-matching (if any) survives i18n tweaks;
-      // primary routing signal is `cause.reason`.
       message:
         'MFA enrollment required: no authenticator factor enrolled. Enroll TOTP before accessing SlipOK settings.',
       cause: {
@@ -322,7 +378,6 @@ export function requireRecentMfaVerification(
     });
   }
 
-  // needs_challenge — includes aal1 and expired
   const challengeMessage =
     result.reason === 'expired'
       ? 'MFA verification expired: please re-enter your authenticator code to continue.'
@@ -341,24 +396,18 @@ export function requireRecentMfaVerification(
   });
 }
 
-/**
- * Alias with a middleware-friendly name for Phase 01.
- * `enforceMfaStepUp(ctx.user)` reads the same as `requireRecentMfaVerification(ctx.user)`.
- */
 export const enforceMfaStepUp = requireRecentMfaVerification;
 
-/**
- * Helper for tRPC middleware composition, if a future ticket wants a dedicated
- * `mfaStepUpProcedure`. Example:
- * ```ts
- * const mfaStepUpProcedure = protectedProcedure.use(({ ctx, next }) => {
- *   requireRecentMfaVerification(ctx.user);
- *   return next({ ctx });
- * });
- * ```
- */
 export function createMfaStepUpMiddleware(windowMinutes?: number) {
-  return function mfaStepUpMiddleware(opts: { ctx: { user: { accessToken?: string | null } | null } }) {
-    requireRecentMfaVerification(opts.ctx.user, { windowMinutes });
+  return function mfaStepUpMiddleware(opts: {
+    ctx: {
+      user?: BetterAuthUserIdentity | { accessToken?: string | null } | null;
+      session?: BetterAuthSessionShape | null;
+    };
+  }) {
+    requireRecentMfaVerification(
+      { user: opts.ctx.user as BetterAuthUserIdentity | null, session: opts.ctx.session },
+      { windowMinutes },
+    );
   };
 }
