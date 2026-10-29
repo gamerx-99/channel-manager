@@ -1,4 +1,4 @@
-{
+﻿{
   "version": "7",
   "dialect": "sqlite",
   "entries": [
@@ -56,6 +56,13 @@
       "version": "6",
       "when": 1793212575102,
       "tag": "20261029000000_booking_nights_overlap_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793251264066,
+      "tag": "20261029010000_better_auth",
       "breakpoints": true
     }
   ]

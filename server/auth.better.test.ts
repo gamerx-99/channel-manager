@@ -19,7 +19,6 @@ import {
 import { createContextFromRequest } from "./_core/context";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../drizzle/d1");
-const pendingAuthDdlPath = resolve(dirname(fileURLToPath(import.meta.url)), "../drizzle/pending/13-05-better-auth.sql");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
 
 let sqlite: InstanceType<typeof DatabaseSync>;
@@ -30,18 +29,12 @@ beforeEach(() => {
   sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys = ON;");
 
-  // 1. Run D1 base migrations
+  // 1. Run D1 migrations (includes Better Auth schema migration)
   for (const file of readdirSync(migrationFolder).filter(f => f.endsWith(".sql")).sort()) {
     const content = readFileSync(resolve(migrationFolder, file), "utf8");
     for (const stmt of content.split("--> statement-breakpoint")) {
       if (stmt.trim()) sqlite.exec(stmt);
     }
-  }
-
-  // 2. Run pending 13-05 auth schema DDL
-  const authDdl = readFileSync(pendingAuthDdlPath, "utf8");
-  for (const stmt of authDdl.split("--> statement-breakpoint")) {
-    if (stmt.trim()) sqlite.exec(stmt);
   }
 
   const mergedSchema = { ...d1Schema, ...authSchema };
@@ -86,6 +79,31 @@ afterEach(() => {
 });
 
 describe("Server Better Auth on D1 Test Suite", () => {
+  it("creates user, session, account, verification and two_factor tables via D1 migrations", () => {
+    const tables = (sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{ name: string }>)
+      .map(row => row.name);
+    expect(tables).toContain("user");
+    expect(tables).toContain("session");
+    expect(tables).toContain("account");
+    expect(tables).toContain("verification");
+    expect(tables).toContain("two_factor");
+  });
+
+  it("on the Worker, a Supabase bearer token alone never yields a user with hotel permissions", async () => {
+    // When db is present (as on Cloudflare Worker with env.DB), requests with Supabase tokens alone
+    // cannot authenticate through Better Auth session resolution and never obtain hotel permissions.
+    const fakeSupabaseToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsImV4cCI6OTk5OTk5OTk5OX0.dummy";
+    const ctx = await createContextFromRequest({
+      req: new Request("https://example.com/api/trpc", {
+        headers: { authorization: `Bearer ${fakeSupabaseToken}` },
+      }),
+      db,
+    });
+    expect(ctx.user).toBeNull();
+    expect(ctx.caller?.access).toBe("public");
+    expect(ctx.caller?.roles).toEqual([]);
+  });
+
   // Test 1: User Registration
   it("creates user and credential account on registration", async () => {
     const now = new Date();
