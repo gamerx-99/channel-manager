@@ -24,7 +24,7 @@ import {
   deleteHotelMedia as dbDeleteHotelMedia,
   setHotelMediaHero as dbSetHotelMediaHero,
 } from '../db';
-import { listManagedHotels as d1ListManagedHotels } from '../d1/hotel';
+import { listManagedHotels as d1ListManagedHotels, getManagedHotel as d1GetManagedHotel } from '../d1/hotel';
 import type { BookingRecord } from '../db/types';
 import { uploadHotelMediaToStorage, deleteHotelMediaFromStorage } from '../storage';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
@@ -262,6 +262,18 @@ export const createHotel = protectedProcedure.input(createHotelSchema).mutation(
 // Intentionally unguarded by a named permission beyond RLS: getManagedHotel is scoped to
 // the caller's accessible hotels and returns null (mapped to NOT_FOUND) otherwise.
 export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
+  if (ctx.db) {
+    try {
+      const h = await d1GetManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
+      if (!h) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
+      }
+      return h as unknown as NonNullable<Awaited<ReturnType<typeof getManagedHotel>>>;
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      return rethrowDomainError(error);
+    }
+  }
   let h;
   try {
     h = await getManagedHotel(rlsClient(ctx.user.accessToken), input);
