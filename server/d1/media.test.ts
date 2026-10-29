@@ -145,8 +145,9 @@ describe("D1 hotel media on R2", () => {
     await seedHotel("hotel-a", "owner-a");
     const bucket = new MemoryR2();
     const caller = { userId: "owner-a" };
-    const first = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "first.jpg", content_type: "image/jpeg", data: bytes });
-    const second = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "second.jpg", content_type: "image/jpeg", data: bytes });
+    const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    const first = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "first.jpg", content_type: "image/jpeg", data: jpegBytes });
+    const second = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "second.jpg", content_type: "image/jpeg", data: jpegBytes });
     expect(second.isHero).toBe(false);
     await expect(deleteHotelMediaFromR2(db, caller, bucket as unknown as R2Bucket, "hotel-a", first.id)).resolves.toEqual({ id: first.id });
     expect(bucket.deletes).toEqual([first.url.slice("/media/".length)]);
@@ -164,6 +165,9 @@ describe("D1 hotel media on R2", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/png");
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+    expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-site");
     expect(response.headers.get("ETag")).toBe('"test-etag"');
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes);
     expect((await app.request("/media/hotel-a/00000000-0000-4000-8000-000000000000.png", {}, env)).status).toBe(404);
@@ -204,5 +208,83 @@ describe("D1 hotel media on R2", () => {
     expect(oversized.status).toBe(413);
     expect(await oversized.json()).toEqual({ error: "Upload request is too large." });
     expect(bucket.objects.size).toBe(0);
+  });
+
+  it("rejects non-raster types and declared vs detected mismatches", () => {
+    const svgBytes = new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'></svg>");
+    expect(() => validateHotelMediaUpload(svgBytes, "image/svg+xml", "image.svg")).toThrow("Only image files can be uploaded.");
+
+    const htmlBytes = new TextEncoder().encode("<!DOCTYPE html><html><body><h1>test</h1></body></html>");
+    expect(() => validateHotelMediaUpload(htmlBytes, "image/png", "photo.png")).toThrow("Only image files can be uploaded.");
+
+    expect(() => validateHotelMediaUpload(bytes, "image/jpeg", "photo.jpg")).toThrow("Declared content type does not match detected image type.");
+
+    const avisBytes = new Uint8Array([0, 0, 0, 28, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x73]); // ftypavis
+    expect(validateHotelMediaUpload(avisBytes, "image/avif", "photo.avif")).toEqual({ contentType: "image/avif", extension: "avif" });
+  });
+
+  it("x.html with PNG bytes produces a .png key", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    const media = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, {
+      hotel_id: "hotel-a", filename: "x.html", content_type: "image/png", data: bytes,
+    });
+    expect(media.url).toMatch(/^\/media\/hotel-a\/[a-f0-9-]{36}\.png$/);
+  });
+
+  it("GET of a .svg or .html key returns 404 without calling R2", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    let getCalled = false;
+    const originalGet = bucket.get.bind(bucket);
+    bucket.get = async (key: string) => {
+      getCalled = true;
+      return originalGet(key);
+    };
+    const app = createWorkerApp({ createContext: fakeContext(null), createDatabase: () => db });
+    const env = { DB: {} as D1Database, MEDIA: bucket as unknown as R2Bucket } as WorkerEnv;
+
+    const svgRes = await app.request("/media/hotel-a/00000000-0000-4000-8000-000000000000.svg", {}, env);
+    expect(svgRes.status).toBe(404);
+    expect(getCalled).toBe(false);
+
+    const htmlRes = await app.request("/media/hotel-a/00000000-0000-4000-8000-000000000000.html", {}, env);
+    expect(htmlRes.status).toBe(404);
+    expect(getCalled).toBe(false);
+  });
+
+  it("serves response with exact CSP (including sandbox), nosniff, CORP same-site, and extension Content-Type even when R2 metadata says text/html", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    const key = "hotel-a/00000000-0000-4000-8000-000000000001.png";
+    bucket.objects.set(key, {
+      data: bytes,
+      httpMetadata: { contentType: "text/html" },
+    });
+    const app = createWorkerApp({ createContext: fakeContext(null), createDatabase: () => db });
+    const env = { DB: {} as D1Database, MEDIA: bucket as unknown as R2Bucket } as WorkerEnv;
+
+    const response = await app.request(`/media/${key}`, {}, env);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/png");
+    expect(response.headers.get("Content-Security-Policy")).toBe("default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-site");
+  });
+
+  it("delete removes the row even when bucket.delete throws", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    const caller = { userId: "owner-a" };
+    const media = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, {
+      hotel_id: "hotel-a", filename: "photo.jpg", content_type: "image/jpeg", data: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
+    });
+    bucket.delete = async () => {
+      throw new Error("R2 network failure");
+    };
+    const result = await deleteHotelMediaFromR2(db, caller, bucket as unknown as R2Bucket, "hotel-a", media.id);
+    expect(result).toEqual({ id: media.id });
+    const remaining = await db.select().from(hotelMedia).where(eq(hotelMedia.id, media.id));
+    expect(remaining).toHaveLength(0);
   });
 });

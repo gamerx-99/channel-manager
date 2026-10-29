@@ -12,7 +12,7 @@ const IMAGE_SIGNATURES: Array<{ mime: string; extension: string; test: (data: Ui
   { mime: "image/jpeg", extension: "jpg", test: d => d.length >= 3 && d[0] === 0xff && d[1] === 0xd8 && d[2] === 0xff },
   { mime: "image/gif", extension: "gif", test: d => d.length >= 4 && d[0] === 0x47 && d[1] === 0x49 && d[2] === 0x46 && d[3] === 0x38 },
   { mime: "image/webp", extension: "webp", test: d => d.length >= 12 && d[0] === 0x52 && d[1] === 0x49 && d[2] === 0x46 && d[3] === 0x46 && d[8] === 0x57 && d[9] === 0x45 && d[10] === 0x42 && d[11] === 0x50 },
-  { mime: "image/avif", extension: "avif", test: d => d.length >= 12 && d[4] === 0x66 && d[5] === 0x74 && d[6] === 0x79 && d[7] === 0x70 && d[8] === 0x61 && d[9] === 0x76 && d[10] === 0x69 && d[11] === 0x66 },
+  { mime: "image/avif", extension: "avif", test: d => d.length >= 12 && d[4] === 0x66 && d[5] === 0x74 && d[6] === 0x79 && d[7] === 0x70 && d[8] === 0x61 && d[9] === 0x76 && d[10] === 0x69 && (d[11] === 0x66 || d[11] === 0x73) },
 ];
 
 export function detectImageType(data: Uint8Array): { mime: string; extension: string } | null {
@@ -27,6 +27,11 @@ export function validateHotelMediaUpload(data: Uint8Array, contentType: string, 
   const detected = detectImageType(data);
   if (!detected) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Only image files can be uploaded." });
+  }
+  const rawDeclared = (contentType || "").split(";")[0]!.trim().toLowerCase();
+  const declaredType = rawDeclared === "image/jpg" ? "image/jpeg" : rawDeclared;
+  if (declaredType !== detected.mime) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Declared content type does not match detected image type." });
   }
   return { contentType: detected.mime, extension: detected.extension };
 }
@@ -47,7 +52,7 @@ export function validateHotelMediaObjectKey(hotelId: string, candidate: string):
     throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid hotel media object key." });
   }
   if (prefix !== hotelId || filename === "." || filename === ".." || filename.includes("/") || filename.includes("\\")
-    || !/^[a-f0-9-]{36}\.[a-z0-9]{1,10}$/i.test(filename)) {
+    || !/^[a-f0-9-]{36}\.(jpg|png|webp|gif|avif)$/i.test(filename)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid hotel media object key." });
   }
   return `${hotelId}/${filename}`;
@@ -122,13 +127,7 @@ export async function deleteHotelMediaFromR2(
   )).limit(1);
   if (!current) return null;
   const key = storedR2Key(scope.hotelId, current.url);
-  if (key) {
-    try {
-      await bucket.delete(key);
-    } catch {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel media could not be deleted." });
-    }
-  }
+  // ASSUMPTION: an orphaned R2 object is harmless, while a row pointing at a missing object is a broken image.
   const [deleted] = await db.delete(hotelMedia).where(and(
     eq(hotelMedia.id, mediaId), eq(hotelMedia.hotelId, scope.hotelId),
   )).returning({ id: hotelMedia.id });
@@ -137,5 +136,13 @@ export async function deleteHotelMediaFromR2(
     SET is_hero = (id = (SELECT id FROM hotel_media WHERE hotel_id = ? ORDER BY display_order LIMIT 1))
     WHERE hotel_id = ? AND NOT EXISTS (SELECT 1 FROM hotel_media WHERE hotel_id = ? AND is_hero = 1)`)
     .bind(scope.hotelId, scope.hotelId, scope.hotelId)]);
+
+  if (key) {
+    try {
+      await bucket.delete(key);
+    } catch (error) {
+      console.error("[hotel_media] R2 delete failed after row removal:", error instanceof Error ? error.message : "unknown error");
+    }
+  }
   return { id: deleted.id };
 }

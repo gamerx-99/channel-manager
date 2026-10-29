@@ -34,6 +34,14 @@ type WorkerAppDependencies = {
 
 const MAX_UPLOAD_REQUEST_BYTES = 7 * 1024 * 1024;
 
+const MEDIA_CONTENT_TYPES: Record<string, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
+};
+
 function defaultDatabase(binding?: D1Database): D1ScopedDatabase | undefined {
   if (!binding) return undefined;
   return drizzle(binding, { schema: d1Schema }) as unknown as D1ScopedDatabase;
@@ -239,21 +247,28 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
 
   app.get("/media/:hotelId/:file", async c => {
     const hotelId = c.req.param("hotelId");
+    const file = c.req.param("file");
+    const ext = file.split(".").pop()?.toLowerCase() ?? "";
+    const contentType = MEDIA_CONTENT_TYPES[ext];
+    if (!contentType) {
+      return c.text("Not found.", 404);
+    }
     let key: string;
     try {
-      key = validateHotelMediaObjectKey(hotelId, `${hotelId}/${c.req.param("file")}`);
+      key = validateHotelMediaObjectKey(hotelId, `${hotelId}/${file}`);
     } catch {
       return c.text("Not found.", 404);
     }
     try {
       const object = await c.env.MEDIA.get(key);
       if (!object) return c.text("Not found.", 404);
+      // ASSUMPTION: the public hotel pages are served from our own site, so same-site is enough.
       const headers = new Headers({
-        "Content-Type": object.httpMetadata?.contentType ?? "application/octet-stream",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
         "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
-        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox",
+        "Cross-Origin-Resource-Policy": "same-site",
       });
       if (object.httpEtag) headers.set("ETag", object.httpEtag);
       return new Response(object.body as unknown as BodyInit, { status: 200, headers });
