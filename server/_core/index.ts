@@ -7,6 +7,9 @@ import { registerStorageProxy } from "./storageProxy";
 import { registerOtaIcalRoutes } from "../otaIcalRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { initNodeTm30 } from "../tm30Node";
+
+initNodeTm30();
 
 const app = express();
 

@@ -107,11 +107,18 @@ export function buildTm30Rows(bookings: Tm30Booking[]): Tm30ExportRow[] {
   return rows;
 }
 
-function createMappedTemplateWorkbook(): XLSX.WorkBook {
+export function createMappedTemplateWorkbook(): XLSX.WorkBook {
   const workbook = XLSX.utils.book_new();
   const sheet = XLSX.utils.aoa_to_sheet([[...TM30_HEADERS]]);
   XLSX.utils.book_append_sheet(workbook, sheet, "TM.30");
   return workbook;
+}
+
+export type Tm30TemplateLoader = () => XLSX.WorkBook;
+let customTemplateLoader: Tm30TemplateLoader | null = null;
+
+export function registerTm30TemplateLoader(loader: Tm30TemplateLoader | null) {
+  customTemplateLoader = loader;
 }
 
 /**
@@ -121,6 +128,9 @@ function createMappedTemplateWorkbook(): XLSX.WorkBook {
  * missing file an explicit configuration error instead of silently falling back.
  */
 export function loadTm30Template(): XLSX.WorkBook {
+  if (customTemplateLoader) {
+    return customTemplateLoader();
+  }
   return createMappedTemplateWorkbook();
 }
 
