@@ -128,13 +128,8 @@ async function resolveScope(
     });
     scope = { hotelId, userId: caller.userId, role: "support", permissions };
   } else {
-    if (!caller.roles?.includes("admin") && !memberships.some(row => row.role === "admin")) forbidden();
-    scope = {
-      hotelId,
-      userId: caller.userId,
-      role: "admin",
-      permissions: resolveMembershipPermissions("admin"),
-    };
+    // admin (platform admin) no longer has cross-hotel read (spec 14 S5).
+    forbidden();
   }
 
   requirePermission(scope, required);

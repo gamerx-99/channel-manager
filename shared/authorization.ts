@@ -106,12 +106,6 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   // the `for select` policies that route through `public.is_hotel_member()`.
   admin: [
     "platform.view_all_hotels",
-    "property.view",
-    "property.view_reports",
-    "operations.view_bookings",
-    "housekeeping.view_room_status",
-    "ota.view_status",
-    "ota.view_sync_logs",
   ],
   // Support sees the hotel list only. Hotel data comes solely from an active support
   // grant the owner approved (`resolveSupportGrantPermissions` in shared/permissions.ts).

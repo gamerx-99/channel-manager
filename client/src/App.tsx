@@ -7,7 +7,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Home";
-import ChannelPerformance from "./pages/ChannelPerformance";
 import Financials from "./pages/Financials";
 import AdvancedPricing from "./pages/AdvancedPricing";
 import Housekeeping from "./pages/Housekeeping";
@@ -41,9 +40,6 @@ function Router() {
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
       <Route path="/accept-invite" component={AcceptInvite} />
-      <Route path="/dashboard/channels">
-        <PrivateRoute><ChannelPerformance /></PrivateRoute>
-      </Route>
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
