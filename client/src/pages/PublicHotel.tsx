@@ -40,13 +40,13 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [children, setChildren] = useState<string[]>([]);
   const [preferredRoomTypeId, setPreferredRoomTypeId] = useState<string | null>(null);
   const [heldBooking, setHeldBooking] = useState<{
-    booking_id: string;
-    hotel_id: string;
-    room_id: string;
-    expires_at: string;
-    room_type_name: string;
-    room_number: string;
-    total_price: number | string;
+    bookingId: string;
+    hotelId: string;
+    roomId: string;
+    expiresAt: string;
+    roomTypeName: string;
+    roomNumber: string;
+    totalPrice: number | string;
     nights: number;
   } | null>(null);
   const [selectedServiceQty, setSelectedServiceQty] = useState<Record<string, number>>({});
@@ -65,8 +65,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
   });
 
   const isDatesValid = Boolean(checkIn && checkOut && checkOut > checkIn);
-  const propertyChildRule = publicHotel.data?.roomTypes[0]?.child_rule ?? 'age';
-  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.child_rule === 'age' || roomType.child_rule_limit != null);
+  const propertyChildRule = publicHotel.data?.roomTypes[0]?.childRule ?? 'age';
+  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.childRule === 'age' || roomType.childRuleLimit != null);
   const childMeasurements = children.filter(value => value !== '').map(value => propertyChildRule === 'age' ? { age: Number(value) } : { height_cm: Number(value) });
   const guestsValid = adults >= 1 && children.every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
 
@@ -126,16 +126,16 @@ export default function PublicHotel({ slug }: { slug: string }) {
   }
 
   const { hotel, roomTypes, media } = publicHotel.data;
-  const heroImage = media.find(item => item.is_hero)?.url ?? media[0]?.url;
+  const heroImage = media.find(item => item.isHero)?.url ?? media[0]?.url;
 
   // hotel_site_config fallback: when no config row or table missing, use fixed copy/colors
   const siteConfig = siteConfigQuery.data ?? null;
-  const heroCopy = siteConfig?.hero_copy ?? DEFAULT_HERO_COPY;
-  const accentColor = siteConfig?.accent_color ?? DEFAULT_ACCENT_COLOR;
-  const visibleSections = siteConfig?.visible_sections ?? null;
-  const isVisible = (key: string) => visibleSections == null || visibleSections[key] !== false;
+  const heroCopy = siteConfig?.heroCopy ?? DEFAULT_HERO_COPY;
+  const accentColor = siteConfig?.accentColor ?? DEFAULT_ACCENT_COLOR;
+  const visibleSections = (siteConfig?.visibleSections as Record<string, boolean> | null) ?? null;
+  const isVisible = (key: string) => visibleSections?.[key] !== false;
 
-  const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
+  const availableRoomTypes = availabilityQuery.data?.roomTypes ?? [];
 
   const handleSelectRoom = (roomTypeId: string) => {
     setPreferredRoomTypeId(roomTypeId);
@@ -194,8 +194,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
     setWizardError(null);
     confirmDetailsMutation.mutate({
-      booking_id: heldBooking.booking_id,
-      hotel_id: heldBooking.hotel_id,
+      booking_id: heldBooking.bookingId,
+      hotel_id: heldBooking.hotelId,
       guest_name: guestName.trim(),
       guest_email: guestEmail.trim() || undefined,
       guest_phone: guestPhone.trim() || undefined,
@@ -204,12 +204,12 @@ export default function PublicHotel({ slug }: { slug: string }) {
     });
   };
 
-  const serviceLineTotal = (service: { name: string; pricing_model: string; unit_price: number | string }, qty: number) =>
+  const serviceLineTotal = (service: { name: string; pricingModel: string; unitPrice: number | string }, qty: number) =>
     calculateServiceTotal(
       {
         service_name: service.name,
-        pricing_model: service.pricing_model as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
-        unit_price: Number(service.unit_price),
+        pricing_model: service.pricingModel as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
+        unit_price: Number(service.unitPrice),
         quantity: qty,
       },
       heldBooking?.nights ?? 0,
@@ -389,7 +389,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                         />
                         <div>
                           <strong style={{ fontSize: "13px", display: "block" }}>{s.name}</strong>
-                          <small style={{ color: "#6a7670", fontSize: "10px" }}>{s.pricing_model}</small>
+                          <small style={{ color: "#6a7670", fontSize: "10px" }}>{s.pricingModel}</small>
                         </div>
                       </div>
                       <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "10px" }}>
@@ -514,7 +514,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             <h4 style={{ margin: "0 0 14px", fontSize: "14px", color: "#ffffff" }}>{t("publicHotel.summaryTitle")}</h4>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px", color: "#e8eee8", marginBottom: "16px" }}>
               <div><strong>{t("publicHotel.summaryProperty")}</strong> {hotel.name}</div>
-              <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
+              <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.roomTypeName} {heldBooking?.roomNumber ? `(${heldBooking.roomNumber})` : ""}</div>
               <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
               <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
               <div><strong>{t("publicHotel.summaryGuests")}</strong> {t("publicHotel.adultsLabel")}: {adults}, {t("publicHotel.childrenLabel")}: {children.length}</div>
@@ -536,7 +536,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             )}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, color: "#ffffff" }}>
               <span>{t("publicHotel.summaryTotal")}</span>
-              <span>฿{(confirmDetailsMutation.data?.amount ?? (Number(heldBooking?.total_price ?? 0) + selectedServicesTotal)).toLocaleString()}</span>
+              <span>฿{(confirmDetailsMutation.data?.amount ?? (Number(heldBooking?.totalPrice ?? 0) + selectedServicesTotal)).toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "24px" }}>
               <button type="button" className="button button-quiet" onClick={() => setWizardStep(4)}>
@@ -564,15 +564,15 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>{t("publicHotel.bookingConfirmedTitle")}</h3>
                 </div>
                 <p style={{ margin: "0 0 18px", color: "#5a6660", fontSize: "13px" }}>
-                  {t("publicHotel.bookingConfirmedNotice", { name: guestName.trim(), reference: (confirmedBookingId ?? heldBooking?.booking_id ?? "").slice(0, 8).toUpperCase() })}
+                  {t("publicHotel.bookingConfirmedNotice", { name: guestName.trim(), reference: (confirmedBookingId ?? heldBooking?.bookingId ?? "").slice(0, 8).toUpperCase() })}
                 </p>
                 <div style={{ background: "#f6f4ee", padding: "16px", borderRadius: "8px", fontSize: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
                   <div><strong>{t("publicHotel.confirmedProperty")}</strong> {hotel.name}</div>
-                  <div><strong>{t("publicHotel.confirmedRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
+                  <div><strong>{t("publicHotel.confirmedRoomType")}</strong> {heldBooking?.roomTypeName} {heldBooking?.roomNumber ? `(${heldBooking.roomNumber})` : ""}</div>
                   <div><strong>{t("publicHotel.confirmedCheckIn")}</strong> {checkIn}</div>
                   <div><strong>{t("publicHotel.confirmedCheckOut")}</strong> {checkOut} ({(heldBooking?.nights ?? 0) > 1 ? t("publicHotel.confirmedNightsPlural", { count: heldBooking?.nights ?? 0 }) : t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2ddd0", paddingTop: "10px", fontSize: "14px", fontWeight: 700, color: "var(--pine)" }}>
-                    {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? Number(heldBooking?.total_price ?? 0)).toLocaleString() })}
+                    {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? Number(heldBooking?.totalPrice ?? 0)).toLocaleString() })}
                   </div>
                 </div>
                 <button
@@ -588,8 +588,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
               <div>
                 {heldBooking && (
                   <PaymentQR
-                    bookingId={heldBooking.booking_id}
-                    hotelId={heldBooking.hotel_id}
+                    bookingId={heldBooking.bookingId}
+                    hotelId={heldBooking.hotelId}
                     onSuccess={() => setPaymentSuccess(true)}
                     onExpired={() => {
                       setWizardError(t("publicHotel.holdExpiredRestart"));
@@ -670,7 +670,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   <div className="public-room-copy">
                     <div>
                       <h3>{room.name}</h3>
-                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.base_price).toLocaleString() })}</span>
+                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.basePrice).toLocaleString() })}</span>
                     </div>
                     <ArrowRight size={17} />
                   </div>
