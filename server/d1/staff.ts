@@ -15,7 +15,7 @@ export async function listHotelOptions(db: D1ScopedDatabase, caller: D1CallerCon
 export async function listHotelUserAssignments(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
   const memberships = await db.select().from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-  if (memberships.some(row => row.role === "super_admin")) {
+  if (caller.roles?.includes("super_admin") || memberships.some(row => row.role === "super_admin")) {
     await authorizePlatformAction(db, caller, "platform.manage_users");
     const rows = await db.select().from(hotelUsers).orderBy(desc(hotelUsers.createdAt));
     return Promise.all(rows.map(row => assignmentWithHotel(db, row)));

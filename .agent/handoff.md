@@ -1839,3 +1839,9 @@ owner then grants a time-limited key by typing that email. New table `support_ac
 (migration not applied yet). Refuses emails that already have an account. Email needs
 `RESEND_API_KEY` and `EMAIL_FROM` on the Worker, otherwise the mock sender drops it.
 Not tested in a browser or with a real email.
+
+## 2026-10-31 Platform super admin accounts (spec 14)
+- **Ticket**: a super admin belongs to no hotel, and `hotel_users` requires one, so production could never have a super admin.
+- **Done**: `platform_admins` table (migration `20261031010000_platform_admins.sql`), `isActivePlatformAdmin`, session role, `platform-invite:` links in `acceptStaffInvite`, staff list honours `caller.roles`. The app has no screen that creates this role.
+- **Evidence**: `pnpm test` 122 files, 878/878 pass; `pnpm check` pass; `pnpm build` pass.
+- **Not done**: reviewer approval for this ticket and the two before it; browser check of the logged-in super admin flow; `RESEND_API_KEY` and `EMAIL_FROM`.

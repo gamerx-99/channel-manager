@@ -94,6 +94,15 @@ owner-approved access to a hotel without cross-hotel read.
 - Sending needs `RESEND_API_KEY` and `EMAIL_FROM` on the Worker. Without them
   `createEmailSender` falls back to the mock sender and no email leaves.
 
+## Platform super admins (owner decision, 2026-10-31)
+
+- A super admin belongs to no hotel, so the account lives in `platform_admins`
+  (migration `20261031010000_platform_admins.sql`), and the session gains the
+  `super_admin` role once the invite is accepted and the row is not disabled.
+- ASSUMPTION: the app has no screen that creates a super admin. A `platform-invite:<email>`
+  link is created by hand in D1, so no request can mint this role.
+- The role still never opens a hotel or the financial report.
+
 ## 14-03b / 14-04 local delivery notes (2026-10-30)
 
 - `access.updateStaffPermissions`, `grantSupport`, `revokeSupport`, `supportAccess`,

@@ -8,6 +8,7 @@ import {
   type Permission,
 } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
+import { isActivePlatformAdmin } from "../d1/platformAdmins";
 import { getSupportMemberships, isActiveSupportAccount } from "../d1/supportAccess";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
@@ -171,6 +172,9 @@ export async function createContextFromRequest(
           membershipRows.some(row => row.role === "super_admin") &&
           !roles.includes("super_admin")
         ) {
+          roles.push("super_admin");
+        }
+        if (!roles.includes("super_admin") && await isActivePlatformAdmin(db, authUser.id)) {
           roles.push("super_admin");
         }
         if (!roles.includes("support") && await isActiveSupportAccount(db, authUser.id)) {

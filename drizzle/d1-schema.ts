@@ -499,6 +499,20 @@ export const supportAccounts = sqliteTable("support_accounts", {
   uniqueIndex("uq_support_accounts_email").on(table.email),
 ]);
 
+// A super admin belongs to no hotel either, so it gets the same shape of table.
+export const platformAdmins = sqliteTable("platform_admins", {
+  id: id(),
+  userId: text("user_id").notNull(),
+  email: text("email").notNull(),
+  invitedBy: text("invited_by").notNull(),
+  acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+  disabledAt: integer("disabled_at", { mode: "timestamp_ms" }),
+  createdAt: createdAt(),
+}, table => [
+  uniqueIndex("uq_platform_admins_user").on(table.userId),
+  uniqueIndex("uq_platform_admins_email").on(table.email),
+]);
+
 export const d1Schema = {
   agents,
   hotels,
@@ -531,4 +545,5 @@ export const d1Schema = {
   supportAccessGrants,
   supportAccessLog,
   supportAccounts,
+  platformAdmins,
 };
