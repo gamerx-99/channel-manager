@@ -30,7 +30,8 @@ describe("Hotel owner signup link contract", () => {
     expect(router).toMatch(/completeHotelOwnerSignup\s*[:=]\s*rateLimitedProcedure/);
     expect(router).toMatch(/createSignupLink\s*[:=]\s*protectedProcedure/);
     expect(router).toContain("requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links')");
-    // assertSingleHotelAdmin no longer exists in D1
+    const signupLinksSource = readFileSync(resolve(process.cwd(), 'server/d1/signupLinks.ts'), 'utf8');
+    expect(signupLinksSource).toContain("This hotel already has a Hotel Admin assigned.");
   });
 
   it("grants platform.manage_signup_links to super_admin's blanket permission set", () => {
