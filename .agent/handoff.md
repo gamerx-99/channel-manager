@@ -1800,3 +1800,26 @@ Full logs remain `.agent/support-access-{test,check,build}.log` locally.
   `.agent/reviews/T14-03b-14-04.md`.
 - **NOT DONE**: manual browser/visual verification was not run; financial-report
   product expansion remains out of scope. No commit, push, merge or deploy attempted.
+
+## [2026-10-30] Remove Express/Vercel, delete unused files, PUBLIC_BOOKING_LIMITER (branch `cloud/remove-express`, from `agent-s/support-access`)
+- **Approval**: owner approved on 2026-10-30 changes to `vercel.json`, `api/index.ts`,
+  `server/_core/index.ts`, the 13-08 pipeline, the rate limit binding and deleting unused files.
+- **Commits**: `2b4abe7 chore(build)` dev/build through wrangler, `start` removed;
+  `f0b7759 chore(server)` Express/Vercel/13-08 pipeline removed (express, @types/express,
+  cross-env, esbuild, tsx, @aws-sdk/client-s3 removed with pnpm remove); `1996577 chore` 94 unused
+  files and 40 orphaned dependencies removed, CLAUDE.md/AGENTS.md/BANNED_ZONE.md updated;
+  `7d70e79 feat(worker)` PUBLIC_BOOKING_LIMITER (namespace 1001/1002/1003, 20 per 60 s) on
+  channelManager.holdRoomType and confirmBookingDetails, keyed by CF-Connecting-IP.
+- **How "unused" was proven**: esbuild import graph from worker/index.ts, client/src/main.tsx,
+  every test file, vitest.setup.ts and the vite/vitest/drizzle configs; path/name greps for files
+  read by string; `tsc --noEmit` for type-only imports.
+- **Tests removed**: 2 cases in `server/tm30.test.ts` that only exercised the deleted
+  `server/tm30Node.ts`. `server/hotelAccess.regression.test.ts` lost a type-only `express`
+  import (no assertion changed). 12 tests added for the rate limit.
+- **Evidence**: `pnpm check` clean; `pnpm test` 849 passed / 3 failed, the same 3 that fail on the
+  base branch (otaIcal date-sensitive export; SQLite parameter binding in d1/booking and
+  d1/hotel tests); `pnpm build` passes and the dry-run lists PUBLIC_BOOKING_LIMITER for the top
+  level, `--env staging` and `--env production`.
+- **NOT DONE**: no merge, deploy or live rate-limit check (wrangler `--dry-run` only); the rate
+  limit edge-case ASSUMPTION is in OPEN_QUESTIONS.md; `mysql2`/`drizzle.config.ts`/`db:push`
+  (MySQL leftovers) kept because `db:push` still references them.
