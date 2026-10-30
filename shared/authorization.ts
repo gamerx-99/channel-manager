@@ -106,6 +106,13 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   // the `for select` policies that route through `public.is_hotel_member()`.
   admin: [
     "platform.view_all_hotels",
+    // Cross-hotel READ only — every write capability is withheld here and at the
+    // database layer (Stage 1 closed admin cross-hotel data writes). These reads
+    // let the platform admin browse hotels, bookings and OTA sync logs without
+    // being able to modify anything.
+    "property.view",
+    "operations.view_bookings",
+    "ota.view_sync_logs",
   ],
   // Support sees the hotel list only. Hotel data comes solely from an active support
   // grant the owner approved (`resolveSupportGrantPermissions` in shared/permissions.ts).
