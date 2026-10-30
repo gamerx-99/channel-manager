@@ -1,4 +1,3 @@
-import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { eq } from "drizzle-orm";
 import {
   APP_ROLES,
@@ -13,6 +12,7 @@ import { getSupportMemberships } from "../d1/supportAccess";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
+import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 
 export type SupabaseMembership = {
   hotelId: string;
@@ -46,6 +46,10 @@ export type TrpcContext = {
   res?: any;
   db?: D1ScopedDatabase;
   session?: unknown;
+  /** PUBLIC_BOOKING_LIMITER binding; set by the Worker only. */
+  publicBookingLimiter?: PublicBookingLimiter;
+  /** CF-Connecting-IP header, the PUBLIC_BOOKING_LIMITER key; set by the Worker only. */
+  cfConnectingIp?: string;
 };
 
 export type CreateContextOptions = {
@@ -229,11 +233,4 @@ export async function createContextFromRequest(
     user: null,
     clientIp: clientIp || "unknown",
   };
-}
-
-export function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
-  return createContextFromRequest({
-    headers: opts.req.headers,
-    clientIp: opts.req.ip || opts.req.socket?.remoteAddress,
-  });
 }

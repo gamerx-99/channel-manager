@@ -146,6 +146,10 @@ external piece (see Q1).
   `server/_core/vite.ts`, `@supabase/*`, `pg`, `mysql2`, Manus/Forge leftovers), archive the
   Supabase project after a retention window, update `CLAUDE.md` (stack, commands, migrations
   section) and `.agent/BANNED_ZONE.md`.
+  *Partly done 2026-10-30 (branch `cloud/remove-express`, not merged):* Express/Vercel files,
+  `server/_core/vite.ts`, `pg`, Manus/Forge leftovers, the 13-08 scripts and other unused files
+  removed; `CLAUDE.md` and `.agent/BANNED_ZONE.md` updated. Still open: `mysql2` (needed by
+  `drizzle.config.ts` / `db:push`), archiving the Supabase project.
 
 ## PostgreSQL behavior handed to 13-03 / 13-04
 

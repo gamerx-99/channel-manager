@@ -1,5 +1,11 @@
 # 13-08 Data Migration & Cutover Runbook
 
+> **Status (2026-10-30):** the two CLI scripts this runbook drives
+> (`scripts/migrate-supabase-to-d1.ts`, `scripts/sync-supabase-storage-to-r2.ts`) were removed
+> from the tree with the Express/Vercel decommission (branch `cloud/remove-express`). Restore them
+> from git history (`git show <commit>^:scripts/<file>`) if a re-run is ever needed. The shared
+> transform layer `shared/migration/dataTransforms.ts` and its tests are kept.
+
 ## Overview
 This runbook guides the operations team through rehearsing and executing the full platform cutover from **Supabase** (Postgres, Storage, Auth) to **Cloudflare** (D1 SQLite, R2, Better Auth) for ticket `13-08`.
 

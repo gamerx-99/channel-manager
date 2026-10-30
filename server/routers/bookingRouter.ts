@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { rooms } from '../../drizzle/d1-schema';
 import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/pricingModels';
 import { TM30_HEADERS, buildTm30Rows, createTm30Workbook } from '../tm30';
+import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
 import {
   listBookingsForHotel,
   holdRoomType as dbHoldRoomType,
@@ -236,6 +237,7 @@ export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAva
 });
 
 export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutation(async ({ ctx, input }) => {
+  await enforcePublicBookingRateLimit(ctx);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   let ipHash: string | null = null;
   try {
@@ -261,6 +263,7 @@ export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutat
 });
 
 export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDetailsSchema).mutation(async ({ ctx, input }) => {
+  await enforcePublicBookingRateLimit(ctx);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
     return await dbConfirmBookingDetails(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, {

@@ -15,6 +15,8 @@ let sqlite: InstanceType<typeof DatabaseSync>;
 let db: D1ScopedDatabase;
 
 beforeEach(() => {
+  // The export drops bookings that already checked out, so pin the clock before the seeded stay.
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-20T05:00:00.000Z") });
   sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys = ON");
   for (const file of readdirSync(migrationFolder).filter(name => name.endsWith(".sql")).sort()) {
@@ -30,7 +32,10 @@ beforeEach(() => {
   }, { schema: d1Schema }) as unknown as D1ScopedDatabase;
 });
 
-afterEach(() => sqlite.close());
+afterEach(() => {
+  vi.useRealTimers();
+  sqlite.close();
+});
 
 function fakeContext(userId: string | null) {
   return async () => ({ user: userId ? { id: userId } as any : null, clientIp: "test" });

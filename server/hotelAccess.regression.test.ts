@@ -1,4 +1,3 @@
-import type { Request, Response } from 'express';
 import { hotelUsers } from '../drizzle/d1-schema';
 import { describe, expect, it, vi } from 'vitest';
 
