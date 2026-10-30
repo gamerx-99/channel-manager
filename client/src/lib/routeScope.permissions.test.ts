@@ -25,8 +25,16 @@ describe("hotel-scoped permission routing", () => {
     expect(getRouteScopeDecision({ ...common, role: "support", memberships, now: memberships[0].expiresAt }).allowed).toBe(false);
     expect(getRouteScopeDecision({ ...common, role: "support", memberships: [], now }).allowed).toBe(false);
   });
-  it("mirrors the owner-only financial dashboard even when staff can view financial amounts", () => {
-    expect(getRouteScopeDecision({ ...common, pathname: "/dashboard/financials", selectedHotelId: "a", memberships: [{ hotelId: "a", role: "front_desk", permissions: resolveMembershipPermissions("front_desk", { grants: ["property.view_financials"] }) }] })).toEqual({ allowed: false, reason: "permission_required" });
+  it("opens the financial dashboard only for staff the owner switched on in the selected hotel", () => {
+    const granted = [{ hotelId: "a", role: "front_desk" as const, permissions: resolveMembershipPermissions("front_desk", { grants: ["property.view_financials"] }) }];
+    const pathname = "/dashboard/financials";
+    expect(getRouteScopeDecision({ ...common, pathname, selectedHotelId: "a", memberships: granted })).toEqual({ allowed: true });
+    expect(getRouteScopeDecision({ ...common, pathname, selectedHotelId: "b", memberships: granted })).toEqual({ allowed: false, reason: "permission_required" });
+    expect(getRouteScopeDecision({ ...common, pathname, selectedHotelId: "a", memberships: [{ hotelId: "a", role: "front_desk", permissions: resolveMembershipPermissions("front_desk") }] })).toEqual({ allowed: false, reason: "permission_required" });
+  });
+  it("keeps a support key out of the financial dashboard", () => {
+    const memberships = [{ hotelId: "a", role: "support" as const, permissions: resolveSupportGrantPermissions({ canEdit: true }) }];
+    expect(getRouteScopeDecision({ ...common, role: "support", pathname: "/dashboard/financials", selectedHotelId: "a", memberships })).toEqual({ allowed: false, reason: "permission_required" });
   });
   it("super admin cannot use a mixed owner identity to enter hotel data", () => {
     expect(getRouteScopeDecision({ ...common, role: "super_admin", roles: ["super_admin", "hotel_owner"], memberships: [{ hotelId: "a", role: "hotel_owner", permissions: resolveMembershipPermissions("hotel_owner") }] }).allowed).toBe(false);

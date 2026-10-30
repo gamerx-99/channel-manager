@@ -49,8 +49,9 @@ bindings, D1 ids and crons per environment — changes need extra care).
   `shared/authorization.ts`, checked server-side via `requirePermission` (global) or
   `requireHotelPermission` (per-hotel — **note**: this one unconditionally bypasses
   for `super_admin` regardless of the permission matrix; use `requirePermission`
-  instead when a capability must be withheld from `super_admin` on purpose, as
-  `property.view_financials` is) and mirrored client-side in `routeScope.ts` +
+  instead when a capability must be withheld from `super_admin` on purpose;
+  `property.view_financials` has its own `requireFinancialsAccess`) and mirrored
+  client-side in `routeScope.ts` +
   `can()` in `App.tsx`. Never gate on role name directly in application code — gate
   on permission.
 - New tRPC procedures follow the existing pattern in `server/routers.ts`: a

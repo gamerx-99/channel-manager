@@ -12,9 +12,9 @@ describe("Financials dashboard contract", () => {
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
-  it("exposes a protected financials procedure gated by requirePermission, not requireHotelPermission", () => {
+  it("exposes a protected financials procedure gated by requireFinancialsAccess, not requireHotelPermission", () => {
     expect(router).toContain("export const financials = protectedProcedure.query");
-    expect(router).toContain("requirePermission(ctx.user, 'property.view_financials')");
+    expect(router).toContain("requireFinancialsAccess(ctx.user)");
     expect(router).toContain("d1ListManagedHotelsForFinancials(ctx.db");
     expect(router).toContain("buildFinancialsSummary(hotels as any)");
   });

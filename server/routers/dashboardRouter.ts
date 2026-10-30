@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure } from '../_core/trpc';
-import { requirePermission, rethrowDomainError, todayIso, addIsoDays } from '../routerUtils';
+import { requireFinancialsAccess, rethrowDomainError, todayIso, addIsoDays } from '../routerUtils';
 import {
   listManagedHotels as d1ListManagedHotels,
   listManagedHotelsForFinancials as d1ListManagedHotelsForFinancials,
@@ -55,7 +55,7 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
 });
 
 export const financials = protectedProcedure.query(async ({ ctx }) => {
-  requirePermission(ctx.user, 'property.view_financials');
+  requireFinancialsAccess(ctx.user);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
     const hotels = (await d1ListManagedHotelsForFinancials(ctx.db, ctx.caller ?? { userId: ctx.user.id })).map(h => ({

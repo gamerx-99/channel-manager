@@ -14,7 +14,7 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
   const { selectedHotelId } = useHotel();
   const can = (permission: Permission) => permission.startsWith("platform.")
     ? hasAnyPermission(roles, permission)
-    : (permission !== "property.view_financials" || hasAnyPermission(roles, permission)) && !roles.includes("super_admin") && memberships.some(m => m.hotelId === selectedHotelId && (!m.expiresAt || new Date(m.expiresAt).getTime() > Date.now()) && m.permissions?.includes(permission));
+    : (permission !== "property.view_financials" || !roles.includes("support")) && !roles.includes("super_admin") && memberships.some(m => m.hotelId === selectedHotelId && (!m.expiresAt || new Date(m.expiresAt).getTime() > Date.now()) && m.permissions?.includes(permission));
   const isSuperAdmin = roles.includes("super_admin");
   const isPlatformAdmin = roles.some(role => isPlatformRole(role));
   const initials = userName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "U";

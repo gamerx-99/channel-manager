@@ -48,9 +48,9 @@ export function getRouteScopeDecision({ role, roles, pathname, routeHotelId, vis
   const effectiveRoles = roles?.length ? roles : role ? [role] : [];
   if (!effectiveRoles.some(candidate => isHumanRole(candidate))) return { allowed: false, reason: "role_required" };
   const requiredPermission = getRequiredRoutePermission(pathname);
-  // The financial dashboard uses requirePermission on the server (owner-only),
-  // even when a hotel grants visibility of financial amounts to another member.
-  if (requiredPermission === "property.view_financials" && !effectiveRoles.some(candidate => roleHasPermission(candidate, requiredPermission))) {
+  // Staff reach the financial dashboard through the owner's per-person switch, which the
+  // membership check below reads. A support key carries the permission but never opens it.
+  if (requiredPermission === "property.view_financials" && effectiveRoles.includes("support")) {
     return { allowed: false, reason: "permission_required" };
   }
   if (requiredPermission?.startsWith("platform.")) {

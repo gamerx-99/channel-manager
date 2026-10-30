@@ -2,6 +2,8 @@ import { getSupportMemberships } from "./supportAccess";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { defaultChildRateConfig, defaultOccupancyPricing } from "@shared/occupancyPricing";
+import type { AppRole } from "@shared/authorization";
+import { resolveMembershipPermissions } from "@shared/permissions";
 import { bookings, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang, satangToMoney } from "../db/money";
@@ -60,8 +62,13 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
 
 export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
-  const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers)
-    .where(and(eq(hotelUsers.userId, caller.userId), eq(hotelUsers.role, "hotel_owner")));
+  const allMemberships = await db.select({
+    hotelId: hotelUsers.hotelId, role: hotelUsers.role, grants: hotelUsers.permissionGrants, revokes: hotelUsers.permissionRevokes,
+  }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  const blocked = (role: string) => role === "support" || role === "super_admin";
+  if (caller.roles?.some(blocked) || allMemberships.some(row => blocked(row.role))) throw new TRPCError({ code: "FORBIDDEN" });
+  // Hotels are chosen by the owner's per-person switch, never by another hotel's membership.
+  const memberships = allMemberships.filter(row => resolveMembershipPermissions(row.role as AppRole, { grants: row.grants, revokes: row.revokes }).includes("property.view_financials"));
   const output = [];
   for (const membership of memberships) {
     await authorizeHotelAction(db, caller, membership.hotelId, "property.view_financials", "financials.list_hotels", new Date());

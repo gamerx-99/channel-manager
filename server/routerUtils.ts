@@ -21,6 +21,18 @@ export function requirePermission(user: { role?: AppRole | null; roles?: readonl
   }
 }
 
+/**
+ * The financial report spans the caller's hotels, so it needs the owner's per-person
+ * switch on at least one of them. Support keys and super_admin never open it.
+ */
+export function requireFinancialsAccess(user: { role?: AppRole | null; roles?: readonly AppRole[] | null; memberships?: readonly PermissionMembership[] | null }) {
+  const roles = getIdentityRoles(user);
+  const blocked = roles.includes('support') || roles.includes('super_admin');
+  if (blocked || !user.memberships?.some(membership => membership.permissions?.includes('property.view_financials'))) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Missing permission: property.view_financials' });
+  }
+}
+
 export function requireHotelPermission(
   user: { id: string; role?: AppRole | null; roles?: readonly AppRole[] | null; memberships?: readonly PermissionMembership[] | null },
   hotelId: string,

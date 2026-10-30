@@ -63,8 +63,10 @@ owner-approved access to a hotel without cross-hotel read.
 
 ## Non-goals / invariants
 
-- `property.view_financials` stays `hotel_owner`-only and is never granted to
-  `super_admin` (see `requirePermission`, not `requireHotelPermission`).
+- `property.view_financials` is held by `hotel_owner`, and the owner alone decides
+  which staff get it through the per-person switch (owner decision, 2026-10-31). It
+  never reaches `super_admin`, and a support key never opens the financial report
+  (see `requireFinancialsAccess`, not `requireHotelPermission`).
 - `property.manage_staff` is never part of a support grant.
 - Support reaches a hotel only through an owner-approved, time-limited grant.
 - `inviteAuthUser.test.ts` has 4 pre-existing failures (missing Supabase creds) —
@@ -89,9 +91,8 @@ owner-approved access to a hotel without cross-hotel read.
   dashboard entry) shows only hotel name, plan, payment status, room count and sync
   status. Billing fields remain null until spec 12, per the existing owner decision.
 - Routing and navigation use the selected hotel's resolved membership, without
-  cross-hotel role inheritance. The financial dashboard mirrors its existing
-  owner-only `requirePermission` gate; stored financial-amount visibility overrides
-  do not turn that report into a staff report.
+  cross-hotel role inheritance. The financial dashboard opens for the owner and for
+  staff with the owner's switch on, and it lists only the hotels where that holds.
 - Existing tests asserting the retired super-admin hotel bypass are replaced with
   stronger FORBIDDEN/no-repository-call checks. Not-found tests retain their
   assertions with authorized owner fixtures. This implements the explicit security

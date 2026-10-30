@@ -1823,3 +1823,11 @@ Full logs remain `.agent/support-access-{test,check,build}.log` locally.
 - **NOT DONE**: no merge, deploy or live rate-limit check (wrangler `--dry-run` only); the rate
   limit edge-case ASSUMPTION is in OPEN_QUESTIONS.md; `mysql2`/`drizzle.config.ts`/`db:push`
   (MySQL leftovers) kept because `db:push` still references them.
+
+## 2026-10-31: financial report follows the owner's switch
+
+Owner decision: the owner decides who sees the financial report. `financials` now uses
+`requireFinancialsAccess` and lists only hotels where the person holds
+`property.view_financials`. Support keys and super_admin stay denied. No migration.
+860 tests, check and build pass. Tests that asserted the old owner-only rule were
+changed for this decision. Support email invitations are not built yet.
