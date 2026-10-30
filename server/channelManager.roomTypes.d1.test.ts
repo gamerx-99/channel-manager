@@ -68,6 +68,7 @@ function validPricing(capacity = 2) {
 beforeEach(() => {
   Object.values(hotelMocks).forEach(mock => mock.mockReset());
   Object.values(siteConfigMocks).forEach(mock => mock.mockReset());
+  hotelMocks.getManagedHotel.mockResolvedValue({ room_types: [{ id: ROOM_TYPE_ID, capacity: 2 }] });
   hotelMocks.updateManagedRoomType.mockResolvedValue({ id: ROOM_TYPE_ID, name: 'Suite' });
   hotelMocks.deleteManagedRoomType.mockResolvedValue({ id: ROOM_TYPE_ID });
 });
@@ -242,4 +243,26 @@ describe('channelManager.deleteRoomType (D1 router)', () => {
   });
 });
 
+});
+
+
+describe('capacity-only updates', () => {
+  it('rejects a capacity change without a complete pricing schedule', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [{ id: ROOM_TYPE_ID, capacity: 2 }] });
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.updateRoomType({ hotel_id: HOTEL_ID, room_type_id: ROOM_TYPE_ID,
+      name: 'Deluxe King', capacity: 3, base_price: 2800 })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(hotelMocks.updateManagedRoomType).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('missing room type boundary', () => {
+  it('rejects a missing same-hotel room type before attempting an update', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [] });
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.updateRoomType({ hotel_id: HOTEL_ID, room_type_id: ROOM_TYPE_ID, name: 'Deluxe', capacity: 2, base_price: 2500, ...validPricing() }))
+      .rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(hotelMocks.updateManagedRoomType).not.toHaveBeenCalled();
+  });
 });

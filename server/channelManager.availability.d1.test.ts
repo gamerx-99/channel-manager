@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.setConfig({ testTimeout: 10000 });
@@ -13,6 +12,8 @@ const availabilityMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./d1/availability', () => availabilityMocks);
+const hotelMocks = vi.hoisted(() => ({ getManagedHotel: vi.fn() }));
+vi.mock('./d1/hotel', () => hotelMocks);
 
 const { appRouter } = await import('./routers');
 
@@ -41,6 +42,7 @@ function caller(role: 'hotel_owner' | 'revenue_manager' | 'housekeeping' | 'fron
 
 beforeEach(() => {
   Object.values(availabilityMocks).forEach(mock => mock.mockReset());
+  hotelMocks.getManagedHotel.mockReset().mockResolvedValue({ room_types: [{ id: ROOM_TYPE_ID }], rooms: [{ room_type_id: ROOM_TYPE_ID }] });
   availabilityMocks.updateAvailability.mockResolvedValue({
     id: 'availability-1',
     roomTypeId: ROOM_TYPE_ID,
@@ -150,10 +152,7 @@ describe('channelManager.updateAvailability (D1 router)', () => {
     expect(availabilityMocks.updateAvailability).not.toHaveBeenCalled();
   });
 
-  it('propagates a NOT_FOUND from the D1 room-type guard', async () => {
-    availabilityMocks.updateAvailability.mockRejectedValueOnce(
-      new TRPCError({ code: 'NOT_FOUND', message: 'Room type not found.' }),
-    );
+  it('rejects a room type outside the selected hotel before writing', async () => {
     const app = await caller('revenue_manager');
 
     await expect(
@@ -211,4 +210,15 @@ describe('channelManager.bookingOccupancy (D1 router)', () => {
   });
 });
 
+});
+
+
+describe('physical allotment limits', () => {
+  it('rejects over-capacity availability before writing', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [{ id: ROOM_TYPE_ID }], rooms: [{ room_type_id: ROOM_TYPE_ID }] });
+    const app = caller('revenue_manager');
+    await expect(app.channelManager.updateAvailability({ hotel_id: HOME_HOTEL, room_type_id: ROOM_TYPE_ID,
+      date: '2026-08-20', price: 2500, rooms_available: 2, action: 'allotment' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(availabilityMocks.updateAvailability).not.toHaveBeenCalled();
+  });
 });

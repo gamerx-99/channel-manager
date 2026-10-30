@@ -59,6 +59,7 @@ function caller(role: 'super_admin' | 'hotel_owner' | 'front_desk', hotelId = HO
 beforeEach(() => {
   Object.values(hotelMocks).forEach(mock => mock.mockReset());
   Object.values(siteConfigMocks).forEach(mock => mock.mockReset());
+  hotelMocks.getManagedHotel.mockResolvedValue({ id: HOTEL_ID, room_types: [], rooms: [] });
   hotelMocks.createManagedHotel.mockResolvedValue({ id: 'hotel-created' });
   hotelMocks.createManagedRoomType.mockResolvedValue({ id: ROOM_TYPE_ID, hotelId: HOTEL_ID });
 });
@@ -167,7 +168,7 @@ describe('channelManager.createRoomType (D1 router)', () => {
         base_occupancy: undefined,
         max_occupancy: undefined,
         occupancy_pricing: undefined,
-        child_rule: undefined,
+        child_rule: 'age',
         child_rule_limit: undefined,
         child_rates: undefined,
         children_count_toward_max: undefined,
@@ -247,4 +248,46 @@ describe('channelManager.createRoomType (D1 router)', () => {
   });
 });
 
+});
+
+
+describe('hotel-wide child measurement rules', () => {
+  const input = { hotel_id: HOTEL_ID, name: 'Family', capacity: 3, base_price: 2500, quantity: 1 };
+  it('rejects a child measurement rule that conflicts with the hotel-wide rule', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [{ child_rule: 'age' }] });
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.createRoomType({ ...input, child_rule: 'height', child_rule_limit: 160 }))
+      .rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(hotelMocks.createManagedRoomType).not.toHaveBeenCalled();
+  });
+  it('inherits the shared height limit when creating another room type', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [{ child_rule: 'height', child_rule_limit: 160 }] });
+    const app = caller('hotel_owner');
+    await app.channelManager.createRoomType(input);
+    expect(hotelMocks.createManagedRoomType).toHaveBeenCalledWith(expect.anything(), expect.anything(),
+      expect.objectContaining({ child_rule: 'height', child_rule_limit: 160 }));
+  });
+  it('requires a height limit when no sibling has one to inherit', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [{ child_rule: 'height', child_rule_limit: null }] });
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.createRoomType(input)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(hotelMocks.createManagedRoomType).not.toHaveBeenCalled();
+  });
+  it('refuses adding a room type when existing child measurement rules disagree', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce({ room_types: [{ child_rule: 'age' }, { child_rule: 'height', child_rule_limit: 160 }] });
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.createRoomType(input)).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+    expect(hotelMocks.createManagedRoomType).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('unavailable hotel creation boundary', () => {
+  it('rejects a missing hotel before inserting a room type', async () => {
+    hotelMocks.getManagedHotel.mockResolvedValueOnce(null);
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.createRoomType({ hotel_id: HOTEL_ID, name: 'Deluxe', capacity: 2, base_price: 2500, quantity: 1 }))
+      .rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(hotelMocks.createManagedRoomType).not.toHaveBeenCalled();
+  });
 });

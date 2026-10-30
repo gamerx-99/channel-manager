@@ -65,6 +65,7 @@ describe("D1 payment repository", () => {
   it("rejects cross-hotel payment settings and session access", async () => {
     await seed();
     const callerA = { userId: "ua" };
+    const sessionB = await createPaymentSession(db, { userId: 'ub' }, { booking_id: 'bb', hotel_id: 'b', amount: 10, qr_reference: 'reference-b', qr_string: 'qr-b', expires_at: '2026-11-01T00:00:00.000Z' });
     await savePromptPaySettings(db, { userId: "ub" }, "b", "prompt-b", 15);
     await expect(getHotelPaymentConfig(db, callerA, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(savePromptPaySettings(db, callerA, "b", "prompt-a", 30)).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -72,8 +73,8 @@ describe("D1 payment repository", () => {
     await expect(removeSlipOkKey(db, callerA, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(createPaymentSession(db, callerA, { booking_id: "bb", hotel_id: "b", amount: 10, qr_reference: "x", qr_string: "x", expires_at: "2026-11-01T00:00:00.000Z" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(getLatestPaymentSession(db, callerA, "bb", "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(updatePaymentSessionStatus(db, callerA, "b", "session-b", "paid")).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(finalizePaymentSession(db, callerA, "b", "session-b", { status: "paid" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(updatePaymentSessionStatus(db, callerA, "b", sessionB.id, "paid")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(finalizePaymentSession(db, callerA, "b", sessionB.id, { status: "paid" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(updateBookingPaymentStatus(db, callerA, "b", "bb", "verified")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

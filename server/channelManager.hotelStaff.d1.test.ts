@@ -39,7 +39,7 @@ const STAFF_ID = 'a5f0d7d7-7bc7-4aab-8dc6-1b2ee2ba17f3';
 const MEMBERSHIP_ID = 'c5b0b6e1-6a11-4c90-bb12-3f9a4583df45';
 
 const ownerMembership = {
-  id: 'owner-membership',
+  id: 'b0b0b0b0-1111-4111-8111-111111111111',
   hotel_id: HOTEL_ID,
   user_id: OWNER_ID,
   role: 'hotel_owner' as const,
@@ -56,12 +56,12 @@ const staffMembership = {
   hotels: { name: 'Little Bro' },
 };
 
-function caller(role: 'hotel_owner' | 'revenue_manager' | 'front_desk', hotelId = HOTEL_ID) {
+function caller(role: 'hotel_owner' | 'revenue_manager' | 'front_desk' | 'super_admin', hotelId = HOTEL_ID, userId = OWNER_ID) {
   return appRouter.createCaller({
     req: {} as Request,
     res: {} as Response,
     user: {
-      id: OWNER_ID,
+      id: userId,
       email: `${role}@example.com`,
       name: 'Staff test user',
       accessToken: `${role}-access-token`,
@@ -72,7 +72,7 @@ function caller(role: 'hotel_owner' | 'revenue_manager' | 'front_desk', hotelId 
       memberships: role === 'hotel_owner' ? [{ hotelId, role }] : [{ hotelId: HOTEL_ID, role }],
     },
     db: {} as any,
-    caller: { userId: OWNER_ID, roles: [role], access: 'authenticated' } as any,
+    caller: { userId, roles: [role], access: 'authenticated' } as any,
   });
 }
 
@@ -328,4 +328,42 @@ describe('channelManager.removeHotelStaff (D1 router)', () => {
   });
 });
 
+});
+
+
+describe('last Hotel Admin boundary', () => {
+  it('rejects demoting the last Hotel Admin by a different authorized manager', async () => {
+    const app = caller('hotel_owner', HOTEL_ID, 'another-manager');
+    await expect(app.channelManager.updateHotelStaffRole({ hotel_id: HOTEL_ID, membership_id: ownerMembership.id, role: 'front_desk' }))
+      .rejects.toMatchObject({ code: 'BAD_REQUEST', message: 'The last Hotel Admin cannot be demoted.' });
+    expect(staffMocks.updateHotelUserAssignmentRole).not.toHaveBeenCalled();
+  });
+  it('rejects removing the last Hotel Admin by a different authorized manager', async () => {
+    const app = caller('hotel_owner', HOTEL_ID, 'another-manager');
+    await expect(app.channelManager.removeHotelStaff({ hotel_id: HOTEL_ID, membership_id: ownerMembership.id }))
+      .rejects.toMatchObject({ code: 'BAD_REQUEST', message: 'The last Hotel Admin cannot be removed.' });
+    expect(staffMocks.deleteHotelUserAssignment).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('single Hotel Admin promotion', () => {
+  it('rejects promoting another member to Hotel Admin while one already exists', async () => {
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.updateHotelStaffRole({ hotel_id: HOTEL_ID, membership_id: MEMBERSHIP_ID, role: 'hotel_owner' }))
+      .rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(staffMocks.updateHotelUserAssignmentRole).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('platform staff listing port', () => {
+  it('rejects hotel owners before reading admin users or memberships', async () => {
+    await expect(caller('hotel_owner').channelManager.adminUsers()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(staffMocks.listHotelUserAssignments).not.toHaveBeenCalled();
+  });
+  it('lists D1 assignments for a super admin with the retired Auth user list empty', async () => {
+    await expect(caller('super_admin').channelManager.adminUsers()).resolves.toEqual({ users: [], assignments: [ownerMembership, staffMembership] });
+    expect(staffMocks.listHotelUserAssignments).toHaveBeenCalledWith({}, expect.objectContaining({ roles: ['super_admin'] }));
+  });
 });

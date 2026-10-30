@@ -21,8 +21,8 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toContain('Explore room types, rates, and availability directly from this hotel.');
     expect(publicHotelSource).toContain('#954831');
     // Fallback via nullish coalescing
-    expect(publicHotelSource).toMatch(/hero_copy.*\?\?.*DEFAULT_HERO_COPY|DEFAULT_HERO_COPY.*\?\?/s);
-    expect(publicHotelSource).toMatch(/accent_color.*\?\?.*DEFAULT_ACCENT_COLOR|DEFAULT_ACCENT_COLOR.*\?\?/s);
+    expect(publicHotelSource).toMatch(/const heroCopy\s*=\s*siteConfig\?\.heroCopy\s*\?\?\s*DEFAULT_HERO_COPY/s);
+    expect(publicHotelSource).toMatch(/const accentColor\s*=\s*siteConfig\?\.accentColor\s*\?\?\s*DEFAULT_ACCENT_COLOR/s);
     // Also checks siteConfigQuery.data ?? null
     expect(publicHotelSource).toContain('siteConfigQuery.data');
     expect(publicHotelSource).toContain('siteConfig?.heroCopy');
@@ -41,11 +41,13 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toMatch(/const accentColor = siteConfig\?\.accentColor \?\? DEFAULT_ACCENT_COLOR/);
   });
 
-  it('server/d1/siteConfig.ts getHotelSiteConfig returns null/default gracefully on 42P01', () => {
+  it('server/d1/siteConfig.ts scopes public and managed reads and returns null for missing config', () => {
     expect(siteConfigSource).toContain('export async function getHotelSiteConfig');
     expect(siteConfigSource).toContain('hotelSiteConfig');
     expect(siteConfigSource).toContain('row ?? null');
-    // D1 has no missing-table guard; skip
+    expect(siteConfigSource).toContain('const hotel = await requirePublicHotel(db, caller, slug)');
+    expect(siteConfigSource).toContain('eq(hotelSiteConfig.hotelId, hotel.id)');
+    expect(siteConfigSource).toContain('eq(hotelSiteConfig.hotelId, hotelId)');
   });
 
   it('server/routers.ts exposes public getHotelSiteConfig (for PublicHotel) and protected saveHotelSiteConfig', () => {

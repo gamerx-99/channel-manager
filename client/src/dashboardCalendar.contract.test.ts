@@ -11,7 +11,7 @@ describe('Dashboard Calendar View contract', () => {
   const home = readFileSync(resolve(process.cwd(), 'client/src/pages/Home.tsx'), 'utf8');
   const css = readFileSync(resolve(process.cwd(), 'client/src/index.css'), 'utf8');
 
-  it('exposes a protected calendar procedure with an ISO date window and RLS-scoped sources', () => {
+  it('exposes a protected calendar procedure with an ISO date window and D1-scoped sources', () => {
     expect(router).toContain('export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchema)');
     expect(router).toContain("d1ListManagedHotels(ctx.db");
     expect(router).toContain("getOtaSummary");
@@ -25,7 +25,12 @@ describe('Dashboard Calendar View contract', () => {
     expect(router).toContain("booking.checkIn) <= date && (booking.checkOut) > date && isBookingOccupyingInventory(booking as any)");
     expect(router).toContain("status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy')");
     expect(router).toContain('syncEvents: hotelOtaEvents.filter');
-    // getUpdatedItemCount no longer exists
+    expect(dashboardRouterText).toContain('d1ListManagedHotels(db, caller)');
+    expect(dashboardRouterText).toContain('d1GetManagedHotel(db, caller, hotel.id)');
+    expect(dashboardRouterText).toContain('d1ListAvailabilityForHotel(db, caller, hotel.id)');
+    expect(dashboardRouterText).toContain('d1ListBookingOccupancyForHotel(db, caller, hotel.id, dates[0], occupancyEndDate)');
+    expect(dashboardRouterText).toMatch(/booking\.checkIn\) <= date[\s\S]*?booking\.checkOut\) > date[\s\S]*?isBookingOccupyingInventory\(booking as any\)/);
+    expect(dashboardRouterText).toContain('available = Math.max(0, allotment - bookedRoomIds.size)');
   });
 
   it('renders the calendar inside the Dashboard and supports property/date selection', () => {

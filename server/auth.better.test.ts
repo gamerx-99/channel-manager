@@ -942,3 +942,25 @@ describe("Server Better Auth on D1 Test Suite", () => {
     expect(() => requireRecentMfaVerification(elevatedUser, { nowMs })).not.toThrow();
   });
 });
+
+
+describe('real staff invitation conflicts', () => {
+  it('rejects duplicate memberships and a second Hotel Admin without sending invitations', async () => {
+    await db.insert(hotels).values({ id: 'invite-hotel', name: 'Hotel', slug: 'invite-hotel', address: 'A', ownerContact: 'owner@example.test' });
+    await db.insert(user).values({ id: 'existing-staff', email: 'staff@example.test', name: 'Staff', emailVerified: true });
+    await db.insert(hotelUsers).values([
+      { hotelId: 'invite-hotel', userId: 'owner', role: 'hotel_owner' },
+      { hotelId: 'invite-hotel', userId: 'existing-staff', role: 'front_desk' },
+    ]);
+    const sendInviteEmail = vi.fn();
+    const sender = { sendInviteEmail } as unknown as EmailSender;
+    await expect(inviteStaffUser(db, { userId: 'owner' }, sender, { hotel_id: 'invite-hotel', email: 'staff@example.test', role: 'front_desk' }))
+      .rejects.toMatchObject({ code: 'CONFLICT', message: 'This user is already assigned to the selected hotel.' });
+    await expect(inviteStaffUser(db, { userId: 'owner' }, sender, { hotel_id: 'invite-hotel', email: 'new-owner@example.test', role: 'hotel_owner' }))
+      .rejects.toMatchObject({ code: 'CONFLICT', message: 'This hotel already has a Hotel Admin assigned.' });
+    expect(sendInviteEmail).not.toHaveBeenCalled();
+    expect(await db.select().from(hotelUsers)).toHaveLength(2);
+    expect(await db.select().from(user)).toHaveLength(1);
+    expect(await db.select().from(verification)).toEqual([]);
+  });
+});

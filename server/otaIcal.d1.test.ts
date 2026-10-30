@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
-import { beforeEach, afterEach, describe, expect, it } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { bookings, d1Schema, hotelUsers, hotels, otaConnections, rooms, roomTypes } from "../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "./db/scope";
 import { createWorkerApp } from "../worker/app";
@@ -71,9 +71,11 @@ describe("GET /api/ical/:file (D1)", () => {
   });
 
   it("never queries the database for a malformed token", async () => {
+    const select = vi.spyOn(db, "select");
     const app = createWorkerApp({ createContext: fakeContext(null), createDatabase: () => db });
     const env = { DB: {} as D1Database, MEDIA: {} as R2Bucket } as WorkerEnv;
     const res = await app.request("/api/ical/'; drop table bookings; --.ics", {}, env);
     expect(res.status).toBe(404);
+    expect(select).not.toHaveBeenCalled();
   });
 });

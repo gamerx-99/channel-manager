@@ -92,6 +92,7 @@ describe('createBooking flow (D1)', () => {
     };
 
     await app.channelManager.createBooking(input);
+    expect(hotelMocks.getManagedHotel).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322' }), HOTEL_ID);
 
     expect(bookingMocks.createBookingWithGuests).toHaveBeenCalledTimes(1);
     const [, , bookingPayload, guestsPayload, servicesPayload] = bookingMocks.createBookingWithGuests.mock.calls[0]!;

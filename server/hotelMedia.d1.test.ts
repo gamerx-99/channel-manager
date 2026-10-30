@@ -84,6 +84,7 @@ describe('hotel media router permissions (D1)', () => {
     expect(list).toHaveLength(1);
 
     await expect(app.channelManager.deleteHotelMedia({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.channelManager.setHotelMediaHero({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
   it('super_admin bypasses hotel permission and can list/delete/set hero', async () => {
