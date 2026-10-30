@@ -80,7 +80,7 @@ async function assertBookingNightsInvariant(now: Date) {
 describe("D1 booking repositories", () => {
   it("preserves every source booking export", () => {
     expect(Object.keys(bookingRepository).sort()).toEqual([
-      "confirmBookingDetails", "createBookingWithGuests", "createPublicBooking", "expireBookingIfPast",
+      "confirmBookingDetails", "countActiveHoldsForIp", "createBookingWithGuests", "createPublicBooking", "expireBookingIfPast",
       "getPublicHotelAvailability", "getStayDates", "holdRoomType", "listBookingsForHotel",
       "logBookingStatusChange", "transitionBookingStatus",
     ].sort());
