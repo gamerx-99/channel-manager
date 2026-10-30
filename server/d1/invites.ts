@@ -1,7 +1,7 @@
 import { assertStaffPermissionChange } from "./staffAuthorization";
 import { TRPCError } from "@trpc/server";
-import { and, eq, gt, like } from "drizzle-orm";
-import { hotelUsers, hotels } from "../../drizzle/d1-schema";
+import { and, eq, gt, like, or } from "drizzle-orm";
+import { hotelUsers, hotels, supportAccounts } from "../../drizzle/d1-schema";
 import { user, verification, account } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { ASSIGNABLE_STAFF_ROLES, type HumanRole } from "@shared/authorization";
@@ -211,14 +211,19 @@ export async function acceptStaffInvite(
   // to prevent race conditions on concurrent acceptance requests.
   const [record] = await db
     .delete(verification)
-    .where(and(eq(verification.value, input.token), gt(verification.expiresAt, now), like(verification.identifier, "invite:%")))
+    .where(and(
+      eq(verification.value, input.token),
+      gt(verification.expiresAt, now),
+      or(like(verification.identifier, "invite:%"), like(verification.identifier, "support-invite:%")),
+    ))
     .returning();
 
-  if (!record || !record.identifier.startsWith("invite:")) {
+  if (!record || !/^(support-)?invite:/.test(record.identifier)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This invitation link is invalid or has expired." });
   }
 
-  const email = record.identifier.replace(/^invite:/, "");
+  const isSupportInvite = record.identifier.startsWith("support-invite:");
+  const email = record.identifier.replace(/^(support-)?invite:/, "");
   const [targetUser] = await db.select().from(user).where(eq(user.email, email)).limit(1);
   if (!targetUser) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Invited user account not found." });
@@ -257,6 +262,10 @@ export async function acceptStaffInvite(
         updatedAt: now,
       })
       .where(eq(user.id, targetUser.id));
+
+    if (isSupportInvite) {
+      await db.update(supportAccounts).set({ acceptedAt: now }).where(eq(supportAccounts.userId, targetUser.id));
+    }
   } catch (accountError) {
     // Compensating restore if account creation unexpectedly fails
     try {

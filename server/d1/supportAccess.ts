@@ -1,11 +1,104 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
-import { hotels, hotelUsers, supportAccessGrants, supportAccessLog } from "../../drizzle/d1-schema";
+import { and, desc, eq, gt, inArray, isNotNull, isNull } from "drizzle-orm";
+import { hotels, hotelUsers, supportAccessGrants, supportAccessLog, supportAccounts } from "../../drizzle/d1-schema";
+import { user, verification } from "../../drizzle/auth-schema";
 import { SUPPORT_GRANT_DURATION_HOURS, resolveSupportGrantPermissions } from "@shared/permissions";
-import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
+import { authorizeHotelAction, authorizePlatformAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
+import type { EmailSender } from "../email";
+import { generateSignupToken } from "../signupLinks";
+import { resolveAppUrl } from "./invites";
+
+const INVITE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function requireOwner(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, action: string, now: Date) {
   return authorizeHotelAction(db, caller, hotelId, "property.manage_support_access", action, now);
+}
+
+export async function isActiveSupportAccount(db: D1ScopedDatabase, userId: string) {
+  const rows = await db.select({ id: supportAccounts.id }).from(supportAccounts).where(and(
+    eq(supportAccounts.userId, userId), isNotNull(supportAccounts.acceptedAt), isNull(supportAccounts.disabledAt),
+  ));
+  return rows.length > 0;
+}
+
+/** The same answer for an unknown email and a non-support one, so owners cannot probe accounts. */
+export async function findSupportUserIdByEmail(db: D1ScopedDatabase, email: string) {
+  const [row] = await db.select({ id: user.id }).from(user).where(eq(user.email, email.trim().toLowerCase())).limit(1);
+  const identities = row ? await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, row.id)) : [];
+  if (!row || !(identities.some(identity => identity.role === "support") || await isActiveSupportAccount(db, row.id))) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The selected account is not a support account." });
+  }
+  return row.id;
+}
+
+/**
+ * A super admin creates the account; it works only after the invitee accepts by email.
+ * ASSUMPTION: support needs its own address. Support identity removes all hotel access by
+ * design, so an existing account (a hotel owner, say) is refused rather than converted.
+ */
+export async function inviteSupportAccount(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  emailSender: EmailSender,
+  input: { email: string },
+  appUrl?: string,
+  now = new Date(),
+) {
+  await authorizePlatformAction(db, caller, "platform.manage_users");
+  const email = input.email.trim().toLowerCase();
+  const identifier = `support-invite:${email}`;
+  const [existingAccount] = await db.select().from(supportAccounts).where(eq(supportAccounts.email, email)).limit(1);
+  const [existingUser] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
+  const resending = Boolean(existingAccount && !existingAccount.acceptedAt && !existingAccount.disabledAt);
+  if (existingUser && !resending) {
+    throw new TRPCError({ code: "CONFLICT", message: "This email already has an account. Use a separate address for support." });
+  }
+
+  const userId = existingUser?.id ?? crypto.randomUUID();
+  const token = generateSignupToken();
+  const verificationId = crypto.randomUUID();
+  try {
+    if (resending) await db.delete(verification).where(eq(verification.identifier, identifier));
+    else await db.insert(user).values({ id: userId, name: email.split("@")[0] || "Support", email, emailVerified: false, createdAt: now, updatedAt: now });
+    await db.insert(verification).values({ id: verificationId, identifier, value: token, expiresAt: new Date(now.getTime() + INVITE_LIFETIME_MS), createdAt: now, updatedAt: now });
+    if (!resending) await db.insert(supportAccounts).values({ userId, email, invitedBy: caller.userId, createdAt: now });
+    await emailSender.sendInviteEmail({
+      to: email,
+      hotelName: "the hayhost support team",
+      inviteUrl: `${resolveAppUrl(appUrl)}/accept-invite?token=${token}`,
+      roleName: "support",
+    });
+  } catch (error) {
+    // Child-to-parent rollback order, as in inviteStaffUser.
+    try {
+      await db.delete(verification).where(eq(verification.id, verificationId));
+      if (!resending) {
+        await db.delete(supportAccounts).where(eq(supportAccounts.userId, userId));
+        await db.delete(user).where(eq(user.id, userId));
+      }
+    } catch {
+      // Preserve the original error.
+    }
+    throw error;
+  }
+  return { email, invitationSent: true };
+}
+
+export async function listSupportAccounts(db: D1ScopedDatabase, caller: D1CallerContext) {
+  await authorizePlatformAction(db, caller, "platform.manage_users");
+  return db.select({
+    id: supportAccounts.id, email: supportAccounts.email, acceptedAt: supportAccounts.acceptedAt,
+    disabledAt: supportAccounts.disabledAt, createdAt: supportAccounts.createdAt,
+  }).from(supportAccounts).orderBy(desc(supportAccounts.createdAt));
+}
+
+/** Takes effect on the next request: the role is resolved from this row every time. */
+export async function disableSupportAccount(db: D1ScopedDatabase, caller: D1CallerContext, id: string, now = new Date()) {
+  await authorizePlatformAction(db, caller, "platform.manage_users");
+  const [row] = await db.update(supportAccounts).set({ disabledAt: now }).where(and(eq(supportAccounts.id, id), isNull(supportAccounts.disabledAt))).returning();
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Support account not found." });
+  await db.delete(verification).where(eq(verification.identifier, `support-invite:${row.email}`));
+  return { success: true };
 }
 
 export async function grantSupportAccess(db: D1ScopedDatabase, caller: D1CallerContext, input: {
@@ -15,10 +108,10 @@ export async function grantSupportAccess(db: D1ScopedDatabase, caller: D1CallerC
   if (!(SUPPORT_GRANT_DURATION_HOURS as readonly number[]).includes(input.durationHours) || !["view", "edit"].includes(input.mode)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Choose 1, 24, 72 or 168 hours and view or edit access." });
   }
-  // ASSUMPTION: an owner approves a known support account by its user id; no bearer
-  // secret or account discovery is needed. Never grant access to arbitrary staff ids.
+  // Never grant access to arbitrary staff ids.
   const identities = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, input.supportUserId));
-  if (!identities.some(row => row.role === "support") || identities.some(row => row.role === "super_admin")) {
+  const isSupport = identities.some(row => row.role === "support") || await isActiveSupportAccount(db, input.supportUserId);
+  if (!isSupport || identities.some(row => row.role === "super_admin")) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "The selected account is not a support account." });
   }
   const [grant] = await db.insert(supportAccessGrants).values({
@@ -41,14 +134,17 @@ export async function listSupportAccess(db: D1ScopedDatabase, caller: D1CallerCo
   await requireOwner(db, caller, hotelId, "support.audit.read", now);
   const grants = await db.select().from(supportAccessGrants).where(eq(supportAccessGrants.hotelId, hotelId)).orderBy(desc(supportAccessGrants.createdAt));
   const log = await db.select().from(supportAccessLog).where(eq(supportAccessLog.hotelId, hotelId)).orderBy(desc(supportAccessLog.createdAt));
-  return { grants, log };
+  const supportIds = Array.from(new Set([...grants, ...log].map(row => row.supportUserId)));
+  const people = supportIds.length ? await db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.id, supportIds)) : [];
+  return { grants, log, supportEmails: Object.fromEntries(people.map(person => [person.id, person.email])) };
 }
 
 /** Request-time projection only: the repositories revalidate every action against D1. */
 export async function getSupportMemberships(db: D1ScopedDatabase, caller: D1CallerContext, now = new Date()) {
   if (!caller.userId || caller.access === "public" || caller.roles?.includes("super_admin")) return [];
   const identities = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-  if (!identities.some(row => row.role === "support") || identities.some(row => row.role === "super_admin")) return [];
+  const isSupport = identities.some(row => row.role === "support") || caller.roles?.includes("support");
+  if (!isSupport || identities.some(row => row.role === "super_admin")) return [];
   const grants = await db.select().from(supportAccessGrants).where(and(
     eq(supportAccessGrants.supportUserId, caller.userId), isNull(supportAccessGrants.revokedAt), gt(supportAccessGrants.expiresAt, now),
   ));
@@ -82,7 +178,7 @@ export async function logSupportProcedure(db: D1ScopedDatabase, caller: D1Caller
   // accepted identifiers so forged aliases/extras cannot corrupt hotel audit trails.
   const identifiers: Record<string, readonly string[]> = {
     "access.updateStaffPermissions": ["targetUserId"],
-    "access.grantSupport": ["supportUserId"],
+    "access.grantSupport": ["supportEmail"],
     "access.revokeSupport": ["grantId"],
     "payment.manualVerify": ["booking_id"],
     "notifications.markRead": ["notificationId"],

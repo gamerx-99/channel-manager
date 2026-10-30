@@ -345,7 +345,7 @@ describe("audit canonical request fields", () => {
     expect(await db.select().from(supportAccessLog)).toMatchObject([{ hotelId, action: `denied:payment.manualVerify:{"hotel_id":"${hotelId}","booking_id":"${bookingId}"}` }]);
   });
   it("camelCase endpoints ignore a forged snake_case hotel alias", async () => {
-    await logSupportProcedure(db, support, "access.grantSupport", { hotelId: "a", hotel_id: "b", supportUserId: "support", booking_id: "forged" }, true);
-    expect(await db.select().from(supportAccessLog)).toMatchObject([{ hotelId: "a", action: 'denied:access.grantSupport:{"hotelId":"a","supportUserId":"support"}' }]);
+    await logSupportProcedure(db, support, "access.grantSupport", { hotelId: "a", hotel_id: "b", supportEmail: "support@example.test", booking_id: "forged" }, true);
+    expect(await db.select().from(supportAccessLog)).toMatchObject([{ hotelId: "a", action: 'denied:access.grantSupport:{"hotelId":"a","supportEmail":"support@example.test"}' }]);
   });
 });

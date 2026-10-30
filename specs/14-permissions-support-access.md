@@ -81,6 +81,19 @@ owner-approved access to a hotel without cross-hotel read.
 - `savePromptPayId` has no MFA step-up.
 
 
+## Support accounts by email (owner decision, 2026-10-31)
+
+- A super admin enters an email on `/settings/admin-users`. The invitee accepts on the
+  existing `/accept-invite` page, and only then does the account work. The account lives
+  in `support_accounts` (migration `20261031000000_support_accounts.sql`) because support
+  belongs to no hotel. A super admin can disable it.
+- A hotel owner grants the time-limited key by typing that support email, not a user id.
+  Owners cannot create support accounts.
+- ASSUMPTION: an email that already has an account is refused, because support identity
+  removes all hotel access by design.
+- Sending needs `RESEND_API_KEY` and `EMAIL_FROM` on the Worker. Without them
+  `createEmailSender` falls back to the mock sender and no email leaves.
+
 ## 14-03b / 14-04 local delivery notes (2026-10-30)
 
 - `access.updateStaffPermissions`, `grantSupport`, `revokeSupport`, `supportAccess`,

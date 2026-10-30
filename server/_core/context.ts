@@ -8,7 +8,7 @@ import {
   type Permission,
 } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
-import { getSupportMemberships } from "../d1/supportAccess";
+import { getSupportMemberships, isActiveSupportAccount } from "../d1/supportAccess";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
@@ -172,6 +172,9 @@ export async function createContextFromRequest(
           !roles.includes("super_admin")
         ) {
           roles.push("super_admin");
+        }
+        if (!roles.includes("support") && await isActiveSupportAccount(db, authUser.id)) {
+          roles.push("support");
         }
 
         const resolvedRole = getHighestRole(roles);

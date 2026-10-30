@@ -21,9 +21,9 @@ describe("owner support approval", () => {
     render(<SupportAccess hotelId="a" />);
     const duration = screen.getByLabelText("Duration") as HTMLSelectElement;
     expect(Array.from(duration.options).map(option => option.value)).toEqual(["1", "24", "72", "168"]);
-    await userEvent.type(screen.getByLabelText("Support user ID"), "opaque-support-id");
+    await userEvent.type(screen.getByLabelText("Support email"), "support@example.test");
     await userEvent.click(screen.getByRole("button", { name: "Approve support key" }));
-    expect(mocks.grant).toHaveBeenCalledWith({ hotelId: "a", supportUserId: "opaque-support-id", durationHours: 1, mode: "view" });
+    expect(mocks.grant).toHaveBeenCalledWith({ hotelId: "a", supportEmail: "support@example.test", durationHours: 1, mode: "view" });
     expect(screen.getByText(/hotel.read/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Revoke key" }));
     expect(mocks.revoke).toHaveBeenCalledWith({ hotelId: "a", grantId: "key" });

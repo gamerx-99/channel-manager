@@ -35,7 +35,7 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
   const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
   const supportMemberships = await getSupportMemberships(db, caller);
-  const safeMemberships = memberships.some(m => m.role === "support")
+  const safeMemberships = caller.roles?.includes("support") || memberships.some(m => m.role === "support")
     ? supportMemberships
     : memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
   const output = [];

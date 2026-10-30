@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppRole, Permission } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
 
-const mocks = vi.hoisted(() => ({ grantSupportAccess: vi.fn(), revokeSupportAccess: vi.fn(), listSupportAccess: vi.fn(), updateHotelStaffPermissions: vi.fn(), listPlatformHotelSummaries: vi.fn() }));
-vi.mock("./d1/supportAccess", () => ({ grantSupportAccess: mocks.grantSupportAccess, revokeSupportAccess: mocks.revokeSupportAccess, listSupportAccess: mocks.listSupportAccess, logSupportProcedure: vi.fn() }));
+const mocks = vi.hoisted(() => ({ grantSupportAccess: vi.fn(), revokeSupportAccess: vi.fn(), listSupportAccess: vi.fn(), updateHotelStaffPermissions: vi.fn(), listPlatformHotelSummaries: vi.fn(), findSupportUserIdByEmail: vi.fn(), inviteSupportAccount: vi.fn(), listSupportAccounts: vi.fn(), disableSupportAccount: vi.fn() }));
+vi.mock("./d1/supportAccess", () => ({ grantSupportAccess: mocks.grantSupportAccess, revokeSupportAccess: mocks.revokeSupportAccess, listSupportAccess: mocks.listSupportAccess, findSupportUserIdByEmail: mocks.findSupportUserIdByEmail, inviteSupportAccount: mocks.inviteSupportAccount, listSupportAccounts: mocks.listSupportAccounts, disableSupportAccount: mocks.disableSupportAccount, logSupportProcedure: vi.fn() }));
 vi.mock("./db/scope", () => ({ updateHotelStaffPermissions: mocks.updateHotelStaffPermissions, listPlatformHotelSummaries: mocks.listPlatformHotelSummaries }));
 const { accessRouter } = await import("./routers/accessRouter");
 const hotelId = "11111111-1111-4111-8111-111111111111";
@@ -16,7 +16,7 @@ beforeEach(() => { Object.values(mocks).forEach(mock => { mock.mockReset(); mock
 
 describe("support/permissions router boundaries", () => {
   const ownerCalls = [
-    { name: "grant", run: (app: ReturnType<typeof caller>, id = hotelId) => app.grantSupport({ hotelId: id, supportUserId: "support-opaque-id", mode: "view", durationHours: 1 }), helper: mocks.grantSupportAccess },
+    { name: "grant", run: (app: ReturnType<typeof caller>, id = hotelId) => app.grantSupport({ hotelId: id, supportEmail: "support@example.test", mode: "view", durationHours: 1 }), helper: mocks.grantSupportAccess },
     { name: "revoke", run: (app: ReturnType<typeof caller>, id = hotelId) => app.revokeSupport({ hotelId: id, grantId }), helper: mocks.revokeSupportAccess },
     { name: "audit", run: (app: ReturnType<typeof caller>, id = hotelId) => app.supportAccess({ hotelId: id }), helper: mocks.listSupportAccess },
   ];
@@ -50,9 +50,26 @@ describe("support/permissions router boundaries", () => {
     await caller("super_admin").platformSummary();
     expect(mocks.listPlatformHotelSummaries).toHaveBeenCalledOnce();
   });
+  it("only super admin manages support accounts, and an owner cannot invite one", async () => {
+    const id = grantId;
+    for (const role of ["hotel_owner", "admin", "support", "front_desk"] as const) {
+      await expect(caller(role).inviteSupportAccount({ email: "new@example.test" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(caller(role).supportAccounts()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(caller(role).disableSupportAccount({ id })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    expect(mocks.inviteSupportAccount).not.toHaveBeenCalled();
+    await caller("super_admin").inviteSupportAccount({ email: "New@Example.test" });
+    expect(mocks.inviteSupportAccount).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ userId: "actor" }), expect.anything(), { email: "new@example.test" });
+  });
+  it("grants by email, resolving the support account first", async () => {
+    mocks.findSupportUserIdByEmail.mockResolvedValue("support-id");
+    await caller("hotel_owner").grantSupport({ hotelId, supportEmail: "S@Example.test", mode: "view", durationHours: 1 });
+    expect(mocks.findSupportUserIdByEmail).toHaveBeenCalledWith(expect.anything(), "s@example.test");
+    expect(mocks.grantSupportAccess).toHaveBeenCalledWith(expect.anything(), expect.anything(), { hotelId, supportUserId: "support-id", mode: "view", durationHours: 1 });
+  });
   it("validates exact duration/mode/permissions before mutations", async () => {
-    await expect(caller("hotel_owner").grantSupport({ hotelId, supportUserId: "s", durationHours: 2 as any, mode: "view" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await expect(caller("hotel_owner").grantSupport({ hotelId, supportUserId: "s", durationHours: 1, mode: "root" as any })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller("hotel_owner").grantSupport({ hotelId, supportEmail: "s@example.test", durationHours: 2 as any, mode: "view" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller("hotel_owner").grantSupport({ hotelId, supportEmail: "s@example.test", durationHours: 1, mode: "root" as any })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller("hotel_owner").updateStaffPermissions({ hotelId, targetUserId: "s", permissions: ["made-up" as any] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(mocks.grantSupportAccess).not.toHaveBeenCalled();
     expect(mocks.updateHotelStaffPermissions).not.toHaveBeenCalled();
@@ -61,7 +78,7 @@ describe("support/permissions router boundaries", () => {
     const app = accessRouter.createCaller({ user: null, clientIp: "test" });
     await expect(app.platformSummary()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(app.supportAccess({ hotelId })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-    await expect(app.grantSupport({ hotelId, supportUserId: "s", durationHours: 1, mode: "view" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(app.grantSupport({ hotelId, supportEmail: "s@example.test", durationHours: 1, mode: "view" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(app.revokeSupport({ hotelId, grantId })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(app.updateStaffPermissions({ hotelId, targetUserId: "s", permissions: [] })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });

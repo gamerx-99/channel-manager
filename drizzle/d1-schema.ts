@@ -485,6 +485,20 @@ export const supportAccessLog = sqliteTable("support_access_log", {
   index("support_access_log_hotel_created_idx").on(table.hotelId, table.createdAt),
 ]);
 
+// Support belongs to no hotel, so the platform role lives here and not in hotel_users.
+export const supportAccounts = sqliteTable("support_accounts", {
+  id: id(),
+  userId: text("user_id").notNull(),
+  email: text("email").notNull(),
+  invitedBy: text("invited_by").notNull(),
+  acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+  disabledAt: integer("disabled_at", { mode: "timestamp_ms" }),
+  createdAt: createdAt(),
+}, table => [
+  uniqueIndex("uq_support_accounts_user").on(table.userId),
+  uniqueIndex("uq_support_accounts_email").on(table.email),
+]);
+
 export const d1Schema = {
   agents,
   hotels,
@@ -516,4 +530,5 @@ export const d1Schema = {
   hotelServices,
   supportAccessGrants,
   supportAccessLog,
+  supportAccounts,
 };

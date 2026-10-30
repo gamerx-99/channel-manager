@@ -1831,3 +1831,11 @@ Owner decision: the owner decides who sees the financial report. `financials` no
 `property.view_financials`. Support keys and super_admin stay denied. No migration.
 860 tests, check and build pass. Tests that asserted the old owner-only rule were
 changed for this decision. Support email invitations are not built yet.
+
+## 2026-10-31: support accounts by email
+
+Owner decision: a super admin enters an email, the invitee accepts by email, and the
+owner then grants a time-limited key by typing that email. New table `support_accounts`
+(migration not applied yet). Refuses emails that already have an account. Email needs
+`RESEND_API_KEY` and `EMAIL_FROM` on the Worker, otherwise the mock sender drops it.
+Not tested in a browser or with a real email.

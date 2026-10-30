@@ -3,6 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { canLoadAdminHotels, formatAdminDate } from '@/lib/adminUsers';
 import { HUMAN_ROLES, ROLE_LABELS, isPlatformRole, type HumanRole } from '@shared/authorization';
 import { useTranslation } from '@/lib/i18n';
+import { SupportAccountsPanel } from '@/components/SupportAccountsPanel';
 
 type AdminRole = HumanRole;
 
@@ -65,6 +66,8 @@ export default function AdminUsers() {
                 </table>
               </div>
             </section>
+
+            <SupportAccountsPanel />
 
             <section className="panel">
               <div className="panel-heading"><div><div className="eyebrow">{t('adminUsers.accessGrantEyebrow')}</div><h2>{t('adminUsers.assignExistingUserTitle')}</h2></div><Users size={19} className="muted-icon" /></div>
