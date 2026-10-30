@@ -42,7 +42,7 @@ export default function NotificationBell({ hotelId }: NotificationBellProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <div className="dropdown-anchor" ref={containerRef}>
@@ -83,15 +83,15 @@ export default function NotificationBell({ hotelId }: NotificationBellProps) {
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`notif-item${n.is_read ? "" : " notif-item--unread"}`}
+                  className={`notif-item${n.isRead ? "" : " notif-item--unread"}`}
                 >
                   <div className="notif-item-body">
                     <p className="notif-item-message">{n.message}</p>
                     <span className="notif-item-time">
-                      {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                     </span>
                   </div>
-                  {!n.is_read && (
+                  {!n.isRead && (
                     <button
                       type="button"
                       className="icon-button"

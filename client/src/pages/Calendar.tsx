@@ -98,7 +98,7 @@ export default function Calendar({ id }: { id: string }) {
   const availabilityByKey = useMemo(() => {
     const records = availabilityQuery.data ?? [];
     const lookup = new Map<string, (typeof records)[number]>();
-    records.forEach(row => lookup.set(`${row.room_type_id}:${row.date}`, row));
+    records.forEach(row => lookup.set(`${row.roomTypeId}:${row.date}`, row));
     return lookup;
   }, [availabilityQuery.data]);
 
@@ -116,19 +116,19 @@ export default function Calendar({ id }: { id: string }) {
     return <div className="page-content"><PageState tone="error" title={t("availability.errorTitle")} description={hotelQuery.error?.message ?? availabilityQuery.error?.message ?? bookingOccupancyQuery.error?.message ?? t("availability.errorDescFallback")} actionLabel={t("availability.retryButton")} onAction={retryAvailability} actionPending={hotelQuery.isFetching || availabilityQuery.isFetching || bookingOccupancyQuery.isFetching} /></div>;
   }
 
-  const hotel = hotelQuery.data;
-  const roomCountByType = hotel.rooms.reduce<Record<string, number>>((counts, room) => {
-    counts[room.room_type_id] = (counts[room.room_type_id] ?? 0) + 1;
+  const hotel = hotelQuery.data as any;
+  const roomCountByType = hotel.rooms.reduce((counts: Record<string, number>, room: any) => {
+    counts[room.roomTypeId] = (counts[room.roomTypeId] ?? 0) + 1;
     return counts;
   }, {});
   const occupancy = bookingOccupancyQuery.data ?? [];
 
   function getAllotment(roomTypeId: string, date: string, totalRooms: number) {
-    return availabilityByKey.get(`${roomTypeId}:${date}`)?.rooms_available ?? totalRooms;
+    return availabilityByKey.get(`${roomTypeId}:${date}`)?.roomsAvailable ?? totalRooms;
   }
 
   function getEffectiveAvailability(roomTypeId: string, date: string, totalRooms: number) {
-    const booked = getBookedRoomCountForDate(roomTypeId, date, hotel.rooms, occupancy);
+    const booked = getBookedRoomCountForDate(roomTypeId, date, hotel.rooms, occupancy as any);
     return getAvailableRoomCount(totalRooms, getAllotment(roomTypeId, date, totalRooms), booked);
   }
 
@@ -142,7 +142,7 @@ export default function Calendar({ id }: { id: string }) {
   }
 
   function setInventoryForScope(roomTypeId: string | null, isIn: boolean) {
-    const targetTypes = hotel.room_types.filter(roomType => roomTypeId === null || roomType.id === roomTypeId);
+    const targetTypes = hotel.room_types.filter((roomType: any) => roomTypeId === null || roomType.id === roomTypeId);
     setDraft(current => {
       const next = { ...current };
       for (const roomType of targetTypes) {
@@ -228,12 +228,12 @@ export default function Calendar({ id }: { id: string }) {
     for (const roomType of hotel.room_types) {
       const total = roomCountByType[roomType.id] ?? 0;
       const savedCell = availabilityByKey.get(`${roomType.id}:${dateStr}`);
-      const allotment = savedCell?.rooms_available ?? total;
+      const allotment = savedCell?.roomsAvailable ?? total;
       const fallbackAvailable = editing ? allotment : getEffectiveAvailability(roomType.id, dateStr, total);
       const fallbackPrice = Number(savedCell?.price ?? roomType.base_price);
       const cell = draftCell(roomType.id, dateStr, fallbackAvailable, fallbackPrice);
 
-      for (const booking of getBookingsForRoomTypeAndDate(roomType.id, dateStr, hotel.rooms, occupancy)) {
+      for (const booking of getBookingsForRoomTypeAndDate(roomType.id, dateStr, hotel.rooms, occupancy as any)) {
         bookingPlatforms.add(getBookingPlatform(booking));
       }
 
@@ -386,15 +386,15 @@ export default function Calendar({ id }: { id: string }) {
               <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, false)}>{t("availability.setAllOut")}</button>
             </div>
           </div>
-          {hotel.room_types.length ? hotel.room_types.map((roomType, index) => {
+          {hotel.room_types.length ? hotel.room_types.map((roomType: any, index: number) => {
             const totalRooms = roomCountByType[roomType.id] ?? 0;
             const selectedDay = inDate ?? todayIso;
             const savedCell = availabilityByKey.get(`${roomType.id}:${selectedDay}`);
-            const allotment = Math.min(totalRooms, draft[`${roomType.id}:${selectedDay}`]?.available ?? savedCell?.rooms_available ?? totalRooms);
+            const allotment = Math.min(totalRooms, draft[`${roomType.id}:${selectedDay}`]?.available ?? savedCell?.roomsAvailable ?? totalRooms);
             const fallbackAvailable = getEffectiveAvailability(roomType.id, selectedDay, totalRooms);
             const fallbackPrice = Number(draft[`${roomType.id}:${selectedDay}`]?.price ?? savedCell?.price ?? roomType.base_price);
             const cell = draftCell(roomType.id, selectedDay, fallbackAvailable, fallbackPrice);
-            const bookings = getBookingsForRoomTypeAndDate(roomType.id, selectedDay, hotel.rooms, occupancy);
+            const bookings = getBookingsForRoomTypeAndDate(roomType.id, selectedDay, hotel.rooms, occupancy as any);
             const platforms = Array.from(new Set(bookings.map(getBookingPlatform)));
             return <div className="calendar-selected-room" key={roomType.id}>
               <div className="calendar-room-label">

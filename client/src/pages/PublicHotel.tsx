@@ -46,7 +46,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
     expires_at: string;
     room_type_name: string;
     room_number: string;
-    total_price: number;
+    total_price: number | string;
     nights: number;
   } | null>(null);
   const [selectedServiceQty, setSelectedServiceQty] = useState<Record<string, number>>({});
@@ -188,15 +188,14 @@ export default function PublicHotel({ slug }: { slug: string }) {
     const services = (servicesQuery.data ?? [])
       .filter((s) => (selectedServiceQty[s.id] ?? 0) > 0)
       .map((s) => ({
-        service_name: s.name,
-        pricing_model: s.pricing_model as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
-        unit_price: Number(s.unit_price),
+        hotel_service_id: s.id,
         quantity: selectedServiceQty[s.id],
       }));
 
     setWizardError(null);
     confirmDetailsMutation.mutate({
       booking_id: heldBooking.booking_id,
+      hotel_id: heldBooking.hotel_id,
       guest_name: guestName.trim(),
       guest_email: guestEmail.trim() || undefined,
       guest_phone: guestPhone.trim() || undefined,
@@ -537,7 +536,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             )}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, color: "#ffffff" }}>
               <span>{t("publicHotel.summaryTotal")}</span>
-              <span>฿{(confirmDetailsMutation.data?.amount ?? (heldBooking?.total_price ?? 0) + selectedServicesTotal).toLocaleString()}</span>
+              <span>฿{(confirmDetailsMutation.data?.amount ?? (Number(heldBooking?.total_price ?? 0) + selectedServicesTotal)).toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "24px" }}>
               <button type="button" className="button button-quiet" onClick={() => setWizardStep(4)}>
@@ -573,7 +572,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   <div><strong>{t("publicHotel.confirmedCheckIn")}</strong> {checkIn}</div>
                   <div><strong>{t("publicHotel.confirmedCheckOut")}</strong> {checkOut} ({(heldBooking?.nights ?? 0) > 1 ? t("publicHotel.confirmedNightsPlural", { count: heldBooking?.nights ?? 0 }) : t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2ddd0", paddingTop: "10px", fontSize: "14px", fontWeight: 700, color: "var(--pine)" }}>
-                    {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? heldBooking?.total_price ?? 0).toLocaleString() })}
+                    {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? Number(heldBooking?.total_price ?? 0)).toLocaleString() })}
                   </div>
                 </div>
                 <button
