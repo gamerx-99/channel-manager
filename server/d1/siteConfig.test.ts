@@ -85,6 +85,18 @@ describe("D1 site config and media repository", () => {
     await expect(getHotelSiteConfigBySlug(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("rejects cross-hotel site config and media access", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    const caller = { userId: "owner-a" };
+    await expect(getHotelSiteConfig(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(saveHotelSiteConfig(db, caller, { hotel_id: "b", hero_copy: "No" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(listHotelMedia(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(createHotelMedia(db, caller, { hotel_id: "b", url: "r2/b/1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(deleteHotelMedia(db, caller, "b", "media-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(setHotelMediaHero(db, caller, "b", "media-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("does not synthesize a successful save when persisted config violates the schema", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");

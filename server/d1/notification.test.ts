@@ -57,6 +57,18 @@ describe("D1 notifications repository", () => {
     await expect(insertNotification(db, caller, { hotelId: "a", type: "system", message: "yes" })).resolves.toMatchObject({ hotelId: "a" });
   });
 
+  it("rejects cross-hotel notification access", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    await seedNotification("n-a", "a");
+    await seedNotification("n-b", "b");
+    const caller = { userId: "owner-a" };
+    await expect(listNotifications(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(markNotificationRead(db, caller, "n-b", "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(markAllNotificationsRead(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(insertNotification(db, caller, { hotelId: "b", type: "system", message: "no" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("limits global reads and mark-all to the platform permission", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");

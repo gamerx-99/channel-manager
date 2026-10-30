@@ -77,6 +77,12 @@ describe("D1 OTA iCal services", () => {
     expect(() => sqlite.prepare("UPDATE ota_connections SET room_type_id = 'type-b' WHERE id = 'ota-a'").run()).toThrow(/does not belong to this hotel/);
   });
 
+  it("rejects cross-hotel OTA sync and export access", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await expect(syncOtaIcalBlocks(db, ownerB, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(fetchAndSyncOtaConnection(db, ownerB, "ota-a", vi.fn(), NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("allows only a trusted system identity or a hotel caller with the sync permission", async () => {
     await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
     await expect(syncOtaIcalBlocks(db, publicCaller, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
