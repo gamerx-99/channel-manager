@@ -61,6 +61,9 @@ crons = ["*/15 * * * *"]
 [env.production]
 name = "hayhost"
 workers_dev = false
+# Custom Domain: wrangler deploy --env production creates the DNS record and certificate.
+# The apex hayhostth.com is left to a dashboard Redirect Rule to www.
+routes = [{ pattern = "www.hayhostth.com", custom_domain = true }]
 
 [env.production.vars]
 NODE_ENV = "production"
