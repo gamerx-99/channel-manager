@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { rateLimitedProcedure, protectedProcedure, router } from '../_core/trpc';
-import { createD1SystemCallerContext } from '../db/scope';
+import { authorizeHotelAction, createD1SystemCallerContext } from '../db/scope';
 import {
   getHotelPaymentConfig,
   getSlipOkCredentialsForVerification,
@@ -265,6 +265,7 @@ export const paymentRouter = router({
       const db = ctx.db;
       const caller = ctx.caller ?? { userId: ctx.user.id };
       try {
+        await authorizeHotelAction(db, caller, input.hotel_id, 'operations.manage_bookings', 'payment.manual_verify');
         const [booking] = await db.select({ id: bookings.id, hotelId: bookings.hotelId, status: bookings.status }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
         if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
 

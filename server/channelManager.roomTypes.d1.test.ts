@@ -144,25 +144,14 @@ describe('channelManager.updateRoomType (D1 router)', () => {
     expect(hotelMocks.updateManagedRoomType).not.toHaveBeenCalled();
   });
 
-  it('allows a super admin to update a room type without a hotel membership', async () => {
+  // Spec 14 replaces the retired platform bypass with a hotel-data denial.
+  it('denies super admin room-type writes before querying hotel data', async () => {
     const app = await caller('super_admin');
-
-    await expect(
-      app.channelManager.updateRoomType({
-        hotel_id: HOTEL_ID,
-        room_type_id: ROOM_TYPE_ID,
-        name: 'Executive King',
-        capacity: 2,
-        base_price: 4000,
-        ...validPricing(2),
-      }),
-    ).resolves.toMatchObject({ id: ROOM_TYPE_ID });
-
-    expect(hotelMocks.updateManagedRoomType).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ roles: ['super_admin'] }),
-      expect.objectContaining({ name: 'Executive King' }),
-    );
+    await expect(app.channelManager.updateRoomType({ hotel_id: HOTEL_ID, room_type_id: ROOM_TYPE_ID,
+      name: 'Executive King', capacity: 2, base_price: 4000, ...validPricing(2),
+    })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(hotelMocks.getManagedHotel).not.toHaveBeenCalled();
+    expect(hotelMocks.updateManagedRoomType).not.toHaveBeenCalled();
   });
 
   it('rejects a non-positive base price before querying the D1 helper', async () => {
@@ -184,7 +173,7 @@ describe('channelManager.updateRoomType (D1 router)', () => {
 
   it('maps a filtered update result to not found', async () => {
     hotelMocks.updateManagedRoomType.mockResolvedValueOnce(null);
-    const app = await caller('super_admin');
+    const app = await caller('hotel_owner');
 
     await expect(
       app.channelManager.updateRoomType({
@@ -232,7 +221,7 @@ describe('channelManager.deleteRoomType (D1 router)', () => {
 
   it('maps a filtered delete result to not found', async () => {
     hotelMocks.deleteManagedRoomType.mockResolvedValueOnce(null);
-    const app = await caller('super_admin');
+    const app = await caller('hotel_owner');
 
     await expect(
       app.channelManager.deleteRoomType({

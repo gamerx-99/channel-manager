@@ -1,3 +1,4 @@
+import { logSupportProcedure } from "../d1/supportAccess";
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
@@ -58,12 +59,11 @@ const requireUser = t.middleware(async opts => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
-  return next({
-    ctx: {
-      ...ctx,
-      user: ctx.user,
-    },
-  });
+  const result = await next({ ctx: { ...ctx, user: ctx.user } });
+  if (ctx.db && (ctx.user.roles ?? [ctx.user.role]).includes("support")) {
+    await logSupportProcedure(ctx.db, ctx.caller ?? { userId: ctx.user.id }, opts.path, await opts.getRawInput(), !result.ok);
+  }
+  return result;
 });
 
 export const protectedProcedure = t.procedure.use(requireUser);

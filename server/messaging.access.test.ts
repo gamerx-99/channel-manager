@@ -79,9 +79,11 @@ describe('messaging access', () => {
     await expect(app.channelManager.sendMessage({ hotel_id: HOME_HOTEL, thread_id: '11111111-1111-4111-8111-111111111111', body: 'hi' })).resolves.toMatchObject({ id: 'msg-1' });
   });
 
-  it('lets super_admin bypass hotel permission for messaging', async () => {
+  // Spec 14: platform accounts cannot read hotel messages.
+  it('denies super_admin hotel messaging before the repository', async () => {
     const app = await caller('super_admin');
-    await expect(app.channelManager.listThreads({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+    await expect(app.channelManager.listThreads({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(messagingMocks.listThreads).not.toHaveBeenCalled();
   });
 
   it('denies admin (platform-only) both view and send', async () => {

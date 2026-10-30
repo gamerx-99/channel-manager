@@ -80,7 +80,7 @@ async function resolveScope(
   const supportIdentity = caller.roles?.includes("support") || memberships.some(row => row.role === "support");
   let scope: Scope;
 
-  if (targetMembership && targetMembership.role !== "support") {
+  if (targetMembership && !supportIdentity) {
     if (!isAppRole(targetMembership.role) || targetMembership.role === "super_admin") forbidden();
     const role = targetMembership.role;
     scope = {
@@ -120,12 +120,14 @@ async function resolveScope(
       resolveSupportGrantPermissions({ canEdit: grant.mode === "edit" }),
     ));
     const permissions = PERMISSIONS.filter(permission => permissionSets.every(set => set.has(permission)));
+    const readOnlyWrite = activeGrants.some(grant => grant.mode !== "edit") && ["notifications.mark_read", "notifications.mark_all_read"].includes(action);
     await db.insert(supportAccessLog).values({
       grantId: activeGrants[0].id,
       hotelId,
       supportUserId: caller.userId,
-      action,
+      action: permissions.includes(required) && !readOnlyWrite ? action : `denied:${action}`,
     });
+    if (readOnlyWrite) forbidden();
     scope = { hotelId, userId: caller.userId, role: "support", permissions };
   } else {
     // admin (platform admin) no longer has cross-hotel read (spec 14 S5).
@@ -282,10 +284,7 @@ export async function updateHotelStaffPermissions(
 export async function listPlatformHotelSummaries(
   db: D1ScopedDatabase, caller: D1CallerContext,
 ): Promise<PlatformHotelSummary[]> {
-  const identities = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-  if (!caller.roles?.includes("super_admin") && !identities.some(row => row.role === "super_admin")) forbidden();
-  const permissions = resolveMembershipPermissions("super_admin");
-  if (!permissions.includes("platform.view_all_hotels")) forbidden();
+  await authorizePlatformAction(db, caller, "platform.view_system_logs");
 
   const rows = await db.select({
     hotelName: hotels.name,

@@ -87,14 +87,15 @@ describe('hotel media router permissions (D1)', () => {
     await expect(app.channelManager.setHotelMediaHero({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
-  it('super_admin bypasses hotel permission and can list/delete/set hero', async () => {
+  // Spec 14: platform accounts cannot read or change hotel media.
+  it('denies super_admin hotel media reads and writes before the repository', async () => {
     const app = await caller('super_admin');
-
-    const list = await app.channelManager.listHotelMedia({ hotel_id: HOME_HOTEL });
-    expect(list).toHaveLength(1);
-
-    await expect(app.channelManager.setHotelMediaHero({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).resolves.toMatchObject({ success: true });
-    await expect(app.channelManager.deleteHotelMedia({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).resolves.toMatchObject({ id: MEDIA_ID });
+    await expect(app.channelManager.listHotelMedia({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.channelManager.setHotelMediaHero({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.channelManager.deleteHotelMedia({ hotel_id: HOME_HOTEL, media_id: MEDIA_ID })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(siteConfigMocks.listHotelMedia).not.toHaveBeenCalled();
+    expect(siteConfigMocks.setHotelMediaHero).not.toHaveBeenCalled();
+    expect(siteConfigMocks.deleteHotelMedia).not.toHaveBeenCalled();
   });
 
   it('uploadHotelMedia is disabled in tRPC and points callers to the /api/media endpoint', async () => {

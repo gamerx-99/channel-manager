@@ -1,3 +1,4 @@
+import { getSupportMemberships } from "./supportAccess";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { bookingStatusLog, bookings, hotelUsers, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
@@ -630,17 +631,23 @@ export async function triggerOtaCalendarSyncD1(
 
 export async function getOtaSummary(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
-  let hotelRows: { id: string; name: string }[] = [];
-  if (caller.roles?.includes("super_admin")) {
-    const rows = await db.select({ id: hotels.id, name: hotels.name }).from(hotels);
-    hotelRows = rows.map((r: any) => ({ id: r.id, name: r.name }));
-  } else {
-    const memberships = await db.select({ hotelId: hotelUsers.hotelId }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-    const ids = memberships.map((m: any) => m.hotelId);
-    if (!ids.length) return [];
-    const rows = await db.select({ id: hotels.id, name: hotels.name }).from(hotels).where(inArray(hotels.id, ids));
-    hotelRows = rows.map((r: any) => ({ id: r.id, name: r.name }));
+  const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  if (caller.roles?.includes("super_admin") || memberships.some(row => row.role === "super_admin")) throw new TRPCError({ code: "FORBIDDEN" });
+  const supportIdentity = caller.roles?.includes("support") || memberships.some(row => row.role === "support");
+  const candidates = supportIdentity ? await getSupportMemberships(db, caller) : memberships;
+  const ids: string[] = [];
+  for (const { hotelId } of candidates) {
+    try {
+      await authorizeHotelAction(db, caller, hotelId, "ota.view_status", "ota.summary.read");
+      await authorizeHotelAction(db, caller, hotelId, "ota.view_sync_logs", "ota.summary.logs");
+      ids.push(hotelId);
+    } catch (error) {
+      if (error instanceof TRPCError && error.code === "FORBIDDEN") continue;
+      throw error;
+    }
   }
+  if (!ids.length) return [];
+  const hotelRows = await db.select({ id: hotels.id, name: hotels.name }).from(hotels).where(inArray(hotels.id, ids));
 
   const output: any[] = [];
   for (const hotel of hotelRows) {

@@ -1,3 +1,4 @@
+import { getSupportMemberships } from "./supportAccess";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { defaultChildRateConfig, defaultOccupancyPricing } from "@shared/occupancyPricing";
@@ -31,21 +32,21 @@ function canonicalThreshold(value: string | number): string {
 export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
   const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-  const safeMemberships = memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
+  const supportMemberships = await getSupportMemberships(db, caller);
+  const safeMemberships = memberships.some(m => m.role === "support")
+    ? supportMemberships
+    : memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
   const output = [];
   for (const { hotelId } of safeMemberships) {
-    await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
+    const scope = await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
     const [hotel] = await db.select().from(hotels).where(eq(hotels.id, hotelId)).limit(1);
     if (!hotel) continue;
-    const canViewFinancials = await (async () => {
-      try { await authorizeHotelAction(db, caller, hotelId, "property.view_financials", "hotels.list.price", new Date()); return true; }
-      catch { return false; }
-    })();
+    const canViewFinancials = scope.permissions.includes("property.view_financials");
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
       db.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
       db.select({ id: rooms.id, status: rooms.status }).from(rooms).where(eq(rooms.hotelId, hotelId)),
-      db.select({ id: bookings.id, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
-        .from(bookings).where(eq(bookings.hotelId, hotelId)),
+      scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
+        .from(bookings).where(eq(bookings.hotelId, hotelId)) : Promise.resolve([]),
     ]);
     output.push({
       id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address,

@@ -69,7 +69,7 @@ describe("D1 notifications repository", () => {
     await expect(insertNotification(db, caller, { hotelId: "b", type: "system", message: "no" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("limits global reads and mark-all to the platform permission", async () => {
+  it("withholds hotel notification bodies and mutations from platform accounts", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");
     await seedNotification("n-a", "a");
@@ -78,8 +78,8 @@ describe("D1 notifications repository", () => {
     await expect(markSystemNotificationsRead(db, { userId: "owner-a" })).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     await seedHotel("platform", "root", "super_admin");
-    expect(await listAllNotifications(db, { userId: "root" })).toHaveLength(2);
-    await markSystemNotificationsRead(db, { userId: "root" });
-    expect((await db.select().from(notifications).where(notifications.isRead)).length).toBe(2);
+    expect(await listAllNotifications(db, { userId: "root" })).toEqual([]);
+    await expect(markSystemNotificationsRead(db, { userId: "root" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect((await db.select().from(notifications).where(notifications.isRead)).length).toBe(0);
   });
 });

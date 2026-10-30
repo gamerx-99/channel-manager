@@ -9,6 +9,7 @@ import {
   type Permission,
 } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
+import { getSupportMemberships } from "../d1/supportAccess";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
@@ -17,6 +18,8 @@ export type SupabaseMembership = {
   hotelId: string;
   role: HumanRole;
   permissions: Permission[];
+  expiresAt?: Date;
+  mode?: "view" | "edit";
 };
 
 export type AppUserIdentity = {
@@ -175,13 +178,16 @@ export async function createContextFromRequest(
           access: "authenticated",
         };
 
+        const supportMemberships = await getSupportMemberships(db, caller);
+        const scopedMemberships = roles.includes("support") ? supportMemberships : memberships;
+
         const user: AppUserIdentity = {
           id: authUser.id,
           email: authUser.email ?? null,
           name: authUser.name ?? authUser.email ?? null,
           role: resolvedRole,
           roles,
-          memberships,
+          memberships: scopedMemberships,
           accessToken: authSession.token,
           appMetadata: {
             role: resolvedRole ?? undefined,

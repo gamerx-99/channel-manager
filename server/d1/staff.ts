@@ -1,3 +1,6 @@
+import { assertStaffPermissionChange } from "./staffAuthorization";
+import { resolveMembershipPermissions } from "@shared/permissions";
+import { type AppRole } from "@shared/authorization";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { hotelAdminAuditLogs, hotelUsers, hotels } from "../../drizzle/d1-schema";
@@ -37,16 +40,20 @@ async function assignmentWithHotel(db: D1ScopedDatabase, row: typeof hotelUsers.
 }
 
 export async function createHotelUserAssignment(db: D1ScopedDatabase, caller: D1CallerContext, input: { hotel_id: string; user_id: string; role: HumanRole }, now = new Date()) {
-  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.assignment.create", now);
+  const actor = await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.assignment.create", now);
   if (!ASSIGNABLE_STAFF_ROLES.includes(input.role as typeof ASSIGNABLE_STAFF_ROLES[number])) throw new TRPCError({ code: "BAD_REQUEST", message: "Role cannot be assigned to hotel staff." });
+  assertStaffPermissionChange(actor, input.user_id, input.role);
   const [row] = await db.insert(hotelUsers).values({ hotelId: input.hotel_id, userId: input.user_id, role: input.role }).returning();
   if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel membership insert returned no record." });
   return assignmentWithHotel(db, row);
 }
 
 export async function updateHotelUserAssignmentRole(db: D1ScopedDatabase, caller: D1CallerContext, input: { membership_id: string; hotel_id: string; role: HumanRole }, now = new Date()) {
-  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.assignment.update", now);
+  const actor = await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.assignment.update", now);
   if (!ASSIGNABLE_STAFF_ROLES.includes(input.role as typeof ASSIGNABLE_STAFF_ROLES[number])) throw new TRPCError({ code: "BAD_REQUEST", message: "Role cannot be assigned to hotel staff." });
+  const [target] = await db.select().from(hotelUsers).where(and(eq(hotelUsers.id, input.membership_id), eq(hotelUsers.hotelId, input.hotel_id))).limit(1);
+  if (!target) return null;
+  assertStaffPermissionChange(actor, target.userId, input.role, target);
   const [row] = await db.update(hotelUsers).set({ role: input.role, permissionGrants: [], permissionRevokes: [] }).where(and(
     eq(hotelUsers.id, input.membership_id), eq(hotelUsers.hotelId, input.hotel_id),
   )).returning();
@@ -56,7 +63,8 @@ export async function updateHotelUserAssignmentRole(db: D1ScopedDatabase, caller
 export async function deleteHotelUserAssignment(db: D1ScopedDatabase, caller: D1CallerContext, membershipId: string, now = new Date()) {
   const [target] = await db.select().from(hotelUsers).where(eq(hotelUsers.id, membershipId)).limit(1);
   if (!target) return null;
-  await authorizeHotelAction(db, caller, target.hotelId, "property.manage_staff", "staff.assignment.delete", now);
+  const actor = await authorizeHotelAction(db, caller, target.hotelId, "property.manage_staff", "staff.assignment.delete", now);
+  assertStaffPermissionChange(actor, target.userId, target.role as AppRole, target, []);
   const [row] = await db.delete(hotelUsers).where(and(eq(hotelUsers.id, membershipId), eq(hotelUsers.hotelId, target.hotelId))).returning({ id: hotelUsers.id });
   return row ?? null;
 }
@@ -68,7 +76,7 @@ export async function listHotelStaff(db: D1ScopedDatabase, caller: D1CallerConte
   return Promise.all(otherRows.filter(row => ASSIGNABLE_STAFF_ROLES.includes(row.role as typeof ASSIGNABLE_STAFF_ROLES[number])).map(async row => {
     const assignment = await assignmentWithHotel(db, row);
     const user = users.get(row.userId);
-    return { ...assignment, email: user?.email ?? null, confirmed_at: user?.confirmed_at ?? null, last_sign_in_at: user?.last_sign_in_at ?? null };
+    return { ...assignment, permissions: resolveMembershipPermissions(row.role as AppRole, { grants: row.permissionGrants, revokes: row.permissionRevokes }), email: user?.email ?? null, confirmed_at: user?.confirmed_at ?? null, last_sign_in_at: user?.last_sign_in_at ?? null };
   }));
 }
 
@@ -79,7 +87,7 @@ export async function listHotelAdminAuditLogs(db: D1ScopedDatabase, caller: D1Ca
 }
 
 export async function transferHotelAdmin(db: D1ScopedDatabase, caller: D1CallerContext, input: { hotel_id: string; target_membership_id: string }, now = new Date()) {
-  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.admin.transfer", now);
+  await authorizeHotelAction(db, caller, input.hotel_id, "property.transfer_ownership", "staff.admin.transfer", now);
   const [target] = await db.select().from(hotelUsers).where(and(eq(hotelUsers.id, input.target_membership_id), eq(hotelUsers.hotelId, input.hotel_id))).limit(1);
   const [current] = await db.select().from(hotelUsers).where(and(eq(hotelUsers.hotelId, input.hotel_id), eq(hotelUsers.role, "hotel_owner"))).limit(1);
   if (!target || !isHumanRole(target.role) || target.role === "super_admin" || target.role === "admin" || target.role === "support") return null;

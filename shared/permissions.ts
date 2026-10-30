@@ -13,6 +13,8 @@ export const HOTEL_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
 );
 
 /** Every hotel member can open the property; it is not a switch. */
+export const OWNER_RESERVED_PERMISSIONS: readonly Permission[] = ["property.manage_support_access", "property.transfer_ownership"];
+
 export const BASE_MEMBER_PERMISSION: Permission = "property.view";
 
 export type PermissionToggle = {
@@ -109,7 +111,7 @@ export function resolveMembershipPermissions(role: AppRole, overrides: Permissio
   if (!isAdjustableRole(role)) return [...ROLE_PERMISSIONS[role]];
 
   const permissions = new Set<Permission>(ROLE_PERMISSIONS[role]);
-  for (const grant of overrides.grants ?? []) if (isHotelPermission(grant)) permissions.add(grant);
+  for (const grant of overrides.grants ?? []) if (isHotelPermission(grant) && !OWNER_RESERVED_PERMISSIONS.includes(grant)) permissions.add(grant);
   for (const revoke of overrides.revokes ?? []) if (isHotelPermission(revoke)) permissions.delete(revoke);
   return sortPermissions(closeOver(permissions));
 }
@@ -166,9 +168,7 @@ export function applyToggle(current: readonly Permission[], key: PermissionToggl
   return sortPermissions(closeOver(permissions));
 }
 
-export const OWNER_GRANT_ONLY_PERMISSIONS: readonly Permission[] = TOGGLES.filter(toggle => toggle.ownerGrantOnly).flatMap(
-  toggle => toggle.permissions,
-);
+export const OWNER_GRANT_ONLY_PERMISSIONS: readonly Permission[] = TOGGLES.filter(toggle => toggle.ownerGrantOnly).flatMap(toggle => toggle.permissions);
 
 export type PermissionEditCheck =
   | { ok: true }
@@ -204,7 +204,7 @@ export function checkPermissionEdit(input: {
   const before = new Set(input.targetPermissions);
   const after = new Set(input.nextPermissions);
   const changed = HOTEL_PERMISSIONS.filter(permission => before.has(permission) !== after.has(permission));
-  if (changed.some(permission => OWNER_GRANT_ONLY_PERMISSIONS.includes(permission))) {
+  if (changed.some(permission => OWNER_GRANT_ONLY_PERMISSIONS.includes(permission) || OWNER_RESERVED_PERMISSIONS.includes(permission))) {
     return { ok: false, reason: "OWNER_ONLY" };
   }
   if (changed.some(permission => !actor.has(permission))) return { ok: false, reason: "BEYOND_ACTOR_PERMISSIONS" };
@@ -218,7 +218,7 @@ export const SUPPORT_GRANT_DURATION_HOURS = [1, 24, 72, 168] as const;
 export const SUPPORT_GRANT_MAX_HOURS = 168;
 
 /** Even with a key, support never changes who runs the hotel. */
-export const SUPPORT_EXCLUDED_PERMISSIONS: readonly Permission[] = ["property.manage_staff"];
+export const SUPPORT_EXCLUDED_PERMISSIONS: readonly Permission[] = ["property.manage_staff", ...OWNER_RESERVED_PERMISSIONS];
 
 /** What a read-only support grant shows: everything, changing nothing. */
 export const SUPPORT_VIEW_PERMISSIONS: readonly Permission[] = [

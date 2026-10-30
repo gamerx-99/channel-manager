@@ -246,7 +246,7 @@ export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchem
 });
 
 export const transferHotelAdmin = protectedProcedure.input(hotelStaffTransferSchema).mutation(async ({ ctx, input }) => {
-  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.transfer_ownership');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
     const caller = ctx.caller ?? { userId: ctx.user.id };

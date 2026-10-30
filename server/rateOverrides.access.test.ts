@@ -97,10 +97,11 @@ describe('rate overrides access', () => {
     await expect(app.channelManager.deleteRateOverride({ hotel_id: HOME_HOTEL, rate_override_id: OVERRIDE_ID })).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
-  it('lets super_admin bypass hotel permission for rate overrides', async () => {
-    availabilityMocks.dbListRateOverrides.mockResolvedValueOnce([]);
+  // Spec 14: platform accounts cannot read hotel rates.
+  it('denies super_admin hotel rates before the repository', async () => {
     const app = await caller('super_admin');
-    await expect(app.channelManager.listRateOverrides({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+    await expect(app.channelManager.listRateOverrides({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(availabilityMocks.dbListRateOverrides).not.toHaveBeenCalled();
   });
 
   it('surfaces CONFLICT when an overlapping range is created', async () => {

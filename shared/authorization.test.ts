@@ -98,7 +98,7 @@ describe("seven-role authorization matrix", () => {
     const memberships = [{ hotelId: "hotel-a", role: "front_desk" as const }];
     expect(hasHotelPermission([], memberships, "hotel-a", "operations.manage_checkin_checkout")).toBe(true);
     expect(hasHotelPermission([], memberships, "hotel-b", "operations.manage_checkin_checkout")).toBe(false);
-    expect(hasHotelPermission(["super_admin"], [], "hotel-b", "operations.manage_checkin_checkout")).toBe(true);
+    expect(hasHotelPermission(["super_admin"], [], "hotel-b", "operations.manage_checkin_checkout")).toBe(false);
     expect(hasHotelPermission(["admin"], [], "hotel-b", "operations.manage_checkin_checkout")).toBe(false);
   });
 });

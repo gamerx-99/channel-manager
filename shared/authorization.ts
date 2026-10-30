@@ -63,6 +63,8 @@ export const PERMISSIONS = [
   "property.manage_profile",
   "property.manage_room_structure",
   "property.manage_staff",
+  "property.manage_support_access",
+  "property.transfer_ownership",
   "property.view_reports",
   "property.view_financials",
   "revenue.manage_rates",
@@ -111,6 +113,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   // grant the owner approved (`resolveSupportGrantPermissions` in shared/permissions.ts).
   support: ["platform.view_all_hotels"],
   hotel_owner: [
+    "property.manage_support_access",
+  "property.transfer_ownership",
     "property.view",
     "property.manage_profile",
     "property.manage_room_structure",
@@ -206,7 +210,9 @@ export function hasHotelPermission(
   hotelId: string,
   permission: Permission,
 ) {
-  return roles.includes("super_admin")
+  // Hotel data is never a platform capability, including for a mixed identity.
+  if (!permission.startsWith("platform.") && roles.includes("super_admin")) return false;
+  return (permission.startsWith("platform.") && roles.includes("super_admin"))
     || roles.some(role => isPlatformRole(role) && roleHasPermission(role, permission))
     || memberships.some(
       membership => membership.hotelId === hotelId

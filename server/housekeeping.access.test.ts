@@ -80,10 +80,13 @@ describe('housekeeping tasks access', () => {
     await expect(app.channelManager.updateHousekeepingTaskStatus({ hotel_id: HOME_HOTEL, task_id: TASK_ID, status: 'in_progress' })).resolves.toMatchObject({ status: 'in_progress' });
   });
 
-  it('lets super_admin bypass hotel permission for housekeeping tasks', async () => {
+  // Spec 14: platform accounts cannot access hotel tasks.
+  it('denies super_admin hotel housekeeping reads and writes before the repository', async () => {
     const app = await caller('super_admin');
-    await expect(app.channelManager.listHousekeepingTasks({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
-    await expect(app.channelManager.createHousekeepingTask({ hotel_id: HOME_HOTEL, room_id: ROOM_ID, due_date: '2026-09-01', status: 'pending' })).resolves.toMatchObject({ id: TASK_ID });
+    await expect(app.channelManager.listHousekeepingTasks({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.channelManager.createHousekeepingTask({ hotel_id: HOME_HOTEL, room_id: ROOM_ID, due_date: '2026-09-01', status: 'pending' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(housekeepingMocks.listHousekeepingTasks).not.toHaveBeenCalled();
+    expect(housekeepingMocks.createHousekeepingTask).not.toHaveBeenCalled();
   });
 
   it('lets front_desk and admin view but not create/update', async () => {

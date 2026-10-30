@@ -1,3 +1,4 @@
+import { assertStaffPermissionChange } from "./staffAuthorization";
 import { TRPCError } from "@trpc/server";
 import { and, eq, gt, like } from "drizzle-orm";
 import { hotelUsers, hotels } from "../../drizzle/d1-schema";
@@ -34,11 +35,13 @@ export async function inviteStaffUser(
   appUrl?: string,
   now = new Date(),
 ) {
-  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.invite", now);
+  const actor = await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.invite", now);
 
   if (!ASSIGNABLE_STAFF_ROLES.includes(input.role as typeof ASSIGNABLE_STAFF_ROLES[number])) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Role cannot be assigned to hotel staff." });
   }
+
+  assertStaffPermissionChange(actor, "new-invite", input.role);
 
   const [hotel] = await db
     .select({ id: hotels.id, name: hotels.name })
