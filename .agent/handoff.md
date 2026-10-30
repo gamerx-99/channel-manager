@@ -1703,3 +1703,100 @@ Done in 54ms
 - `2ce8c8f` was made by the round 4 Kimi session, not an unknown process. Stopping the CLI left the session running inside `opencode serve` until it ended at 21:26:53, overlapping Codex for about 6 minutes.
 - Codex could not write git metadata from its sandbox, so the orchestrator created the round 5 commits after rerunning `pnpm test` (780 passed), `pnpm check` and `pnpm build`. This supersedes the commit and clean-status NOT DONE items above.
 - Open for the owner: `getTemplatedMessageForBooking`, `buildPreArrivalReminderBody` and `triggerTemplated*` no longer exist. Tests are marked obsolete, but the owner has not decided whether the feature should return.
+
+
+## [2026-10-30] 14-03b — D1 permission controls and support keys (agent-s/support-access)
+
+- Implemented account-bound, owner-approved 1/24/72/168h support keys, view/edit,
+  revoke and audit endpoints, staff permission updates, and safe platform summaries.
+  Reused existing D1 tables and scope; no migrations or protected deployment files
+  changed. Plan/payment status remain null per the existing spec 13 owner decision.
+- Request context projects active scoped permissions; D1 remains authoritative.
+  Support has no hotel access without a key, no cross-hotel access, and never staff
+  management or owner-reserved controls. Revoked/expired keys deny immediately at
+  the next action, including payment review with a stale context.
+- Closed aggregate OTA/global-notification bypasses, view-only notification writes,
+  and booking-view leakage through hotel/dashboard projections. Delegated staff
+  management cannot escape bounds through role resets, invites, removal or ownership
+  transfer. Owner-only capability controls are named permissions.
+- Audited procedure denials before repository invocation as well as D1 scope reads
+  and writes. Canonical hotel aliases and accepted resource-id allowlists prevent
+  raw request extras from spoofing another hotel's audit or recording guest bodies.
+  Audit storage errors fail closed.
+- Tests: 38 behavioural SQLite-backed D1 security cases, mocked router boundaries,
+  and strengthened legacy bypass expectations. Three aggregate leak regressions
+  failed before fixes; targeted after-fix output is retained. Existing test changes
+  are documented in T14-03b: obsolete bypass assertions became strict denials,
+  not-found checks keep their assertions under valid owner fixtures, and the
+  non-switch owner controls are explicitly excluded from 13-switch coverage.
+- Exact final shared verification (also pasted in both ticket files):
+
+The global `pnpm` shim was denied access to its external store lock. These are
+real outputs from the installed pnpm CLI, run with package-manager version
+management disabled (no dependency install or metadata workaround):
+
+```text
+node node_modules/pnpm/bin/pnpm.cjs test
+ Test Files  115 passed (115)
+      Tests  842 passed (842)
+   Start at  22:35:35
+   Duration  78.17s (transform 14.72s, setup 3.41s, collect 145.41s, tests 127.77s, environment 73.16s, prepare 57.63s)
+```
+
+```text
+node node_modules/pnpm/bin/pnpm.cjs check
+> channel-manager-mvp@1.0.0 check C:\WORK\channel-manager-s
+> tsc --noEmit
+```
+
+```text
+node node_modules/pnpm/bin/pnpm.cjs build
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 43.26s
+
+  dist\index.js          334.1kb
+  dist\vite-7MXDACVA.js    2.8kb
+
+Done in 385ms
+```
+
+All three commands exited 0. Build also emits the existing >500 kB chunk advisory.
+Full logs remain `.agent/support-access-{test,check,build}.log` locally.
+
+- **Reviewer**: VERDICT: APPROVE. Independent reviewer confirmed all security
+  checklist items, reviewed tracked/untracked code and assertion integrity, and
+  inspected final 842-test/check/build evidence. Full disposition:
+  `.agent/reviews/T14-03b-14-04.md`.
+- **NOT DONE**: live/browser verification (no deployment authorized); other parts
+  of the 14-03 parent and 14-05 are outside this run. No commits attempted, as
+  explicitly instructed. Changes remain in the working tree for the orchestrator.
+
+## [2026-10-30] 14-04 — Per-person switches and support approval client (agent-s/support-access)
+
+- Added 13 permission switches to HotelStaff, dependency closure, edit bounds,
+  errors/pending feedback and post-save refresh. Ownership-transfer controls follow
+  the owner-reserved permission. The old confirmation tests retain their assertions;
+  their owner fixture now includes the scoped transfer permission.
+- Added owner-only support approval/revoke/history, support mode/expiry banner,
+  and summary-only platform overview (also used for the super-admin dashboard).
+  Routes, sidebar and shell use the selected hotel's effective permissions and
+  support expiry, without cross-hotel role inheritance. Server revocation is
+  immediate; client visibility refreshes every 15 seconds.
+- Financial dashboard stays owner-only on both server and client. Existing
+  owner-granted amount visibility is preserved; expanding the report to staff
+  requires a future product/spec decision in OPEN_QUESTIONS.
+- String contracts cover changed/new pages, routes, gates and banner. New UI
+  behaviour tests cover switch dependencies, self/owner locks, exact support
+  durations, safe default mode, revoke and owner gate. Route tests cover stored
+  overrides, selected hotel, support expiry/revocation, cross-hotel and mixed
+  super-admin denial, and owner-only financial report gating.
+- **Verification**: same final run pasted above and in T14-04: `Test Files 115
+  passed (115)`, `Tests 842 passed (842)`; `pnpm check`/`tsc --noEmit` exit 0;
+  production build exit 0 (`built in 43.26s`, `dist/index.js 334.1kb`). Existing
+  chunk-size advisory only. No i18n dictionary lines touched.
+- **Reviewer**: VERDICT: APPROVE. Independent reviewer confirmed all security
+  checklist items, reviewed tracked/untracked code and assertion integrity, and
+  inspected final 842-test/check/build evidence. Full disposition:
+  `.agent/reviews/T14-03b-14-04.md`.
+- **NOT DONE**: manual browser/visual verification was not run; financial-report
+  product expansion remains out of scope. No commit, push, merge or deploy attempted.

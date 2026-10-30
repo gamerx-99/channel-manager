@@ -114,3 +114,29 @@ answer noted.
       lannatc@gmail.com owns Worker, D1, R2 and the domain.
 - [x] Phase 1 of i18n covers only the chrome structure (Sidebar, Topbar, Login) and translation dictionary infrastructure (`client/src/lib/i18n/`). Other application pages remain in English for now. RESOLVED 2026-09-02: Phase 2 wired all 18 content pages (Calendar, Home, Bookings, HotelDetail, Hotels, Financials, Housekeeping, Communications, OtaSync, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, WebsiteBuilder, ChannelPerformance, MfaEnroll, NotFound, PublicHotel) to the translation system with complete EN/TH dictionary parity and test suites passing.
 
+
+- [ ] Spec 14-03b/14-04 implementation assumptions (2026-10-30): the short spec does not
+  define a bearer-token exchange or support-account discovery. ASSUMPTION: an owner
+  approves an existing support account by opaque user id; the authenticated account
+  uses the persisted grant directly. Only the owner can create/revoke/read keys and
+  their audit trail (a dedicated permission, never delegated). Existing intersection
+  semantics apply to overlapping keys; client projection expires at the earliest key
+  expiry and refreshes from the server. Platform summaries retain null plan/payment
+  status per the answered spec 13 question. No new migration is required.
+
+- [ ] Spec 14-03b aggregate-path hardening (2026-10-30): ASSUMPTION: until a
+  separate platform-notification store exists, the global platform feed is empty
+  and global hotel-notification mutations are forbidden. Existing hotel notifications
+  can contain guest data and cannot appear in the summary-only platform dashboard.
+
+- [ ] Spec 14-03b delegated staff management (2026-10-30): ASSUMPTION: existing
+  invite and role-template changes must obey the same permission bounds as switches;
+  ownership transfer requires an owner-reserved permission. Otherwise the newly live
+  manage_staff toggle bypasses owner-only switches by promoting or transferring roles.
+
+- [ ] Spec 14 financial switch/report distinction (2026-10-30): existing shared
+  permissions allow owner-granted financial amount visibility, while the spec
+  explicitly keeps the financial dashboard owner-only. ASSUMPTION: retain both
+  existing server semantics and mirror the owner-only dashboard gate in routing
+  and navigation. Letting staff open that report requires a future spec decision;
+  this delivery does not change the report endpoint or expand support permissions.

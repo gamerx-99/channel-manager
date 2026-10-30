@@ -1,9 +1,10 @@
 # 14 Per-person permissions, support access, and platform-role hardening
 
-Status: IN PROGRESS — 14-00 (RLS write hardening) and 14-01 (core authorization)
-committed on `agent-a/next` (2026-10-27), not yet pushed to `main`. 14-02 CANCELLED
-by owner decision (2026-10-27); its D1 schema moves to 13-02 and enforcement to
-13-03. 14-03..14-05 remain pending and are tracked separately.
+Status: IN PROGRESS — 14-03b server and 14-04 client implemented in
+`agent-s/support-access` (2026-10-30), 842 tests/check/build passing and independent
+reviewer APPROVE; uncommitted per instruction.
+14-00/14-01 are historical completed work; 14-02 remains CANCELLED. This run does
+not close the full 14-03 parent or start 14-05.
 Depends on: 12 (SaaS plans/billing) for plan-gated SlipOK quotas (14-05); spec 13 for
 eventual port to the Cloudflare data layer.
 Owner-tier: cross-cutting (shared authorization + server + client + SQL).
@@ -49,7 +50,13 @@ owner-approved access to a hotel without cross-hotel read.
   super-admin dashboard, fix `completeHotelOwnerSignup` to use the logged-in user id,
   fix `verifySlip` to use the session hotel and check the payee account, fix
   `deleteRateOverride` to check same hotel.
-- [ ] **14-04 Client** — per-staff permission switch UI and owner approval screen for
+  - **14-03b DONE locally, reviewer APPROVE (2026-10-30)**: `access` router for stored staff
+    permissions, owner support grants/revoke/audit, and summary-only platform data.
+    D1 grants are account-bound (no bearer-token exchange), exactly 1/24/72/168h,
+    view/edit; reserved owner controls never delegate. Aggregate OTA/notification
+    paths and payment-review writes now honour persisted scope. Delegated role,
+    invite, removal and ownership paths cannot bypass permission switches.
+- [x] **14-04 Client** — per-staff permission switch UI and owner approval screen for
   support access.
 - [ ] **14-05 SlipOK central account** — auto key rotation on quota exhaustion, own
   duplicate-slip check, plan-based quotas.
@@ -70,3 +77,24 @@ owner-approved access to a hotel without cross-hotel read.
 - `auth.me` returns an `accessToken`.
 - `markRead` does not verify the notification belongs to the hotel.
 - `savePromptPayId` has no MFA step-up.
+
+
+## 14-03b / 14-04 local delivery notes (2026-10-30)
+
+- `access.updateStaffPermissions`, `grantSupport`, `revokeSupport`, `supportAccess`,
+  `platformSummary` reuse D1 scope and existing support tables; no migration added.
+- `/hotels/:id/staff` renders the 13 shared switches with dependency closure and
+  edit bounds. `/hotels/:id/support-access` is owner-only and shows keys and audit
+  history. Support mode/expiry appears in the shell. `/platform` (also the super-admin
+  dashboard entry) shows only hotel name, plan, payment status, room count and sync
+  status. Billing fields remain null until spec 12, per the existing owner decision.
+- Routing and navigation use the selected hotel's resolved membership, without
+  cross-hotel role inheritance. The financial dashboard mirrors its existing
+  owner-only `requirePermission` gate; stored financial-amount visibility overrides
+  do not turn that report into a staff report.
+- Existing tests asserting the retired super-admin hotel bypass are replaced with
+  stronger FORBIDDEN/no-repository-call checks. Not-found tests retain their
+  assertions with authorized owner fixtures. This implements the explicit security
+  requirement, rather than preserving obsolete mocked access behavior.
+- Validation and reviewer evidence: `.agent/tickets/T14-03b-support-access.md`,
+  `.agent/tickets/T14-04-per-staff-ui.md` and the latest handoff entries.
