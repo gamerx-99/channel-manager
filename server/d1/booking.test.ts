@@ -315,6 +315,17 @@ describe("D1 booking repositories", () => {
     expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("held");
   });
 
+  it("refuses a hold on an unavailable room", async () => {
+    await seedHotel("a", "owner-a");
+    await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-03"), []);
+    await expect(holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-03", adults: 2, children: [] }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST", message: /no longer available/ });
+    await expect(holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-02", check_out: "2026-11-03", adults: 2, children: [] }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST", message: /no longer available/ });
+    await expect(holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-03", check_out: "2026-11-04", adults: 2, children: [] }))
+      .resolves.toMatchObject({ room_type_name: "Standard" });
+  });
+
   it("transitions check-in/out with scoped audit and denies cross-hotel ids", async () => {
     await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
     await db.insert(bookings).values({ id: "confirmed-a", hotelId: "a", roomId: "room-a-1", guestName: "Guest", checkIn: "2026-11-01", checkOut: "2026-11-02", price: "100.00", source: "manual", status: "confirmed" });
