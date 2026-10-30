@@ -187,7 +187,7 @@ export default function Bookings({ id }: { id: string }) {
     return <div className="page-content"><PageState tone="error" title={t('bookings.errorTitle')} description={error?.message ?? t('bookings.errorDescFallback')} actionLabel={t('bookings.retryButton')} onAction={retryBookings} actionPending={hotelQuery.isFetching || bookingsQuery.isFetching} /></div>;
   }
 
-  const roomTypeName = (roomTypeId: string) => hotel.room_types.find(roomType => roomType.id === roomTypeId)?.name ?? t('bookings.unassignedRoomType');
+  const roomTypeName = (roomTypeId: string) => hotel.room_types.find((roomType: any) => roomType.id === roomTypeId)?.name ?? t('bookings.unassignedRoomType');
 
   return (
     <div className="page-content bookings-page">
@@ -221,3 +221,4 @@ export default function Bookings({ id }: { id: string }) {
     </div>
   );
 }
+

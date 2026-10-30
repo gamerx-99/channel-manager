@@ -79,8 +79,17 @@ export default function PublicHotel({ slug }: { slug: string }) {
   );
 
   const holdRoomTypeMutation = trpc.channelManager.holdRoomType.useMutation({
-    onSuccess: (data) => {
-      setHeldBooking(data);
+    onSuccess: (data: any) => {
+      setHeldBooking({
+        bookingId: data.booking_id,
+        hotelId: data.hotel_id,
+        roomId: data.room_id,
+        expiresAt: data.expires_at,
+        roomTypeName: data.room_type_name,
+        roomNumber: data.room_number,
+        totalPrice: data.total_price,
+        nights: data.nights,
+      });
       setWizardError(null);
       setWizardStep(3);
     },
@@ -103,9 +112,9 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
   // Lazy-expiry countdown for the held/pending booking (steps 2-5).
   useEffect(() => {
-    if (!heldBooking?.expires_at || wizardStep < 2 || wizardStep > 5) return;
+    if (!heldBooking?.expiresAt || wizardStep < 2 || wizardStep > 5) return;
     const tick = () => {
-      const ms = new Date(heldBooking.expires_at).getTime() - Date.now();
+      const ms = new Date(heldBooking.expiresAt).getTime() - Date.now();
       setRemainingMs(Math.max(0, ms));
       if (ms <= 0) {
         setWizardError(t("publicHotel.holdExpiredRestart"));
@@ -115,7 +124,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [heldBooking?.expires_at, wizardStep, t]);
+  }, [heldBooking?.expiresAt, wizardStep, t]);
 
   if (publicHotel.isLoading) {
     return <div className="public-page"><main className="public-loading">{t("publicHotel.loadingHotelDetails")}</main></div>;
@@ -126,7 +135,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   }
 
   const { hotel, roomTypes, media } = publicHotel.data;
-  const heroImage = media.find(item => item.isHero)?.url ?? media[0]?.url;
+  const heroImage = media.find(item => item.is_hero)?.url ?? media[0]?.url;
 
   // hotel_site_config fallback: when no config row or table missing, use fixed copy/colors
   const siteConfig = siteConfigQuery.data ?? null;
@@ -135,7 +144,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const visibleSections = (siteConfig?.visibleSections as Record<string, boolean> | null) ?? null;
   const isVisible = (key: string) => visibleSections?.[key] !== false;
 
-  const availableRoomTypes = availabilityQuery.data?.roomTypes ?? [];
+  const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
 
   const handleSelectRoom = (roomTypeId: string) => {
     setPreferredRoomTypeId(roomTypeId);
@@ -279,7 +288,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 </div>
               ) : availableRoomTypes.length > 0 ? (
                 <div style={{ display: "grid", gap: "8px" }}>
-                  {availableRoomTypes.map((rt) => {
+                  {availableRoomTypes.map((rt: any) => {
                     const isPreferred = preferredRoomTypeId === rt.id;
                     const isAvailable = rt.is_available;
                     return (
@@ -651,7 +660,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
           </div>
           {roomTypes.length ? (
             <div className="public-room-grid">
-              {roomTypes.map((room, index) => (
+              {roomTypes.map((room: any, index: number) => (
                 <article
                   className="public-room-card cursor-pointer"
                   key={room.id}
@@ -728,3 +737,4 @@ export default function PublicHotel({ slug }: { slug: string }) {
     </div>
   );
 }
+

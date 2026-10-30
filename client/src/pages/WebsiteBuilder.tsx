@@ -556,7 +556,7 @@ export default function WebsiteBuilder() {
               <div className="space-y-3">
                 <Label className="text-xs text-[#52655b]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
                 <div className="space-y-2 rounded-xl border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                  {(Object.keys(sectionLabels) as Array<keyof SiteConfig["visible_sections"]>).map(key => (
+                  {(Object.keys(sectionLabels) as Array<keyof SiteConfig["visibleSections"]>).map(key => (
                     <label key={key} className="flex items-center justify-between gap-3 rounded-lg border border-[#e5ebe7] bg-white px-3 py-2.5">
                       <span>
                         <span className="text-sm font-medium text-[#263b31]">{sectionLabels[key].label}</span>
@@ -564,7 +564,7 @@ export default function WebsiteBuilder() {
                       </span>
                       <Switch
                         checked={draft.visibleSections[key]}
-                        onCheckedChange={v => setDraft(p => ({ ...p, visible_sections: { ...p.visible_sections, [key]: v } }))}
+                        onCheckedChange={v => setDraft(p => ({ ...p, visibleSections: { ...p.visibleSections, [key]: v } }))}
                         disabled={!canManage}
                         aria-label={`visible_sections ${key}`}
                       />
