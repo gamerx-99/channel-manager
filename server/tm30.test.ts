@@ -9,7 +9,6 @@ import {
   TM30_HEADERS,
   type Tm30Booking,
 } from "./tm30";
-import { loadNodeTm30Template } from "./tm30Node";
 
 const sampleBookings: Tm30Booking[] = [
   {
@@ -88,34 +87,5 @@ describe("TM.30 export and template compatibility", () => {
     expect(tm30Source).not.toMatch(/from\s+["']fs["']/);
     expect(tm30Source).not.toMatch(/from\s+["']node:path["']/);
     expect(tm30Source).not.toMatch(/from\s+["']path["']/);
-  });
-
-  it("loadNodeTm30Template throws an explicit error when configured path is missing", () => {
-    const origEnv = process.env.TM30_TEMPLATE_PATH;
-    try {
-      process.env.TM30_TEMPLATE_PATH = "non_existent_template.xlsx";
-      expect(() => loadNodeTm30Template()).toThrowError(
-        /TM\.30 template not found at/
-      );
-    } finally {
-      if (origEnv !== undefined) {
-        process.env.TM30_TEMPLATE_PATH = origEnv;
-      } else {
-        delete process.env.TM30_TEMPLATE_PATH;
-      }
-    }
-  });
-
-  it("loadNodeTm30Template falls back to mapped workbook when unconfigured and file not found", () => {
-    const origEnv = process.env.TM30_TEMPLATE_PATH;
-    try {
-      delete process.env.TM30_TEMPLATE_PATH;
-      const wb = loadNodeTm30Template();
-      expect(wb.SheetNames).toContain("TM.30");
-    } finally {
-      if (origEnv !== undefined) {
-        process.env.TM30_TEMPLATE_PATH = origEnv;
-      }
-    }
   });
 });

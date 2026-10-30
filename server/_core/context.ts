@@ -1,4 +1,3 @@
-import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { eq } from "drizzle-orm";
 import {
   APP_ROLES,
@@ -229,11 +228,4 @@ export async function createContextFromRequest(
     user: null,
     clientIp: clientIp || "unknown",
   };
-}
-
-export function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
-  return createContextFromRequest({
-    headers: opts.req.headers,
-    clientIp: opts.req.ip || opts.req.socket?.remoteAddress,
-  });
 }
