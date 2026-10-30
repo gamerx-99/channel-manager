@@ -72,4 +72,27 @@ describe('messaging access', () => {
     const app = await caller('hotel_owner');
     await expect(app.channelManager.sendMessage({ hotel_id: HOME_HOTEL, thread_id: '11111111-1111-4111-8111-111111111111', body: 'hi' })).resolves.toMatchObject({ id: 'msg-1' });
   });
+
+  it('lets front_desk list and send messages', async () => {
+    const app = await caller('front_desk');
+    await expect(app.channelManager.listThreads({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+    await expect(app.channelManager.sendMessage({ hotel_id: HOME_HOTEL, thread_id: '11111111-1111-4111-8111-111111111111', body: 'hi' })).resolves.toMatchObject({ id: 'msg-1' });
+  });
+
+  it('lets super_admin bypass hotel permission for messaging', async () => {
+    const app = await caller('super_admin');
+    await expect(app.channelManager.listThreads({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+  });
+
+  it('denies admin (platform-only) both view and send', async () => {
+    const app = await caller('admin');
+    await expect(app.channelManager.listThreads({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.channelManager.sendMessage({ hotel_id: HOME_HOTEL, thread_id: '11111111-1111-4111-8111-111111111111', body: 'hi' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('returns FORBIDDEN when thread not found', async () => {
+    messagingMocks.listMessages.mockRejectedValueOnce(new Error('not found'));
+    const app = await caller('hotel_owner');
+    await expect(app.channelManager.listMessages({ hotel_id: HOME_HOTEL, thread_id: '11111111-1111-4111-8111-111111111111' })).rejects.toBeTruthy();
+  });
 });

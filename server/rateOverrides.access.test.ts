@@ -96,4 +96,22 @@ describe('rate overrides access', () => {
     const app = await caller('hotel_owner');
     await expect(app.channelManager.deleteRateOverride({ hotel_id: HOME_HOTEL, rate_override_id: OVERRIDE_ID })).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
+
+  it('lets super_admin bypass hotel permission for rate overrides', async () => {
+    availabilityMocks.dbListRateOverrides.mockResolvedValueOnce([]);
+    const app = await caller('super_admin');
+    await expect(app.channelManager.listRateOverrides({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+  });
+
+  it('surfaces CONFLICT when an overlapping range is created', async () => {
+    availabilityMocks.dbCreateRateOverride.mockRejectedValueOnce(new Error('23P01: overlap'));
+    const app = await caller('hotel_owner');
+    await expect(app.channelManager.createRateOverride(validCreateInput as any)).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
+  it('surfaces CONFLICT when the EXCLUDE constraint fires', async () => {
+    availabilityMocks.dbCreateRateOverride.mockRejectedValueOnce(new Error('23P01: prevent_rate_override_overlap'));
+    const app = await caller('revenue_manager');
+    await expect(app.channelManager.createRateOverride(validCreateInput as any)).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
 });

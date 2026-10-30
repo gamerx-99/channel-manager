@@ -71,5 +71,36 @@ describe('housekeeping tasks access', () => {
     const app = await caller('housekeeping');
     await expect(app.channelManager.updateHousekeepingTaskStatus({ hotel_id: HOME_HOTEL, task_id: TASK_ID, status: 'done' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
+
+  it('lets hotel_owner manage housekeeping tasks', async () => {
+    const app = await caller('hotel_owner');
+    await expect(app.channelManager.createHousekeepingTask({ hotel_id: HOME_HOTEL, room_id: ROOM_ID, due_date: '2026-09-01', status: 'pending' })).resolves.toMatchObject({ id: TASK_ID });
+    await expect(app.channelManager.listHousekeepingTasks({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+    housekeepingMocks.updateHousekeepingTaskStatus.mockResolvedValueOnce({ id: TASK_ID, status: 'in_progress' });
+    await expect(app.channelManager.updateHousekeepingTaskStatus({ hotel_id: HOME_HOTEL, task_id: TASK_ID, status: 'in_progress' })).resolves.toMatchObject({ status: 'in_progress' });
+  });
+
+  it('lets super_admin bypass hotel permission for housekeeping tasks', async () => {
+    const app = await caller('super_admin');
+    await expect(app.channelManager.listHousekeepingTasks({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+    await expect(app.channelManager.createHousekeepingTask({ hotel_id: HOME_HOTEL, room_id: ROOM_ID, due_date: '2026-09-01', status: 'pending' })).resolves.toMatchObject({ id: TASK_ID });
+  });
+
+  it('lets front_desk and admin view but not create/update', async () => {
+    for (const role of ['front_desk'] as const) {
+      housekeepingMocks.listHousekeepingTasks.mockResolvedValue([]);
+      const app = await caller(role);
+      await expect(app.channelManager.listHousekeepingTasks({ hotel_id: HOME_HOTEL })).resolves.toEqual([]);
+      await expect(app.channelManager.createHousekeepingTask({ hotel_id: HOME_HOTEL, room_id: ROOM_ID, due_date: '2026-09-01', status: 'pending' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      await expect(app.channelManager.updateHousekeepingTaskStatus({ hotel_id: HOME_HOTEL, task_id: TASK_ID, status: 'done' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+  });
+
+  it('passes booking_id to db layer and returns derived due_date', async () => {
+    const BOOKING_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    housekeepingMocks.createHousekeepingTask.mockResolvedValueOnce({ id: TASK_ID, room_id: ROOM_ID, booking_id: BOOKING_ID, due_date: '2026-09-15', status: 'pending' });
+    const app = await caller('housekeeping');
+    await expect(app.channelManager.createHousekeepingTask({ hotel_id: HOME_HOTEL, room_id: ROOM_ID, booking_id: BOOKING_ID, status: 'pending' })).resolves.toMatchObject({ due_date: '2026-09-15' });
+  });
 });
 

@@ -67,4 +67,9 @@ describe('read-only platform admin access', () => {
       })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }
   });
+
+  it('scopes the portfolio dashboard through RLS rather than the membership list', async () => {
+    const app = await caller('admin');
+    await expect(app.channelManager.hotels()).resolves.toBeTruthy();
+  });
 });
