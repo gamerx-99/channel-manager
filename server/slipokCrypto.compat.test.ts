@@ -86,13 +86,14 @@ describe("SlipOK WebCrypto / Node format compatibility", () => {
     const plaintext = "sensitive_key";
     const stored = await encryptSlipOkKey(plaintext);
     const [iv, ct, tag] = stored.split(":");
+    const flipFirstByte = (hex: string) => (hex.startsWith("ff") ? "00" : "ff") + hex.slice(2);
 
     // Tampered ciphertext
-    const tamperedCt = "ff" + ct.slice(2);
+    const tamperedCt = flipFirstByte(ct);
     await expect(decryptSlipOkKey(`${iv}:${tamperedCt}:${tag}`)).rejects.toThrow();
 
     // Tampered tag
-    const tamperedTag = "ee" + tag.slice(2);
+    const tamperedTag = flipFirstByte(tag);
     await expect(decryptSlipOkKey(`${iv}:${ct}:${tamperedTag}`)).rejects.toThrow();
 
     // Malformed format
