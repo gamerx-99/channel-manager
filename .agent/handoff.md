@@ -1581,56 +1581,58 @@ Write every entry so someone who has never seen this session can pick up the wor
 
 | Deleted file | What it tested | Decision | Evidence |
 |---|---|---|---|
-| client/src/dashboardCalendar.contract.test.ts | dashboard calendar contract | restored | restored and passing (6/6) |
-| client/src/lib/mfa.challenge.test.tsx | supabase null runtime | obsolete | supabase client removed; main.tsx no longer imports supabase |
-| client/src/main.adversarial.test.ts | trpc bootstrap hostile | obsolete | getTrpcHeaders now returns {} (Better Auth cookies) |
-| client/src/main.trpcClient.test.ts | trpc bootstrap regression | obsolete | supabase session token no longer used |
-| client/src/pages/Calendar.test.tsx | Calendar UI rendering | restored | restored and passing (5/5) |
-| client/src/pages/Financials.contract.test.ts | Financials contract | restored | restored and passing (5/5) |
-| client/src/pages/HotelOwnerSignup.contract.test.ts | signup link contract | restored | restored and passing (5/5) |
-| client/src/pages/HotelStaff.test.tsx | HotelStaff UI | restored | restored and passing (8/8) |
-| client/src/pages/PublicHotel.contract.test.ts | PublicHotel contract | restored | restored and passing (13/13) |
-| client/src/pages/WebsiteBuilder.contract.test.ts | WebsiteBuilder contract | restored | restored and passing (12/12) |
-| client/src/pages/calendarAvailability.test.ts | calendar availability pure logic | restored | restored and passing (3/3) |
-| server/bookingFlow.test.ts | createBooking flow | ported | server/bookingFlow.d1.test.ts |
-| server/bookingMinStay.test.ts | min_stay enforcement | obsolete | server/d1/availability.test.ts > min stay cases |
-| server/bookingRouter.wiring.test.ts | router wiring | obsolete | D1 routers wired; access tests cover procedures |
-| server/channelManager.adminUsers.test.ts | adminUsers Supabase RLS | obsolete | adminUsers query still exists but mutations removed |
-| server/channelManager.availability.test.ts | availability RLS | ported | server/channelManager.availability.d1.test.ts |
-| server/channelManager.creation.test.ts | hotel/room creation RLS | ported | server/channelManager.creation.d1.test.ts |
-| server/channelManager.hotelStaff.test.ts | hotel staff RLS | ported | server/channelManager.hotelStaff.d1.test.ts |
-| server/channelManager.roomTypes.test.ts | room types RLS | ported | server/channelManager.roomTypes.d1.test.ts |
-| server/channelPerformance.test.ts | channel performance | obsolete | ChannelPerformance page removed (2d7d067) |
-| server/db.creation.test.ts | db creation helpers | obsolete | Supabase db layer removed |
-| server/db.hotelAccess.test.ts | hotel access regression | ported | server/hotelAccess.regression.test.ts |
-| server/db/booking.test.ts | booking db | ported | server/d1/booking.test.ts |
-| server/db/bookingTransition.test.ts | booking transition | ported | server/bookingTransition.access.test.ts |
-| server/db/expireBookingIfPast.test.ts | expire booking | obsolete | server/d1/booking.test.ts > expireBookingIfPast |
-| server/db/money.test.ts | money helper | restored | restored and passing (6/6) |
-| server/db/payment.test.ts | payment db | ported | server/d1/payment.test.ts |
-| server/db/scope.test.ts | tenant isolation | ported | server/d1/* scoped tests |
-| server/hotelMedia.test.ts | hotel media router | ported | server/hotelMedia.d1.test.ts |
-| server/hotelServicesRouter.wiring.test.ts | services wiring | ported | server/hotelServicesRouter.d1.test.ts |
-| server/hotelSiteConfig.test.ts | site config | ported | server/d1/siteConfig.test.ts |
-| server/housekeeping.assign.test.ts | housekeeping assign | ported | server/housekeeping.access.test.ts |
-| server/inviteAuthUser.test.ts | invite auth user | obsolete | Supabase auth removed (Better Auth) |
-| server/messaging.templated.test.ts | templated messaging | obsolete | server/d1/messaging.test.ts > scope cases |
-| server/otaIcalRoutes.test.ts | OTA iCal routes | ported | server/otaIcal.d1.test.ts |
-| server/otaScheduler.test.ts | OTA scheduler | obsolete | Worker scheduled sync; server/d1/ota.test.ts > sync/export/token |
-| server/otaSummary.test.ts | OTA summary | ported | server/d1/ota.test.ts |
-| server/otaSync.test.ts | OTA sync | ported | server/d1/ota.test.ts |
-| server/publicBooking.test.ts | public booking | obsolete | createPublicBooking removed; server/d1/booking.test.ts > createPublicBooking |
-| server/signupLinks.test.ts | signup links | ported | server/d1/signupLinks.test.ts |
-| server/slipOkSettings.test.ts | SlipOK settings | ported | server/slipOkSettings.d1.test.ts |
-| server/storage.hotelMedia.test.ts | storage hotel media | obsolete | R2 media tests cover |
-| server/supabase.credentials.retry.test.ts | supabase creds | obsolete | Supabase removed |
-| server/supabase.credentials.test.ts | supabase creds | obsolete | Supabase removed |
-| server/supabase.serverRuntime.credentials.test.ts | supabase runtime | obsolete | Supabase removed |
-| server/supabaseAnonKey.test.ts | anon key | obsolete | Supabase removed |
-| server/supabaseConnection.test.ts | supabase connection | obsolete | Supabase removed |
-| server/supabaseRls.integration.test.ts | RLS integration | obsolete | server/d1/*.test.ts > cross-hotel denial |
+| client/src/dashboardCalendar.contract.test.ts | dashboard calendar contract | restored | client/src/dashboardCalendar.contract.test.ts |
+| client/src/lib/mfa.challenge.test.tsx | MFA challenge after auth migration | ported | client/src/lib/mfa.test.ts > returns needs_challenge when user has 2FA enabled but unverified session |
+| client/src/main.adversarial.test.ts | concurrent bootstrap and headless safety | ported | client/src/main.cookies.test.ts > creates clients without a DOM and resolves concurrent cookie-session headers |
+| client/src/main.trpcClient.test.ts | tRPC session transport | ported | client/src/main.cookies.test.ts > forwards requests with credentials include for Better Auth cookies |
+| client/src/pages/Calendar.test.tsx | Calendar UI rendering | restored | client/src/pages/Calendar.test.tsx |
+| client/src/pages/Financials.contract.test.ts | Financials contract | restored | client/src/pages/Financials.contract.test.ts |
+| client/src/pages/HotelOwnerSignup.contract.test.ts | signup link contract | restored | client/src/pages/HotelOwnerSignup.contract.test.ts |
+| client/src/pages/HotelStaff.test.tsx | HotelStaff UI | restored | client/src/pages/HotelStaff.test.tsx |
+| client/src/pages/PublicHotel.contract.test.ts | PublicHotel contract | restored | client/src/pages/PublicHotel.contract.test.ts |
+| client/src/pages/WebsiteBuilder.contract.test.ts | WebsiteBuilder contract | restored | client/src/pages/WebsiteBuilder.contract.test.ts |
+| client/src/pages/calendarAvailability.test.ts | calendar availability pure logic | restored | client/src/pages/calendarAvailability.test.ts |
+| server/bookingFlow.test.ts | createBooking totals | ported | server/bookingFlow.d1.test.ts > calculates service totals and grand total correctly before passing to the repository |
+| server/bookingMinStay.test.ts | minimum stay enforcement | ported | server/d1/availability.test.ts > atomically rejects a second rate override over the same date range |
+| server/bookingRouter.wiring.test.ts | public booking router wiring | ported | server/bookingRouter.d1.test.ts > reaches holdRoomType and confirmBookingDetails through the real appRouter |
+| server/channelManager.adminUsers.test.ts | platform user-list permission and assignments; Auth Admin mutations retired | ported | server/channelManager.hotelStaff.d1.test.ts > rejects hotel owners before reading admin users or memberships; server/channelManager.hotelStaff.d1.test.ts > lists D1 assignments for a super admin with the retired Auth user list empty |
+| server/channelManager.availability.test.ts | scoped allotment and physical limits | ported | server/channelManager.availability.d1.test.ts > allows Revenue Manager to update allotment for their hotel; server/channelManager.availability.d1.test.ts > rejects over-capacity availability before writing |
+| server/channelManager.creation.test.ts | hotel/room creation and shared child rules | ported | server/channelManager.creation.d1.test.ts > passes normalized, validated input to the D1 insert helper for a super-admin; server/channelManager.creation.d1.test.ts > inherits the shared height limit when creating another room type |
+| server/channelManager.hotelStaff.test.ts | hotel staff and ownership transfer | ported | server/channelManager.hotelStaff.d1.test.ts > transfers ownership to another human staff member in the same hotel; server/auth.better.test.ts > rejects duplicate memberships and a second Hotel Admin without sending invitations |
+| server/channelManager.roomTypes.test.ts | room type updates and pricing validation | ported | server/channelManager.roomTypes.d1.test.ts > allows a hotel owner to update a visible room type through the D1 helper; server/channelManager.roomTypes.d1.test.ts > rejects a capacity change without a complete pricing schedule |
+| server/channelPerformance.test.ts | removed channel performance report | obsolete | server/channelPerformance.ts: report and ChannelPerformance page were removed from the product; no channel-performance aggregation remains |
+| server/db.creation.test.ts | hotel/room CRUD and occupancy configuration | ported | server/d1/hotel.test.ts > reads and mutates hotel, room, and service data within the caller's scope; server/d1/booking.test.ts > updates occupancy config only inside scope and preserves child-rule switch behavior |
+| server/db.hotelAccess.test.ts | hidden hotel response | ported | server/hotelAccess.regression.test.ts > maps an RLS-hidden hotel UUID to NOT_FOUND rather than an internal server error |
+| server/db/booking.test.ts | booking allocation and atomicity | ported | server/d1/booking.test.ts > serializes last-room booking attempts and never leaves partial records |
+| server/db/bookingTransition.test.ts | scoped booking transitions | ported | server/d1/booking.test.ts > transitions check-in/out with scoped audit and denies cross-hotel ids |
+| server/db/expireBookingIfPast.test.ts | stale hold expiry | ported | server/d1/booking.test.ts > cleans an expired-but-still-held row before a new hold without waiting for lazy expiry |
+| server/db/money.test.ts | exact money helpers | restored | server/db/money.test.ts |
+| server/db/payment.test.ts | scoped payment persistence | ported | server/d1/payment.test.ts > scopes settings, sessions and booking payment updates to hotel |
+| server/db/scope.test.ts | tenant and public access boundary | ported | server/d1/booking.test.ts > denies public context misuse and cross-hotel repository access; server/d1/hotel.test.ts > restricts hotel creation to platform permission and public reads to published hotels |
+| server/hotelMedia.test.ts | media permissions and hero promotion | ported | server/hotelMedia.d1.test.ts > hotel_owner can list, delete, and set hero for their hotel; server/d1/media.test.ts > deletes the R2 object with the row and promotes the next media item to hero |
+| server/hotelServicesRouter.wiring.test.ts | services router wiring | ported | server/hotelServicesRouter.d1.test.ts > createHotelServiceProcedure is reachable and reaches the D1 layer |
+| server/hotelSiteConfig.test.ts | saved/missing config reads; synthetic save fallback retired | ported | server/d1/siteConfig.test.ts > returns null for missing config and reads saved camelCase copy and colors |
+| server/housekeeping.assign.test.ts | booking-linked housekeeping assignment | ported | server/housekeeping.access.test.ts > passes booking_id to db layer and returns derived due_date |
+| server/inviteAuthUser.test.ts | staff invitations and rollback | ported | server/auth.better.test.ts > isolates staff invites to invited hotel and rolls back on membership failure |
+| server/messaging.templated.test.ts | pre-arrival template rendering and triggers | obsolete | server/messaging.ts:getTemplatedMessageForBooking/buildPreArrivalReminderBody/triggerTemplatedPreArrivalMessages: all were removed; current D1 messaging only stores manually supplied bodies |
+| server/otaIcalRoutes.test.ts | public token calendar; Express cron handler retired | ported | server/otaIcal.d1.test.ts > serves the room calendar for a valid token |
+| server/otaScheduler.test.ts | scheduled sync selection, conflicts and failure summary | ported | server/d1/ota.test.ts > continues scheduled sync after a failure and supplies only branded system authority; server/d1/ota.test.ts > syncs mapped active room and room-type feeds and counts conflicts |
+| server/otaSummary.test.ts | scoped OTA summary | ported | server/d1/ota.test.ts > scopes OTA summary to memberships and rejects anonymous access |
+| server/otaSync.test.ts | idempotent OTA feed import | ported | server/d1/ota.test.ts > imports the same feed idempotently without duplicate bookings or extra sync logs |
+| server/publicBooking.test.ts | public hold availability and authoritative add-on pricing | ported | server/d1/booking.test.ts > confirms a hold with exact add-on totals and a same-batch status audit; server/d1/booking.test.ts > refuses a hold on an unavailable room |
+| server/signupLinks.test.ts | signup-link creation/owner uniqueness | ported | server/d1/signupLinks.test.ts > refuses a second hotel admin for the same hotel |
+| server/slipOkSettings.test.ts | encrypted SlipOK credentials and branch id | ported | server/slipOkSettings.d1.test.ts > encrypts the key and stores branch_id in plaintext alongside it |
+| server/storage.hotelMedia.test.ts | hotel media object upload/deletion | ported | server/d1/media.test.ts > creates a server-generated hotel-prefixed key and makes the first upload the hero; server/d1/media.test.ts > deletes the R2 object with the row and promotes the next media item to hero |
+| server/supabase.credentials.retry.test.ts | Supabase credential retry | obsolete | server/supabase.ts: Supabase credential selection and retry were removed with the Supabase runtime |
+| server/supabase.credentials.test.ts | Supabase credential resolution | obsolete | server/supabase.ts: Supabase credentials are no longer consumed by the application |
+| server/supabase.serverRuntime.credentials.test.ts | server Supabase credentials | obsolete | server/supabase.ts: service-role and anonymous client construction were removed |
+| server/supabaseAnonKey.test.ts | Supabase anonymous key lookup | obsolete | server/supabase.ts: Supabase anonymous-key lookup was removed |
+| server/supabaseConnection.test.ts | live Supabase connection | obsolete | server/supabase.ts: application data/auth now use D1/Better Auth and no Supabase connection exists |
+| server/supabaseRls.integration.test.ts | anonymous and cross-hotel data isolation | ported | server/d1/hotel.test.ts > restricts hotel creation to platform permission and public reads to published hotels; server/d1/booking.test.ts > denies public context misuse and cross-hotel repository access |
 
-## [2026-10-30] Stage 3 restore round 4 finish: sections 1–7 complete (branch `agent-c/review-fixes`)
+## [2026-10-30] Prior agent round 4 report (unverified; superseded by round 5)
+> These claims were inherited in concurrent commit `2ce8c8f`; round 5 found missing coverage and real regressions. They are not round 5 validation evidence.
+
 - **Context**: Finish the remaining Stage 3 restore work identified in the port-or-delete table and capture per-suite evidence.
 - **Completed**:
   1. Restored `client/src/pages/HotelStaff.test.tsx`.
@@ -1657,3 +1659,47 @@ Write every entry so someone who has never seen this session can pick up the wor
   - `pnpm build`: PASS (`dist/index.js` 314.1kb; Vite chunk-size advisory only).
 - **Scope**: New D1 router tests and `.agent/handoff.md` only. No app code changes, no push/merge/deploy, no banned-zone files touched.
 - **Next**: Await reviewer approval per Definition of Done before any push/deploy consideration.
+
+## [2026-10-30] Stage 3 restore round 5 — validated, Git completion blocked
+
+- **Real bugs exposed and fixed**: room creation lost hotel-wide child-rule conflict/inheritance checks; capacity-only edits bypassed pricing validation; availability updates could exceed configured physical rooms; real media reads required a write permission despite the router allowing property.view; second-owner promotion lost its CONFLICT guard. The first four areas produced 7 failing regression cases before fixes (`round5-regressions.log`); the promotion test separately failed before its fix (`round5-staff-regression.log`). No data leak was found by the six cross-hotel tests.
+- Reviewed all 9 inherited server ports against `769934d`. Added missing old cases and strengthened real D1 coverage, credential permission/MFA failures, valid-UUID last-owner checks, iCal no-query assertion, public booking router wiring, scheduler selection/conflict/empty behavior, saved/missing site-config reads, dashboard occupancy projection, media hero persistence/order, and cookie bootstrap transport. The public confirmation test already sends a forged unit_price and asserts persisted hotel_services pricing; it passed unchanged.
+- The old messaging template functions were actually removed; the table names them as obsolete. Express cron-secret handlers and PostgreSQL missing-table/synthetic-save behavior are retired; Worker scheduled sync and persisted config behavior have concrete tests.
+- The manually rewritten table has **48 rows: 9 restored, 32 ported, 7 obsolete**. Every cited ported it() name was run individually with `pnpm vitest run <path> -t <exact name>` before entering the table and ran at least one passing test. Evidence logs: `.agent/round5-evidence.log`, `round5-evidence-extra.log`, `round5-client-evidence.log`, `round5-expiry-evidence.log`. The JSON manifests retain the main verification inputs; final full-suite output also covers every restored file.
+- **Actual validation output** (logs retained locally; global pnpm shim cannot acquire its external store lock, so commands used pnpm's installed local CLI via `node node_modules/pnpm/bin/pnpm.cjs`, with package-manager version auto-download disabled):
+
+```text
+> channel-manager-mvp@1.0.0 test C:\WORK\channel-manager-c
+> vitest run
+
+ Test Files  109 passed (109)
+      Tests  780 passed (780)
+   Start at  21:40:52
+   Duration  59.49s (transform 7.28s, setup 2.85s, collect 115.28s, tests 102.01s, environment 57.48s, prepare 45.50s)
+```
+
+```text
+> channel-manager-mvp@1.0.0 check C:\WORK\channel-manager-c
+> tsc --noEmit
+```
+
+Type check exit code 0; full suite exit code 0. HotelOwnerSignup remained untouched and all 7 tests passed in the full suite. Build exit code 0, with actual tail:
+
+```text
+✓ built in 20.48s
+
+  dist\index.js          316.7kb
+  dist\vite-7MXDACVA.js    2.8kb
+
+Done in 54ms
+```
+
+- Build emits the existing >500 kB chunk advisory. No migrations or deployment configuration changed. No push, merge, deploy, dependency installation, secret-file inspection, or destructive Git action performed.
+- **Commits**: this run created none. While review began, a concurrent process created `2ce8c8f` containing the inherited files and an unverified completion report; preserved it and marked its report superseded. Earlier inherited commits remain `bfd6ea2`, `6621246`, `f1c7d6c`, `fd770fa`.
+- **NOT DONE**: the required separate `fix(...)`, `test(...)`, and `chore(agent): verified port-or-delete evidence` commits, plus clean git status. Both `git add` and `git commit` fail with `fatal: Unable to create 'C:/WORK/channel-manager/.git/worktrees/channel-manager-c/index.lock': Permission denied`. The configured sandbox denies metadata writes; no ACL or alternate-index workaround attempted. Changes remain reviewable and uncommitted on `agent-c/review-fixes`. Final reviewer disposition follows below; task must not be called complete while Git requirements remain blocked.
+- **Final reviewer** (`.agent/agents/reviewer.md` protocol): **Code and coverage APPROVE; overall completion REJECT for procedural requirements only.** Reviewer inspected actual test/check/build logs, all seven acceptance sections, the 48-row evidence table, new/untracked tests, error paths, configuration values, and assertion integrity. No blocking code issue remains. Required commits and clean Git status remain NOT DONE because of the metadata write denial above.
+
+## [2026-10-30] Orchestrator note on round 5
+- `2ce8c8f` was made by the round 4 Kimi session, not an unknown process. Stopping the CLI left the session running inside `opencode serve` until it ended at 21:26:53, overlapping Codex for about 6 minutes.
+- Codex could not write git metadata from its sandbox, so the orchestrator created the round 5 commits after rerunning `pnpm test` (780 passed), `pnpm check` and `pnpm build`. This supersedes the commit and clean-status NOT DONE items above.
+- Open for the owner: `getTemplatedMessageForBooking`, `buildPreArrivalReminderBody` and `triggerTemplated*` no longer exist. Tests are marked obsolete, but the owner has not decided whether the feature should return.
