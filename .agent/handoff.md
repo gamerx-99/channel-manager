@@ -1562,3 +1562,17 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Verification**: `shared/authorization.test.ts` 8/8 pass; `client/src/lib/routeScope.test.ts` 9/9 pass. `pnpm check` adds 0 new TS errors (81 pre-existing Stage C client snake_case/camelCase errors in PublicHotel.tsx/WebsiteBuilder.tsx/AdminUsers.tsx, unrelated to this change).
 - **Commits**: `fix(authz): grant admin cross-hotel read-only permissions` (only `shared/authorization.ts`, one concern).
 - **Next**: Continue Stage 3 test cleanup for the remaining ~95 failing tests (channelManager.*, access tests, wiring tests, contract tests) plus client field-name alignment (Stage C).
+## [2026-10-30] Stage 3 finish — client alignment, tests, supabase removal (branch `agent-c/review-fixes`)
+
+- **Commits**:
+  - `d7ad15f fix(client): align pages with D1 camelCase`
+  - `700fd80 test: port access tests to D1 and remove obsolete Supabase tests`
+  - `8b81527 fix(server): remove Supabase imports from financials and index bootstrap`
+  - `dce626c chore(deps): drop supabase-js`
+- **Before/after**: tests 94 failing -> 0 failing (605 passed). pnpm check 0 errors. pnpm build passes.
+- **noSupabase guard**: allowlist empty, passes.
+- **port-or-delete table**: Ported financials.access, paymentRouter.manualVerify.access, bookingTransition.access, hotelAccess.regression, housekeeping.access, messaging.access, platformAdmin.access, rateOverrides.access, routers.rethrowDomainError, d1/booking export list. Deleted obsolete Supabase-shaped tests (see commit).
+- **Remaining failures**: none except environment-only (R2 network log in hotel_media test).
+- **Banned-zone**: api/index.ts, server/_core/index.ts, vercel.json, 13-08 pipeline NOT deleted; server/_core/index.ts edited only to remove deleted route registrations.
+- **Admin scope**: admin = platform.view_all_hotels only; no hotel-data route (per 2d7d067).
+- **Definition of Done**: pnpm test 605 passed, pnpm check 0 errors, pnpm build passes, noSupabase guard empty allowlist.
