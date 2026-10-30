@@ -1,15 +1,20 @@
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
 import React, { useState } from "react";
-import { hasAnyPermission, isPlatformRole, type AppRole, type Permission } from "@shared/authorization";
+import { hasAnyPermission, isPlatformRole, type AppRole, type Permission, type PermissionMembership } from "@shared/authorization";
 import { Sidebar } from "./Sidebar";
+import { useHotel } from "../../contexts/HotelContext";
+import { SupportAccessBanner } from "../SupportAccessBanner";
 import { Topbar } from "./Topbar";
 
-export function AppShell({ children, userName, userEmail, onLogout, roles }: { children: React.ReactNode; userName: string; userEmail: string | null; onLogout: () => void; roles: readonly AppRole[] }) {
+export function AppShell({ children, userName, userEmail, onLogout, roles, memberships = [] }: { children: React.ReactNode; userName: string; userEmail: string | null; onLogout: () => void; roles: readonly AppRole[]; memberships?: readonly (PermissionMembership & { expiresAt?: Date | string; mode?: "view" | "edit" })[] }) {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const can = (permission: Permission) => hasAnyPermission(roles, permission);
+  const { selectedHotelId } = useHotel();
+  const can = (permission: Permission) => permission.startsWith("platform.")
+    ? hasAnyPermission(roles, permission)
+    : (permission !== "property.view_financials" || hasAnyPermission(roles, permission)) && !roles.includes("super_admin") && memberships.some(m => m.hotelId === selectedHotelId && (!m.expiresAt || new Date(m.expiresAt).getTime() > Date.now()) && m.permissions?.includes(permission));
   const isSuperAdmin = roles.includes("super_admin");
   const isPlatformAdmin = roles.some(role => isPlatformRole(role));
   const initials = userName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "U";
@@ -51,6 +56,7 @@ export function AppShell({ children, userName, userEmail, onLogout, roles }: { c
           onToggleUserMenu={() => { setUserMenuOpen(prev => !prev); setAddMenuOpen(false); setWorkspaceMenuOpen(false); }}
           onCloseUserMenu={() => setUserMenuOpen(false)}
         />
+        <SupportAccessBanner memberships={memberships} />
         <div className="page-wrap">{children}</div>
       </main>
     </div>

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getFirstVisibleHotelId, getRequiredRoutePermission, getRouteScopeDecision } from "./routeScope";
 
 describe("route scope", () => {
-  it("allows super admins to access platform and every hotel route", () => {
+  it("allows super admins to access platform routes and denies hotel data routes", () => {
     expect(getRouteScopeDecision({
       role: "super_admin",
       pathname: "/settings/admin-users",
@@ -13,7 +13,7 @@ describe("route scope", () => {
       role: "super_admin",
       pathname: "/hotels/other-hotel/bookings",
       visibleHotelIds: [],
-    })).toEqual({ allowed: true });
+    })).toEqual({ allowed: false, reason: "permission_required" });
   });
 
   it("gives the read-only platform admin cross-hotel reads but no write surfaces", () => {

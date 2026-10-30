@@ -55,7 +55,7 @@ const mocks = vi.hoisted(() => {
     createSignupLink: { isPending: false, mutate: vi.fn() },
   };
 
-  const authMeQuery = { data: { role: "hotel_owner" as const }, isLoading: false, error: null as { message: string } | null };
+  const authMeQuery = { data: { id: "owner-1", role: "hotel_owner" as const, memberships: [{ hotelId: "hotel-1", role: "hotel_owner" as const, permissions: ["property.transfer_ownership"] }] }, isLoading: false, error: null as { message: string } | null };
   const signupLinksQuery = { data: [] as Array<{ id: string; token: string; status: string }>, isLoading: false, error: null as { message: string } | null, refetch: vi.fn() };
 
   return {
@@ -128,7 +128,7 @@ beforeEach(() => {
   mocks.mutations.remove.mutate.mockReset();
   mocks.mutations.transfer.mutate.mockReset();
   mocks.mutations.createSignupLink.mutate.mockReset();
-  mocks.authMeQuery.data = { role: "hotel_owner" };
+  mocks.authMeQuery.data = { id: "owner-1", role: "hotel_owner", memberships: [{ hotelId: "hotel-1", role: "hotel_owner", permissions: ["property.transfer_ownership"] }] };
   mocks.signupLinksQuery.data = [];
 });
 

@@ -1,10 +1,11 @@
+import { StaffPermissionToggles } from "@/components/StaffPermissionToggles";
 import { FormEvent, useMemo, useState } from "react";
 import React from "react";
 import { Link } from "wouter";
 import { ArrowRightLeft, Check, Copy, Link2, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
-import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
+import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AppRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
 
 type HotelStaffProps = { id: string };
@@ -59,6 +60,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: authMe } = trpc.auth.me.useQuery();
+  const actorMembership = authMe?.memberships?.find(m => m.hotelId === hotelId);
   const isSuperAdmin = authMe?.role === "super_admin";
   const staffQuery = trpc.channelManager.hotelStaff.useQuery(
     { hotel_id: hotelId },
@@ -147,6 +149,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const hotelAdminAlreadyAssigned = Boolean(currentHotelAdmin);
   const auditUserLabel = (userId: string) => staff.find(member => member.user_id === userId)?.email ?? userId;
   const transferCandidates = staff.filter(member => member.role !== "hotel_owner" && !isPlatformRole(member.role));
+  const canTransferOwnership = actorMembership?.permissions?.includes("property.transfer_ownership") ?? false;
   const hotelAdminRestrictionText = t("hotelStaff.hotelAdminRestrictionText");
 
   async function copyGeneratedLink() {
@@ -282,7 +285,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
             <div><span className="strip-label">{t("hotelStaff.summaryHotelStaff")}</span><strong>{staff.length}</strong></div>
             <div><span className="strip-label">{t("hotelStaff.summaryActiveAccounts")}</span><strong>{activeStaffCount}</strong></div>
             <div className="strip-caption"><ShieldCheck size={16} /> {t("hotelStaff.summaryCaption")}</div>
-            {currentHotelAdmin && transferCandidates.length > 0 && (
+            {canTransferOwnership && currentHotelAdmin && transferCandidates.length > 0 && (
               <button
                 className="button button-quiet button-small"
                 type="button"
@@ -308,7 +311,14 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                     <tr><td colSpan={5}><div className="table-empty"><Users size={18} /><strong>{t("hotelStaff.noStaffYetTitle")}</strong><span>{t("hotelStaff.noStaffYetDesc")}</span></div></td></tr>
                   ) : staff.map(member => (
                     <tr key={member.id}>
-                      <td><strong>{member.email ?? t("hotelStaff.noEmail")}</strong><small>{member.user_id}</small></td>
+                      <td><strong>{member.email ?? t("hotelStaff.noEmail")}</strong><small>{member.user_id}</small>
+                        {member.permissions && actorMembership && authMe && <StaffPermissionToggles
+                          hotelId={hotelId}
+                          target={{ userId: member.user_id, role: member.role as AppRole, permissions: member.permissions }}
+                          actor={{ userId: authMe.id, role: actorMembership.role, permissions: actorMembership.permissions ?? [] }}
+                          onSaved={async () => { await Promise.all([staffQuery.refetch(), utils.auth.me.invalidate()]); }}
+                        />}
+                      </td>
                       <td>
                         <TooltipProvider>
                           <Tooltip>

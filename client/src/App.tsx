@@ -1,3 +1,5 @@
+import { trpc } from "./lib/trpc";
+import { hasAnyPermission } from "@shared/authorization";
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
 import { Route, Switch, useLocation } from "wouter";
 import React, { useEffect } from "react";
@@ -22,6 +24,8 @@ import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
+import SupportAccess from "./pages/SupportAccess";
+import PlatformOverview from "./pages/PlatformOverview";
 import HotelStaff from "./pages/HotelStaff";
 import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
@@ -52,8 +56,12 @@ function Router() {
       {communicationsEnabled && <Route path="/communications">
         <PrivateRoute><Communications /></PrivateRoute>
       </Route>}
+      <Route path="/platform"><PrivateRoute><PlatformOverview /></PrivateRoute></Route>
+      <Route path="/hotels/:id/support-access">
+        {(params) => <PrivateRoute><SupportAccess hotelId={params.id} /></PrivateRoute>}
+      </Route>
       <Route path="/dashboard">
-        <PrivateRoute><Dashboard /></PrivateRoute>
+        <PrivateRoute><DashboardEntry /></PrivateRoute>
       </Route>
       <Route path="/hotels">
         <PrivateRoute><Hotels /></PrivateRoute>
@@ -92,6 +100,11 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+function DashboardEntry() {
+  const { data: me } = trpc.auth.me.useQuery();
+  return hasAnyPermission(me?.roles ?? [], "platform.view_system_logs") ? <PlatformOverview /> : <Dashboard />;
 }
 
 function RedirectToDashboard() {
