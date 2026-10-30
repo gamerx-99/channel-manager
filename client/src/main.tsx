@@ -24,7 +24,6 @@ queryClient.getMutationCache().subscribe(event => {
 
 /**
  * Resolves request headers for tRPC client.
- * Null-safe when VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are missing.
  * Better Auth session cookies are transmitted automatically via credentials: "include".
  */
 export async function getTrpcHeaders(): Promise<Record<string, string>> {

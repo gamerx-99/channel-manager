@@ -19,7 +19,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     isError: hotelsError,
   } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user) });
 
-  // Derives MFA requirement from Better Auth session / tRPC authMe without raw Supabase calls.
+  // Derives MFA requirement from Better Auth session / tRPC authMe.
   const twoFactorEnabled = Boolean(authMe?.twoFactorEnabled);
   const needsMfaEnroll = Boolean(
     isAuthenticated &&

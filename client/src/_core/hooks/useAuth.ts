@@ -18,9 +18,6 @@ export type LogoutResult = {
   clearUser: boolean;
 };
 
-/** Compatibility alias for legacy consumers */
-export type SupabaseLogoutResult = LogoutResult;
-
 /**
  * Revokes the current session via Better Auth client.
  */
@@ -45,10 +42,7 @@ export async function signOutCurrentSession(): Promise<LogoutResult> {
   }
 }
 
-/**
- * Backward compatibility alias for existing consumers and test suites.
- */
-export const signOutCurrentSupabaseSession = signOutCurrentSession;
+
 
 function toAppUser(user: {
   id: string;

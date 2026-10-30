@@ -180,7 +180,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           <p className="dashboard-calendar-subtitle">ดูห้องว่าง การจองที่ใช้ห้อง และสัญญาณการซิงก์ iCal ในมุมมองเดียว</p>
         </div>
         <div className="dashboard-calendar-heading-actions">
-          <span className="calendar-live-status"><i /> Live RLS data</span>
+          <span className="calendar-live-status"><i /> Live query</span>
           <button className="icon-button" type="button" onClick={retry} disabled={calendarQuery.isFetching} aria-label="Refresh operations calendar" title="Refresh calendar">
             <RefreshCw size={16} className={calendarQuery.isFetching ? 'animate-spin' : ''} />
           </button>
@@ -260,7 +260,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           })}</div> : <p className="dashboard-calendar-empty-sync">ไม่มี room type สำหรับแก้ไขในวันนี้</p>}
         </div>
       </div>
-      <div className="calendar-footer"><span>Availability and sync markers are limited to properties visible under Supabase RLS.</span><span className="signal-text"><i /> {calendarQuery.data.generatedAt ? `Updated ${formatSyncTime(calendarQuery.data.generatedAt)}` : 'Live query'}</span></div>
+      <div className="calendar-footer"><span>Availability and sync markers are limited to properties you can access.</span><span className="signal-text"><i /> {calendarQuery.data.generatedAt ? `Updated ${formatSyncTime(calendarQuery.data.generatedAt)}` : 'Live query'}</span></div>
     </section>
   );
 }

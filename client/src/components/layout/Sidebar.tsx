@@ -232,7 +232,7 @@ export function Sidebar({
           <div className="user-avatar">{initials}</div>
           <div>
             <strong>{userName}</strong>
-            <span>{userEmail ?? t("sidebar.supabaseUser")}</span>
+            <span>{userEmail ?? t("sidebar.hotelUser")}</span>
           </div>
           <button
             className="icon-button"

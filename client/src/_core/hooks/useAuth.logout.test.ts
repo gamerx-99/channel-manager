@@ -8,9 +8,9 @@ vi.mock('@/lib/auth-client', () => ({
   },
 }));
 
-import { signOutCurrentSession, signOutCurrentSupabaseSession } from './useAuth';
+import { signOutCurrentSession } from './useAuth';
 
-describe('signOutCurrentSession & signOutCurrentSupabaseSession', () => {
+describe('signOutCurrentSession', () => {
   beforeEach(() => {
     signOut.mockReset();
   });
@@ -19,7 +19,7 @@ describe('signOutCurrentSession & signOutCurrentSupabaseSession', () => {
     signOut.mockResolvedValue({ error: null });
 
     await expect(signOutCurrentSession()).resolves.toEqual({ error: null, clearUser: true });
-    await expect(signOutCurrentSupabaseSession()).resolves.toEqual({ error: null, clearUser: true });
+    await expect(signOutCurrentSession()).resolves.toEqual({ error: null, clearUser: true });
     expect(signOut).toHaveBeenCalledTimes(2);
   });
 

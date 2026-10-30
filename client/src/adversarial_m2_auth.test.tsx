@@ -83,7 +83,6 @@ vi.mock("./components/layout/AppShell", () => ({
 // Components under test
 import {
   signOutCurrentSession,
-  signOutCurrentSupabaseSession,
   useAuth,
 } from "./_core/hooks/useAuth";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
@@ -203,13 +202,13 @@ describe("Empirical Challenge: useAuth Hook & Reactive Session State", () => {
     expect(result.current.user).toBeNull();
   });
 
-  it("signOutCurrentSession and alias signOutCurrentSupabaseSession revoke session and return clearUser flag", async () => {
+  it("signOutCurrentSession revokes session and returns clearUser flag", async () => {
     authClientMocks.signOut.mockResolvedValue({ error: null });
 
     const res1 = await signOutCurrentSession();
     expect(res1).toEqual({ error: null, clearUser: true });
 
-    const res2 = await signOutCurrentSupabaseSession();
+    const res2 = await signOutCurrentSession();
     expect(res2).toEqual({ error: null, clearUser: true });
 
     expect(authClientMocks.signOut).toHaveBeenCalledTimes(2);

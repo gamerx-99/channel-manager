@@ -1703,3 +1703,7 @@ Done in 54ms
 - `2ce8c8f` was made by the round 4 Kimi session, not an unknown process. Stopping the CLI left the session running inside `opencode serve` until it ended at 21:26:53, overlapping Codex for about 6 minutes.
 - Codex could not write git metadata from its sandbox, so the orchestrator created the round 5 commits after rerunning `pnpm test` (780 passed), `pnpm check` and `pnpm build`. This supersedes the commit and clean-status NOT DONE items above.
 - Open for the owner: `getTemplatedMessageForBooking`, `buildPreArrivalReminderBody` and `triggerTemplated*` no longer exist. Tests are marked obsolete, but the owner has not decided whether the feature should return.
+
+## [2026-10-30] Remove Supabase from client text
+- Vibe (Mistral) reworded user-visible text and removed stale aliases; the orchestrator fixed the last two RLS strings and made the commit. Checked: no Supabase left in client/src, renamed i18n keys exist in both languages, 780 tests pass, check and build pass.
+
