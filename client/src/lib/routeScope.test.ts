@@ -27,7 +27,7 @@ describe("route scope", () => {
       role: "admin",
       pathname: "/hotels/hotel-outside-scope/bookings",
       visibleHotelIds: [],
-    })).toEqual({ allowed: true });
+    })).toEqual({ allowed: false, reason: "permission_required" });
 
     expect(getRouteScopeDecision({
       role: "admin",

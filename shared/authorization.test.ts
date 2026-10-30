@@ -50,9 +50,12 @@ describe("seven-role authorization matrix", () => {
 
   it("keeps the platform admin role strictly read-only across every hotel", () => {
     expect(roleHasPermission("admin", "platform.view_all_hotels")).toBe(true);
-    expect(roleHasPermission("admin", "property.view")).toBe(true);
-    expect(roleHasPermission("admin", "operations.view_bookings")).toBe(true);
-    expect(roleHasPermission("admin", "ota.view_sync_logs")).toBe(true);
+    // `admin` is platform-level only (commit 2d7d067 "close admin cross-hotel read"):
+    // it sees the hotel list, never hotel-internal data such as bookings (guest
+    // passport data) or OTA sync logs.
+    expect(roleHasPermission("admin", "property.view")).toBe(false);
+    expect(roleHasPermission("admin", "operations.view_bookings")).toBe(false);
+    expect(roleHasPermission("admin", "ota.view_sync_logs")).toBe(false);
 
     const writeCapability = /^(platform\.manage_|platform\.view_system_logs|property\.manage_|revenue\.|operations\.manage_|operations\.export_|housekeeping\.update_|ota\.manage_|ota\.trigger_|service\.)/;
     expect(ROLE_PERMISSIONS.admin.filter(permission => writeCapability.test(permission))).toEqual([]);
