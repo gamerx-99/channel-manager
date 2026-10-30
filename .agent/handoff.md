@@ -1554,3 +1554,11 @@ Write every entry so someone who has never seen this session can pick up the wor
 - `pnpm vitest run`: Passed 912 tests (0 regressions).
 - `pnpm build`: Production Vite build and esbuild server bundle clean.
 - `pnpm build:worker`: Worker bundling dry-run clean.
+
+
+## [2026-10-30] Stage 3 test cleanup — grant admin cross-hotel read-only permissions (branch `agent-c/review-fixes`, worktree `channel-manager-c`)
+- **Context**: `todo-remaining.md` Stage 3 (ลบ Supabase) code level is done in `channel-manager-c` but ~97 tests fail. Two pure-logic failures trace to `shared/authorization.ts`: `admin` (a platform role meant to be cross-hotel READ only) only had `platform.view_all_hotels`, so it lacked `property.view`, `operations.view_bookings`, and `ota.view_sync_logs`. That broke `shared/authorization.test.ts` ("platform admin strictly read-only") and `client/src/lib/routeScope.test.ts` (admin reading `/hotels/.../bookings` cross-hotel).
+- **What happened**: Added `property.view`, `operations.view_bookings`, `ota.view_sync_logs` to `ROLE_PERMISSIONS.admin` with a comment that these are reads only and all write capabilities remain withheld (writeCapability regex unaffected).
+- **Verification**: `shared/authorization.test.ts` 8/8 pass; `client/src/lib/routeScope.test.ts` 9/9 pass. `pnpm check` adds 0 new TS errors (81 pre-existing Stage C client snake_case/camelCase errors in PublicHotel.tsx/WebsiteBuilder.tsx/AdminUsers.tsx, unrelated to this change).
+- **Commits**: `fix(authz): grant admin cross-hotel read-only permissions` (only `shared/authorization.ts`, one concern).
+- **Next**: Continue Stage 3 test cleanup for the remaining ~95 failing tests (channelManager.*, access tests, wiring tests, contract tests) plus client field-name alignment (Stage C).
