@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import type { D1Database, Fetcher, R2Bucket } from "@cloudflare/workers-types/index.ts";
+import type { D1Database, Fetcher, R2Bucket, RateLimit } from "@cloudflare/workers-types/index.ts";
 import { TRPCError } from "@trpc/server";
 import { drizzle } from "drizzle-orm/d1";
 import { appRouter } from "../server/routers";
@@ -25,6 +25,8 @@ export type WorkerEnv = {
   ASSETS: Fetcher;
   DB: D1Database;
   MEDIA: R2Bucket;
+  /** Optional so environments without the binding keep the older limits only. */
+  PUBLIC_BOOKING_LIMITER?: RateLimit;
 };
 
 type WorkerAppDependencies = {
@@ -154,13 +156,16 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       endpoint: "/api/trpc",
       req: c.req.raw,
       router: appRouter,
-      createContext: () =>
-        requestContext(
+      createContext: async () => ({
+        ...(await requestContext(
           c.req.raw,
           c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
           db,
           c.env?.DB,
-        ),
+        )),
+        publicBookingLimiter: c.env?.PUBLIC_BOOKING_LIMITER,
+        cfConnectingIp: c.req.header("cf-connecting-ip"),
+      }),
     });
   });
 

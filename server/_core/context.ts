@@ -12,6 +12,7 @@ import { getSupportMemberships } from "../d1/supportAccess";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
+import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 
 export type SupabaseMembership = {
   hotelId: string;
@@ -45,6 +46,10 @@ export type TrpcContext = {
   res?: any;
   db?: D1ScopedDatabase;
   session?: unknown;
+  /** PUBLIC_BOOKING_LIMITER binding; set by the Worker only. */
+  publicBookingLimiter?: PublicBookingLimiter;
+  /** CF-Connecting-IP header, the PUBLIC_BOOKING_LIMITER key; set by the Worker only. */
+  cfConnectingIp?: string;
 };
 
 export type CreateContextOptions = {

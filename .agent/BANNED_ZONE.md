@@ -14,7 +14,7 @@ even if a spec seems to imply it's needed.
   new one instead, even to fix a typo in a comment.
 - `pnpm-lock.yaml` — only ever changes as a side effect of an approved dependency
   change, never edited by hand.
-- `wrangler.toml` — deploy-critical: bindings (D1, R2, assets), database
+- `wrangler.toml` — deploy-critical: bindings (D1, R2, assets, rate limits), database
   ids and cron triggers for each environment (bindings are not inherited, so every
   environment repeats them). Any change here needs its own ticket with a
   `pnpm build` (wrangler `--dry-run`) verification step, not a drive-by edit inside an

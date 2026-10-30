@@ -70,6 +70,14 @@ answer noted.
       v1 Phase 1 scope — flagging as a candidate for its own ticket if the human wants
       the two systems reconciled. Raised 2026-09-03.
 
+- [ ] PUBLIC_BOOKING_LIMITER edge cases (2026-10-30, branch `cloud/remove-express`):
+      (1) a request with no CF-Connecting-IP header is not counted by the binding (it
+      cannot have come through Cloudflare's edge) instead of sharing one bucket; (2) if
+      `limit()` throws, the request falls back to the older limits (per-isolate
+      `rateLimitedProcedure` counter + D1 active-holds-per-IP guard) instead of failing.
+      ASSUMPTION: both fail open, see `server/publicBookingRateLimit.ts`. Confirm or ask
+      for fail-closed. Raised 2026-10-30.
+
 ## Resolved
 
 - [x] 13-06a private-network DNS protection. ASSUMPTION (2026-10-28): Cloudflare Workers cannot

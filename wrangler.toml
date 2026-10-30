@@ -24,6 +24,13 @@ migrations_dir = "drizzle/d1"
 binding = "MEDIA"
 bucket_name = "hayhost-media-dev"
 
+# Public booking writes (channelManager.holdRoomType / confirmBookingDetails), keyed by
+# CF-Connecting-IP. Each environment has its own namespace_id so counters never mix.
+[[ratelimits]]
+name = "PUBLIC_BOOKING_LIMITER"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
 [env.staging]
 name = "hayhost-stage"
 workers_dev = true
@@ -42,6 +49,11 @@ migrations_dir = "drizzle/d1"
 [[env.staging.r2_buckets]]
 binding = "MEDIA"
 bucket_name = "hayhost-media-staging"
+
+[[env.staging.ratelimits]]
+name = "PUBLIC_BOOKING_LIMITER"
+namespace_id = "1002"
+simple = { limit = 20, period = 60 }
 
 [env.staging.triggers]
 crons = ["*/15 * * * *"]
@@ -64,6 +76,11 @@ migrations_dir = "drizzle/d1"
 [[env.production.r2_buckets]]
 binding = "MEDIA"
 bucket_name = "hayhost-media"
+
+[[env.production.ratelimits]]
+name = "PUBLIC_BOOKING_LIMITER"
+namespace_id = "1003"
+simple = { limit = 20, period = 60 }
 
 [env.production.triggers]
 crons = ["*/15 * * * *"]
