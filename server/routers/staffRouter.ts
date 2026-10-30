@@ -227,6 +227,9 @@ export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchem
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'The last Hotel Admin cannot be demoted.' });
       }
     }
+    if (input.role === 'hotel_owner' && assignments.some(row => row.hotel_id === input.hotel_id && row.role === 'hotel_owner' && row.id !== membership.id)) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'This hotel already has one Hotel Admin. Transfer the existing Hotel Admin access instead.' });
+    }
     const updated = await updateHotelUserAssignmentRole(ctx.db, caller, {
       membership_id: input.membership_id,
       hotel_id: input.hotel_id,

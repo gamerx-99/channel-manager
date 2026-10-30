@@ -253,6 +253,20 @@ export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mut
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
+    const hotel = await d1GetManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+    if (!hotel) throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
+    const existingRules = new Set(hotel.room_types.map(roomType => roomType.child_rule).filter(Boolean));
+    if (existingRules.size > 1) {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Room types must use one shared child measurement rule before adding another room type.' });
+    }
+    const childRule = input.child_rule ?? hotel.room_types[0]?.child_rule ?? 'age';
+    if (existingRules.size && !existingRules.has(childRule)) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'All room types in a hotel must use the same child measurement rule.' });
+    }
+    const childRuleLimit = input.child_rule_limit ?? hotel.room_types[0]?.child_rule_limit ?? null;
+    if (childRule === 'height' && childRuleLimit == null) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'A child height limit is required for this room type.' });
+    }
     return await d1CreateManagedRoomType(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
       hotel_id: input.hotel_id,
       name: input.name,
@@ -262,8 +276,8 @@ export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mut
       base_occupancy: input.base_occupancy,
       max_occupancy: input.max_occupancy,
       occupancy_pricing: input.occupancy_pricing,
-      child_rule: input.child_rule,
-      child_rule_limit: input.child_rule_limit,
+      child_rule: childRule,
+      child_rule_limit: childRule === 'height' || input.child_rule_limit !== undefined ? childRuleLimit : undefined,
       child_rates: input.child_rates,
       children_count_toward_max: input.children_count_toward_max,
     } as any);
@@ -277,6 +291,12 @@ export const updateRoomType = protectedProcedure.input(updateRoomTypeSchema).mut
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
+    const hotel = await d1GetManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+    const roomType = hotel?.room_types.find(roomType => roomType.id === input.room_type_id);
+    if (!roomType) throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
+    if (input.capacity !== roomType.capacity && (!input.occupancy_pricing || !input.child_rates)) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Occupancy pricing and child rates must be saved together when capacity changes.' });
+    }
     const updated = await d1UpdateManagedRoomType(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
       hotel_id: input.hotel_id,
       room_type_id: input.room_type_id,

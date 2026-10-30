@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../_core/trpc';
 import type { Permission } from '@shared/authorization';
+import { getManagedHotel } from '../d1/hotel';
 import {
   listAvailabilityForHotel,
   listBookingOccupancyForHotel,
@@ -93,6 +94,14 @@ export const updateAvailabilityProcedure = protectedProcedure
     requireHotelPermission(ctx.user, input.hotel_id, permission);
     if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
+      const hotel = await getManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      if (!hotel?.room_types.some(roomType => roomType.id === input.room_type_id)) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Room type not found.' });
+      }
+      const totalRooms = hotel.rooms.filter(room => room.room_type_id === input.room_type_id).length;
+      if (input.rooms_available > totalRooms) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Available rooms cannot exceed the ${totalRooms} rooms configured for this room type.` });
+      }
       return await dbUpdateAvailability(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
         hotelId: input.hotel_id,
         roomTypeId: input.room_type_id,
