@@ -39,8 +39,10 @@ export function isExpired(expiresAt: string | null): boolean {
 
 export function isBookingOccupyingInventory(booking: {
   status: BookingStatus;
-  expires_at: string | null;
+  expires_at?: string | null;
+  expiresAt?: string | null;
 }): boolean {
+  const expiresAt = booking.expires_at ?? booking.expiresAt ?? null;
   if (booking.status === 'confirmed' || booking.status === 'checked_in') {
     return true;
   }
@@ -49,7 +51,7 @@ export function isBookingOccupyingInventory(booking: {
     booking.status === 'pending_payment' ||
     booking.status === 'pending_verification'
   ) {
-    return !isExpired(booking.expires_at);
+    return !isExpired(expiresAt);
   }
   return false;
 }

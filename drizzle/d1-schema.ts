@@ -166,6 +166,7 @@ export const bookings = sqliteTable("bookings", {
   paymentMethod: text("payment_method"),
   latePayment: integer("late_payment", { mode: "boolean" }).notNull().default(false),
   createdBy: text("created_by"),
+  createdIpHash: text("created_ip_hash"),
   adultsCount: integer("adults_count"),
   childrenCount: integer("children_count"),
   marketingConsent: integer("marketing_consent", { mode: "boolean" }).notNull().default(false),

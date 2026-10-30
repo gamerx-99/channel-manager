@@ -35,9 +35,6 @@ import {
   updateHotelStaffRole,
   transferHotelAdmin,
   removeHotelStaff,
-  inviteAdminUser,
-  assignAdminUser,
-  removeAdminMembership,
 } from './routers/staffRouter';
 import {
   availability,
@@ -105,9 +102,6 @@ export const appRouter = router({
     transferHotelAdmin,
     removeHotelStaff,
     adminHotels,
-    inviteAdminUser,
-    assignAdminUser,
-    removeAdminMembership,
     createHotel,
     hotel,
     createRoomType,

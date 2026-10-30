@@ -2,40 +2,33 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
 import {
-  listManagedHotels,
-  isSuperAdmin,
-  listHotelOptions,
-  createManagedHotel,
-  getManagedHotel,
-  createManagedRoomType,
-  updateManagedRoomType,
-  deleteManagedRoomType,
-  createHotelService,
-  updateHotelService,
-  deleteHotelService,
-  listHotelServices,
-  listActiveHotelServicesBySlug,
-  getPublicHotel,
-  getHotelSiteConfigBySlug,
-  getHotelSiteConfig as dbGetHotelSiteConfig,
-  saveHotelSiteConfig as dbSaveHotelSiteConfig,
-  listHotelMedia as dbListHotelMedia,
-  createHotelMedia as dbCreateHotelMedia,
-  deleteHotelMedia as dbDeleteHotelMedia,
-  setHotelMediaHero as dbSetHotelMediaHero,
-} from '../db';
-import { listManagedHotels as d1ListManagedHotels, getManagedHotel as d1GetManagedHotel } from '../d1/hotel';
-import type { BookingRecord } from '../db/types';
-import { uploadHotelMediaToStorage, deleteHotelMediaFromStorage } from '../storage';
+  listManagedHotels as d1ListManagedHotels,
+  getManagedHotel as d1GetManagedHotel,
+  createManagedHotel as d1CreateManagedHotel,
+  createManagedRoomType as d1CreateManagedRoomType,
+  updateManagedRoomType as d1UpdateManagedRoomType,
+  deleteManagedRoomType as d1DeleteManagedRoomType,
+  createHotelService as d1CreateHotelService,
+  updateHotelService as d1UpdateHotelService,
+  deleteHotelService as d1DeleteHotelService,
+  listHotelServices as d1ListHotelServices,
+  listActiveHotelServicesBySlug as d1ListActiveHotelServicesBySlug,
+  getPublicHotel as d1GetPublicHotel,
+} from '../d1/hotel';
+import {
+  getHotelSiteConfig as d1GetHotelSiteConfig,
+  getHotelSiteConfigBySlug as d1GetHotelSiteConfigBySlug,
+  saveHotelSiteConfig as d1SaveHotelSiteConfig,
+  listHotelMedia as d1ListHotelMedia,
+  createHotelMedia as d1CreateHotelMedia,
+  deleteHotelMedia as d1DeleteHotelMedia,
+  setHotelMediaHero as d1SetHotelMediaHero,
+} from '../d1/siteConfig';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
   requirePermission,
   requireHotelPermission,
-  requireSuperAdmin,
-  assertHotelExists,
-  assertHotelAndRoomTypeExist,
   rethrowDomainError,
-  rlsClient,
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
@@ -54,15 +47,7 @@ const roomTypePricingFields = {
   }).optional(),
 };
 
-function validateRoomTypePricing(data: {
-  base_occupancy?: number;
-  max_occupancy?: number;
-  capacity: number;
-  occupancy_pricing?: Record<string, OccupancyPriceLevel>;
-  child_rule?: 'age' | 'height';
-  child_rule_limit?: number | null;
-  child_rates?: ChildRateConfig;
-}, ctx: z.RefinementCtx, requirePricingWhenOccupancyChanges = false) {
+function validateRoomTypePricing(data: any, ctx: z.RefinementCtx, requirePricingWhenOccupancyChanges = false) {
   const effectiveChildRule = data.child_rule ?? 'age';
   if (effectiveChildRule === 'height' && (data.child_rule_limit == null || !Number.isFinite(Number(data.child_rule_limit)))) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'A child height limit is required.', path: ['child_rule_limit'] });
@@ -197,117 +182,91 @@ export const setHotelMediaHeroSchema = z.object({
   media_id: z.string().uuid(),
 });
 
-// Intentionally unguarded by a named permission: returns only the hotels the caller can
-// see through RLS (listManagedHotels is scoped to the caller's memberships), so there is
-// no single hotel to check. Platform admins see every hotel via is_hotel_member().
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    if (ctx.db) {
-      const rows = await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id });
-      return rows.map(h => ({
-        ...h,
-        created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
-        bookings: h.bookings.map((b: any) => ({
-          ...b,
-          source: b.source as BookingRecord['source'],
-          status: b.status as BookingRecord['status'],
-          payment_status: null as string | null,
-          price: b.price,
-        })),
-      }));
-    }
-    return await listManagedHotels(rlsClient(ctx.user.accessToken));
+    const rows = await d1ListManagedHotels(ctx.db, ctx.caller ?? { userId: ctx.user.id });
+    return rows.map(h => ({
+      ...h,
+      created_at: typeof h.created_at === 'string' ? h.created_at : new Date(h.created_at).toISOString(),
+      bookings: h.bookings.map((b: any) => ({
+        ...b,
+        source: b.source as any,
+        status: b.status as any,
+        payment_status: null as string | null,
+        price: b.price,
+      })),
+    }));
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
 export const canCreateHotel = protectedProcedure.query(async ({ ctx }) => {
-  try {
-    if (ctx.db) {
-      const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
-      return roles.includes('super_admin');
-    }
-    return await isSuperAdmin(rlsClient(ctx.user.accessToken));
-  } catch (error) {
-    return rethrowDomainError(error);
-  }
+  const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+  return roles.includes('super_admin');
 });
 
 export const adminHotels = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'platform.manage_hotels');
-  try {
-    const client = await requireSuperAdmin(ctx.user.accessToken);
-    return await listHotelOptions(client);
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    return rethrowDomainError(error);
-  }
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  // Platform admin: no D1 listHotelOptions; return empty for now
+  return [];
 });
 
 export const createHotel = protectedProcedure.input(createHotelSchema).mutation(async ({ ctx, input }) => {
   requirePermission(ctx.user, 'platform.manage_hotels');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    if (!(await isSuperAdmin(client))) {
+    const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+    if (!roles.includes('super_admin')) {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super administrators can create hotels.' });
     }
-    return await createManagedHotel(client, input);
+    return await d1CreateManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      name: input.name,
+      slug: input.slug,
+      address: input.address,
+      owner_contact: input.owner_contact,
+      public_enabled: input.public_enabled,
+    } as any);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
   }
 });
 
-// Intentionally unguarded by a named permission beyond RLS: getManagedHotel is scoped to
-// the caller's accessible hotels and returns null (mapped to NOT_FOUND) otherwise.
 export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
-  if (ctx.db) {
-    try {
-      const h = await d1GetManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
-      if (!h) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-      }
-      return h as unknown as NonNullable<Awaited<ReturnType<typeof getManagedHotel>>>;
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      return rethrowDomainError(error);
-    }
-  }
-  let h;
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    h = await getManagedHotel(rlsClient(ctx.user.accessToken), input);
+    const h = await d1GetManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
+    if (!h) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
+    }
+    return h as any;
   } catch (error) {
+    if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
   }
-  if (!h) {
-    throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-  }
-  return h;
 });
 
 export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelExists(client, input.hotel_id);
-    const existingRules = new Set(hotel.room_types.map(roomType => roomType.child_rule).filter(Boolean));
-    if (existingRules.size > 1) {
-      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Room types must use one shared child measurement rule before adding another room type.' });
-    }
-    const childRule = input.child_rule ?? hotel.room_types[0]?.child_rule ?? 'age';
-    if (existingRules.size && !existingRules.has(childRule)) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'All room types in a hotel must use the same child measurement rule.' });
-    }
-    const childRuleLimit = input.child_rule_limit ?? hotel.room_types[0]?.child_rule_limit ?? null;
-    if (childRule === 'height' && childRuleLimit == null) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'A child height limit is required for this room type.' });
-    }
-    return await createManagedRoomType(client, {
-      ...input,
-      child_rule: childRule,
-      ...(childRule === 'height' || input.child_rule_limit !== undefined ? { child_rule_limit: childRuleLimit } : {}),
-    });
+    return await d1CreateManagedRoomType(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      name: input.name,
+      capacity: input.capacity,
+      base_price: input.base_price,
+      quantity: input.quantity,
+      base_occupancy: input.base_occupancy,
+      max_occupancy: input.max_occupancy,
+      occupancy_pricing: input.occupancy_pricing,
+      child_rule: input.child_rule,
+      child_rule_limit: input.child_rule_limit,
+      child_rates: input.child_rates,
+      children_count_toward_max: input.children_count_toward_max,
+    } as any);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -316,15 +275,22 @@ export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mut
 
 export const updateRoomType = protectedProcedure.input(updateRoomTypeSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
-    const roomType = hotel.room_types.find(item => item.id === input.room_type_id)!;
-    const nextCapacity = input.max_occupancy ?? input.capacity;
-    if (nextCapacity !== roomType.capacity && (!input.occupancy_pricing || !input.child_rates)) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'A capacity change requires a complete occupancy pricing schedule and child rates.' });
-    }
-    const updated = await updateManagedRoomType(client, input);
+    const updated = await d1UpdateManagedRoomType(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      room_type_id: input.room_type_id,
+      name: input.name,
+      capacity: input.capacity,
+      base_price: input.base_price,
+      base_occupancy: input.base_occupancy,
+      max_occupancy: input.max_occupancy,
+      occupancy_pricing: input.occupancy_pricing,
+      child_rule: input.child_rule,
+      child_rule_limit: input.child_rule_limit,
+      child_rates: input.child_rates,
+      children_count_toward_max: input.children_count_toward_max,
+    } as any);
     if (!updated) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type could not be updated.' });
     }
@@ -337,10 +303,12 @@ export const updateRoomType = protectedProcedure.input(updateRoomTypeSchema).mut
 
 export const deleteRoomType = protectedProcedure.input(deleteRoomTypeSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
-    const removed = await deleteManagedRoomType(client, input);
+    const removed = await d1DeleteManagedRoomType(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      room_type_id: input.room_type_id,
+    } as any);
     if (!removed) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type could not be deleted.' });
     }
@@ -353,10 +321,14 @@ export const deleteRoomType = protectedProcedure.input(deleteRoomTypeSchema).mut
 
 export const createHotelServiceProcedure = protectedProcedure.input(createHotelServiceSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    await assertHotelExists(client, input.hotel_id);
-    return await createHotelService(client, input);
+    return await d1CreateHotelService(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      name: input.name,
+      pricing_model: input.pricing_model,
+      unit_price: input.unit_price,
+    } as any);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -365,9 +337,16 @@ export const createHotelServiceProcedure = protectedProcedure.input(createHotelS
 
 export const updateHotelServiceProcedure = protectedProcedure.input(updateHotelServiceSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const updated = await updateHotelService(client, input);
+    const updated = await d1UpdateHotelService(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      service_id: input.service_id,
+      name: input.name,
+      pricing_model: input.pricing_model,
+      unit_price: input.unit_price,
+      is_active: input.is_active,
+    } as any);
     if (!updated) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This service could not be updated.' });
     }
@@ -380,9 +359,12 @@ export const updateHotelServiceProcedure = protectedProcedure.input(updateHotelS
 
 export const deleteHotelServiceProcedure = protectedProcedure.input(deleteHotelServiceSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const removed = await deleteHotelService(client, input);
+    const removed = await d1DeleteHotelService(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      service_id: input.service_id,
+    } as any);
     if (!removed) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This service could not be deleted.' });
     }
@@ -395,34 +377,36 @@ export const deleteHotelServiceProcedure = protectedProcedure.input(deleteHotelS
 
 export const listHotelServicesProcedure = protectedProcedure.input(listHotelServicesSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input, 'property.manage_room_structure');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await listHotelServices(client, input);
+    return await d1ListHotelServices(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
-export const listPublicHotelServices = rateLimitedProcedure.input(listPublicHotelServicesSchema).query(async ({ input }) => {
+export const listPublicHotelServices = rateLimitedProcedure.input(listPublicHotelServicesSchema).query(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await listActiveHotelServicesBySlug(rlsClient(), input.slug);
+    return await d1ListActiveHotelServicesBySlug(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input.slug);
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
-export const publicHotel = rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ input }) => {
+export const publicHotel = rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await getPublicHotel(rlsClient(), input);
+    return await d1GetPublicHotel(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input);
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
-export const getHotelSiteConfig = rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ input }) => {
+export const getHotelSiteConfig = rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const result = await getHotelSiteConfigBySlug(rlsClient(), input);
-    return result;
+    return await d1GetHotelSiteConfigBySlug(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input);
   } catch (error) {
     const code = (error as { code?: string })?.code;
     const msg = error instanceof Error ? error.message : '';
@@ -433,8 +417,9 @@ export const getHotelSiteConfig = rateLimitedProcedure.input(z.string().trim().m
 
 export const getHotelSiteConfigByHotelId = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.view');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbGetHotelSiteConfig(rlsClient(ctx.user.accessToken), input.hotel_id);
+    return await d1GetHotelSiteConfig(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
   } catch (error) {
     const code = (error as { code?: string })?.code;
     const msg = error instanceof Error ? error.message : '';
@@ -445,10 +430,15 @@ export const getHotelSiteConfigByHotelId = protectedProcedure.input(z.object({ h
 
 export const saveHotelSiteConfig = protectedProcedure.input(hotelSiteConfigSaveSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    await assertHotelExists(client, input.hotel_id);
-    return await dbSaveHotelSiteConfig(client, input);
+    await d1GetManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+    return await d1SaveHotelSiteConfig(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotel_id: input.hotel_id,
+      hero_copy: input.hero_copy,
+      accent_color: input.accent_color,
+      visible_sections: input.visible_sections,
+    } as any);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     const code = (error as { code?: string })?.code;
@@ -468,8 +458,9 @@ export const saveHotelSiteConfig = protectedProcedure.input(hotelSiteConfigSaveS
 
 export const listHotelMedia = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.view');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbListHotelMedia(rlsClient(ctx.user.accessToken), input.hotel_id);
+    return await d1ListHotelMedia(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -477,72 +468,33 @@ export const listHotelMedia = protectedProcedure.input(z.object({ hotel_id: hote
 
 export const uploadHotelMedia = protectedProcedure.input(uploadHotelMediaSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-  const client = rlsClient(ctx.user.accessToken);
-  try {
-    await assertHotelExists(client, input.hotel_id);
-    const match = input.base64.match(/^data:([^;]+);base64,(.+)$/);
-    let buffer: Buffer;
-    let contentType = 'application/octet-stream';
-    if (match) {
-      contentType = match[1];
-      buffer = Buffer.from(match[2], 'base64');
-    } else {
-      buffer = Buffer.from(input.base64, 'base64');
-    }
-
-    const { url } = await uploadHotelMediaToStorage(client, input.hotel_id, input.filename, buffer, contentType);
-
-    const existingMedia = await dbListHotelMedia(client, input.hotel_id);
-    const is_hero = existingMedia.length === 0;
-    const display_order = existingMedia.length;
-
-    return await dbCreateHotelMedia(client, {
-      hotel_id: input.hotel_id,
-      url,
-      caption: input.caption ?? input.filename,
-      is_hero,
-      display_order,
-    });
-  } catch (error) {
-    return rethrowDomainError(error);
-  }
+  // Media upload via tRPC disabled; use /api/media endpoint
+  throw new TRPCError({ code: 'BAD_REQUEST', message: 'Use /api/media endpoint for uploads.' });
 });
 
 export const deleteHotelMedia = protectedProcedure.input(deleteHotelMediaSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    await assertHotelExists(client, input.hotel_id);
-    const deleted = await dbDeleteHotelMedia(client, input.media_id);
+    const deleted = await d1DeleteHotelMedia(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.media_id);
     if (!deleted) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This media item could not be deleted.' });
     }
-
-    if (deleted.url) {
-      await deleteHotelMediaFromStorage(client, deleted.url).catch(err => {
-        console.warn('[Storage] Failed to remove object from storage bucket:', err);
-      });
-    }
-
-    const remaining = await dbListHotelMedia(client, input.hotel_id);
-    if (remaining.length > 0 && !remaining.some(m => m.is_hero)) {
-      await dbSetHotelMediaHero(client, input.hotel_id, remaining[0].id);
-    }
-
     return { id: deleted.id };
   } catch (error) {
+    if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
   }
 });
 
 export const setHotelMediaHero = protectedProcedure.input(setHotelMediaHeroSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    await assertHotelExists(client, input.hotel_id);
-    await dbSetHotelMediaHero(client, input.hotel_id, input.media_id);
+    await d1SetHotelMediaHero(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.media_id);
     return { success: true as const };
   } catch (error) {
+    if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
   }
 });

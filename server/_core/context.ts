@@ -12,7 +12,6 @@ import { resolveMembershipPermissions } from "@shared/permissions";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
-import { getSupabaseIdentity } from "../supabase";
 
 export type SupabaseMembership = {
   hotelId: string;
@@ -220,20 +219,8 @@ export async function createContextFromRequest(
   }
 
   // Fallback to legacy Supabase identity when db is not provided
-  let legacyUser: SupabaseIdentity | null = null;
-  try {
-    const authHeader = headers.get("authorization");
-    legacyUser = await getSupabaseIdentity(authHeader);
-  } catch (error) {
-    console.error(
-      "[Auth] Unexpected error during getSupabaseIdentity in createContext:",
-      error instanceof Error ? error.message : String(error),
-    );
-    legacyUser = null;
-  }
-
   return {
-    user: legacyUser,
+    user: null,
     clientIp: clientIp || "unknown",
   };
 }

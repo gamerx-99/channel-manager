@@ -16,8 +16,8 @@ import {
   validateHotelMediaObjectKey,
   validateHotelMediaUpload,
 } from "../server/d1/media";
-import { buildIcalExport } from "../server/icalFeed";
-import { loadIcalExport } from "../server/otaIcalRoutes";
+import { getOtaIcalExport } from "../server/d1/ota";
+import { createD1SystemCallerContext } from "../server/db/scope";
 import { createAuth, type AuthInstance } from "../server/auth";
 
 /** Runtime bindings declared in wrangler.toml. */
@@ -301,10 +301,13 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
   app.get("/api/ical/:file", async c => {
     const token = c.req.param("file").replace(/\.ics$/i, "").toLowerCase();
     try {
-      const exportData = await loadIcalExport(token);
-      if (!exportData) return c.text("Calendar not found.", 404);
+      if (!c.env?.DB) return c.text("Calendar not found.", 404);
+      const db = createDatabase(c.env.DB)!;
+      const systemCaller = createD1SystemCallerContext();
+      const ics = await getOtaIcalExport(db, systemCaller, token);
+      if (!ics) return c.text("Calendar not found.", 404);
       return c.body(
-        buildIcalExport({ calendarName: exportData.calendarName, events: exportData.events }),
+        ics,
         200,
         {
           "Content-Type": "text/calendar; charset=utf-8",

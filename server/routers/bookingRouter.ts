@@ -1,23 +1,23 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
+import { eq } from 'drizzle-orm';
+import { rooms } from '../../drizzle/d1-schema';
 import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/pricingModels';
 import { TM30_HEADERS, buildTm30Rows, createTm30Workbook } from '../tm30';
 import {
-  assertBookingMinStay,
-  createBookingWithGuests,
-  getManagedHotel,
-  getPublicHotelAvailability,
+  listBookingsForHotel,
   holdRoomType as dbHoldRoomType,
   confirmBookingDetails as dbConfirmBookingDetails,
-  listBookingsForHotel,
-  transitionBookingStatus as dbTransitionBookingStatus,
-} from '../db';
-import { createSupabaseAdminClient } from '../supabase';
+  getPublicHotelAvailability,
+} from '../d1/booking';
+import { getManagedHotel } from '../d1/hotel';
+import { assertBookingMinStay } from '../d1/availability';
+import { transitionBookingStatus as dbTransitionBookingStatus } from '../d1/bookingService';
+import { createBookingWithGuests } from '../d1/booking';
 import {
   requireHotelPermission,
   rethrowDomainError,
-  rlsClient,
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
@@ -42,20 +42,6 @@ export const publicHotelAvailabilitySchema = z.object({
   path: ['check_out'],
 });
 
-export const createPublicBookingSchema = z.object({
-  slug: z.string().trim().min(1).max(100),
-  room_type_id: z.string().uuid(),
-  check_in: z.string().date(),
-  check_out: z.string().date(),
-  guest_name: z.string().trim().min(1, 'Guest name is required.').max(180),
-  guest_email: z.string().trim().email('Invalid email address.').max(320).optional().or(z.literal('')),
-  guest_phone: z.string().trim().max(50).optional().or(z.literal('')),
-  special_requests: z.string().trim().max(500).optional().or(z.literal('')),
-}).refine(data => data.check_out > data.check_in, {
-  message: 'Check-out date must be later than check-in date.',
-  path: ['check_out'],
-});
-
 export const holdRoomTypeSchema = z.object({
   slug: z.string().trim().min(1).max(100),
   room_type_id: z.string().uuid(),
@@ -69,22 +55,22 @@ export const holdRoomTypeSchema = z.object({
 
 export const confirmBookingDetailsSchema = z.object({
   booking_id: z.string().uuid(),
+  hotel_id: z.string().uuid(),
   guest_name: z.string().trim().min(1, 'Guest name is required.').max(180),
   guest_email: z.string().trim().email('Invalid email address.').max(320).optional().or(z.literal('')),
   guest_phone: z.string().trim().max(50).optional().or(z.literal('')),
   special_requests: z.string().trim().max(500).optional().or(z.literal('')),
   services: z.array(z.object({
-    service_name: z.string().trim().min(1),
-    pricing_model: z.enum(['PER_PERSON_PER_NIGHT', 'PER_NIGHT', 'ONE_TIME']),
-    unit_price: z.number().nonnegative(),
-    quantity: z.number().int().min(1).default(1),
+    hotel_service_id: z.string().uuid(),
+    quantity: z.number().int().min(1).max(50),
   })).default([]),
 });
 
 export const bookings = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input, 'operations.view_bookings');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await listBookingsForHotel(rlsClient(ctx.user.accessToken), input);
+    return await listBookingsForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -100,8 +86,9 @@ export const transitionBookingStatus = protectedProcedure
   .input(transitionBookingStatusSchema)
   .mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_checkin_checkout');
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
-      return await dbTransitionBookingStatus(rlsClient(ctx.user.accessToken), input);
+      return await dbTransitionBookingStatus(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
     } catch (error) {
       return rethrowDomainError(error);
     }
@@ -109,10 +96,11 @@ export const transitionBookingStatus = protectedProcedure
 
 export const exportTm30 = protectedProcedure.input(hotelIdSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input, 'operations.export_tm30');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const bookingList = await listBookingsForHotel(rlsClient(ctx.user.accessToken), input);
-    const rows = buildTm30Rows(bookingList);
-    const workbook = createTm30Workbook(bookingList);
+    const bookingList = await listBookingsForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
+    const rows = buildTm30Rows(bookingList as any);
+    const workbook = createTm30Workbook(bookingList as any);
     return {
       filename: `tm30-${input}-${new Date().toISOString().slice(0, 10)}.xlsx`,
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -126,13 +114,13 @@ export const exportTm30 = protectedProcedure.input(hotelIdSchema).mutation(async
 
 export const previewTm30 = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input, 'operations.export_tm30');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const bookingList = await listBookingsForHotel(rlsClient(ctx.user.accessToken), input);
+    const bookingList = await listBookingsForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
     let rows: string[][] = [];
     try {
-      rows = buildTm30Rows(bookingList);
+      rows = buildTm30Rows(bookingList as any);
     } catch {
-      // If guest rows are incomplete for TM.30, preview returns empty rows with headers so the user can inspect what is missing
       rows = [];
     }
     return {
@@ -183,10 +171,15 @@ export const createBooking = protectedProcedure
     if (input.check_out <= input.check_in) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Check-out must be later than check-in.' });
     }
-    const client = rlsClient(ctx.user.accessToken);
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    const caller = ctx.caller ?? { userId: ctx.user.id };
     try {
-      // Router pre-check: enforce min_stay_nights from rate_overrides before insert.
-      await assertBookingMinStay(client, input.room_id, input.check_in, input.check_out);
+      if (input.room_id) {
+        const [room] = await ctx.db.select({ roomTypeId: rooms.roomTypeId }).from(rooms).where(eq(rooms.id, input.room_id)).limit(1);
+        if (room?.roomTypeId) {
+          await assertBookingMinStay(ctx.db, caller, input.hotel_id, room.roomTypeId, input.check_in, input.check_out);
+        }
+      }
     } catch (error) {
       if (error instanceof TRPCError) throw error;
       return rethrowDomainError(error);
@@ -194,14 +187,14 @@ export const createBooking = protectedProcedure
     try {
       const { guests, services, ...booking } = input;
       const nights = calcNights(input.check_in, input.check_out);
-      
+
       let roomBasePrice = 0;
       if (booking.room_id) {
-        const hotelData = await getManagedHotel(client, booking.hotel_id);
+        const hotelData = await getManagedHotel(ctx.db, caller, booking.hotel_id);
         if (hotelData) {
-          const selectedRoom = hotelData.rooms.find(r => r.id === booking.room_id);
+          const selectedRoom = hotelData.rooms.find((r: any) => r.id === booking.room_id);
           if (selectedRoom) {
-            const roomType = hotelData.room_types.find(rt => rt.id === selectedRoom.room_type_id);
+            const roomType = hotelData.room_types.find((rt: any) => rt.id === selectedRoom.room_type_id);
             if (roomType) {
               roomBasePrice = Number(roomType.base_price);
             }
@@ -211,8 +204,9 @@ export const createBooking = protectedProcedure
       booking.price = calculateGrandTotal(roomBasePrice, nights, services);
 
       return await createBookingWithGuests(
-        client,
-        { ...booking, created_by: ctx.user.id },
+        ctx.db,
+        caller,
+        { ...booking, created_by: ctx.user.id } as any,
         guests.map(guest => ({
           ...guest,
           middle_name: guest.middle_name ?? null,
@@ -229,9 +223,10 @@ export const createBooking = protectedProcedure
     }
   });
 
-export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAvailabilitySchema).query(async ({ input }) => {
+export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAvailabilitySchema).query(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await getPublicHotelAvailability(rlsClient(), input.slug, input.check_in, input.check_out, {
+    return await getPublicHotelAvailability(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input.slug, input.check_in, input.check_out, {
       adults: input.adults,
       children: input.children,
     });
@@ -240,24 +235,43 @@ export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAva
   }
 });
 
-/**
- * DEPRECATED: createPublicBooking bypasses occupancy pricing and guest counts.
- * Use holdRoomType + confirmBookingDetails flow instead.
- * Kept for reference but not exposed in the router.
- */
-// REMOVED (S1): createPublicBooking retired in favour of hold flow.
-
-export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutation(async ({ input }) => {
+export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutation(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  let ipHash: string | null = null;
   try {
-    return await dbHoldRoomType(createSupabaseAdminClient(), input);
+    const ip = ctx.clientIp || 'unknown';
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip));
+    ipHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    ipHash = null;
+  }
+  try {
+    return await dbHoldRoomType(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, {
+      slug: input.slug,
+      room_type_id: input.room_type_id,
+      check_in: input.check_in,
+      check_out: input.check_out,
+      adults: input.adults,
+      children: input.children,
+      createdIpHash: ipHash,
+    });
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
-export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDetailsSchema).mutation(async ({ input }) => {
+export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDetailsSchema).mutation(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbConfirmBookingDetails(createSupabaseAdminClient(), input);
+    return await dbConfirmBookingDetails(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, {
+      booking_id: input.booking_id,
+      hotel_id: input.hotel_id,
+      guest_name: input.guest_name,
+      guest_email: input.guest_email || null,
+      guest_phone: input.guest_phone || null,
+      special_requests: input.special_requests || null,
+      services: input.services,
+    });
   } catch (error) {
     return rethrowDomainError(error);
   }

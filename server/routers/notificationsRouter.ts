@@ -1,33 +1,32 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../_core/trpc';
-import { createSupabaseAdminClient } from '../supabase';
 import {
   listNotifications,
   listAllNotifications,
   markNotificationRead,
   markAllNotificationsRead,
   markSystemNotificationsRead,
-} from '../db';
+} from '../d1/notification';
 import {
   requireHotelPermission,
   rethrowDomainError,
-  rlsClient,
 } from '../routerUtils';
 
 export const notificationsRouter = router({
   list: protectedProcedure
     .input(z.object({ hotelId: z.string().uuid().optional() }))
     .query(async ({ ctx, input }) => {
+      if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
       try {
         if (!input.hotelId) {
-          if (ctx.user.role !== 'super_admin') {
+          if (!ctx.user.roles?.includes('super_admin') && ctx.user.role !== 'super_admin') {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Only Super Admins can fetch all notifications globally.' });
           }
-          return await listAllNotifications(createSupabaseAdminClient());
+          return await listAllNotifications(ctx.db, ctx.caller ?? { userId: ctx.user.id });
         }
         await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-        return await listNotifications(rlsClient(ctx.user.accessToken), input.hotelId);
+        return await listNotifications(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotelId);
       } catch (error) {
         return rethrowDomainError(error);
       }
@@ -35,9 +34,10 @@ export const notificationsRouter = router({
   markRead: protectedProcedure
     .input(z.object({ hotelId: z.string().uuid(), notificationId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
       try {
         await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-        return await markNotificationRead(rlsClient(ctx.user.accessToken), input.notificationId, input.hotelId);
+        return await markNotificationRead(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.notificationId, input.hotelId);
       } catch (error) {
         return rethrowDomainError(error);
       }
@@ -45,14 +45,15 @@ export const notificationsRouter = router({
   markAllRead: protectedProcedure
     .input(z.object({ hotelId: z.string().uuid().optional() }))
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
       try {
         if (!input.hotelId) {
-          if (ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
-          await markSystemNotificationsRead(createSupabaseAdminClient());
+          if (!ctx.user.roles?.includes('super_admin') && ctx.user.role !== 'super_admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          await markSystemNotificationsRead(ctx.db, ctx.caller ?? { userId: ctx.user.id });
           return { success: true };
         }
         await requireHotelPermission(ctx.user, input.hotelId, 'property.view');
-        await markAllNotificationsRead(rlsClient(ctx.user.accessToken), input.hotelId);
+        await markAllNotificationsRead(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotelId);
         return { success: true };
       } catch (error) {
         return rethrowDomainError(error);

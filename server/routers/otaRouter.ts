@@ -8,35 +8,35 @@ import {
   rethrowDomainError,
 } from '../routerUtils';
 import {
-  getOtaConnections,
-  getGlobalOtaSummary,
+  listOtaConnections,
   upsertOtaConnection,
   deleteOtaConnection,
-  getOtaSyncLogs,
-  triggerOtaCalendarSync,
-} from '../otaSync';
+  listOtaSyncLogs,
+  getOtaSummary,
+  triggerOtaCalendarSyncD1,
+} from '../d1/ota';
 import { ICAL_URL_ERROR, isPublicIcalUrl } from '../icalUrl';
 
 export const otaRouter = router({
   summary: protectedProcedure.query(async ({ ctx }) => {
-    requirePermission(ctx.user, 'ota.view_status');
+    if (!ctx.db) throw new Error('D1 database required.');
     try {
-      return await getGlobalOtaSummary(ctx.user.accessToken);
+      return await getOtaSummary(ctx.db, ctx.caller ?? { userId: ctx.user.id });
     } catch (error) {
       return rethrowDomainError(error);
     }
   }),
   listConnections: protectedProcedure.input(z.object({ hotelId: z.string().uuid() })).query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotelId, 'ota.view_status');
+    if (!ctx.db) throw new Error('D1 database required.');
     try {
-      // The export URL is a credential for the room's calendar; only managers see it.
       const includeExportUrl = hasHotelPermission(
         getIdentityRoles(ctx.user),
         ctx.user.memberships ?? [],
         input.hotelId,
         'ota.manage_ical_connection',
       );
-      return await getOtaConnections(ctx.user.accessToken, input.hotelId, { includeExportUrl });
+      return await listOtaConnections(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotelId, { includeExportUrl });
     } catch (error) {
       return rethrowDomainError(error);
     }
@@ -57,23 +57,32 @@ export const otaRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotelId, 'ota.manage_ical_connection');
+      if (!ctx.db) throw new Error('D1 database required.');
       try {
-        return await upsertOtaConnection(
-          ctx.user.accessToken,
+        const includeExportUrl = hasHotelPermission(
+          getIdentityRoles(ctx.user),
+          ctx.user.memberships ?? [],
           input.hotelId,
-          input.provider,
-          input.status,
-          input.icalImportUrl,
-          { roomId: input.roomId, roomTypeId: input.roomTypeId }
+          'ota.manage_ical_connection',
         );
+        return await upsertOtaConnection(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+          hotelId: input.hotelId,
+          provider: input.provider,
+          status: input.status,
+          icalImportUrl: input.icalImportUrl,
+          roomId: input.roomId,
+          roomTypeId: input.roomTypeId,
+          includeExportUrl,
+        });
       } catch (error) {
         return rethrowDomainError(error);
       }
     }),
   listLogs: protectedProcedure.input(z.object({ hotelId: z.string().uuid() })).query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotelId, 'ota.view_sync_logs');
+    if (!ctx.db) throw new Error('D1 database required.');
     try {
-      return await getOtaSyncLogs(ctx.user.accessToken, input.hotelId);
+      return await listOtaSyncLogs(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotelId);
     } catch (error) {
       return rethrowDomainError(error);
     }
@@ -87,8 +96,9 @@ export const otaRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotelId, 'ota.manage_ical_connection');
+      if (!ctx.db) throw new Error('D1 database required.');
       try {
-        await deleteOtaConnection(ctx.user.accessToken, input.hotelId, input.provider);
+        await deleteOtaConnection(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotelId, input.provider);
         return { success: true };
       } catch (error) {
         return rethrowDomainError(error);
@@ -103,8 +113,9 @@ export const otaRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotelId, 'ota.trigger_ical_sync');
+      if (!ctx.db) throw new Error('D1 database required.');
       try {
-        return await triggerOtaCalendarSync(ctx.user.accessToken, input.hotelId, input.provider);
+        return await triggerOtaCalendarSyncD1(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotelId, input.provider);
       } catch (error) {
         return rethrowDomainError(error);
       }
