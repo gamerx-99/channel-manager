@@ -1577,9 +1577,7 @@ Write every entry so someone who has never seen this session can pick up the wor
 - **Admin scope**: admin = platform.view_all_hotels only; no hotel-data route (per 2d7d067).
 - **Definition of Done**: pnpm test 605 passed, pnpm check 0 errors, pnpm build passes, noSupabase guard empty allowlist.
 
-## [2026-10-30] Port-or-delete table
-
-## [2026-10-30] Port-or-delete table (Stage 3 follow-up)
+## [2026-10-30] Port-or-delete table (Stage 3 finish)
 
 | Deleted file | What it tested | Decision | Evidence |
 |---|---|---|---|
@@ -1587,43 +1585,43 @@ Write every entry so someone who has never seen this session can pick up the wor
 | client/src/lib/mfa.challenge.test.tsx | supabase null runtime | obsolete | supabase client removed; main.tsx no longer imports supabase |
 | client/src/main.adversarial.test.ts | trpc bootstrap hostile | obsolete | getTrpcHeaders now returns {} (Better Auth cookies) |
 | client/src/main.trpcClient.test.ts | trpc bootstrap regression | obsolete | supabase session token no longer used |
-| client/src/pages/Calendar.test.tsx | Calendar UI rendering | obsolete | deleted after D1 field alignment; no D1 equivalent |
+| client/src/pages/Calendar.test.tsx | Calendar UI rendering | restored | restored and passing (5/5) |
 | client/src/pages/Financials.contract.test.ts | Financials contract | restored | restored and passing (5/5) |
 | client/src/pages/HotelOwnerSignup.contract.test.ts | signup link contract | restored | restored and passing (5/5) |
-| client/src/pages/HotelStaff.test.tsx | HotelStaff UI | obsolete | deleted; D1 staff tests cover scope |
+| client/src/pages/HotelStaff.test.tsx | HotelStaff UI | restored | restored and passing (8/8) |
 | client/src/pages/PublicHotel.contract.test.ts | PublicHotel contract | restored | restored and passing (13/13) |
-| client/src/pages/WebsiteBuilder.contract.test.ts | WebsiteBuilder contract | restored | restored and passing (9/9) |
-| client/src/pages/calendarAvailability.test.ts | calendar availability pure logic | obsolete | deleted; no D1 equivalent |
-| server/bookingFlow.test.ts | createBooking flow | obsolete | old Supabase booking flow removed; D1 booking tests cover atomic creation |
+| client/src/pages/WebsiteBuilder.contract.test.ts | WebsiteBuilder contract | restored | restored and passing (12/12) |
+| client/src/pages/calendarAvailability.test.ts | calendar availability pure logic | restored | restored and passing (3/3) |
+| server/bookingFlow.test.ts | createBooking flow | ported | server/bookingFlow.d1.test.ts |
 | server/bookingMinStay.test.ts | min_stay enforcement | obsolete | server/d1/availability.test.ts > min stay cases |
 | server/bookingRouter.wiring.test.ts | router wiring | obsolete | D1 routers wired; access tests cover procedures |
 | server/channelManager.adminUsers.test.ts | adminUsers Supabase RLS | obsolete | adminUsers query still exists but mutations removed |
-| server/channelManager.availability.test.ts | availability RLS | obsolete | D1 availability tests cover scope |
-| server/channelManager.creation.test.ts | hotel/room creation RLS | obsolete | D1 hotel tests cover creation scope |
-| server/channelManager.hotelStaff.test.ts | hotel staff RLS | obsolete | D1 staff tests cover scope |
-| server/channelManager.roomTypes.test.ts | room types RLS | obsolete | D1 hotel tests cover room types |
+| server/channelManager.availability.test.ts | availability RLS | ported | server/channelManager.availability.d1.test.ts |
+| server/channelManager.creation.test.ts | hotel/room creation RLS | ported | server/channelManager.creation.d1.test.ts |
+| server/channelManager.hotelStaff.test.ts | hotel staff RLS | ported | server/channelManager.hotelStaff.d1.test.ts |
+| server/channelManager.roomTypes.test.ts | room types RLS | ported | server/channelManager.roomTypes.d1.test.ts |
 | server/channelPerformance.test.ts | channel performance | obsolete | ChannelPerformance page removed (2d7d067) |
 | server/db.creation.test.ts | db creation helpers | obsolete | Supabase db layer removed |
-| server/db.hotelAccess.test.ts | hotel access regression | ported to server/hotelAccess.regression.test.ts | ported |
-| server/db/booking.test.ts | booking db | ported to server/d1/booking.test.ts | D1 booking tests |
-| server/db/bookingTransition.test.ts | booking transition | ported to server/bookingTransition.access.test.ts | ported |
+| server/db.hotelAccess.test.ts | hotel access regression | ported | server/hotelAccess.regression.test.ts |
+| server/db/booking.test.ts | booking db | ported | server/d1/booking.test.ts |
+| server/db/bookingTransition.test.ts | booking transition | ported | server/bookingTransition.access.test.ts |
 | server/db/expireBookingIfPast.test.ts | expire booking | obsolete | server/d1/booking.test.ts > expireBookingIfPast |
 | server/db/money.test.ts | money helper | restored | restored and passing (6/6) |
-| server/db/payment.test.ts | payment db | ported to server/d1/payment.test.ts | D1 payment tests |
-| server/db/scope.test.ts | tenant isolation | ported to server/d1/* scoped tests | D1 scope tests |
-| server/hotelMedia.test.ts | hotel media router | obsolete | server/d1/media.test.ts > scoped upload/delete |
-| server/hotelServicesRouter.wiring.test.ts | services wiring | obsolete | server/d1/hotel.test.ts > room/service scope |
-| server/hotelSiteConfig.test.ts | site config | ported to server/d1/siteConfig.test.ts | D1 siteConfig tests |
-| server/housekeeping.assign.test.ts | housekeeping assign | ported to server/housekeeping.access.test.ts | ported |
+| server/db/payment.test.ts | payment db | ported | server/d1/payment.test.ts |
+| server/db/scope.test.ts | tenant isolation | ported | server/d1/* scoped tests |
+| server/hotelMedia.test.ts | hotel media router | ported | server/hotelMedia.d1.test.ts |
+| server/hotelServicesRouter.wiring.test.ts | services wiring | ported | server/hotelServicesRouter.d1.test.ts |
+| server/hotelSiteConfig.test.ts | site config | ported | server/d1/siteConfig.test.ts |
+| server/housekeeping.assign.test.ts | housekeeping assign | ported | server/housekeeping.access.test.ts |
 | server/inviteAuthUser.test.ts | invite auth user | obsolete | Supabase auth removed (Better Auth) |
 | server/messaging.templated.test.ts | templated messaging | obsolete | server/d1/messaging.test.ts > scope cases |
-| server/otaIcalRoutes.test.ts | OTA iCal routes | obsolete | Worker handles iCal; server/d1/ota.test.ts > sync/export/token |
+| server/otaIcalRoutes.test.ts | OTA iCal routes | ported | server/otaIcal.d1.test.ts |
 | server/otaScheduler.test.ts | OTA scheduler | obsolete | Worker scheduled sync; server/d1/ota.test.ts > sync/export/token |
-| server/otaSummary.test.ts | OTA summary | ported to server/d1/ota.test.ts | D1 ota tests |
-| server/otaSync.test.ts | OTA sync | ported to server/d1/ota.test.ts | D1 ota tests |
+| server/otaSummary.test.ts | OTA summary | ported | server/d1/ota.test.ts |
+| server/otaSync.test.ts | OTA sync | ported | server/d1/ota.test.ts |
 | server/publicBooking.test.ts | public booking | obsolete | createPublicBooking removed; server/d1/booking.test.ts > createPublicBooking |
-| server/signupLinks.test.ts | signup links | obsolete | server/d1/signupLinks.ts (no dedicated test) |
-| server/slipOkSettings.test.ts | SlipOK settings | obsolete | server/d1/payment.test.ts > scope test |
+| server/signupLinks.test.ts | signup links | ported | server/d1/signupLinks.test.ts |
+| server/slipOkSettings.test.ts | SlipOK settings | ported | server/slipOkSettings.d1.test.ts |
 | server/storage.hotelMedia.test.ts | storage hotel media | obsolete | R2 media tests cover |
 | server/supabase.credentials.retry.test.ts | supabase creds | obsolete | Supabase removed |
 | server/supabase.credentials.test.ts | supabase creds | obsolete | Supabase removed |
@@ -1631,3 +1629,31 @@ Write every entry so someone who has never seen this session can pick up the wor
 | server/supabaseAnonKey.test.ts | anon key | obsolete | Supabase removed |
 | server/supabaseConnection.test.ts | supabase connection | obsolete | Supabase removed |
 | server/supabaseRls.integration.test.ts | RLS integration | obsolete | server/d1/*.test.ts > cross-hotel denial |
+
+## [2026-10-30] Stage 3 restore round 4 finish: sections 1–7 complete (branch `agent-c/review-fixes`)
+- **Context**: Finish the remaining Stage 3 restore work identified in the port-or-delete table and capture per-suite evidence.
+- **Completed**:
+  1. Restored `client/src/pages/HotelStaff.test.tsx`.
+  2. Restored WebsiteBuilder hero-image contract cases.
+  3. Added unavailable-hold test to `server/d1/booking.test.ts`.
+  4. Added explicit cross-hotel denial tests to `server/d1/{payment,staff,hotel,notification,siteConfig,ota}.test.ts`.
+  5. Ported remaining router tests:
+     - `server/channelManager.availability.d1.test.ts`
+     - `server/channelManager.creation.d1.test.ts`
+     - `server/channelManager.hotelStaff.d1.test.ts`
+     - `server/channelManager.roomTypes.d1.test.ts`
+  6. Rewrote the 48-row port-or-delete table above.
+- **Per-suite evidence**:
+  - `pnpm vitest run server/channelManager.availability.d1.test.ts server/channelManager.creation.d1.test.ts server/channelManager.hotelStaff.d1.test.ts server/channelManager.roomTypes.d1.test.ts` → 4 files, 40 tests passed.
+  - `pnpm vitest run server/otaIcal.d1.test.ts` → 1 file, 3 tests passed.
+  - `pnpm vitest run server/bookingFlow.d1.test.ts --testTimeout=10000` → 1 file, 1 test passed.
+  - `pnpm vitest run server/hotelMedia.d1.test.ts --testTimeout=10000` → 1 file, 5 tests passed.
+  - `pnpm vitest run server/hotelServicesRouter.d1.test.ts --testTimeout=10000` → 1 file, 2 tests passed.
+  - `pnpm vitest run server/slipOkSettings.d1.test.ts --testTimeout=10000` → 1 file, 4 tests passed.
+  - Note: running the five timeout-sensitive suites together with the default 5 s timeout caused 4 timeouts; each suite passes standalone with 10 s. The full suite uses sufficient total time and passes cleanly.
+- **Verification**:
+  - `pnpm test`: 748 passed, 106 files, 0 failed, 0 skipped.
+  - `pnpm check`: PASS (0 TypeScript errors).
+  - `pnpm build`: PASS (`dist/index.js` 314.1kb; Vite chunk-size advisory only).
+- **Scope**: New D1 router tests and `.agent/handoff.md` only. No app code changes, no push/merge/deploy, no banned-zone files touched.
+- **Next**: Await reviewer approval per Definition of Done before any push/deploy consideration.
