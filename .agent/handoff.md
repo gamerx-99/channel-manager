@@ -1595,7 +1595,7 @@ Write every entry so someone who has never seen this session can pick up the wor
 | client/src/pages/WebsiteBuilder.contract.test.ts | WebsiteBuilder contract | restored | restored and passing (9/9) |
 | client/src/pages/calendarAvailability.test.ts | calendar availability pure logic | obsolete | deleted; no D1 equivalent |
 | server/bookingFlow.test.ts | createBooking flow | obsolete | old Supabase booking flow removed; D1 booking tests cover atomic creation |
-| server/bookingMinStay.test.ts | min_stay enforcement | obsolete | D1 availability tests cover min stay |
+| server/bookingMinStay.test.ts | min_stay enforcement | obsolete | server/d1/availability.test.ts > min stay cases |
 | server/bookingRouter.wiring.test.ts | router wiring | obsolete | D1 routers wired; access tests cover procedures |
 | server/channelManager.adminUsers.test.ts | adminUsers Supabase RLS | obsolete | adminUsers query still exists but mutations removed |
 | server/channelManager.availability.test.ts | availability RLS | obsolete | D1 availability tests cover scope |
@@ -1607,27 +1607,27 @@ Write every entry so someone who has never seen this session can pick up the wor
 | server/db.hotelAccess.test.ts | hotel access regression | ported to server/hotelAccess.regression.test.ts | ported |
 | server/db/booking.test.ts | booking db | ported to server/d1/booking.test.ts | D1 booking tests |
 | server/db/bookingTransition.test.ts | booking transition | ported to server/bookingTransition.access.test.ts | ported |
-| server/db/expireBookingIfPast.test.ts | expire booking | obsolete | D1 booking tests cover expiry |
+| server/db/expireBookingIfPast.test.ts | expire booking | obsolete | server/d1/booking.test.ts > expireBookingIfPast |
 | server/db/money.test.ts | money helper | restored | restored and passing (6/6) |
 | server/db/payment.test.ts | payment db | ported to server/d1/payment.test.ts | D1 payment tests |
 | server/db/scope.test.ts | tenant isolation | ported to server/d1/* scoped tests | D1 scope tests |
-| server/hotelMedia.test.ts | hotel media router | obsolete | D1 media tests cover scope |
-| server/hotelServicesRouter.wiring.test.ts | services wiring | obsolete | D1 hotel tests cover services |
+| server/hotelMedia.test.ts | hotel media router | obsolete | server/d1/media.test.ts > scoped upload/delete |
+| server/hotelServicesRouter.wiring.test.ts | services wiring | obsolete | server/d1/hotel.test.ts > room/service scope |
 | server/hotelSiteConfig.test.ts | site config | ported to server/d1/siteConfig.test.ts | D1 siteConfig tests |
 | server/housekeeping.assign.test.ts | housekeeping assign | ported to server/housekeeping.access.test.ts | ported |
 | server/inviteAuthUser.test.ts | invite auth user | obsolete | Supabase auth removed (Better Auth) |
-| server/messaging.templated.test.ts | templated messaging | obsolete | D1 messaging tests cover scope |
-| server/otaIcalRoutes.test.ts | OTA iCal routes | obsolete | Worker handles iCal; D1 ota tests cover |
-| server/otaScheduler.test.ts | OTA scheduler | obsolete | Worker scheduled sync; D1 ota tests cover |
+| server/messaging.templated.test.ts | templated messaging | obsolete | server/d1/messaging.test.ts > scope cases |
+| server/otaIcalRoutes.test.ts | OTA iCal routes | obsolete | Worker handles iCal; server/d1/ota.test.ts > sync/export/token |
+| server/otaScheduler.test.ts | OTA scheduler | obsolete | Worker scheduled sync; server/d1/ota.test.ts > sync/export/token |
 | server/otaSummary.test.ts | OTA summary | ported to server/d1/ota.test.ts | D1 ota tests |
 | server/otaSync.test.ts | OTA sync | ported to server/d1/ota.test.ts | D1 ota tests |
-| server/publicBooking.test.ts | public booking | obsolete | createPublicBooking removed; D1 booking tests cover public flow |
-| server/signupLinks.test.ts | signup links | obsolete | D1 signupLinks tests cover |
-| server/slipOkSettings.test.ts | SlipOK settings | obsolete | D1 payment tests cover SlipOK |
+| server/publicBooking.test.ts | public booking | obsolete | createPublicBooking removed; server/d1/booking.test.ts > createPublicBooking |
+| server/signupLinks.test.ts | signup links | obsolete | server/d1/signupLinks.ts (no dedicated test) |
+| server/slipOkSettings.test.ts | SlipOK settings | obsolete | server/d1/payment.test.ts > scope test |
 | server/storage.hotelMedia.test.ts | storage hotel media | obsolete | R2 media tests cover |
 | server/supabase.credentials.retry.test.ts | supabase creds | obsolete | Supabase removed |
 | server/supabase.credentials.test.ts | supabase creds | obsolete | Supabase removed |
 | server/supabase.serverRuntime.credentials.test.ts | supabase runtime | obsolete | Supabase removed |
 | server/supabaseAnonKey.test.ts | anon key | obsolete | Supabase removed |
 | server/supabaseConnection.test.ts | supabase connection | obsolete | Supabase removed |
-| server/supabaseRls.integration.test.ts | RLS integration | obsolete | D1 scope tests cover isolation |
+| server/supabaseRls.integration.test.ts | RLS integration | obsolete | server/d1/*.test.ts > cross-hotel denial |
