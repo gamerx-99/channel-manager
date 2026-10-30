@@ -1823,3 +1823,18 @@ Full logs remain `.agent/support-access-{test,check,build}.log` locally.
 - **NOT DONE**: no merge, deploy or live rate-limit check (wrangler `--dry-run` only); the rate
   limit edge-case ASSUMPTION is in OPEN_QUESTIONS.md; `mysql2`/`drizzle.config.ts`/`db:push`
   (MySQL leftovers) kept because `db:push` still references them.
+
+## [2026-10-30] Production custom domain www.hayhostth.com (branch `cloud/custom-domain`, from `cloud/remove-express`)
+- **Approval**: owner approved the `wrangler.toml` change on 2026-10-30, after registering
+  `hayhostth.com` on the account's Cloudflare Registrar.
+- **Change**: `[env.production]` gets `routes = [{ pattern = "www.hayhostth.com", custom_domain = true }]`.
+  Staging and top level unchanged. Apex `hayhostth.com` → www is a dashboard Redirect Rule (not set by
+  this branch).
+- **Evidence**: `pnpm check` clean; `pnpm test` 850 passed / 2 failed (the two SQLite parameter-binding
+  failures in d1/booking and d1/hotel that also fail on the base); `pnpm build` and
+  `wrangler deploy --dry-run --env production|staging` pass; `tomllib` confirms the route sits only
+  under env.production.
+- **NOT DONE (human steps)**: `wrangler d1 migrations apply hayhost-production --env production --remote`
+  (Cloudflare API reports 0 tables), `wrangler secret put` for BETTER_AUTH_SECRET /
+  SLIPOK_ENCRYPTION_KEY / SLIP_OK_API, `wrangler deploy --env production`, apex redirect rule.
+  Decide between the `heyhostth` Workers Builds Worker and the `hayhost` Worker for production.
