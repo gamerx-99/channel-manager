@@ -38,7 +38,8 @@ describe("index.html crawl contract", () => {
     expect(html.indexOf('location.pathname !== "/"')).toBeLessThan(html.indexOf("<!--static-landing-->"));
   });
 
-  it("keeps structured data inside root so React removes it on hotel pages", () => {
-    expect(html).toContain('<div id="root"><!--static-landing--><!--structured-data--></div>');
+  it("keeps structured data in head, where React leaves it, and removes it off the landing route", () => {
+    expect(html.indexOf("<!--structured-data-->")).toBeLessThan(html.indexOf("</head>"));
+    expect(html.indexOf("<!--structured-data-->")).toBeLessThan(html.indexOf('application/ld+json"]\')?.remove()'));
   });
 });
