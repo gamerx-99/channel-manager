@@ -133,6 +133,32 @@ describe("inviting an address that was already self-registered", () => {
     expect(await membership()).toHaveLength(0);
   });
 
+  it("rejects a role the inviter may no longer grant", async () => {
+    await seedPreRegisteredAccount();
+    const now = new Date();
+    await db.delete(hotelUsers).where(eq(hotelUsers.userId, "owner"));
+    await db.insert(hotelUsers).values({ hotelId: "hotel-a", userId: "manager", role: "admin" });
+    await db.insert(verification).values({ id: "old", identifier: `hotel-invite:hotel-a:hotel_owner:manager:${EMAIL}`, value: "old-token", expiresAt: new Date(Date.now() + 3600000), createdAt: now, updatedAt: now });
+
+    await expect(accept("old-token")).rejects.toMatchObject({ code: "CONFLICT" });
+
+    expect(await membership()).toHaveLength(0);
+    expect((await db.select().from(account).where(eq(account.userId, USER_ID)))[0]?.password).toBe("attacker-hash");
+  });
+
+  it("cancels a pending invite when a verified user is assigned directly", async () => {
+    await seedPreRegisteredAccount();
+    await invite();
+    const pendingToken = emailedToken();
+    await db.update(user).set({ emailVerified: true }).where(eq(user.id, USER_ID));
+    await invite();
+    await db.delete(hotelUsers).where(eq(hotelUsers.userId, USER_ID));
+
+    await expect(accept(pendingToken)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    expect(await membership()).toHaveLength(0);
+  });
+
   it("does not reset a verified account when a second hotel's old invite is used", async () => {
     await seedPreRegisteredAccount();
     await invite();

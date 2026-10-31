@@ -181,6 +181,8 @@ const en = {
     invalidTitle: "Invitation link is invalid or expired",
     invalidDesc: "This invite link may have already been used or has expired. Please contact your property administrator for a new invite.",
     backToLogin: "Back to sign in",
+    existingAccountTitle: "Invitation accepted",
+    existingAccountDesc: "This email already has an account, so your password has not changed. Sign in with your existing password.",
     passwordTooShort: "Choose a password with at least 8 characters.",
     passwordMismatch: "Passwords do not match.",
   },

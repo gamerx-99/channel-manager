@@ -5,7 +5,6 @@ import { hotelUsers, hotels, platformAdmins, supportAccounts } from "../../drizz
 import { user, verification, account, session, twoFactor } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { ASSIGNABLE_STAFF_ROLES, type AppRole, type HumanRole } from "@shared/authorization";
-import { resolveMembershipPermissions } from "@shared/permissions";
 import { isActivePlatformAdmin } from "./platformAdmins";
 import { createHotelUserAssignment } from "./staff";
 import type { EmailSender } from "../email";
@@ -85,20 +84,21 @@ export async function inviteStaffUser(
       throw new TRPCError({ code: "CONFLICT", message: "This user is already assigned to the selected hotel." });
     }
 
+    // A new invite replaces any earlier one, including one for another role.
+    const pendingInvites = await db
+      .select({ id: verification.id, identifier: verification.identifier })
+      .from(verification)
+      .where(like(verification.identifier, `hotel-invite:${input.hotel_id}:%`));
+    for (const pending of pendingInvites.filter(row => row.identifier.endsWith(`:${normalizedEmail}`))) {
+      await db.delete(verification).where(eq(verification.id, pending.id));
+    }
+
     // Anyone can register any address, so an unverified account proves nothing:
     // grant the role only after the emailed token is used.
     if (!existingUser.emailVerified) {
       const token = generateSignupToken();
       const identifier = `hotel-invite:${input.hotel_id}:${input.role}:${caller.userId}:${normalizedEmail}`;
       const verificationId = crypto.randomUUID();
-      // A new invite replaces any earlier one, including one for another role.
-      const pendingInvites = await db
-        .select({ id: verification.id, identifier: verification.identifier })
-        .from(verification)
-        .where(like(verification.identifier, `hotel-invite:${input.hotel_id}:%`));
-      for (const pending of pendingInvites.filter(row => row.identifier.endsWith(`:${normalizedEmail}`))) {
-        await db.delete(verification).where(eq(verification.id, pending.id));
-      }
       await db.insert(verification).values({
         id: verificationId,
         identifier,
@@ -302,7 +302,7 @@ export async function acceptStaffInvite(
   try {
     if (pendingHotelInvite) {
       const [, hotelId, role, inviterId] = pendingHotelInvite;
-      await assertPendingHotelInviteValid(db, { hotelId, role, inviterId, userId: targetUser.id });
+      await assertPendingHotelInviteValid(db, { hotelId, role, inviterId, userId: targetUser.id }, now);
     }
 
     if (!keepsCredentials) {
@@ -377,21 +377,28 @@ export async function acceptStaffInvite(
 async function assertPendingHotelInviteValid(
   db: D1ScopedDatabase,
   invite: { hotelId: string; role: string; inviterId: string; userId: string },
+  now: Date,
 ) {
   const invalid = () => new TRPCError({ code: "CONFLICT", message: "This invitation is no longer valid. Please ask the hotel for a new one." });
 
   if (!ASSIGNABLE_STAFF_ROLES.includes(invite.role as typeof ASSIGNABLE_STAFF_ROLES[number])) throw invalid();
 
-  const [inviter] = await db
-    .select()
-    .from(hotelUsers)
-    .where(and(eq(hotelUsers.hotelId, invite.hotelId), eq(hotelUsers.userId, invite.inviterId)))
-    .limit(1);
-  const inviterCanManage = inviter && resolveMembershipPermissions(inviter.role as AppRole, {
-    grants: inviter.permissionGrants,
-    revokes: inviter.permissionRevokes,
-  }).includes("property.manage_staff");
-  if (!inviterCanManage && !(await isActivePlatformAdmin(db, invite.inviterId))) throw invalid();
+  // The inviter must still be allowed to grant this exact role.
+  const isPlatformAdmin = await isActivePlatformAdmin(db, invite.inviterId);
+  try {
+    const actor = await authorizeHotelAction(
+      db,
+      { userId: invite.inviterId, roles: isPlatformAdmin ? ["super_admin"] : [], access: "authenticated" },
+      invite.hotelId,
+      "property.manage_staff",
+      "staff.invite.accept",
+      now,
+    );
+    assertStaffPermissionChange(actor, "new-invite", invite.role as AppRole);
+  } catch (error) {
+    if (error instanceof TRPCError && error.code === "FORBIDDEN") throw invalid();
+    throw error;
+  }
 
   const [membership] = await db
     .select({ id: hotelUsers.id })
