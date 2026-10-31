@@ -12,8 +12,10 @@
 
 const SLIPOK_DEFAULT_BASE_URL = 'https://api.slipok.com/api/line/apikey';
 
-/** SlipOK refused the slip itself: wrong slip, amount, receiver or a repeat. */
-const SLIPOK_REJECTED_SLIP_CODES = new Set([1005, 1006, 1007, 1008, 1011, 1012, 1013, 1014]);
+/** SlipOK read the slip and refused it: no such transfer, wrong amount or receiver, or a repeat. */
+const SLIPOK_REJECTED_SLIP_CODES = new Set([1011, 1012, 1013, 1014]);
+/** The upload could not be read, which says nothing about the payment. */
+const SLIPOK_UNREADABLE_SLIP_CODES = new Set([1005, 1006, 1007, 1008]);
 
 export interface SlipVerificationInput {
   /** Base64 of the slip image */
@@ -35,7 +37,7 @@ export interface SlipVerificationResult {
 export class SlipOkError extends Error {
   constructor(
     message: string,
-    public readonly code: 'INVALID_KEY' | 'API_ERROR' | 'AMOUNT_MISMATCH' | 'NO_KEY',
+    public readonly code: 'INVALID_KEY' | 'API_ERROR' | 'AMOUNT_MISMATCH' | 'NO_KEY' | 'UNREADABLE_SLIP',
   ) {
     super(message);
     this.name = 'SlipOkError';
@@ -98,6 +100,9 @@ export async function verifySlipWithSlipOk(
     const failure = (await response.json().catch(() => null)) as Record<string, unknown> | null;
     if (failure && SLIPOK_REJECTED_SLIP_CODES.has(failure.code as number)) {
       return { matched: false, transactionRef: null, amount: null, raw: failure };
+    }
+    if (failure && SLIPOK_UNREADABLE_SLIP_CODES.has(failure.code as number)) {
+      throw new SlipOkError('SlipOK could not read the slip image.', 'UNREADABLE_SLIP');
     }
     // Includes 1009 bank outage and 1010 bank delay, which need a later recheck.
     throw new SlipOkError(`SlipOK API error: HTTP ${response.status}`, 'API_ERROR');

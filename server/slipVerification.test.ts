@@ -74,7 +74,15 @@ describe('verifySlipWithSlipOk', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ files: 'base64slipdata', log: true, amount: 3500 });
   });
 
-  it.each([1006, 1007, 1008, 1011, 1012, 1013, 1014])('treats SlipOK code %i as a rejected slip', async code => {
+  it.each([1005, 1006, 1007, 1008])('asks for a new image on SlipOK code %i', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'unreadable' }));
+
+    await expect(
+      verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100 }),
+    ).rejects.toMatchObject({ code: 'UNREADABLE_SLIP' });
+  });
+
+  it.each([1011, 1012, 1013, 1014])('treats SlipOK code %i as a rejected slip', async code => {
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'rejected' }));
 
     const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100 });

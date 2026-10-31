@@ -174,7 +174,7 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
         }
 
-        const [booking] = await db.select({ id: bookings.id, status: bookings.status }).from(bookings).where(eq(bookings.id, session.booking_id)).limit(1);
+        const [booking] = await db.select({ id: bookings.id, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(eq(bookings.id, session.booking_id)).limit(1);
         if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
         const bookingStatus = booking.status as BookingStatus;
 
@@ -220,18 +220,32 @@ export const paymentRouter = router({
             return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
           }
 
+          // A concurrent submit of the same slip may have confirmed this booking;
+          // its 1012 reply must not undo that.
+          assertValidTransition('pending_verification', 'payment_rejected');
+          const [rejected] = await db.update(bookings).set({ status: 'payment_rejected' })
+            .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')))
+            .returning({ id: bookings.id });
+          if (!rejected) {
+            return { verified: false as const, pendingManualReview: true as const, message: 'ระบบกำลังตรวจสอบสลิปของคุณ กรุณารอการยืนยันจากเจ้าหน้าที่' };
+          }
           await finalizePaymentSession(db, systemCaller, hotelId, session.id, {
             status: 'failed',
             rawResponse: result.raw,
           });
-          assertValidTransition('pending_verification', 'payment_rejected');
-          await db.update(bookings).set({ status: 'payment_rejected' }).where(eq(bookings.id, session.booking_id));
           await updateBookingPaymentStatus(db, systemCaller, hotelId, session.booking_id, 'failed');
           await logBookingStatusChange(db, systemCaller, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'payment_rejected', reason: 'slipok_amount_or_ref_mismatch' });
           return { verified: false as const, message: 'ไม่พบการชำระเงินที่ตรงกัน กรุณาติดต่อที่พัก' };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
           if (error instanceof SlipOkError) {
+            if (error.code === 'UNREADABLE_SLIP') {
+              // Nothing is known about the payment, so give back the status and room hold.
+              await db.update(bookings).set({ status: bookingStatus, expiresAt: booking.expiresAt })
+                .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')));
+              await logBookingStatusChange(db, systemCaller, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: bookingStatus, reason: 'slipok_unreadable_slip' });
+              return { verified: false as const, retrySlip: true as const, message: 'อ่านรูปสลิปไม่ได้ กรุณาอัปโหลดรูปสลิปที่ชัดเจนอีกครั้ง' };
+            }
             if (error.code === 'API_ERROR') {
               await logBookingStatusChange(db, systemCaller, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason: 'slipok_api_unavailable_manual_review_required' });
               return {
