@@ -28,7 +28,8 @@ async function seedPreRegisteredAccount(emailVerified = false) {
   await db.insert(twoFactor).values({ id: "attacker-2fa", userId: USER_ID, secret: "s", backupCodes: "b" });
 }
 
-const invite = () => inviteStaffUser(db, owner, emails, { hotel_id: "hotel-a", email: EMAIL, role: "front_desk" }, "https://app.example.test");
+const invite = (role: "front_desk" | "revenue_manager" = "front_desk") => inviteStaffUser(db, owner, emails, { hotel_id: "hotel-a", email: EMAIL, role }, "https://app.example.test");
+const accept = (token: string) => acceptStaffInvite(db, { token, password: "password-123" }, async password => `hashed:${password}`);
 const membership = () => db.select().from(hotelUsers).where(and(eq(hotelUsers.hotelId, "hotel-a"), eq(hotelUsers.userId, USER_ID)));
 const emailedToken = () => /token=([^"\s]+)/.exec(emails.getLastEmail()?.text ?? "")?.[1] ?? "";
 
@@ -95,6 +96,55 @@ describe("inviting an address that was already self-registered", () => {
     await expect(invite()).rejects.toThrow("delivery failed");
 
     expect(await db.select().from(verification)).toHaveLength(0);
+  });
+
+  it("re-inviting at another role cancels the earlier invite", async () => {
+    await seedPreRegisteredAccount();
+    await invite("revenue_manager");
+    const firstToken = emailedToken();
+    await invite("front_desk");
+
+    await expect(accept(firstToken)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await accept(emailedToken());
+
+    expect(await membership()).toMatchObject([{ role: "front_desk" }]);
+  });
+
+  it("leaves credentials alone when the invite can no longer be honoured", async () => {
+    await seedPreRegisteredAccount();
+    const now = new Date();
+    await db.insert(verification).values({ id: "stale", identifier: `hotel-invite:hotel-a:hotel_owner:owner:${EMAIL}`, value: "stale-token", expiresAt: new Date(Date.now() + 3600000), createdAt: now, updatedAt: now });
+
+    await expect(accept("stale-token")).rejects.toMatchObject({ code: "CONFLICT" });
+
+    const [credential] = await db.select().from(account).where(eq(account.userId, USER_ID));
+    expect(credential?.password).toBe("attacker-hash");
+    expect(await db.select().from(session).where(eq(session.userId, USER_ID))).toHaveLength(1);
+    expect((await db.select().from(user).where(eq(user.id, USER_ID)))[0]?.emailVerified).toBe(false);
+  });
+
+  it("rejects the invite once the inviter lost staff management", async () => {
+    await seedPreRegisteredAccount();
+    await invite();
+    await db.delete(hotelUsers).where(eq(hotelUsers.userId, "owner"));
+
+    await expect(accept(emailedToken())).rejects.toMatchObject({ code: "CONFLICT" });
+
+    expect(await membership()).toHaveLength(0);
+  });
+
+  it("does not reset a verified account when a second hotel's old invite is used", async () => {
+    await seedPreRegisteredAccount();
+    await invite();
+    const pendingToken = emailedToken();
+    await db.update(user).set({ emailVerified: true }).where(eq(user.id, USER_ID));
+
+    await expect(accept(pendingToken)).resolves.toMatchObject({ signInRequired: true });
+
+    const [credential] = await db.select().from(account).where(eq(account.userId, USER_ID));
+    expect(credential?.password).toBe("attacker-hash");
+    expect(await db.select().from(twoFactor).where(eq(twoFactor.userId, USER_ID))).toHaveLength(1);
+    expect(await membership()).toMatchObject([{ role: "front_desk" }]);
   });
 
   it("still assigns a verified account immediately", async () => {

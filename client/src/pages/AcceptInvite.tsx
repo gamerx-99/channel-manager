@@ -81,6 +81,12 @@ export default function AcceptInvite() {
         password,
       });
 
+      if (result.signInRequired) {
+        setSubmitting(false);
+        navigate("/login");
+        return;
+      }
+
       const email = result.user?.email || userEmail;
       if (email) {
         await authClient.signIn.email({
