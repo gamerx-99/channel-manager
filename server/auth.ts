@@ -59,13 +59,20 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      // A reset ends every other session, so a stolen session cannot outlive it.
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
-        if (opts.emailSender) {
+        if (!opts.emailSender) return;
+        try {
           await opts.emailSender.sendPasswordResetEmail({
             to: user.email,
             resetUrl: url,
             userName: user.name,
           });
+        } catch (error) {
+          // A send error only happens for a real account, so surfacing it would
+          // tell anyone which emails are registered.
+          console.error("[Auth] Password reset email failed:", error instanceof Error ? error.message : error);
         }
       },
     },

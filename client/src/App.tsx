@@ -15,6 +15,8 @@ import Housekeeping from "./pages/Housekeeping";
 import Communications from "./pages/Communications";
 import Login from "./pages/Login";
 import MfaEnroll from "./pages/MfaEnroll";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
 import Landing from "./pages/Landing";
 import Signup from "./pages/Signup";
@@ -42,6 +44,8 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/mfa/enroll" component={MfaEnroll} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/signup" component={Signup} />
       <Route path="/signup/:token">
         {(params) => <HotelOwnerSignup token={params.token} />}

@@ -125,8 +125,8 @@ export async function setHotelPublicEnabled(db: D1ScopedDatabase, caller: D1Call
 
 // A hotel page lives at /:slug, so a slug must not shadow an app route.
 const RESERVED_HOTEL_SLUGS = new Set([
-  "accept-invite", "api", "assets", "communications", "dashboard", "hotels", "housekeeping", "login", "media", "mfa",
-  "platform", "settings", "signup", "website-builder",
+  "accept-invite", "api", "assets", "communications", "dashboard", "forgot-password", "hotels", "housekeeping", "login", "media", "mfa",
+  "platform", "reset-password", "settings", "signup", "website-builder",
 ]);
 
 /**

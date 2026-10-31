@@ -6,3 +6,9 @@ https://:worker.lannatc.workers.dev/*
 
 /accept-invite
   X-Robots-Tag: noindex
+
+/forgot-password
+  X-Robots-Tag: noindex
+
+/reset-password
+  X-Robots-Tag: noindex

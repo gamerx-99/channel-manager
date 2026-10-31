@@ -13,6 +13,7 @@ import { getSupportMemberships, isActiveSupportAccount } from "../d1/supportAcce
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
+import { createEmailSender } from "../email";
 import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
 
@@ -148,7 +149,7 @@ export async function createContextFromRequest(
         (headers.get("x-forwarded-proto") && headers.get("host")
           ? `${headers.get("x-forwarded-proto")}://${headers.get("host")}`
           : undefined);
-      const auth = authOverride ?? createAuth({ db, baseURL: origin });
+      const auth = authOverride ?? createAuth({ db, baseURL: origin, emailSender: createEmailSender() });
       const sessionResult = await auth.api.getSession({ headers });
 
       if (sessionResult && sessionResult.user && sessionResult.session) {

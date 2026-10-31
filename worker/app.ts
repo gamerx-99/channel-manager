@@ -19,6 +19,7 @@ import {
 import { getOtaIcalExport } from "../server/d1/ota";
 import { createD1SystemCallerContext } from "../server/db/scope";
 import { createAuth, type AuthInstance } from "../server/auth";
+import { createEmailSender } from "../server/email";
 
 /** Runtime bindings declared in wrangler.toml. */
 export type WorkerEnv = {
@@ -133,7 +134,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
   const app = new Hono<{ Bindings: WorkerEnv }>();
   const createContext = dependencies.createContext ?? createContextFromRequest;
   const createDatabase = dependencies.createDatabase ?? defaultDatabase;
-  const getAuth = dependencies.createAuthInstance ?? ((db, baseURL) => createAuth({ db, baseURL }));
+  const getAuth = dependencies.createAuthInstance ?? ((db, baseURL) => createAuth({ db, baseURL, emailSender: createEmailSender() }));
 
   const requestContext = (
     req: Request,
