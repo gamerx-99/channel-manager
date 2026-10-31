@@ -65,6 +65,7 @@ workers_dev = false
 [env.production.vars]
 NODE_ENV = "production"
 PUBLIC_APP_URL = "https://www.hayhostth.com"
+EMAIL_FROM = "no-reply@hayhostth.com"
 
 [[env.production.d1_databases]]
 binding = "DB"

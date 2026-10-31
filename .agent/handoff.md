@@ -1,5 +1,10 @@
 # Handoff log
 
+## [2026-10-31] Production EMAIL_FROM in wrangler.toml (branch `feat/financials-owner-grant`)
+- **What happened**: The owner added `EMAIL_FROM` as a dashboard variable and approved adding it to `[env.production.vars]`, so the next deploy keeps it.
+- **Verification**: `wrangler deploy --dry-run --env production` listed `env.EMAIL_FROM ("no-reply@hayhostth.com")`, exit 0. Config only, so `pnpm test` was not rerun.
+- **Not done**: not pushed or deployed. Staging keeps `EMAIL_FROM` as a secret.
+
 ## [2026-10-31] Central SlipOK, MFA step-up, publishing, password reset, UI fixes (branch `feat/financials-owner-grant`)
 - **What happened** (one commit each, `ecd819f..HEAD`):
   0. Raw D1 binds of `children_count_toward_max` use 1/0 (two repository tests failed under node:sqlite).
