@@ -667,6 +667,13 @@ const en = {
     saving: "Saving…",
     savePromptPayId: "Save PromptPay ID",
     promptPayDisclaimer: "PromptPay ID is used solely for QR code generation. Guests pay directly into the property's account. The platform does not hold funds.",
+    mfaPrompt: "Enter the 6-digit code from your authenticator app to save this change.",
+    mfaCodeLabel: "Authenticator code",
+    mfaVerify: "Verify and save",
+    mfaCancel: "Cancel",
+    mfaChecking: "Checking…",
+    mfaEnrollNeeded: "Changing where guests pay needs an authenticator app on your account. Set one up first, then come back to save.",
+    mfaEnrollLink: "Set up an authenticator app",
   },
   housekeeping: {
     loadingAriaLabel: "Loading housekeeping data",

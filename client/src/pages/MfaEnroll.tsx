@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
-import { shouldEnforceMfaForRoles } from "@/lib/mfa";
+import { mfaReturnPath, shouldEnforceMfaForRoles } from "@/lib/mfa";
 import { generateTotpQrDataUrl } from "@/lib/qr";
 import { useTranslation } from "@/lib/i18n";
 import type { AppRole } from "@shared/authorization";
@@ -11,6 +11,7 @@ import type { AppRole } from "@shared/authorization";
 export default function MfaEnroll() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const returnPath = mfaReturnPath(typeof window === "undefined" ? "" : window.location.search);
   const [step, setStep] = useState<"intro" | "enrolling" | "verifying" | "done">("intro");
   const [password, setPassword] = useState("");
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -27,14 +28,14 @@ export default function MfaEnroll() {
 
     // If already has verified MFA, no need to enroll again
     if (authMe.twoFactorEnabled) {
-      navigate("/dashboard");
+      navigate(returnPath);
       return;
     }
 
     const roles = (authMe.roles?.length ? authMe.roles : authMe.role ? [authMe.role] : []) as AppRole[];
     const isPlatformRole = shouldEnforceMfaForRoles(roles);
     setCanSkip(!isPlatformRole);
-  }, [authMe, loadingMe, navigate]);
+  }, [authMe, loadingMe, navigate, returnPath]);
 
   async function handleEnroll() {
     setError(null);
@@ -52,7 +53,7 @@ export default function MfaEnroll() {
 
       if (res.error) {
         if (res.error.code === "TOTP_ALREADY_ENABLED") {
-          navigate("/dashboard");
+          navigate(returnPath);
           return;
         }
         setError(res.error.message || t("mfaEnroll.errorEnrollFailed"));
@@ -100,7 +101,7 @@ export default function MfaEnroll() {
       }
 
       setStep("done");
-      navigate("/dashboard");
+      navigate(returnPath);
     } catch (e) {
       setSubmitting(false);
       setError(e instanceof Error ? e.message : t("mfaEnroll.errorVerifyFailed"));
@@ -117,7 +118,7 @@ export default function MfaEnroll() {
 
   async function handleSkipToDashboard() {
     if (canSkip === false) return; // blocked for platform roles
-    navigate("/dashboard");
+    navigate(returnPath);
   }
 
   return (

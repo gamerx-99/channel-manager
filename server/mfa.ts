@@ -367,7 +367,7 @@ export function requireRecentMfaVerification(
     throw new TRPCError({
       code: 'PRECONDITION_FAILED',
       message:
-        'MFA enrollment required: no authenticator factor enrolled. Enroll TOTP before accessing SlipOK settings.',
+        'MFA enrollment required: set up an authenticator app before changing payment settings.',
       cause: {
         reason: result.reason,
         aal: result.aal,

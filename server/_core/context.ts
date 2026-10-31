@@ -14,6 +14,7 @@ import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
 import type { PublicBookingLimiter } from "../publicBookingRateLimit";
+import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
 
 export type SupabaseMembership = {
   hotelId: string;
@@ -51,6 +52,10 @@ export type TrpcContext = {
   publicBookingLimiter?: PublicBookingLimiter;
   /** CF-Connecting-IP header, the PUBLIC_BOOKING_LIMITER key; set by the Worker only. */
   cfConnectingIp?: string;
+  /** Better Auth instance that resolved the session, for server-side auth calls. */
+  auth?: AuthInstance;
+  /** Request headers that carried the session. */
+  headers?: Headers;
 };
 
 export type CreateContextOptions = {
@@ -192,6 +197,11 @@ export async function createContextFromRequest(
         const supportMemberships = await getSupportMemberships(db, caller);
         const scopedMemberships = roles.includes("support") ? supportMemberships : memberships;
 
+        const twoFactorEnabled = (authUser as { twoFactorEnabled?: boolean }).twoFactorEnabled ?? false;
+        // Better Auth sessions carry no proof of a recent TOTP check; see server/mfaStepUp.ts.
+        const twoFactorVerifiedAt = twoFactorEnabled ? await getMfaStepUpVerifiedAt(db, authSession.id, authUser.id) : null;
+        const session = { ...authSession, twoFactorVerifiedAt };
+
         const user: AppUserIdentity = {
           id: authUser.id,
           email: authUser.email ?? null,
@@ -207,9 +217,8 @@ export async function createContextFromRequest(
             name: authUser.name,
             email: authUser.email,
           },
-          twoFactorEnabled:
-            (authUser as { twoFactorEnabled?: boolean }).twoFactorEnabled ?? false,
-          session: authSession,
+          twoFactorEnabled,
+          session,
         };
 
         return {
@@ -218,7 +227,9 @@ export async function createContextFromRequest(
           clientIp: clientIp || "unknown",
           req,
           db,
-          session: authSession,
+          session,
+          auth,
+          headers,
         };
       }
     } catch (error) {

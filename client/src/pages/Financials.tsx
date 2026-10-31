@@ -17,6 +17,8 @@ import type { FinancialsRoomTypeBreakdown } from "@/../../server/financials";
 import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
+import { useMfaStepUp } from "@/lib/mfa";
+import { Link } from "wouter";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -223,27 +225,52 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
   const [timeoutMin, setTimeoutMin] = useState(15);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  // Changing where guests pay needs a recent authenticator code (server/mfa.ts).
+  const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
 
   const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
     onSuccess() {
       setSaved(true);
       setSaveError(null);
       setPromptPayId("");
+      reset();
       setTimeout(() => setSaved(false), 3000);
     },
     onError(err) {
+      // The step-up window closed between the check and the save: ask again.
+      if (err.data?.code === "PRECONDITION_FAILED") {
+        void triggerStepUp();
+        return;
+      }
       setSaveError(err.message);
     },
   });
 
-  function handleSave() {
-    setSaveError(null);
-    setSaved(false);
+  function save() {
     savePromptPay.mutate({
       hotel_id: hotelId,
       promptpay_id: promptPayId.replace(/\D/g, ""),
       payment_timeout_minutes: timeoutMin,
     });
+  }
+
+  async function handleSave() {
+    setSaveError(null);
+    setSaved(false);
+    if ((await triggerStepUp()) === "verified") save();
+  }
+
+  async function handleVerify() {
+    if (await submitTotp(totpCode)) {
+      setTotpCode("");
+      save();
+    }
+  }
+
+  function handleCancel() {
+    setTotpCode("");
+    reset();
   }
 
   return (
@@ -299,14 +326,56 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
             </div>
           </div>
 
+          {mfaState.status === "needs_challenge" && (
+            <div className="flex flex-col gap-2 rounded-lg border border-[#dce4df] bg-[#f6faf7] p-4">
+              <label htmlFor="promptpay-totp-input" className="text-sm font-medium text-[#263b31]">{t("financials.mfaPrompt")}</label>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  id="promptpay-totp-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  aria-label={t("financials.mfaCodeLabel")}
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                  className="w-32 rounded-lg border border-[#dce4df] px-3 py-2 text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
+                />
+                <button
+                  id="promptpay-totp-submit"
+                  type="button"
+                  disabled={totpCode.length !== 6}
+                  onClick={() => void handleVerify()}
+                  className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+                >
+                  {t("financials.mfaVerify")}
+                </button>
+                <button type="button" onClick={handleCancel} className="rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-white">
+                  {t("financials.mfaCancel")}
+                </button>
+              </div>
+              {mfaState.error && <p className="text-xs text-red-600" role="alert">{mfaState.error}</p>}
+            </div>
+          )}
+          {mfaState.status === "pending" && <p className="text-xs text-[#6c7e75]" role="status">{t("financials.mfaChecking")}</p>}
+          {mfaState.status === "needs_enroll" && (
+            <div id="promptpay-mfa-enroll" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+              <p>{t("financials.mfaEnrollNeeded")}</p>
+              <Link href="/mfa/enroll?next=/dashboard/financials" className="mt-2 inline-block font-medium underline">
+                {t("financials.mfaEnrollLink")}
+              </Link>
+            </div>
+          )}
+          {mfaState.status === "error" && <p className="text-xs text-red-600" role="alert">{mfaState.message}</p>}
           {saveError && <p className="text-xs text-red-600" role="alert">{saveError}</p>}
           {saved && <p className="text-xs text-[#1d6b56]" role="status">{t("financials.savedSuccess")}</p>}
 
           <button
             id="promptpay-save-btn"
             type="button"
-            disabled={promptPayId.replace(/\D/g, "").length < 10 || savePromptPay.isPending}
-            onClick={handleSave}
+            disabled={promptPayId.replace(/\D/g, "").length < 10 || savePromptPay.isPending || mfaState.status === "pending"}
+            onClick={() => void handleSave()}
             className="w-max rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
           >
             {savePromptPay.isPending ? t("financials.saving") : t("financials.savePromptPayId")}

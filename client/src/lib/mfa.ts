@@ -1,12 +1,17 @@
 import { PLATFORM_ROLES, type AppRole } from "@shared/authorization";
 import { useState, useCallback } from "react";
 import { authClient } from "@/lib/auth-client";
+import { trpc } from "@/lib/trpc";
 
 /** Blocking enroll path for platform roles without an MFA factor. */
 export const MFA_ENROLL_PATH = "/mfa/enroll";
 
-/** Default step-up validity window: 10 minutes (matching server/mfa.ts). */
-export const MFA_STEP_UP_WINDOW_MS = 10 * 60 * 1000;
+/** Where to go after enrolling: an in-app `next` page, never another site. */
+export function mfaReturnPath(search: string): string {
+  const next = new URLSearchParams(search).get("next");
+  return next && /^\/(dashboard|settings)(\/|$|\?)/.test(next) ? next : "/dashboard";
+}
+
 
 type FactorLike = {
   status?: string;
@@ -115,113 +120,57 @@ export type MfaStepUpState =
   | { status: "verified" }
   | { status: "error"; message: string };
 
+/** The server's error message, which explains what to do next. */
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 /**
- * Hook that manages client-side MFA step-up for sensitive actions (Phase 01: SlipOK)
- * using Better Auth TOTP verification and session freshness tracking.
+ * Hook that manages MFA step-up for sensitive actions such as saving PromptPay.
+ * The server decides: it checks the code with Better Auth and keeps the step-up
+ * for this session only (server/mfaStepUp.ts), so a page reload keeps it and a
+ * stolen client flag cannot fake it.
  *
  * Usage:
  *   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
- *   // When user clicks a sensitive action:
  *   const step = await triggerStepUp(); // "verified" | "needs_enroll" | "needs_challenge" | "error"
- *   // If "needs_challenge", render TOTP input and call:
- *   const ok = await submitTotp(code);  // verifies TOTP and sets state to verified
+ *   // If "needs_challenge", render a code input and call:
+ *   const ok = await submitTotp(code);
  */
-export function useMfaStepUp(options?: { windowMs?: number }) {
-  const windowMs = options?.windowMs ?? MFA_STEP_UP_WINDOW_MS;
+export function useMfaStepUp() {
+  const utils = trpc.useUtils();
   const [mfaState, setMfaState] = useState<MfaStepUpState>({ status: "idle" });
-  const [lastVerifiedAt, setLastVerifiedAt] = useState<number | null>(null);
-
-  /**
-   * Evaluates whether the current session has verified TOTP within the allowable time window.
-   */
-  const checkFreshness = useCallback(
-    (session: unknown, verifiedTimestamp: number | null): boolean => {
-      const now = Date.now();
-
-      // 1. Check local verification timestamp from this hook instance
-      if (verifiedTimestamp && now - verifiedTimestamp < windowMs) {
-        return true;
-      }
-
-      // 2. Check session attributes from Better Auth (twoFactorVerifiedAt / twoFactorVerified)
-      if (session && typeof session === "object") {
-        const s = session as {
-          twoFactorVerified?: boolean | null;
-          twoFactorVerifiedAt?: string | number | Date | null;
-          createdAt?: string | number | Date | null;
-        };
-
-        const isExplicitlyVerified =
-          s.twoFactorVerified !== false &&
-          (s.twoFactorVerified === true ||
-            (s.twoFactorVerifiedAt != null && s.twoFactorVerifiedAt !== ""));
-
-        if (!isExplicitlyVerified) {
-          return false;
-        }
-
-        const rawTime =
-          s.twoFactorVerifiedAt ??
-          (s.twoFactorVerified === true ? s.createdAt : null);
-
-        if (rawTime) {
-          const verifiedTimeMs = new Date(rawTime).getTime();
-          if (!Number.isNaN(verifiedTimeMs) && verifiedTimeMs > 0) {
-            if (now - verifiedTimeMs < windowMs) {
-              return true;
-            }
-          }
-        }
-      }
-
-      return false;
-    },
-    [windowMs],
-  );
 
   const triggerStepUp = useCallback(async (): Promise<
     "verified" | "needs_enroll" | "needs_challenge" | "error"
   > => {
     setMfaState({ status: "pending" });
     try {
-      const sessionResult = await authClient.getSession();
-      if (sessionResult.error || !sessionResult.data?.user) {
-        const msg = sessionResult.error?.message ?? "Authentication required.";
-        setMfaState({ status: "error", message: msg });
-        return "error";
-      }
-
-      const { user, session } = sessionResult.data;
-      const twoFactorEnabled = Boolean(
-        (user as { twoFactorEnabled?: boolean | null }).twoFactorEnabled,
-      );
-
-      // User has not enrolled 2FA -> must enroll first
-      if (!twoFactorEnabled) {
-        setMfaState({ status: "needs_enroll" });
-        return "needs_enroll";
-      }
-
-      // Session is already verified within freshness window
-      if (checkFreshness(session, lastVerifiedAt)) {
+      const { status } = await utils.client.auth.mfaStepUpStatus.query();
+      if (status === "verified") {
         setMfaState({ status: "verified" });
         return "verified";
       }
-
-      // User has 2FA enrolled but needs to complete TOTP challenge
-      setMfaState({ status: "needs_challenge", factorId: "totp" });
-      return "needs_challenge";
+      if (status === "needs_enroll") {
+        setMfaState({ status: "needs_enroll" });
+        return "needs_enroll";
+      }
+      if (status === "needs_challenge") {
+        setMfaState({ status: "needs_challenge", factorId: "totp" });
+        return "needs_challenge";
+      }
+      setMfaState({ status: "error", message: "Authentication required." });
+      return "error";
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error during MFA step-up.";
-      setMfaState({ status: "error", message: msg });
+      setMfaState({ status: "error", message: errorMessage(e, "Unknown error during MFA step-up.") });
       return "error";
     }
-  }, [checkFreshness, lastVerifiedAt]);
+  }, [utils]);
 
   const submitTotp = useCallback(
     async (code: string): Promise<boolean> => {
       const cleanCode = code?.trim() ?? "";
-      if (cleanCode.length !== 6) {
+      if (!/^\d{6}$/.test(cleanCode)) {
         setMfaState({
           status: "needs_challenge",
           factorId: "totp",
@@ -232,44 +181,19 @@ export function useMfaStepUp(options?: { windowMs?: number }) {
 
       setMfaState({ status: "pending" });
       try {
-        const { error } = await authClient.twoFactor.verifyTotp({
-          code: cleanCode,
-        });
-
-        if (error) {
-          const message =
-            error.message?.toLowerCase().includes("invalid")
-              ? "Incorrect code — please wait for the next 6-digit code and try again."
-              : error.message || "Verification failed.";
-
-          setMfaState({
-            status: "needs_challenge",
-            factorId: "totp",
-            error: message,
-          });
-          return false;
-        }
-
-        const now = Date.now();
-        setLastVerifiedAt(now);
+        await utils.client.auth.verifyMfaStepUp.mutate({ code: cleanCode });
         setMfaState({ status: "verified" });
         return true;
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Verification failed.";
-        setMfaState({
-          status: "needs_challenge",
-          factorId: "totp",
-          error: msg,
-        });
+        setMfaState({ status: "needs_challenge", factorId: "totp", error: errorMessage(e, "Verification failed.") });
         return false;
       }
     },
-    [],
+    [utils],
   );
 
   const reset = useCallback(() => {
     setMfaState({ status: "idle" });
-    setLastVerifiedAt(null);
   }, []);
 
   return { mfaState, triggerStepUp, submitTotp, reset };

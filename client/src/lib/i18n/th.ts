@@ -669,6 +669,13 @@ const th: TranslationDictionary = {
     saving: "กำลังบันทึก…",
     savePromptPayId: "บันทึก PromptPay ID",
     promptPayDisclaimer: "PromptPay ID ใช้สำหรับสร้าง QR Code เท่านั้น ลูกค้าจ่ายตรงเข้าบัญชีของที่พัก แพลตฟอร์มไม่รับหรือถือเงิน",
+    mfaPrompt: "กรอกรหัส 6 หลักจากแอปยืนยันตัวตนเพื่อบันทึกการเปลี่ยนแปลงนี้",
+    mfaCodeLabel: "รหัสจากแอปยืนยันตัวตน",
+    mfaVerify: "ยืนยันและบันทึก",
+    mfaCancel: "ยกเลิก",
+    mfaChecking: "กำลังตรวจสอบ…",
+    mfaEnrollNeeded: "การเปลี่ยนบัญชีรับเงินต้องเปิดใช้แอปยืนยันตัวตน (เช่น Google Authenticator) ก่อน ตั้งค่าเสร็จแล้วกลับมาบันทึกได้เลย",
+    mfaEnrollLink: "ตั้งค่าแอปยืนยันตัวตน",
   },
   housekeeping: {
     loadingAriaLabel: "กำลังโหลดข้อมูลแม่บ้าน",
