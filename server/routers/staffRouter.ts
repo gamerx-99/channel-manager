@@ -14,20 +14,11 @@ import {
   deleteHotelUserAssignment,
   updateHotelUserAssignmentRole,
   transferHotelAdmin as dbTransferHotelAdmin,
-  getManagedHotel,
-} from '../db';
+} from '../d1/staff';
 import {
-  listAuthUsers,
-  inviteAuthUser,
-  deleteAuthUser,
-  getAuthUser,
-  createHotelOwnerMembership,
-  createSignupLink as dbCreateSignupLink,
-  listSignupLinksForHotel,
-  getValidSignupLink,
-  redeemSignupLink,
-} from '../supabase';
-import { generateSignupToken, deriveSignupLinkStatus } from '../signupLinks';
+  inviteStaffUser as d1InviteStaffUser,
+  acceptStaffInvite as d1AcceptStaffInvite,
+} from '../d1/invites';
 import {
   createSignupLink as d1CreateSignupLink,
   listSignupLinksForHotel as d1ListSignupLinksForHotel,
@@ -35,24 +26,15 @@ import {
   redeemSignupLink as d1RedeemSignupLink,
   createHotelOwnerMembership as d1CreateHotelOwnerMembership,
 } from '../d1/signupLinks';
-import {
-  inviteStaffUser as d1InviteStaffUser,
-  acceptStaffInvite as d1AcceptStaffInvite,
-} from '../d1/invites';
 import { createEmailSender } from '../email';
 import {
   requirePermission,
   requireHotelPermission,
-  requireSuperAdmin,
-  assertSingleHotelAdmin,
-  assertHotelExists,
   rethrowDomainError,
-  rlsClient,
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
 const adminUserIdSchema = z.string().uuid();
-// `support` is stored only once the spec 14 migration widens the hotel_users role check.
 const adminUserRoleSchema = z.enum(['super_admin', 'admin', 'support', 'hotel_owner', 'revenue_manager', 'front_desk', 'housekeeping']);
 const adminUserEmailSchema = z.string().trim().email('Enter a valid email address.').max(320).transform(email => email.toLowerCase());
 
@@ -71,6 +53,7 @@ export const inviteUserSchema = z.object({
 export const removeMembershipSchema = z.object({ membership_id: adminUserIdSchema });
 
 export const hotelStaffListSchema = z.object({ hotel_id: hotelIdSchema });
+
 export const hotelStaffRoleValueSchema = z.enum(['hotel_owner', 'revenue_manager', 'front_desk', 'housekeeping']);
 
 export const hotelStaffInviteSchema = z.object({
@@ -100,15 +83,13 @@ export const hotelAdminAuditLogListSchema = z.object({
   limit: z.number().int().min(1).max(100).default(50),
 });
 
+// adminUsers: platform-level, requires Better Auth user listing (Stage 3). Temporarily returns empty.
 export const adminUsers = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'platform.manage_users');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const client = await requireSuperAdmin(ctx.user.accessToken);
-    const [users, assignments] = await Promise.all([
-      listAuthUsers(),
-      listHotelUserAssignments(client),
-    ]);
-    return { users, assignments };
+    const assignments = await listHotelUserAssignments(ctx.db, ctx.caller ?? { userId: ctx.user.id });
+    return { users: [], assignments };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -117,13 +98,11 @@ export const adminUsers = protectedProcedure.query(async ({ ctx }) => {
 
 export const hotelStaff = protectedProcedure.input(hotelStaffListSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelExists(client, input.hotel_id);
-    const users = await listAuthUsers();
     return {
-      hotel: { id: hotel.id, name: hotel.name },
-      staff: await listHotelStaff(client, input.hotel_id, users),
+      hotel: { id: input.hotel_id, name: '' },
+      staff: await listHotelStaff(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, []),
     };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
@@ -133,10 +112,9 @@ export const hotelStaff = protectedProcedure.input(hotelStaffListSchema).query(a
 
 export const listHotelAdminAuditLogs = protectedProcedure.input(hotelAdminAuditLogListSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelExists(client, input.hotel_id);
-    return await dbListHotelAdminAuditLogs(client, input.hotel_id, input.limit);
+    return await dbListHotelAdminAuditLogs(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.limit);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -145,50 +123,15 @@ export const listHotelAdminAuditLogs = protectedProcedure.input(hotelAdminAuditL
 
 export const inviteHotelStaff = protectedProcedure.input(hotelStaffInviteSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
-  if (ctx.db) {
-    try {
-      const emailSender = createEmailSender();
-      return await d1InviteStaffUser(
-        ctx.db,
-        ctx.caller ?? { userId: ctx.user.id },
-        emailSender,
-        input,
-      );
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      return rethrowDomainError(error);
-    }
-  }
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelExists(client, input.hotel_id);
-    const assignments = await listHotelUserAssignments(client);
-    if (input.role === 'hotel_owner') {
-      assertSingleHotelAdmin(assignments, input.hotel_id);
-    }
-    const users = await listAuthUsers();
-    const existingUser = users.find(user => user.email?.toLowerCase() === input.email);
-    if (existingUser && assignments.some(row => row.hotel_id === input.hotel_id && row.user_id === existingUser.id)) {
-      throw new TRPCError({ code: 'CONFLICT', message: 'This user is already assigned to the selected hotel.' });
-    }
-    const user = existingUser ?? await inviteAuthUser(input.email);
-    try {
-      const membership = await createHotelUserAssignment(client, {
-        user_id: user.id,
-        hotel_id: input.hotel_id,
-        role: input.role,
-      });
-      return { user, membership, invitationSent: !existingUser };
-    } catch (membershipError) {
-      if (!existingUser) {
-        try {
-          await deleteAuthUser(user.id);
-        } catch {
-          // Preserve the original membership error if cleanup is unavailable.
-        }
-      }
-      throw membershipError;
-    }
+    const emailSender = createEmailSender();
+    return await d1InviteStaffUser(
+      ctx.db,
+      ctx.caller ?? { userId: ctx.user.id },
+      emailSender,
+      input,
+    );
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -200,26 +143,13 @@ export const createSignupLink = protectedProcedure.input(z.object({
   expiresInHours: z.number().int().min(1).max(720),
 })).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
-  if (ctx.db) {
-    try {
-      return await d1CreateSignupLink(
-        ctx.db,
-        ctx.caller ?? { userId: ctx.user.id },
-        input,
-      );
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      return rethrowDomainError(error);
-    }
-  }
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelExists(client, input.hotel_id);
-    const assignments = await listHotelUserAssignments(client);
-    assertSingleHotelAdmin(assignments, input.hotel_id);
-    const token = generateSignupToken();
-    const expiresAt = new Date(Date.now() + input.expiresInHours * 60 * 60 * 1000).toISOString();
-    return await dbCreateSignupLink(input.hotel_id, ctx.user.id, token, expiresAt);
+    return await d1CreateSignupLink(
+      ctx.db,
+      ctx.caller ?? { userId: ctx.user.id },
+      input,
+    );
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
@@ -228,33 +158,21 @@ export const createSignupLink = protectedProcedure.input(z.object({
 
 export const listSignupLinks = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'platform.manage_signup_links');
-  if (ctx.db) {
-    try {
-      return await d1ListSignupLinksForHotel(
-        ctx.db,
-        ctx.caller ?? { userId: ctx.user.id },
-        input.hotel_id,
-      );
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      return rethrowDomainError(error);
-    }
-  }
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const links = await listSignupLinksForHotel(input.hotel_id);
-    return links.map(link => ({ ...link, status: deriveSignupLinkStatus(link) }));
+    return await d1ListSignupLinksForHotel(
+      ctx.db,
+      ctx.caller ?? { userId: ctx.user.id },
+      input.hotel_id,
+    );
   } catch (error) {
     return rethrowDomainError(error);
   }
 });
 
 export const validateSignupLink = rateLimitedProcedure.input(z.object({ token: z.string().min(1) })).query(async ({ ctx, input }) => {
-  if (ctx.db) {
-    const link = await d1GetValidSignupLink(ctx.db, input.token);
-    if (!link) return { valid: false as const };
-    return { valid: true as const, hotelName: link.hotelName };
-  }
-  const link = await getValidSignupLink(input.token);
+  if (!ctx.db) return { valid: false as const };
+  const link = await d1GetValidSignupLink(ctx.db, input.token);
   if (!link) return { valid: false as const };
   return { valid: true as const, hotelName: link.hotelName };
 });
@@ -266,25 +184,13 @@ export const completeHotelOwnerSignup = rateLimitedProcedure.input(z.object({
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Authentication required to complete signup.' });
   }
   const userId = ctx.user.id;
-  if (ctx.db) {
-    const redeemed = await d1RedeemSignupLink(ctx.db, input.token, userId);
-    if (!redeemed) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'This signup link is no longer valid.' });
-    }
-    try {
-      await d1CreateHotelOwnerMembership(ctx.db, redeemed.hotel_id, userId);
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      return rethrowDomainError(error);
-    }
-    return { success: true as const };
-  }
-  const redeemed = await redeemSignupLink(input.token, userId);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  const redeemed = await d1RedeemSignupLink(ctx.db, input.token, userId);
   if (!redeemed) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'This signup link is no longer valid.' });
   }
   try {
-    await createHotelOwnerMembership(redeemed.hotel_id, userId);
+    await d1CreateHotelOwnerMembership(ctx.db, redeemed.hotel_id, userId);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -304,9 +210,10 @@ export const acceptStaffInvite = rateLimitedProcedure.input(z.object({
 
 export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const assignments = await listHotelUserAssignments(client);
+    const caller = ctx.caller ?? { userId: ctx.user.id };
+    const assignments = await listHotelUserAssignments(ctx.db, caller);
     const membership = assignments.find(row => row.id === input.membership_id && row.hotel_id === input.hotel_id);
     if (!membership) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel staff membership was not found.' });
@@ -320,12 +227,12 @@ export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchem
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'The last Hotel Admin cannot be demoted.' });
       }
     }
-    if (input.role === 'hotel_owner') {
-      assertSingleHotelAdmin(assignments, input.hotel_id, membership.id);
+    if (input.role === 'hotel_owner' && assignments.some(row => row.hotel_id === input.hotel_id && row.role === 'hotel_owner' && row.id !== membership.id)) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'This hotel already has one Hotel Admin. Transfer the existing Hotel Admin access instead.' });
     }
-    const updated = await updateHotelUserAssignmentRole(client, {
-      hotel_id: input.hotel_id,
+    const updated = await updateHotelUserAssignmentRole(ctx.db, caller, {
       membership_id: input.membership_id,
+      hotel_id: input.hotel_id,
       role: input.role as HumanRole,
     });
     if (!updated) {
@@ -339,10 +246,11 @@ export const updateHotelStaffRole = protectedProcedure.input(hotelStaffRoleSchem
 });
 
 export const transferHotelAdmin = protectedProcedure.input(hotelStaffTransferSchema).mutation(async ({ ctx, input }) => {
-  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
-  const client = rlsClient(ctx.user.accessToken);
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.transfer_ownership');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const assignments = await listHotelUserAssignments(client);
+    const caller = ctx.caller ?? { userId: ctx.user.id };
+    const assignments = await listHotelUserAssignments(ctx.db, caller);
     const currentOwner = assignments.find(row => row.hotel_id === input.hotel_id && row.role === 'hotel_owner');
     const target = assignments.find(row => row.id === input.target_membership_id && row.hotel_id === input.hotel_id);
     if (!currentOwner) {
@@ -355,10 +263,10 @@ export const transferHotelAdmin = protectedProcedure.input(hotelStaffTransferSch
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a different staff member to receive Hotel Admin access.' });
     }
     const targetRole = target.role as AppRole;
-    if (isPlatformRole(targetRole) || targetRole === 'api_service') {
+    if (isPlatformRole(targetRole)) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only a human hotel staff member can receive Hotel Admin access.' });
     }
-    const transferred = await dbTransferHotelAdmin(client, {
+    const transferred = await dbTransferHotelAdmin(ctx.db, caller, {
       hotel_id: input.hotel_id,
       target_membership_id: input.target_membership_id,
     });
@@ -374,9 +282,10 @@ export const transferHotelAdmin = protectedProcedure.input(hotelStaffTransferSch
 
 export const removeHotelStaff = protectedProcedure.input(hotelStaffRemoveSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const assignments = await listHotelUserAssignments(client);
+    const caller = ctx.caller ?? { userId: ctx.user.id };
+    const assignments = await listHotelUserAssignments(ctx.db, caller);
     const membership = assignments.find(row => row.id === input.membership_id && row.hotel_id === input.hotel_id);
     if (!membership) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel staff membership was not found.' });
@@ -390,86 +299,9 @@ export const removeHotelStaff = protectedProcedure.input(hotelStaffRemoveSchema)
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'The last Hotel Admin cannot be removed.' });
       }
     }
-    const removed = await deleteHotelUserAssignment(client, input.membership_id);
+    const removed = await deleteHotelUserAssignment(ctx.db, caller, input.membership_id);
     if (!removed) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel staff membership could not be removed.' });
-    }
-    return { success: true as const, id: removed.id };
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    return rethrowDomainError(error);
-  }
-});
-
-export const inviteAdminUser = protectedProcedure.input(inviteUserSchema).mutation(async ({ ctx, input }) => {
-  requirePermission(ctx.user, 'platform.manage_users');
-  const client = await requireSuperAdmin(ctx.user.accessToken);
-  try {
-    const hotel = await assertHotelExists(client, input.hotel_id);
-    const invitedUser = await inviteAuthUser(input.email);
-    try {
-      const membership = await createHotelUserAssignment(client, {
-        user_id: invitedUser.id,
-        hotel_id: input.hotel_id,
-        role: input.role,
-      });
-      return { user: invitedUser, membership };
-    } catch (membershipError) {
-      try {
-        await deleteAuthUser(invitedUser.id);
-      } catch {
-        // Do not replace the original membership error if cleanup is unavailable.
-      }
-      throw membershipError;
-    }
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    return rethrowDomainError(error);
-  }
-});
-
-export const assignAdminUser = protectedProcedure.input(assignUserSchema).mutation(async ({ ctx, input }) => {
-  requirePermission(ctx.user, 'platform.manage_users');
-  const client = await requireSuperAdmin(ctx.user.accessToken);
-  try {
-    const [user, hotel, assignments] = await Promise.all([
-      getAuthUser(input.user_id),
-      getManagedHotel(client, input.hotel_id),
-      listHotelUserAssignments(client),
-    ]);
-    if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'The selected Auth user was not found.' });
-    if (!hotel) throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-    if (assignments.some(row => row.hotel_id === input.hotel_id && row.user_id === input.user_id)) {
-      throw new TRPCError({ code: 'CONFLICT', message: 'This user is already assigned to the selected hotel.' });
-    }
-    if (input.role === 'hotel_owner') {
-      assertSingleHotelAdmin(assignments, input.hotel_id);
-    }
-    return await createHotelUserAssignment(client, input);
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    return rethrowDomainError(error);
-  }
-});
-
-export const removeAdminMembership = protectedProcedure.input(removeMembershipSchema).mutation(async ({ ctx, input }) => {
-  requirePermission(ctx.user, 'platform.manage_users');
-  const client = await requireSuperAdmin(ctx.user.accessToken);
-  try {
-    const assignments = await listHotelUserAssignments(client);
-    const membership = assignments.find(row => row.id === input.membership_id);
-    if (!membership) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel membership was not found.' });
-    }
-    if (membership.role === 'super_admin' && membership.user_id === ctx.user.id) {
-      const remainingSuperAdmins = assignments.filter(row => row.role === 'super_admin' && row.id !== membership.id);
-      if (remainingSuperAdmins.length === 0) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'The last super administrator cannot be removed.' });
-      }
-    }
-    const removed = await deleteHotelUserAssignment(client, input.membership_id);
-    if (!removed) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel membership was not found.' });
     }
     return { success: true as const, id: removed.id };
   } catch (error) {
@@ -491,7 +323,4 @@ export const staffRouter = router({
   updateHotelStaffRole,
   transferHotelAdmin,
   removeHotelStaff,
-  inviteAdminUser,
-  assignAdminUser,
-  removeAdminMembership,
 });

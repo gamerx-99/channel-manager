@@ -62,6 +62,17 @@ describe("D1 staff repository", () => {
     await expect(listHotelAdminAuditLogs(db, { userId: "new" }, "a")).resolves.toHaveLength(1);
   });
 
+  it("rejects cross-hotel staff reads and writes", async () => {
+    await seed();
+    const ownerA = { userId: "ua" };
+    await expect(listHotelStaff(db, ownerA, "b", [])).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(listHotelAdminAuditLogs(db, ownerA, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(createHotelUserAssignment(db, ownerA, { hotel_id: "b", user_id: "x", role: "front_desk" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(updateHotelUserAssignmentRole(db, ownerA, { membership_id: "owner-b", hotel_id: "b", role: "front_desk" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(deleteHotelUserAssignment(db, ownerA, "owner-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(transferHotelAdmin(db, ownerA, { hotel_id: "b", target_membership_id: "owner-b" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("does not partially demote an owner when the transfer target changes during the transaction", async () => {
     await seed();
     const target = await createHotelUserAssignment(db, { userId: "ua" }, { hotel_id: "a", user_id: "new", role: "housekeeping" });

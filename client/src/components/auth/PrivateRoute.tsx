@@ -5,19 +5,20 @@ import { trpc } from "../../lib/trpc";
 import { shouldRedirectToMfaEnroll, MFA_ENROLL_PATH } from "@/lib/mfa";
 import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
+import { SELECTED_HOTEL_STORAGE_KEY } from "../../contexts/HotelContext";
 import { type AppRole } from "@shared/authorization";
 import { AppShell } from "../layout/AppShell";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
   const [location, navigate] = useLocation();
-  const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery();
+  const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery(undefined, { refetchInterval: 15000 });
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
   const {
     data: visibleHotels,
     isLoading: hotelsLoading,
     isError: hotelsError,
-  } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user) });
+  } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user), refetchInterval: 15000 });
 
   // Derives MFA requirement from Better Auth session / tRPC authMe without raw Supabase calls.
   const twoFactorEnabled = Boolean(authMe?.twoFactorEnabled);
@@ -48,6 +49,8 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     role: authMe?.role,
     roles: authRoles,
     pathname: location,
+    memberships: authMe?.memberships,
+    selectedHotelId: (visibleHotels ?? []).find(h => h.id === localStorage.getItem(SELECTED_HOTEL_STORAGE_KEY))?.id ?? visibleHotels?.[0]?.id,
     visibleHotelIds: (visibleHotels ?? []).map(hotel => hotel.id),
   });
 
@@ -68,7 +71,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   return (
     <HotelProvider hotels={visibleHotels} isLoading={hotelsLoading} isError={hotelsError}>
-      <AppShell userName={user.name ?? user.email ?? "User"} userEmail={user.email} roles={authRoles} onLogout={() => void logout()}>
+      <AppShell userName={user.name ?? user.email ?? "User"} userEmail={user.email} roles={authRoles} memberships={authMe?.memberships ?? []} onLogout={() => void logout()}>
         {children}
       </AppShell>
     </HotelProvider>

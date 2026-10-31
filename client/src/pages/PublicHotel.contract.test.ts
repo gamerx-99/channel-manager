@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('PublicHotel site config fallback contract (T06-03)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
-  const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/db/siteConfig.ts'), 'utf8');
+  const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/d1/siteConfig.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
   const routerSource = routerText + hotelRouterText;
@@ -21,12 +21,12 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toContain('Explore room types, rates, and availability directly from this hotel.');
     expect(publicHotelSource).toContain('#954831');
     // Fallback via nullish coalescing
-    expect(publicHotelSource).toMatch(/hero_copy.*\?\?.*DEFAULT_HERO_COPY|DEFAULT_HERO_COPY.*\?\?/s);
-    expect(publicHotelSource).toMatch(/accent_color.*\?\?.*DEFAULT_ACCENT_COLOR|DEFAULT_ACCENT_COLOR.*\?\?/s);
+    expect(publicHotelSource).toMatch(/const heroCopy\s*=\s*siteConfig\?\.heroCopy\s*\?\?\s*DEFAULT_HERO_COPY/s);
+    expect(publicHotelSource).toMatch(/const accentColor\s*=\s*siteConfig\?\.accentColor\s*\?\?\s*DEFAULT_ACCENT_COLOR/s);
     // Also checks siteConfigQuery.data ?? null
     expect(publicHotelSource).toContain('siteConfigQuery.data');
-    expect(publicHotelSource).toContain('siteConfig?.hero_copy');
-    expect(publicHotelSource).toContain('siteConfig?.accent_color');
+    expect(publicHotelSource).toContain('siteConfig?.heroCopy');
+    expect(publicHotelSource).toContain('siteConfig?.accentColor');
   });
 
   it('PublicHotel applies accent_color to CTA buttons and hero copy comes from config', () => {
@@ -36,16 +36,18 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   });
 
   it('PublicHotel shows default hero_copy/accent_color when config missing, and configured values when present (derived logic)', () => {
-    // Derive logic string is present: heroCopy = siteConfig?.hero_copy ?? DEFAULT_HERO_COPY
-    expect(publicHotelSource).toMatch(/const heroCopy = siteConfig\?\.hero_copy \?\? DEFAULT_HERO_COPY/);
-    expect(publicHotelSource).toMatch(/const accentColor = siteConfig\?\.accent_color \?\? DEFAULT_ACCENT_COLOR/);
+    // Derive logic string is present: heroCopy = siteConfig?.heroCopy ?? DEFAULT_HERO_COPY
+    expect(publicHotelSource).toMatch(/const heroCopy = siteConfig\?\.heroCopy \?\? DEFAULT_HERO_COPY/);
+    expect(publicHotelSource).toMatch(/const accentColor = siteConfig\?\.accentColor \?\? DEFAULT_ACCENT_COLOR/);
   });
 
-  it('server/db/siteConfig.ts getHotelSiteConfig returns null/default gracefully on 42P01', () => {
+  it('server/d1/siteConfig.ts scopes public and managed reads and returns null for missing config', () => {
     expect(siteConfigSource).toContain('export async function getHotelSiteConfig');
-    expect(siteConfigSource).toContain('hotel_site_config');
-    expect(siteConfigSource).toContain('return null');
-    expect(siteConfigSource).toContain('isMissingHotelSiteConfigTableError');
+    expect(siteConfigSource).toContain('hotelSiteConfig');
+    expect(siteConfigSource).toContain('row ?? null');
+    expect(siteConfigSource).toContain('const hotel = await requirePublicHotel(db, caller, slug)');
+    expect(siteConfigSource).toContain('eq(hotelSiteConfig.hotelId, hotel.id)');
+    expect(siteConfigSource).toContain('eq(hotelSiteConfig.hotelId, hotelId)');
   });
 
   it('server/routers.ts exposes public getHotelSiteConfig (for PublicHotel) and protected saveHotelSiteConfig', () => {
@@ -58,15 +60,15 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(routerSource).toMatch(/if \(code === '42P01'.*hotel_site_config/);
   });
 
-  it('visible_sections fallback keeps sections visible when config absent', () => {
-    expect(publicHotelSource).toContain('visible_sections');
+  it('visibleSections fallback keeps sections visible when config absent', () => {
+    expect(publicHotelSource).toContain('visibleSections');
     expect(publicHotelSource).toContain('isVisible');
   });
 });
 
 describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
   const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
-  const dbSource = readFileSync(resolve(process.cwd(), 'server/db/booking.ts'), 'utf8');
+  const dbSource = readFileSync(resolve(process.cwd(), 'server/d1/booking.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const bookingRouterText = readFileSync(resolve(process.cwd(), 'server/routers/bookingRouter.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
@@ -100,12 +102,12 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(publicHotelSource).toContain('publicHotel.adultsLabel');
     expect(publicHotelSource).toContain('publicHotel.childrenLabel');
     expect(publicHotelSource).toContain('childMeasurements');
-    expect(dbSource).toContain('get_public_room_type_availability_for_guests');
+    expect(dbSource).toContain('getPublicRoomTypeAvailabilityForGuests');
     expect(publicHotelSource).not.toContain('roomTypes.map((rt) => (');
     expect(bookingRouterText).toContain('children: z.array(publicChildMeasurementSchema)');
   });
 
-  it('server/db/booking.ts exposes holdRoomType and confirmBookingDetails with service persistence', () => {
+  it('server/d1/booking.ts exposes holdRoomType and confirmBookingDetails with service persistence', () => {
     expect(dbSource).toContain('export async function holdRoomType');
     expect(dbSource).toContain('export async function confirmBookingDetails');
     expect(dbSource).toContain('booking_services');
@@ -118,3 +120,20 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(routerSource).toMatch(/listPublicHotelServices\s*[:=]\s*rateLimitedProcedure\.input/);
   });
 });
+
+describe('PublicHotel private or unknown hotel state', () => {
+  const source = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+
+  it('does not retry NOT_FOUND, so a private or unknown hotel answers at once', () => {
+    expect(source).toContain('retry: (failureCount, error) => error.data?.code !== "NOT_FOUND" && failureCount < 2');
+  });
+
+  it('shows a clear unavailable state for NOT_FOUND and a retry for other errors', () => {
+    expect(source).toContain('publicHotel.error?.data?.code === "NOT_FOUND"');
+    expect(source).toContain('data-testid="public-hotel-not-found"');
+    expect(source).toContain('t("publicHotel.hotelUnavailableTitle")');
+    expect(source).toContain('data-testid="public-hotel-load-error"');
+    expect(source).toContain('onClick={() => void publicHotel.refetch()}');
+  });
+});
+

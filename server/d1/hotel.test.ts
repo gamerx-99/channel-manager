@@ -101,6 +101,20 @@ describe("D1 hotel repository", () => {
     await expect(getPublicHotel(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("rejects cross-hotel hotel data access", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    const caller = { userId: "owner-a" };
+    await expect(getManagedHotel(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(listHotelServices(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(createManagedRoomType(db, caller, { hotel_id: "b", name: "No", capacity: 2, base_price: 120, quantity: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(updateManagedRoomType(db, caller, { hotel_id: "b", room_type_id: "rt-b", name: "No", capacity: 2, base_price: 110 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(deleteManagedRoomType(db, caller, { hotel_id: "b", room_type_id: "rt-b" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(createHotelService(db, caller, { hotel_id: "b", name: "No", pricing_model: "ONE_TIME", unit_price: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(updateHotelService(db, caller, { hotel_id: "b", service_id: "service-b", name: "No", pricing_model: "ONE_TIME", unit_price: 1, is_active: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(deleteHotelService(db, caller, { hotel_id: "b", service_id: "service-b" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("returns managed hotels newest first", async () => {
     await db.insert(hotels).values([
       { id: "older", name: "Older", slug: "older", address: "A", ownerContact: "owner@example.test", publicEnabled: false, createdAt: new Date("2026-01-01T00:00:00Z") },

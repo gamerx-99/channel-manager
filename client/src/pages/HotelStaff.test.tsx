@@ -31,16 +31,16 @@ const mocks = vi.hoisted(() => {
   const auditQuery = {
     data: [] as Array<{
       id: string;
-      hotel_id: string;
-      actor_user_id: string;
-      actor_email: string | null;
+      hotelId: string;
+      actorUserId: string;
+      actorEmail: string | null;
       action: "hotel_admin_transfer";
-      previous_admin_membership_id: string;
-      previous_admin_user_id: string;
-      new_admin_membership_id: string;
-      new_admin_user_id: string;
+      previousAdminMembershipId: string;
+      previousAdminUserId: string;
+      newAdminMembershipId: string;
+      newAdminUserId: string;
       details: Record<string, unknown>;
-      created_at: string;
+      createdAt: string;
     }>,
     isLoading: false,
     error: null as { message: string } | null,
@@ -55,7 +55,7 @@ const mocks = vi.hoisted(() => {
     createSignupLink: { isPending: false, mutate: vi.fn() },
   };
 
-  const authMeQuery = { data: { role: "hotel_owner" as const }, isLoading: false, error: null as { message: string } | null };
+  const authMeQuery = { data: { id: "owner-1", role: "hotel_owner" as const, memberships: [{ hotelId: "hotel-1", role: "hotel_owner" as const, permissions: ["property.transfer_ownership"] }] }, isLoading: false, error: null as { message: string } | null };
   const signupLinksQuery = { data: [] as Array<{ id: string; token: string; status: string }>, isLoading: false, error: null as { message: string } | null, refetch: vi.fn() };
 
   return {
@@ -128,7 +128,7 @@ beforeEach(() => {
   mocks.mutations.remove.mutate.mockReset();
   mocks.mutations.transfer.mutate.mockReset();
   mocks.mutations.createSignupLink.mutate.mockReset();
-  mocks.authMeQuery.data = { role: "hotel_owner" };
+  mocks.authMeQuery.data = { id: "owner-1", role: "hotel_owner", memberships: [{ hotelId: "hotel-1", role: "hotel_owner", permissions: ["property.transfer_ownership"] }] };
   mocks.signupLinksQuery.data = [];
 });
 
@@ -140,7 +140,7 @@ describe("HotelStaff", () => {
     expect(screen.getByRole("heading", { name: "Little Bro team" })).toBeTruthy();
     expect(screen.getByText("frontdesk@example.com")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Role for frontdesk@example.com" })).toBeTruthy();
-    expect(screen.queryByRole("option", { name: "Super Admin" })).toBeNull();
+    expect(screen.queryByRole("option", { name: /Super Admin/ })).toBeNull();
     expect(screen.getByText(/limited to this hotel/)).toBeTruthy();
   });
 
@@ -283,16 +283,16 @@ describe("HotelStaff", () => {
     ];
     mocks.auditQuery.data = [{
       id: "audit-1",
-      hotel_id: "hotel-1",
-      actor_user_id: "owner-1",
-      actor_email: "owner@example.com",
+      hotelId: "hotel-1",
+      actorUserId: "owner-1",
+      actorEmail: "owner@example.com",
       action: "hotel_admin_transfer",
-      previous_admin_membership_id: "membership-owner",
-      previous_admin_user_id: "owner-1",
-      new_admin_membership_id: "membership-1",
-      new_admin_user_id: "user-1",
+      previousAdminMembershipId: "membership-owner",
+      previousAdminUserId: "owner-1",
+      newAdminMembershipId: "membership-1",
+      newAdminUserId: "user-1",
       details: { previousRole: "hotel_owner", newRole: "hotel_owner", reason: "planned handover" },
-      created_at: "2026-08-19T05:00:00.000Z",
+      createdAt: "2026-08-19T05:00:00.000Z",
     }];
     render(<HotelStaff id="hotel-1" />);
 

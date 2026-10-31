@@ -9,11 +9,33 @@ import {
   cleanupUnverifiedFactors,
   prepareTotpEnrollment,
   useMfaStepUp,
+  mfaReturnPath,
 } from "./mfa";
 
 const authClientMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   verifyTotp: vi.fn(),
+}));
+
+const serverMocks = vi.hoisted(() => ({
+  status: vi.fn(),
+  verify: vi.fn(),
+}));
+
+// The hook now asks the server (auth.mfaStepUpStatus / auth.verifyMfaStepUp)
+// instead of Better Auth's client, because only the server can record a step-up
+// that requireRecentMfaVerification accepts.
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    useUtils: () => ({
+      client: {
+        auth: {
+          mfaStepUpStatus: { query: serverMocks.status },
+          verifyMfaStepUp: { mutate: serverMocks.verify },
+        },
+      },
+    }),
+  },
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -32,6 +54,8 @@ afterEach(() => {
 beforeEach(() => {
   authClientMocks.getSession.mockReset();
   authClientMocks.verifyTotp.mockReset();
+  serverMocks.status.mockReset();
+  serverMocks.verify.mockReset();
 });
 
 describe("mfa pure helpers", () => {
@@ -91,179 +115,104 @@ describe("mfa pure helpers", () => {
   });
 });
 
-describe("useMfaStepUp Hook with Better Auth", () => {
+describe("useMfaStepUp Hook (server-backed step-up)", () => {
+  async function trigger(result: { current: ReturnType<typeof useMfaStepUp> }) {
+    let step = "";
+    await act(async () => { step = await result.current.triggerStepUp(); });
+    return step;
+  }
+
   it("initializes with idle state", () => {
     const { result } = renderHook(() => useMfaStepUp());
     expect(result.current.mfaState).toEqual({ status: "idle" });
   });
 
-  it("returns error when user is unauthenticated", async () => {
-    authClientMocks.getSession.mockResolvedValueOnce({
-      data: null,
-      error: { message: "No active session" },
-    });
-
+  it("returns error when the server cannot identify the user", async () => {
+    serverMocks.status.mockRejectedValueOnce(new Error("Please login (10001)"));
     const { result } = renderHook(() => useMfaStepUp());
 
-    let step: string = "";
-    await act(async () => {
-      step = await result.current.triggerStepUp();
-    });
-
-    expect(step).toBe("error");
-    expect(result.current.mfaState.status).toBe("error");
-    if (result.current.mfaState.status === "error") {
-      expect(result.current.mfaState.message).toContain("No active session");
-    }
+    expect(await trigger(result)).toBe("error");
+    expect(result.current.mfaState).toEqual({ status: "error", message: "Please login (10001)" });
   });
 
-  it("returns needs_enroll when user has not enabled 2FA", async () => {
-    authClientMocks.getSession.mockResolvedValueOnce({
-      data: { user: { id: "u-no-mfa", twoFactorEnabled: false }, session: { id: "s-1" } },
-      error: null,
-    });
-
+  it("returns needs_enroll when the user has no authenticator", async () => {
+    serverMocks.status.mockResolvedValueOnce({ status: "needs_enroll", expiresAtMs: null });
     const { result } = renderHook(() => useMfaStepUp());
 
-    let step: string = "";
-    await act(async () => {
-      step = await result.current.triggerStepUp();
-    });
-
-    expect(step).toBe("needs_enroll");
+    expect(await trigger(result)).toBe("needs_enroll");
     expect(result.current.mfaState).toEqual({ status: "needs_enroll" });
   });
 
-  it("returns needs_challenge when user has 2FA enabled but unverified session", async () => {
-    authClientMocks.getSession.mockResolvedValueOnce({
-      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-unverified" } },
-      error: null,
-    });
-
+  it("returns needs_challenge when the session has no recent step-up", async () => {
+    serverMocks.status.mockResolvedValueOnce({ status: "needs_challenge", expiresAtMs: null });
     const { result } = renderHook(() => useMfaStepUp());
 
-    let step: string = "";
-    await act(async () => {
-      step = await result.current.triggerStepUp();
-    });
-
-    expect(step).toBe("needs_challenge");
+    expect(await trigger(result)).toBe("needs_challenge");
     expect(result.current.mfaState.status).toBe("needs_challenge");
   });
 
-  it("returns verified directly if session already has fresh twoFactorVerifiedAt", async () => {
-    authClientMocks.getSession.mockResolvedValueOnce({
-      data: {
-        user: { id: "u-mfa", twoFactorEnabled: true },
-        session: {
-          id: "s-fresh",
-          twoFactorVerifiedAt: new Date(Date.now() - 60_000).toISOString(),
-        },
-      },
-      error: null,
-    });
-
+  it("returns verified when the server already holds a fresh step-up", async () => {
+    serverMocks.status.mockResolvedValueOnce({ status: "verified", expiresAtMs: Date.now() + 60_000 });
     const { result } = renderHook(() => useMfaStepUp());
 
-    let step: string = "";
-    await act(async () => {
-      step = await result.current.triggerStepUp();
-    });
-
-    expect(step).toBe("verified");
+    expect(await trigger(result)).toBe("verified");
     expect(result.current.mfaState).toEqual({ status: "verified" });
   });
 
-  it("submits TOTP code and updates state to verified upon success", async () => {
-    authClientMocks.getSession.mockResolvedValue({
-      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-1" } },
-      error: null,
-    });
-    authClientMocks.verifyTotp.mockResolvedValueOnce({
-      data: { user: { id: "u-mfa" } },
-      error: null,
-    });
-
+  it("verifies the code on the server and becomes verified", async () => {
+    serverMocks.verify.mockResolvedValueOnce({ verified: true });
     const { result } = renderHook(() => useMfaStepUp());
 
-    await act(async () => {
-      await result.current.triggerStepUp();
-    });
-    expect(result.current.mfaState.status).toBe("needs_challenge");
-
-    let ok: boolean = false;
-    await act(async () => {
-      ok = await result.current.submitTotp("123456");
-    });
+    let ok = false;
+    await act(async () => { ok = await result.current.submitTotp("123456"); });
 
     expect(ok).toBe(true);
-    expect(authClientMocks.verifyTotp).toHaveBeenCalledWith({ code: "123456" });
+    expect(serverMocks.verify).toHaveBeenCalledWith({ code: "123456" });
+    expect(authClientMocks.verifyTotp).not.toHaveBeenCalled();
     expect(result.current.mfaState).toEqual({ status: "verified" });
-
-    // Subsequent triggerStepUp within freshness window immediately returns verified
-    let secondStep: string = "";
-    await act(async () => {
-      secondStep = await result.current.triggerStepUp();
-    });
-    expect(secondStep).toBe("verified");
   });
 
-  it("handles invalid TOTP submission gracefully", async () => {
-    authClientMocks.getSession.mockResolvedValue({
-      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-1" } },
-      error: null,
-    });
-    authClientMocks.verifyTotp.mockResolvedValueOnce({
-      data: null,
-      error: { message: "Invalid verification code" },
-    });
-
+  it("shows the server message when the code is wrong", async () => {
+    serverMocks.verify.mockRejectedValueOnce(new Error("Incorrect code. Wait for the next 6-digit code and try again."));
     const { result } = renderHook(() => useMfaStepUp());
 
-    await act(async () => {
-      await result.current.triggerStepUp();
-    });
-
-    let ok: boolean = true;
-    await act(async () => {
-      ok = await result.current.submitTotp("999999");
-    });
+    let ok = true;
+    await act(async () => { ok = await result.current.submitTotp("999999"); });
 
     expect(ok).toBe(false);
-    expect(result.current.mfaState.status).toBe("needs_challenge");
-    if (result.current.mfaState.status === "needs_challenge") {
-      expect(result.current.mfaState.error).toContain("Incorrect code");
-    }
+    expect(result.current.mfaState).toMatchObject({ status: "needs_challenge", error: expect.stringContaining("Incorrect code") });
   });
 
-  it("resets state and clears verification timestamp upon reset()", async () => {
-    authClientMocks.getSession.mockResolvedValue({
-      data: { user: { id: "u-mfa", twoFactorEnabled: true }, session: { id: "s-1" } },
-      error: null,
-    });
-    authClientMocks.verifyTotp.mockResolvedValue({
-      data: { user: { id: "u-mfa" } },
-      error: null,
-    });
-
+  it("refuses a code that is not six digits without calling the server", async () => {
     const { result } = renderHook(() => useMfaStepUp());
 
-    await act(async () => {
-      await result.current.triggerStepUp();
-      await result.current.submitTotp("123456");
-    });
-    expect(result.current.mfaState.status).toBe("verified");
+    let ok = true;
+    await act(async () => { ok = await result.current.submitTotp("12a456"); });
 
-    act(() => {
-      result.current.reset();
-    });
+    expect(ok).toBe(false);
+    expect(serverMocks.verify).not.toHaveBeenCalled();
+  });
+
+  it("resets to idle", async () => {
+    serverMocks.verify.mockResolvedValueOnce({ verified: true });
+    const { result } = renderHook(() => useMfaStepUp());
+    await act(async () => { await result.current.submitTotp("123456"); });
+
+    act(() => { result.current.reset(); });
     expect(result.current.mfaState).toEqual({ status: "idle" });
+  });
+});
 
-    // After reset, triggerStepUp requires challenge again
-    let stepAfterReset: string = "";
-    await act(async () => {
-      stepAfterReset = await result.current.triggerStepUp();
-    });
-    expect(stepAfterReset).toBe("needs_challenge");
+describe("mfaReturnPath", () => {
+  it("returns to an in-app page after enrolling", () => {
+    expect(mfaReturnPath("?next=/dashboard/financials")).toBe("/dashboard/financials");
+    expect(mfaReturnPath("?next=/settings/security")).toBe("/settings/security");
+  });
+
+  it("never sends the user to another site", () => {
+    expect(mfaReturnPath("?next=//evil.example/dashboard")).toBe("/dashboard");
+    expect(mfaReturnPath("?next=https://evil.example")).toBe("/dashboard");
+    expect(mfaReturnPath("?next=/dashboardx")).toBe("/dashboard");
+    expect(mfaReturnPath("")).toBe("/dashboard");
   });
 });

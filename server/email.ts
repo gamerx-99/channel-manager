@@ -1,3 +1,5 @@
+import { escapeHtml } from "@shared/escapeHtml";
+
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -73,20 +75,23 @@ export class ResendEmailSender implements EmailSender {
   async sendInviteEmail(params: SendInviteEmailParams): Promise<void> {
     const roleLabel = params.roleName ? ` as ${params.roleName.replace("_", " ")}` : "";
     const subject = `You've been invited to join ${params.hotelName} on hayhost`;
+    const hotelNameHtml = escapeHtml(params.hotelName);
+    const roleLabelHtml = escapeHtml(roleLabel);
+    const inviteUrlHtml = escapeHtml(params.inviteUrl);
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;">
-        <h2 style="color: #0f172a; margin-bottom: 16px;">Welcome to ${params.hotelName}</h2>
+        <h2 style="color: #0f172a; margin-bottom: 16px;">Welcome to ${hotelNameHtml}</h2>
         <p style="font-size: 16px; line-height: 24px;">
-          You have been invited${roleLabel} to manage property operations on <strong>hayhost</strong>.
+          You have been invited${roleLabelHtml} to manage property operations on <strong>hayhost</strong>.
         </p>
         <div style="margin: 32px 0;">
-          <a href="${params.inviteUrl}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
+          <a href="${inviteUrlHtml}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
             Accept Invitation &amp; Set Password
           </a>
         </div>
         <p style="font-size: 14px; color: #64748b; line-height: 20px;">
           If the button above does not work, copy and paste this URL into your browser:<br/>
-          <a href="${params.inviteUrl}" style="color: #2563eb;">${params.inviteUrl}</a>
+          <a href="${inviteUrlHtml}" style="color: #2563eb;">${inviteUrlHtml}</a>
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
         <p style="font-size: 12px; color: #94a3b8;">
@@ -101,6 +106,7 @@ export class ResendEmailSender implements EmailSender {
 
   async sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<void> {
     const subject = "Reset your password on hayhost";
+    const resetUrlHtml = escapeHtml(params.resetUrl);
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;">
         <h2 style="color: #0f172a; margin-bottom: 16px;">Password Reset Request</h2>
@@ -108,13 +114,13 @@ export class ResendEmailSender implements EmailSender {
           We received a request to reset your password for your <strong>hayhost</strong> account.
         </p>
         <div style="margin: 32px 0;">
-          <a href="${params.resetUrl}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
+          <a href="${resetUrlHtml}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
             Reset Password
           </a>
         </div>
         <p style="font-size: 14px; color: #64748b; line-height: 20px;">
           If the button above does not work, copy and paste this URL into your browser:<br/>
-          <a href="${params.resetUrl}" style="color: #2563eb;">${params.resetUrl}</a>
+          <a href="${resetUrlHtml}" style="color: #2563eb;">${resetUrlHtml}</a>
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
         <p style="font-size: 12px; color: #94a3b8;">

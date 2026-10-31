@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import type { D1Database, Fetcher, R2Bucket } from "@cloudflare/workers-types/index.ts";
+import type { D1Database, Fetcher, R2Bucket, RateLimit } from "@cloudflare/workers-types/index.ts";
 import { TRPCError } from "@trpc/server";
 import { drizzle } from "drizzle-orm/d1";
 import { appRouter } from "../server/routers";
@@ -16,15 +16,18 @@ import {
   validateHotelMediaObjectKey,
   validateHotelMediaUpload,
 } from "../server/d1/media";
-import { buildIcalExport } from "../server/icalFeed";
-import { loadIcalExport } from "../server/otaIcalRoutes";
+import { getOtaIcalExport } from "../server/d1/ota";
+import { createD1SystemCallerContext } from "../server/db/scope";
 import { createAuth, type AuthInstance } from "../server/auth";
+import { createEmailSender } from "../server/email";
 
 /** Runtime bindings declared in wrangler.toml. */
 export type WorkerEnv = {
   ASSETS: Fetcher;
   DB: D1Database;
   MEDIA: R2Bucket;
+  /** Optional so environments without the binding keep the older limits only. */
+  PUBLIC_BOOKING_LIMITER?: RateLimit;
 };
 
 type WorkerAppDependencies = {
@@ -131,7 +134,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
   const app = new Hono<{ Bindings: WorkerEnv }>();
   const createContext = dependencies.createContext ?? createContextFromRequest;
   const createDatabase = dependencies.createDatabase ?? defaultDatabase;
-  const getAuth = dependencies.createAuthInstance ?? ((db, baseURL) => createAuth({ db, baseURL }));
+  const getAuth = dependencies.createAuthInstance ?? ((db, baseURL) => createAuth({ db, baseURL, emailSender: createEmailSender() }));
 
   const requestContext = (
     req: Request,
@@ -154,13 +157,16 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       endpoint: "/api/trpc",
       req: c.req.raw,
       router: appRouter,
-      createContext: () =>
-        requestContext(
+      createContext: async () => ({
+        ...(await requestContext(
           c.req.raw,
           c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
           db,
           c.env?.DB,
-        ),
+        )),
+        publicBookingLimiter: c.env?.PUBLIC_BOOKING_LIMITER,
+        cfConnectingIp: c.req.header("cf-connecting-ip"),
+      }),
     });
   });
 
@@ -301,10 +307,13 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
   app.get("/api/ical/:file", async c => {
     const token = c.req.param("file").replace(/\.ics$/i, "").toLowerCase();
     try {
-      const exportData = await loadIcalExport(token);
-      if (!exportData) return c.text("Calendar not found.", 404);
+      if (!c.env?.DB) return c.text("Calendar not found.", 404);
+      const db = createDatabase(c.env.DB)!;
+      const systemCaller = createD1SystemCallerContext();
+      const ics = await getOtaIcalExport(db, systemCaller, token);
+      if (!ics) return c.text("Calendar not found.", 404);
       return c.body(
-        buildIcalExport({ calendarName: exportData.calendarName, events: exportData.events }),
+        ics,
         200,
         {
           "Content-Type": "text/calendar; charset=utf-8",

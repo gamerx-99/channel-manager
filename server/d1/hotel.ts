@@ -1,6 +1,10 @@
+import { createHotelOwnerMembership } from "./signupLinks";
+import { getSupportMemberships } from "./supportAccess";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { defaultChildRateConfig, defaultOccupancyPricing } from "@shared/occupancyPricing";
+import type { AppRole } from "@shared/authorization";
+import { resolveMembershipPermissions } from "@shared/permissions";
 import { bookings, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang, satangToMoney } from "../db/money";
@@ -31,21 +35,21 @@ function canonicalThreshold(value: string | number): string {
 export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
   const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-  const safeMemberships = memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
+  const supportMemberships = await getSupportMemberships(db, caller);
+  const safeMemberships = caller.roles?.includes("support") || memberships.some(m => m.role === "support")
+    ? supportMemberships
+    : memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
   const output = [];
   for (const { hotelId } of safeMemberships) {
-    await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
+    const scope = await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
     const [hotel] = await db.select().from(hotels).where(eq(hotels.id, hotelId)).limit(1);
     if (!hotel) continue;
-    const canViewFinancials = await (async () => {
-      try { await authorizeHotelAction(db, caller, hotelId, "property.view_financials", "hotels.list.price", new Date()); return true; }
-      catch { return false; }
-    })();
+    const canViewFinancials = scope.permissions.includes("property.view_financials");
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
       db.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
       db.select({ id: rooms.id, status: rooms.status }).from(rooms).where(eq(rooms.hotelId, hotelId)),
-      db.select({ id: bookings.id, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
-        .from(bookings).where(eq(bookings.hotelId, hotelId)),
+      scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
+        .from(bookings).where(eq(bookings.hotelId, hotelId)) : Promise.resolve([]),
     ]);
     output.push({
       id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address,
@@ -59,8 +63,13 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
 
 export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
-  const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers)
-    .where(and(eq(hotelUsers.userId, caller.userId), eq(hotelUsers.role, "hotel_owner")));
+  const allMemberships = await db.select({
+    hotelId: hotelUsers.hotelId, role: hotelUsers.role, grants: hotelUsers.permissionGrants, revokes: hotelUsers.permissionRevokes,
+  }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  const blocked = (role: string) => role === "support" || role === "super_admin";
+  if (caller.roles?.some(blocked) || allMemberships.some(row => blocked(row.role))) throw new TRPCError({ code: "FORBIDDEN" });
+  // Hotels are chosen by the owner's per-person switch, never by another hotel's membership.
+  const memberships = allMemberships.filter(row => resolveMembershipPermissions(row.role as AppRole, { grants: row.grants, revokes: row.revokes }).includes("property.view_financials"));
   const output = [];
   for (const membership of memberships) {
     await authorizeHotelAction(db, caller, membership.hotelId, "property.view_financials", "financials.list_hotels", new Date());
@@ -105,6 +114,48 @@ export async function createManagedHotel(db: D1ScopedDatabase, caller: D1CallerC
   return { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, public_enabled: hotel.publicEnabled, created_at: hotel.createdAt };
 }
 
+/** Publish the hotel page at /:slug and open direct booking, or take it private again. */
+export async function setHotelPublicEnabled(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, enabled: boolean, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel.public_enabled.update", now);
+  const [hotel] = await db.update(hotels).set({ publicEnabled: enabled }).where(eq(hotels.id, hotelId))
+    .returning({ id: hotels.id, publicEnabled: hotels.publicEnabled });
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
+  return { id: hotel.id, public_enabled: hotel.publicEnabled };
+}
+
+// A hotel page lives at /:slug, so a slug must not shadow an app route.
+const RESERVED_HOTEL_SLUGS = new Set([
+  "accept-invite", "api", "assets", "communications", "dashboard", "forgot-password", "hotels", "housekeeping", "login", "media", "mfa",
+  "platform", "reset-password", "settings", "signup", "website-builder",
+]);
+
+/**
+ * Public signup: a signed-in account with no role yet becomes the owner of one new hotel.
+ * ASSUMPTION: one hotel per account, and the hotel stays private until the owner publishes it.
+ */
+export async function registerOwnHotel(db: D1ScopedDatabase, caller: D1CallerContext, input: Omit<CreateHotelInput, "public_enabled">, now = new Date()) {
+  if (!caller.userId || caller.access === "public" || caller.roles?.some(role => role === "super_admin" || role === "admin" || role === "support")) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  if (RESERVED_HOTEL_SLUGS.has(input.slug)) throw new TRPCError({ code: "BAD_REQUEST", message: "This web address is reserved." });
+  const memberships = await db.select({ id: hotelUsers.id }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId)).limit(1);
+  if (memberships.length) throw new TRPCError({ code: "CONFLICT", message: "This account already has a hotel." });
+  const taken = await db.select({ id: hotels.id }).from(hotels).where(eq(hotels.slug, input.slug)).limit(1);
+  if (taken.length) throw new TRPCError({ code: "CONFLICT", message: "This web address is already in use." });
+
+  const [hotel] = await db.insert(hotels).values({
+    name: input.name, slug: input.slug, address: input.address, ownerContact: input.owner_contact, publicEnabled: false,
+  }).returning();
+  if (!hotel) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel insert did not return a record." });
+  try {
+    await createHotelOwnerMembership(db, hotel.id, caller.userId, now);
+  } catch (error) {
+    await db.delete(hotels).where(eq(hotels.id, hotel.id));
+    throw error;
+  }
+  return { id: hotel.id, name: hotel.name, slug: hotel.slug };
+}
+
 export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: CreateRoomTypeInput, now = new Date()) {
   await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_room_structure", "room_types.create", now);
   if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) throw new TRPCError({ code: "BAD_REQUEST", message: "Room quantity must be a positive integer." });
@@ -123,7 +174,7 @@ export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1Call
     (id, hotel_id, name, capacity, base_price, base_occupancy, max_occupancy, occupancy_pricing, child_rule, child_rule_limit, child_rates, children_count_toward_max)
     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(roomTypeId, input.hotel_id, input.name, maxOccupancy, basePrice, baseOccupancy, maxOccupancy,
-      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), input.children_count_toward_max ?? true)];
+      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), (input.children_count_toward_max ?? true) ? 1 : 0)];
   for (let index = 0; index < input.quantity; index++) {
     batch.push(db.$client.prepare("insert into rooms (id, hotel_id, room_type_id, room_number) values (?, ?, ?, ?)")
       .bind(crypto.randomUUID(), input.hotel_id, roomTypeId, String(startNumber + index).padStart(3, "0")));

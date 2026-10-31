@@ -39,19 +39,18 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
   const { data: logs, isLoading: loadingLogs, error: logsError, refetch: refetchLogs } = trpc.channelManager.ota.listLogs.useQuery({ hotelId });
 
   const { data: hotel } = trpc.channelManager.hotel.useQuery(hotelId);
-  const rooms = [...(hotel?.rooms ?? [])].sort((a, b) => a.room_number.localeCompare(b.room_number, undefined, { numeric: true }));
-  const roomTypeNames = new Map((hotel?.room_types ?? []).map(roomType => [roomType.id, roomType.name]));
-  const roomLabel = (roomId?: string | null) => {
+  const rooms = [...(hotel?.rooms ?? [])].sort((a: any, b: any) => String(a.room_number).localeCompare(String(b.room_number), undefined, { numeric: true }));
+  const roomTypeNames = new Map((hotel?.room_types ?? []).map((roomType: any) => [roomType.id, roomType.name]));  const roomLabel = (roomId?: string | null) => {
     const room = rooms.find(candidate => candidate.id === roomId);
     if (!room) return null;
     const typeName = roomTypeNames.get(room.room_type_id);
     return typeName ? `${room.room_number} · ${typeName}` : room.room_number;
   };
   const roomTypes = (hotel?.room_types ?? [])
-    .map(roomType => ({ id: roomType.id, name: roomType.name, count: rooms.filter(room => room.room_type_id === roomType.id).length }))
-    .filter(roomType => roomType.count > 0);
+    .map((roomType: any) => ({ id: roomType.id, name: roomType.name, count: rooms.filter((room: any) => room.room_type_id === roomType.id).length }))
+    .filter((roomType: any) => roomType.count > 0);
   const roomTypeLabel = (roomTypeId?: string | null) => {
-    const roomType = roomTypes.find(candidate => candidate.id === roomTypeId);
+    const roomType = roomTypes.find((candidate: any) => candidate.id === roomTypeId);
     return roomType ? t("otaSync.roomTypeOption", { name: roomType.name, count: roomType.count }) : null;
   };
   // A connection blocks either one room or a whole room type; the picker encodes which.
@@ -400,8 +399,7 @@ export default function OtaSync({ hotelId }: { hotelId: string }) {
                     {roomTypes.length > 0 && (
                       <SelectGroup>
                         <SelectLabel>{t("otaSync.roomGroupType")}</SelectLabel>
-                        {roomTypes.map(roomType => (
-                          <SelectItem key={roomType.id} value={`type:${roomType.id}`}>{roomTypeLabel(roomType.id)}</SelectItem>
+                        {roomTypes.map((roomType: any) => (                          <SelectItem key={roomType.id} value={`type:${roomType.id}`}>{roomTypeLabel(roomType.id)}</SelectItem>
                         ))}
                       </SelectGroup>
                     )}

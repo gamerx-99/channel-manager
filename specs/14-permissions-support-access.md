@@ -1,9 +1,10 @@
 # 14 Per-person permissions, support access, and platform-role hardening
 
-Status: IN PROGRESS — 14-00 (RLS write hardening) and 14-01 (core authorization)
-committed on `agent-a/next` (2026-10-27), not yet pushed to `main`. 14-02 CANCELLED
-by owner decision (2026-10-27); its D1 schema moves to 13-02 and enforcement to
-13-03. 14-03..14-05 remain pending and are tracked separately.
+Status: IN PROGRESS — 14-05 per-hotel SlipOK keys restored 2026-11-01 on `feat/financials-owner-grant` (needs secret SLIPOK_ENCRYPTION_KEY); — 14-03b server and 14-04 client implemented in
+`agent-s/support-access` (2026-10-30), 842 tests/check/build passing and independent
+reviewer APPROVE; uncommitted per instruction.
+14-00/14-01 are historical completed work; 14-02 remains CANCELLED. This run does
+not close the full 14-03 parent or start 14-05.
 Depends on: 12 (SaaS plans/billing) for plan-gated SlipOK quotas (14-05); spec 13 for
 eventual port to the Cloudflare data layer.
 Owner-tier: cross-cutting (shared authorization + server + client + SQL).
@@ -49,15 +50,33 @@ owner-approved access to a hotel without cross-hotel read.
   super-admin dashboard, fix `completeHotelOwnerSignup` to use the logged-in user id,
   fix `verifySlip` to use the session hotel and check the payee account, fix
   `deleteRateOverride` to check same hotel.
-- [ ] **14-04 Client** — per-staff permission switch UI and owner approval screen for
+  - **14-03b DONE locally, reviewer APPROVE (2026-10-30)**: `access` router for stored staff
+    permissions, owner support grants/revoke/audit, and summary-only platform data.
+    D1 grants are account-bound (no bearer-token exchange), exactly 1/24/72/168h,
+    view/edit; reserved owner controls never delegate. Aggregate OTA/notification
+    paths and payment-review writes now honour persisted scope. Delegated role,
+    invite, removal and ownership paths cannot bypass permission switches.
+- [x] **14-04 Client** — per-staff permission switch UI and owner approval screen for
   support access.
-- [ ] **14-05 SlipOK central account** — auto key rotation on quota exhaustion, own
-  duplicate-slip check, plan-based quotas.
+- [x] **14-05 SlipOK per-hotel key** (reversed 2026-11-01, branch
+  `feat/financials-owner-grant`) — the central account built on 2026-10-31 was dropped
+  by the owner: SlipOK's terms forbid resale without authorisation, and one branch
+  would have to hold every hotel's receiving account. Each hotel may connect its own
+  SlipOK key and branch ID in Security settings (encrypted with
+  `SLIPOK_ENCRYPTION_KEY`, recent MFA required). Requests send `log: true`, so SlipOK
+  checks the receiver accounts bound to that branch; our own receiver compare is gone
+  because a PromptPay ID cannot be compared with a bank account. Own duplicate check by
+  `verified_transaction_ref` before the write stays. No key, a refused key or a key
+  that cannot be decrypted sends the slip to manual review, so SlipOK is optional.
+  Owner decisions: no plan quotas (every function works now, tiers later), no key pool
+  or rotation, and nothing may evade SlipOK's multi-account detection.
 
 ## Non-goals / invariants
 
-- `property.view_financials` stays `hotel_owner`-only and is never granted to
-  `super_admin` (see `requirePermission`, not `requireHotelPermission`).
+- `property.view_financials` is held by `hotel_owner`, and the owner alone decides
+  which staff get it through the per-person switch (owner decision, 2026-10-31). It
+  never reaches `super_admin`, and a support key never opens the financial report
+  (see `requireFinancialsAccess`, not `requireHotelPermission`).
 - `property.manage_staff` is never part of a support grant.
 - Support reaches a hotel only through an owner-approved, time-limited grant.
 - `inviteAuthUser.test.ts` has 4 pre-existing failures (missing Supabase creds) —
@@ -70,3 +89,45 @@ owner-approved access to a hotel without cross-hotel read.
 - `auth.me` returns an `accessToken`.
 - `markRead` does not verify the notification belongs to the hotel.
 - `savePromptPayId` has no MFA step-up.
+
+
+## Support accounts by email (owner decision, 2026-10-31)
+
+- A super admin enters an email on `/settings/admin-users`. The invitee accepts on the
+  existing `/accept-invite` page, and only then does the account work. The account lives
+  in `support_accounts` (migration `20261031000000_support_accounts.sql`) because support
+  belongs to no hotel. A super admin can disable it.
+- A hotel owner grants the time-limited key by typing that support email, not a user id.
+  Owners cannot create support accounts.
+- ASSUMPTION: an email that already has an account is refused, because support identity
+  removes all hotel access by design.
+- Sending needs `RESEND_API_KEY` and `EMAIL_FROM` on the Worker. Without them
+  `createEmailSender` falls back to the mock sender and no email leaves.
+
+## Platform super admins (owner decision, 2026-10-31)
+
+- A super admin belongs to no hotel, so the account lives in `platform_admins`
+  (migration `20261031010000_platform_admins.sql`), and the session gains the
+  `super_admin` role once the invite is accepted and the row is not disabled.
+- ASSUMPTION: the app has no screen that creates a super admin. A `platform-invite:<email>`
+  link is created by hand in D1, so no request can mint this role.
+- The role still never opens a hotel or the financial report.
+
+## 14-03b / 14-04 local delivery notes (2026-10-30)
+
+- `access.updateStaffPermissions`, `grantSupport`, `revokeSupport`, `supportAccess`,
+  `platformSummary` reuse D1 scope and existing support tables; no migration added.
+- `/hotels/:id/staff` renders the 13 shared switches with dependency closure and
+  edit bounds. `/hotels/:id/support-access` is owner-only and shows keys and audit
+  history. Support mode/expiry appears in the shell. `/platform` (also the super-admin
+  dashboard entry) shows only hotel name, plan, payment status, room count and sync
+  status. Billing fields remain null until spec 12, per the existing owner decision.
+- Routing and navigation use the selected hotel's resolved membership, without
+  cross-hotel role inheritance. The financial dashboard opens for the owner and for
+  staff with the owner's switch on, and it lists only the hotels where that holds.
+- Existing tests asserting the retired super-admin hotel bypass are replaced with
+  stronger FORBIDDEN/no-repository-call checks. Not-found tests retain their
+  assertions with authorized owner fixtures. This implements the explicit security
+  requirement, rather than preserving obsolete mocked access behavior.
+- Validation and reviewer evidence: `.agent/tickets/T14-03b-support-access.md`,
+  `.agent/tickets/T14-04-per-staff-ui.md` and the latest handoff entries.

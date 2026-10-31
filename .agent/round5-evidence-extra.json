@@ -1,0 +1,34 @@
+[
+  [
+    "server/auth.better.test.ts",
+    "isolates staff invites to invited hotel and rolls back on membership failure"
+  ],
+  [
+    "server/d1/siteConfig.test.ts",
+    "allows public config lookup only for server-created public context and published hotels"
+  ],
+  [
+    "server/d1/hotel.test.ts",
+    "rejects cross-hotel hotel data access"
+  ],
+  [
+    "server/d1/payment.test.ts",
+    "rejects cross-hotel payment settings and session access"
+  ],
+  [
+    "server/d1/staff.test.ts",
+    "rejects cross-hotel staff reads and writes"
+  ],
+  [
+    "server/d1/notification.test.ts",
+    "rejects cross-hotel notification access"
+  ],
+  [
+    "server/d1/siteConfig.test.ts",
+    "rejects cross-hotel site config and media access"
+  ],
+  [
+    "server/d1/ota.test.ts",
+    "rejects cross-hotel OTA sync before fetching or changing inventory"
+  ]
+]

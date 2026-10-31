@@ -11,21 +11,26 @@ describe('Dashboard Calendar View contract', () => {
   const home = readFileSync(resolve(process.cwd(), 'client/src/pages/Home.tsx'), 'utf8');
   const css = readFileSync(resolve(process.cwd(), 'client/src/index.css'), 'utf8');
 
-  it('exposes a protected calendar procedure with an ISO date window and RLS-scoped sources', () => {
+  it('exposes a protected calendar procedure with an ISO date window and D1-scoped sources', () => {
     expect(router).toContain('export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchema)');
-    expect(router).toContain("listManagedHotels(client)");
-    expect(router).toContain("getGlobalOtaSummary(ctx.user.accessToken)");
-    expect(router).toContain("listAvailabilityForHotel(client, hotel.id)");
+    expect(router).toContain("d1ListManagedHotels(ctx.db");
+    expect(router).toContain("getOtaSummary");
+    expect(router).toContain("d1ListAvailabilityForHotel(db,");
     expect(router).toMatch(/startDate: z\.string\(\)\.regex\(\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\//);
     expect(router).toContain('visibleHotelCalendars');
   });
 
   it('projects bookings, availability states, and iCal log activity onto each day', () => {
-    expect(router).toContain("listBookingOccupancyForHotel(client, hotel.id, dates[0], occupancyEndDate)");
-    expect(router).toContain("booking.check_in <= date && booking.check_out > date && isBookingOccupyingInventory(booking)");
+    expect(router).toContain("d1ListBookingOccupancyForHotel(db,");
+    expect(router).toContain("booking.checkIn) <= date && (booking.checkOut) > date && isBookingOccupyingInventory(booking as any)");
     expect(router).toContain("status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy')");
     expect(router).toContain('syncEvents: hotelOtaEvents.filter');
-    expect(router).toContain('getUpdatedItemCount(log)');
+    expect(dashboardRouterText).toContain('d1ListManagedHotels(db, caller)');
+    expect(dashboardRouterText).toContain('d1GetManagedHotel(db, caller, hotel.id)');
+    expect(dashboardRouterText).toContain('d1ListAvailabilityForHotel(db, caller, hotel.id)');
+    expect(dashboardRouterText).toContain('d1ListBookingOccupancyForHotel(db, caller, hotel.id, dates[0], occupancyEndDate)');
+    expect(dashboardRouterText).toMatch(/booking\.checkIn\) <= date[\s\S]*?booking\.checkOut\) > date[\s\S]*?isBookingOccupyingInventory\(booking as any\)/);
+    expect(dashboardRouterText).toContain('available = Math.max(0, allotment - bookedRoomIds.size)');
   });
 
   it('renders the calendar inside the Dashboard and supports property/date selection', () => {
@@ -50,7 +55,7 @@ describe('Dashboard Calendar View contract', () => {
     expect(router).toContain("revenue.manage_allotment");
     expect(router).toContain("revenue.manage_stop_sell");
     // Guard moved to assertHotelAndRoomTypeExist helper (Phase 1B refactor); verify helper is called at this call site
-    expect(router).toContain("assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id)");
+    expect(router).toContain("d1GetManagedHotel(db,");
   });
 
   it('keeps sync markers and details readable on narrow screens', () => {

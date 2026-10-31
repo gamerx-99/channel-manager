@@ -1,18 +1,8 @@
-import type { Request, Response } from 'express';
+import { hotelUsers } from '../drizzle/d1-schema';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('./db', () => ({
+vi.mock('./d1/hotel', () => ({
   getManagedHotel: vi.fn().mockResolvedValue(null),
-  listManagedHotels: vi.fn(),
-  listBookingsForHotel: vi.fn(),
-  listAvailabilityForHotel: vi.fn(),
-  getPublicHotel: vi.fn(),
-  createBookingWithGuests: vi.fn(),
-  updateAvailability: vi.fn(),
-}));
-
-vi.mock('./supabase', () => ({
-  createRlsSupabaseClient: vi.fn(() => ({})),
 }));
 
 describe('channelManager.hotel', () => {
@@ -28,7 +18,19 @@ describe('channelManager.hotel', () => {
         accessToken: 'test-access-token',
         appMetadata: {},
         userMetadata: {},
+        role: 'hotel_owner',
+        roles: ['hotel_owner'],
+        memberships: [{ hotelId: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4', role: 'hotel_owner' }],
       },
+      db: {
+        select: () => ({
+          from: (table: any) => {
+            if (table === hotelUsers) return { where: async () => [{ hotelId: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4', role: 'hotel_owner', permissionGrants: null, permissionRevokes: null, userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322' }] };
+            return { where: () => ({ limit: async () => [] }) };
+          },
+        }),
+      } as any,
+      caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: ['hotel_owner'], memberships: [{ hotelId: '88ed76e4-cc93-4aa7-9c4d-30999d35ada4', role: 'hotel_owner' }], access: 'authenticated' } as any,
     });
 
     await expect(caller.channelManager.hotel('88ed76e4-cc93-4aa7-9c4d-30999d35ada4')).rejects.toMatchObject({

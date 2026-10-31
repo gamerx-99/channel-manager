@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { PaymentQR } from "@/components/PaymentQR";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
 import { useTranslation } from "@/lib/i18n";
+import { usePageMeta } from "@/lib/pageMeta";
 import { calculateServiceTotal } from "@shared/pricingModels";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
@@ -40,13 +41,13 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [children, setChildren] = useState<string[]>([]);
   const [preferredRoomTypeId, setPreferredRoomTypeId] = useState<string | null>(null);
   const [heldBooking, setHeldBooking] = useState<{
-    booking_id: string;
-    hotel_id: string;
-    room_id: string;
-    expires_at: string;
-    room_type_name: string;
-    room_number: string;
-    total_price: number;
+    bookingId: string;
+    hotelId: string;
+    roomId: string;
+    expiresAt: string;
+    roomTypeName: string;
+    roomNumber: string;
+    totalPrice: number | string;
     nights: number;
   } | null>(null);
   const [selectedServiceQty, setSelectedServiceQty] = useState<Record<string, number>>({});
@@ -59,14 +60,18 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
 
-  const publicHotel = trpc.channelManager.publicHotel.useQuery(slug);
+  // A private or unknown hotel answers NOT_FOUND at once; retrying it only kept
+  // guests looking at a loading screen.
+  const publicHotel = trpc.channelManager.publicHotel.useQuery(slug, {
+    retry: (failureCount, error) => error.data?.code !== "NOT_FOUND" && failureCount < 2,
+  });
   const siteConfigQuery = trpc.channelManager.getHotelSiteConfig.useQuery(slug, {
     enabled: !publicHotel.isLoading && !publicHotel.error,
   });
 
   const isDatesValid = Boolean(checkIn && checkOut && checkOut > checkIn);
-  const propertyChildRule = publicHotel.data?.roomTypes[0]?.child_rule ?? 'age';
-  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.child_rule === 'age' || roomType.child_rule_limit != null);
+  const propertyChildRule = publicHotel.data?.roomTypes[0]?.childRule ?? 'age';
+  const childRulesConfigured = (publicHotel.data?.roomTypes.length ?? 0) > 0 && publicHotel.data!.roomTypes.every(roomType => roomType.childRule === 'age' || roomType.childRuleLimit != null);
   const childMeasurements = children.filter(value => value !== '').map(value => propertyChildRule === 'age' ? { age: Number(value) } : { height_cm: Number(value) });
   const guestsValid = adults >= 1 && children.every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
 
@@ -79,8 +84,17 @@ export default function PublicHotel({ slug }: { slug: string }) {
   );
 
   const holdRoomTypeMutation = trpc.channelManager.holdRoomType.useMutation({
-    onSuccess: (data) => {
-      setHeldBooking(data);
+    onSuccess: (data: any) => {
+      setHeldBooking({
+        bookingId: data.booking_id,
+        hotelId: data.hotel_id,
+        roomId: data.room_id,
+        expiresAt: data.expires_at,
+        roomTypeName: data.room_type_name,
+        roomNumber: data.room_number,
+        totalPrice: data.total_price,
+        nights: data.nights,
+      });
       setWizardError(null);
       setWizardStep(3);
     },
@@ -103,9 +117,9 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
   // Lazy-expiry countdown for the held/pending booking (steps 2-5).
   useEffect(() => {
-    if (!heldBooking?.expires_at || wizardStep < 2 || wizardStep > 5) return;
+    if (!heldBooking?.expiresAt || wizardStep < 2 || wizardStep > 5) return;
     const tick = () => {
-      const ms = new Date(heldBooking.expires_at).getTime() - Date.now();
+      const ms = new Date(heldBooking.expiresAt).getTime() - Date.now();
       setRemainingMs(Math.max(0, ms));
       if (ms <= 0) {
         setWizardError(t("publicHotel.holdExpiredRestart"));
@@ -115,14 +129,27 @@ export default function PublicHotel({ slug }: { slug: string }) {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [heldBooking?.expires_at, wizardStep, t]);
+  }, [heldBooking?.expiresAt, wizardStep, t]);
+
+  const notFound = publicHotel.error?.data?.code === "NOT_FOUND";
+  const metaHotel = publicHotel.data?.hotel;
+  usePageMeta(metaHotel
+    ? {
+      title: t("publicHotel.metaTitle", { name: metaHotel.name }),
+      description: siteConfigQuery.data?.heroCopy?.trim() || t("publicHotel.metaDescription", { name: metaHotel.name, address: metaHotel.address }),
+    }
+    : notFound ? { title: t("publicHotel.hotelUnavailableTitle"), description: t("publicHotel.hotelUnavailableDesc"), noindex: true } : null);
 
   if (publicHotel.isLoading) {
-    return <div className="public-page"><main className="public-loading">{t("publicHotel.loadingHotelDetails")}</main></div>;
+    return <div className="public-page"><main className="public-loading" role="status" aria-live="polite">{t("publicHotel.loadingHotelDetails")}</main></div>;
+  }
+
+  if (notFound || (!publicHotel.error && !publicHotel.data)) {
+    return <div className="public-page"><main className="public-loading" data-testid="public-hotel-not-found"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><div className="public-state-actions"><Link className="button public-button" href="/">{t("publicHotel.goHome")}</Link><Link className="button button-quiet" href="/login">{t("publicHotel.hotelSignIn")}</Link></div></main></div>;
   }
 
   if (publicHotel.error || !publicHotel.data) {
-    return <div className="public-page"><main className="public-loading"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><Link className="button public-button" href="/login">{t("publicHotel.hotelSignIn")}</Link></main></div>;
+    return <div className="public-page"><main className="public-loading" role="alert" data-testid="public-hotel-load-error"><h1>{t("publicHotel.loadErrorTitle")}</h1><p>{t("publicHotel.loadErrorDesc")}</p><button type="button" className="button public-button" onClick={() => void publicHotel.refetch()}>{t("publicHotel.tryAgain")}</button></main></div>;
   }
 
   const { hotel, roomTypes, media } = publicHotel.data;
@@ -130,10 +157,10 @@ export default function PublicHotel({ slug }: { slug: string }) {
 
   // hotel_site_config fallback: when no config row or table missing, use fixed copy/colors
   const siteConfig = siteConfigQuery.data ?? null;
-  const heroCopy = siteConfig?.hero_copy ?? DEFAULT_HERO_COPY;
-  const accentColor = siteConfig?.accent_color ?? DEFAULT_ACCENT_COLOR;
-  const visibleSections = siteConfig?.visible_sections ?? null;
-  const isVisible = (key: string) => visibleSections == null || visibleSections[key] !== false;
+  const heroCopy = siteConfig?.heroCopy ?? DEFAULT_HERO_COPY;
+  const accentColor = siteConfig?.accentColor ?? DEFAULT_ACCENT_COLOR;
+  const visibleSections = (siteConfig?.visibleSections as Record<string, boolean> | null) ?? null;
+  const isVisible = (key: string) => visibleSections?.[key] !== false;
 
   const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
 
@@ -188,15 +215,14 @@ export default function PublicHotel({ slug }: { slug: string }) {
     const services = (servicesQuery.data ?? [])
       .filter((s) => (selectedServiceQty[s.id] ?? 0) > 0)
       .map((s) => ({
-        service_name: s.name,
-        pricing_model: s.pricing_model as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
-        unit_price: Number(s.unit_price),
+        hotel_service_id: s.id,
         quantity: selectedServiceQty[s.id],
       }));
 
     setWizardError(null);
     confirmDetailsMutation.mutate({
-      booking_id: heldBooking.booking_id,
+      booking_id: heldBooking.bookingId,
+      hotel_id: heldBooking.hotelId,
       guest_name: guestName.trim(),
       guest_email: guestEmail.trim() || undefined,
       guest_phone: guestPhone.trim() || undefined,
@@ -205,12 +231,12 @@ export default function PublicHotel({ slug }: { slug: string }) {
     });
   };
 
-  const serviceLineTotal = (service: { name: string; pricing_model: string; unit_price: number | string }, qty: number) =>
+  const serviceLineTotal = (service: { name: string; pricingModel: string; unitPrice: number | string }, qty: number) =>
     calculateServiceTotal(
       {
         service_name: service.name,
-        pricing_model: service.pricing_model as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
-        unit_price: Number(service.unit_price),
+        pricing_model: service.pricingModel as "PER_PERSON_PER_NIGHT" | "PER_NIGHT" | "ONE_TIME",
+        unit_price: Number(service.unitPrice),
         quantity: qty,
       },
       heldBooking?.nights ?? 0,
@@ -280,7 +306,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 </div>
               ) : availableRoomTypes.length > 0 ? (
                 <div style={{ display: "grid", gap: "8px" }}>
-                  {availableRoomTypes.map((rt) => {
+                  {availableRoomTypes.map((rt: any) => {
                     const isPreferred = preferredRoomTypeId === rt.id;
                     const isAvailable = rt.is_available;
                     return (
@@ -390,7 +416,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                         />
                         <div>
                           <strong style={{ fontSize: "13px", display: "block" }}>{s.name}</strong>
-                          <small style={{ color: "#6a7670", fontSize: "10px" }}>{s.pricing_model}</small>
+                          <small style={{ color: "#6a7670", fontSize: "10px" }}>{s.pricingModel}</small>
                         </div>
                       </div>
                       <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "10px" }}>
@@ -515,7 +541,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             <h4 style={{ margin: "0 0 14px", fontSize: "14px", color: "#ffffff" }}>{t("publicHotel.summaryTitle")}</h4>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px", color: "#e8eee8", marginBottom: "16px" }}>
               <div><strong>{t("publicHotel.summaryProperty")}</strong> {hotel.name}</div>
-              <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
+              <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.roomTypeName} {heldBooking?.roomNumber ? `(${heldBooking.roomNumber})` : ""}</div>
               <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
               <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
               <div><strong>{t("publicHotel.summaryGuests")}</strong> {t("publicHotel.adultsLabel")}: {adults}, {t("publicHotel.childrenLabel")}: {children.length}</div>
@@ -537,7 +563,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             )}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "12px", display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, color: "#ffffff" }}>
               <span>{t("publicHotel.summaryTotal")}</span>
-              <span>฿{(confirmDetailsMutation.data?.amount ?? (heldBooking?.total_price ?? 0) + selectedServicesTotal).toLocaleString()}</span>
+              <span>฿{(confirmDetailsMutation.data?.amount ?? (Number(heldBooking?.totalPrice ?? 0) + selectedServicesTotal)).toLocaleString()}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "24px" }}>
               <button type="button" className="button button-quiet" onClick={() => setWizardStep(4)}>
@@ -565,15 +591,15 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700 }}>{t("publicHotel.bookingConfirmedTitle")}</h3>
                 </div>
                 <p style={{ margin: "0 0 18px", color: "#5a6660", fontSize: "13px" }}>
-                  {t("publicHotel.bookingConfirmedNotice", { name: guestName.trim(), reference: (confirmedBookingId ?? heldBooking?.booking_id ?? "").slice(0, 8).toUpperCase() })}
+                  {t("publicHotel.bookingConfirmedNotice", { name: guestName.trim(), reference: (confirmedBookingId ?? heldBooking?.bookingId ?? "").slice(0, 8).toUpperCase() })}
                 </p>
                 <div style={{ background: "#f6f4ee", padding: "16px", borderRadius: "8px", fontSize: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
                   <div><strong>{t("publicHotel.confirmedProperty")}</strong> {hotel.name}</div>
-                  <div><strong>{t("publicHotel.confirmedRoomType")}</strong> {heldBooking?.room_type_name} {heldBooking?.room_number ? `(${heldBooking.room_number})` : ""}</div>
+                  <div><strong>{t("publicHotel.confirmedRoomType")}</strong> {heldBooking?.roomTypeName} {heldBooking?.roomNumber ? `(${heldBooking.roomNumber})` : ""}</div>
                   <div><strong>{t("publicHotel.confirmedCheckIn")}</strong> {checkIn}</div>
                   <div><strong>{t("publicHotel.confirmedCheckOut")}</strong> {checkOut} ({(heldBooking?.nights ?? 0) > 1 ? t("publicHotel.confirmedNightsPlural", { count: heldBooking?.nights ?? 0 }) : t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2ddd0", paddingTop: "10px", fontSize: "14px", fontWeight: 700, color: "var(--pine)" }}>
-                    {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? heldBooking?.total_price ?? 0).toLocaleString() })}
+                    {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? Number(heldBooking?.totalPrice ?? 0)).toLocaleString() })}
                   </div>
                 </div>
                 <button
@@ -589,8 +615,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
               <div>
                 {heldBooking && (
                   <PaymentQR
-                    bookingId={heldBooking.booking_id}
-                    hotelId={heldBooking.hotel_id}
+                    bookingId={heldBooking.bookingId}
+                    hotelId={heldBooking.hotelId}
                     onSuccess={() => setPaymentSuccess(true)}
                     onExpired={() => {
                       setWizardError(t("publicHotel.holdExpiredRestart"));
@@ -652,7 +678,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
           </div>
           {roomTypes.length ? (
             <div className="public-room-grid">
-              {roomTypes.map((room, index) => (
+              {roomTypes.map((room: any, index: number) => (
                 <article
                   className="public-room-card cursor-pointer"
                   key={room.id}
@@ -671,7 +697,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
                   <div className="public-room-copy">
                     <div>
                       <h3>{room.name}</h3>
-                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.base_price).toLocaleString() })}</span>
+                      <span>{t("publicHotel.roomCapacityFrom", { capacity: room.capacity, price: Number(room.basePrice).toLocaleString() })}</span>
                     </div>
                     <ArrowRight size={17} />
                   </div>
@@ -729,3 +755,4 @@ export default function PublicHotel({ slug }: { slug: string }) {
     </div>
   );
 }
+

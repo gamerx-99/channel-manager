@@ -2,13 +2,13 @@ import { isBookingOccupyingInventory, type BookingStatus } from '@shared/booking
 
 export type CalendarRoom = { id: string; room_type_id: string };
 export type CalendarBooking = {
-  room_id: string | null;
-  check_in: string;
-  check_out: string;
+  roomId: string | null;
+  checkIn: string;
+  checkOut: string;
   status: BookingStatus;
-  expires_at: string | null;
+  expiresAt: string | null;
   source?: string;
-  guest_name?: string | null;
+  guestName?: string | null;
 };
 
 export function getBookedRoomCountForDate(
@@ -19,12 +19,12 @@ export function getBookedRoomCountForDate(
 ): number {
   const roomTypeById = new Map(rooms.map(room => [room.id, room.room_type_id]));
   const bookedRoomIds = new Set(bookings.filter(booking =>
-    booking.room_id !== null &&
-    roomTypeById.get(booking.room_id) === roomTypeId &&
-    booking.check_in <= date &&
-    booking.check_out > date &&
+    booking.roomId !== null &&
+    roomTypeById.get(booking.roomId) === roomTypeId &&
+    booking.checkIn <= date &&
+    booking.checkOut > date &&
     isBookingOccupyingInventory(booking),
-  ).map(booking => booking.room_id));
+  ).map(booking => booking.roomId));
   return bookedRoomIds.size;
 }
 
@@ -44,17 +44,17 @@ export function getBookingsForRoomTypeAndDate(
 ): CalendarBooking[] {
   const roomTypeById = new Map(rooms.map(room => [room.id, room.room_type_id]));
   return bookings.filter(booking =>
-    booking.room_id !== null &&
-    roomTypeById.get(booking.room_id) === roomTypeId &&
-    booking.check_in <= date &&
-    booking.check_out > date &&
+    booking.roomId !== null &&
+    roomTypeById.get(booking.roomId) === roomTypeId &&
+    booking.checkIn <= date &&
+    booking.checkOut > date &&
     isBookingOccupyingInventory(booking),
   );
 }
 
 export function getBookingPlatform(booking: CalendarBooking): string {
   if (booking.source === 'ota_ical') {
-    return booking.guest_name?.split(' · ')[0]?.trim() || 'OTA';
+    return booking.guestName?.split(' · ')[0]?.trim() || 'OTA';
   }
   return booking.source || 'Booking';
 }

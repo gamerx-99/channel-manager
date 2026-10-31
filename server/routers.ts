@@ -1,3 +1,4 @@
+import { accessRouter } from "./routers/accessRouter";
 import { router } from './_core/trpc';
 import { systemRouter } from './_core/systemRouter';
 import { notificationsRouter } from './routers/notificationsRouter';
@@ -35,9 +36,6 @@ import {
   updateHotelStaffRole,
   transferHotelAdmin,
   removeHotelStaff,
-  inviteAdminUser,
-  assignAdminUser,
-  removeAdminMembership,
 } from './routers/staffRouter';
 import {
   availability,
@@ -52,6 +50,8 @@ import {
   canCreateHotel,
   adminHotels,
   createHotel,
+  registerOwnHotel,
+  setHotelPublished,
   hotel,
   createRoomType,
   updateRoomType,
@@ -82,6 +82,7 @@ import {
 } from './routers/bookingRouter';
 
 export const appRouter = router({
+  access: accessRouter,
   system: systemRouter,
   notifications: notificationsRouter,
   auth: authRouter,
@@ -105,10 +106,9 @@ export const appRouter = router({
     transferHotelAdmin,
     removeHotelStaff,
     adminHotels,
-    inviteAdminUser,
-    assignAdminUser,
-    removeAdminMembership,
     createHotel,
+    registerOwnHotel,
+    setHotelPublished,
     hotel,
     createRoomType,
     updateRoomType,

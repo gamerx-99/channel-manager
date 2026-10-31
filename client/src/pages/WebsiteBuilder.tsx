@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../server/routers";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -16,20 +18,17 @@ import { useTranslation } from "@/lib/i18n";
 // Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path
 // (uploadHotelMedia / deleteHotelMedia / listHotelMedia / setHotelMediaHero).
 // hotel_domains custom-domain flow is intentionally deferred (see DECISIONS.md) and not wired here.
+//
+// D1 returns camelCase (hotelId, heroCopy, accentColor, visibleSections, isHero, displayOrder...).
+// Client form state mirrors that; only the tRPC *mutation inputs* stay snake_case (see handleSave).
 
-type MediaItem = {
-  id: string;
-  url: string;
-  caption: string | null;
-  is_hero: boolean;
-  display_order: number;
-};
+type HotelMediaItem = inferRouterOutputs<AppRouter>["channelManager"]["listHotelMedia"][number];
 
 type SiteConfig = {
-  hotel_id: string;
-  hero_copy: string;
-  accent_color: string;
-  visible_sections: {
+  hotelId: string;
+  heroCopy: string;
+  accentColor: string;
+  visibleSections: {
     hero: boolean;
     story: boolean;
     rooms: boolean;
@@ -38,7 +37,7 @@ type SiteConfig = {
   };
 };
 
-const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visible_sections"] = {
+const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visibleSections"] = {
   hero: true,
   story: true,
   rooms: true,
@@ -48,10 +47,10 @@ const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visible_sections"] = {
 
 function defaultConfig(hotelId: string): SiteConfig {
   return {
-    hotel_id: hotelId,
-    hero_copy: "Explore room types, rates, and availability directly from this hotel.",
-    accent_color: "#1d6b56",
-    visible_sections: { ...DEFAULT_VISIBLE_SECTIONS },
+    hotelId,
+    heroCopy: "Explore room types, rates, and availability directly from this hotel.",
+    accentColor: "#1d6b56",
+    visibleSections: { ...DEFAULT_VISIBLE_SECTIONS },
   };
 }
 
@@ -85,7 +84,8 @@ export default function WebsiteBuilder() {
   const canManage = hasAnyPermission(authRoles, "property.manage_profile");
   const canView = hasAnyPermission(authRoles, "property.view");
 
-  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
+  // The hotel page Photos tab links here with ?hotel=<id>.
+  const [selectedHotelId, setSelectedHotelId] = useState<string>(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("hotel") ?? "");
   const effectiveHotelId = selectedHotelId || (hotels?.[0] as any)?.id || "";
   const selectedHotel = useMemo(() => (hotels ?? []).find((h: any) => h.id === effectiveHotelId) as any | undefined, [hotels, effectiveHotelId]);
 
@@ -124,7 +124,10 @@ export default function WebsiteBuilder() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const media = serverMedia;
-  const config = useMemo(() => serverConfig ?? defaultConfig(effectiveHotelId), [serverConfig, effectiveHotelId]);
+  const config = useMemo(() => (serverConfig ?? defaultConfig(effectiveHotelId)) as unknown as SiteConfig, [
+    serverConfig,
+    effectiveHotelId,
+  ]);
 
   // Initialize draft form from config when hotel or config changes
   const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
@@ -134,15 +137,15 @@ export default function WebsiteBuilder() {
     if (!effectiveHotelId) return;
     if (initializedFor !== effectiveHotelId) {
       setInitializedFor(effectiveHotelId);
-      setDraft((serverConfig ?? defaultConfig(effectiveHotelId)) as SiteConfig);
+      setDraft((serverConfig ?? defaultConfig(effectiveHotelId)) as unknown as SiteConfig);
       setFormError(null);
       setSaveNote(null);
     }
   }, [effectiveHotelId, serverConfig, initializedFor]);
 
-  const heroImage = useMemo(() => media.find(m => m.is_hero)?.url ?? media[0]?.url ?? null, [media]);
+  const heroImage = useMemo(() => media.find(m => m.isHero)?.url ?? media[0]?.url ?? null, [media]);
 
-  const sectionLabels: Record<keyof SiteConfig["visible_sections"], { label: string; hint: string }> = useMemo(() => ({
+  const sectionLabels: Record<keyof SiteConfig["visibleSections"], { label: string; hint: string }> = useMemo(() => ({
     hero: { label: t("websiteBuilder.sectionHeroLabel"), hint: t("websiteBuilder.sectionHeroHint") },
     'story': { label: t("websiteBuilder.sectionStoryLabel"), hint: t("websiteBuilder.sectionStoryHint") },
     'rooms': { label: t("websiteBuilder.sectionRoomsLabel"), hint: t("websiteBuilder.sectionRoomsHint") },
@@ -207,23 +210,23 @@ export default function WebsiteBuilder() {
       setFormError(t("websiteBuilder.errorSelectHotelFirst"));
       return;
     }
-    if (!isValidHexColor(draft.accent_color)) {
+    if (!isValidHexColor(draft.accentColor)) {
       setFormError(t("websiteBuilder.errorInvalidHex"));
       return;
     }
-    if (draft.hero_copy.trim().length === 0) {
+    if (draft.heroCopy.trim().length === 0) {
       setFormError(t("websiteBuilder.errorHeroCopyEmpty"));
       return;
     }
-    if (draft.hero_copy.length > 500) {
+    if (draft.heroCopy.length > 500) {
       setFormError(t("websiteBuilder.errorHeroCopyTooLong"));
       return;
     }
     saveConfigMut.mutate({
       hotel_id: effectiveHotelId,
-      hero_copy: draft.hero_copy,
-      accent_color: draft.accent_color,
-      visible_sections: draft.visible_sections,
+      hero_copy: draft.heroCopy,
+      accent_color: draft.accentColor,
+      visible_sections: draft.visibleSections,
     });
   }
 
@@ -310,8 +313,8 @@ export default function WebsiteBuilder() {
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryAccentColor")}</p>
             <div className="mt-3 flex items-center gap-2">
-              <span className="h-6 w-6 rounded-full border border-[#dce4df]" style={{ background: draft.accent_color }} aria-hidden="true" />
-              <span className="text-sm font-mono font-semibold text-[#263b31]">{draft.accent_color}</span>
+              <span className="h-6 w-6 rounded-full border border-[#dce4df]" style={{ background: draft.accentColor }} aria-hidden="true" />
+              <span className="text-sm font-mono font-semibold text-[#263b31]">{draft.accentColor}</span>
             </div>
             <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryAccentHint")}</p>
           </CardContent>
@@ -319,7 +322,7 @@ export default function WebsiteBuilder() {
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryVisibleSections")}</p>
-            <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{Object.values(draft.visible_sections).filter(Boolean).length} / 5</p>
+            <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{Object.values(draft.visibleSections).filter(Boolean).length} / 5</p>
             <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryVisibleHint")}</p>
           </CardContent>
         </Card>
@@ -366,23 +369,23 @@ export default function WebsiteBuilder() {
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={item.url} alt={item.caption ?? "Hotel media preview"} className="h-full w-full object-cover" />
-                        {item.is_hero && (
+                        {item.isHero && (
                           <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">{t("websiteBuilder.heroBadge")}</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2 p-3">
                         <div className="min-w-0">
                           <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>
-                          <p className="text-[11px] text-[#778a80]">{item.is_hero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")} · {t("websiteBuilder.displayOrderLabel", { order: item.display_order })}</p>
+                          <p className="text-[11px] text-[#778a80]">{item.isHero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")} · {t("websiteBuilder.displayOrderLabel", { order: item.displayOrder })}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className={`h-7 border-[#dce4df] px-2 text-xs ${item.is_hero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
+                            className={`h-7 border-[#dce4df] px-2 text-xs ${item.isHero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
                             onClick={() => handleSetHero(item.id)}
-                            disabled={!canManage || item.is_hero}
+                            disabled={!canManage || item.isHero}
                             aria-label={t("websiteBuilder.setHeroAria", { id: item.id })}
                           >
                             {t("websiteBuilder.setHeroButton")}
@@ -421,7 +424,7 @@ export default function WebsiteBuilder() {
             </CardHeader>
             <CardContent className="pt-5">
               <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
-                {config?.visible_sections?.hero ? (
+                {config?.visibleSections?.hero ? (
                   <div className="relative h-[220px] overflow-hidden bg-[#f6faf7]">
                     {heroImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -432,10 +435,10 @@ export default function WebsiteBuilder() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" aria-hidden="true" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <h3 className="text-lg font-semibold text-white">{selectedHotel?.name ?? "Your hotel preview"}</h3>
-                      <p className="mt-1 max-w-xl text-sm leading-6 text-white/90">{draft.hero_copy || config.hero_copy}</p>
+                      <p className="mt-1 max-w-xl text-sm leading-6 text-white/90">{draft.heroCopy || config.heroCopy}</p>
                       <span
                         className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white"
-                        style={{ background: draft.accent_color }}
+                        style={{ background: draft.accentColor }}
                       >
                         {t("websiteBuilder.viewRooms")}
                       </span>
@@ -446,34 +449,34 @@ export default function WebsiteBuilder() {
                 )}
 
                 <div className="grid gap-3 p-4 sm:grid-cols-2">
-                  {config?.visible_sections?.story ? (
+                  {config?.visibleSections?.story ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                       <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.theHotel")}</p>
                       <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.stayAt", { hotelName: selectedHotel?.name ?? "this hotel" })}</p>
                     </div>
                   ) : null}
-                  {config?.visible_sections?.rooms ? (
+                  {config?.visibleSections?.rooms ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                       <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.rooms")}</p>
                       <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.roomsPreviewHint", { count: selectedHotel?.room_types?.length ?? 0 })}</p>
                     </div>
                   ) : null}
-                  {config?.visible_sections?.booking ? (
+                  {config?.visibleSections?.booking ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                       <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
                       <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
-                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold text-white" style={{ background: draft.accent_color }}>
+                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold text-white" style={{ background: draft.accentColor }}>
                         {t("websiteBuilder.planVisit")}
                       </span>
                     </div>
                   ) : null}
-                  {config?.visible_sections?.location ? (
+                  {config?.visibleSections?.location ? (
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                       <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.location")}</p>
                       <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{selectedHotel?.address ?? t("websiteBuilder.addressFallback")}</p>
                     </div>
                   ) : null}
-                  {!Object.values(draft.visible_sections).some(Boolean) && (
+                  {!Object.values(draft.visibleSections).some(Boolean) && (
                     <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{t("websiteBuilder.allSectionsHidden")}</div>
                   )}
                 </div>
@@ -514,7 +517,7 @@ export default function WebsiteBuilder() {
                 </Label>
                 <Textarea
                   id="wb-hero-copy"
-                  value={draft.hero_copy}
+                  value={draft.heroCopy}
                   onChange={e => setDraft(p => ({ ...p, hero_copy: e.target.value }))}
                   disabled={!canManage}
                   className="min-h-[96px] border-[#dce4df]"
@@ -522,7 +525,7 @@ export default function WebsiteBuilder() {
                   maxLength={500}
                   aria-label="hero_copy"
                 />
-                <p className="text-[11px] text-[#778a80]">{draft.hero_copy.length} / 500</p>
+                <p className="text-[11px] text-[#778a80]">{draft.heroCopy.length} / 500</p>
               </div>
 
               <div className="space-y-1.5">
@@ -533,7 +536,7 @@ export default function WebsiteBuilder() {
                   <Input
                     id="wb-accent-color"
                     type="color"
-                    value={isValidHexColor(draft.accent_color) ? draft.accent_color : "#1d6b56"}
+                    value={isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56"}
                     onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
                     disabled={!canManage}
                     className="h-9 w-14 border-[#dce4df] p-1"
@@ -541,7 +544,7 @@ export default function WebsiteBuilder() {
                   />
                   <Input
                     placeholder="#1d6b56"
-                    value={draft.accent_color}
+                    value={draft.accentColor}
                     onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
                     disabled={!canManage}
                     className="flex-1 border-[#dce4df] font-mono text-sm"
@@ -554,15 +557,15 @@ export default function WebsiteBuilder() {
               <div className="space-y-3">
                 <Label className="text-xs text-[#52655b]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
                 <div className="space-y-2 rounded-xl border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                  {(Object.keys(sectionLabels) as Array<keyof SiteConfig["visible_sections"]>).map(key => (
+                  {(Object.keys(sectionLabels) as Array<keyof SiteConfig["visibleSections"]>).map(key => (
                     <label key={key} className="flex items-center justify-between gap-3 rounded-lg border border-[#e5ebe7] bg-white px-3 py-2.5">
                       <span>
                         <span className="text-sm font-medium text-[#263b31]">{sectionLabels[key].label}</span>
                         <span className="ml-2 text-xs text-[#7a8c83]">{sectionLabels[key].hint}</span>
                       </span>
                       <Switch
-                        checked={draft.visible_sections[key]}
-                        onCheckedChange={v => setDraft(p => ({ ...p, visible_sections: { ...p.visible_sections, [key]: v } }))}
+                        checked={draft.visibleSections[key]}
+                        onCheckedChange={v => setDraft(p => ({ ...p, visibleSections: { ...p.visibleSections, [key]: v } }))}
                         disabled={!canManage}
                         aria-label={`visible_sections ${key}`}
                       />
@@ -597,3 +600,4 @@ export default function WebsiteBuilder() {
     </div>
   );
 }
+

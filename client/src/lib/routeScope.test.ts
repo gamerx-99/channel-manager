@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getFirstVisibleHotelId, getRequiredRoutePermission, getRouteScopeDecision } from "./routeScope";
 
 describe("route scope", () => {
-  it("allows super admins to access platform and every hotel route", () => {
+  it("allows super admins to access platform routes and denies hotel data routes", () => {
     expect(getRouteScopeDecision({
       role: "super_admin",
       pathname: "/settings/admin-users",
@@ -13,7 +13,7 @@ describe("route scope", () => {
       role: "super_admin",
       pathname: "/hotels/other-hotel/bookings",
       visibleHotelIds: [],
-    })).toEqual({ allowed: true });
+    })).toEqual({ allowed: false, reason: "permission_required" });
   });
 
   it("gives the read-only platform admin cross-hotel reads but no write surfaces", () => {
@@ -27,7 +27,7 @@ describe("route scope", () => {
       role: "admin",
       pathname: "/hotels/hotel-outside-scope/bookings",
       visibleHotelIds: [],
-    })).toEqual({ allowed: true });
+    })).toEqual({ allowed: false, reason: "permission_required" });
 
     expect(getRouteScopeDecision({
       role: "admin",
@@ -42,18 +42,10 @@ describe("route scope", () => {
     })).toEqual({ allowed: false, reason: "permission_required" });
   });
 
-  it("requires reporting permission for Channel analytics", () => {
-    expect(getRequiredRoutePermission("/dashboard/channels")).toBe("property.view_reports");
-    expect(getRouteScopeDecision({
-      role: "hotel_owner",
-      pathname: "/dashboard/channels",
-      visibleHotelIds: ["hotel-1"],
-    })).toEqual({ allowed: true });
-    expect(getRouteScopeDecision({
-      role: "front_desk",
-      pathname: "/dashboard/channels",
-      visibleHotelIds: ["hotel-1"],
-    })).toEqual({ allowed: false, reason: "permission_required" });
+  // The Channel analytics page was removed (2d7d067), so its route no longer
+  // carries a permission of its own.
+  it("has no Channel analytics route left", () => {
+    expect(getRequiredRoutePermission("/dashboard/channels")).toBe(getRequiredRoutePermission("/dashboard"));
   });
 
   it("denies hotel owners from platform-only routes", () => {

@@ -12,11 +12,11 @@ describe("Financials dashboard contract", () => {
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
-  it("exposes a protected financials procedure gated by requirePermission, not requireHotelPermission", () => {
+  it("exposes a protected financials procedure gated by requireFinancialsAccess, not requireHotelPermission", () => {
     expect(router).toContain("export const financials = protectedProcedure.query");
-    expect(router).toContain("requirePermission(ctx.user, 'property.view_financials')");
-    expect(router).toContain("listManagedHotelsForFinancials(rlsClient(ctx.user.accessToken))");
-    expect(router).toContain("buildFinancialsSummary(hotels)");
+    expect(router).toContain("requireFinancialsAccess(ctx.user)");
+    expect(router).toContain("d1ListManagedHotelsForFinancials(ctx.db");
+    expect(router).toContain("buildFinancialsSummary(hotels as any)");
   });
 
   it("registers the page and gates it with the financials-only permission", () => {
@@ -46,5 +46,13 @@ describe("Financials dashboard contract", () => {
     expect(component).toContain('t("financials.collectedRevenue")');
     expect(component).toContain('t("financials.outstandingRevenue")');
     expect(component).toContain('t("financials.pendingRevenue")');
+  });
+
+  it("asks for an authenticator step-up before saving PromptPay and guides owners without one", () => {
+    expect(component).toContain("useMfaStepUp()");
+    expect(component).toContain('(await triggerStepUp()) === "verified"');
+    expect(component).toContain('id="promptpay-totp-input"');
+    expect(component).toContain('mfaState.status === "needs_enroll"');
+    expect(component).toContain('href="/mfa/enroll?next=/dashboard/financials"');
   });
 });

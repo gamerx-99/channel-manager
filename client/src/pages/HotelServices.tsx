@@ -35,7 +35,7 @@ const emptyServiceForm = {
   is_active: true,
 };
 
-type Service = { id: string; hotel_id: string; name: string; pricing_model: HotelServicePricingModel; unit_price: number | string; is_active: boolean };
+type Service = { id: string; hotelId: string; name: string; pricingModel: HotelServicePricingModel; unitPrice: number | string; isActive: boolean };
 
 const PRICING_MODEL_OPTIONS: HotelServicePricingModel[] = ['ONE_TIME', 'PER_NIGHT', 'PER_PERSON_PER_NIGHT'];
 
@@ -114,9 +114,9 @@ export default function HotelServices({ id }: { id: string }) {
     setSelectedServiceId(service.id);
     setServiceForm({
       name: service.name,
-      pricing_model: service.pricing_model,
-      unit_price: String(service.unit_price),
-      is_active: service.is_active,
+      pricing_model: service.pricingModel,
+      unit_price: String(service.unitPrice),
+      is_active: service.isActive,
     });
     setServiceError(null);
     setShowEdit(true);
@@ -206,8 +206,7 @@ export default function HotelServices({ id }: { id: string }) {
         <Link href={`/hotels/${hotel.id}/bookings`}>{t('hotelDetail.tabBookings')}</Link>
         <Link href={`/hotels/${hotel.id}/calendar`}>{t('hotelDetail.tabAvailability')}</Link>
         <Link href={`/hotels/${hotel.id}/services`} className="active">{t('hotelDetail.tabServices')}</Link>
-        <a href="#" onClick={event => event.preventDefault()}>{t('hotelDetail.tabImages')}</a>
-        <a href="#" onClick={event => event.preventDefault()}>{t('hotelDetail.tabDomains')}</a>
+        <Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>
       </nav>
       <section className="panel room-types-panel">
         <div className="panel-heading">
@@ -222,10 +221,10 @@ export default function HotelServices({ id }: { id: string }) {
                 {services.map(service => (
                   <tr key={service.id}>
                     <td><strong>{service.name}</strong></td>
-                    <td>{pricingModelLabel(service.pricing_model)}</td>
-                    <td className="align-right">{formatCurrency(service.unit_price)}</td>
-                    <td><span className={`status-pill ${service.is_active ? 'live' : 'setup'}`}><i />{service.is_active ? t('hotelServices.activeYes') : t('hotelServices.activeNo')}</span></td>
-                    <td className="align-right"><RoomTypeActions roomType={service} onEdit={openEditService} onDelete={openDeleteService} /></td>
+                    <td>{pricingModelLabel(service.pricingModel as HotelServicePricingModel)}</td>
+                    <td className="align-right">{formatCurrency(service.unitPrice)}</td>
+                    <td><span className={`status-pill ${service.isActive ? 'live' : 'setup'}`}><i />{service.isActive ? t('hotelServices.activeYes') : t('hotelServices.activeNo')}</span></td>
+                    <td className="align-right"><RoomTypeActions roomType={service as any} onEdit={openEditService as any} onDelete={openDeleteService as any} /></td>
                   </tr>
                 ))}
               </tbody>

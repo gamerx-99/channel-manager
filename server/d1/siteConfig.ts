@@ -45,7 +45,7 @@ export async function saveHotelSiteConfig(
 }
 
 export async function listHotelMedia(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel_media.list", now);
+  await authorizeHotelAction(db, caller, hotelId, "property.view", "hotel_media.list", now);
   return db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId)).orderBy(asc(hotelMedia.displayOrder));
 }
 

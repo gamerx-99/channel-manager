@@ -5,7 +5,11 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [2026-10-31] "OTA sync stays hidden": the sidebar still shows OTA sync to holders of `ota.view_status`. It was left unchanged.
+- [2026-10-31] Staff BookingWizard `availableRooms` hides every room when any booking overlaps the dates (it does not compare room ids). Pre-existing, not fixed here.
 
+- [ ] Should signup verify email once Resend is live? A self-registered owner invited to another hotel must set a new password through the invite link.
+      ASSUMPTION: unverified accounts receive the role only through the emailed token, and their old password, sessions and 2FA are removed. Raised 2026-10-31.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.
@@ -70,7 +74,17 @@ answer noted.
       v1 Phase 1 scope — flagging as a candidate for its own ticket if the human wants
       the two systems reconciled. Raised 2026-09-03.
 
+- [ ] PUBLIC_BOOKING_LIMITER edge cases (2026-10-30, branch `cloud/remove-express`):
+      (1) a request with no CF-Connecting-IP header is not counted by the binding (it
+      cannot have come through Cloudflare's edge) instead of sharing one bucket; (2) if
+      `limit()` throws, the request falls back to the older limits (per-isolate
+      `rateLimitedProcedure` counter + D1 active-holds-per-IP guard) instead of failing.
+      ASSUMPTION: both fail open, see `server/publicBookingRateLimit.ts`. Confirm or ask
+      for fail-closed. Raised 2026-10-30.
+
 ## Resolved
+
+- [x] [2026-11-01] Central SlipOK receiver fallback and the unused `slipok_*` columns: both closed when the owner returned to per-hotel keys. `log: true` checks the receiver, and the columns and `slipokCrypto.ts` are in use again.
 
 - [x] 13-06a private-network DNS protection. ASSUMPTION (2026-10-28): Cloudflare Workers cannot
       reach private networks, so the Worker iCal guard validates literal IP ranges and local
@@ -114,3 +128,32 @@ answer noted.
       lannatc@gmail.com owns Worker, D1, R2 and the domain.
 - [x] Phase 1 of i18n covers only the chrome structure (Sidebar, Topbar, Login) and translation dictionary infrastructure (`client/src/lib/i18n/`). Other application pages remain in English for now. RESOLVED 2026-09-02: Phase 2 wired all 18 content pages (Calendar, Home, Bookings, HotelDetail, Hotels, Financials, Housekeeping, Communications, OtaSync, AdvancedPricing, HotelStaff, AdminUsers, SecuritySettings, WebsiteBuilder, ChannelPerformance, MfaEnroll, NotFound, PublicHotel) to the translation system with complete EN/TH dictionary parity and test suites passing.
 
+
+- [ ] Spec 14-03b/14-04 implementation assumptions (2026-10-30): the short spec does not
+  define a bearer-token exchange or support-account discovery. ASSUMPTION: an owner
+  approves an existing support account by opaque user id; the authenticated account
+  uses the persisted grant directly. Only the owner can create/revoke/read keys and
+  their audit trail (a dedicated permission, never delegated). Existing intersection
+  semantics apply to overlapping keys; client projection expires at the earliest key
+  expiry and refreshes from the server. Platform summaries retain null plan/payment
+  status per the answered spec 13 question. No new migration is required.
+
+- [ ] Spec 14-03b aggregate-path hardening (2026-10-30): ASSUMPTION: until a
+  separate platform-notification store exists, the global platform feed is empty
+  and global hotel-notification mutations are forbidden. Existing hotel notifications
+  can contain guest data and cannot appear in the summary-only platform dashboard.
+
+- [ ] Spec 14-03b delegated staff management (2026-10-30): ASSUMPTION: existing
+  invite and role-template changes must obey the same permission bounds as switches;
+  ownership transfer requires an owner-reserved permission. Otherwise the newly live
+  manage_staff toggle bypasses owner-only switches by promoting or transferring roles.
+
+- [ ] Spec 14 financial switch/report distinction (2026-10-30): existing shared
+  permissions allow owner-granted financial amount visibility, while the spec
+  explicitly keeps the financial dashboard owner-only. ASSUMPTION: retain both
+  existing server semantics and mirror the owner-only dashboard gate in routing
+  and navigation. Letting staff open that report requires a future spec decision;
+  this delivery does not change the report endpoint or expand support permissions.
+
+
+- [ ] Public signup (2026-10-31): the owner asked for a signup page. ASSUMPTION: one hotel per account, the hotel starts private, and the Worker rate limiter guards the hotel step. The email is not verified, because no mail provider is live. The page shows no prices, no trial and no terms, because those are unconfirmed. Decide email verification and the signup terms before production.

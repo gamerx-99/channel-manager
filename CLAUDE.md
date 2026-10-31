@@ -5,57 +5,65 @@ session before touching code. Details too long to keep here live in `specs/` —
 file stays short enough to read every time.
 
 ## Stack & commands
-- Stack: TypeScript, Vite + React (client), Express + tRPC (server), Supabase
-  (Postgres + Auth), deployed on Vercel (serverless function via `api/index.ts`).
+- Stack: TypeScript, Vite + React (client), Hono + tRPC on one Cloudflare Worker
+  (`worker/index.ts`), D1 (SQLite via Drizzle), R2 (hotel media), Better Auth.
+  Deployed with `wrangler deploy --env staging|production` (see `wrangler.toml`).
+  There is no Express/Node server and no Vercel deploy any more.
 - Package manager: `pnpm` (see `pnpm-lock.yaml` — never mix in `npm install`).
 - `pnpm test` — Vitest, must pass before any ticket closes.
 - `pnpm check` — `tsc --noEmit`, must pass before any ticket closes.
-- `pnpm build` — `vite build` + esbuild server bundle, must pass before any ticket
-  that touches server/deploy config closes.
+- `pnpm build` — `vite build` + `wrangler deploy --dry-run --outdir dist-worker`
+  (bundles the Worker, uploads nothing), must pass before any ticket that touches
+  server/client/deploy config closes.
 - No lint script exists yet (`package.json` has no `"lint"` entry). Do not invent
   one mid-ticket — if a phase needs it, that's its own ticket first.
-- `pnpm dev` — local dev server (`tsx watch`). Known issue: has failed to bind in
-  this sandboxed environment before (see `.agent/OPEN_QUESTIONS.md`) — verify against
-  the live Vercel deploy if local dev won't start.
+- `pnpm dev` — `vite build` + `wrangler dev` (http://localhost:8787, local D1/R2 state
+  in `.wrangler/state`). The client is built once; rerun after client changes.
+- `wrangler` is only ever run with `--dry-run` by agents; real deploys are a human step
+  (Hard rule 3).
 
 ## Folder structure
 ```
 client/src/           React app (pages/, components/, lib/)
-server/                Express + tRPC (routers.ts is the single tRPC router)
-server/_core/          Express bootstrap, oauth, storage proxy, trpc setup
+worker/                Worker entry: index.ts (fetch + cron), app.ts (Hono routes: tRPC,
+                         Better Auth, R2 media, OTA iCal export)
+server/                tRPC (routers.ts + routers/), domain logic
+server/_core/          tRPC setup (trpc.ts), request context (context.ts), system router
+server/d1/             Scoped D1 repositories; server/db/scope.ts holds the access checks
 shared/                Code shared by client and server (authorization.ts is load-bearing)
-api/index.ts            Vercel serverless entry — imports the pre-bundled dist/index.js
-*.sql (repo root)       Numbered migrations (YYYYMMDD_description.sql) + matching
-                         verify_YYYYMMDD_description.sql — see "Migrations" below
+drizzle/               D1 schema (d1-schema.ts, auth-schema.ts) and D1 migrations (d1/)
+*.sql (repo root)       Historical Supabase migrations + verify_*.sql — record only,
+                         see "Migrations" below
 .agent/                 Orchestration scaffold (this workflow) — see MASTER_PROMPT.md
 specs/                  Executable specs for the roadmap in todo.md's "Roadmap" section
 ```
 
 ## Do not touch without asking
 See `.agent/BANNED_ZONE.md` for the enforced list. Highlights: `.env` (never commit
-real secrets), already-applied migrations (`20260824_*.sql`, `20260830_*.sql` — write
-a new migration instead of editing these), `vercel.json` (deploy-critical, changes
-here need extra care — see the git history for why: two separate production outages
-this session traced back to Vercel config).
+real secrets), already-applied migrations (root `*.sql` and applied `drizzle/d1/*.sql` —
+write a new migration instead of editing these), `wrangler.toml` (deploy-critical:
+bindings, D1 ids and crons per environment — changes need extra care).
 
 ## Conventions
 - Permissions: every capability gate is a named `Permission` in
   `shared/authorization.ts`, checked server-side via `requirePermission` (global) or
   `requireHotelPermission` (per-hotel — **note**: this one unconditionally bypasses
   for `super_admin` regardless of the permission matrix; use `requirePermission`
-  instead when a capability must be withheld from `super_admin` on purpose, as
-  `property.view_financials` is) and mirrored client-side in `routeScope.ts` +
+  instead when a capability must be withheld from `super_admin` on purpose;
+  `property.view_financials` has its own `requireFinancialsAccess`) and mirrored
+  client-side in `routeScope.ts` +
   `can()` in `App.tsx`. Never gate on role name directly in application code — gate
   on permission.
 - New tRPC procedures follow the existing pattern in `server/routers.ts`: a
   permission check first, then `try { ... } catch (error) { return
   rethrowDomainError(error); }`.
-- New admin-client (service-role) operations belong in `server/supabase.ts`, next to
-  the existing `auth.admin.*` helpers — never use the service-role client for
-  request-scoped hotel data (see the comment on `createSupabaseAdminClient`).
+- Hotel data goes through the scoped D1 repositories in `server/d1/`, which check the
+  caller with `server/db/scope.ts` (`authorizeHotelAction`). Use the system caller
+  (`createD1SystemCallerContext`) only for unauthenticated system paths such as the
+  OTA iCal export and the cron.
 - New pure aggregation logic (reports, summaries) should be a standalone,
   unit-testable function taking plain data in and plain data out — follow
-  `server/channelPerformance.ts` / `server/financials.ts`.
+  `server/financials.ts`.
 - Tests: server-side logic gets a plain Vitest unit test; router procedures that
   enforce a permission boundary get a mocked-router test (see
   `server/financials.access.test.ts`); new pages get a string-contract test (see
@@ -66,13 +74,13 @@ this session traced back to Vercel config).
   this workflow existed doesn't always follow that; new work should.
 
 ## Migrations
-This environment has no live `DATABASE_URL`/`SUPABASE_POOLER_DB_URL` (placeholders in
-`.env` — see `.agent/OPEN_QUESTIONS.md`), so migrations cannot be applied
-programmatically. Every migration ships as a pair:
-`YYYYMMDD_description.sql` (the migration) + `verify_YYYYMMDD_description.sql`
-(read-only checks, every row should read PASS). The human applies both by hand in the
-Supabase SQL editor. Never mark a migration-touching ticket DONE until the human
-confirms the verify script passed against the live project.
+The database is D1. Schema lives in `drizzle/d1-schema.ts` + `drizzle/auth-schema.ts`;
+migrations are generated into `drizzle/d1/` with
+`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. Agents never apply them
+to a remote database: the human runs `wrangler d1 migrations apply <database> --env
+staging|production --remote`. Never mark a migration-touching ticket DONE until the
+human confirms it was applied. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the
+historical Supabase record — keep them, never edit them.
 
 ## Hard rules (non-negotiable, copied from `.agent/MASTER_PROMPT.md` so no sub-agent
 misses them even if it never reads the master prompt)

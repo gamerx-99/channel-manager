@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../_core/trpc';
 import type { Permission } from '@shared/authorization';
+import { getManagedHotel } from '../d1/hotel';
 import {
   listAvailabilityForHotel,
   listBookingOccupancyForHotel,
@@ -9,13 +10,11 @@ import {
   createRateOverride as dbCreateRateOverride,
   listRateOverrides as dbListRateOverrides,
   deleteRateOverride as dbDeleteRateOverride,
-} from '../db';
+} from '../d1/availability';
 import {
   requirePermission,
   requireHotelPermission,
-  assertHotelAndRoomTypeExist,
   rethrowDomainError,
-  rlsClient,
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
@@ -53,8 +52,9 @@ export const deleteRateOverrideSchema = z.object({
 
 export const availability = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input, 'property.view');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await listAvailabilityForHotel(rlsClient(ctx.user.accessToken), input);
+    return await listAvailabilityForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -71,8 +71,9 @@ export const bookingOccupancySchema = z.object({
 
 export const bookingOccupancy = protectedProcedure.input(bookingOccupancySchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.view');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await listBookingOccupancyForHotel(rlsClient(ctx.user.accessToken), input.hotel_id, input.check_in, input.check_out);
+    return await listBookingOccupancyForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.check_in, input.check_out);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -86,25 +87,28 @@ export const updateAvailabilityProcedure = protectedProcedure
       : input.action === 'allotment'
         ? 'revenue.manage_allotment'
         : 'revenue.manage_rates';
-    const client = rlsClient(ctx.user.accessToken);
-    if (input.hotel_id) {
-      requireHotelPermission(ctx.user, input.hotel_id, permission);
-      try {
-        const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
-        const totalRooms = hotel.rooms.filter(room => room.room_type_id === input.room_type_id).length;
-        if (input.rooms_available > totalRooms) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: `Available rooms cannot exceed the ${totalRooms} rooms configured for this room type.` });
-        }
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        return rethrowDomainError(error);
-      }
-    } else {
+    if (!input.hotel_id) {
       requirePermission(ctx.user, permission);
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'hotel_id is required.' });
     }
+    requireHotelPermission(ctx.user, input.hotel_id, permission);
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
-      const { hotel_id: _hotelId, action: _action, ...availabilityInput } = input;
-      return await dbUpdateAvailability(client, availabilityInput);
+      const hotel = await getManagedHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      if (!hotel?.room_types.some(roomType => roomType.id === input.room_type_id)) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Room type not found.' });
+      }
+      const totalRooms = hotel.rooms.filter(room => room.room_type_id === input.room_type_id).length;
+      if (input.rooms_available > totalRooms) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Available rooms cannot exceed the ${totalRooms} rooms configured for this room type.` });
+      }
+      return await dbUpdateAvailability(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+        hotelId: input.hotel_id,
+        roomTypeId: input.room_type_id,
+        date: input.date,
+        price: String(input.price),
+        roomsAvailable: input.rooms_available,
+      });
     } catch (error) {
       return rethrowDomainError(error);
     }
@@ -112,15 +116,15 @@ export const updateAvailabilityProcedure = protectedProcedure
 
 export const createRateOverrideProcedure = protectedProcedure.input(createRateOverrideSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_pricing_rules');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const hotel = await assertHotelAndRoomTypeExist(client, input.hotel_id, input.room_type_id);
-    return await dbCreateRateOverride(client, {
-      room_type_id: input.room_type_id,
-      start_date: input.start_date,
-      end_date: input.end_date,
-      override_price: input.override_price,
-      min_stay_nights: input.min_stay_nights ?? null,
+    return await dbCreateRateOverride(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotelId: input.hotel_id,
+      roomTypeId: input.room_type_id,
+      startDate: input.start_date,
+      endDate: input.end_date,
+      overridePrice: String(input.override_price),
+      minStayNights: input.min_stay_nights ?? null,
     });
   } catch (error) {
     if (error instanceof TRPCError) throw error;
@@ -130,8 +134,9 @@ export const createRateOverrideProcedure = protectedProcedure.input(createRateOv
 
 export const listRateOverridesProcedure = protectedProcedure.input(listRateOverridesSchema).query(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_pricing_rules');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbListRateOverrides(rlsClient(ctx.user.accessToken), input);
+    return await dbListRateOverrides(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.room_type_id);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -139,9 +144,9 @@ export const listRateOverridesProcedure = protectedProcedure.input(listRateOverr
 
 export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOverrideSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_pricing_rules');
-  const client = rlsClient(ctx.user.accessToken);
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const removed = await dbDeleteRateOverride(client, input.rate_override_id, input.hotel_id);
+    const removed = await dbDeleteRateOverride(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.rate_override_id);
     if (!removed) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This rate override was not found.' });
     }

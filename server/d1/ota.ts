@@ -1,8 +1,56 @@
+import { getSupportMemberships } from "./supportAccess";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
-import { bookingStatusLog, bookings, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingStatusLog, bookings, hotelUsers, hotels, otaConnections, otaSyncLogs, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { buildIcalExport, parseIcalEvents, type IcalEvent } from "../icalFeed";
-import { authorizeHotelAction, isD1SystemCallerContext, type D1CallerContext, type D1ScopedDatabase, type D1SystemCallerContext } from "../db/scope";
+import { authorizeHotelAction, isD1SystemCallerContext, createD1SystemCallerContext, type D1CallerContext, type D1ScopedDatabase, type D1SystemCallerContext } from "../db/scope";
+// Inlined from deleted ../otaSync
+function buildIcalExportUrl(token: string): string {
+  const base = (process.env.PUBLIC_APP_URL || "https://www.hayhostth.com").replace(/\/+$/, "");
+  return `${base}/api/ical/${token}.ics`;
+}
+export type OtaConnectionRow = {
+  id: string;
+  hotel_id: string;
+  provider: string;
+  status: string;
+  room_id: string | null;
+  room_type_id: string | null;
+  ical_import_url: string | null;
+  last_sync_at: string | null;
+  last_error: string | null;
+  ical_export_token: string;
+};
+export type OtaConnectionView = Omit<OtaConnectionRow, "ical_export_token"> & { ical_export_url: string | null };
+export type OtaSyncLogSummary = {
+  id?: string;
+  hotel_id: string;
+  provider: string;
+  direction: "inbound" | "outbound";
+  action: string;
+  status: "success" | "failed";
+  payload?: any;
+  response?: any;
+  error_message?: string;
+  created_at?: string;
+};
+export function toOtaConnectionView(row: OtaConnectionRow, includeExportUrl: boolean): OtaConnectionView {
+  const { ical_export_token: token, ...rest } = row as any;
+  return { ...rest, ical_export_url: includeExportUrl && token ? buildIcalExportUrl(token) : null };
+}
+export function getUpdatedItemCount(log: { payload?: any; response?: any }): number {
+  const sources = [log.response, log.payload];
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    const record = source as Record<string, unknown>;
+    const readNonNegativeCount = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null);
+    const count = [record.updatedItemCount, record.updated_item_count, record.importedCount, record.imported_count]
+      .map(readNonNegativeCount)
+      .find((c): c is number => c !== null);
+    if (count !== undefined) return count;
+  }
+  return 0;
+}
 import { ICAL_FETCH_ERROR, fetchPublicIcalFeed } from "./icalUrl";
 import { getStayDates } from "@shared/stayDates";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
@@ -433,4 +481,198 @@ export async function getOtaIcalExport(db: D1ScopedDatabase, caller: D1CallerCon
   }
 
   return buildIcalExport({ calendarName, events, now });
+}
+
+function dbRowToOtaRow(row: any): OtaConnectionRow {
+  return {
+    id: row.id,
+    hotel_id: row.hotelId,
+    provider: row.provider,
+    status: row.status,
+    room_id: row.roomId ?? null,
+    room_type_id: row.roomTypeId ?? null,
+    ical_import_url: row.icalImportUrl ?? null,
+    last_sync_at: row.lastSyncAt ? new Date(row.lastSyncAt).toISOString() : null,
+    last_error: row.lastError ?? null,
+    ical_export_token: row.icalExportToken,
+  };
+}
+
+function dbLogToSummary(row: any) {
+  return {
+    id: row.id,
+    hotel_id: row.hotelId,
+    provider: row.provider,
+    direction: row.direction,
+    action: row.action,
+    status: row.status,
+    payload: row.payload ? (() => { try { return JSON.parse(row.payload); } catch { return null; } })() : null,
+    response: row.response ? (() => { try { return JSON.parse(row.response); } catch { return null; } })() : null,
+    error_message: row.errorMessage ?? null,
+    created_at: new Date(row.createdAt).toISOString(),
+  };
+}
+
+export async function listOtaConnections(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  hotelId: string,
+  options: { includeExportUrl?: boolean } = {},
+): Promise<OtaConnectionView[]> {
+  await authorizeHotelAction(db, caller, hotelId, "ota.view_status", "ota.connections.list", new Date());
+  const rows = await db.select().from(otaConnections).where(eq(otaConnections.hotelId, hotelId)).orderBy(asc(otaConnections.provider));
+  return rows.map((row: any) => toOtaConnectionView(dbRowToOtaRow(row), Boolean(options.includeExportUrl)));
+}
+
+export async function upsertOtaConnection(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  input: {
+    hotelId: string;
+    provider: string;
+    status: string;
+    icalImportUrl?: string;
+    roomId?: string | null;
+    roomTypeId?: string | null;
+    includeExportUrl?: boolean;
+  },
+): Promise<OtaConnectionView> {
+  await authorizeHotelAction(db, caller, input.hotelId, "ota.manage_ical_connection", "ota.connections.upsert", new Date());
+  await otaConnectionRoomSameHotel(db, caller, {
+    hotel_id: input.hotelId,
+    room_id: input.roomId ?? null,
+    room_type_id: input.roomTypeId ?? null,
+  });
+
+  let roomIdVal: string | null | undefined;
+  let roomTypeIdVal: string | null | undefined;
+  if (input.roomTypeId) {
+    roomIdVal = null;
+    roomTypeIdVal = input.roomTypeId;
+  } else if (input.roomId !== undefined) {
+    roomIdVal = input.roomId ?? null;
+    roomTypeIdVal = null;
+  }
+
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const now = Date.now();
+
+  const values: any = {
+    id: crypto.randomUUID(),
+    hotelId: input.hotelId,
+    provider: input.provider,
+    status: input.status,
+    icalImportUrl: input.icalImportUrl ?? null,
+    icalExportToken: token,
+    updatedAt: now,
+    createdAt: now,
+  };
+  if (roomIdVal !== undefined) values.roomId = roomIdVal;
+  if (roomTypeIdVal !== undefined) values.roomTypeId = roomTypeIdVal;
+
+  const setObj: any = {
+    status: input.status,
+    icalImportUrl: input.icalImportUrl ?? null,
+    updatedAt: now,
+  };
+  if (roomIdVal !== undefined) setObj.roomId = roomIdVal;
+  if (roomTypeIdVal !== undefined) setObj.roomTypeId = roomTypeIdVal;
+
+  await db.insert(otaConnections).values(values).onConflictDoUpdate({
+    target: [otaConnections.hotelId, otaConnections.provider],
+    set: setObj,
+  });
+
+  const [row] = await db.select().from(otaConnections).where(and(eq(otaConnections.hotelId, input.hotelId), eq(otaConnections.provider, input.provider))).limit(1);
+  if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "OTA connection was not persisted." });
+  return toOtaConnectionView(dbRowToOtaRow(row), Boolean(input.includeExportUrl));
+}
+
+export async function deleteOtaConnection(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  hotelId: string,
+  provider: string,
+): Promise<void> {
+  await authorizeHotelAction(db, caller, hotelId, "ota.manage_ical_connection", "ota.connections.delete", new Date());
+  await db.delete(otaConnections).where(and(eq(otaConnections.hotelId, hotelId), eq(otaConnections.provider, provider)));
+}
+
+export async function listOtaSyncLogs(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  hotelId: string,
+  limit = 50,
+) {
+  await authorizeHotelAction(db, caller, hotelId, "ota.view_sync_logs", "ota.logs.list", new Date());
+  const rows = await db.select().from(otaSyncLogs).where(eq(otaSyncLogs.hotelId, hotelId)).orderBy(desc(otaSyncLogs.createdAt)).limit(limit);
+  return rows.map((row: any) => dbLogToSummary(row));
+}
+
+export async function triggerOtaCalendarSyncD1(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  hotelId: string,
+  provider: string,
+) {
+  await authorizeHotelAction(db, caller, hotelId, "ota.trigger_ical_sync", "ota.calendar.trigger", new Date());
+  const [connection] = await db.select().from(otaConnections).where(and(eq(otaConnections.hotelId, hotelId), eq(otaConnections.provider, provider))).limit(1);
+  if (!connection) throw new TRPCError({ code: "NOT_FOUND", message: `No iCal import URL is configured for ${provider}.` });
+  const systemCaller = createD1SystemCallerContext();
+  const result = await fetchAndSyncOtaConnection(db, systemCaller, connection.id);
+  return {
+    success: true,
+    updatedItemCount: result.inserted + result.updated + result.cancelled,
+    conflictCount: result.conflicts.length,
+    conflicts: result.conflicts,
+    response: { message: result.conflicts.length > 0 ? `${result.conflicts.length} event(s) from ${connection.provider} overlap existing bookings on this room` : `Successfully synchronized iCal calendar with ${connection.provider}` },
+  };
+}
+
+export async function getOtaSummary(db: D1ScopedDatabase, caller: D1CallerContext) {
+  if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
+  const memberships = await db.select({ hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
+  if (caller.roles?.includes("super_admin") || memberships.some(row => row.role === "super_admin")) throw new TRPCError({ code: "FORBIDDEN" });
+  const supportIdentity = caller.roles?.includes("support") || memberships.some(row => row.role === "support");
+  const candidates = supportIdentity ? await getSupportMemberships(db, caller) : memberships;
+  const ids: string[] = [];
+  for (const { hotelId } of candidates) {
+    try {
+      await authorizeHotelAction(db, caller, hotelId, "ota.view_status", "ota.summary.read");
+      await authorizeHotelAction(db, caller, hotelId, "ota.view_sync_logs", "ota.summary.logs");
+      ids.push(hotelId);
+    } catch (error) {
+      if (error instanceof TRPCError && error.code === "FORBIDDEN") continue;
+      throw error;
+    }
+  }
+  if (!ids.length) return [];
+  const hotelRows = await db.select({ id: hotels.id, name: hotels.name }).from(hotels).where(inArray(hotels.id, ids));
+
+  const output: any[] = [];
+  for (const hotel of hotelRows) {
+    const connections = await db.select().from(otaConnections).where(eq(otaConnections.hotelId, hotel.id)).orderBy(asc(otaConnections.provider));
+    for (const conn of connections) {
+      const logs = await db.select().from(otaSyncLogs).where(and(eq(otaSyncLogs.hotelId, hotel.id), eq(otaSyncLogs.provider, conn.provider))).orderBy(desc(otaSyncLogs.createdAt)).limit(5);
+      const recentUpdatedItemCount = logs
+        .filter((l: any) => l.action === "sync_calendar" && l.status === "success")
+        .reduce((total: number, l: any) => total + getUpdatedItemCount(dbLogToSummary(l) as any), 0);
+      const latestLog = logs.length > 0 ? dbLogToSummary(logs[0]) : null;
+      output.push({
+        id: conn.id,
+        hotel_id: conn.hotelId,
+        provider: conn.provider,
+        status: conn.status,
+        room_id: conn.roomId ?? null,
+        room_type_id: conn.roomTypeId ?? null,
+        last_sync_at: conn.lastSyncAt ? new Date(conn.lastSyncAt).toISOString() : null,
+        last_error: conn.lastError ?? null,
+        hotel_name: hotel.name || "Property",
+        latest_log: latestLog,
+        recent_updated_item_count: recentUpdatedItemCount,
+        recent_synced_count: recentUpdatedItemCount,
+      });
+    }
+  }
+  return output;
 }

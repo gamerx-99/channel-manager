@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { notifications } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, authorizePlatformAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
@@ -10,7 +11,9 @@ export async function listNotifications(db: D1ScopedDatabase, caller: D1CallerCo
 
 export async function listAllNotifications(db: D1ScopedDatabase, caller: D1CallerContext) {
   await authorizePlatformAction(db, caller, "platform.view_all_hotels");
-  return db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(100);
+  // ASSUMPTION: there is no separate platform-notification table yet. Hotel
+  // notification bodies are private hotel data, so the global feed is empty.
+  return [] as (typeof notifications.$inferSelect)[];
 }
 
 export async function markNotificationRead(
@@ -36,7 +39,7 @@ export async function markAllNotificationsRead(db: D1ScopedDatabase, caller: D1C
 
 export async function markSystemNotificationsRead(db: D1ScopedDatabase, caller: D1CallerContext) {
   await authorizePlatformAction(db, caller, "platform.view_all_hotels");
-  await db.update(notifications).set({ isRead: true }).where(eq(notifications.isRead, false));
+  throw new TRPCError({ code: "FORBIDDEN", message: "Platform accounts cannot modify hotel notifications." });
 }
 
 export async function insertNotification(

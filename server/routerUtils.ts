@@ -1,7 +1,5 @@
 import { TRPCError } from '@trpc/server';
 import { hasAnyPermission, hasHotelPermission, type AppRole, type Permission, type PermissionMembership } from '@shared/authorization';
-import { createRlsSupabaseClient } from './supabase';
-import { isSuperAdmin, getManagedHotel } from './db';
 
 export function addIsoDays(isoDate: string, amount: number) {
   const date = new Date(`${isoDate}T00:00:00.000Z`);
@@ -11,10 +9,6 @@ export function addIsoDays(isoDate: string, amount: number) {
 
 export function todayIso() {
   return new Date().toISOString().slice(0, 10);
-}
-
-export function rlsClient(accessToken?: string) {
-  return createRlsSupabaseClient(accessToken);
 }
 
 export function getIdentityRoles(user: { role?: AppRole | null; roles?: readonly AppRole[] | null }) {
@@ -27,6 +21,18 @@ export function requirePermission(user: { role?: AppRole | null; roles?: readonl
   }
 }
 
+/**
+ * The financial report spans the caller's hotels, so it needs the owner's per-person
+ * switch on at least one of them. Support keys and super_admin never open it.
+ */
+export function requireFinancialsAccess(user: { role?: AppRole | null; roles?: readonly AppRole[] | null; memberships?: readonly PermissionMembership[] | null }) {
+  const roles = getIdentityRoles(user);
+  const blocked = roles.includes('support') || roles.includes('super_admin');
+  if (blocked || !user.memberships?.some(membership => membership.permissions?.includes('property.view_financials'))) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Missing permission: property.view_financials' });
+  }
+}
+
 export function requireHotelPermission(
   user: { id: string; role?: AppRole | null; roles?: readonly AppRole[] | null; memberships?: readonly PermissionMembership[] | null },
   hotelId: string,
@@ -36,14 +42,6 @@ export function requireHotelPermission(
   if (!hasHotelPermission(roles, user.memberships ?? [], hotelId, permission)) {
     throw new TRPCError({ code: 'FORBIDDEN', message: `Missing permission for hotel: ${permission}` });
   }
-}
-
-export async function requireSuperAdmin(accessToken: string) {
-  const client = rlsClient(accessToken);
-  if (!(await isSuperAdmin(client))) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super administrators can manage users.' });
-  }
-  return client;
 }
 
 export function assertSingleHotelAdmin(
@@ -96,18 +94,3 @@ export function rethrowDomainError(error: unknown): never {
   throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
 }
 
-export async function assertHotelExists(client: ReturnType<typeof rlsClient>, hotelId: string) {
-  const hotel = await getManagedHotel(client, hotelId);
-  if (!hotel) {
-    throw new TRPCError({ code: 'NOT_FOUND', message: 'This hotel is not available to your account.' });
-  }
-  return hotel;
-}
-
-export async function assertHotelAndRoomTypeExist(client: ReturnType<typeof rlsClient>, hotelId: string, roomTypeId: string) {
-  const hotel = await getManagedHotel(client, hotelId);
-  if (!hotel || !hotel.room_types.some(rt => rt.id === roomTypeId)) {
-    throw new TRPCError({ code: 'NOT_FOUND', message: 'This room type is not available to your account.' });
-  }
-  return hotel;
-}

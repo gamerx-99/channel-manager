@@ -1,4 +1,4 @@
-import type { BookingRecord } from './db';
+type BookingRecord = { id: string; status: string; check_in: string; check_out: string; price: string | null; [key: string]: any };
 
 type BookingRow = Pick<BookingRecord, 'id' | 'status' | 'check_in' | 'check_out' | 'price'> & {
   payment_status?: string | null;

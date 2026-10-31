@@ -4,6 +4,7 @@ import {
   ADJUSTABLE_STAFF_ROLES,
   HOTEL_PERMISSIONS,
   OWNER_GRANT_ONLY_PERMISSIONS,
+  OWNER_RESERVED_PERMISSIONS,
   PERMISSION_TOGGLES,
   SUPPORT_EXCLUDED_PERMISSIONS,
   SUPPORT_GRANT_MAX_HOURS,
@@ -18,10 +19,10 @@ import {
 } from "./permissions";
 
 describe("permission toggles", () => {
-  it("cover every hotel permission except the base one exactly once", () => {
+  it("cover every delegable hotel permission except the base one exactly once", () => {
     const covered = PERMISSION_TOGGLES.flatMap(toggle => toggle.permissions);
     expect(new Set(covered).size).toBe(covered.length);
-    expect([...covered].sort()).toEqual(HOTEL_PERMISSIONS.filter(permission => permission !== "property.view").sort());
+    expect([...covered].sort()).toEqual(HOTEL_PERMISSIONS.filter(permission => permission !== "property.view" && !OWNER_RESERVED_PERMISSIONS.includes(permission)).sort());
   });
 
   it("only require toggles that exist", () => {

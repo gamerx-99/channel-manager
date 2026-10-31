@@ -1,6 +1,6 @@
 import React, { FormEvent, useState } from 'react';
 import { ArrowRight, LockKeyhole, ShieldCheck, KeyRound } from 'lucide-react';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
 import { MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
@@ -37,7 +37,9 @@ export default function Login() {
 
       if (signInError) {
         setSubmitting(false);
-        setError(signInError.message || t("login.invalidCredentials") || "Sign in failed");
+        // Better Auth's own message is English; a wrong email or password gets ours.
+        const wrongCredentials = signInError.code === "INVALID_EMAIL_OR_PASSWORD" || signInError.status === 401;
+        setError(wrongCredentials || !signInError.message ? t("login.invalidCredentials") : signInError.message);
         return;
       }
 
@@ -199,6 +201,7 @@ export default function Login() {
                 required
               />
             </label>
+            <Link href="/forgot-password" className="text-link" data-testid="forgot-password-link">{t("login.forgotPassword")}</Link>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
             <button className="button button-primary login-button" type="submit" disabled={submitting}>
               {submitting ? t("login.signingIn") : t("login.continue")} <ArrowRight size={16} />

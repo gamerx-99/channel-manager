@@ -3,11 +3,12 @@
  * Mocks the global fetch to avoid real HTTP calls.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { verifySlipWithSlipOk, SlipOkError } from './slipVerification';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { verifySlipWithSlipOk } from './slipVerification';
 
 const FAKE_API_KEY = 'test-api-key-12345';
 const FAKE_BRANCH_ID = 'test-branch-001';
+const CREDENTIALS = { apiKey: FAKE_API_KEY, branchId: FAKE_BRANCH_ID };
 
 /** Build a minimal Response-like object for fetch mocking */
 function mockResponse(status: number, body: unknown): Response {
@@ -34,10 +35,6 @@ function mockResponse(status: number, body: unknown): Response {
 describe('verifySlipWithSlipOk', () => {
   const originalFetch = global.fetch;
 
-  beforeEach(() => {
-    process.env.SLIP_OK_API = 'https://api.slipok.com/api/line/apikey';
-  });
-
   afterEach(() => {
     global.fetch = originalFetch;
     vi.restoreAllMocks();
@@ -49,10 +46,9 @@ describe('verifySlipWithSlipOk', () => {
     );
     global.fetch = fetchMock;
 
-    await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, {
+    await verifySlipWithSlipOk(CREDENTIALS, {
       slipData: 'base64slipdata',
       expectedAmount: 3500,
-      ref: 'BK-ABCD1234',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -63,15 +59,69 @@ describe('verifySlipWithSlipOk', () => {
     );
   });
 
+  // log: true makes SlipOK check the receiver bound to the hotel's branch.
+  it('sends the image in files with amount and log', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      mockResponse(200, { success: true, data: { amount: 3500, transRef: 'TX-001' } }),
+    );
+    global.fetch = fetchMock;
+
+    await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64slipdata', expectedAmount: 3500 });
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ files: 'base64slipdata', log: true, amount: 3500 });
+  });
+
+  it('ignores the old SLIP_OK_API variable', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(mockResponse(200, { success: true, data: { amount: 100, transRef: 'TX-001' } }));
+    global.fetch = fetchMock;
+    vi.stubEnv('SLIP_OK_API', 'https://example.test');
+
+    await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 });
+    vi.unstubAllEnvs();
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.slipok.com/api/line/apikey/${FAKE_BRANCH_ID}`);
+  });
+
+  it.each([1005, 1006, 1007, 1008])('asks for a new image on SlipOK code %i', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'unreadable' }));
+
+    await expect(
+      verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 }),
+    ).rejects.toMatchObject({ code: 'UNREADABLE_SLIP' });
+  });
+
+  it.each([1011, 1012, 1013, 1014])('treats SlipOK code %i as a rejected slip', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'rejected' }));
+
+    const result = await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 });
+
+    expect(result).toMatchObject({ matched: false, transactionRef: null, raw: { code } });
+  });
+
+  it.each([1001, 1003, 1004, 1009, 1010])('sends SlipOK code %i to manual review', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'later' }));
+
+    await expect(
+      verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 }),
+    ).rejects.toMatchObject({ code: 'API_ERROR' });
+  });
+
+  it('does not match a slip with no transaction reference', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(200, { success: true, data: { amount: 100 } }));
+
+    const result = await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 });
+
+    expect(result.matched).toBe(false);
+  });
+
   it('returns matched=true when SlipOK confirms payment with correct amount', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce(
       mockResponse(200, { success: true, data: { amount: 3500, transRef: 'TX-001' } }),
     );
 
-    const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, {
+    const result = await verifySlipWithSlipOk(CREDENTIALS, {
       slipData: 'base64slipdata',
       expectedAmount: 3500,
-      ref: 'BK-ABCD1234',
     });
 
     expect(result.matched).toBe(true);
@@ -84,10 +134,9 @@ describe('verifySlipWithSlipOk', () => {
       mockResponse(200, { success: true, data: { amount: 1000, transRef: 'TX-002' } }),
     );
 
-    const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, {
+    const result = await verifySlipWithSlipOk(CREDENTIALS, {
       slipData: 'base64slipdata',
       expectedAmount: 3500,
-      ref: 'BK-TEST',
     });
 
     expect(result.matched).toBe(false);
@@ -99,10 +148,9 @@ describe('verifySlipWithSlipOk', () => {
       mockResponse(200, { success: true, data: { amount: 3500.005, transRef: 'TX-003' } }),
     );
 
-    const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, {
+    const result = await verifySlipWithSlipOk(CREDENTIALS, {
       slipData: 'base64',
       expectedAmount: 3500,
-      ref: 'REF',
     });
 
     // |3500.005 - 3500| = 0.005 <= 0.01 → matched
@@ -116,7 +164,7 @@ describe('verifySlipWithSlipOk', () => {
     );
 
     await expect(
-      verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100, ref: 'REF' }),
+      verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 }),
     ).rejects.toMatchObject({ code: 'INVALID_KEY' });
   });
 
@@ -126,7 +174,7 @@ describe('verifySlipWithSlipOk', () => {
     );
 
     await expect(
-      verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100, ref: 'REF' }),
+      verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 }),
     ).rejects.toMatchObject({ code: 'API_ERROR' });
   });
 
@@ -134,20 +182,8 @@ describe('verifySlipWithSlipOk', () => {
     global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'));
 
     await expect(
-      verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100, ref: 'REF' }),
+      verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100 }),
     ).rejects.toMatchObject({ code: 'API_ERROR' });
-  });
-
-  it('throws SlipOkError with NO_KEY when apiKey is empty', async () => {
-    await expect(
-      verifySlipWithSlipOk('', FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100, ref: 'REF' }),
-    ).rejects.toMatchObject({ code: 'NO_KEY' });
-  });
-
-  it('throws SlipOkError with NO_KEY when branchId is empty', async () => {
-    await expect(
-      verifySlipWithSlipOk(FAKE_API_KEY, '', { slipData: 'base64', expectedAmount: 100, ref: 'REF' }),
-    ).rejects.toMatchObject({ code: 'NO_KEY' });
   });
 
   it('returns matched=false when success is false even if amount matches', async () => {
@@ -155,10 +191,9 @@ describe('verifySlipWithSlipOk', () => {
       mockResponse(200, { success: false, data: { amount: 3500, transRef: 'TX-FAIL' } }),
     );
 
-    const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, {
+    const result = await verifySlipWithSlipOk(CREDENTIALS, {
       slipData: 'base64',
       expectedAmount: 3500,
-      ref: 'REF',
     });
 
     expect(result.matched).toBe(false);

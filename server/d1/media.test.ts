@@ -108,6 +108,7 @@ describe("D1 hotel media on R2", () => {
     expect(media).toMatchObject({ hotelId: "hotel-a", url: expect.stringMatching(/^\/media\/hotel-a\/[a-f0-9-]{36}\.png$/), isHero: true });
     expect([...bucket.objects.keys()]).toEqual([media.url.slice("/media/".length)]);
     expect([...bucket.objects.values()][0]?.customMetadata).toMatchObject({ hotelId: "hotel-a", mediaId: media.id });
+    expect(await db.select().from(hotelMedia)).toMatchObject([{ id: media.id, isHero: true, displayOrder: 0 }]);
   });
 
   it("refuses cross-hotel uploads and deletes before touching R2", async () => {
@@ -148,11 +149,15 @@ describe("D1 hotel media on R2", () => {
     const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
     const first = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "first.jpg", content_type: "image/jpeg", data: jpegBytes });
     const second = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "second.jpg", content_type: "image/jpeg", data: jpegBytes });
+    const third = await uploadHotelMediaToR2(db, caller, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "third.jpg", content_type: "image/jpeg", data: jpegBytes });
     expect(second.isHero).toBe(false);
     await expect(deleteHotelMediaFromR2(db, caller, bucket as unknown as R2Bucket, "hotel-a", first.id)).resolves.toEqual({ id: first.id });
     expect(bucket.deletes).toEqual([first.url.slice("/media/".length)]);
     expect(bucket.objects.has(first.url.slice("/media/".length))).toBe(false);
-    expect((await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, "hotel-a")))).toMatchObject([{ id: second.id, isHero: true }]);
+    const remaining = await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, "hotel-a"));
+    expect(remaining).toHaveLength(2);
+    expect(remaining.find(item => item.id === second.id)).toMatchObject({ isHero: true });
+    expect(remaining.find(item => item.id === third.id)).toMatchObject({ isHero: false });
   });
 
   it("serves public R2 objects with immutable cache headers, ETag and 404 for missing keys", async () => {

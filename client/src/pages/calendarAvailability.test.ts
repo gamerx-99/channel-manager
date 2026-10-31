@@ -8,10 +8,10 @@ describe('calendar booking occupancy', () => {
       { id: 'room-2', room_type_id: 'rt-1' },
       { id: 'room-3', room_type_id: 'rt-2' },
     ], [
-      { room_id: 'room-1', check_in: '2026-10-10', check_out: '2026-10-12', status: 'confirmed', expires_at: null },
-      { room_id: 'room-2', check_in: '2026-10-11', check_out: '2026-10-12', status: 'confirmed', expires_at: null },
-      { room_id: 'room-3', check_in: '2026-10-10', check_out: '2026-10-12', status: 'confirmed', expires_at: null },
-      { room_id: 'room-2', check_in: '2026-10-10', check_out: '2026-10-12', status: 'cancelled', expires_at: null },
+      { roomId: 'room-1', checkIn: '2026-10-10', checkOut: '2026-10-12', status: 'confirmed', expiresAt: null },
+      { roomId: 'room-2', checkIn: '2026-10-11', checkOut: '2026-10-12', status: 'confirmed', expiresAt: null },
+      { roomId: 'room-3', checkIn: '2026-10-10', checkOut: '2026-10-12', status: 'confirmed', expiresAt: null },
+      { roomId: 'room-2', checkIn: '2026-10-10', checkOut: '2026-10-12', status: 'cancelled', expiresAt: null },
     ]);
 
     expect(booked).toBe(1);
@@ -26,8 +26,8 @@ describe('calendar booking occupancy', () => {
     expect(getBookedRoomCountForDate('rt-1', '2026-10-03', [
       { id: 'room-1', room_type_id: 'rt-1' },
     ], [
-      { room_id: 'room-1', check_in: '2026-10-01', check_out: '2026-10-04', status: 'confirmed', expires_at: null },
-      { room_id: 'room-1', check_in: '2026-10-02', check_out: '2026-10-05', status: 'confirmed', expires_at: null },
+      { roomId: 'room-1', checkIn: '2026-10-01', checkOut: '2026-10-04', status: 'confirmed', expiresAt: null },
+      { roomId: 'room-1', checkIn: '2026-10-02', checkOut: '2026-10-05', status: 'confirmed', expiresAt: null },
     ])).toBe(1);
   });
 });

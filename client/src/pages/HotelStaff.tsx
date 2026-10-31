@@ -1,10 +1,11 @@
+import { StaffPermissionToggles } from "@/components/StaffPermissionToggles";
 import { FormEvent, useMemo, useState } from "react";
 import React from "react";
 import { Link } from "wouter";
 import { ArrowRightLeft, Check, Copy, Link2, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
-import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
+import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AppRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
 
 type HotelStaffProps = { id: string };
@@ -59,6 +60,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: authMe } = trpc.auth.me.useQuery();
+  const actorMembership = authMe?.memberships?.find(m => m.hotelId === hotelId);
   const isSuperAdmin = authMe?.role === "super_admin";
   const staffQuery = trpc.channelManager.hotelStaff.useQuery(
     { hotel_id: hotelId },
@@ -147,6 +149,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   const hotelAdminAlreadyAssigned = Boolean(currentHotelAdmin);
   const auditUserLabel = (userId: string) => staff.find(member => member.user_id === userId)?.email ?? userId;
   const transferCandidates = staff.filter(member => member.role !== "hotel_owner" && !isPlatformRole(member.role));
+  const canTransferOwnership = actorMembership?.permissions?.includes("property.transfer_ownership") ?? false;
   const hotelAdminRestrictionText = t("hotelStaff.hotelAdminRestrictionText");
 
   async function copyGeneratedLink() {
@@ -282,7 +285,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
             <div><span className="strip-label">{t("hotelStaff.summaryHotelStaff")}</span><strong>{staff.length}</strong></div>
             <div><span className="strip-label">{t("hotelStaff.summaryActiveAccounts")}</span><strong>{activeStaffCount}</strong></div>
             <div className="strip-caption"><ShieldCheck size={16} /> {t("hotelStaff.summaryCaption")}</div>
-            {currentHotelAdmin && transferCandidates.length > 0 && (
+            {canTransferOwnership && currentHotelAdmin && transferCandidates.length > 0 && (
               <button
                 className="button button-quiet button-small"
                 type="button"
@@ -308,7 +311,14 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                     <tr><td colSpan={5}><div className="table-empty"><Users size={18} /><strong>{t("hotelStaff.noStaffYetTitle")}</strong><span>{t("hotelStaff.noStaffYetDesc")}</span></div></td></tr>
                   ) : staff.map(member => (
                     <tr key={member.id}>
-                      <td><strong>{member.email ?? t("hotelStaff.noEmail")}</strong><small>{member.user_id}</small></td>
+                      <td><strong>{member.email ?? t("hotelStaff.noEmail")}</strong><small>{member.user_id}</small>
+                        {member.permissions && actorMembership && authMe && <StaffPermissionToggles
+                          hotelId={hotelId}
+                          target={{ userId: member.user_id, role: member.role as AppRole, permissions: member.permissions }}
+                          actor={{ userId: authMe.id, role: actorMembership.role, permissions: actorMembership.permissions ?? [] }}
+                          onSaved={async () => { await Promise.all([staffQuery.refetch(), utils.auth.me.invalidate()]); }}
+                        />}
+                      </td>
                       <td>
                         <TooltipProvider>
                           <Tooltip>
@@ -324,7 +334,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                                   onChange={event => requestRoleChange(
                                     member.id,
                                     member.email,
-                                    member.role,
+                                    member.role as HumanRole,
                                     event.target.value as AssignableStaffRole,
                                   )}
                                   disabled={isPending || isPlatformRole(member.role)}
@@ -346,8 +356,8 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                         )}
                       </td>
                       <td>{member.last_sign_in_at ? t("hotelStaff.lastSignIn", { date: formatDate(member.last_sign_in_at) }) : member.confirmed_at ? t("hotelStaff.confirmed", { date: formatDate(member.confirmed_at) }) : t("hotelStaff.invitationPending")}</td>
-                      <td>{formatDate(member.created_at)}</td>
-                      <td className="align-right"><button className="button button-quiet button-small" type="button" onClick={() => requestRemoveMember(member.id, member.email, member.role)} disabled={isPending || isPlatformRole(member.role)}>{removeStaff.isPending ? t("hotelStaff.removing") : t("hotelStaff.remove")}</button></td>
+                      <td>{formatDate(String(member.created_at))}</td>
+                      <td className="align-right"><button className="button button-quiet button-small" type="button" onClick={() => requestRemoveMember(member.id, member.email, member.role as HumanRole)} disabled={isPending || isPlatformRole(member.role)}>{removeStaff.isPending ? t("hotelStaff.removing") : t("hotelStaff.remove")}</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -373,11 +383,11 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                   <article className="audit-log-row" key={event.id}>
                     <div className="audit-log-marker" aria-hidden="true"><ShieldCheck size={15} /></div>
                     <div className="audit-log-main">
-                      <div className="audit-log-title"><strong>{t("hotelStaff.adminTransferredTitle")}</strong><time dateTime={event.created_at}>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.created_at))}</time></div>
+                      <div className="audit-log-title"><strong>{t("hotelStaff.adminTransferredTitle")}</strong><time dateTime={String(event.createdAt)}>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.createdAt))}</time></div>
                       <p>{t("hotelStaff.transferredAccessSummary", {
-                        actor: auditUserLabel(event.actor_user_id),
-                        previous: auditUserLabel(event.previous_admin_user_id),
-                        next: auditUserLabel(event.new_admin_user_id),
+                        actor: auditUserLabel(event.actorUserId),
+                        previous: auditUserLabel(event.previousAdminUserId),
+                        next: auditUserLabel(event.newAdminUserId),
                       })}</p>
                       <small>{t("hotelStaff.eventId", { id: event.id })}</small>
                     </div>
@@ -498,13 +508,13 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                 </div>
                 <div className="confirmation-body" id="audit-detail-description">
                   <p className="modal-lede">{t("hotelStaff.recordedBy", {
-                    actor: auditUserLabel(event.actor_user_id),
-                    date: new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "short" }).format(new Date(event.created_at)),
+                    actor: auditUserLabel(event.actorUserId),
+                    date: new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "short" }).format(new Date(event.createdAt)),
                   })}</p>
                   <div className="audit-detail-grid">
-                    <div><span>{t("hotelStaff.previousHotelAdmin")}</span><strong>{auditUserLabel(event.previous_admin_user_id)}</strong></div>
-                    <div><span>{t("hotelStaff.newHotelAdminLabel")}</span><strong>{auditUserLabel(event.new_admin_user_id)}</strong></div>
-                    <div><span>{t("hotelStaff.hotel")}</span><strong>{staffQuery.data?.hotel.name ?? event.hotel_id}</strong></div>
+                    <div><span>{t("hotelStaff.previousHotelAdmin")}</span><strong>{auditUserLabel(event.previousAdminUserId)}</strong></div>
+                    <div><span>{t("hotelStaff.newHotelAdminLabel")}</span><strong>{auditUserLabel(event.newAdminUserId)}</strong></div>
+                    <div><span>{t("hotelStaff.hotel")}</span><strong>{staffQuery.data?.hotel.name ?? event.hotelId}</strong></div>
                     <div><span>{t("hotelStaff.action")}</span><strong>{event.action}</strong></div>
                   </div>
                   <details className="audit-payload"><summary>{t("hotelStaff.viewFullPayload")}</summary><pre>{JSON.stringify(event.details, null, 2)}</pre></details>
@@ -529,7 +539,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                 <select aria-label={t("hotelStaff.newHotelAdminLabel")} value={transferTargetId} onChange={event => setTransferTargetId(event.target.value)} autoFocus required>
                   <option value="" disabled>{t("hotelStaff.chooseStaffMemberPlaceholder")}</option>
                   {transferCandidates.map(member => (
-                    <option value={member.id} key={member.id}>{member.email ?? t("hotelStaff.unnamedStaffMember")} — {roleLabel(member.role)}</option>
+                    <option value={member.id} key={member.id}>{member.email ?? t("hotelStaff.unnamedStaffMember")} — {roleLabel(member.role as HumanRole)}</option>
                   ))}
                 </select>
               </label>
@@ -646,3 +656,5 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
     </div>
   );
 }
+
+

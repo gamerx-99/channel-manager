@@ -15,7 +15,7 @@ const TAG_LENGTH = 16;
 
 function getEncryptionKeyBytes(): Uint8Array {
   const raw = (typeof process !== "undefined" ? process.env?.SLIPOK_ENCRYPTION_KEY : "") ?? "";
-  if (raw.length !== 64) {
+  if (!/^[0-9a-f]{64}$/i.test(raw)) {
     throw new Error(
       "SLIPOK_ENCRYPTION_KEY must be a 64-character hex string (32 bytes). " +
         'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',

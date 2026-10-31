@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { bookings, hotelPaymentSettings, paymentSessions } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang } from "../db/money";
@@ -31,24 +31,6 @@ export async function removeSlipOkKey(db: D1ScopedDatabase, caller: D1CallerCont
     .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { slipokKeyEnc: null, slipokKeyHash: null, slipokBranchId: null, slipokEnabled: false, updatedAt: now } });
 }
 
-export async function savePromptPaySettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, promptPayId: string, timeoutMinutes: number, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.promptpay.save", now);
-  if (!Number.isInteger(timeoutMinutes) || timeoutMinutes < 5 || timeoutMinutes > 60) throw new TRPCError({ code: "BAD_REQUEST", message: "Payment timeout must be between 5 and 60 minutes." });
-  await db.insert(hotelPaymentSettings).values({ hotelId, promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now })
-    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now } });
-}
-
-export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.config.read", now);
-  const [row] = await db.select({
-    promptpayId: hotelPaymentSettings.promptpayId,
-    slipokEnabled: hotelPaymentSettings.slipokEnabled,
-    paymentTimeoutMinutes: hotelPaymentSettings.paymentTimeoutMinutes,
-  }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
-  if (!row) return null;
-  return { promptpay_id: row.promptpayId, slipok_enabled: row.slipokEnabled, payment_timeout_minutes: row.paymentTimeoutMinutes };
-}
-
 /** Server-only; the result must never be returned from a procedure. */
 export async function getSlipOkCredentialsForVerification(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "payment.slipok.verify_credentials", now);
@@ -60,6 +42,23 @@ export async function getSlipOkCredentialsForVerification(db: D1ScopedDatabase, 
     eq(hotelPaymentSettings.slipokEnabled, true),
   )).limit(1);
   return row ? { slipok_key_enc: row.slipokKeyEnc, slipok_branch_id: row.slipokBranchId } : null;
+}
+
+export async function savePromptPaySettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, promptPayId: string, timeoutMinutes: number, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.promptpay.save", now);
+  if (!Number.isInteger(timeoutMinutes) || timeoutMinutes < 5 || timeoutMinutes > 60) throw new TRPCError({ code: "BAD_REQUEST", message: "Payment timeout must be between 5 and 60 minutes." });
+  await db.insert(hotelPaymentSettings).values({ hotelId, promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now } });
+}
+
+export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.config.read", now);
+  const [row] = await db.select({
+    promptpayId: hotelPaymentSettings.promptpayId,
+    paymentTimeoutMinutes: hotelPaymentSettings.paymentTimeoutMinutes,
+  }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  if (!row) return null;
+  return { promptpay_id: row.promptpayId, payment_timeout_minutes: row.paymentTimeoutMinutes };
 }
 
 export async function createPaymentSession(db: D1ScopedDatabase, caller: D1CallerContext, input: CreatePaymentSessionInput, now = new Date()) {
@@ -89,15 +88,28 @@ export async function updatePaymentSessionStatus(db: D1ScopedDatabase, caller: D
   return row ? sessionRecord(row) : null;
 }
 
+/** Another session already verified with this bank transaction reference. */
+async function transactionRefUsedElsewhere(db: D1ScopedDatabase, sessionId: string, ref: string) {
+  const [row] = await db.select({ id: paymentSessions.id }).from(paymentSessions)
+    .where(and(eq(paymentSessions.verifiedTransactionRef, ref), ne(paymentSessions.id, sessionId))).limit(1);
+  return Boolean(row);
+}
+
 export async function finalizePaymentSession(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, sessionId: string, input: { status: PaymentSessionStatus; verifiedAt?: string; rawResponse: Record<string, unknown>; verifiedTransactionRef?: string | null }, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "payment_session.finalize", now);
+  const ref = input.verifiedTransactionRef;
+  // Checked across hotels on purpose: one slip pays for one booking anywhere on the platform.
+  if (ref && await transactionRefUsedElsewhere(db, sessionId, ref)) return { duplicateRef: true };
   try {
-    const [row] = await db.update(paymentSessions).set({ status: input.status, rawResponse: input.rawResponse, ...(input.verifiedAt ? { verifiedAt: new Date(input.verifiedAt) } : {}), ...(input.verifiedTransactionRef ? { verifiedTransactionRef: input.verifiedTransactionRef } : {}) })
+    const [row] = await db.update(paymentSessions).set({ status: input.status, rawResponse: input.rawResponse, ...(input.verifiedAt ? { verifiedAt: new Date(input.verifiedAt) } : {}), ...(ref ? { verifiedTransactionRef: ref } : {}) })
       .where(and(eq(paymentSessions.id, sessionId), eq(paymentSessions.hotelId, hotelId))).returning();
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Payment session not found." });
     return { duplicateRef: false };
   } catch (error) {
-    if (error instanceof Error && /unique/i.test(error.message) && input.verifiedTransactionRef) return { duplicateRef: true };
+    // A concurrent submit of the same slip can win between the check and the
+    // write; the unique index then refuses ours. Drizzle wraps that error, so
+    // look the reference up again instead of matching its message.
+    if (ref && !(error instanceof TRPCError) && await transactionRefUsedElsewhere(db, sessionId, ref)) return { duplicateRef: true };
     throw error;
   }
 }

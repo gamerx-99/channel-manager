@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('WebsiteBuilder contract — Phase 06', () => {
   const wbSource = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8');
-  const dbSource = readFileSync(resolve(process.cwd(), 'server/db.ts'), 'utf8');
+  const dbSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
   const routerSource = routerText + hotelRouterText;
@@ -52,8 +52,8 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     // Note: Updated per Rule 6 to match translation dictionary key
     expect(wbSource).toContain('websiteBuilder.publicPreviewTitle');
     expect(wbSource).toContain('heroImage');
-    expect(wbSource).toContain('draft.accent_color');
-    expect(wbSource).toContain('draft.hero_copy');
+    expect(wbSource).toContain('draft.accentColor');
+    expect(wbSource).toContain('draft.heroCopy');
   });
 
   // ── hotel_domains deferral ───────────────────────────────────────────────
@@ -63,15 +63,36 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(wbSource).toMatch(/deferred|deferral/i);
   });
 
-  // ── db/siteConfig.ts functions ───────────────────────────────────────────
-  it('server/db/siteConfig.ts exports all required hotel media and site config functions', () => {
-    const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/db/siteConfig.ts'), 'utf8');
+  // ── D1 media/siteConfig functions ────────────────────────────────────────
+  it('server/d1/media.ts exports the R2 upload and delete helpers', () => {
+    const mediaSource = readFileSync(resolve(process.cwd(), 'server/d1/media.ts'), 'utf8');
+    expect(mediaSource).toContain('export async function uploadHotelMediaToR2');
+    expect(mediaSource).toContain('export async function deleteHotelMediaFromR2');
+  });
+
+  it('server/d1/siteConfig.ts exports all required hotel media and site config functions', () => {
+    const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/d1/siteConfig.ts'), 'utf8');
     expect(siteConfigSource).toContain('export async function listHotelMedia');
     expect(siteConfigSource).toContain('export async function createHotelMedia');
     expect(siteConfigSource).toContain('export async function deleteHotelMedia');
     expect(siteConfigSource).toContain('export async function setHotelMediaHero');
     expect(siteConfigSource).toContain('export async function getHotelSiteConfig');
     expect(siteConfigSource).toContain('export async function saveHotelSiteConfig');
+  });
+
+  it('server/d1/media.ts uploadHotelMediaToR2 auto-promotes first image as hero', () => {
+    const mediaSource = readFileSync(resolve(process.cwd(), 'server/d1/media.ts'), 'utf8');
+    expect(mediaSource).toContain('existing.length === 0');
+    expect(mediaSource).toContain('is_hero = 0');
+    expect(mediaSource).toContain('is_hero, display_order');
+    expect(mediaSource).toContain('VALUES (?, ?, ?, ?, 1, ?)');
+  });
+
+  it('server/d1/media.ts deleteHotelMediaFromR2 promotes remaining first item as hero when needed', () => {
+    const mediaSource = readFileSync(resolve(process.cwd(), 'server/d1/media.ts'), 'utf8');
+    expect(mediaSource).toContain('UPDATE hotel_media');
+    expect(mediaSource).toContain('ORDER BY display_order LIMIT 1');
+    expect(mediaSource).toContain('NOT EXISTS (SELECT 1 FROM hotel_media WHERE hotel_id = ? AND is_hero = 1)');
   });
 
   // ── router procedures ────────────────────────────────────────────────────
@@ -94,14 +115,4 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(routerSource).toContain("requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile')");
   });
 
-  it('server/routers.ts upload auto-promotes first image as hero', () => {
-    // Logic: if no existing media, is_hero = true
-    expect(routerSource).toContain('existingMedia.length === 0');
-    expect(routerSource).toContain('is_hero');
-  });
-
-  it('server/routers.ts delete promotes remaining first item as hero when needed', () => {
-    expect(routerSource).toContain('remaining.length > 0');
-    expect(routerSource).toContain('setHotelMediaHero');
-  });
 });

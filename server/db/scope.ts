@@ -16,13 +16,30 @@ type D1Client = {
 export type D1ScopedDatabase = DrizzleD1Database<typeof d1Schema> & { $client: D1Client };
 
 const SYSTEM_CALLER_BRAND: unique symbol = Symbol("D1 system caller");
+const GUEST_PAYMENT_BRAND: unique symbol = Symbol("D1 guest payment caller");
+
+/** The only writes an anonymous guest can reach, on one hotel, while paying for a booking. */
+const GUEST_PAYMENT_ACTIONS = new Set([
+  "payment.config.read",
+  "payment.slipok.verify_credentials",
+  "payment_session.create",
+  "payment_session.read",
+  "payment_session.update",
+  "payment_session.finalize",
+  "booking.payment_status.update",
+  "bookings.status_log.create",
+  "bookings.expire",
+  "bookings.nights.claim",
+]);
 
 /** Construct this context from the verified server identity, never from client input. */
 export type D1CallerContext = {
   userId: string;
   roles?: readonly AppRole[];
-  access?: "authenticated" | "public" | "system";
+  access?: "authenticated" | "public" | "system" | "guest_payment";
   readonly [SYSTEM_CALLER_BRAND]?: true;
+  readonly [GUEST_PAYMENT_BRAND]?: true;
+  readonly guestPaymentHotelId?: string;
 };
 
 export type D1SystemCallerContext = D1CallerContext & { readonly [SYSTEM_CALLER_BRAND]: true };
@@ -30,6 +47,20 @@ export type D1SystemCallerContext = D1CallerContext & { readonly [SYSTEM_CALLER_
 /** Create the non-serializable authority used by trusted server jobs such as Cron. */
 export function createD1SystemCallerContext(): D1SystemCallerContext {
   return { userId: "system", access: "system", [SYSTEM_CALLER_BRAND]: true };
+}
+
+/**
+ * Caller for guest-facing hotel pages. Always used there, even when the viewer
+ * is signed in: an owner opening their own public page is a guest of it, and a
+ * staff caller would be refused by requirePublicHotel.
+ */
+export function createD1PublicCallerContext(): D1CallerContext {
+  return { userId: "", roles: [], access: "public" };
+}
+
+/** Create only after confirming the booking belongs to this published hotel. */
+export function createD1GuestPaymentCallerContext(hotelId: string): D1CallerContext & { guestPaymentHotelId: string } {
+  return { userId: "", access: "guest_payment", guestPaymentHotelId: hotelId, [GUEST_PAYMENT_BRAND]: true };
 }
 
 export function isD1SystemCallerContext(caller: D1CallerContext): caller is D1SystemCallerContext {
@@ -63,6 +94,10 @@ async function resolveScope(
   action: string,
   now: Date,
 ): Promise<Scope> {
+  if (caller.access === "guest_payment") {
+    if (caller[GUEST_PAYMENT_BRAND] !== true || caller.guestPaymentHotelId !== hotelId || !GUEST_PAYMENT_ACTIONS.has(action)) forbidden();
+    return { hotelId, userId: "", role: "front_desk", permissions: [required] };
+  }
   if (!caller.userId || caller.access === "public") forbidden();
   if (caller.roles?.includes("super_admin")) {
     resolveMembershipPermissions("super_admin");
@@ -80,7 +115,7 @@ async function resolveScope(
   const supportIdentity = caller.roles?.includes("support") || memberships.some(row => row.role === "support");
   let scope: Scope;
 
-  if (targetMembership && targetMembership.role !== "support") {
+  if (targetMembership && !supportIdentity) {
     if (!isAppRole(targetMembership.role) || targetMembership.role === "super_admin") forbidden();
     const role = targetMembership.role;
     scope = {
@@ -120,12 +155,14 @@ async function resolveScope(
       resolveSupportGrantPermissions({ canEdit: grant.mode === "edit" }),
     ));
     const permissions = PERMISSIONS.filter(permission => permissionSets.every(set => set.has(permission)));
+    const readOnlyWrite = activeGrants.some(grant => grant.mode !== "edit") && ["notifications.mark_read", "notifications.mark_all_read"].includes(action);
     await db.insert(supportAccessLog).values({
       grantId: activeGrants[0].id,
       hotelId,
       supportUserId: caller.userId,
-      action,
+      action: permissions.includes(required) && !readOnlyWrite ? action : `denied:${action}`,
     });
+    if (readOnlyWrite) forbidden();
     scope = { hotelId, userId: caller.userId, role: "support", permissions };
   } else {
     // admin (platform admin) no longer has cross-hotel read (spec 14 S5).
@@ -282,10 +319,7 @@ export async function updateHotelStaffPermissions(
 export async function listPlatformHotelSummaries(
   db: D1ScopedDatabase, caller: D1CallerContext,
 ): Promise<PlatformHotelSummary[]> {
-  const identities = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId));
-  if (!caller.roles?.includes("super_admin") && !identities.some(row => row.role === "super_admin")) forbidden();
-  const permissions = resolveMembershipPermissions("super_admin");
-  if (!permissions.includes("platform.view_all_hotels")) forbidden();
+  await authorizePlatformAction(db, caller, "platform.view_system_logs");
 
   const rows = await db.select({
     hotelName: hotels.name,

@@ -310,17 +310,6 @@ export type NotificationRecord = {
   created_at: string;
 };
 
-export type SlipOkSettingsRow = {
-  id: string;
-  hotel_id: string;
-  slipok_key_enc: string | null;
-  slipok_key_hash: string | null;
-  slipok_branch_id: string | null;
-  slipok_enabled: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
 export type CreatePaymentSessionInput = {
   booking_id: string;
   hotel_id: string;

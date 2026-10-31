@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, gt, inArray, lt, ne } from "drizzle-orm";
-import { bookings, bookingServices, bookingStatusLog, guests as guestTable, hotelPaymentSettings, hotelServices, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingNights, bookings, bookingServices, bookingStatusLog, guests as guestTable, hotelPaymentSettings, hotelServices, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { assertValidTransition, type BookingStatus } from "@shared/bookingLifecycle";
 import type { ChildMeasurement, OccupancyPricingRules } from "@shared/occupancyPricing";
 import type { BookingRecord, BookingServiceRecord, CreatePublicBookingInput, GuestRecord } from "../db/types";
@@ -177,11 +177,51 @@ export async function expireBookingIfPast(db: D1ScopedDatabase, caller: D1Caller
   return { status: "expired" as const, expires_at: expiresAt };
 }
 
-export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: { slug: string; room_type_id: string; check_in: string; check_out: string; adults: number; children: ChildMeasurement[] }, now = new Date()) {
+/**
+ * Make sure the booking holds every night of its room, claiming any night it
+ * lost. False when another booking took a night or the booking no longer
+ * occupies inventory, so the caller must not confirm it.
+ */
+export async function claimBookingNights(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, bookingId: string, now = new Date()): Promise<boolean> {
+  await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "bookings.nights.claim", now);
+  const [row] = await db.select({ roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut }).from(bookings)
+    .where(and(eq(bookings.id, bookingId), eq(bookings.hotelId, hotelId))).limit(1);
+  if (!row?.roomId) return false;
+  const nights = getStayDates(row.checkIn, row.checkOut);
+  try {
+    await db.$client.batch([
+      releaseExpiredHoldNightsStatement(db, { roomId: row.roomId }, now),
+      addNightsStatement(db, bookingId, nights, now),
+    ]);
+  } catch (error) {
+    if (isBookingNightsUniqueConflict(error)) return false;
+    throw error;
+  }
+  const owned = new Set((await db.select({ night: bookingNights.night }).from(bookingNights)
+    .where(and(eq(bookingNights.bookingId, bookingId), eq(bookingNights.roomId, row.roomId)))).map(night => night.night));
+  return nights.every(night => owned.has(night));
+}
+
+export async function countActiveHoldsForIp(db: D1ScopedDatabase, hotelId: string, ipHash: string, now = new Date()): Promise<number> {
+  const rows = await db.select({ id: bookings.id }).from(bookings).where(and(
+    eq(bookings.hotelId, hotelId),
+    eq(bookings.createdIpHash, ipHash),
+    inArray(bookings.status, ["held", "pending_payment", "pending_verification"]),
+  ));
+  return rows.length;
+}
+
+export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: { slug: string; room_type_id: string; check_in: string; check_out: string; adults: number; children: ChildMeasurement[]; createdIpHash?: string | null }, now = new Date()) {
   publicContext(caller);
   const dates = getStayDates(input.check_in, input.check_out);
   if (!dates.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Check-out date must be after check-in date." });
   const hotel = await getPublicHotelBySlug(db, caller, input.slug);
+  if (input.createdIpHash) {
+    const activeHolds = await countActiveHoldsForIp(db, hotel.id, input.createdIpHash, now);
+    if (activeHolds >= 3) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many active holds. Please complete or cancel an existing booking first." });
+    }
+  }
   const [roomType] = await db.select().from(roomTypes).where(and(eq(roomTypes.id, input.room_type_id), eq(roomTypes.hotelId, hotel.id))).limit(1);
   if (!roomType) throw new TRPCError({ code: "NOT_FOUND", message: "Selected room type does not exist for this hotel." });
   const result = await priceStayForRoomType(db, roomType, input.check_in, input.check_out, input.adults, input.children);
@@ -191,7 +231,7 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   const [settings] = await db.select({ holdTimeoutMinutes: hotelPaymentSettings.holdTimeoutMinutes }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotel.id)).limit(1);
   const expiresAt = new Date(now.getTime() + (settings?.holdTimeoutMinutes ?? 15) * 60_000);
   const bookingId = crypto.randomUUID();
-  const insertResult = await atomicInsert(db, { id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id, guestName: "", checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(result.pricing.totalPrice), source: "manual", status: "held", expiresAt, adults: input.adults, children: input.children.length, public: true, guests: [], services: [], changedBy: caller.userId || null, reason: "public_hold_created" }, now);
+  const insertResult = await atomicInsert(db, { id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id, guestName: "", checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(result.pricing.totalPrice), source: "manual", status: "held", expiresAt, adults: input.adults, children: input.children.length, public: true, guests: [], services: [], changedBy: caller.userId || null, reason: "public_hold_created", createdIpHash: input.createdIpHash ?? null }, now);
   if (insertResult[1]!.meta.changes !== 1) throw noAvailability();
   const [created] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
   const [room] = created?.roomId ? await db.select({ roomNumber: rooms.roomNumber }).from(rooms).where(eq(rooms.id, created.roomId)).limit(1) : [];
@@ -292,19 +332,19 @@ function canonicalBookingPrice(value: string | number | null) {
 async function atomicInsert(db: D1ScopedDatabase, input: {
   id: string; hotelId: string; roomId: string | null; roomTypeId: string | null; guestName: string;
   checkIn: string; checkOut: string; price: string; source: string; status: BookingStatus; expiresAt: Date | null;
-  adults: number | null; children: number | null; public: boolean;
+  adults: number | null; children: number | null; public: boolean; createdIpHash?: string | null;
   guests: Array<Omit<GuestRecord, "id" | "booking_id">>;
   services: Array<Omit<BookingServiceRecord, "id" | "booking_id" | "created_at">>;
   changedBy: string | null; reason: string | null;
 }, now: Date) {
   const bookingInsert = input.public
-    ? db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by)
-        select ?, ?, r.id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from rooms r join hotels h on h.id = r.hotel_id
-        where r.hotel_id = ? and r.room_type_id = ? and r.status <> 'maintenance' and h.public_enabled = 1
-          and not exists (select 1 from bookings b where b.room_id = r.id and b.check_in < ? and b.check_out > ?
-            and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?))))
-        order by r.room_number limit 1`)
-      .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime())
+    ? db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by, created_ip_hash)
+            select ?, ?, r.id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from rooms r join hotels h on h.id = r.hotel_id
+            where r.hotel_id = ? and r.room_type_id = ? and r.status <> 'maintenance' and h.public_enabled = 1
+              and not exists (select 1 from bookings b where b.room_id = r.id and b.check_in < ? and b.check_out > ?
+                and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?))))
+            order by r.room_number limit 1`)
+          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime())
     : db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by)
         select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from hotels h
         where h.id = ? and (? is null or exists (select 1 from rooms r where r.id = ? and r.hotel_id = ? and r.status <> 'maintenance'))

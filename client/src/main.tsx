@@ -4,7 +4,6 @@ import { httpBatchLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { supabase } from "./lib/supabase";
 import "./index.css";
 
 export const queryClient = new QueryClient();
@@ -29,15 +28,8 @@ queryClient.getMutationCache().subscribe(event => {
  * Better Auth session cookies are transmitted automatically via credentials: "include".
  */
 export async function getTrpcHeaders(): Promise<Record<string, string>> {
-  if (!supabase) return {};
-  try {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token
-      ? { Authorization: `Bearer ${data.session.access_token}` }
-      : {};
-  } catch {
-    return {};
-  }
+  // Better Auth sessions travel via httpOnly cookies (credentials: "include").
+  return {};
 }
 
 export function createTrpcClient() {

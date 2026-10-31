@@ -73,12 +73,13 @@ export function Sidebar({
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
       ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
+      ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
       ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: ShieldCheck }] : []),
     ]
     : [];
   const navItems = [
+    ...(can("platform.view_system_logs") ? [{ href: "/platform", label: "Platform overview", icon: LayoutDashboard }] : []),
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
-    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: t("sidebar.channelAnalytics"), icon: BarChart3 }] : []),
     ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: t("sidebar.hotelsManagement"), icon: Hotel }] : []),
     ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: t("sidebar.adminUsers"), icon: ShieldCheck }] : []),
     ...hotelNavItems,
@@ -183,10 +184,13 @@ export function Sidebar({
           className="nav-link w-full text-left bg-transparent border-0 cursor-pointer"
           onClick={() => {
             const hotel = visibleHotels?.find(h => h.id === selectedHotelId) || visibleHotels?.[0];
-            if (hotel?.slug) {
-              window.open(`/${hotel.slug}#book`, '_blank');
-            } else {
+            if (!hotel?.slug) {
               toast.info(t("sidebar.bookingEnginesSelectPrompt"));
+            } else if (!hotel.public_enabled) {
+              // A private hotel page shows guests nothing, so say how to open it.
+              toast.info(t("sidebar.bookingEnginesPrivatePrompt"));
+            } else {
+              window.open(`/${hotel.slug}#book`, "_blank", "noopener");
             }
           }}
         >

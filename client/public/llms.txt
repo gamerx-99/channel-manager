@@ -1,0 +1,22 @@
+# hayhost
+
+> hayhost is a booking website and hotel management system for small hotels and homestays in Thailand. The service is in Thai and English.
+
+hayhost is made for small property owners who take direct bookings. It keeps rooms, bookings and guest details in one place.
+
+## What it does
+
+- A booking website for each hotel, with rooms, photos and available dates
+- One calendar for arrivals, departures and available rooms
+- Guest details prepared for the TM.30 report to Thai immigration
+- Housekeeping status for each room
+- Staff accounts with separate permissions
+
+## Links
+
+- [Home](https://www.hayhostth.com/): what hayhost does and common questions
+- [Sign up](https://www.hayhostth.com/signup): create an account and a hotel
+
+## Contact
+
+- Support: support@hayhostth.com

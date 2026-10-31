@@ -20,6 +20,7 @@ export default function AcceptInvite() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedExistingAccount, setAcceptedExistingAccount] = useState(false);
 
   useEffect(() => {
     const search = typeof window !== "undefined" && window.location.search ? window.location.search : "";
@@ -81,6 +82,12 @@ export default function AcceptInvite() {
         password,
       });
 
+      if (result.signInRequired) {
+        setSubmitting(false);
+        setAcceptedExistingAccount(true);
+        return;
+      }
+
       const email = result.user?.email || userEmail;
       if (email) {
         await authClient.signIn.email({
@@ -135,7 +142,17 @@ export default function AcceptInvite() {
           />
         )}
 
-        {authStatus === "authenticated" && (
+        {acceptedExistingAccount && (
+          <PageState
+            tone="empty"
+            title={t("acceptInvite.existingAccountTitle")}
+            description={t("acceptInvite.existingAccountDesc")}
+            actionLabel={t("acceptInvite.backToLogin")}
+            onAction={() => navigate("/login")}
+          />
+        )}
+
+        {authStatus === "authenticated" && !acceptedExistingAccount && (
           <form className="login-card" onSubmit={handleSubmit}>
             <div className="eyebrow">{t("acceptInvite.eyebrowCard")}</div>
             <h2>{t("acceptInvite.titleCard")}</h2>

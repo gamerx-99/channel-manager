@@ -7,6 +7,7 @@ import PageState from '@/components/PageState';
 import BookingWizard from '@/components/BookingWizard';
 import { useTranslation } from '@/lib/i18n';
 import { communicationsEnabled } from '@/lib/featureFlags';
+import { buildTm30PrintHtml } from '@/lib/tm30Print';
 import { hasHotelPermission } from '@shared/authorization';
 
 type BookingStatus = 'held' | 'pending_payment' | 'pending_verification' | 'confirmed' | 'expired' | 'payment_rejected' | 'cancelled' | 'refund_pending' | 'refunded' | 'checked_in' | 'checked_out';
@@ -129,34 +130,7 @@ export default function Bookings({ id }: { id: string }) {
   const downloadPdfPreview = () => {
     if (!previewQuery.data || !hotel) return;
     const { headers, rows } = previewQuery.data;
-    const html = `
-      <!DOCTYPE html>
-      <html lang="th">
-      <head>
-        <meta charset="utf-8">
-        <title>TM.30 Report - ${hotel.name}</title>
-        <style>
-          body { font-family: sans-serif; padding: 20px; color: #111; }
-          h1 { font-size: 18px; margin-bottom: 4px; }
-          p { font-size: 12px; color: #555; margin-bottom: 16px; }
-          table { width: 100%; border-collapse: collapse; font-size: 10px; }
-          th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-          th { background: #f4f4f4; }
-        </style>
-      </head>
-      <body>
-        <h1>TM.30 Immigration Report: ${hotel.name}</h1>
-        <p>Generated: ${new Date().toLocaleString()} | Format: DD/MM/YYYY (A.D.)</p>
-        <table>
-          <thead><tr>${headers.map(h => `<th>${h.replace(/\n/g, ' ')}</th>`).join('')}</tr></thead>
-          <tbody>
-            ${rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="9">No records</td></tr>'}
-          </tbody>
-        </table>
-        <script>window.print();</script>
-      </body>
-      </html>
-    `;
+    const html = buildTm30PrintHtml(hotel.name, headers, rows, new Date().toLocaleString());
     const win = window.open('', '_blank');
     if (win) {
       win.document.write(html);
@@ -187,7 +161,7 @@ export default function Bookings({ id }: { id: string }) {
     return <div className="page-content"><PageState tone="error" title={t('bookings.errorTitle')} description={error?.message ?? t('bookings.errorDescFallback')} actionLabel={t('bookings.retryButton')} onAction={retryBookings} actionPending={hotelQuery.isFetching || bookingsQuery.isFetching} /></div>;
   }
 
-  const roomTypeName = (roomTypeId: string) => hotel.room_types.find(roomType => roomType.id === roomTypeId)?.name ?? t('bookings.unassignedRoomType');
+  const roomTypeName = (roomTypeId: string) => hotel.room_types.find((roomType: any) => roomType.id === roomTypeId)?.name ?? t('bookings.unassignedRoomType');
 
   return (
     <div className="page-content bookings-page">
@@ -207,7 +181,7 @@ export default function Bookings({ id }: { id: string }) {
         <p className="mobile-scroll-hint" role="note">{t('bookings.mobileScrollHint')}</p>
         <div className="table-wrap"><table className="data-table bookings-table"><thead><tr><th>{t('bookings.bookingCol')}</th><th>{t('bookings.guestCol')}</th><th>{t('bookings.stayDatesCol')}</th><th>{t('bookings.roomCol')}</th><th>{t('bookings.sourceCol')}</th><th>{t('bookings.statusCol')}</th><th className="align-right">{t('bookings.valueCol')}</th><th /></tr></thead><tbody>{filtered.length ? filtered.map(booking => {
           const tm30Ready = booking.guests.length > 0 && booking.guests.every(guest => Boolean(guest.passport_no && guest.nationality_code && guest.birth_date));
-          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status]}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1">{communicationsEnabled && <Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link>}{booking.status === 'pending_verification' ? (<><button className="button button-primary" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: true })}>{t('bookings.approveVerification')}</button><button className="button button-quiet" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: false })}>{t('bookings.rejectVerification')}</button></>) : booking.status === 'confirmed' && canManageCheckInOut ? (<button className="button button-primary" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_in' }); }}>{t('bookings.checkInAction')}</button>) : booking.status === 'checked_in' && canManageCheckInOut ? (<button className="button button-quiet" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_out' }); }}>{t('bookings.checkOutAction')}</button>) : (<button className="icon-button" type="button" aria-label={t('bookings.moreActionsAria', { id: booking.id })} disabled><MoreHorizontal size={16} /></button>)}</div></td></tr>;
+          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status as keyof typeof statusLabel]}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1">{communicationsEnabled && <Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link>}{booking.status === 'pending_verification' ? (<><button className="button button-primary" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: true })}>{t('bookings.approveVerification')}</button><button className="button button-quiet" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: false })}>{t('bookings.rejectVerification')}</button></>) : booking.status === 'confirmed' && canManageCheckInOut ? (<button className="button button-primary" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_in' }); }}>{t('bookings.checkInAction')}</button>) : booking.status === 'checked_in' && canManageCheckInOut ? (<button className="button button-quiet" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_out' }); }}>{t('bookings.checkOutAction')}</button>) : (<button className="icon-button" type="button" aria-label={t('bookings.moreActionsAria', { id: booking.id })} disabled><MoreHorizontal size={16} /></button>)}</div></td></tr>;
         }) : <tr><td colSpan={8} className="empty-cell">{bookings.length ? t('bookings.noMatch') : t('bookings.emptyBookings')}</td></tr>}</tbody></table></div>
         <div className="table-footer"><span>{t('bookings.showingCount', { filtered: filtered.length, total: bookings.length })}</span></div>
       </section>
@@ -221,3 +195,4 @@ export default function Bookings({ id }: { id: string }) {
     </div>
   );
 }
+

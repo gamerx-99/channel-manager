@@ -1,0 +1,154 @@
+[
+  [
+    "server/bookingFlow.d1.test.ts",
+    "calculates service totals and grand total correctly before passing to the repository"
+  ],
+  [
+    "server/d1/availability.test.ts",
+    "atomically rejects a second rate override over the same date range"
+  ],
+  [
+    "server/bookingRouter.d1.test.ts",
+    "reaches holdRoomType and confirmBookingDetails through the real appRouter"
+  ],
+  [
+    "server/channelManager.hotelStaff.d1.test.ts",
+    "rejects hotel owners before reading admin users or memberships"
+  ],
+  [
+    "server/channelManager.hotelStaff.d1.test.ts",
+    "lists D1 assignments for a super admin with the retired Auth user list empty"
+  ],
+  [
+    "server/channelManager.availability.d1.test.ts",
+    "allows Revenue Manager to update allotment for their hotel"
+  ],
+  [
+    "server/channelManager.availability.d1.test.ts",
+    "rejects over-capacity availability before writing"
+  ],
+  [
+    "server/channelManager.creation.d1.test.ts",
+    "passes normalized, validated input to the D1 insert helper for a super-admin"
+  ],
+  [
+    "server/channelManager.creation.d1.test.ts",
+    "inherits the shared height limit when creating another room type"
+  ],
+  [
+    "server/channelManager.hotelStaff.d1.test.ts",
+    "transfers ownership to another human staff member in the same hotel"
+  ],
+  [
+    "server/channelManager.roomTypes.d1.test.ts",
+    "allows a hotel owner to update a visible room type through the D1 helper"
+  ],
+  [
+    "server/channelManager.roomTypes.d1.test.ts",
+    "rejects a capacity change without a complete pricing schedule"
+  ],
+  [
+    "server/d1/hotel.test.ts",
+    "reads and mutates hotel, room, and service data within the caller's scope"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "updates occupancy config only inside scope and preserves child-rule switch behavior"
+  ],
+  [
+    "server/hotelAccess.regression.test.ts",
+    "maps an RLS-hidden hotel UUID to NOT_FOUND rather than an internal server error"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "serializes last-room booking attempts and never leaves partial records"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "transitions check-in/out with scoped audit and denies cross-hotel ids"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "expires stale holds atomically; active holds block and expired holds release the room"
+  ],
+  [
+    "server/d1/payment.test.ts",
+    "scopes settings, sessions and booking payment updates to hotel"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "denies public context misuse and cross-hotel repository access"
+  ],
+  [
+    "server/hotelMedia.d1.test.ts",
+    "hotel_owner can list, delete, and set hero for their hotel"
+  ],
+  [
+    "server/d1/media.test.ts",
+    "deletes the R2 object with the row and promotes the next media item to hero"
+  ],
+  [
+    "server/hotelServicesRouter.d1.test.ts",
+    "createHotelServiceProcedure is reachable and reaches the D1 layer"
+  ],
+  [
+    "server/d1/siteConfig.test.ts",
+    "returns null for missing config and reads saved camelCase copy and colors"
+  ],
+  [
+    "server/housekeeping.access.test.ts",
+    "passes booking_id to db layer and returns derived due_date"
+  ],
+  [
+    "server/otaIcal.d1.test.ts",
+    "serves the room calendar for a valid token"
+  ],
+  [
+    "server/d1/ota.test.ts",
+    "continues scheduled sync after a failure and supplies only branded system authority"
+  ],
+  [
+    "server/d1/ota.test.ts",
+    "syncs mapped active room and room-type feeds and counts conflicts"
+  ],
+  [
+    "server/d1/ota.test.ts",
+    "scopes OTA summary to memberships and rejects anonymous access"
+  ],
+  [
+    "server/d1/ota.test.ts",
+    "imports the same feed idempotently without duplicate bookings or extra sync logs"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "confirms a hold with exact add-on totals and a same-batch status audit"
+  ],
+  [
+    "server/d1/booking.test.ts",
+    "refuses a hold on an unavailable room"
+  ],
+  [
+    "server/d1/signupLinks.test.ts",
+    "refuses a second hotel admin for the same hotel"
+  ],
+  [
+    "server/auth.better.test.ts",
+    "rejects duplicate memberships and a second Hotel Admin without sending invitations"
+  ],
+  [
+    "server/slipOkSettings.d1.test.ts",
+    "encrypts the key and stores branch_id in plaintext alongside it"
+  ],
+  [
+    "server/d1/media.test.ts",
+    "creates a server-generated hotel-prefixed key and makes the first upload the hero"
+  ],
+  [
+    "server/d1/media.test.ts",
+    "refuses cross-hotel uploads and deletes before touching R2"
+  ],
+  [
+    "server/d1/hotel.test.ts",
+    "restricts hotel creation to platform permission and public reads to published hotels"
+  ]
+]

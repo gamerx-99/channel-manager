@@ -23,4 +23,24 @@ describe('Hotel Detail calendar navigation', () => {
     expect(hotelDetail).toContain('hotelDetail.heightChildRateLabel');
     expect(hotelDetail).toContain('hotelDetail.childrenCountTowardMaxLabel');
   });
+
+  it('lets a holder of property.manage_profile publish or unpublish the hotel page', () => {
+    expect(hotelDetail).toContain("hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], id, 'property.manage_profile')");
+    expect(hotelDetail).toContain('trpc.channelManager.setHotelPublished.useMutation');
+    expect(hotelDetail).toContain('{canPublish && <div className="publish-control">');
+    expect(hotelDetail).toContain('id="hotel-publish-toggle"');
+    expect(hotelDetail).toContain("t('hotelDetail.confirmUnpublish')");
+  });
+
+  it('has no dead href="#" tabs: Photos opens the website builder for this hotel, Domains is gone', () => {
+    const services = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelServices.tsx'), 'utf8');
+    const builder = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8');
+    for (const page of [hotelDetail, services]) {
+      expect(page).not.toContain('href="#"');
+      expect(page).not.toContain('tabDomains');
+      expect(page).toContain("<Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>");
+    }
+    expect(builder).toContain('new URLSearchParams(window.location.search).get("hotel")');
+  });
 });
+

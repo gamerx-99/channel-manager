@@ -35,7 +35,7 @@ const postgresPublicTables = [
   "support_access_grants",
   "support_access_log",
 ].sort();
-const d1OnlyTables = ["booking_nights"];
+const d1OnlyTables = ["booking_nights", "platform_admins", "support_accounts"];
 
 describe("D1 schema parity", () => {
   it("contains every app-owned Postgres table and no Supabase-internal tables", () => {

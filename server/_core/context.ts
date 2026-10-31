@@ -1,4 +1,3 @@
-import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { eq } from "drizzle-orm";
 import {
   APP_ROLES,
@@ -9,15 +8,21 @@ import {
   type Permission,
 } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
+import { isActivePlatformAdmin } from "../d1/platformAdmins";
+import { getSupportMemberships, isActiveSupportAccount } from "../d1/supportAccess";
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
-import { getSupabaseIdentity } from "../supabase";
+import { createEmailSender } from "../email";
+import type { PublicBookingLimiter } from "../publicBookingRateLimit";
+import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
 
 export type SupabaseMembership = {
   hotelId: string;
   role: HumanRole;
   permissions: Permission[];
+  expiresAt?: Date;
+  mode?: "view" | "edit";
 };
 
 export type AppUserIdentity = {
@@ -44,6 +49,14 @@ export type TrpcContext = {
   res?: any;
   db?: D1ScopedDatabase;
   session?: unknown;
+  /** PUBLIC_BOOKING_LIMITER binding; set by the Worker only. */
+  publicBookingLimiter?: PublicBookingLimiter;
+  /** CF-Connecting-IP header, the PUBLIC_BOOKING_LIMITER key; set by the Worker only. */
+  cfConnectingIp?: string;
+  /** Better Auth instance that resolved the session, for server-side auth calls. */
+  auth?: AuthInstance;
+  /** Request headers that carried the session. */
+  headers?: Headers;
 };
 
 export type CreateContextOptions = {
@@ -136,7 +149,7 @@ export async function createContextFromRequest(
         (headers.get("x-forwarded-proto") && headers.get("host")
           ? `${headers.get("x-forwarded-proto")}://${headers.get("host")}`
           : undefined);
-      const auth = authOverride ?? createAuth({ db, baseURL: origin });
+      const auth = authOverride ?? createAuth({ db, baseURL: origin, emailSender: createEmailSender() });
       const sessionResult = await auth.api.getSession({ headers });
 
       if (sessionResult && sessionResult.user && sessionResult.session) {
@@ -167,6 +180,12 @@ export async function createContextFromRequest(
         ) {
           roles.push("super_admin");
         }
+        if (!roles.includes("super_admin") && await isActivePlatformAdmin(db, authUser.id)) {
+          roles.push("super_admin");
+        }
+        if (!roles.includes("support") && await isActiveSupportAccount(db, authUser.id)) {
+          roles.push("support");
+        }
 
         const resolvedRole = getHighestRole(roles);
 
@@ -176,13 +195,21 @@ export async function createContextFromRequest(
           access: "authenticated",
         };
 
+        const supportMemberships = await getSupportMemberships(db, caller);
+        const scopedMemberships = roles.includes("support") ? supportMemberships : memberships;
+
+        const twoFactorEnabled = (authUser as { twoFactorEnabled?: boolean }).twoFactorEnabled ?? false;
+        // Better Auth sessions carry no proof of a recent TOTP check; see server/mfaStepUp.ts.
+        const twoFactorVerifiedAt = twoFactorEnabled ? await getMfaStepUpVerifiedAt(db, authSession.id, authUser.id) : null;
+        const session = { ...authSession, twoFactorVerifiedAt };
+
         const user: AppUserIdentity = {
           id: authUser.id,
           email: authUser.email ?? null,
           name: authUser.name ?? authUser.email ?? null,
           role: resolvedRole,
           roles,
-          memberships,
+          memberships: scopedMemberships,
           accessToken: authSession.token,
           appMetadata: {
             role: resolvedRole ?? undefined,
@@ -191,9 +218,8 @@ export async function createContextFromRequest(
             name: authUser.name,
             email: authUser.email,
           },
-          twoFactorEnabled:
-            (authUser as { twoFactorEnabled?: boolean }).twoFactorEnabled ?? false,
-          session: authSession,
+          twoFactorEnabled,
+          session,
         };
 
         return {
@@ -202,7 +228,9 @@ export async function createContextFromRequest(
           clientIp: clientIp || "unknown",
           req,
           db,
-          session: authSession,
+          session,
+          auth,
+          headers,
         };
       }
     } catch (error) {
@@ -220,27 +248,8 @@ export async function createContextFromRequest(
   }
 
   // Fallback to legacy Supabase identity when db is not provided
-  let legacyUser: SupabaseIdentity | null = null;
-  try {
-    const authHeader = headers.get("authorization");
-    legacyUser = await getSupabaseIdentity(authHeader);
-  } catch (error) {
-    console.error(
-      "[Auth] Unexpected error during getSupabaseIdentity in createContext:",
-      error instanceof Error ? error.message : String(error),
-    );
-    legacyUser = null;
-  }
-
   return {
-    user: legacyUser,
+    user: null,
     clientIp: clientIp || "unknown",
   };
-}
-
-export function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
-  return createContextFromRequest({
-    headers: opts.req.headers,
-    clientIp: opts.req.ip || opts.req.socket?.remoteAddress,
-  });
 }

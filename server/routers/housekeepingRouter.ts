@@ -5,12 +5,10 @@ import {
   createHousekeepingTask as dbCreateHousekeepingTask,
   listHousekeepingTasks as dbListHousekeepingTasks,
   updateHousekeepingTaskStatus as dbUpdateHousekeepingTaskStatus,
-} from '../db';
+} from '../d1/housekeeping';
 import {
   requireHotelPermission,
-  assertHotelExists,
   rethrowDomainError,
-  rlsClient,
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
@@ -42,15 +40,12 @@ export const createHousekeepingTask = protectedProcedure
   .input(createHousekeepingTaskSchema)
   .mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.update_room_status');
-    // due_date required when no booking — db helper derives it from booking.check_out when booking_id provided
     if (!input.due_date && !input.booking_id) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'due_date is required when no booking is linked.' });
     }
-    const client = rlsClient(ctx.user.accessToken);
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
-      await assertHotelExists(client, input.hotel_id);
-      // Assignee membership validation and booking due_date derivation are handled by createHousekeepingTask in db.ts
-      return await dbCreateHousekeepingTask(client, {
+      return await dbCreateHousekeepingTask(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, {
         room_id: input.room_id,
         booking_id: input.booking_id ?? null,
         assigned_to: input.assigned_to ?? null,
@@ -66,9 +61,9 @@ export const listHousekeepingTasks = protectedProcedure
   .input(listHousekeepingTasksSchema)
   .query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.view_room_status');
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
-      // 42P01 graceful handling (missing migration) is done inside listHousekeepingTasks in db.ts
-      return await dbListHousekeepingTasks(rlsClient(ctx.user.accessToken), { hotel_id: input.hotel_id });
+      return await dbListHousekeepingTasks(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
     } catch (error) {
       return rethrowDomainError(error);
     }
@@ -78,11 +73,9 @@ export const updateHousekeepingTaskStatus = protectedProcedure
   .input(updateHousekeepingTaskStatusSchema)
   .mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'housekeeping.update_room_status');
-    const client = rlsClient(ctx.user.accessToken);
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
-      await assertHotelExists(client, input.hotel_id);
-      // Assignee membership validation, booking due_date derivation, and 42P01 handling are all in updateHousekeepingTaskStatus in db.ts
-      const updated = await dbUpdateHousekeepingTaskStatus(client, {
+      const updated = await dbUpdateHousekeepingTaskStatus(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, {
         task_id: input.task_id,
         status: input.status,
         assigned_to: input.assigned_to,

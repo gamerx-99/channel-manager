@@ -8,7 +8,7 @@ import { bookingNights, bookingStatusLog, bookings, d1Schema, hotelUsers, hotels
 import type { D1ScopedDatabase } from "../db/scope";
 import { createD1SystemCallerContext, isD1SystemCallerContext } from "../db/scope";
 import { createBookingWithGuests } from "./booking";
-import { fetchAndSyncOtaConnection, getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks } from "./ota";
+import { getOtaSummary, fetchAndSyncOtaConnection, getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks } from "./ota";
 import { runScheduledD1OtaSync } from "./otaScheduler";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
@@ -75,6 +75,16 @@ describe("D1 OTA iCal services", () => {
     expect(await otaConnectionRoomSameHotel(db, ownerA, { hotel_id: "a", room_id: "room-a", room_type_id: null }, NOW)).toBe(true);
     expect(() => sqlite.prepare("UPDATE ota_connections SET room_id = 'room-b' WHERE id = 'ota-a'").run()).toThrow(/does not belong to this hotel/);
     expect(() => sqlite.prepare("UPDATE ota_connections SET room_type_id = 'type-b' WHERE id = 'ota-a'").run()).toThrow(/does not belong to this hotel/);
+  });
+
+  it("rejects cross-hotel OTA sync before fetching or changing inventory", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await expect(syncOtaIcalBlocks(db, ownerB, "ota-a", [feedEvent], {}, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const fetchImpl = vi.fn();
+    await expect(fetchAndSyncOtaConnection(db, ownerB, "ota-a", fetchImpl, NOW)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(await db.select().from(bookings)).toEqual([]);
+    expect(await db.select().from(otaSyncLogs)).toEqual([]);
   });
 
   it("allows only a trusted system identity or a hotel caller with the sync permission", async () => {
@@ -373,5 +383,51 @@ describe("D1 OTA iCal services", () => {
       "room-a|2026-11-10",
       "room-a|2026-11-11",
     ]);
+  });
+});
+
+
+describe('scheduled OTA selection and summary', () => {
+  it('handles an empty connection list without invoking sync', async () => {
+    const syncConnection = vi.fn();
+    await expect(runScheduledD1OtaSync(db, { syncConnection })).resolves.toEqual({ total: 0, succeeded: 0, failed: 0, conflicts: 0, failures: [] });
+    expect(syncConnection).not.toHaveBeenCalled();
+  });
+  it('syncs mapped active room and room-type feeds and counts conflicts', async () => {
+    await seedHotel('a', 'owner-a');
+    await db.insert(otaConnections).values([
+      { id: 'room-feed', hotelId: 'a', provider: 'Room', status: 'connected', roomId: 'room-a', icalImportUrl: 'https://calendar.example.com/room' },
+      { id: 'type-feed', hotelId: 'a', provider: 'Type', status: 'connected', roomTypeId: 'type-a', icalImportUrl: 'https://calendar.example.com/type' },
+      { id: 'disabled', hotelId: 'a', provider: 'Disabled', status: 'disconnected', roomId: 'room-a', icalImportUrl: 'https://calendar.example.com/disabled' },
+    ]);
+    const processed: string[] = [];
+    const summary = await runScheduledD1OtaSync(db, { syncConnection: async (_db, caller, id) => {
+      expect(isD1SystemCallerContext(caller)).toBe(true);
+      processed.push(id);
+      return { inserted: 0, updated: 0, unchanged: 0, cancelled: 0, skipped_uids: [], conflicts: [{ uid: id, start: '2026-11-01', end: '2026-11-02' }] };
+    } });
+    expect(processed.sort()).toEqual(['room-feed', 'type-feed']);
+    expect(summary).toEqual({ total: 2, succeeded: 2, failed: 0, conflicts: 2, failures: [] });
+  });
+});
+
+
+describe('OTA summary port', () => {
+  it('scopes OTA summary to memberships and rejects anonymous access', async () => {
+    await seedHotel('a', 'owner-a'); await seedHotel('b', 'owner-b');
+    await expect(getOtaSummary(db, publicCaller)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(getOtaSummary(db, { userId: 'unassigned' })).resolves.toEqual([]);
+    await expect(getOtaSummary(db, ownerA)).resolves.toMatchObject([{ id: 'ota-a', hotel_id: 'a' }]);
+    expect(await getOtaSummary(db, ownerA)).toHaveLength(1);
+  });
+
+  it('never returns the iCal export token or import URL to summary readers', async () => {
+    await seedHotel('a', 'owner-a');
+
+    const [row] = await getOtaSummary(db, ownerA);
+
+    expect(row).toBeDefined();
+    expect(row).not.toHaveProperty('ical_export_token');
+    expect(row).not.toHaveProperty('ical_import_url');
   });
 });

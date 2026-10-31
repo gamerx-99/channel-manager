@@ -1,6 +1,8 @@
+import { trpc } from "./lib/trpc";
+import { hasAnyPermission } from "@shared/authorization";
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
-import { Route, Switch, useLocation } from "wouter";
-import React, { useEffect } from "react";
+import { Route, Switch } from "wouter";
+import React from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -13,7 +15,11 @@ import Housekeeping from "./pages/Housekeeping";
 import Communications from "./pages/Communications";
 import Login from "./pages/Login";
 import MfaEnroll from "./pages/MfaEnroll";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
+import Landing from "./pages/Landing";
+import Signup from "./pages/Signup";
 import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
@@ -22,6 +28,8 @@ import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
+import SupportAccess from "./pages/SupportAccess";
+import PlatformOverview from "./pages/PlatformOverview";
 import HotelStaff from "./pages/HotelStaff";
 import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
@@ -36,6 +44,9 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/mfa/enroll" component={MfaEnroll} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/signup" component={Signup} />
       <Route path="/signup/:token">
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
@@ -52,8 +63,12 @@ function Router() {
       {communicationsEnabled && <Route path="/communications">
         <PrivateRoute><Communications /></PrivateRoute>
       </Route>}
+      <Route path="/platform"><PrivateRoute><PlatformOverview /></PrivateRoute></Route>
+      <Route path="/hotels/:id/support-access">
+        {(params) => <PrivateRoute><SupportAccess hotelId={params.id} /></PrivateRoute>}
+      </Route>
       <Route path="/dashboard">
-        <PrivateRoute><Dashboard /></PrivateRoute>
+        <PrivateRoute><DashboardEntry /></PrivateRoute>
       </Route>
       <Route path="/hotels">
         <PrivateRoute><Hotels /></PrivateRoute>
@@ -88,25 +103,25 @@ function Router() {
       <Route path="/:slug">
         {(params) => <PublicHotel slug={params.slug} />}
       </Route>
-      <Route path="/" component={() => <RedirectToDashboard />} />
+      <Route path="/" component={Landing} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function RedirectToDashboard() {
-  const [, navigate] = useLocation();
-  useEffect(() => {
-    navigate("/dashboard");
-  }, [navigate]);
-  return null;
+function DashboardEntry() {
+  const { data: me } = trpc.auth.me.useQuery();
+  return hasAnyPermission(me?.roles ?? [], "platform.view_system_logs") ? <PlatformOverview /> : <Dashboard />;
 }
+
+// Hotel owners are sold to in Thai; every other page keeps the existing default.
+const initialLanguage = ["/", "/signup"].includes(window.location.pathname) ? "th" : "en";
 
 export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <LanguageProvider>
+        <LanguageProvider defaultLanguage={initialLanguage}>
           <TooltipProvider>
             <Toaster />
             <Router />

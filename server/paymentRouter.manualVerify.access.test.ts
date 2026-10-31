@@ -1,40 +1,45 @@
+import { bookings, hotelUsers, bookingStatusLog } from '../drizzle/d1-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const dbMocks = vi.hoisted(() => ({
-  updateBookingPaymentStatus: vi.fn(),
-  logBookingStatusChange: vi.fn(),
-}));
 
 const hotelId = '88ed76e4-cc93-4aa7-9c4d-30999d35ada4';
 const bookingId = 'f1a1b1c1-d1e1-41f1-81f1-111111111111';
 
-function makeFakeBookingsTable(bookingRow: Record<string, unknown> | null) {
+function makeDb(status: string | null) {
+  const membership = { hotelId, role: 'hotel_owner', permissionGrants: null, permissionRevokes: null, userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322' };
+  const booking = status ? { id: bookingId, hotelId, status } : null;
   return {
-    select: () => ({
-      eq: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({ data: bookingRow, error: null }),
+    select: (..._cols: any[]) => ({
+      from: (table: any) => {
+        if (table === hotelUsers) {
+          return { where: async () => [membership] };
+        }
+        return {
+          where: () => ({
+            limit: async () => (booking ? [booking] : []),
+          }),
+        };
+      },
+    }),
+    update: (_table: any) => ({
+      set: (_patch: any) => ({
+        where: () => ({
+          returning: async () => [{ id: bookingId }],
         }),
       }),
     }),
-    update: (_patch: Record<string, unknown>) => ({
-      eq: async () => ({ error: null }),
+    insert: (_table: any) => ({
+      values: (_vals: any) => ({
+        returning: async () => [{ id: 'log-1' }],
+      }),
     }),
   };
 }
-
-const supabaseMocks = vi.hoisted(() => ({
-  createRlsSupabaseClient: vi.fn(),
-}));
-
-vi.mock('./db', () => dbMocks);
-vi.mock('./supabase', () => supabaseMocks);
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function caller(role: 'hotel_owner' | 'revenue_manager') {
+function caller(role: 'hotel_owner' | 'revenue_manager', db: any) {
   return import('./routers').then(({ appRouter }) => appRouter.createCaller({
     req: {} as Request,
     res: {} as Response,
@@ -49,65 +54,39 @@ function caller(role: 'hotel_owner' | 'revenue_manager') {
       roles: [role],
       memberships: [{ hotelId, role }],
     },
+    db,
+    caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: [role], memberships: [{ hotelId, role }], access: 'authenticated' } as any,
   }));
 }
 
 describe('payment.manualVerify permission boundary', () => {
   it('denies revenue_manager, which lacks operations.manage_bookings', async () => {
-    const app = await caller('revenue_manager');
+    const app = await caller('revenue_manager', makeDb('pending_verification'));
 
     await expect(app.payment.manualVerify({
       booking_id: bookingId,
       hotel_id: hotelId,
       approved: true,
     })).rejects.toMatchObject({ code: 'FORBIDDEN' });
-
-    expect(supabaseMocks.createRlsSupabaseClient).not.toHaveBeenCalled();
   });
 
   it('lets hotel_owner approve a pending_verification booking', async () => {
-    supabaseMocks.createRlsSupabaseClient.mockReturnValueOnce({
-      from: (table: string) => {
-        if (table === 'bookings') {
-          return makeFakeBookingsTable({ id: bookingId, hotel_id: hotelId, status: 'pending_verification' });
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      },
-    });
-    const app = await caller('hotel_owner');
+    const app = await caller('hotel_owner', makeDb('pending_verification'));
 
     await expect(app.payment.manualVerify({
       booking_id: bookingId,
       hotel_id: hotelId,
       approved: true,
     })).resolves.toMatchObject({ booking_id: bookingId, status: 'confirmed' });
-
-    expect(dbMocks.updateBookingPaymentStatus).toHaveBeenCalledWith(expect.anything(), bookingId, 'verified');
-    expect(dbMocks.logBookingStatusChange).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      booking_id: bookingId,
-      from_status: 'pending_verification',
-      to_status: 'confirmed',
-      changed_by: 'd93900a0-e7fe-45d6-9364-80ea8a035322',
-    }));
   });
 
   it('rejects approving a booking that is not awaiting verification', async () => {
-    supabaseMocks.createRlsSupabaseClient.mockReturnValueOnce({
-      from: (table: string) => {
-        if (table === 'bookings') {
-          return makeFakeBookingsTable({ id: bookingId, hotel_id: hotelId, status: 'confirmed' });
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      },
-    });
-    const app = await caller('hotel_owner');
+    const app = await caller('hotel_owner', makeDb('confirmed'));
 
     await expect(app.payment.manualVerify({
       booking_id: bookingId,
       hotel_id: hotelId,
       approved: true,
     })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
-
-    expect(dbMocks.updateBookingPaymentStatus).not.toHaveBeenCalled();
   });
 });

@@ -85,6 +85,22 @@ describe("D1 site config and media repository", () => {
     await expect(getHotelSiteConfigBySlug(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("rejects cross-hotel site config and media access", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    await saveHotelSiteConfig(db, { userId: "owner-b" }, { hotel_id: "b", hero_copy: "Hotel B" });
+    await db.insert(hotelMedia).values({ id: 'media-b', hotelId: 'b', url: '/media/b/photo.jpg', isHero: true });
+    const caller = { userId: "owner-a" };
+    await expect(getHotelSiteConfig(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(saveHotelSiteConfig(db, caller, { hotel_id: "b", hero_copy: "No" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(listHotelMedia(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(createHotelMedia(db, caller, { hotel_id: "b", url: "r2/b/1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(deleteHotelMedia(db, caller, "b", "media-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(setHotelMediaHero(db, caller, "b", "media-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(getHotelSiteConfig(db, { userId: "owner-b" }, "b")).resolves.toMatchObject({ heroCopy: "Hotel B" });
+    expect(await db.select().from(hotelMedia)).toMatchObject([{ id: 'media-b', isHero: true }]);
+  });
+
   it("does not synthesize a successful save when persisted config violates the schema", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");
@@ -104,5 +120,37 @@ describe("D1 site config and media repository", () => {
       createHotelMedia(db, { userId: "owner-a" }, { hotel_id: "a", url: "hero-2", is_hero: true }),
     ]);
     expect((await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, "a"))).filter(media => media.isHero)).toHaveLength(1);
+  });
+});
+
+
+describe('hotel media read permission', () => {
+  it('allows front desk and revenue manager to read media with property.view', async () => {
+    await seedHotel('a', 'owner-a');
+    await db.insert(hotelUsers).values([
+      { hotelId: 'a', userId: 'front', role: 'front_desk' },
+      { hotelId: 'a', userId: 'revenue', role: 'revenue_manager' },
+    ]);
+    const media = await createHotelMedia(db, { userId: 'owner-a' }, { hotel_id: 'a', url: '/media/a/photo.jpg' });
+    for (const userId of ['front', 'revenue']) {
+      await expect(listHotelMedia(db, { userId }, 'a')).resolves.toMatchObject([{ id: media.id }]);
+      await expect(setHotelMediaHero(db, { userId }, 'a', media.id)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      await expect(deleteHotelMedia(db, { userId }, 'a', media.id)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+  });
+});
+
+
+describe('site config reads', () => {
+  it('returns null for missing config and reads saved camelCase copy and colors', async () => {
+    await seedHotel('a', 'owner-a');
+    const owner = { userId: 'owner-a' };
+    const publicCaller = { userId: '', access: 'public' as const };
+    await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toBeNull();
+    await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toBeNull();
+    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Welcome', accent_color: '#123456', visible_sections: { rooms: false } });
+    const expected = { heroCopy: 'Welcome', accentColor: '#123456', visibleSections: { rooms: false } };
+    await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toMatchObject(expected);
+    await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toMatchObject(expected);
   });
 });

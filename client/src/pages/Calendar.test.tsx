@@ -136,8 +136,8 @@ describe("Availability month calendar", () => {
     next.setDate(next.getDate() + 1);
     const checkout = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
     mocks.bookingOccupancyQuery.data = [{
-      room_id: "room-1", check_in: iso, check_out: checkout, status: "confirmed", expires_at: null,
-      source: "ota_ical", guest_name: "Booking.com · CLOSED - Not available",
+      roomId: "room-1", checkIn: iso, checkOut: checkout, status: "confirmed", expiresAt: null,
+      source: "ota_ical", guestName: "Booking.com ? CLOSED - Not available",
     }];
     render(<Calendar id="hotel-1" />);
     const bookedCell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && button.className.includes("has-booking"));

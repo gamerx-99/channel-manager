@@ -1,0 +1,14 @@
+https://:worker.lannatc.workers.dev/*
+  X-Robots-Tag: noindex
+
+/login
+  X-Robots-Tag: noindex
+
+/accept-invite
+  X-Robots-Tag: noindex
+
+/forgot-password
+  X-Robots-Tag: noindex
+
+/reset-password
+  X-Robots-Tag: noindex

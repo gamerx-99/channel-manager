@@ -5,7 +5,7 @@
       "name": "channel-manager-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "port": 8787
     }
   ]
 }
