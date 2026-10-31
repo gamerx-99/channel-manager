@@ -166,3 +166,9 @@ answer noted.
 
 
 - [ ] Public signup (2026-10-31): the owner asked for a signup page. ASSUMPTION: one hotel per account, the hotel starts private, and the Worker rate limiter guards the hotel step. The email is not verified, because no mail provider is live. The page shows no prices, no trial and no terms, because those are unconfirmed. Decide email verification and the signup terms before production.
+
+## Raised on `feat/hayhost-hardening` (2026-10-31)
+- [ ] Dashboard calendar for front desk / housekeeping: reading saved allotment and rates needs `revenue.manage_rates`, so the whole calendar used to fail with 403 for them. ASSUMPTION: they now see booking-based room counts with prices hidden, and an owner's stop-sell or reduced allotment is not reflected for them. Decide whether front desk should see saved allotment (a new read-only permission) or rates. Raised 2026-10-31.
+- [ ] Web bookings are stored with `source = 'manual'`, because the `bookings_source_check` constraint only allows `manual`, `walk-in`, `phone` and `ota_ical`. The bookings list and channel reports cannot tell a web booking from one staff typed in. A fix needs a migration that adds a `website` source; not made here. Raised 2026-10-31.
+- [ ] Manual slip review: the slip image is sent to SlipOK but never stored, so staff approving a `pending_verification` booking cannot see the slip and must check their bank app. ASSUMPTION: unchanged. Storing slips in R2 is its own ticket (privacy and retention decision). Raised 2026-10-31.
+- [ ] `SLIPOK_API_BASE_URL` (local mock only) is honoured only for loopback URLs. ASSUMPTION: no deployed Worker should set it. Raised 2026-10-31.
