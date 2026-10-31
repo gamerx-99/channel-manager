@@ -58,8 +58,18 @@ owner-approved access to a hotel without cross-hotel read.
     invite, removal and ownership paths cannot bypass permission switches.
 - [x] **14-04 Client** — per-staff permission switch UI and owner approval screen for
   support access.
-- [ ] **14-05 SlipOK central account** — auto key rotation on quota exhaustion, own
-  duplicate-slip check, plan-based quotas.
+- [x] **14-05 SlipOK central account** (2026-10-31, branch `feat/financials-owner-grant`) —
+  one platform key from the Worker secrets `SLIPOK_API_KEY` + `SLIPOK_BRANCH_ID`
+  (fixed base URL, `SLIP_OK_API` no longer read); no `log: true`; our own receiver
+  check against the hotel PromptPay ID (`receiver.proxy.value`, then
+  `receiver.account.value`, right-aligned digit compare, at least 4 digits, mismatch
+  rejects, nothing comparable goes to manual review); own duplicate check by
+  `verified_transaction_ref` before the write; missing secrets mean manual review.
+  Hotel key form and `slipok.getSettings/saveKey/removeKey` removed; the
+  `hotel_payment_settings.slipok_*` columns stay. Owner decisions: no plan quotas
+  (every function works now, tiers later) and no key pool or rotation — more than one
+  SlipOK account waits for SlipOK's platform terms, and nothing may evade its
+  multi-account detection.
 
 ## Non-goals / invariants
 

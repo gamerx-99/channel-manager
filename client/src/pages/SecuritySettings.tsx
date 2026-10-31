@@ -1,13 +1,9 @@
-import { useParams } from "wouter";
 import MfaSettings from "@/components/MfaSettings";
 import SlipOkSettings from "@/components/SlipOkSettings";
-import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
 
 export default function SecuritySettings() {
   const { t } = useTranslation();
-  const { selectedHotel } = useHotel();
-  const hotelId = useParams<{ hotelId?: string }>().hotelId || selectedHotel?.id;
 
   return (
     <div className="page-content">
@@ -21,7 +17,7 @@ export default function SecuritySettings() {
         </div>
       </section>
       <MfaSettings />
-      {hotelId && <SlipOkSettings hotelId={hotelId} />}
+      <SlipOkSettings />
     </div>
   );
 }

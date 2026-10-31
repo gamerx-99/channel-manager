@@ -1,67 +1,12 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
-import {
-  getSlipOkSettings,
-  saveSlipOkSettings,
-  removeSlipOkKey,
-  savePromptPaySettings,
-} from '../d1/payment';
-import { encryptSlipOkKey, hashSlipOkKey } from '../slipokCrypto';
+import { savePromptPaySettings } from '../d1/payment';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
 import { requireRecentMfaVerification } from '../mfa';
 
-const hotelIdSchema = z.string().uuid();
-
+// Slip checks use one central SlipOK account (spec 14-05), so hotels only set
+// where guests pay.
 export const slipokRouter = router({
-  getSettings: protectedProcedure
-    .input(z.object({ hotel_id: hotelIdSchema }))
-    .query(async ({ ctx, input }) => {
-      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
-      if (!ctx.db) throw new Error('D1 database required.');
-      try {
-        return await getSlipOkSettings(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
-
-  saveKey: protectedProcedure
-    .input(
-      z.object({
-        hotel_id: hotelIdSchema,
-        api_key: z.string().trim().min(8, 'SlipOK API key is too short.').max(512),
-        branch_id: z.string().trim().min(1, 'SlipOK branch ID is required.').max(128),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
-      if (!ctx.db) throw new Error('D1 database required.');
-      try {
-        const encryptedKey = await encryptSlipOkKey(input.api_key);
-        const keyHash = await hashSlipOkKey(input.api_key);
-        await saveSlipOkSettings(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, encryptedKey, keyHash, input.branch_id);
-        return { success: true as const };
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
-
-  removeKey: protectedProcedure
-    .input(z.object({ hotel_id: hotelIdSchema }))
-    .mutation(async ({ ctx, input }) => {
-      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
-      if (!ctx.db) throw new Error('D1 database required.');
-      try {
-        await removeSlipOkKey(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
-        return { success: true as const };
-      } catch (error) {
-        return rethrowDomainError(error);
-      }
-    }),
-
   savePromptPayId: protectedProcedure
     .input(z.object({
       hotel_id: z.string().uuid(),

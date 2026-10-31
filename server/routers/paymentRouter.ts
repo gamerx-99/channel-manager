@@ -4,7 +4,6 @@ import { rateLimitedProcedure, protectedProcedure, router } from '../_core/trpc'
 import { authorizeHotelAction, createD1GuestPaymentCallerContext, type D1ScopedDatabase } from '../db/scope';
 import {
   getHotelPaymentConfig,
-  getSlipOkCredentialsForVerification,
   getLatestPaymentSession,
   createPaymentSession,
   updateBookingPaymentStatus,
@@ -15,8 +14,7 @@ import { expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
 import { bookings, hotels } from '../../drizzle/d1-schema';
 import { eq, and } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
-import { decryptSlipOkKey } from '../slipokCrypto';
-import { verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
+import { getCentralSlipOkCredentials, verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
 import { assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 
@@ -193,19 +191,27 @@ export const paymentRouter = router({
         await db.update(bookings).set({ status: 'pending_verification', expiresAt: null }).where(eq(bookings.id, session.booking_id));
         await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: bookingStatus, to_status: 'pending_verification', reason: 'slip_submitted' });
 
-        const config = await getSlipOkCredentialsForVerification(db, guest, hotelId);
-        if (!config?.slipok_key_enc || !config.slipok_branch_id) {
-          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Slip verification is not available for this hotel. Please contact the hotel directly.' });
-        }
+        const manualReview = async (reason: string) => {
+          await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason });
+          return { verified: false as const, pendingManualReview: true as const, message: 'ระบบกำลังตรวจสอบสลิปของคุณ กรุณารอการยืนยันจากเจ้าหน้าที่' };
+        };
 
-        const apiKey = await decryptSlipOkKey(config.slipok_key_enc);
+        // One central SlipOK account serves every hotel. Without it, staff check the slip.
+        const credentials = getCentralSlipOkCredentials();
+        if (!credentials) return await manualReview('slipok_not_configured_manual_review_required');
+        const config = await getHotelPaymentConfig(db, guest, hotelId);
+        if (!config?.promptpay_id) return await manualReview('promptpay_missing_manual_review_required');
 
         try {
-          const result = await verifySlipWithSlipOk(apiKey, config.slipok_branch_id, {
+          const result = await verifySlipWithSlipOk(credentials, {
             slipData: input.slip_data,
             expectedAmount: Number(session.amount),
-            ref: session.qr_reference,
+            expectedReceiver: config.promptpay_id,
           });
+
+          if (result.needsManualReview) {
+            return await manualReview('slipok_receiver_unverified_manual_review_required');
+          }
 
           if (result.matched) {
             const { duplicateRef } = await finalizePaymentSession(db, guest, hotelId, session.id, {
@@ -241,7 +247,7 @@ export const paymentRouter = router({
             rawResponse: result.raw,
           });
           await updateBookingPaymentStatus(db, guest, hotelId, session.booking_id, 'failed');
-          await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'payment_rejected', reason: 'slipok_amount_or_ref_mismatch' });
+          await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'payment_rejected', reason: result.receiverCheck === 'mismatch' ? 'slipok_receiver_mismatch' : 'slipok_amount_or_ref_mismatch' });
           return { verified: false as const, message: 'ไม่พบการชำระเงินที่ตรงกัน กรุณาติดต่อที่พัก' };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
@@ -254,15 +260,11 @@ export const paymentRouter = router({
               return { verified: false as const, retrySlip: true as const, message: 'อ่านรูปสลิปไม่ได้ กรุณาอัปโหลดรูปสลิปที่ชัดเจนอีกครั้ง' };
             }
             if (error.code === 'API_ERROR') {
-              await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason: 'slipok_api_unavailable_manual_review_required' });
-              return {
-                verified: false as const,
-                pendingManualReview: true as const,
-                message: 'ระบบกำลังตรวจสอบสลิปของคุณ กรุณารอการยืนยันจากเจ้าหน้าที่',
-              };
+              return await manualReview('slipok_api_unavailable_manual_review_required');
             }
             if (error.code === 'INVALID_KEY') {
-              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'ระบบตรวจสลิปขัดข้อง กรุณาติดต่อที่พัก' });
+              // A platform key problem is not the guest's fault; staff check the slip.
+              return await manualReview('slipok_key_rejected_manual_review_required');
             }
           }
           throw error;

@@ -1120,10 +1120,17 @@ const en = {
     errorSelectHotel: "Select a hotel for this user.",
     errorSelectUserAndHotel: "Select a user and a hotel.",
   },
+  slipOk: {
+    eyebrow: "Payment verification",
+    title: "Slip checking",
+    centralNote: "Guest transfer slips are checked automatically by hayhost. You do not need a SlipOK account or API key.",
+    promptPayHint: "Guests pay to the PromptPay ID you set in Financials.",
+    openFinancials: "Open Financials",
+  },
   securitySettings: {
     eyebrow: "Settings / Security",
     title: "Security",
-    lede: "Manage your authenticator app, payment integration, and step-up verification for sensitive actions.",
+    lede: "Manage your authenticator app and step-up verification for sensitive actions.",
   },
   websiteBuilder: {
     loadingAriaLabel: "Loading website builder",

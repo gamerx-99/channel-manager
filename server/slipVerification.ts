@@ -1,33 +1,46 @@
 /**
- * Phase 12B — SlipOK API verification client (server-only).
+ * SlipOK API verification client (server-only).
  *
- * Calls the SlipOK REST API with the hotel's per-hotel API key to verify
- * whether a payment slip matches a given amount and reference.
- *
- * API key is decrypted from hotel_payment_settings at call time.
- * Never exposed to the client.
+ * The platform holds one central SlipOK account (spec 14-05). Its API key and
+ * branch ID come from the Worker secrets `SLIPOK_API_KEY` and
+ * `SLIPOK_BRANCH_ID`; hotels never enter keys. Because one branch serves every
+ * hotel, SlipOK cannot check the receiver for us, so this module compares the
+ * slip's receiver with the hotel's PromptPay ID itself.
  *
  * SlipOK API docs: https://slipok.com/api-document
  */
 
-const SLIPOK_DEFAULT_BASE_URL = 'https://api.slipok.com/api/line/apikey';
+const SLIPOK_BASE_URL = 'https://api.slipok.com/api/line/apikey';
 
 /** SlipOK read the slip and refused it: no such transfer, wrong amount or receiver, or a repeat. */
 const SLIPOK_REJECTED_SLIP_CODES = new Set([1011, 1012, 1013, 1014]);
 /** The upload could not be read, which says nothing about the payment. */
 const SLIPOK_UNREADABLE_SLIP_CODES = new Set([1005, 1006, 1007, 1008]);
 
+/** Fewer compared digits than this cannot tell two accounts apart. */
+const MIN_COMPARED_RECEIVER_DIGITS = 4;
+
+export interface SlipOkCredentials {
+  apiKey: string;
+  branchId: string;
+}
+
 export interface SlipVerificationInput {
   /** Base64 of the slip image */
   slipData: string;
   /** Expected amount in THB */
   expectedAmount: number;
-  /** Booking / session reference to match */
-  ref?: string;
+  /** The hotel's PromptPay ID, which the slip's receiver must match */
+  expectedReceiver: string;
 }
+
+export type ReceiverCheck = 'match' | 'mismatch' | 'unknown';
 
 export interface SlipVerificationResult {
   matched: boolean;
+  /** The slip is otherwise valid but its receiver cannot be compared, so a person must check it. */
+  needsManualReview: boolean;
+  receiverCheck: ReceiverCheck | null;
   transactionRef: string | null;
   amount: number | null;
   /** Raw SlipOK response data for audit logging */
@@ -37,41 +50,80 @@ export interface SlipVerificationResult {
 export class SlipOkError extends Error {
   constructor(
     message: string,
-    public readonly code: 'INVALID_KEY' | 'API_ERROR' | 'AMOUNT_MISMATCH' | 'NO_KEY' | 'UNREADABLE_SLIP',
+    public readonly code: 'INVALID_KEY' | 'API_ERROR' | 'UNREADABLE_SLIP',
   ) {
     super(message);
     this.name = 'SlipOkError';
   }
 }
 
+/** The central SlipOK account, or null when its secrets are not set. */
+export function getCentralSlipOkCredentials(env: Record<string, string | undefined> = process.env): SlipOkCredentials | null {
+  const apiKey = env.SLIPOK_API_KEY?.trim();
+  const branchId = env.SLIPOK_BRANCH_ID?.trim();
+  if (!apiKey || !branchId) return null;
+  return { apiKey, branchId };
+}
+
+/** Digits and mask characters only, with a +66 phone number written as 0XXXXXXXXX. */
+function normaliseAccountValue(value: string) {
+  const kept = value.replace(/[^0-9xX]/g, '').toLowerCase();
+  // ASSUMPTION: only an 11-character value is a 66-prefixed mobile number; a
+  // 13-digit national ID or tax ID may also start with 66 and is left alone.
+  return kept.length === 11 && kept.startsWith('66') ? `0${kept.slice(2)}` : kept;
+}
+
+/**
+ * Compare a (possibly masked) slip value with the PromptPay ID from the right,
+ * one position at a time. Masked positions are skipped; any differing digit is
+ * a mismatch. Returns null when too few digits could be compared.
+ */
+export function compareReceiverValue(promptPayId: string, slipValue: string): Exclude<ReceiverCheck, 'unknown'> | null {
+  const expected = normaliseAccountValue(promptPayId);
+  const actual = normaliseAccountValue(slipValue);
+  let compared = 0;
+  for (let offset = 1; offset <= Math.min(expected.length, actual.length); offset++) {
+    const a = expected[expected.length - offset]!;
+    const b = actual[actual.length - offset]!;
+    if (a === 'x' || b === 'x') continue;
+    if (a !== b) return 'mismatch';
+    compared++;
+  }
+  return compared >= MIN_COMPARED_RECEIVER_DIGITS ? 'match' : null;
+}
+
+function nestedValue(source: unknown, key: string): string | null {
+  if (!source || typeof source !== 'object') return null;
+  const value = (source as Record<string, unknown>)[key];
+  if (!value || typeof value !== 'object') return null;
+  const inner = (value as Record<string, unknown>).value;
+  return typeof inner === 'string' && inner.trim() ? inner : null;
+}
+
+/** Check the slip receiver: the PromptPay proxy first, then the bank account. */
+export function checkSlipReceiver(promptPayId: string, receiver: unknown): ReceiverCheck {
+  for (const key of ['proxy', 'account']) {
+    const value = nestedValue(receiver, key);
+    if (!value) continue;
+    const result = compareReceiverValue(promptPayId, value);
+    if (result) return result;
+  }
+  return 'unknown';
+}
+
 /**
  * Verify a payment slip against the SlipOK API.
  *
- * SlipOK requires two separate credentials, not one: the branch ID goes in
- * the URL path, and the API key goes in the `x-authorization` header. An
- * earlier version of this function conflated them into a single value and
- * put it in the URL with no auth header at all — every real verification
- * call would have failed with 401.
+ * The branch ID goes in the URL path and the API key in the `x-authorization`
+ * header.
  *
- * @param apiKey   - Decrypted per-hotel SlipOK API key (sent as x-authorization)
- * @param branchId - Per-hotel SlipOK branch ID (sent as the URL path segment)
- * @param input    - Slip data, expected amount, optional ref
- * @returns SlipVerificationResult with matched flag
  * @throws SlipOkError on API or key errors
  */
 export async function verifySlipWithSlipOk(
-  apiKey: string,
-  branchId: string,
+  credentials: SlipOkCredentials,
   input: SlipVerificationInput,
 ): Promise<SlipVerificationResult> {
-  if (!apiKey || apiKey.trim().length === 0 || !branchId || branchId.trim().length === 0) {
-    throw new SlipOkError('No SlipOK API key/branch ID configured for this hotel.', 'NO_KEY');
-  }
-
-  // SLIP_OK_API is a base URL. Anything else is ignored so a key stored there
-  // can never end up in a request URL.
-  const baseUrl = process.env.SLIP_OK_API?.startsWith('https://') ? process.env.SLIP_OK_API : SLIPOK_DEFAULT_BASE_URL;
-  const url = baseUrl.endsWith(`/${branchId}`) ? baseUrl : `${baseUrl}/${branchId}`;
+  const url = `${SLIPOK_BASE_URL}/${encodeURIComponent(credentials.branchId)}`;
 
   let response: Response;
   try {
@@ -79,11 +131,12 @@ export async function verifySlipWithSlipOk(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-authorization': apiKey,
+        'x-authorization': credentials.apiKey,
       },
-      // `data` is the QR text, so an image goes in `files`. `log` makes SlipOK
-      // check the receiver account bound to the branch and reject repeat slips.
-      body: JSON.stringify({ files: input.slipData, log: true, amount: input.expectedAmount }),
+      // `data` is the QR text, so an image goes in `files`. No `log`: the
+      // central branch has no single receiver to bind, and repeats are caught
+      // by our own transaction-reference check.
+      body: JSON.stringify({ files: input.slipData, amount: input.expectedAmount }),
     });
   } catch (err) {
     throw new SlipOkError(
@@ -99,7 +152,7 @@ export async function verifySlipWithSlipOk(
   if (!response.ok) {
     const failure = (await response.json().catch(() => null)) as Record<string, unknown> | null;
     if (failure && SLIPOK_REJECTED_SLIP_CODES.has(failure.code as number)) {
-      return { matched: false, transactionRef: null, amount: null, raw: failure };
+      return { matched: false, needsManualReview: false, receiverCheck: null, transactionRef: null, amount: null, raw: failure };
     }
     if (failure && SLIPOK_UNREADABLE_SLIP_CODES.has(failure.code as number)) {
       throw new SlipOkError('SlipOK could not read the slip image.', 'UNREADABLE_SLIP');
@@ -115,7 +168,7 @@ export async function verifySlipWithSlipOk(
     throw new SlipOkError('SlipOK returned an unexpected response format.', 'API_ERROR');
   }
 
-  // SlipOK response shape (v2): { success: bool, data: { amount, ref, ... } }
+  // SlipOK response shape (v2): { success: bool, data: { amount, transRef, receiver, ... } }
   const data = (body.data ?? body) as Record<string, unknown>;
   const returnedAmount = typeof data.amount === 'number' ? data.amount : null;
   const returnedRef = typeof data.transRef === 'string' && data.transRef ? data.transRef : null;
@@ -123,10 +176,14 @@ export async function verifySlipWithSlipOk(
   // Amount tolerance: allow ±0.01 THB for rounding
   const amountMatched =
     returnedAmount !== null && Math.abs(returnedAmount - input.expectedAmount) <= 0.01;
+  // No transRef means no replay check in finalizePaymentSession, so it cannot match.
+  const slipValid = Boolean(body.success) && data.success !== false && amountMatched && returnedRef !== null;
+  const receiverCheck = slipValid ? checkSlipReceiver(input.expectedReceiver, data.receiver) : null;
 
   return {
-    // No transRef means no replay check in finalizePaymentSession, so it cannot match.
-    matched: Boolean(body.success) && data.success !== false && amountMatched && returnedRef !== null,
+    matched: receiverCheck === 'match',
+    needsManualReview: receiverCheck === 'unknown',
+    receiverCheck,
     transactionRef: returnedRef,
     amount: returnedAmount,
     raw: body,
