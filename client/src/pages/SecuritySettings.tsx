@@ -1,3 +1,4 @@
+import DeleteAccountSettings from "@/components/DeleteAccountSettings";
 import MfaSettings from "@/components/MfaSettings";
 import SlipOkSettings from "@/components/SlipOkSettings";
 import { useTranslation } from "@/lib/i18n";
@@ -18,6 +19,7 @@ export default function SecuritySettings() {
       </section>
       <MfaSettings />
       <SlipOkSettings />
+      <DeleteAccountSettings />
     </div>
   );
 }

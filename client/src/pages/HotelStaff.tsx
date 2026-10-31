@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { ArrowRightLeft, Check, Copy, Link2, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
+import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AppRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
 
@@ -147,7 +148,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
   );
   const currentHotelAdmin = staff.find(member => member.role === "hotel_owner");
   const hotelAdminAlreadyAssigned = Boolean(currentHotelAdmin);
-  const auditUserLabel = (userId: string) => staff.find(member => member.user_id === userId)?.email ?? userId;
+  const auditUserLabel = (userId: string) => userId === DELETED_USER_ID ? t("accountDeletion.deletedUser") : staff.find(member => member.user_id === userId)?.email ?? userId;
   const transferCandidates = staff.filter(member => member.role !== "hotel_owner" && !isPlatformRole(member.role));
   const canTransferOwnership = actorMembership?.permissions?.includes("property.transfer_ownership") ?? false;
   const hotelAdminRestrictionText = t("hotelStaff.hotelAdminRestrictionText");
