@@ -8,7 +8,7 @@ import { bookingNights, bookingStatusLog, bookings, d1Schema, hotelUsers, hotels
 import type { D1ScopedDatabase } from "../db/scope";
 import { createD1SystemCallerContext, isD1SystemCallerContext } from "../db/scope";
 import { createBookingWithGuests } from "./booking";
-import { getOtaSummary, fetchAndSyncOtaConnection, getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks } from "./ota";
+import { getOtaSummary, fetchAndSyncOtaConnection, getOtaIcalExport, otaConnectionRoomSameHotel, syncOtaIcalBlocks, upsertOtaConnection } from "./ota";
 import { runScheduledD1OtaSync } from "./otaScheduler";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
@@ -65,6 +65,28 @@ async function seedHotel(id: string, owner: string, token = (id === "a" ? "a" : 
 async function seedOtaBooking(id: string, uid: string, status: string, checkIn = feedEvent.start, checkOut = feedEvent.end) {
   await db.insert(bookings).values({ id, hotelId: "a", roomId: "room-a", guestName: "Trip · Reserved", checkIn, checkOut, price: "0.00", source: "ota_ical", status, otaConnectionId: "ota-a", externalUid: uid });
 }
+
+describe("upsertOtaConnection on D1", () => {
+  // Regression: timestamps were written as numbers into timestamp_ms columns,
+  // so saving any connection from the OTA page failed with "value.getTime is not a function".
+  it("creates a connection with an export link, then updates it in place", async () => {
+    await seedHotel("a", "owner-a");
+    const created = await upsertOtaConnection(db, ownerA, { hotelId: "a", provider: "Agoda", status: "connected", icalImportUrl: "https://example.com/agoda.ics", roomTypeId: "type-a", includeExportUrl: true });
+    expect(created).toMatchObject({ provider: "Agoda", room_type_id: "type-a" });
+    const [row] = await db.select().from(otaConnections).where(eq(otaConnections.provider, "Agoda"));
+    expect(row!.createdAt).toBeInstanceOf(Date);
+
+    await upsertOtaConnection(db, ownerA, { hotelId: "a", provider: "Agoda", status: "connected", icalImportUrl: "https://example.com/new.ics", roomId: "room-a" });
+    const rows = await db.select().from(otaConnections).where(eq(otaConnections.provider, "Agoda"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ icalImportUrl: "https://example.com/new.ics", roomId: "room-a", roomTypeId: null, icalExportToken: row!.icalExportToken });
+  });
+
+  it("refuses another hotel's owner", async () => {
+    await seedHotel("a", "owner-a"); await seedHotel("b", "owner-b");
+    await expect(upsertOtaConnection(db, ownerB, { hotelId: "a", provider: "Agoda", status: "connected" })).rejects.toBeTruthy();
+  });
+});
 
 describe("D1 OTA iCal services", () => {
   it("enforces same-hotel room and room-type targets", async () => {
