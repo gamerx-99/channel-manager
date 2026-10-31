@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { generateTotpQrDataUrl } from "@/lib/qr";
+import { useTranslation } from "@/lib/i18n";
 
 type MfaFactor = {
   id: string;
@@ -16,6 +17,7 @@ type EnrollData = {
 };
 
 export default function MfaSettings() {
+  const { t } = useTranslation();
   const trpcUtils = trpc.useUtils();
   const { data: authMe, isLoading: loading, error: authError } = trpc.auth.me.useQuery();
 
@@ -31,14 +33,14 @@ export default function MfaSettings() {
 
   const isEnabled = Boolean(authMe?.twoFactorEnabled);
   const verifiedFactors: MfaFactor[] = isEnabled
-    ? [{ id: "totp-authenticator", status: "verified", factor_type: "totp", friendly_name: "Authenticator" }]
+    ? [{ id: "totp-authenticator", status: "verified", factor_type: "totp", friendly_name: t("mfaSettings.authenticatorName") }]
     : [];
   const hasVerified = verifiedFactors.length > 0;
 
   async function handleStartEnroll() {
     setError(null);
     setSuccess(null);
-    const password = window.prompt("Enter your account password to enable two-factor authentication:") ?? enrollPassword;
+    const password = window.prompt(t("mfaSettings.promptEnablePassword")) ?? enrollPassword;
     if (!password) {
       setShowPasswordPrompt(true);
       return;
@@ -57,13 +59,13 @@ export default function MfaSettings() {
         if (res.error.code === "TOTP_ALREADY_ENABLED") {
           await trpcUtils.auth.me.invalidate();
         } else {
-          setError(res.error.message || "Enrollment failed");
+          setError(res.error.message || t("mfaSettings.enrollFailed"));
         }
         return;
       }
 
       if (!res.data || res.data.method !== "totp") {
-        setError("Failed to generate TOTP secret");
+        setError(t("mfaSettings.secretFailed"));
         return;
       }
 
@@ -80,7 +82,7 @@ export default function MfaSettings() {
       setEnrollPassword("");
       setCode("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Enrollment failed");
+      setError(e instanceof Error ? e.message : t("mfaSettings.enrollFailed"));
     } finally {
       setBusy(null);
     }
@@ -95,7 +97,7 @@ export default function MfaSettings() {
 
   async function handleVerify() {
     if (!activeFactorId || !code.trim()) {
-      setError("Enter a 6-digit code");
+      setError(t("mfaSettings.enterCode"));
       return;
     }
     setError(null);
@@ -109,26 +111,26 @@ export default function MfaSettings() {
 
       if (verifyError) {
         const msg = verifyError.message?.toLowerCase().includes("invalid")
-          ? "Incorrect code — please wait for the next 6-digit code and try again"
+          ? t("mfaSettings.incorrectCode")
           : verifyError.message;
-        setError(msg || "Verification failed");
+        setError(msg || t("mfaSettings.verifyFailed"));
         return;
       }
 
-      setSuccess(enrollData ? "Authenticator enrolled and verified" : "Code verified successfully");
+      setSuccess(enrollData ? t("mfaSettings.enrolledVerified") : t("mfaSettings.codeVerified"));
       setEnrollData(null);
       setActiveFactorId(null);
       setCode("");
       await trpcUtils.auth.me.invalidate();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Verification failed");
+      setError(e instanceof Error ? e.message : t("mfaSettings.verifyFailed"));
     } finally {
       setBusy(null);
     }
   }
 
   async function handleUnenroll(_factorId: string) {
-    const password = window.prompt("Enter your account password to disable two-factor authentication:");
+    const password = window.prompt(t("mfaSettings.promptDisablePassword"));
     if (!password) return;
 
     setError(null);
@@ -138,13 +140,13 @@ export default function MfaSettings() {
     try {
       const { error: unenrollError } = await authClient.twoFactor.disable({ password });
       if (unenrollError) {
-        setError(unenrollError.message || "Unenroll failed");
+        setError(unenrollError.message || t("mfaSettings.unenrollFailed"));
         return;
       }
-      setSuccess("Authenticator removed");
+      setSuccess(t("mfaSettings.removed"));
       await trpcUtils.auth.me.invalidate();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unenroll failed");
+      setError(e instanceof Error ? e.message : t("mfaSettings.unenrollFailed"));
     } finally {
       setBusy(null);
     }
@@ -154,29 +156,28 @@ export default function MfaSettings() {
     <section className="panel mfa-settings" aria-labelledby="mfa-heading">
       <div className="panel-heading">
         <div>
-          <div className="eyebrow">Security / MFA</div>
-          <h2 id="mfa-heading">Two-factor authentication</h2>
+          <div className="eyebrow">{t("mfaSettings.eyebrow")}</div>
+          <h2 id="mfa-heading">{t("mfaSettings.title")}</h2>
         </div>
         <span className={`status-pill ${hasVerified ? "live" : "setup"}`}>
-          <i /> {hasVerified ? "Enabled" : "Not enabled"}
+          <i /> {hasVerified ? t("mfaSettings.enabled") : t("mfaSettings.notEnabled")}
         </span>
       </div>
 
       <p className="lede" style={{ marginTop: 8 }}>
-        Add a TOTP authenticator app (Google Authenticator, Authy, 1Password) to protect your account. Works for every
-        role.
+        {t("mfaSettings.intro")}
       </p>
 
       {loading && (
         <p role="status" className="lede">
-          Loading authenticator status…
+          {t("mfaSettings.loadingStatus")}
         </p>
       )}
 
       {(error || authError) && (
         <div className="form-error page-alert" role="alert">
           {error || authError?.message}
-          <button type="button" className="icon-button" onClick={() => setError(null)} aria-label="Dismiss error">
+          <button type="button" className="icon-button" onClick={() => setError(null)} aria-label={t("mfaSettings.dismissError")}>
             ×
           </button>
         </div>
@@ -192,8 +193,7 @@ export default function MfaSettings() {
           {hasVerified ? (
             <div className="mfa-factor-list" data-testid="mfa-verified">
               <p>
-                Authenticator is active for this account. You can step-up verify with a fresh code or remove the
-                authenticator.
+                {t("mfaSettings.activeDesc")}
               </p>
               {verifiedFactors.map((f) => (
                 <div key={f.id} className="panel" style={{ padding: 12, marginTop: 12 }}>
@@ -206,19 +206,19 @@ export default function MfaSettings() {
                       disabled={busy === "challenge"}
                       onClick={() => handleChallenge(f.id)}
                     >
-                      Verify with code
+                      {t("mfaSettings.verifyWithCode")}
                     </button>
                     <button
                       type="button"
                       className="button button-quiet button-small"
                       disabled={busy === "unenroll"}
                       onClick={() => {
-                        if (window.confirm("Remove this authenticator? You will no longer be prompted for a TOTP code.")) {
+                        if (window.confirm(t("mfaSettings.confirmRemove"))) {
                           void handleUnenroll(f.id);
                         }
                       }}
                     >
-                      {busy === "unenroll" ? "Removing…" : "Remove authenticator"}
+                      {busy === "unenroll" ? t("mfaSettings.removing") : t("mfaSettings.removeAuthenticator")}
                     </button>
                   </div>
                 </div>
@@ -226,12 +226,12 @@ export default function MfaSettings() {
 
               {activeFactorId && !enrollData && (
                 <div className="panel" style={{ marginTop: 12, padding: 12 }} data-testid="mfa-verify-panel">
-                  <h3>Enter verification code</h3>
-                  <p className="lede">Enter the 6-digit code from your authenticator app.</p>
+                  <h3>{t("mfaSettings.enterVerificationCode")}</h3>
+                  <p className="lede">{t("mfaSettings.enterCodeDesc")}</p>
                   <label>
-                    Verification code
+                    {t("mfaSettings.verificationCode")}
                     <input
-                      aria-label="Verification code"
+                      aria-label={t("mfaSettings.verificationCode")}
                       placeholder="123456"
                       value={code}
                       onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -248,7 +248,7 @@ export default function MfaSettings() {
                       disabled={busy === "verify" || !code.trim()}
                       onClick={() => void handleVerify()}
                     >
-                      {busy === "verify" ? "Verifying…" : "Verify code"}
+                      {busy === "verify" ? t("mfaSettings.verifying") : t("mfaSettings.verifyCode")}
                     </button>
                     <button
                       type="button"
@@ -259,7 +259,7 @@ export default function MfaSettings() {
                         setError(null);
                       }}
                     >
-                      Cancel
+                      {t("mfaSettings.cancel")}
                     </button>
                   </div>
                 </div>
@@ -267,19 +267,19 @@ export default function MfaSettings() {
             </div>
           ) : (
             <div data-testid="mfa-not-enrolled">
-              <p>No authenticator enrolled yet.</p>
+              <p>{t("mfaSettings.noneEnrolled")}</p>
 
               {showPasswordPrompt && !enrollData && (
                 <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-                  <h3>Confirm password</h3>
-                  <p className="lede">Please enter your current password to begin TOTP enrollment.</p>
+                  <h3>{t("mfaSettings.confirmPassword")}</h3>
+                  <p className="lede">{t("mfaSettings.confirmPasswordDesc")}</p>
                   <label>
-                    Account Password
+                    {t("mfaSettings.accountPassword")}
                     <input
                       type="password"
                       value={enrollPassword}
                       onChange={(e) => setEnrollPassword(e.target.value)}
-                      placeholder="Enter password"
+                      placeholder={t("mfaSettings.enterPassword")}
                       autoComplete="current-password"
                     />
                   </label>
@@ -290,7 +290,7 @@ export default function MfaSettings() {
                       disabled={busy === "enroll" || !enrollPassword}
                       onClick={() => void executeEnroll(enrollPassword)}
                     >
-                      {busy === "enroll" ? "Enrolling…" : "Confirm & Enroll"}
+                      {busy === "enroll" ? t("mfaSettings.enrolling") : t("mfaSettings.confirmEnroll")}
                     </button>
                     <button
                       type="button"
@@ -301,7 +301,7 @@ export default function MfaSettings() {
                         setError(null);
                       }}
                     >
-                      Cancel
+                      {t("mfaSettings.cancel")}
                     </button>
                   </div>
                 </div>
@@ -314,33 +314,33 @@ export default function MfaSettings() {
                   disabled={busy === "enroll"}
                   onClick={() => void handleStartEnroll()}
                 >
-                  {busy === "enroll" ? "Enrolling…" : "Enroll authenticator"}
+                  {busy === "enroll" ? t("mfaSettings.enrolling") : t("mfaSettings.enrollAuthenticator")}
                 </button>
               )}
 
               {enrollData && (
                 <div className="panel" style={{ marginTop: 12, padding: 12 }} data-testid="mfa-enroll-panel">
-                  <h3>Scan QR code</h3>
-                  <p className="lede">Scan this QR code in your authenticator app, or enter the secret manually.</p>
+                  <h3>{t("mfaSettings.scanQr")}</h3>
+                  <p className="lede">{t("mfaSettings.scanQrDesc")}</p>
                   {enrollData.totp.qr_code && (
                     <img
                       src={enrollData.totp.qr_code}
-                      alt="MFA QR code"
+                      alt={t("mfaSettings.qrAlt")}
                       data-testid="mfa-qr"
                       style={{ width: 180, height: 180, border: "1px solid var(--border)", borderRadius: 8 }}
                     />
                   )}
                   <p style={{ marginTop: 8, wordBreak: "break-all" }}>
-                    <strong>Secret:</strong> <code data-testid="mfa-secret">{enrollData.totp.secret}</code>
+                    <strong>{t("mfaSettings.secret")}</strong> <code data-testid="mfa-secret">{enrollData.totp.secret}</code>
                   </p>
                   <p style={{ wordBreak: "break-all" }}>
                     <small>{enrollData.totp.uri}</small>
                   </p>
 
                   <label style={{ marginTop: 12, display: "block" }}>
-                    Verification code
+                    {t("mfaSettings.verificationCode")}
                     <input
-                      aria-label="Verification code"
+                      aria-label={t("mfaSettings.verificationCode")}
                       placeholder="123456"
                       value={code}
                       onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -357,7 +357,7 @@ export default function MfaSettings() {
                       disabled={busy === "verify" || !code.trim()}
                       onClick={() => void handleVerify()}
                     >
-                      {busy === "verify" ? "Verifying…" : "Verify and activate"}
+                      {busy === "verify" ? t("mfaSettings.verifying") : t("mfaSettings.verifyActivate")}
                     </button>
                     <button
                       type="button"
@@ -369,7 +369,7 @@ export default function MfaSettings() {
                         setError(null);
                       }}
                     >
-                      Cancel
+                      {t("mfaSettings.cancel")}
                     </button>
                   </div>
                 </div>
