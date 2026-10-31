@@ -100,15 +100,24 @@ function nestedValue(source: unknown, key: string): string | null {
   return typeof inner === 'string' && inner.trim() ? inner : null;
 }
 
-/** Check the slip receiver: the PromptPay proxy first, then the bank account. */
+/**
+ * Check the slip receiver: the PromptPay proxy first, then the bank account.
+ *
+ * A comparable proxy decides on its own. A bank account number can only be
+ * compared by chance (it is not the PromptPay ID), so when only the account is
+ * comparable, a match still counts but a mismatch goes to manual review
+ * instead of being rejected.
+ */
 export function checkSlipReceiver(promptPayId: string, receiver: unknown): ReceiverCheck {
-  for (const key of ['proxy', 'account']) {
-    const value = nestedValue(receiver, key);
-    if (!value) continue;
-    const result = compareReceiverValue(promptPayId, value);
-    if (result) return result;
-  }
-  return 'unknown';
+  const proxy = nestedValue(receiver, 'proxy');
+  const proxyResult = proxy ? compareReceiverValue(promptPayId, proxy) : null;
+  if (proxyResult) return proxyResult;
+
+  const account = nestedValue(receiver, 'account');
+  const accountResult = account ? compareReceiverValue(promptPayId, account) : null;
+  // ASSUMPTION: a bank account that differs from the PromptPay ID may still be
+  // the hotel's own account behind that PromptPay ID, so staff decide.
+  return accountResult === 'match' ? 'match' : 'unknown';
 }
 
 /**

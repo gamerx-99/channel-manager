@@ -222,6 +222,16 @@ describe('verifySlipWithSlipOk receiver check', () => {
     expect(result).toMatchObject({ matched: true, receiverCheck: 'match' });
   });
 
+  it('sends a slip with only a mismatching bank account to manual review', async () => {
+    const result = await respond({ displayName: 'Hotel', account: { value: 'xxx-x-x1234-x' } });
+    expect(result).toMatchObject({ matched: false, needsManualReview: true, receiverCheck: 'unknown' });
+  });
+
+  it('sends a slip whose proxy is masked and whose bank account differs to manual review', async () => {
+    const result = await respond({ proxy: { value: 'xxx-xxx-xxxx' }, account: { value: '123-4-56789-0' } });
+    expect(result).toMatchObject({ matched: false, needsManualReview: true, receiverCheck: 'unknown' });
+  });
+
   it('does not check the receiver of a slip that already failed on amount', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(200, { success: true, data: { amount: 99, transRef: 'TX-9' } }));
     const result = await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100, expectedReceiver: PROMPTPAY });
@@ -257,6 +267,12 @@ describe('compareReceiverValue', () => {
 describe('checkSlipReceiver', () => {
   it('decides on the proxy before the account', () => {
     expect(checkSlipReceiver(PROMPTPAY, { proxy: { value: '081-xxx-9999' }, account: { value: '081-xxx-5678' } })).toBe('mismatch');
+  });
+
+  it('treats a bank-account-only mismatch as unknown but still rejects a proxy mismatch', () => {
+    expect(checkSlipReceiver(PROMPTPAY, { account: { value: '123-4-56789-0' } })).toBe('unknown');
+    expect(checkSlipReceiver(PROMPTPAY, { account: { value: '081-xxx-5678' } })).toBe('match');
+    expect(checkSlipReceiver(PROMPTPAY, { proxy: { value: '081-xxx-9999' }, account: { value: '123-4-56789-0' } })).toBe('mismatch');
   });
 
   it('is unknown when neither value can be compared', () => {
