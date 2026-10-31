@@ -12,8 +12,11 @@
 
 const SLIPOK_DEFAULT_BASE_URL = 'https://api.slipok.com/api/line/apikey';
 
+/** SlipOK refused the slip itself: wrong slip, amount, receiver or a repeat. */
+const SLIPOK_REJECTED_SLIP_CODES = new Set([1005, 1006, 1007, 1008, 1011, 1012, 1013, 1014]);
+
 export interface SlipVerificationInput {
-  /** Base64 or URL of the slip image */
+  /** Base64 of the slip image */
   slipData: string;
   /** Expected amount in THB */
   expectedAmount: number;
@@ -63,7 +66,9 @@ export async function verifySlipWithSlipOk(
     throw new SlipOkError('No SlipOK API key/branch ID configured for this hotel.', 'NO_KEY');
   }
 
-  const baseUrl = process.env.SLIP_OK_API ?? SLIPOK_DEFAULT_BASE_URL;
+  // SLIP_OK_API is a base URL. Anything else is ignored so a key stored there
+  // can never end up in a request URL.
+  const baseUrl = process.env.SLIP_OK_API?.startsWith('https://') ? process.env.SLIP_OK_API : SLIPOK_DEFAULT_BASE_URL;
   const url = baseUrl.endsWith(`/${branchId}`) ? baseUrl : `${baseUrl}/${branchId}`;
 
   let response: Response;
@@ -74,7 +79,9 @@ export async function verifySlipWithSlipOk(
         'Content-Type': 'application/json',
         'x-authorization': apiKey,
       },
-      body: JSON.stringify({ data: input.slipData }),
+      // `data` is the QR text, so an image goes in `files`. `log` makes SlipOK
+      // check the receiver account bound to the branch and reject repeat slips.
+      body: JSON.stringify({ files: input.slipData, log: true, amount: input.expectedAmount }),
     });
   } catch (err) {
     throw new SlipOkError(
@@ -88,6 +95,11 @@ export async function verifySlipWithSlipOk(
   }
 
   if (!response.ok) {
+    const failure = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    if (failure && SLIPOK_REJECTED_SLIP_CODES.has(failure.code as number)) {
+      return { matched: false, transactionRef: null, amount: null, raw: failure };
+    }
+    // Includes 1009 bank outage and 1010 bank delay, which need a later recheck.
     throw new SlipOkError(`SlipOK API error: HTTP ${response.status}`, 'API_ERROR');
   }
 
@@ -101,19 +113,15 @@ export async function verifySlipWithSlipOk(
   // SlipOK response shape (v2): { success: bool, data: { amount, ref, ... } }
   const data = (body.data ?? body) as Record<string, unknown>;
   const returnedAmount = typeof data.amount === 'number' ? data.amount : null;
-  const returnedRef =
-    typeof data.transRef === 'string'
-      ? data.transRef
-      : typeof data.ref === 'string'
-        ? data.ref
-        : null;
+  const returnedRef = typeof data.transRef === 'string' && data.transRef ? data.transRef : null;
 
   // Amount tolerance: allow ±0.01 THB for rounding
   const amountMatched =
     returnedAmount !== null && Math.abs(returnedAmount - input.expectedAmount) <= 0.01;
 
   return {
-    matched: Boolean(body.success) && amountMatched,
+    // No transRef means no replay check in finalizePaymentSession, so it cannot match.
+    matched: Boolean(body.success) && data.success !== false && amountMatched && returnedRef !== null,
     transactionRef: returnedRef,
     amount: returnedAmount,
     raw: body,

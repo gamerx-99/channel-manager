@@ -63,6 +63,53 @@ describe('verifySlipWithSlipOk', () => {
     );
   });
 
+  it('sends the image in files with log and amount, as the SlipOK guide requires', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      mockResponse(200, { success: true, data: { amount: 3500, transRef: 'TX-001' } }),
+    );
+    global.fetch = fetchMock;
+
+    await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64slipdata', expectedAmount: 3500 });
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ files: 'base64slipdata', log: true, amount: 3500 });
+  });
+
+  it.each([1006, 1007, 1008, 1011, 1012, 1013, 1014])('treats SlipOK code %i as a rejected slip', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'rejected' }));
+
+    const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100 });
+
+    expect(result).toMatchObject({ matched: false, transactionRef: null, raw: { code } });
+  });
+
+  it.each([1001, 1003, 1004, 1009, 1010])('sends SlipOK code %i to manual review', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'later' }));
+
+    await expect(
+      verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100 }),
+    ).rejects.toMatchObject({ code: 'API_ERROR' });
+  });
+
+  it('does not match a slip with no transaction reference', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(200, { success: true, data: { amount: 100 } }));
+
+    const result = await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100 });
+
+    expect(result.matched).toBe(false);
+  });
+
+  it('never puts a non-URL SLIP_OK_API value in the request URL', async () => {
+    process.env.SLIP_OK_API = 'an-api-key-by-mistake';
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      mockResponse(200, { success: true, data: { amount: 100, transRef: 'TX-001' } }),
+    );
+    global.fetch = fetchMock;
+
+    await verifySlipWithSlipOk(FAKE_API_KEY, FAKE_BRANCH_ID, { slipData: 'base64', expectedAmount: 100 });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`https://api.slipok.com/api/line/apikey/${FAKE_BRANCH_ID}`);
+  });
+
   it('returns matched=true when SlipOK confirms payment with correct amount', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce(
       mockResponse(200, { success: true, data: { amount: 3500, transRef: 'TX-001' } }),
