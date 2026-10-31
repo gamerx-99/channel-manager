@@ -148,3 +148,6 @@ answer noted.
   existing server semantics and mirror the owner-only dashboard gate in routing
   and navigation. Letting staff open that report requires a future spec decision;
   this delivery does not change the report endpoint or expand support permissions.
+
+
+- [ ] Public signup (2026-10-31): the owner asked for a signup page. ASSUMPTION: one hotel per account, the hotel starts private, and the Worker rate limiter guards the hotel step. The email is not verified, because no mail provider is live. The page shows no prices, no trial and no terms, because those are unconfirmed. Decide email verification and the signup terms before production.

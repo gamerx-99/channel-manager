@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
+import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
 import {
   listManagedHotels as d1ListManagedHotels,
   getManagedHotel as d1GetManagedHotel,
   createManagedHotel as d1CreateManagedHotel,
+  registerOwnHotel as d1RegisterOwnHotel,
   createManagedRoomType as d1CreateManagedRoomType,
   updateManagedRoomType as d1UpdateManagedRoomType,
   deleteManagedRoomType as d1DeleteManagedRoomType,
@@ -229,6 +231,17 @@ export const createHotel = protectedProcedure.input(createHotelSchema).mutation(
       owner_contact: input.owner_contact,
       public_enabled: input.public_enabled,
     } as any);
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const registerOwnHotel = protectedProcedure.input(createHotelSchema.omit({ public_enabled: true })).mutation(async ({ ctx, input }) => {
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  await enforcePublicBookingRateLimit(ctx);
+  try {
+    return await d1RegisterOwnHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);

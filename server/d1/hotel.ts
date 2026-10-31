@@ -1,3 +1,4 @@
+import { createHotelOwnerMembership } from "./signupLinks";
 import { getSupportMemberships } from "./supportAccess";
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -111,6 +112,39 @@ export async function createManagedHotel(db: D1ScopedDatabase, caller: D1CallerC
   }).returning();
   if (!hotel) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel insert did not return a record." });
   return { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, public_enabled: hotel.publicEnabled, created_at: hotel.createdAt };
+}
+
+// A hotel page lives at /:slug, so a slug must not shadow an app route.
+const RESERVED_HOTEL_SLUGS = new Set([
+  "accept-invite", "api", "assets", "communications", "dashboard", "hotels", "housekeeping", "login", "media", "mfa",
+  "platform", "settings", "signup", "website-builder",
+]);
+
+/**
+ * Public signup: a signed-in account with no role yet becomes the owner of one new hotel.
+ * ASSUMPTION: one hotel per account, and the hotel stays private until the owner publishes it.
+ */
+export async function registerOwnHotel(db: D1ScopedDatabase, caller: D1CallerContext, input: Omit<CreateHotelInput, "public_enabled">, now = new Date()) {
+  if (!caller.userId || caller.access === "public" || caller.roles?.some(role => role === "super_admin" || role === "admin" || role === "support")) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  if (RESERVED_HOTEL_SLUGS.has(input.slug)) throw new TRPCError({ code: "BAD_REQUEST", message: "This web address is reserved." });
+  const memberships = await db.select({ id: hotelUsers.id }).from(hotelUsers).where(eq(hotelUsers.userId, caller.userId)).limit(1);
+  if (memberships.length) throw new TRPCError({ code: "CONFLICT", message: "This account already has a hotel." });
+  const taken = await db.select({ id: hotels.id }).from(hotels).where(eq(hotels.slug, input.slug)).limit(1);
+  if (taken.length) throw new TRPCError({ code: "CONFLICT", message: "This web address is already in use." });
+
+  const [hotel] = await db.insert(hotels).values({
+    name: input.name, slug: input.slug, address: input.address, ownerContact: input.owner_contact, publicEnabled: false,
+  }).returning();
+  if (!hotel) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel insert did not return a record." });
+  try {
+    await createHotelOwnerMembership(db, hotel.id, caller.userId, now);
+  } catch (error) {
+    await db.delete(hotels).where(eq(hotels.id, hotel.id));
+    throw error;
+  }
+  return { id: hotel.id, name: hotel.name, slug: hotel.slug };
 }
 
 export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: CreateRoomTypeInput, now = new Date()) {

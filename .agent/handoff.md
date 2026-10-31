@@ -1845,3 +1845,8 @@ Not tested in a browser or with a real email.
 - **Done**: `platform_admins` table (migration `20261031010000_platform_admins.sql`), `isActivePlatformAdmin`, session role, `platform-invite:` links in `acceptStaffInvite`, staff list honours `caller.roles`. The app has no screen that creates this role.
 - **Evidence**: `pnpm test` 122 files, 878/878 pass; `pnpm check` pass; `pnpm build` pass.
 - **Not done**: reviewer approval for this ticket and the two before it; browser check of the logged-in super admin flow; `RESEND_API_KEY` and `EMAIL_FROM`.
+
+## 2026-10-31 Landing page and public signup
+- **Done**: `/` is now a public Landing page instead of a redirect. `/signup` creates an account, then `channelManager.registerOwnHotel` creates one private hotel with the caller as owner. Web addresses that match app routes are refused.
+- **Evidence**: `pnpm test`, `pnpm check` and `pnpm build` pass. In a local Worker, a test signup reached `/dashboard`, a reserved address showed the Thai error, retry kept the account, and D1 showed `baan-test`, `public_enabled = 0`, `hotel_owner`.
+- **Not done**: not deployed; no reviewer; email is not verified; no prices or terms on the page, see `.agent/OPEN_QUESTIONS.md`.
