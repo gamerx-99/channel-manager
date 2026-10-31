@@ -91,7 +91,8 @@ export default function DeleteAccountSettings() {
         </div>
       </div>
 
-      <div className="form-error" role="note" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+      <div style={{ padding: "0 22px 22px" }}>
+      <div className="form-error" role="note" style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 0 }}>
         <TriangleAlert size={15} aria-hidden="true" style={{ flex: "0 0 auto" }} />
         <span>{t("accountDeletion.warning")}</span>
       </div>
@@ -132,23 +133,23 @@ export default function DeleteAccountSettings() {
 
       {status.isSuccess && !blocked && confirming && (
         <form
-          className="panel"
-          style={{ marginTop: 14, padding: 12, display: "grid", gap: 10 }}
+          className="admin-form"
+          style={{ marginTop: 14, padding: 0 }}
           data-testid="delete-account-confirm"
           onSubmit={event => { event.preventDefault(); if (canSubmit) void handleDelete(); }}
         >
           <h3>{t("accountDeletion.confirmTitle")}</h3>
           {error && <div className="form-error" role="alert" style={{ margin: 0 }}>{error}</div>}
-          <label style={{ display: "grid", gap: 6 }}>
+          <label>
             {t("accountDeletion.emailLabel", { email: accountEmail })}
             <input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="off" />
           </label>
-          <label style={{ display: "grid", gap: 6 }}>
+          <label>
             {t("accountDeletion.passwordLabel")}
             <input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" />
           </label>
           {needsCode && (
-            <label style={{ display: "grid", gap: 6 }}>
+            <label>
               {t("accountDeletion.codeLabel")}
               <input
                 value={code}
@@ -170,6 +171,7 @@ export default function DeleteAccountSettings() {
           </div>
         </form>
       )}
+      </div>
     </section>
   );
 }
