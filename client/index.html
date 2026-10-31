@@ -1,14 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <meta name="theme-color" content="#1f6b5c" />
     <meta name="description" content="hayhost — เว็บไซต์จองและระบบโรงแรมสำหรับโรงแรมและโฮมสเตย์ขนาดเล็กในประเทศไทย" />
     <title>hayhost — เว็บไซต์จองและระบบโรงแรม</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="hayhost" />
+    <meta property="og:locale" content="th_TH" />
+    <meta property="og:title" content="hayhost — เว็บไซต์จองและระบบโรงแรม" />
+    <meta property="og:description" content="เว็บไซต์จองและระบบโรงแรมสำหรับโรงแรมและโฮมสเตย์ขนาดเล็กในประเทศไทย" />
+    <!--structured-data-->
+    <script>
+      // Every path falls back to this file; the static landing belongs to "/" only.
+      if (location.pathname !== "/") {
+        document.documentElement.classList.add("app-route");
+      }
+    </script>
+    <style>.app-route #static-landing { display: none; }</style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--static-landing--></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

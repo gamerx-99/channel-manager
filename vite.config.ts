@@ -1,9 +1,17 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+import { renderLandingHtml, renderStructuredData } from "./client/seo/landingHtml";
 
-const plugins = [react(), tailwindcss()];
+const staticLanding: Plugin = {
+  name: "static-landing",
+  transformIndexHtml: html => html
+    .replace("<!--static-landing-->", renderLandingHtml())
+    .replace("<!--structured-data-->", renderStructuredData()),
+};
+
+const plugins = [react(), tailwindcss(), staticLanding];
 
 export default defineConfig({
   plugins,
