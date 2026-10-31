@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { hotelUsers, hotels, platformAdmins } from "../../drizzle/d1-schema";
 import { user, verification } from "../../drizzle/auth-schema";
@@ -50,10 +50,20 @@ export async function checkAccountPassword(input: { auth: AuthInstance; db: D1Sc
   const { db, userId } = input;
   const now = input.now ?? new Date();
   const identifier = attemptsIdentifier(userId);
-  const [attempts] = await db.select().from(verification).where(eq(verification.identifier, identifier)).limit(1);
-  const live = attempts && attempts.expiresAt > now ? attempts : null;
-  const failures = live ? Number(live.value) : 0;
-  if (failures >= MAX_PASSWORD_ATTEMPTS) {
+  const nowMs = now.getTime();
+  const windowEnd = new Date(nowMs + PASSWORD_ATTEMPT_WINDOW_MS);
+  const live = sql`"verification"."expires_at" > ${nowMs}`;
+
+  // Counted before the check, in one statement, so parallel requests cannot share an attempt.
+  const [counted] = await db.insert(verification)
+    .values({ id: identifier, identifier, value: "1", expiresAt: windowEnd, createdAt: now, updatedAt: now })
+    .onConflictDoUpdate({ target: verification.id, set: {
+      value: sql`case when ${live} then cast("verification"."value" as integer) + 1 else 1 end`,
+      expiresAt: sql`case when ${live} then "verification"."expires_at" else ${windowEnd.getTime()} end`,
+      updatedAt: now,
+    } })
+    .returning({ value: verification.value });
+  if (Number(counted?.value) > MAX_PASSWORD_ATTEMPTS) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many wrong passwords. Please wait 15 minutes and try again." });
   }
 
@@ -61,14 +71,10 @@ export async function checkAccountPassword(input: { auth: AuthInstance; db: D1Sc
     await input.auth.api.verifyPassword({ headers: input.headers, body: { password: input.password } });
   } catch (error) {
     const status = (error as { status?: unknown; statusCode?: unknown } | null)?.status ?? (error as { statusCode?: unknown } | null)?.statusCode;
-    if (status !== "BAD_REQUEST" && status !== 400) throw error;
-    if (live) {
-      await db.update(verification).set({ value: String(failures + 1), updatedAt: now }).where(eq(verification.id, live.id));
-    } else {
-      await db.delete(verification).where(eq(verification.identifier, identifier));
-      await db.insert(verification).values({ id: crypto.randomUUID(), identifier, value: "1", expiresAt: new Date(now.getTime() + PASSWORD_ATTEMPT_WINDOW_MS), createdAt: now, updatedAt: now });
-    }
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Incorrect password." });
+    if (status === "BAD_REQUEST" || status === 400) throw new TRPCError({ code: "BAD_REQUEST", message: "Incorrect password." });
+    // An outage says nothing about the password, so give the attempt back.
+    await db.update(verification).set({ value: sql`cast("verification"."value" as integer) - 1` }).where(eq(verification.id, identifier));
+    throw error;
   }
 }
 

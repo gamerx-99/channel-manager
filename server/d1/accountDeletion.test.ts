@@ -8,6 +8,7 @@ import { authSchema } from "../../drizzle/auth-schema";
 import { d1Schema } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { checkAccountPassword, deleteOwnAccount, getAccountDeletionBlockers } from "./accountDeletion";
+import { logSupportProcedure } from "./supportAccess";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -233,6 +234,13 @@ describe("deleteOwnAccount", () => {
   });
 });
 
+describe("support audit", () => {
+  it("writes nothing for account actions, even with a forged hotel id", async () => {
+    await logSupportProcedure(db, self, "auth.deleteAccount", { hotel_id: "h1", hotelId: "h1" }, false);
+    expect(count("support_access_log")).toBe(0);
+  });
+});
+
 describe("getAccountDeletionBlockers", () => {
   it("names every hotel the person owns", async () => {
     exec(`insert into hotels (id, name, slug, address, owner_contact) values ('h2', 'Hotel Two', 'h2', 'Addr', 'c')`);
@@ -268,18 +276,32 @@ describe("checkAccountPassword", () => {
     expect(verifyPassword).toHaveBeenCalledTimes(5);
   });
 
-  it("starts counting again after the window", async () => {
-    addVerification(`account-delete-attempts:${USER}`, "5");
-    exec(`update verification set expires_at = ?`, nowMs - 1);
+  it("gives parallel requests no extra guesses", async () => {
     const verifyPassword = vi.fn().mockRejectedValue(wrong);
+    await Promise.allSettled(Array.from({ length: 20 }, () => check(verifyPassword)));
+
+    expect(verifyPassword).toHaveBeenCalledTimes(5);
+    expect(count("verification")).toBe(1);
+  });
+
+  it("starts counting again after the window", async () => {
+    const verifyPassword = vi.fn().mockRejectedValue(wrong);
+    for (let attempt = 0; attempt < 6; attempt++) await check(verifyPassword).catch(() => undefined);
+    exec(`update verification set expires_at = ?`, nowMs - 1);
 
     await expect(check(verifyPassword)).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(sqlite.prepare("select value from verification").all()).toEqual([{ value: "1" }]);
+    expect(sqlite.prepare("select value, expires_at from verification").all()).toEqual([{ value: "1", expires_at: nowMs + 15 * 60_000 }]);
   });
 
   it("does not count an outage as a wrong password", async () => {
     const outage = new Error("database down");
     await expect(check(vi.fn().mockRejectedValue(outage))).rejects.toBe(outage);
+    expect(sqlite.prepare("select value from verification").all()).toEqual([{ value: "0" }]);
+  });
+
+  it("removes the attempt counter with the account", async () => {
+    await check(vi.fn().mockRejectedValue(wrong)).catch(() => undefined);
+    await deleteOwnAccount(db, self, NOW);
     expect(count("verification")).toBe(0);
   });
 });
