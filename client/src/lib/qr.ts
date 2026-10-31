@@ -448,7 +448,15 @@ export function encodeQrByteMode(text: string): { size: number; modules: boolean
  * @returns Fully formatted data:image/svg+xml;... string
  */
 export function generateTotpQrDataUrl(uri: string): string {
-  const { size, modules } = encodeQrByteMode(uri);
+  return generateQrDataUrl(uri);
+}
+
+/**
+ * SVG data URL for any text, drawn in the browser so nothing is sent to a
+ * third party (used for the PromptPay payment QR as well as TOTP).
+ */
+export function generateQrDataUrl(text: string): string {
+  const { size, modules } = encodeQrByteMode(text);
   const border = 4; // 4-module quiet zone per ISO/IEC 18004
   const totalSize = size + border * 2;
   const pixelSize = 4;

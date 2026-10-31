@@ -2,8 +2,9 @@ import { assertStaffPermissionChange } from "./staffAuthorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
 import { type AppRole } from "@shared/authorization";
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { hotelAdminAuditLogs, hotelUsers, hotels } from "../../drizzle/d1-schema";
+import { account, session, user } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, authorizePlatformAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { ASSIGNABLE_STAFF_ROLES, isHumanRole, type HumanRole } from "@shared/authorization";
 
@@ -69,10 +70,39 @@ export async function deleteHotelUserAssignment(db: D1ScopedDatabase, caller: D1
   return row ?? null;
 }
 
-export async function listHotelStaff(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, authUsers: Array<{ id: string; email: string | null; confirmed_at: string | null; last_sign_in_at: string | null }>, now = new Date()) {
+type StaffAuthUser = { id: string; email: string | null; confirmed_at: string | null; last_sign_in_at: string | null };
+
+/**
+ * Email and sign-in state for this hotel's members, from the Better Auth tables.
+ * A member is confirmed once they hold a password (self-signup or an accepted
+ * invite); last sign-in is the newest live session, since sign-out deletes it.
+ */
+async function loadStaffAuthUsers(db: D1ScopedDatabase, userIds: string[]): Promise<StaffAuthUser[]> {
+  if (!userIds.length) return [];
+  const [users, credentials, sessions] = await Promise.all([
+    db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.id, userIds)),
+    db.select({ userId: account.userId, createdAt: account.createdAt }).from(account)
+      .where(and(inArray(account.userId, userIds), eq(account.providerId, "credential"))),
+    db.select({ userId: session.userId, createdAt: session.createdAt }).from(session).where(inArray(session.userId, userIds)),
+  ]);
+  const earliest = new Map<string, Date>();
+  for (const row of credentials) if (!earliest.has(row.userId) || row.createdAt < earliest.get(row.userId)!) earliest.set(row.userId, row.createdAt);
+  const latest = new Map<string, Date>();
+  for (const row of sessions) if (!latest.has(row.userId) || row.createdAt > latest.get(row.userId)!) latest.set(row.userId, row.createdAt);
+  return users.map(row => ({
+    id: row.id,
+    email: row.email,
+    confirmed_at: earliest.get(row.id)?.toISOString() ?? null,
+    last_sign_in_at: latest.get(row.id)?.toISOString() ?? null,
+  }));
+}
+
+/** `authUsers` overrides the lookup (tests); by default it is read from D1 after the permission check. */
+export async function listHotelStaff(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, authUsers?: StaffAuthUser[], now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_staff", "staff.list", now);
   const otherRows = await db.select().from(hotelUsers).where(eq(hotelUsers.hotelId, hotelId)).orderBy(desc(hotelUsers.createdAt));
-  const users = new Map(authUsers.map(user => [user.id, user]));
+  const resolved = authUsers ?? await loadStaffAuthUsers(db, Array.from(new Set(otherRows.map(row => row.userId))));
+  const users = new Map(resolved.map(user => [user.id, user]));
   return Promise.all(otherRows.filter(row => ASSIGNABLE_STAFF_ROLES.includes(row.role as typeof ASSIGNABLE_STAFF_ROLES[number])).map(async row => {
     const assignment = await assignmentWithHotel(db, row);
     const user = users.get(row.userId);

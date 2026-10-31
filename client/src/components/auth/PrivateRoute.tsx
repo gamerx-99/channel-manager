@@ -8,8 +8,10 @@ import { getRouteScopeDecision } from "../../lib/routeScope";
 import { SELECTED_HOTEL_STORAGE_KEY } from "../../contexts/HotelContext";
 import { type AppRole } from "@shared/authorization";
 import { AppShell } from "../layout/AppShell";
+import { useTranslation } from "@/lib/i18n";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
   const [location, navigate] = useLocation();
   const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery(undefined, { refetchInterval: 15000 });
@@ -56,15 +58,15 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   if (!decision.allowed) {
     const message = decision.reason === "hotel_not_visible"
-      ? "This property is outside your assigned hotel workspace."
+      ? t("accessRestricted.hotelNotVisible")
       : decision.reason === "permission_required"
-        ? "Your current role does not have permission to open this workspace."
-        : "This area is available only to platform administrators.";
+        ? t("accessRestricted.permissionRequired")
+        : t("accessRestricted.platformOnly");
     return (
       <main className="auth-loading">
-        <h1>Access restricted</h1>
+        <h1>{t("accessRestricted.title")}</h1>
         <p>{message}</p>
-        <Link href="/dashboard" className="button primary">Return to dashboard</Link>
+        <Link href="/dashboard" className="button primary">{t("accessRestricted.returnToDashboard")}</Link>
       </main>
     );
   }

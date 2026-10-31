@@ -5,6 +5,7 @@ import { formatIsoToDisplayDate, parseDisplayDateToIso } from '@shared/dateUtils
 import type { BookingServiceInput, PricingModel } from '@shared/pricingModels';
 import { calcNights, calculateGrandTotal, calculateServiceTotal } from '@shared/pricingModels';
 import { useTranslation, type TranslationKey } from '@/lib/i18n';
+import { availableRoomsForStay } from '@/lib/roomAvailability';
 
 const PRICING_MODEL_KEYS: Record<PricingModel, TranslationKey> = {
   ONE_TIME: 'bookingWizard.modelOneTime',
@@ -28,7 +29,7 @@ interface HotelData {
   id: string;
   rooms: { id: string; room_number: string; room_type_id: string; status: string }[];
   room_types: { id: string; name: string; base_price: number | string }[];
-  bookings: { id: string; check_in: string; check_out: string; status: string }[];
+  bookings: { id: string; room_id?: string | null; check_in: string; check_out: string; status: string }[];
 }
 
 export default function BookingWizard({
@@ -47,7 +48,7 @@ export default function BookingWizard({
 
   const [checkIn, setCheckIn] = useState(displayDay(1));
   const [checkOut, setCheckOut] = useState(displayDay(2));
-  const [roomId, setRoomId] = useState('');
+  const [pickedRoomId, setRoomId] = useState('');
   const [guestName, setGuestName] = useState('');
   const [source, setSource] = useState<'manual' | 'walk-in' | 'phone'>('manual');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'promptpay' | ''>('');
@@ -88,17 +89,12 @@ export default function BookingWizard({
     return calcNights(checkInIso, checkOutIso);
   }, [checkInIso, checkOutIso]);
 
-  const availableRooms = useMemo(() => {
-    if (!checkInIso || !checkOutIso || checkInIso >= checkOutIso) return [];
-    return hotel.rooms.filter(room => {
-      if (room.status === 'out_of_service') return false;
-      const hasOverlap = hotel.bookings.some(b => {
-        if (b.status === 'cancelled') return false;
-        return b.check_in < checkOutIso && b.check_out > checkInIso;
-      });
-      return !hasOverlap;
-    });
-  }, [hotel.rooms, hotel.bookings, checkInIso, checkOutIso]);
+  const availableRooms = useMemo(
+    () => availableRoomsForStay(hotel.rooms, hotel.bookings, checkInIso, checkOutIso),
+    [hotel.rooms, hotel.bookings, checkInIso, checkOutIso],
+  );
+  // A room picked earlier stops counting once new dates make it unavailable.
+  const roomId = availableRooms.some(room => room.id === pickedRoomId) ? pickedRoomId : '';
 
   const selectedRoom = hotel.rooms.find(r => r.id === roomId);
   const roomType = selectedRoom ? hotel.room_types.find(rt => rt.id === selectedRoom.room_type_id) : null;

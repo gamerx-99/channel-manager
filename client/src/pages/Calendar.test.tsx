@@ -95,6 +95,13 @@ describe("Availability month calendar", () => {
     expect(screen.getByLabelText("Next month")).toBeTruthy();
   });
 
+  it("counts each room type's rooms from the hotel's rooms (regression: every type showed 0 rooms)", () => {
+    render(<Calendar id="hotel-1" />);
+    expect(screen.getAllByText("2 rooms").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 rooms").length).toBeGreaterThan(0);
+    expect(screen.queryByText("0 rooms")).toBeNull();
+  });
+
   it("uses the three-click IN, OUT, IN range selection", async () => {
     const user = userEvent.setup();
     render(<Calendar id="hotel-1" />);
@@ -123,6 +130,8 @@ describe("Availability month calendar", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
     expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledTimes(2);
     expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ rooms_available: 0 }));
+    // Regression: without hotel_id the server answered "hotel_id is required." to every save.
+    expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", rooms_available: 0, action: "stop_sell" }));
 
     await user.click(screen.getByRole("button", { name: "Edit prices" }));
     expect(screen.getAllByLabelText("Price").length).toBe(2);

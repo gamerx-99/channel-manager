@@ -28,4 +28,27 @@ describe('dashboard calendar data projection', () => {
       { date: '2026-11-03', bookings: 0, available: 0, price: 150 },
     ]);
   });
+
+  it('still answers for front desk, who cannot read rates, with prices hidden (regression: 403 broke the dashboard)', async () => {
+    const { TRPCError } = await import('@trpc/server');
+    const db = {} as any;
+    const caller = { userId: 'desk', roles: ['front_desk' as const], access: 'authenticated' as const };
+    const app = appRouter.createCaller({ req: {} as Request, res: {} as Response, db, caller, user: { id: 'desk', roles: ['front_desk'], memberships: [{ hotelId: 'hotel-a', role: 'front_desk' }] } as any });
+    mocks.listManagedHotels.mockResolvedValue([{ id: 'hotel-a' }]);
+    mocks.getManagedHotel.mockResolvedValue({ id: 'hotel-a', name: 'Hotel A', room_types: [{ id: 'type-a', name: 'Standard', base_price: 100 }], rooms: [{ id: 'room-a', room_type_id: 'type-a' }, { id: 'room-b', room_type_id: 'type-a' }] });
+    mocks.listAvailabilityForHotel.mockRejectedValue(new TRPCError({ code: 'FORBIDDEN', message: 'Hotel access denied.' }));
+    mocks.getOtaSummary.mockResolvedValue([]);
+    mocks.listBookingOccupancyForHotel.mockResolvedValue([{ roomId: 'room-a', checkIn: '2026-11-01', checkOut: '2026-11-02', status: 'confirmed' }]);
+    const result = await app.channelManager.dashboardCalendar({ startDate: '2026-11-01', days: 7 });
+    expect(result.hotels[0].days[0].roomTypes[0]).toMatchObject({ available: 1, totalRooms: 2, price: null });
+  });
+
+  it('does not swallow other availability errors', async () => {
+    const db = {} as any;
+    const caller = { userId: 'owner', roles: ['hotel_owner' as const], access: 'authenticated' as const };
+    const app = appRouter.createCaller({ req: {} as Request, res: {} as Response, db, caller, user: { id: 'owner', roles: ['hotel_owner'], memberships: [{ hotelId: 'hotel-a', role: 'hotel_owner' }] } as any });
+    mocks.listManagedHotels.mockResolvedValue([{ id: 'hotel-a' }]);
+    mocks.listAvailabilityForHotel.mockRejectedValue(new Error('D1 down'));
+    await expect(app.channelManager.dashboardCalendar({ startDate: '2026-11-01', days: 7 })).rejects.toBeTruthy();
+  });
 });

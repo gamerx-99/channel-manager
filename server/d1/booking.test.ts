@@ -315,6 +315,15 @@ describe("D1 booking repositories", () => {
     expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("held");
   });
 
+  it("lets staff book a free room over dates another room already has, but not the taken room", async () => {
+    await seedHotel("a", "owner-a", { quantity: 2 });
+    await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-03"), []);
+    await expect(createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-02", "2026-11-04"), []))
+      .rejects.toMatchObject({ code: "BAD_REQUEST", message: /no longer available/ });
+    await expect(createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-2", "confirmed", "2026-11-02", "2026-11-04"), []))
+      .resolves.toMatchObject({ room_id: "room-a-2" });
+  });
+
   it("refuses a hold on an unavailable room", async () => {
     await seedHotel("a", "owner-a");
     await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-03"), []);

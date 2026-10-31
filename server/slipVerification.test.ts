@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { checkSlipReceiver, compareReceiverValue, getCentralSlipOkCredentials, verifySlipWithSlipOk } from './slipVerification';
+import { checkSlipReceiver, compareReceiverValue, getCentralSlipOkCredentials, localSlipOkBaseUrl, verifySlipWithSlipOk } from './slipVerification';
 
 const FAKE_API_KEY = 'test-api-key-12345';
 const FAKE_BRANCH_ID = 'test-branch-001';
@@ -222,6 +222,16 @@ describe('verifySlipWithSlipOk receiver check', () => {
     expect(result).toMatchObject({ matched: true, receiverCheck: 'match' });
   });
 
+  it('sends a slip with only a mismatching bank account to manual review', async () => {
+    const result = await respond({ displayName: 'Hotel', account: { value: 'xxx-x-x1234-x' } });
+    expect(result).toMatchObject({ matched: false, needsManualReview: true, receiverCheck: 'unknown' });
+  });
+
+  it('sends a slip whose proxy is masked and whose bank account differs to manual review', async () => {
+    const result = await respond({ proxy: { value: 'xxx-xxx-xxxx' }, account: { value: '123-4-56789-0' } });
+    expect(result).toMatchObject({ matched: false, needsManualReview: true, receiverCheck: 'unknown' });
+  });
+
   it('does not check the receiver of a slip that already failed on amount', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(200, { success: true, data: { amount: 99, transRef: 'TX-9' } }));
     const result = await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64', expectedAmount: 100, expectedReceiver: PROMPTPAY });
@@ -259,6 +269,12 @@ describe('checkSlipReceiver', () => {
     expect(checkSlipReceiver(PROMPTPAY, { proxy: { value: '081-xxx-9999' }, account: { value: '081-xxx-5678' } })).toBe('mismatch');
   });
 
+  it('treats a bank-account-only mismatch as unknown but still rejects a proxy mismatch', () => {
+    expect(checkSlipReceiver(PROMPTPAY, { account: { value: '123-4-56789-0' } })).toBe('unknown');
+    expect(checkSlipReceiver(PROMPTPAY, { account: { value: '081-xxx-5678' } })).toBe('match');
+    expect(checkSlipReceiver(PROMPTPAY, { proxy: { value: '081-xxx-9999' }, account: { value: '123-4-56789-0' } })).toBe('mismatch');
+  });
+
   it('is unknown when neither value can be compared', () => {
     expect(checkSlipReceiver(PROMPTPAY, { proxy: { value: 'xxx' }, account: {} })).toBe('unknown');
     expect(checkSlipReceiver(PROMPTPAY, null)).toBe('unknown');
@@ -278,5 +294,34 @@ describe('getCentralSlipOkCredentials', () => {
 
   it('ignores the old SLIP_OK_API variable', () => {
     expect(getCentralSlipOkCredentials({ SLIP_OK_API: 'https://example.test', SLIP_APIKEY: 'key' })).toBeNull();
+  });
+});
+
+describe('local SlipOK mock URL', () => {
+  it('accepts only loopback hosts', () => {
+    expect(localSlipOkBaseUrl('http://127.0.0.1:8790/api/')).toBe('http://127.0.0.1:8790/api');
+    expect(localSlipOkBaseUrl('http://localhost:8790')).toBe('http://localhost:8790');
+    expect(localSlipOkBaseUrl('https://api.example.com')).toBeNull();
+    expect(localSlipOkBaseUrl('http://127.0.0.1.evil.test')).toBeNull();
+    expect(localSlipOkBaseUrl('file:///etc/passwd')).toBeNull();
+    expect(localSlipOkBaseUrl('not a url')).toBeNull();
+    expect(localSlipOkBaseUrl(undefined)).toBeNull();
+  });
+
+  it('ignores a non-loopback override and keeps the real SlipOK host', () => {
+    expect(getCentralSlipOkCredentials({ SLIPOK_API_KEY: 'k', SLIPOK_BRANCH_ID: '1', SLIPOK_API_BASE_URL: 'https://attacker.test' })).toEqual({ apiKey: 'k', branchId: '1' });
+  });
+
+  it('sends the request to the loopback mock when set', async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { amount: 100, transRef: 'T', receiver: { proxy: { value: '081-xxx-5678' } } } }), { status: 200 }));
+    global.fetch = fetchMock;
+    try {
+      const credentials = getCentralSlipOkCredentials({ SLIPOK_API_KEY: 'k', SLIPOK_BRANCH_ID: '7', SLIPOK_API_BASE_URL: 'http://127.0.0.1:8790' })!;
+      await verifySlipWithSlipOk(credentials, { slipData: 'b', expectedAmount: 100, expectedReceiver: '0812345678' });
+      expect(fetchMock.mock.calls[0]![0]).toBe('http://127.0.0.1:8790/7');
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });

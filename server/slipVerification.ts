@@ -23,6 +23,8 @@ const MIN_COMPARED_RECEIVER_DIGITS = 4;
 export interface SlipOkCredentials {
   apiKey: string;
   branchId: string;
+  /** Local mock only; see `localSlipOkBaseUrl`. */
+  baseUrl?: string;
 }
 
 export interface SlipVerificationInput {
@@ -62,7 +64,25 @@ export function getCentralSlipOkCredentials(env: Record<string, string | undefin
   const apiKey = env.SLIPOK_API_KEY?.trim();
   const branchId = env.SLIPOK_BRANCH_ID?.trim();
   if (!apiKey || !branchId) return null;
-  return { apiKey, branchId };
+  const baseUrl = localSlipOkBaseUrl(env.SLIPOK_API_BASE_URL);
+  return baseUrl ? { apiKey, branchId, baseUrl } : { apiKey, branchId };
+}
+
+/**
+ * `SLIPOK_API_BASE_URL` lets a local `wrangler dev` run talk to a mock SlipOK.
+ * ASSUMPTION: only a loopback http(s) URL is honoured, so a stray value in a
+ * deployed Worker can never send the platform key to another host.
+ */
+export function localSlipOkBaseUrl(value: string | undefined): string | null {
+  if (!value?.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) return null;
+    return url.toString().replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
 }
 
 /** Digits and mask characters only, with a +66 phone number written as 0XXXXXXXXX. */
@@ -100,15 +120,24 @@ function nestedValue(source: unknown, key: string): string | null {
   return typeof inner === 'string' && inner.trim() ? inner : null;
 }
 
-/** Check the slip receiver: the PromptPay proxy first, then the bank account. */
+/**
+ * Check the slip receiver: the PromptPay proxy first, then the bank account.
+ *
+ * A comparable proxy decides on its own. A bank account number can only be
+ * compared by chance (it is not the PromptPay ID), so when only the account is
+ * comparable, a match still counts but a mismatch goes to manual review
+ * instead of being rejected.
+ */
 export function checkSlipReceiver(promptPayId: string, receiver: unknown): ReceiverCheck {
-  for (const key of ['proxy', 'account']) {
-    const value = nestedValue(receiver, key);
-    if (!value) continue;
-    const result = compareReceiverValue(promptPayId, value);
-    if (result) return result;
-  }
-  return 'unknown';
+  const proxy = nestedValue(receiver, 'proxy');
+  const proxyResult = proxy ? compareReceiverValue(promptPayId, proxy) : null;
+  if (proxyResult) return proxyResult;
+
+  const account = nestedValue(receiver, 'account');
+  const accountResult = account ? compareReceiverValue(promptPayId, account) : null;
+  // ASSUMPTION: a bank account that differs from the PromptPay ID may still be
+  // the hotel's own account behind that PromptPay ID, so staff decide.
+  return accountResult === 'match' ? 'match' : 'unknown';
 }
 
 /**
@@ -123,7 +152,7 @@ export async function verifySlipWithSlipOk(
   credentials: SlipOkCredentials,
   input: SlipVerificationInput,
 ): Promise<SlipVerificationResult> {
-  const url = `${SLIPOK_BASE_URL}/${encodeURIComponent(credentials.branchId)}`;
+  const url = `${credentials.baseUrl ?? SLIPOK_BASE_URL}/${encodeURIComponent(credentials.branchId)}`;
 
   let response: Response;
   try {

@@ -89,7 +89,12 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
       const occupancyEndDate = addIsoDays(dates[dates.length - 1], 1);
       const [hotelDetail, availability, occupancy] = await Promise.all([
         d1GetManagedHotel(db, caller, hotel.id),
-        d1ListAvailabilityForHotel(db, caller, hotel.id),
+        // ASSUMPTION: saved allotment and rates need revenue.manage_rates. Front desk
+        // and housekeeping still get booking-based counts, with prices hidden.
+        d1ListAvailabilityForHotel(db, caller, hotel.id).catch(error => {
+          if (error instanceof TRPCError && error.code === 'FORBIDDEN') return null;
+          throw error;
+        }),
         d1ListBookingOccupancyForHotel(db, caller, hotel.id, dates[0], occupancyEndDate),
       ]);
       if (!hotelDetail) return null;
@@ -98,7 +103,7 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
         counts[room.room_type_id ?? room.roomTypeId] = (counts[room.room_type_id ?? room.roomTypeId] ?? 0) + 1;
         return counts;
       }, {});
-      const availabilityByKey = new Map(availability.map(row => [`${row.roomTypeId}:${row.date}`, row]));
+      const availabilityByKey = new Map((availability ?? []).map(row => [`${row.roomTypeId}:${row.date}`, row]));
       const hotelOtaEvents = otaSummary
         .filter((connection: any) => connection.hotel_id === hotel.id)
         .flatMap((connection: any) => (connection.latest_log ? [connection.latest_log] : []).map((log: any) => ({
@@ -141,7 +146,7 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
               roomTypeId: roomType.id,
               available,
               totalRooms,
-              price: Number(saved?.price ?? roomType.base_price ?? roomType.basePrice),
+              price: availability === null ? null : Number(saved?.price ?? roomType.base_price ?? roomType.basePrice),
               status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy') as 'healthy' | 'low' | 'closed',
             };
           }),
