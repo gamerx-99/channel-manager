@@ -94,7 +94,7 @@ export async function deleteOwnAccount(db: D1ScopedDatabase, caller: D1CallerCon
   const clear = (table: string, column: string) => run(`update ${table} set ${column} = null where ${column} = ?`, userId);
 
   const activeAdmin = `accepted_at is not null and disabled_at is null`;
-  const results = await db.$client.batch([
+  await db.$client.batch([
     db.$client.prepare(`delete from "user" where id = ?
       and not exists (select 1 from hotel_users where user_id = ? and role = 'hotel_owner')
       and (
@@ -149,7 +149,9 @@ export async function deleteOwnAccount(db: D1ScopedDatabase, caller: D1CallerCon
     run(`update hotels set owner_contact = '' where lower(trim(owner_contact)) = ?`, email),
   ]);
 
-  if (results[0]!.meta.changes !== 1) {
+  // D1 counts cascaded rows in meta.changes, so ask for the row instead of reading that count.
+  const [remaining] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1);
+  if (remaining) {
     assertNotBlocked(await getAccountDeletionBlockers(db, caller));
     throw new TRPCError({ code: "CONFLICT", message: "Your account changed; reload and try again." });
   }

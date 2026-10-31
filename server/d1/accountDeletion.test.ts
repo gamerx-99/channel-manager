@@ -219,6 +219,15 @@ describe("deleteOwnAccount", () => {
     await expect(deleteOwnAccount(db, self, NOW)).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
+  it("succeeds when D1 counts cascaded rows in meta.changes", async () => {
+    const client = (db as unknown as { $client: { batch: (statements: unknown[]) => Promise<Array<{ meta: { changes: number } }>> } }).$client;
+    const batch = client.batch;
+    client.batch = async statements => (await batch(statements)).map((result, index) => index === 0 ? { meta: { changes: result.meta.changes + 2 } } : result);
+
+    await expect(deleteOwnAccount(db, self, NOW)).resolves.toEqual({ success: true });
+    expect(one(`select id from "user" where id = ?`, USER)).toBeUndefined();
+  });
+
   it("refuses a public caller", async () => {
     await expect(deleteOwnAccount(db, { userId: "", access: "public" }, NOW)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
