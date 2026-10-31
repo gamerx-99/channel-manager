@@ -1,6 +1,6 @@
 # 14 Per-person permissions, support access, and platform-role hardening
 
-Status: IN PROGRESS — 14-03b server and 14-04 client implemented in
+Status: IN PROGRESS — 14-05 central SlipOK implemented 2026-10-31 on `feat/financials-owner-grant` (needs secrets SLIPOK_API_KEY/SLIPOK_BRANCH_ID); — 14-03b server and 14-04 client implemented in
 `agent-s/support-access` (2026-10-30), 842 tests/check/build passing and independent
 reviewer APPROVE; uncommitted per instruction.
 14-00/14-01 are historical completed work; 14-02 remains CANCELLED. This run does

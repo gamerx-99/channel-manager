@@ -1,5 +1,27 @@
 # Handoff log
 
+## [2026-10-31] Central SlipOK, MFA step-up, publishing, password reset, UI fixes (branch `feat/financials-owner-grant`)
+- **What happened** (one commit each, `ecd819f..HEAD`):
+  0. Raw D1 binds of `children_count_toward_max` use 1/0 (two repository tests failed under node:sqlite).
+  1. 14-05 central SlipOK: secrets `SLIPOK_API_KEY` + `SLIPOK_BRANCH_ID`, fixed URL, no `log`, own receiver check (proxy then account, digits/x, 66→0, right-aligned, ≥4 digits), duplicate pre-check on `verified_transaction_ref`, missing secrets or refused key → manual review. Hotel key form, `slipok.getSettings/saveKey/removeKey` and `slipokCrypto.ts` removed; columns kept. No quotas, no key pool.
+  2. `payment_rejected` resubmit reclaims room nights (`claimBookingNights`) before confirm, else manual review; conditional claim on the move to `pending_verification` (second submit → CONFLICT) and on confirm.
+  3. MFA step-up works on Better Auth: `auth.verifyMfaStepUp` checks the TOTP via Better Auth and stores a 10-minute row bound to the session; context exposes `twoFactorVerifiedAt`; Financials asks for the code before saving PromptPay and sends owners without TOTP to `/mfa/enroll?next=/dashboard/financials`.
+  4. `channelManager.setHotelPublished` (property.manage_profile) + Publish/Make private control on the hotel page.
+  5. `createAuth` gets `createEmailSender()` in the Worker and context; send errors swallowed (no enumeration); `revokeSessionsOnPasswordReset`; `/forgot-password`, `/reset-password` pages.
+  6. UI: Channel analytics leftovers removed; booking button fixed (slug procedures now always use the public caller, private hotel explained); NOT_FOUND on `/:slug` not retried and clearly shown; per-hotel title/description/OG; BookingWizard and Support access in Thai; developer text removed from i18n (guarded by test); `login.invalidCredentials`; Photos tab → website builder, Domains removed.
+  7. Review fix: unexpected errors after the verifySlip claim go to manual review.
+- **Verification** (Node 24): `pnpm test`:
+```
+Test Files  142 passed (142)
+      Tests  1011 passed (1011)
+   Start at  07:06:41
+   Duration  42.85s (transform 2.97s, setup 1.04s, collect 40.53s, tests 38.55s, environment 15.19s, prepare 9.60s)
+```
+  `pnpm check`: exit 0. `pnpm build`: vite build OK, wrangler `--dry-run` OK, exit 0.
+- **Review**: independent reviewer REJECT on one MAJOR (account fallback in the receiver check, kept because the spec requires it, logged in OPEN_QUESTIONS) and minors; the stuck-booking and weak-assertion findings were fixed. Verified in Better Auth 1.7.14 source that `verifyTOTP` on a live session does not rotate it.
+- **Owner must**: set Worker secrets `SLIPOK_API_KEY`, `SLIPOK_BRANCH_ID` (until then every slip goes to manual review) and check `RESEND_API_KEY` + `EMAIL_FROM` are set (otherwise reset emails are not sent). No new migration.
+- **Not done**: nothing pushed to main, nothing deployed, no live SlipOK call. See OPEN_QUESTIONS for the 4 new items.
+
 ## [2026-10-31] SlipOK request aligned with API guide v1.13 (branch `feat/financials-owner-grant`)
 - **What happened**: Images now go in `files` with `log: true` and `amount`. Codes 1011-1014 reject the slip, 1005-1008 restore the booking status and hold and ask for a new image, and other errors go to manual review. A slip without `transRef` cannot match. `SLIP_OK_API` is used only when it starts with `https://`. The rejection write is guarded on `pending_verification`.
 - **Verification**: `pnpm test`: 132 files, 940 tests passed. `pnpm check`: exit 0. `pnpm build`: exit 0. No live SlipOK call was made.
@@ -134,7 +156,8 @@
 
 ## [2026-10-09 09:52] Public inventory RPC follow-up
 - Project: D:\system make\channel-manager-mvp-latest.
-- Completed: public availability now reads room types under the published-hotel RLS policy and gets inventory through get_public_room_type_availability, which returns only room-type IDs and available counts. Anonymous users do not select from ooms or ookings. Calendar occupancy is scoped to its visible date range; check-in/out uses shared per-hotel permission logic.
+- Completed: public availability now reads room types under the published-hotel RLS policy and gets inventory through get_public_room_type_availability, which returns only room-type IDs and available counts. Anonymous users do not select from 
+ooms or ookings. Calendar occupancy is scoped to its visible date range; check-in/out uses shared per-hotel permission logic.
 - Verification: pnpm check passed; pnpm test passed (87 files, 458 passed, 3 skipped); pnpm build passed with the existing chunk-size warning. No production SQL was executed.
 - Remaining: human review/apply 20261009_public_room_type_rls.sql, 20261009_public_booking_inventory.sql, and 20261009_booking_lifecycle_checkin_checkout.sql; run each matching verify script. Deployment must wait for all PASS results.
 - Blockers: none for local code; production migrations and final independent review are pending.
