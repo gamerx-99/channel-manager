@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { TriangleAlert } from "lucide-react";
 import { Link } from "wouter";
@@ -23,6 +23,8 @@ export default function DeleteAccountSettings() {
   const [code, setCode] = useState("");
   const [codeAccepted, setCodeAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // `busy` updates on render, so a second Enter could slip in before it does.
+  const submitting = useRef(false);
 
   const accountEmail = authMe?.email ?? "";
   const needsCode = Boolean(authMe?.twoFactorEnabled) && !codeAccepted;
@@ -57,8 +59,9 @@ export default function DeleteAccountSettings() {
       const reason = errorCode(caught);
       setPassword("");
       if (reason === "CONFLICT") {
-        reset();
+        // A new block replaces the form; otherwise the message explains what happened.
         await status.refetch();
+        setError(t("accountDeletion.errorGeneric"));
       } else if (reason === "PRECONDITION_FAILED") {
         setCodeAccepted(false);
         setCode("");
@@ -136,7 +139,12 @@ export default function DeleteAccountSettings() {
           className="admin-form"
           style={{ marginTop: 14, padding: 0 }}
           data-testid="delete-account-confirm"
-          onSubmit={event => { event.preventDefault(); if (canSubmit) void handleDelete(); }}
+          onSubmit={event => {
+            event.preventDefault();
+            if (!canSubmit || submitting.current) return;
+            submitting.current = true;
+            void handleDelete().finally(() => { submitting.current = false; });
+          }}
         >
           <h3>{t("accountDeletion.confirmTitle")}</h3>
           {error && <div className="form-error" role="alert" style={{ margin: 0 }}>{error}</div>}
