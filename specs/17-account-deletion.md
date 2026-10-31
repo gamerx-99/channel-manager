@@ -1,6 +1,6 @@
 # Spec 17 — Self-service account deletion (PDPA)
 
-Status: IN PROGRESS
+Status: DONE (reviewer approved 2026-10-31; not deployed, no migration needed)
 
 A signed-in user can delete their own account from `/settings/security`. Guests have no
 account, so guest requests are out of scope (see `.agent/OPEN_QUESTIONS.md`). No plan-based
@@ -15,7 +15,7 @@ Order of checks, cheapest and least revealing first:
 1. A valid session, and `confirmEmail` equal to the account email.
 2. With 2FA on: a recent MFA step-up for this session (`requireRecentMfaVerification`).
 3. Nothing blocks deletion.
-4. Fewer than 5 wrong passwords in 15 minutes for this user, stored in `verification`.
+4. At most 5 password attempts in 15 minutes for this user, counted atomically in `verification` before the check.
 5. The password, through Better Auth `verifyPassword`.
 6. The deletion batch.
 
