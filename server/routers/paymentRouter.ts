@@ -10,7 +10,7 @@ import {
   updatePaymentSessionStatus,
   finalizePaymentSession,
 } from '../d1/payment';
-import { expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
+import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
 import { bookings, hotels } from '../../drizzle/d1-schema';
 import { eq, and } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
@@ -188,7 +188,13 @@ export const paymentRouter = router({
         }
 
         assertValidTransition(bookingStatus, 'pending_verification');
-        await db.update(bookings).set({ status: 'pending_verification', expiresAt: null }).where(eq(bookings.id, session.booking_id));
+        // Only one submit may move the booking on; a concurrent one sees no row.
+        const [claimed] = await db.update(bookings).set({ status: 'pending_verification', expiresAt: null })
+          .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, bookingStatus)))
+          .returning({ id: bookings.id });
+        if (!claimed) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'This booking is already being verified. Please wait for the result.' });
+        }
         await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: bookingStatus, to_status: 'pending_verification', reason: 'slip_submitted' });
 
         const manualReview = async (reason: string) => {
@@ -226,8 +232,16 @@ export const paymentRouter = router({
               throw new TRPCError({ code: 'CONFLICT', message: 'This slip has already been used to verify a different payment. Please contact the hotel.' });
             }
 
+            // A rejected booking lost its hold, so another guest may have the room now.
+            if (bookingStatus === 'payment_rejected' && !(await claimBookingNights(db, guest, hotelId, session.booking_id))) {
+              return await manualReview('room_unavailable_manual_review_required');
+            }
+
             assertValidTransition('pending_verification', 'confirmed');
-            await db.update(bookings).set({ status: 'confirmed' }).where(eq(bookings.id, session.booking_id));
+            const [confirmed] = await db.update(bookings).set({ status: 'confirmed' })
+              .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')))
+              .returning({ id: bookings.id });
+            if (!confirmed) return await manualReview('booking_changed_manual_review_required');
             await updateBookingPaymentStatus(db, guest, hotelId, session.booking_id, 'verified');
             await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'confirmed', reason: 'slipok_auto_verified' });
             return { verified: true as const, message: 'ชำระเงินสำเร็จ' };

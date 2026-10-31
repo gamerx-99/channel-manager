@@ -8,7 +8,7 @@ const payment = vi.hoisted(() => ({
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
 }));
-const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn() }));
+const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn() }));
 const verify = vi.hoisted(() => vi.fn());
 
 vi.mock("./d1/payment", () => payment);
@@ -23,15 +23,17 @@ const BOOKING = "22222222-2222-4222-8222-222222222222";
 const SESSION = "33333333-3333-4333-8333-333333333333";
 const HOLD_EXPIRES = new Date("2099-01-01T00:00:00.000Z");
 
-function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true) {
+function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, status = "pending_payment", claimRows: unknown[] = [{ id: BOOKING }]) {
   const writes: Array<Record<string, unknown>> = [];
-  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status: "pending_payment", expiresAt: HOLD_EXPIRES }] };
+  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, expiresAt: HOLD_EXPIRES }] };
   const db = {
     select: () => selectChain,
     update: () => ({
       set(values: Record<string, unknown>) {
         writes.push(values);
-        return { where: () => Object.assign(Promise.resolve(), { returning: async () => rejectedRows }) };
+        // rejectedRows answers only the rejection write; other guarded writes succeed.
+        const rows = values.status === "payment_rejected" ? rejectedRows : values.status === "pending_verification" ? claimRows : [{ id: BOOKING }];
+        return { where: () => Object.assign(Promise.resolve(), { returning: async () => rows }) };
       },
     }),
   };
@@ -48,6 +50,7 @@ beforeEach(() => {
   payment.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
   payment.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
   booking.expireBookingIfPast.mockResolvedValue({ status: "pending_payment" });
+  booking.claimBookingNights.mockResolvedValue(true);
   process.env.SLIPOK_API_KEY = "central-key";
   process.env.SLIPOK_BRANCH_ID = "central-branch";
 });
@@ -154,5 +157,44 @@ describe("verifySlip outcomes", () => {
 
     expect(writes.some(write => write.status === "confirmed")).toBe(false);
     expect(loggedReasons()).toContain("duplicate_slip_ref");
+  });
+
+  it("refuses a second concurrent submit instead of reprocessing the booking", async () => {
+    const { db, writes } = fakeDb(undefined, true, "pending_payment", []);
+
+    await expect(submit(db, 11)).rejects.toMatchObject({ code: "CONFLICT" });
+
+    expect(verify).not.toHaveBeenCalled();
+    expect(writes).toHaveLength(1);
+  });
+
+  it("rechecks the room before confirming a booking that was payment_rejected", async () => {
+    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-4", amount: 120, raw: {} });
+    const { db, writes } = fakeDb(undefined, true, "payment_rejected");
+
+    await expect(submit(db, 12)).resolves.toMatchObject({ verified: true });
+
+    expect(booking.claimBookingNights).toHaveBeenCalledWith(db, expect.anything(), HOTEL, BOOKING);
+    expect(writes.at(-1)).toEqual({ status: "confirmed" });
+  });
+
+  it("sends a payment_rejected booking to manual review when its room is taken", async () => {
+    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-5", amount: 120, raw: {} });
+    booking.claimBookingNights.mockResolvedValueOnce(false);
+    const { db, writes } = fakeDb(undefined, true, "payment_rejected");
+
+    await expect(submit(db, 13)).resolves.toMatchObject({ verified: false, pendingManualReview: true });
+
+    expect(writes.some(write => write.status === "confirmed")).toBe(false);
+    expect(loggedReasons()).toContain("room_unavailable_manual_review_required");
+  });
+
+  it("does not recheck the room for a booking that kept its hold", async () => {
+    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-6", amount: 120, raw: {} });
+    const { db } = fakeDb();
+
+    await expect(submit(db, 14)).resolves.toMatchObject({ verified: true });
+
+    expect(booking.claimBookingNights).not.toHaveBeenCalled();
   });
 });

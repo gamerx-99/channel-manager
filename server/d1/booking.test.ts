@@ -80,7 +80,7 @@ async function assertBookingNightsInvariant(now: Date) {
 describe("D1 booking repositories", () => {
   it("preserves every source booking export", () => {
     expect(Object.keys(bookingRepository).sort()).toEqual([
-      "confirmBookingDetails", "countActiveHoldsForIp", "createBookingWithGuests", "createPublicBooking", "expireBookingIfPast",
+      "claimBookingNights", "confirmBookingDetails", "countActiveHoldsForIp", "createBookingWithGuests", "createPublicBooking", "expireBookingIfPast",
       "getPublicHotelAvailability", "getStayDates", "holdRoomType", "listBookingsForHotel",
       "logBookingStatusChange", "transitionBookingStatus",
     ].sort());
@@ -398,5 +398,47 @@ describe("D1 booking repositories", () => {
     // Nights for 2026-11-10..2026-11-12 are NOT added; original nights remain intact
     const afterNights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, created.id));
     expect(afterNights.map(r => r.night).sort()).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+});
+
+describe("claimBookingNights", () => {
+  const now = new Date("2026-10-31T00:00:00.000Z");
+  const insertBooking = (id: string, status: string) => db.insert(bookings).values({ id, hotelId: "a", roomId: "room-a-1", guestName: id, checkIn: "2026-11-01", checkOut: "2026-11-03", price: "100.00", source: "manual", status, expiresAt: null });
+
+  it("claims the nights a resubmitted booking lost while the room is still free", async () => {
+    await seedHotel("a", "owner-a");
+    await insertBooking("resubmitted", "pending_verification");
+
+    await expect(bookingRepository.claimBookingNights(db, ownerA, "a", "resubmitted", now)).resolves.toBe(true);
+
+    const nights = await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "resubmitted"));
+    expect(nights.map(night => night.night).sort()).toEqual(["2026-11-01", "2026-11-02"]);
+  });
+
+  it("refuses when another booking took the room in the meantime", async () => {
+    await seedHotel("a", "owner-a");
+    await insertBooking("other", "confirmed");
+    await db.$client.batch([addNightsStatement(db, "other", getStayDates("2026-11-01", "2026-11-03"), now)]);
+    await insertBooking("resubmitted", "pending_verification");
+
+    await expect(bookingRepository.claimBookingNights(db, ownerA, "a", "resubmitted", now)).resolves.toBe(false);
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, "resubmitted"))).toEqual([]);
+  });
+
+  it("refuses a booking that no longer occupies inventory", async () => {
+    await seedHotel("a", "owner-a");
+    await insertBooking("rejected", "payment_rejected");
+
+    await expect(bookingRepository.claimBookingNights(db, ownerA, "a", "rejected", now)).resolves.toBe(false);
+  });
+
+  it("is allowed for the guest payment caller of that hotel only", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    await insertBooking("resubmitted", "pending_verification");
+    const { createD1GuestPaymentCallerContext } = await import("../db/scope");
+
+    await expect(bookingRepository.claimBookingNights(db, createD1GuestPaymentCallerContext("a"), "a", "resubmitted", now)).resolves.toBe(true);
+    await expect(bookingRepository.claimBookingNights(db, createD1GuestPaymentCallerContext("b"), "a", "resubmitted", now)).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

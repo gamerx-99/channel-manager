@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, gt, inArray, lt, ne } from "drizzle-orm";
-import { bookings, bookingServices, bookingStatusLog, guests as guestTable, hotelPaymentSettings, hotelServices, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingNights, bookings, bookingServices, bookingStatusLog, guests as guestTable, hotelPaymentSettings, hotelServices, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { assertValidTransition, type BookingStatus } from "@shared/bookingLifecycle";
 import type { ChildMeasurement, OccupancyPricingRules } from "@shared/occupancyPricing";
 import type { BookingRecord, BookingServiceRecord, CreatePublicBookingInput, GuestRecord } from "../db/types";
@@ -175,6 +175,31 @@ export async function expireBookingIfPast(db: D1ScopedDatabase, caller: D1Caller
     return latest ? { status: latest.status as BookingStatus, expires_at: iso(latest.expiresAt) } : null;
   }
   return { status: "expired" as const, expires_at: expiresAt };
+}
+
+/**
+ * Make sure the booking holds every night of its room, claiming any night it
+ * lost. False when another booking took a night or the booking no longer
+ * occupies inventory, so the caller must not confirm it.
+ */
+export async function claimBookingNights(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, bookingId: string, now = new Date()): Promise<boolean> {
+  await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "bookings.nights.claim", now);
+  const [row] = await db.select({ roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut }).from(bookings)
+    .where(and(eq(bookings.id, bookingId), eq(bookings.hotelId, hotelId))).limit(1);
+  if (!row?.roomId) return false;
+  const nights = getStayDates(row.checkIn, row.checkOut);
+  try {
+    await db.$client.batch([
+      releaseExpiredHoldNightsStatement(db, { roomId: row.roomId }, now),
+      addNightsStatement(db, bookingId, nights, now),
+    ]);
+  } catch (error) {
+    if (isBookingNightsUniqueConflict(error)) return false;
+    throw error;
+  }
+  const owned = new Set((await db.select({ night: bookingNights.night }).from(bookingNights)
+    .where(and(eq(bookingNights.bookingId, bookingId), eq(bookingNights.roomId, row.roomId)))).map(night => night.night));
+  return nights.every(night => owned.has(night));
 }
 
 export async function countActiveHoldsForIp(db: D1ScopedDatabase, hotelId: string, ipHash: string, now = new Date()): Promise<number> {

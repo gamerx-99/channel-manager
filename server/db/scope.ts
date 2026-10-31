@@ -28,6 +28,7 @@ const GUEST_PAYMENT_ACTIONS = new Set([
   "booking.payment_status.update",
   "bookings.status_log.create",
   "bookings.expire",
+  "bookings.nights.claim",
 ]);
 
 /** Construct this context from the verified server identity, never from client input. */
