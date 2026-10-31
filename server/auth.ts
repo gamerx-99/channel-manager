@@ -25,6 +25,17 @@ function resolveDrizzleDatabase(db: D1Database | any) {
   return drizzle(db as D1Database, { schema: authSchema });
 }
 
+/** Sessions signed with a published secret can be forged, so only local runs may fall back. */
+export function resolveAuthSecret(explicitSecret?: string) {
+  const env = typeof process !== "undefined" ? process.env : undefined;
+  const secret = explicitSecret || env?.BETTER_AUTH_SECRET;
+  if (secret) return secret;
+  if (env?.NODE_ENV === "development" || env?.NODE_ENV === "test") {
+    return "dev-insecure-secret-minimum-32-chars-key!!";
+  }
+  throw new Error("BETTER_AUTH_SECRET is not configured.");
+}
+
 export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
   const opts: CreateAuthOptions =
     options && typeof options === "object" && "db" in options
@@ -36,10 +47,7 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
     opts.baseURL ||
     (typeof process !== "undefined" ? process.env?.PUBLIC_APP_URL : undefined) ||
     "http://localhost:3000";
-  const secret =
-    opts.secret ||
-    (typeof process !== "undefined" ? process.env?.BETTER_AUTH_SECRET : undefined) ||
-    "dev-insecure-secret-minimum-32-chars-key!!";
+  const secret = resolveAuthSecret(opts.secret);
 
   return betterAuth({
     baseURL,
