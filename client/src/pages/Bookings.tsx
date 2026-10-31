@@ -7,6 +7,7 @@ import PageState from '@/components/PageState';
 import BookingWizard from '@/components/BookingWizard';
 import { useTranslation } from '@/lib/i18n';
 import { communicationsEnabled } from '@/lib/featureFlags';
+import { buildTm30PrintHtml } from '@/lib/tm30Print';
 import { hasHotelPermission } from '@shared/authorization';
 
 type BookingStatus = 'held' | 'pending_payment' | 'pending_verification' | 'confirmed' | 'expired' | 'payment_rejected' | 'cancelled' | 'refund_pending' | 'refunded' | 'checked_in' | 'checked_out';
@@ -129,34 +130,7 @@ export default function Bookings({ id }: { id: string }) {
   const downloadPdfPreview = () => {
     if (!previewQuery.data || !hotel) return;
     const { headers, rows } = previewQuery.data;
-    const html = `
-      <!DOCTYPE html>
-      <html lang="th">
-      <head>
-        <meta charset="utf-8">
-        <title>TM.30 Report - ${hotel.name}</title>
-        <style>
-          body { font-family: sans-serif; padding: 20px; color: #111; }
-          h1 { font-size: 18px; margin-bottom: 4px; }
-          p { font-size: 12px; color: #555; margin-bottom: 16px; }
-          table { width: 100%; border-collapse: collapse; font-size: 10px; }
-          th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-          th { background: #f4f4f4; }
-        </style>
-      </head>
-      <body>
-        <h1>TM.30 Immigration Report: ${hotel.name}</h1>
-        <p>Generated: ${new Date().toLocaleString()} | Format: DD/MM/YYYY (A.D.)</p>
-        <table>
-          <thead><tr>${headers.map(h => `<th>${h.replace(/\n/g, ' ')}</th>`).join('')}</tr></thead>
-          <tbody>
-            ${rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="9">No records</td></tr>'}
-          </tbody>
-        </table>
-        <script>window.print();</script>
-      </body>
-      </html>
-    `;
+    const html = buildTm30PrintHtml(hotel.name, headers, rows, new Date().toLocaleString());
     const win = window.open('', '_blank');
     if (win) {
       win.document.write(html);
