@@ -172,7 +172,10 @@ export default function Calendar({ id }: { id: string }) {
     try {
       await Promise.all(changes.map(([key, value]) => {
         const [room_type_id, date] = key.split(":");
-        return updateAvailability.mutateAsync({ room_type_id, date, price: value.price, rooms_available: value.available });
+        // The server checks the permission for the kind of change on this hotel.
+        const savedAllotment = getAllotment(room_type_id, date, roomCountByType[room_type_id] ?? 0);
+        const action = value.available === savedAllotment ? "rate" : value.available === 0 ? "stop_sell" : "allotment";
+        return updateAvailability.mutateAsync({ hotel_id: id, room_type_id, date, price: value.price, rooms_available: value.available, action });
       }));
       setDraft({});
       setEditing(false);

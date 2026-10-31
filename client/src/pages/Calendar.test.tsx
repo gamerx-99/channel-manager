@@ -130,6 +130,8 @@ describe("Availability month calendar", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
     expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledTimes(2);
     expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ rooms_available: 0 }));
+    // Regression: without hotel_id the server answered "hotel_id is required." to every save.
+    expect(mocks.updateAvailability.mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", rooms_available: 0, action: "stop_sell" }));
 
     await user.click(screen.getByRole("button", { name: "Edit prices" }));
     expect(screen.getAllByLabelText("Price").length).toBe(2);
