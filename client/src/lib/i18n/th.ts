@@ -30,6 +30,7 @@ const th: TranslationDictionary = {
     websiteBuilder: "สร้างเว็บไซต์",
     bookingEngines: "ระบบจองห้องพัก",
     bookingEnginesSelectPrompt: "กรุณาเลือกหรือเพิ่มโรงแรมก่อนเพื่อเปิดหน้าระบบจอง",
+    bookingEnginesPrivatePrompt: "หน้าเว็บที่พักนี้ยังเป็นส่วนตัว เปิดหน้าเว็บจากหน้าที่พักก่อน แล้วแขกจึงจองได้",
     advancedPricing: "ตั้งราคาขั้นสูง",
     system: "ระบบ",
     exports: "ส่งออกข้อมูล",

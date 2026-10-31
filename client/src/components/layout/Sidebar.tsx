@@ -184,10 +184,13 @@ export function Sidebar({
           className="nav-link w-full text-left bg-transparent border-0 cursor-pointer"
           onClick={() => {
             const hotel = visibleHotels?.find(h => h.id === selectedHotelId) || visibleHotels?.[0];
-            if (hotel?.slug) {
-              window.open(`/${hotel.slug}#book`, '_blank');
-            } else {
+            if (!hotel?.slug) {
               toast.info(t("sidebar.bookingEnginesSelectPrompt"));
+            } else if (!hotel.public_enabled) {
+              // A private hotel page shows guests nothing, so say how to open it.
+              toast.info(t("sidebar.bookingEnginesPrivatePrompt"));
+            } else {
+              window.open(`/${hotel.slug}#book`, "_blank", "noopener");
             }
           }}
         >

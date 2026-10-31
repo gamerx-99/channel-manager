@@ -28,6 +28,7 @@ const en = {
     websiteBuilder: "Website Builder",
     bookingEngines: "Booking Engines",
     bookingEnginesSelectPrompt: "Select or add a hotel first to open its live booking engine.",
+    bookingEnginesPrivatePrompt: "This hotel page is private. Publish it from the hotel page first, then guests can book.",
     advancedPricing: "Advanced Pricing",
     system: "System",
     exports: "Exports",

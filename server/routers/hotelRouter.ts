@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
 import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
@@ -435,7 +436,7 @@ export const listHotelServicesProcedure = protectedProcedure.input(listHotelServ
 export const listPublicHotelServices = rateLimitedProcedure.input(listPublicHotelServicesSchema).query(async ({ ctx, input }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await d1ListActiveHotelServicesBySlug(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input.slug);
+    return await d1ListActiveHotelServicesBySlug(ctx.db, createD1PublicCallerContext(), input.slug);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -444,7 +445,7 @@ export const listPublicHotelServices = rateLimitedProcedure.input(listPublicHote
 export const publicHotel = rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ ctx, input }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await d1GetPublicHotel(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input);
+    return await d1GetPublicHotel(ctx.db, createD1PublicCallerContext(), input);
   } catch (error) {
     return rethrowDomainError(error);
   }
@@ -453,7 +454,7 @@ export const publicHotel = rateLimitedProcedure.input(z.string().trim().min(1).m
 export const getHotelSiteConfig = rateLimitedProcedure.input(z.string().trim().min(1).max(100)).query(async ({ ctx, input }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await d1GetHotelSiteConfigBySlug(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input);
+    return await d1GetHotelSiteConfigBySlug(ctx.db, createD1PublicCallerContext(), input);
   } catch (error) {
     const code = (error as { code?: string })?.code;
     const msg = error instanceof Error ? error.message : '';

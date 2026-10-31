@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
 import { eq } from 'drizzle-orm';
@@ -227,7 +228,7 @@ export const createBooking = protectedProcedure
 export const publicHotelAvailability = rateLimitedProcedure.input(publicHotelAvailabilitySchema).query(async ({ ctx, input }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await getPublicHotelAvailability(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, input.slug, input.check_in, input.check_out, {
+    return await getPublicHotelAvailability(ctx.db, createD1PublicCallerContext(), input.slug, input.check_in, input.check_out, {
       adults: input.adults,
       children: input.children,
     });
@@ -248,7 +249,7 @@ export const holdRoomType = rateLimitedProcedure.input(holdRoomTypeSchema).mutat
     ipHash = null;
   }
   try {
-    return await dbHoldRoomType(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, {
+    return await dbHoldRoomType(ctx.db, createD1PublicCallerContext(), {
       slug: input.slug,
       room_type_id: input.room_type_id,
       check_in: input.check_in,
@@ -266,7 +267,7 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
   await enforcePublicBookingRateLimit(ctx);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbConfirmBookingDetails(ctx.db, ctx.caller ?? { userId: '', roles: [], access: 'public' } as any, {
+    return await dbConfirmBookingDetails(ctx.db, createD1PublicCallerContext(), {
       booking_id: input.booking_id,
       hotel_id: input.hotel_id,
       guest_name: input.guest_name,

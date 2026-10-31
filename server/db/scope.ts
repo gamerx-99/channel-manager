@@ -48,6 +48,15 @@ export function createD1SystemCallerContext(): D1SystemCallerContext {
   return { userId: "system", access: "system", [SYSTEM_CALLER_BRAND]: true };
 }
 
+/**
+ * Caller for guest-facing hotel pages. Always used there, even when the viewer
+ * is signed in: an owner opening their own public page is a guest of it, and a
+ * staff caller would be refused by requirePublicHotel.
+ */
+export function createD1PublicCallerContext(): D1CallerContext {
+  return { userId: "", roles: [], access: "public" };
+}
+
 /** Create only after confirming the booking belongs to this published hotel. */
 export function createD1GuestPaymentCallerContext(hotelId: string): D1CallerContext & { guestPaymentHotelId: string } {
   return { userId: "", access: "guest_payment", guestPaymentHotelId: hotelId, [GUEST_PAYMENT_BRAND]: true };
