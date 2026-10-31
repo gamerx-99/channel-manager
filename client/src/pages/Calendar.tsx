@@ -400,7 +400,7 @@ export default function Calendar({ id }: { id: string }) {
               <div className="calendar-room-label">
                 <span className={`room-type-bar ${index % 3 === 0 ? "pine" : index % 3 === 1 ? "slate" : "amber"}`} />
                 <strong>{roomType.name}</strong>
-                <small>{totalRooms} rooms</small>
+                <small>{t("availability.roomsCount", { count: totalRooms })}</small>
               </div>
               <div className="calendar-room-controls">
                 <span className={`calendar-booked-state ${bookings.length ? "is-booked" : ""}`}>

@@ -148,6 +148,13 @@ const en = {
     imageTooLarge: "Images must be 5 MiB or smaller.",
     invalidImage: "Invalid image upload.",
   },
+  accessRestricted: {
+    title: "Access restricted",
+    hotelNotVisible: "This property is outside your assigned hotel workspace.",
+    permissionRequired: "Your current role does not have permission to open this workspace.",
+    platformOnly: "This area is available only to platform administrators.",
+    returnToDashboard: "Return to dashboard",
+  },
   sidebar: {
     overview: "Overview",
     hotelsManagement: "Hotels Management",

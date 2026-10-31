@@ -150,6 +150,13 @@ const th: TranslationDictionary = {
     imageTooLarge: "รูปภาพต้องมีขนาดไม่เกิน 5 MB",
     invalidImage: "อัปโหลดรูปภาพไม่สำเร็จ ไฟล์ไม่ถูกต้อง",
   },
+  accessRestricted: {
+    title: "ไม่มีสิทธิ์เข้าถึง",
+    hotelNotVisible: "ที่พักนี้ไม่อยู่ในพื้นที่ทำงานที่คุณได้รับสิทธิ์",
+    permissionRequired: "บทบาทของคุณยังไม่มีสิทธิ์เปิดหน้านี้",
+    platformOnly: "หน้านี้ใช้ได้เฉพาะผู้ดูแลแพลตฟอร์ม",
+    returnToDashboard: "กลับไปหน้าภาพรวม",
+  },
   sidebar: {
     overview: "ภาพรวม",
     hotelsManagement: "จัดการโรงแรม",
