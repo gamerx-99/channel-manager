@@ -206,8 +206,7 @@ export default function HotelServices({ id }: { id: string }) {
         <Link href={`/hotels/${hotel.id}/bookings`}>{t('hotelDetail.tabBookings')}</Link>
         <Link href={`/hotels/${hotel.id}/calendar`}>{t('hotelDetail.tabAvailability')}</Link>
         <Link href={`/hotels/${hotel.id}/services`} className="active">{t('hotelDetail.tabServices')}</Link>
-        <a href="#" onClick={event => event.preventDefault()}>{t('hotelDetail.tabImages')}</a>
-        <a href="#" onClick={event => event.preventDefault()}>{t('hotelDetail.tabDomains')}</a>
+        <Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>
       </nav>
       <section className="panel room-types-panel">
         <div className="panel-heading">

@@ -467,7 +467,6 @@ const en = {
     tabAvailability: "Availability",
     tabServices: "Services",
     tabImages: "Images",
-    tabDomains: "Domains",
     kpiRooms: "Rooms",
     kpiRoomsSub: "across {{count}} types",
     kpiAvailable: "Available today",

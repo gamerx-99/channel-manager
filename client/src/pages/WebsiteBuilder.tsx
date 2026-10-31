@@ -84,7 +84,8 @@ export default function WebsiteBuilder() {
   const canManage = hasAnyPermission(authRoles, "property.manage_profile");
   const canView = hasAnyPermission(authRoles, "property.view");
 
-  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
+  // The hotel page Photos tab links here with ?hotel=<id>.
+  const [selectedHotelId, setSelectedHotelId] = useState<string>(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("hotel") ?? "");
   const effectiveHotelId = selectedHotelId || (hotels?.[0] as any)?.id || "";
   const selectedHotel = useMemo(() => (hotels ?? []).find((h: any) => h.id === effectiveHotelId) as any | undefined, [hotels, effectiveHotelId]);
 

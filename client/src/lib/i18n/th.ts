@@ -469,7 +469,6 @@ const th: TranslationDictionary = {
     tabAvailability: "ห้องว่างและราคา",
     tabServices: "บริการเสริม",
     tabImages: "รูปภาพ",
-    tabDomains: "โดเมน",
     kpiRooms: "ห้องพัก",
     kpiRoomsSub: "จาก {{count}} ประเภท",
     kpiAvailable: "ว่างวันนี้",
