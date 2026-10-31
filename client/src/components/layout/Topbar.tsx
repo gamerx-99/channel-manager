@@ -19,7 +19,6 @@ const BREADCRUMB_EXACT_KEYS: Record<string, TranslationKey> = {
 };
 
 const BREADCRUMB_PREFIX_KEYS: Array<[string, TranslationKey]> = [
-  ["/dashboard/channels", "breadcrumb.channelAnalytics"],
   ["/dashboard/pricing", "breadcrumb.advancedPricing"],
   ["/dashboard/financials", "breadcrumb.financials"],
   ["/housekeeping", "breadcrumb.housekeeping"],

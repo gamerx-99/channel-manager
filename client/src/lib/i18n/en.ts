@@ -11,7 +11,6 @@ const en = {
   },
   sidebar: {
     overview: "Overview",
-    channelAnalytics: "Channel analytics",
     hotelsManagement: "Hotels Management",
     adminUsers: "Admin Users",
     roomOperations: "Room operations",
@@ -55,7 +54,6 @@ const en = {
   },
   breadcrumb: {
     overview: "Overview",
-    channelAnalytics: "Channel analytics",
     advancedPricing: "Advanced Pricing",
     financials: "Financials",
     housekeeping: "Housekeeping",

@@ -13,7 +13,6 @@ const th: TranslationDictionary = {
   },
   sidebar: {
     overview: "ภาพรวม",
-    channelAnalytics: "วิเคราะห์ช่องทางการขาย",
     hotelsManagement: "จัดการโรงแรม",
     adminUsers: "ผู้ดูแลระบบ",
     roomOperations: "จัดการห้องพัก",
@@ -57,7 +56,6 @@ const th: TranslationDictionary = {
   },
   breadcrumb: {
     overview: "ภาพรวม",
-    channelAnalytics: "วิเคราะห์ช่องทางการขาย",
     advancedPricing: "ตั้งราคาขั้นสูง",
     financials: "การเงิน",
     housekeeping: "แม่บ้านและทำความสะอาด",

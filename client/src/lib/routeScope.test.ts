@@ -42,18 +42,10 @@ describe("route scope", () => {
     })).toEqual({ allowed: false, reason: "permission_required" });
   });
 
-  it("requires reporting permission for Channel analytics", () => {
-    expect(getRequiredRoutePermission("/dashboard/channels")).toBe("property.view_reports");
-    expect(getRouteScopeDecision({
-      role: "hotel_owner",
-      pathname: "/dashboard/channels",
-      visibleHotelIds: ["hotel-1"],
-    })).toEqual({ allowed: true });
-    expect(getRouteScopeDecision({
-      role: "front_desk",
-      pathname: "/dashboard/channels",
-      visibleHotelIds: ["hotel-1"],
-    })).toEqual({ allowed: false, reason: "permission_required" });
+  // The Channel analytics page was removed (2d7d067), so its route no longer
+  // carries a permission of its own.
+  it("has no Channel analytics route left", () => {
+    expect(getRequiredRoutePermission("/dashboard/channels")).not.toBe("property.view_reports");
   });
 
   it("denies hotel owners from platform-only routes", () => {

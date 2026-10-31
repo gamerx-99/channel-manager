@@ -80,7 +80,6 @@ export function Sidebar({
   const navItems = [
     ...(can("platform.view_system_logs") ? [{ href: "/platform", label: "Platform overview", icon: LayoutDashboard }] : []),
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
-    ...(can("property.view_reports") ? [{ href: "/dashboard/channels", label: t("sidebar.channelAnalytics"), icon: BarChart3 }] : []),
     ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: t("sidebar.hotelsManagement"), icon: Hotel }] : []),
     ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: t("sidebar.adminUsers"), icon: ShieldCheck }] : []),
     ...hotelNavItems,
