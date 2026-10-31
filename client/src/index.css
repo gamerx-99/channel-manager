@@ -734,5 +734,6 @@ body { background: var(--paper); color: var(--ink); }
 .signup-slug input{flex:1;min-width:0;border-radius:0 8px 8px 0}
 @media (max-width:860px){.landing-nav-links{display:none}.landing-hero{grid-template-columns:1fr}.landing-feature-grid,.landing-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .landing-nav .login-brand strong{color:var(--ink)}.landing-nav .login-brand em{color:var(--pine)}
-@media (max-width:760px){.signup-page .login-aside-copy{display:none}}
+.signup-slug input{margin:0}
+@media (max-width:760px){.signup-page{display:block}.signup-page .login-aside{min-height:0;height:auto;padding:16px}.signup-page .login-aside-copy{display:none}.signup-slug{flex-direction:column}.signup-slug>span{max-width:none;min-height:34px;border-right:1px solid var(--rule-strong);border-bottom:0;border-radius:8px 8px 0 0}.signup-slug input{border-radius:0 0 8px 8px}}
 @media (max-width:560px){.landing-nav{gap:8px}.landing-nav-actions .landing-sign-in{display:none}.landing-hero p{font-size:16px}.landing-hero-actions .button{flex:1 1 100%}.landing-feature-grid,.landing-steps{grid-template-columns:1fr}}
