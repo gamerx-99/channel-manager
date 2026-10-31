@@ -23,6 +23,8 @@ const MIN_COMPARED_RECEIVER_DIGITS = 4;
 export interface SlipOkCredentials {
   apiKey: string;
   branchId: string;
+  /** Local mock only; see `localSlipOkBaseUrl`. */
+  baseUrl?: string;
 }
 
 export interface SlipVerificationInput {
@@ -62,7 +64,25 @@ export function getCentralSlipOkCredentials(env: Record<string, string | undefin
   const apiKey = env.SLIPOK_API_KEY?.trim();
   const branchId = env.SLIPOK_BRANCH_ID?.trim();
   if (!apiKey || !branchId) return null;
-  return { apiKey, branchId };
+  const baseUrl = localSlipOkBaseUrl(env.SLIPOK_API_BASE_URL);
+  return baseUrl ? { apiKey, branchId, baseUrl } : { apiKey, branchId };
+}
+
+/**
+ * `SLIPOK_API_BASE_URL` lets a local `wrangler dev` run talk to a mock SlipOK.
+ * ASSUMPTION: only a loopback http(s) URL is honoured, so a stray value in a
+ * deployed Worker can never send the platform key to another host.
+ */
+export function localSlipOkBaseUrl(value: string | undefined): string | null {
+  if (!value?.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) return null;
+    return url.toString().replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
 }
 
 /** Digits and mask characters only, with a +66 phone number written as 0XXXXXXXXX. */
@@ -132,7 +152,7 @@ export async function verifySlipWithSlipOk(
   credentials: SlipOkCredentials,
   input: SlipVerificationInput,
 ): Promise<SlipVerificationResult> {
-  const url = `${SLIPOK_BASE_URL}/${encodeURIComponent(credentials.branchId)}`;
+  const url = `${credentials.baseUrl ?? SLIPOK_BASE_URL}/${encodeURIComponent(credentials.branchId)}`;
 
   let response: Response;
   try {

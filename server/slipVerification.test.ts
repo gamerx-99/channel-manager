@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { checkSlipReceiver, compareReceiverValue, getCentralSlipOkCredentials, verifySlipWithSlipOk } from './slipVerification';
+import { checkSlipReceiver, compareReceiverValue, getCentralSlipOkCredentials, localSlipOkBaseUrl, verifySlipWithSlipOk } from './slipVerification';
 
 const FAKE_API_KEY = 'test-api-key-12345';
 const FAKE_BRANCH_ID = 'test-branch-001';
@@ -294,5 +294,34 @@ describe('getCentralSlipOkCredentials', () => {
 
   it('ignores the old SLIP_OK_API variable', () => {
     expect(getCentralSlipOkCredentials({ SLIP_OK_API: 'https://example.test', SLIP_APIKEY: 'key' })).toBeNull();
+  });
+});
+
+describe('local SlipOK mock URL', () => {
+  it('accepts only loopback hosts', () => {
+    expect(localSlipOkBaseUrl('http://127.0.0.1:8790/api/')).toBe('http://127.0.0.1:8790/api');
+    expect(localSlipOkBaseUrl('http://localhost:8790')).toBe('http://localhost:8790');
+    expect(localSlipOkBaseUrl('https://api.example.com')).toBeNull();
+    expect(localSlipOkBaseUrl('http://127.0.0.1.evil.test')).toBeNull();
+    expect(localSlipOkBaseUrl('file:///etc/passwd')).toBeNull();
+    expect(localSlipOkBaseUrl('not a url')).toBeNull();
+    expect(localSlipOkBaseUrl(undefined)).toBeNull();
+  });
+
+  it('ignores a non-loopback override and keeps the real SlipOK host', () => {
+    expect(getCentralSlipOkCredentials({ SLIPOK_API_KEY: 'k', SLIPOK_BRANCH_ID: '1', SLIPOK_API_BASE_URL: 'https://attacker.test' })).toEqual({ apiKey: 'k', branchId: '1' });
+  });
+
+  it('sends the request to the loopback mock when set', async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { amount: 100, transRef: 'T', receiver: { proxy: { value: '081-xxx-5678' } } } }), { status: 200 }));
+    global.fetch = fetchMock;
+    try {
+      const credentials = getCentralSlipOkCredentials({ SLIPOK_API_KEY: 'k', SLIPOK_BRANCH_ID: '7', SLIPOK_API_BASE_URL: 'http://127.0.0.1:8790' })!;
+      await verifySlipWithSlipOk(credentials, { slipData: 'b', expectedAmount: 100, expectedReceiver: '0812345678' });
+      expect(fetchMock.mock.calls[0]![0]).toBe('http://127.0.0.1:8790/7');
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });
