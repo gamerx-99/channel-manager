@@ -420,4 +420,14 @@ describe('OTA summary port', () => {
     await expect(getOtaSummary(db, ownerA)).resolves.toMatchObject([{ id: 'ota-a', hotel_id: 'a' }]);
     expect(await getOtaSummary(db, ownerA)).toHaveLength(1);
   });
+
+  it('never returns the iCal export token or import URL to summary readers', async () => {
+    await seedHotel('a', 'owner-a');
+
+    const [row] = await getOtaSummary(db, ownerA);
+
+    expect(row).toBeDefined();
+    expect(row).not.toHaveProperty('ical_export_token');
+    expect(row).not.toHaveProperty('ical_import_url');
+  });
 });
