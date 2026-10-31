@@ -165,7 +165,7 @@ export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1Call
     (id, hotel_id, name, capacity, base_price, base_occupancy, max_occupancy, occupancy_pricing, child_rule, child_rule_limit, child_rates, children_count_toward_max)
     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(roomTypeId, input.hotel_id, input.name, maxOccupancy, basePrice, baseOccupancy, maxOccupancy,
-      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), input.children_count_toward_max ?? true)];
+      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), (input.children_count_toward_max ?? true) ? 1 : 0)];
   for (let index = 0; index < input.quantity; index++) {
     batch.push(db.$client.prepare("insert into rooms (id, hotel_id, room_type_id, room_number) values (?, ?, ?, ?)")
       .bind(crypto.randomUUID(), input.hotel_id, roomTypeId, String(startNumber + index).padStart(3, "0")));

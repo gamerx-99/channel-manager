@@ -209,7 +209,7 @@ export async function updateRoomTypeWithOccupancyConfig(
     guard,
     db.$client.prepare(`update room_types set name = ?, capacity = ?, base_price = ?, base_occupancy = ?, max_occupancy = ?, occupancy_pricing = ?, child_rule = ?, child_rule_limit = ?, child_rates = ?, children_count_toward_max = ?
         where id = ? and hotel_id = ? and changes() > 0`)
-      .bind(input.name, input.capacity, canonicalMoney(String(input.base_price)), baseOccupancy, maxOccupancy, JSON.stringify(occupancyPricing), nextChildRule, childRuleLimitText, JSON.stringify(childRates), childrenCountTowardMax, input.room_type_id, input.hotel_id),
+      .bind(input.name, input.capacity, canonicalMoney(String(input.base_price)), baseOccupancy, maxOccupancy, JSON.stringify(occupancyPricing), nextChildRule, childRuleLimitText, JSON.stringify(childRates), childrenCountTowardMax ? 1 : 0, input.room_type_id, input.hotel_id),
   ]);
   if (guardResult.meta.changes < 1) throw new TRPCError({ code: "CONFLICT", message: "Room type changed; reload and try again." });
   if (updateResult.meta.changes !== 1) throw new TRPCError({ code: "CONFLICT", message: "Room type changed; reload and try again." });
