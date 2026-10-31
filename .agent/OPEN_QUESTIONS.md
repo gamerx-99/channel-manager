@@ -6,6 +6,8 @@ answer noted.
 
 ## Open
 
+- [ ] Should signup verify email once Resend is live? A self-registered owner invited to another hotel must set a new password through the invite link.
+      ASSUMPTION: unverified accounts receive the role only through the emailed token, and their old password, sessions and 2FA are removed. Raised 2026-10-31.
 - [ ] Spec 13 Q1: transactional email provider for invites/password reset/MFA recovery.
       ASSUMPTION: Resend free tier. Raised 2026-10-26.
 - [ ] Spec 13 Q2: carry Supabase bcrypt password hashes over, or re-invite existing users.

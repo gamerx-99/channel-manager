@@ -1,5 +1,18 @@
 # Handoff log
 
+## [2026-10-31] Security audit fixes and AI SEO first batch (branch `feat/financials-owner-grant`)
+- **What happened**: Fixed the five audit findings, one commit each, then added crawl basics.
+  1. Staff invite to an unverified existing account now waits for the emailed token. Accepting replaces the password, ends sessions, clears 2FA, then grants the membership.
+  2. `createAuth` refuses to run without `BETTER_AUTH_SECRET` unless `NODE_ENV` is development or test.
+  3. TM.30 print HTML is escaped (`client/src/lib/tm30Print.ts`); `auth.me` no longer returns `session`.
+  4. Invite and reset email HTML is escaped.
+  5. `getOtaSummary` no longer returns the iCal export token or import URL.
+  6. SEO: static Thai landing and JSON-LD built into `index.html`, `lang="th"`, Open Graph, `robots.txt`, `sitemap.xml`, `llms.txt`, `_headers` noindex for login, accept-invite and workers.dev.
+- **Verification**: see the commit range; `pnpm test`, `pnpm check`, `pnpm build` were run. Local Worker checked in the browser: `/` and `/login` render, static landing is replaced by React, `/login` and `/accept-invite` send `X-Robots-Tag: noindex`.
+- **Not verified**: the workers.dev noindex rule only applies on a deployed Worker. Nothing was pushed or deployed. Local D1 had no migrations, so the `session` table error in local logs is expected.
+- **Not done**: hotel page metadata, real 404 status and hotel sitemap need a Worker-first route and a `wrangler.toml` change. Other audit items remain open: receiver check and replay in slip verification, public payment procedures, MFA for PromptPay settings, password reset email.
+- **Stash**: pre-existing `th.ts` and `Hotels.tsx` edits are in `git stash` from `agent-b/website-builder-public-hotel`. Two untracked files that differed from this branch were moved to `.agent/worktree-backup-2026-10-31/main-untracked/`.
+
 ## [2026-10-27] Spec 14 ticket 14-03a: server-side security fixes (branch `agent-a/next`)
 - **What happened**: Seven server-side fixes landed, each as its own commit:
   1. `completeHotelOwnerSignup` now uses `ctx.user.id` (userId removed from schema).
