@@ -15,7 +15,7 @@ describe("support and staff page contracts", () => {
     expect(app).toContain('path="/hotels/:id/support-access"');
     expect(scope).toContain('return "property.manage_support_access"');
     const page = read("client/src/pages/SupportAccess.tsx");
-    for (const marker of ["hasHotelPermission", "SUPPORT_GRANT_DURATION_HOURS.map", "grantSupport.useMutation", "revokeSupport.useMutation", "Support access history", "entry.supportUserId", "entry.action", 'role="alert"', 'role="status"']) expect(page).toContain(marker);
+    for (const marker of ["hasHotelPermission", "SUPPORT_GRANT_DURATION_HOURS.map", "grantSupport.useMutation", "revokeSupport.useMutation", 't("supportAccess.historyTitle")', "entry.supportUserId", "entry.action", 'role="alert"', 'role="status"']) expect(page).toContain(marker);
   });
   it("platform dashboard uses the summary-only endpoint and permission gate", () => {
     expect(app).toContain('path="/platform"');
@@ -30,6 +30,7 @@ describe("support and staff page contracts", () => {
     expect(shell).toContain("m.permissions?.includes(permission)");
     expect(shell).toContain("<SupportAccessBanner");
     const banner = read("client/src/components/SupportAccessBanner.tsx");
-    for (const marker of ["selectedHotelId", "membership.mode", "membership.expiresAt", "View only", 'role="status"']) expect(banner).toContain(marker);
+    // The English labels moved to the i18n dictionaries when the page was translated to Thai.
+    for (const marker of ["selectedHotelId", "membership.mode", "membership.expiresAt", 't("supportAccess.modeView")', 'role="status"']) expect(banner).toContain(marker);
   });
 });
