@@ -95,6 +95,13 @@ describe("Availability month calendar", () => {
     expect(screen.getByLabelText("Next month")).toBeTruthy();
   });
 
+  it("counts each room type's rooms from the hotel's rooms (regression: every type showed 0 rooms)", () => {
+    render(<Calendar id="hotel-1" />);
+    expect(screen.getAllByText("2 rooms").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 rooms").length).toBeGreaterThan(0);
+    expect(screen.queryByText("0 rooms")).toBeNull();
+  });
+
   it("uses the three-click IN, OUT, IN range selection", async () => {
     const user = userEvent.setup();
     render(<Calendar id="hotel-1" />);

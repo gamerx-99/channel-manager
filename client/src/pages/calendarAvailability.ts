@@ -11,6 +11,13 @@ export type CalendarBooking = {
   guestName?: string | null;
 };
 
+/** Physical rooms per room type, from `getManagedHotel`'s snake_case rooms. */
+export function countRoomsByType(rooms: CalendarRoom[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const room of rooms) counts[room.room_type_id] = (counts[room.room_type_id] ?? 0) + 1;
+  return counts;
+}
+
 export function getBookedRoomCountForDate(
   roomTypeId: string,
   date: string,

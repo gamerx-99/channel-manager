@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
-import { getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
+import { countRoomsByType, getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 
@@ -117,10 +117,7 @@ export default function Calendar({ id }: { id: string }) {
   }
 
   const hotel = hotelQuery.data as any;
-  const roomCountByType = hotel.rooms.reduce((counts: Record<string, number>, room: any) => {
-    counts[room.roomTypeId] = (counts[room.roomTypeId] ?? 0) + 1;
-    return counts;
-  }, {});
+  const roomCountByType = countRoomsByType(hotel.rooms);
   const occupancy = bookingOccupancyQuery.data ?? [];
 
   function getAllotment(roomTypeId: string, date: string, totalRooms: number) {
