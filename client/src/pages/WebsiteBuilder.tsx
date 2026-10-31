@@ -522,7 +522,7 @@ export default function WebsiteBuilder() {
                 <Textarea
                   id="wb-hero-copy"
                   value={draft.heroCopy}
-                  onChange={e => setDraft(p => ({ ...p, hero_copy: e.target.value }))}
+                  onChange={e => setDraft(p => ({ ...p, heroCopy: e.target.value }))}
                   disabled={!canManage}
                   className="min-h-[96px] border-[#dce4df]"
                   placeholder={t("websiteBuilder.heroCopyPlaceholder")}
@@ -541,7 +541,7 @@ export default function WebsiteBuilder() {
                     id="wb-accent-color"
                     type="color"
                     value={isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56"}
-                    onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
+                    onChange={e => setDraft(p => ({ ...p, accentColor: e.target.value }))}
                     disabled={!canManage}
                     className="h-9 w-14 border-[#dce4df] p-1"
                     aria-label="accent_color picker"
@@ -549,7 +549,7 @@ export default function WebsiteBuilder() {
                   <Input
                     placeholder="#1d6b56"
                     value={draft.accentColor}
-                    onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
+                    onChange={e => setDraft(p => ({ ...p, accentColor: e.target.value }))}
                     disabled={!canManage}
                     className="flex-1 border-[#dce4df] font-mono text-sm"
                     aria-label="accent_color"
