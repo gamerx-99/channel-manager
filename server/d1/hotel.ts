@@ -114,6 +114,15 @@ export async function createManagedHotel(db: D1ScopedDatabase, caller: D1CallerC
   return { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, public_enabled: hotel.publicEnabled, created_at: hotel.createdAt };
 }
 
+/** Publish the hotel page at /:slug and open direct booking, or take it private again. */
+export async function setHotelPublicEnabled(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, enabled: boolean, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel.public_enabled.update", now);
+  const [hotel] = await db.update(hotels).set({ publicEnabled: enabled }).where(eq(hotels.id, hotelId))
+    .returning({ id: hotels.id, publicEnabled: hotels.publicEnabled });
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
+  return { id: hotel.id, public_enabled: hotel.publicEnabled };
+}
+
 // A hotel page lives at /:slug, so a slug must not shadow an app route.
 const RESERVED_HOTEL_SLUGS = new Set([
   "accept-invite", "api", "assets", "communications", "dashboard", "hotels", "housekeeping", "login", "media", "mfa",

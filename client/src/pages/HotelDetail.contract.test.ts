@@ -23,4 +23,12 @@ describe('Hotel Detail calendar navigation', () => {
     expect(hotelDetail).toContain('hotelDetail.heightChildRateLabel');
     expect(hotelDetail).toContain('hotelDetail.childrenCountTowardMaxLabel');
   });
+
+  it('lets a holder of property.manage_profile publish or unpublish the hotel page', () => {
+    expect(hotelDetail).toContain("hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], id, 'property.manage_profile')");
+    expect(hotelDetail).toContain('trpc.channelManager.setHotelPublished.useMutation');
+    expect(hotelDetail).toContain('{canPublish && <div className="publish-control">');
+    expect(hotelDetail).toContain('id="hotel-publish-toggle"');
+    expect(hotelDetail).toContain("t('hotelDetail.confirmUnpublish')");
+  });
 });

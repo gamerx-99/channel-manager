@@ -16,6 +16,7 @@ import {
   listHotelServices as d1ListHotelServices,
   listActiveHotelServicesBySlug as d1ListActiveHotelServicesBySlug,
   getPublicHotel as d1GetPublicHotel,
+  setHotelPublicEnabled as d1SetHotelPublicEnabled,
 } from '../d1/hotel';
 import {
   getHotelSiteConfig as d1GetHotelSiteConfig,
@@ -247,6 +248,19 @@ export const registerOwnHotel = protectedProcedure.input(createHotelSchema.omit(
     return rethrowDomainError(error);
   }
 });
+
+/** Owner switch for the public hotel page and direct booking. Self-signup hotels start private. */
+export const setHotelPublished = protectedProcedure
+  .input(z.object({ hotel_id: z.string().uuid(), public_enabled: z.boolean() }))
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    try {
+      return await d1SetHotelPublicEnabled(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.public_enabled);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
 
 export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });

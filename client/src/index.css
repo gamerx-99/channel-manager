@@ -737,3 +737,5 @@ body { background: var(--paper); color: var(--ink); }
 .signup-slug input{margin:0}
 @media (max-width:760px){.signup-page{display:block}.signup-page .login-aside{min-height:0;height:auto;padding:16px}.signup-page .login-aside-copy{display:none}.signup-slug{flex-direction:column}.signup-slug>span{max-width:none;min-height:34px;border-right:1px solid var(--rule-strong);border-bottom:0;border-radius:8px 8px 0 0}.signup-slug input{border-radius:0 0 8px 8px}}
 @media (max-width:560px){.landing-nav{gap:8px}.landing-nav-actions .landing-sign-in{display:none}.landing-hero p{font-size:16px}.landing-hero-actions .button{flex:1 1 100%}.landing-feature-grid,.landing-steps{grid-template-columns:1fr}}
+
+.publish-control{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}.publish-control .subtle-block{font-size:12px;margin:0}
