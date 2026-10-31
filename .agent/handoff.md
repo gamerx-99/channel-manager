@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-10-31] SlipOK request aligned with API guide v1.13 (branch `feat/financials-owner-grant`)
+- **What happened**: Images now go in `files` with `log: true` and `amount`. Codes 1011-1014 reject the slip, 1005-1008 restore the booking status and hold and ask for a new image, and other errors go to manual review. A slip without `transRef` cannot match. `SLIP_OK_API` is used only when it starts with `https://`. The rejection write is guarded on `pending_verification`.
+- **Verification**: `pnpm test`: 132 files, 940 tests passed. `pnpm check`: exit 0. `pnpm build`: exit 0. No live SlipOK call was made.
+- **Depends on**: each hotel must bind its receiving account in SlipOK LINE LIFF, or `log: true` returns 1014.
+- **Not done**: a later valid slip on a `payment_rejected` booking confirms it with no availability recheck. This existed before this ticket.
+
 ## [2026-10-31] Security audit fixes and AI SEO first batch (branch `feat/financials-owner-grant`)
 - **What happened**: Fixed the five audit findings, one commit each, then added crawl basics.
   1. Staff invite to an unverified existing account now waits for the emailed token. Accepting replaces the password, ends sessions, clears 2FA, then grants the membership.
