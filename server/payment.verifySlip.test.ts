@@ -197,4 +197,14 @@ describe("verifySlip outcomes", () => {
 
     expect(booking.claimBookingNights).not.toHaveBeenCalled();
   });
+
+  it("hands the booking to staff when an unexpected error follows the claim", async () => {
+    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-7", amount: 120, raw: {} });
+    payment.finalizePaymentSession.mockRejectedValueOnce(new Error("D1 down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { db } = fakeDb();
+
+    await expect(submit(db, 15)).resolves.toMatchObject({ pendingManualReview: true });
+    expect(loggedReasons()).toContain("verification_error_manual_review_required");
+  });
 });

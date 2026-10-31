@@ -45,7 +45,7 @@ describe("route scope", () => {
   // The Channel analytics page was removed (2d7d067), so its route no longer
   // carries a permission of its own.
   it("has no Channel analytics route left", () => {
-    expect(getRequiredRoutePermission("/dashboard/channels")).not.toBe("property.view_reports");
+    expect(getRequiredRoutePermission("/dashboard/channels")).toBe(getRequiredRoutePermission("/dashboard"));
   });
 
   it("denies hotel owners from platform-only routes", () => {

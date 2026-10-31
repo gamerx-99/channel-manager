@@ -205,10 +205,10 @@ export const paymentRouter = router({
         // One central SlipOK account serves every hotel. Without it, staff check the slip.
         const credentials = getCentralSlipOkCredentials();
         if (!credentials) return await manualReview('slipok_not_configured_manual_review_required');
-        const config = await getHotelPaymentConfig(db, guest, hotelId);
-        if (!config?.promptpay_id) return await manualReview('promptpay_missing_manual_review_required');
-
         try {
+          const config = await getHotelPaymentConfig(db, guest, hotelId);
+          if (!config?.promptpay_id) return await manualReview('promptpay_missing_manual_review_required');
+
           const result = await verifySlipWithSlipOk(credentials, {
             slipData: input.slip_data,
             expectedAmount: Number(session.amount),
@@ -281,7 +281,10 @@ export const paymentRouter = router({
               return await manualReview('slipok_key_rejected_manual_review_required');
             }
           }
-          throw error;
+          // The booking is already pending_verification with no expiry, so an
+          // unexpected failure must hand it to staff rather than strand it.
+          console.error('[verifySlip] unexpected error after claim:', error instanceof Error ? error.message : error);
+          return await manualReview('verification_error_manual_review_required');
         }
       } catch (error) {
         if (error instanceof TRPCError) throw error;
