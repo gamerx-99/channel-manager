@@ -2,7 +2,7 @@ import { assertStaffPermissionChange } from "./staffAuthorization";
 import { TRPCError } from "@trpc/server";
 import { and, eq, gt, like, or } from "drizzle-orm";
 import { hotelUsers, hotels, platformAdmins, supportAccounts } from "../../drizzle/d1-schema";
-import { user, verification, account } from "../../drizzle/auth-schema";
+import { user, verification, account, session, twoFactor } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { ASSIGNABLE_STAFF_ROLES, type HumanRole } from "@shared/authorization";
 import { createHotelUserAssignment } from "./staff";
@@ -66,7 +66,7 @@ export async function inviteStaffUser(
 
   // Check if auth user exists
   const [existingUser] = await db
-    .select({ id: user.id, email: user.email, name: user.name })
+    .select({ id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified })
     .from(user)
     .where(eq(user.email, normalizedEmail))
     .limit(1);
@@ -81,6 +81,45 @@ export async function inviteStaffUser(
 
     if (existingMembership) {
       throw new TRPCError({ code: "CONFLICT", message: "This user is already assigned to the selected hotel." });
+    }
+
+    // Anyone can register any address, so an unverified account proves nothing:
+    // grant the role only after the emailed token is used.
+    if (!existingUser.emailVerified) {
+      const token = generateSignupToken();
+      const identifier = `hotel-invite:${input.hotel_id}:${input.role}:${normalizedEmail}`;
+      const verificationId = crypto.randomUUID();
+      await db.delete(verification).where(eq(verification.identifier, identifier));
+      await db.insert(verification).values({
+        id: verificationId,
+        identifier,
+        value: token,
+        expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      });
+      try {
+        await emailSender.sendInviteEmail({
+          to: normalizedEmail,
+          hotelName: hotel.name,
+          inviteUrl: `${resolveAppUrl(appUrl)}/accept-invite?token=${token}`,
+          roleName: input.role,
+        });
+      } catch (emailError) {
+        try {
+          await db.delete(verification).where(eq(verification.id, verificationId));
+        } catch {
+          // Preserve original email error
+        }
+        throw emailError;
+      }
+
+      return {
+        user: { id: existingUser.id, email: existingUser.email },
+        membership: null,
+        invitationSent: true,
+        isNewUser: false,
+      };
     }
 
     const membership = await createHotelUserAssignment(
@@ -218,17 +257,19 @@ export async function acceptStaffInvite(
         like(verification.identifier, "invite:%"),
         like(verification.identifier, "support-invite:%"),
         like(verification.identifier, "platform-invite:%"),
+        like(verification.identifier, "hotel-invite:%"),
       ),
     ))
     .returning();
 
-  if (!record || !/^(support-|platform-)?invite:/.test(record.identifier)) {
+  const pendingHotelInvite = record && /^hotel-invite:([^:]+):([^:]+):(.+)$/.exec(record.identifier);
+  if (!record || !(pendingHotelInvite || /^(support-|platform-)?invite:/.test(record.identifier))) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This invitation link is invalid or has expired." });
   }
 
   const isSupportInvite = record.identifier.startsWith("support-invite:");
   const isPlatformInvite = record.identifier.startsWith("platform-invite:");
-  const email = record.identifier.replace(/^(support-|platform-)?invite:/, "");
+  const email = pendingHotelInvite ? pendingHotelInvite[3] : record.identifier.replace(/^(support-|platform-)?invite:/, "");
   const [targetUser] = await db.select().from(user).where(eq(user.email, email)).limit(1);
   if (!targetUser) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Invited user account not found." });
@@ -241,32 +282,52 @@ export async function acceptStaffInvite(
     .where(and(eq(account.userId, targetUser.id), eq(account.providerId, "credential")))
     .limit(1);
 
-  if (existingAccount) {
+  if (existingAccount && !pendingHotelInvite) {
     throw new TRPCError({ code: "CONFLICT", message: "An account has already been set up for this user." });
   }
 
   const hashedPassword = await hashPasswordFn(input.password);
 
   try {
-    // Create credential account and verify user
-    await db.insert(account).values({
-      id: crypto.randomUUID(),
-      userId: targetUser.id,
-      accountId: targetUser.id,
-      providerId: "credential",
-      password: hashedPassword,
-      createdAt: now,
-      updatedAt: now,
-    });
+    if (existingAccount) {
+      // The account was self-registered with an unproven address, so whoever
+      // registered it may not be the person who received this invite. Remove
+      // every credential they could still use before any role is granted.
+      await db.update(account).set({ password: hashedPassword, updatedAt: now }).where(eq(account.id, existingAccount.id));
+      await db.delete(session).where(eq(session.userId, targetUser.id));
+      await db.delete(twoFactor).where(eq(twoFactor.userId, targetUser.id));
+    } else {
+      // Create credential account and verify user
+      await db.insert(account).values({
+        id: crypto.randomUUID(),
+        userId: targetUser.id,
+        accountId: targetUser.id,
+        providerId: "credential",
+        password: hashedPassword,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     await db
       .update(user)
       .set({
         emailVerified: true,
+        twoFactorEnabled: false,
         name: input.name || targetUser.name,
         updatedAt: now,
       })
       .where(eq(user.id, targetUser.id));
+
+    if (pendingHotelInvite) {
+      const [, hotelId, role] = pendingHotelInvite;
+      const [membership] = await db
+        .select({ id: hotelUsers.id })
+        .from(hotelUsers)
+        .where(and(eq(hotelUsers.hotelId, hotelId), eq(hotelUsers.userId, targetUser.id)))
+        .limit(1);
+      if (!membership) await db.insert(hotelUsers).values({ hotelId, userId: targetUser.id, role });
+    }
 
     if (isSupportInvite) {
       await db.update(supportAccounts).set({ acceptedAt: now }).where(eq(supportAccounts.userId, targetUser.id));
