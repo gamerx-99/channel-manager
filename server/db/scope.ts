@@ -16,13 +16,28 @@ type D1Client = {
 export type D1ScopedDatabase = DrizzleD1Database<typeof d1Schema> & { $client: D1Client };
 
 const SYSTEM_CALLER_BRAND: unique symbol = Symbol("D1 system caller");
+const GUEST_PAYMENT_BRAND: unique symbol = Symbol("D1 guest payment caller");
+
+/** The only writes an anonymous guest can reach, on one hotel, while paying for a booking. */
+const GUEST_PAYMENT_ACTIONS = new Set([
+  "payment.config.read",
+  "payment_session.create",
+  "payment_session.read",
+  "payment_session.update",
+  "payment_session.finalize",
+  "booking.payment_status.update",
+  "bookings.status_log.create",
+  "bookings.expire",
+]);
 
 /** Construct this context from the verified server identity, never from client input. */
 export type D1CallerContext = {
   userId: string;
   roles?: readonly AppRole[];
-  access?: "authenticated" | "public" | "system";
+  access?: "authenticated" | "public" | "system" | "guest_payment";
   readonly [SYSTEM_CALLER_BRAND]?: true;
+  readonly [GUEST_PAYMENT_BRAND]?: true;
+  readonly guestPaymentHotelId?: string;
 };
 
 export type D1SystemCallerContext = D1CallerContext & { readonly [SYSTEM_CALLER_BRAND]: true };
@@ -30,6 +45,11 @@ export type D1SystemCallerContext = D1CallerContext & { readonly [SYSTEM_CALLER_
 /** Create the non-serializable authority used by trusted server jobs such as Cron. */
 export function createD1SystemCallerContext(): D1SystemCallerContext {
   return { userId: "system", access: "system", [SYSTEM_CALLER_BRAND]: true };
+}
+
+/** Create only after confirming the booking belongs to this published hotel. */
+export function createD1GuestPaymentCallerContext(hotelId: string): D1CallerContext & { guestPaymentHotelId: string } {
+  return { userId: "", access: "guest_payment", guestPaymentHotelId: hotelId, [GUEST_PAYMENT_BRAND]: true };
 }
 
 export function isD1SystemCallerContext(caller: D1CallerContext): caller is D1SystemCallerContext {
@@ -63,6 +83,10 @@ async function resolveScope(
   action: string,
   now: Date,
 ): Promise<Scope> {
+  if (caller.access === "guest_payment") {
+    if (caller[GUEST_PAYMENT_BRAND] !== true || caller.guestPaymentHotelId !== hotelId || !GUEST_PAYMENT_ACTIONS.has(action)) forbidden();
+    return { hotelId, userId: "", role: "front_desk", permissions: [required] };
+  }
   if (!caller.userId || caller.access === "public") forbidden();
   if (caller.roles?.includes("super_admin")) {
     resolveMembershipPermissions("super_admin");

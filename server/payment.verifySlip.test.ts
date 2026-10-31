@@ -25,9 +25,9 @@ const BOOKING = "22222222-2222-4222-8222-222222222222";
 const SESSION = "33333333-3333-4333-8333-333333333333";
 const HOLD_EXPIRES = new Date("2099-01-01T00:00:00.000Z");
 
-function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }]) {
+function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true) {
   const writes: Array<Record<string, unknown>> = [];
-  const selectChain: any = { from: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, status: "pending_payment", expiresAt: HOLD_EXPIRES }] };
+  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status: "pending_payment", expiresAt: HOLD_EXPIRES }] };
   const db = {
     select: () => selectChain,
     update: () => ({
@@ -52,6 +52,10 @@ beforeEach(() => {
 });
 
 describe("verifySlip outcomes", () => {
+  it("refuses a booking on an unpublished hotel", async () => {
+    await expect(submit(fakeDb(undefined, false).db, 4)).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
   it("restores the status and room hold when the image is unreadable", async () => {
     verify.mockRejectedValueOnce(new SlipOkError("unreadable", "UNREADABLE_SLIP"));
     const { db, writes } = fakeDb();
