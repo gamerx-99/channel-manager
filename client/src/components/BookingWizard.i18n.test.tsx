@@ -42,3 +42,21 @@ describe("Thai translation", () => {
     expect(screen.getByText("ยังไม่มีกุญแจที่ออกให้")).toBeTruthy();
   });
 });
+
+describe("room list with an overlapping booking", () => {
+  it("still offers the free rooms and hides only the booked one", () => {
+    const twoRooms = {
+      ...hotel,
+      rooms: [
+        { id: "r101", room_number: "101", room_type_id: "t", status: "available" },
+        { id: "r102", room_number: "102", room_type_id: "t", status: "available" },
+      ],
+      // Covers every day the wizard could default to.
+      bookings: [{ id: "b", room_id: "r101", check_in: "2000-01-01", check_out: "2100-01-01", status: "confirmed" }],
+    };
+    render(<BookingWizard hotel={twoRooms} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    const values = Array.from(document.querySelectorAll("option")).map(option => option.getAttribute("value"));
+    expect(values).toContain("r102");
+    expect(values).not.toContain("r101");
+  });
+});

@@ -17,7 +17,7 @@ answer noted.
 - [2026-10-31, updated 2026-10-31 on `feat/hayhost-hardening`] SlipOK receiver check: a comparable `receiver.proxy.value` still decides alone (mismatch = rejected). When the slip shows only a bank account number (`receiver.account.value`), a match is accepted but a mismatch now goes to staff manual review instead of being rejected, because a hotel's PromptPay ID is often linked to a bank account whose number differs. ASSUMPTION: auto-accepting a bank-account match is kept as before. Revisit after the first live slips.
 - [2026-10-31] `hotel_payment_settings.slipok_key_enc/_hash/_branch_id/slipok_enabled` are kept but no code reads them, and `slipokCrypto.ts` is gone, so old encrypted keys cannot be decrypted or purged in code. A later migration can drop the columns.
 - [2026-10-31] "OTA sync stays hidden": the sidebar still shows OTA sync to holders of `ota.view_status`. It was left unchanged.
-- [2026-10-31] Staff BookingWizard `availableRooms` hides every room when any booking overlaps the dates (it does not compare room ids). Pre-existing, not fixed here.
+- [2026-10-31, fixed on `feat/hayhost-hardening`] Staff BookingWizard `availableRooms` hid every room when any booking overlapped. It now compares room ids (`client/src/lib/roomAvailability.ts`). ASSUMPTION: held and pending bookings block their room in the list even if expired, because the list has no `expires_at`; the server still decides.
 
 - [ ] Should signup verify email once Resend is live? A self-registered owner invited to another hotel must set a new password through the invite link.
       ASSUMPTION: unverified accounts receive the role only through the emailed token, and their old password, sessions and 2FA are removed. Raised 2026-10-31.
