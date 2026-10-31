@@ -5,6 +5,15 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] Spec 17: how long must bookings, payments, guest records and audit rows be kept, and which of them does the law require (Hotel Act/TM.30, tax, PDPA)? Nothing here is confirmed by a lawyer.
+      ASSUMPTION: every such row stays, with the person replaced by `deleted-user`, and nothing is deleted on a timer. Raised 2026-10-31.
+- [ ] Spec 17: do audit rows need the real actor kept for a dispute or a legal request? ASSUMPTION: no; the actor becomes `deleted-user` and no mapping is kept, so the deletion cannot be undone or traced later. Raised 2026-10-31.
+- [ ] Spec 17: guests have no account, so they cannot use this. Who handles a guest's PDPA deletion request, the hotel or hayhost? Not built. ASSUMPTION: requests go to the hotel as data controller; none are handled in code. Raised 2026-10-31.
+- [ ] Spec 17: free text that may name a person is kept as it is: `messages.body`, `booking_status_log.reason`, `hotels.owner_contact` when it is not exactly the account email, and notifications. ASSUMPTION: these are the hotel's records and cannot be matched reliably. Decide whether an admin process is needed. Raised 2026-10-31.
+- [ ] Spec 17: an owner with nobody to transfer to, or one who wants to close the hotel, has no self-service path, because the app cannot delete a hotel. ASSUMPTION: they email support@hayhostth.com, and that process is manual and undefined. Raised 2026-10-31.
+- [ ] Spec 17: the last platform admin cannot delete their account. ASSUMPTION: refuse, because no screen can create another one. Confirm this is acceptable for a PDPA request from that person. Raised 2026-10-31.
+- [ ] Spec 17: no record is kept that a deletion happened, and no confirmation email is sent, so there is no proof for a later complaint. ASSUMPTION: none, because a log would need a migration and a decision on what it may store. Backups and Cloudflare logs are outside this code: D1 Time Travel keeps deleted rows until its retention ends. Raised 2026-10-31.
+- [ ] Spec 17: a user who lost their authenticator cannot pass the step-up, so cannot delete their account until 2FA recovery exists. ASSUMPTION: they contact support. Raised 2026-10-31.
 - [2026-10-31] SlipOK receiver check falls back from `receiver.proxy.value` to `receiver.account.value` as specified. A slip that shows only a bank account number is compared with the PromptPay phone/ID and is rejected on mismatch. If real slips often omit the proxy, change the fallback to manual review. Decide after the first live slips.
 - [2026-10-31] `hotel_payment_settings.slipok_key_enc/_hash/_branch_id/slipok_enabled` are kept but no code reads them, and `slipokCrypto.ts` is gone, so old encrypted keys cannot be decrypted or purged in code. A later migration can drop the columns.
 - [2026-10-31] "OTA sync stays hidden": the sidebar still shows OTA sync to holders of `ota.view_status`. It was left unchanged.
