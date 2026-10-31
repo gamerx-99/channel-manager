@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { uploadHotelMediaFile } from "@/lib/hotelMedia";
 import { Clock3, Eye, Globe, Image as ImageIcon, Palette, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,9 +101,11 @@ export default function WebsiteBuilder() {
     { enabled: !!effectiveHotelId }
   );
 
-  const uploadMediaMut = trpc.channelManager.uploadHotelMedia.useMutation({
+  // Uploads go to the Worker's /api/media route; the tRPC procedure refuses them.
+  const uploadMediaMut = useMutation({
+    mutationFn: ({ hotel_id, ...file }: { hotel_id: string; base64: string; filename: string }) => uploadHotelMediaFile(hotel_id, file),
     onSuccess: () => { toast.success(t("websiteBuilder.toastImageUploaded")); refetchMedia(); },
-    onError: (e) => setFormError(e.message)
+    onError: (e: Error) => setFormError(e.message)
   });
 
   const deleteMediaMut = trpc.channelManager.deleteHotelMedia.useMutation({

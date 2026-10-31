@@ -12,7 +12,10 @@ describe('WebsiteBuilder contract — Phase 06', () => {
   // ── tRPC hookup ─────────────────────────────────────────────────────────
   it('WebsiteBuilder hooks into all required tRPC procedures', () => {
     expect(wbSource).toContain('trpc.channelManager.listHotelMedia.useQuery');
-    expect(wbSource).toContain('trpc.channelManager.uploadHotelMedia.useMutation');
+    // Uploads use the Worker /api/media route: the tRPC uploadHotelMedia procedure always
+    // refuses them, so calling it (as this test used to require) broke every upload.
+    expect(wbSource).not.toContain('trpc.channelManager.uploadHotelMedia.useMutation');
+    expect(wbSource).toContain('uploadHotelMediaFile(hotel_id, file)');
     expect(wbSource).toContain('trpc.channelManager.deleteHotelMedia.useMutation');
     expect(wbSource).toContain('trpc.channelManager.setHotelMediaHero.useMutation');
     expect(wbSource).toContain('trpc.channelManager.getHotelSiteConfigByHotelId.useQuery');
