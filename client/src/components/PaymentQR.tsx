@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { trpc } from '../lib/trpc';
+import { generateQrDataUrl } from '../lib/qr';
 
 interface PaymentQRProps {
   bookingId: string;
@@ -40,7 +41,9 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   const createSession = trpc.payment.createSession.useMutation({
     onSuccess(data) {
       setSessionId(data.sessionId);
-      setQrImageUrl(data.qrImageUrl);
+      // Drawn locally from the EMVCo payload; the PromptPay ID and amount are
+      // not sent to an outside QR image service.
+      setQrImageUrl(data.qrString ? generateQrDataUrl(data.qrString) : null);
       setAmount(data.amount);
       setExpiresAt(data.expiresAt);
     },
