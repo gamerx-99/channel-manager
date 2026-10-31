@@ -208,3 +208,22 @@ describe("verifySlip outcomes", () => {
     expect(loggedReasons()).toContain("verification_error_manual_review_required");
   });
 });
+
+describe("checkStatus while a slip waits for staff", () => {
+  const check = (db: unknown, index: number) => paymentRouter
+    .createCaller({ db, clientIp: `check-status-${index}`, user: null } as never)
+    .checkStatus({ booking_id: BOOKING, session_id: SESSION });
+
+  it("does not expire the session or fail the payment after the QR time runs out", async () => {
+    payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2000-01-01T00:00:00.000Z" });
+    await expect(check(fakeDb(undefined, true, "pending_verification").db, 1)).resolves.toEqual({ status: "under_review", verifiedAt: null });
+    expect(payment.updatePaymentSessionStatus).not.toHaveBeenCalled();
+    expect(payment.updateBookingPaymentStatus).not.toHaveBeenCalled();
+  });
+
+  it("still expires an unpaid session", async () => {
+    payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2000-01-01T00:00:00.000Z" });
+    await expect(check(fakeDb(undefined, true, "pending_payment").db, 2)).resolves.toEqual({ status: "expired", verifiedAt: null });
+    expect(payment.updatePaymentSessionStatus).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, "expired");
+  });
+});

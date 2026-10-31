@@ -130,6 +130,14 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
         }
 
+        // A slip waiting for staff keeps its session open: the guest has paid
+        // as far as they know, so the QR timer no longer applies.
+        const [booking] = await db.select({ status: bookings.status }).from(bookings)
+          .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, hotelId))).limit(1);
+        if (booking?.status === 'pending_verification' && session.status === 'pending') {
+          return { status: 'under_review' as const, verifiedAt: null };
+        }
+
         const now = new Date();
         const expired = now > new Date(session.expires_at);
         if (session.status === 'pending' && expired) {
