@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { hotelMedia, hotelSiteConfig } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
+import { servedMediaUrl } from "./media";
 
 export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = "#954831";
@@ -46,7 +47,8 @@ export async function saveHotelSiteConfig(
 
 export async function listHotelMedia(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.view", "hotel_media.list", now);
-  return db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId)).orderBy(asc(hotelMedia.displayOrder));
+  const rows = await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId)).orderBy(asc(hotelMedia.displayOrder));
+  return rows.map(row => ({ ...row, url: servedMediaUrl(row.url) }));
 }
 
 export async function createHotelMedia(

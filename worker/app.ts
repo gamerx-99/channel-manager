@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { D1Database, Fetcher, R2Bucket, RateLimit } from "@cloudflare/workers-types/index.ts";
 import { TRPCError } from "@trpc/server";
@@ -15,6 +15,7 @@ import {
   uploadHotelMediaToR2,
   validateHotelMediaObjectKey,
   validateHotelMediaUpload,
+  servedMediaUrl,
 } from "../server/d1/media";
 import { getOtaIcalExport } from "../server/d1/ota";
 import { createD1SystemCallerContext } from "../server/db/scope";
@@ -122,7 +123,7 @@ function mediaJson(media: {
   return {
     id: media.id,
     hotel_id: media.hotelId,
-    url: media.url,
+    url: servedMediaUrl(media.url),
     caption: media.caption,
     is_hero: media.isHero,
     display_order: media.displayOrder,
@@ -263,7 +264,8 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
     }
   });
 
-  app.get("/media/:hotelId/:file", async c => {
+  // `/api/media/...` is the URL handed out (see servedMediaUrl); `/media/...` stays for old links.
+  const serveMedia = async (c: Context<{ Bindings: WorkerEnv }, "/media/:hotelId/:file" | "/api/media/:hotelId/:file">) => {
     const hotelId = c.req.param("hotelId");
     const file = c.req.param("file");
     const ext = file.split(".").pop()?.toLowerCase() ?? "";
@@ -301,7 +303,9 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
     } catch {
       return c.text("Media is temporarily unavailable.", 500);
     }
-  });
+  };
+  app.get("/api/media/:hotelId/:file", serveMedia);
+  app.get("/media/:hotelId/:file", serveMedia);
 
   // Public: OTAs poll this URL; the token is the only credential. Mirrors handleIcalExport.
   app.get("/api/ical/:file", async c => {
