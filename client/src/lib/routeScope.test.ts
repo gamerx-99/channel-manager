@@ -121,3 +121,13 @@ describe("route scope", () => {
     expect(getFirstVisibleHotelId([])).toBeUndefined();
   });
 });
+
+describe("account settings", () => {
+  it.each([
+    ["no hotel and no role", { role: null, roles: [], memberships: [] }],
+    ["a super admin with a hotel selected", { role: "super_admin", roles: ["super_admin"], memberships: [], selectedHotelId: "hotel-1" }],
+    ["staff with no permission in the selected hotel", { role: "housekeeping", roles: ["housekeeping"], memberships: [], selectedHotelId: "hotel-1" }],
+  ] as const)("lets %s reach the security page, where account deletion lives", (_name, input) => {
+    expect(getRouteScopeDecision({ ...input, pathname: "/settings/security", visibleHotelIds: [] })).toEqual({ allowed: true });
+  });
+});
