@@ -186,6 +186,7 @@ const th: TranslationDictionary = {
     descCard: "เข้าสู่ระบบด้วยบัญชีของคุณเพื่อเข้าถึงพื้นที่ทำงานของโรงแรม",
     emailLabel: "อีเมล",
     passwordLabel: "รหัสผ่าน",
+    invalidCredentials: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
     signingIn: "กำลังเข้าสู่ระบบ…",
     continue: "ดำเนินการต่อ",
     securityNote: "Your hotel data is scoped by hayhost scoped authorization.",

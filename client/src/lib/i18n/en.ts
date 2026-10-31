@@ -184,6 +184,7 @@ const en = {
     descCard: "Sign in to your account to access your hotel workspace.",
     emailLabel: "Email address",
     passwordLabel: "Password",
+    invalidCredentials: "The email or password is incorrect.",
     signingIn: "Signing in…",
     continue: "Continue",
     securityNote: "Your hotel data is scoped by hayhost scoped authorization.",

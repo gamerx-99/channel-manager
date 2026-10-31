@@ -37,7 +37,9 @@ export default function Login() {
 
       if (signInError) {
         setSubmitting(false);
-        setError(signInError.message || t("login.invalidCredentials") || "Sign in failed");
+        // Better Auth's own message is English; a wrong email or password gets ours.
+        const wrongCredentials = signInError.code === "INVALID_EMAIL_OR_PASSWORD" || signInError.status === 401;
+        setError(wrongCredentials || !signInError.message ? t("login.invalidCredentials") : signInError.message);
         return;
       }
 
