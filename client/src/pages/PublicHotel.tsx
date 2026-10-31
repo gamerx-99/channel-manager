@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { PaymentQR } from "@/components/PaymentQR";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
 import { useTranslation } from "@/lib/i18n";
+import { usePageMeta } from "@/lib/pageMeta";
 import { calculateServiceTotal } from "@shared/pricingModels";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
@@ -130,11 +131,20 @@ export default function PublicHotel({ slug }: { slug: string }) {
     return () => clearInterval(id);
   }, [heldBooking?.expiresAt, wizardStep, t]);
 
+  const notFound = publicHotel.error?.data?.code === "NOT_FOUND";
+  const metaHotel = publicHotel.data?.hotel;
+  usePageMeta(metaHotel
+    ? {
+      title: t("publicHotel.metaTitle", { name: metaHotel.name }),
+      description: siteConfigQuery.data?.heroCopy?.trim() || t("publicHotel.metaDescription", { name: metaHotel.name, address: metaHotel.address }),
+    }
+    : notFound ? { title: t("publicHotel.hotelUnavailableTitle"), description: t("publicHotel.hotelUnavailableDesc"), noindex: true } : null);
+
   if (publicHotel.isLoading) {
     return <div className="public-page"><main className="public-loading" role="status" aria-live="polite">{t("publicHotel.loadingHotelDetails")}</main></div>;
   }
 
-  if (publicHotel.error?.data?.code === "NOT_FOUND" || (!publicHotel.error && !publicHotel.data)) {
+  if (notFound || (!publicHotel.error && !publicHotel.data)) {
     return <div className="public-page"><main className="public-loading" data-testid="public-hotel-not-found"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><div className="public-state-actions"><Link className="button public-button" href="/">{t("publicHotel.goHome")}</Link><Link className="button button-quiet" href="/login">{t("publicHotel.hotelSignIn")}</Link></div></main></div>;
   }
 

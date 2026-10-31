@@ -1372,6 +1372,8 @@ const en = {
     hotelUnavailableTitle: "Hotel unavailable",
     hotelUnavailableDesc: "This property is not currently published or could not be found.",
     hotelSignIn: "Hotel sign in",
+    metaTitle: "{{name}} — Book direct",
+    metaDescription: "Book {{name}} directly with the hotel. {{address}}",
     goHome: "Go to hayhost home",
     loadErrorTitle: "We could not load this hotel",
     loadErrorDesc: "Please check your connection and try again.",

@@ -1374,6 +1374,8 @@ const th: TranslationDictionary = {
     hotelUnavailableTitle: "ไม่พบข้อมูลโรงแรม",
     hotelUnavailableDesc: "โรงแรมนี้ยังไม่ได้เผยแพร่หรืออาจไม่มีอยู่ในระบบ",
     hotelSignIn: "เข้าสู่ระบบโรงแรม",
+    metaTitle: "{{name}} — จองตรงกับที่พัก",
+    metaDescription: "จอง {{name}} ตรงกับที่พัก ไม่ผ่านคนกลาง {{address}}",
     goHome: "ไปหน้าแรกของ hayhost",
     loadErrorTitle: "โหลดข้อมูลที่พักไม่สำเร็จ",
     loadErrorDesc: "กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง",
