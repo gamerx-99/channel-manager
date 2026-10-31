@@ -1009,6 +1009,7 @@ const th: TranslationDictionary = {
     lastSignIn: "เข้าสู่ระบบล่าสุด {{date}}",
     confirmed: "ยืนยันแล้ว {{date}}",
     invitationPending: "รอยืนยันคำเชิญ",
+    ownerCannotBeRemoved: "ลบผู้ดูแลโรงแรมไม่ได้ ต้องโอนสิทธิ์ให้คนอื่นก่อน",
     removing: "กำลังลบ…",
     remove: "ลบ",
     securityHistoryEyebrow: "ประวัติด้านความปลอดภัย",

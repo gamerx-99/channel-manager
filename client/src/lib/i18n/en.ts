@@ -1007,6 +1007,7 @@ const en = {
     lastSignIn: "Last sign-in {{date}}",
     confirmed: "Confirmed {{date}}",
     invitationPending: "Invitation pending",
+    ownerCannotBeRemoved: "The hotel admin cannot be removed. Transfer the role to someone else first.",
     removing: "Removing…",
     remove: "Remove",
     securityHistoryEyebrow: "Security history",

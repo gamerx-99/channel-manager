@@ -358,7 +358,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                       </td>
                       <td>{member.last_sign_in_at ? t("hotelStaff.lastSignIn", { date: formatDate(member.last_sign_in_at) }) : member.confirmed_at ? t("hotelStaff.confirmed", { date: formatDate(member.confirmed_at) }) : t("hotelStaff.invitationPending")}</td>
                       <td>{formatDate(String(member.created_at))}</td>
-                      <td className="align-right"><button className="button button-quiet button-small" type="button" onClick={() => requestRemoveMember(member.id, member.email, member.role as HumanRole)} disabled={isPending || isPlatformRole(member.role)}>{removeStaff.isPending ? t("hotelStaff.removing") : t("hotelStaff.remove")}</button></td>
+                      <td className="align-right"><button className="button button-quiet button-small" type="button" onClick={() => requestRemoveMember(member.id, member.email, member.role as HumanRole)} disabled={isPending || isPlatformRole(member.role) || member.role === "hotel_owner"} title={member.role === "hotel_owner" ? t("hotelStaff.ownerCannotBeRemoved") : undefined}>{removeStaff.isPending ? t("hotelStaff.removing") : t("hotelStaff.remove")}</button></td>
                     </tr>
                   ))}
                 </tbody>
