@@ -10,6 +10,15 @@ describe("guest payment caller", () => {
       .resolves.toMatchObject({ permissions: ["operations.manage_bookings"] });
   });
 
+  it("reads the SlipOK credentials to verify a slip, but cannot manage them", async () => {
+    await expect(authorizeHotelAction(db, guest, "hotel-a", "operations.manage_bookings", "payment.slipok.verify_credentials"))
+      .resolves.toMatchObject({ permissions: ["operations.manage_bookings"] });
+    for (const action of ["payment.slipok.read", "payment.slipok.save", "payment.slipok.remove"]) {
+      await expect(authorizeHotelAction(db, guest, "hotel-a", "property.manage_profile", action))
+        .rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+  });
+
   it("cannot reach another hotel", async () => {
     await expect(authorizeHotelAction(db, guest, "hotel-b", "operations.manage_bookings", "payment_session.create"))
       .rejects.toMatchObject({ code: "FORBIDDEN" });

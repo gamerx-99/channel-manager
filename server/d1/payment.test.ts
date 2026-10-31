@@ -39,7 +39,6 @@ describe("D1 payment repository", () => {
     await seed(); const caller = { userId: "ua" };
     await savePromptPaySettings(db, caller, "a", "prompt", 30);
     const config = await getHotelPaymentConfig(db, caller, "a");
-    // slipok_enabled is no longer returned: one central SlipOK account serves every hotel.
     expect(config).toEqual({ promptpay_id: "prompt", payment_timeout_minutes: 30 });
     expect(Object.keys(config!).sort()).toEqual(["payment_timeout_minutes", "promptpay_id"]);
     expect(config).not.toHaveProperty("slipok_key_enc");

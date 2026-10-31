@@ -1,5 +1,20 @@
 # Handoff log
 
+## [2026-11-01] SlipOK back to per-hotel keys (branch `feat/financials-owner-grant`)
+- **What happened**: The owner dropped the central account (spec 14-05): SlipOK's terms forbid resale without authorisation, and one branch would have to hold every hotel's accounts. Restored the hotel key form, `slipok.getSettings/saveKey/removeKey` and `slipokCrypto.ts`. `verifySlip` uses the hotel's key with `log: true`; our own receiver compare is gone. No key, a refused key or an undecryptable key goes to manual review. Kept: fixed base URL, duplicate check on `verified_transaction_ref`, claim and room recheck.
+- **Review fixes**: `payment.slipok.verify_credentials` added to `GUEST_PAYMENT_ACTIONS` (without it every guest slip failed with FORBIDDEN and stranded the booking); only CONFLICT is rethrown after the claim, everything else goes to staff; `payment.secretLeak.test.ts` rewritten to reach the D1 repositories, because the old mocks never ran the code; encryption key errors stay out of responses; `SLIPOK_ENCRYPTION_KEY` must be hex; the settings panel shows only to `property.manage_profile`.
+- **Tests removed on purpose**: `slipokCentral.boundary.test.ts` and the receiver-compare and central-credential tests covered behaviour this ticket removes.
+- **Verification**: `pnpm test`:
+```
+Test Files  145 passed (145)
+     Tests  1014 passed (1014)
+  Start at  01:09:54
+  Duration  88.25s
+```
+  `pnpm check`: exit 0. `pnpm build`: exit 0. Reviewer approved on the second pass. The settings panel was not opened in a browser.
+- **Owner steps**: set `SLIPOK_ENCRYPTION_KEY` on `hayhost-stage`, and check the one on `hayhost` is 64 hex characters. `SLIPOK_API_KEY` and `SLIPOK_BRANCH_ID` are no longer read and can be deleted.
+- **Not done**: no live SlipOK call yet; a branch without the hotel's receiving account answers 1014, so correct slips are refused until the account is added. Not pushed or deployed. T&C wording on API keys needs a look before release.
+
 ## [2026-10-31] Production EMAIL_FROM in wrangler.toml (branch `feat/financials-owner-grant`)
 - **What happened**: The owner added `EMAIL_FROM` as a dashboard variable and approved adding it to `[env.production.vars]`, so the next deploy keeps it.
 - **Verification**: `wrangler deploy --dry-run --env production` listed `env.EMAIL_FROM ("no-reply@hayhostth.com")`, exit 0. Config only, so `pnpm test` was not rerun.

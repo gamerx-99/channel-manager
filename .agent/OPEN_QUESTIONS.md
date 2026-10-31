@@ -5,8 +5,6 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
-- [2026-10-31] SlipOK receiver check falls back from `receiver.proxy.value` to `receiver.account.value` as specified. A slip that shows only a bank account number is compared with the PromptPay phone/ID and is rejected on mismatch. If real slips often omit the proxy, change the fallback to manual review. Decide after the first live slips.
-- [2026-10-31] `hotel_payment_settings.slipok_key_enc/_hash/_branch_id/slipok_enabled` are kept but no code reads them, and `slipokCrypto.ts` is gone, so old encrypted keys cannot be decrypted or purged in code. A later migration can drop the columns.
 - [2026-10-31] "OTA sync stays hidden": the sidebar still shows OTA sync to holders of `ota.view_status`. It was left unchanged.
 - [2026-10-31] Staff BookingWizard `availableRooms` hides every room when any booking overlaps the dates (it does not compare room ids). Pre-existing, not fixed here.
 
@@ -85,6 +83,8 @@ answer noted.
       for fail-closed. Raised 2026-10-30.
 
 ## Resolved
+
+- [x] [2026-11-01] Central SlipOK receiver fallback and the unused `slipok_*` columns: both closed when the owner returned to per-hotel keys. `log: true` checks the receiver, and the columns and `slipokCrypto.ts` are in use again.
 
 - [x] 13-06a private-network DNS protection. ASSUMPTION (2026-10-28): Cloudflare Workers cannot
       reach private networks, so the Worker iCal guard validates literal IP ranges and local

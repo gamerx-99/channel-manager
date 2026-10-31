@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const secretValues = ["SENTINEL_BRANCH", "SENTINEL_API_KEY"];
+const secretValues = ["SENTINEL_ENC_KEY", "SENTINEL_HASH", "SENTINEL_BRANCH", "SENTINEL_DECRYPTED_KEY", "SENTINEL_API_KEY"];
 const database = vi.hoisted(() => ({
   getHotelPaymentConfig: vi.fn(),
+  getSlipOkCredentialsForVerification: vi.fn(),
+  getSlipOkSettings: vi.fn(),
+  saveSlipOkSettings: vi.fn(),
+  removeSlipOkKey: vi.fn(),
   savePromptPaySettings: vi.fn(),
   getLatestPaymentSession: vi.fn(),
   createPaymentSession: vi.fn(),
@@ -11,24 +15,23 @@ const database = vi.hoisted(() => ({
   finalizePaymentSession: vi.fn(),
   logBookingStatusChange: vi.fn(),
   expireBookingIfPast: vi.fn(),
-  throwOnError: vi.fn(),
+  claimBookingNights: vi.fn(),
 }));
-const auth = vi.hoisted(() => ({ createSupabaseAdminClient: vi.fn(), rlsClient: vi.fn(), requireHotelPermission: vi.fn() }));
+const crypto = vi.hoisted(() => ({ encryptSlipOkKey: vi.fn(), hashSlipOkKey: vi.fn(), decryptSlipOkKey: vi.fn() }));
 const slip = vi.hoisted(() => {
   class SlipOkError extends Error { constructor(message: string, public code: "INVALID_KEY" | "API_ERROR" | "UNREADABLE_SLIP") { super(message); } }
   return { verifySlipWithSlipOk: vi.fn(), SlipOkError };
 });
 
-vi.mock("./db", () => database);
-vi.mock("./supabase", () => auth);
+vi.mock("./d1/payment", () => database);
+vi.mock("./d1/booking", () => database);
 vi.mock("./routerUtils", () => ({
-  rlsClient: auth.rlsClient,
-  requireHotelPermission: auth.requireHotelPermission,
+  requireHotelPermission: vi.fn(),
   rethrowDomainError: (error: unknown) => { throw error; },
 }));
 vi.mock("./mfa", () => ({ requireRecentMfaVerification: vi.fn() }));
-vi.mock("./slipVerification", async importOriginal => ({
-  getCentralSlipOkCredentials: (await importOriginal<typeof import("./slipVerification")>()).getCentralSlipOkCredentials,
+vi.mock("./slipokCrypto", () => crypto);
+vi.mock("./slipVerification", () => ({
   verifySlipWithSlipOk: slip.verifySlipWithSlipOk,
   SlipOkError: slip.SlipOkError,
 }));
@@ -40,33 +43,22 @@ const BOOKING_VERIFY = "44444444-4444-4444-8444-444444444444";
 const BOOKING_MANUAL = "55555555-5555-4555-8555-555555555555";
 const SESSION = "66666666-6666-4666-8666-666666666666";
 
-function mockSupabase() {
+function fakeDb() {
+  const row = { id: BOOKING_VERIFY, hotelId: HOTEL, publicEnabled: true, status: "pending_payment", expiresAt: null, price: "120.00" };
+  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [row] };
   return {
-    from: () => {
-      let columns = "";
-      const query: any = {
-        select(value: string) { columns = value; return query; },
-        eq() { return query; },
-        update() { return query; },
-        single: async () => ({ data: { price: "120.00", status: "confirmed" }, error: null }),
-        maybeSingle: async () => ({ data: columns.includes("hotel_id")
-          ? { id: BOOKING_MANUAL, hotel_id: HOTEL, status: "pending_verification" }
-          : { id: BOOKING_VERIFY, status: "pending_payment" }, error: null }),
-        then(resolve: (value: unknown) => unknown, reject: (error: unknown) => unknown) {
-          return Promise.resolve({ error: null }).then(resolve, reject);
-        },
-      };
-      return query;
-    },
+    select: () => selectChain,
+    update: () => ({ set: () => ({ where: () => Object.assign(Promise.resolve(), { returning: async () => [{ id: BOOKING_VERIFY }] }) }) }),
   };
 }
 
 const context = (index: number) => ({
+  db: fakeDb(),
   req: {} as Request,
   res: {} as Response,
   clientIp: `secret-leak-test-${index}`,
   user: {
-    id: "user-a", email: "owner@example.test", name: "Owner", accessToken: "access-token",
+    id: "user-a", email: "owner@example.test", name: "Owner",
     appMetadata: {}, userMetadata: {}, role: "hotel_owner", roles: ["hotel_owner"], memberships: [{ hotelId: HOTEL, role: "hotel_owner" }],
   },
 });
@@ -92,26 +84,19 @@ function assertNoSecrets(outcome: Awaited<ReturnType<typeof capture>>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  const client = mockSupabase();
-  auth.createSupabaseAdminClient.mockReturnValue(client);
-  auth.rlsClient.mockReturnValue(client);
-  // The central SlipOK secrets must never reach a response.
-  process.env.SLIPOK_API_KEY = "SENTINEL_API_KEY";
-  process.env.SLIPOK_BRANCH_ID = "SENTINEL_BRANCH";
   database.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
-  database.getLatestPaymentSession.mockImplementation(async (_client: unknown, bookingId: string) => {
+  database.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "SENTINEL_ENC_KEY", slipok_branch_id: "SENTINEL_BRANCH" });
+  database.getSlipOkSettings.mockResolvedValue({ configured: true, enabled: true, branchId: "visible-branch-id" });
+  database.getLatestPaymentSession.mockImplementation(async (_client: unknown, _caller: unknown, bookingId: string) => {
     if (bookingId === BOOKING_CREATE) return null;
     return { id: SESSION, booking_id: bookingId, hotel_id: HOTEL, status: "pending", amount: "120.00", qr_string: "promptpay", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z", verified_at: null };
   });
   database.createPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING_CREATE, hotel_id: HOTEL, status: "pending", amount: "120.00", qr_string: "promptpay", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   database.expireBookingIfPast.mockResolvedValue({ status: "pending_payment", expires_at: null });
   database.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
-  database.createPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING_CREATE, hotel_id: HOTEL, status: "pending", amount: "120.00", qr_string: "promptpay", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
-  database.savePromptPaySettings.mockResolvedValue(undefined);
-  database.updateBookingPaymentStatus.mockResolvedValue(undefined);
-  database.updatePaymentSessionStatus.mockResolvedValue(undefined);
-  database.logBookingStatusChange.mockResolvedValue(undefined);
-  database.throwOnError.mockImplementation((error: unknown) => { if (error) throw error; });
+  crypto.encryptSlipOkKey.mockResolvedValue("SENTINEL_ENC_KEY");
+  crypto.hashSlipOkKey.mockResolvedValue("SENTINEL_HASH");
+  crypto.decryptSlipOkKey.mockResolvedValue("SENTINEL_DECRYPTED_KEY");
   slip.verifySlipWithSlipOk.mockResolvedValue({ matched: true, transactionRef: "txn", amount: 120, raw: { success: true } });
 });
 
@@ -125,10 +110,13 @@ describe("payment router secret response boundary", () => {
       manualVerify: { booking_id: BOOKING_MANUAL, hotel_id: HOTEL, approved: true, note: "reviewed" },
     };
     const slipokInputs: Record<string, unknown> = {
+      getSettings: { hotel_id: HOTEL },
+      saveKey: { hotel_id: HOTEL, api_key: "SENTINEL_API_KEY", branch_id: "SENTINEL_BRANCH" },
+      removeKey: { hotel_id: HOTEL },
       savePromptPayId: { hotel_id: HOTEL, promptpay_id: "0812345678", payment_timeout_minutes: 15 },
     };
     let callIndex = 0;
-    for (const [procedure, input] of Object.entries(paymentRouter._def.procedures)) {
+    for (const [procedure] of Object.entries(paymentRouter._def.procedures)) {
       const caller = paymentRouter.createCaller(context(callIndex++) as never);
       const output = await capture(() => (caller as any)[procedure](paymentInputs[procedure]));
       assertNoSecrets(output);
@@ -144,13 +132,29 @@ describe("payment router secret response boundary", () => {
       assertNoSecrets(invalidInput);
       if (!(procedure in slipokInputs)) expect(invalidInput).toHaveProperty("error");
     }
+
+    // The calls must reach the code that holds the secrets, or this proves nothing.
+    expect(slip.verifySlipWithSlipOk).toHaveBeenCalled();
+    expect(database.saveSlipOkSettings).toHaveBeenCalled();
+    expect(database.getSlipOkSettings).toHaveBeenCalled();
   });
 
-  it("does not expose the central SlipOK key on verification errors", async () => {
+  it("does not expose decrypted credentials when SlipOK refuses the key", async () => {
     const { paymentRouter } = await import("./routers/paymentRouter");
-    slip.verifySlipWithSlipOk.mockRejectedValueOnce(new slip.SlipOkError("SENTINEL_API_KEY rejected", "INVALID_KEY"));
+    slip.verifySlipWithSlipOk.mockRejectedValueOnce(new slip.SlipOkError("SENTINEL_DECRYPTED_KEY rejected", "INVALID_KEY"));
     const caller = paymentRouter.createCaller(context(99) as never);
     const outcome = await capture(() => (caller as any).verifySlip({ booking_id: BOOKING_VERIFY, hotel_id: HOTEL, session_id: SESSION, slip_data: "c2xpcA==" }));
     assertNoSecrets(outcome);
+    expect(outcome).toMatchObject({ result: { pendingManualReview: true } });
+  });
+
+  it("hides the encryption key error when the key cannot be saved", async () => {
+    const { slipokRouter } = await import("./routers/slipokRouter");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    crypto.encryptSlipOkKey.mockRejectedValueOnce(new Error("SLIPOK_ENCRYPTION_KEY must be a 64-character hex string"));
+    const caller = slipokRouter.createCaller(context(100) as never);
+    const outcome = await capture(() => (caller as any).saveKey({ hotel_id: HOTEL, api_key: "SENTINEL_API_KEY", branch_id: "SENTINEL_BRANCH" }));
+    expect(serialized(outcome)).not.toContain("SLIPOK_ENCRYPTION_KEY");
+    expect(database.saveSlipOkSettings).not.toHaveBeenCalled();
   });
 });

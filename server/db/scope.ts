@@ -21,6 +21,7 @@ const GUEST_PAYMENT_BRAND: unique symbol = Symbol("D1 guest payment caller");
 /** The only writes an anonymous guest can reach, on one hotel, while paying for a booking. */
 const GUEST_PAYMENT_ACTIONS = new Set([
   "payment.config.read",
+  "payment.slipok.verify_credentials",
   "payment_session.create",
   "payment_session.read",
   "payment_session.update",
