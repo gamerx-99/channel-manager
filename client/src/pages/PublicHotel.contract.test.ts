@@ -120,3 +120,20 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(routerSource).toMatch(/listPublicHotelServices\s*[:=]\s*rateLimitedProcedure\.input/);
   });
 });
+
+describe('PublicHotel private or unknown hotel state', () => {
+  const source = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+
+  it('does not retry NOT_FOUND, so a private or unknown hotel answers at once', () => {
+    expect(source).toContain('retry: (failureCount, error) => error.data?.code !== "NOT_FOUND" && failureCount < 2');
+  });
+
+  it('shows a clear unavailable state for NOT_FOUND and a retry for other errors', () => {
+    expect(source).toContain('publicHotel.error?.data?.code === "NOT_FOUND"');
+    expect(source).toContain('data-testid="public-hotel-not-found"');
+    expect(source).toContain('t("publicHotel.hotelUnavailableTitle")');
+    expect(source).toContain('data-testid="public-hotel-load-error"');
+    expect(source).toContain('onClick={() => void publicHotel.refetch()}');
+  });
+});
+

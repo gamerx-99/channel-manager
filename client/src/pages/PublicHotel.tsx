@@ -59,7 +59,11 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
 
-  const publicHotel = trpc.channelManager.publicHotel.useQuery(slug);
+  // A private or unknown hotel answers NOT_FOUND at once; retrying it only kept
+  // guests looking at a loading screen.
+  const publicHotel = trpc.channelManager.publicHotel.useQuery(slug, {
+    retry: (failureCount, error) => error.data?.code !== "NOT_FOUND" && failureCount < 2,
+  });
   const siteConfigQuery = trpc.channelManager.getHotelSiteConfig.useQuery(slug, {
     enabled: !publicHotel.isLoading && !publicHotel.error,
   });
@@ -127,11 +131,15 @@ export default function PublicHotel({ slug }: { slug: string }) {
   }, [heldBooking?.expiresAt, wizardStep, t]);
 
   if (publicHotel.isLoading) {
-    return <div className="public-page"><main className="public-loading">{t("publicHotel.loadingHotelDetails")}</main></div>;
+    return <div className="public-page"><main className="public-loading" role="status" aria-live="polite">{t("publicHotel.loadingHotelDetails")}</main></div>;
+  }
+
+  if (publicHotel.error?.data?.code === "NOT_FOUND" || (!publicHotel.error && !publicHotel.data)) {
+    return <div className="public-page"><main className="public-loading" data-testid="public-hotel-not-found"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><div className="public-state-actions"><Link className="button public-button" href="/">{t("publicHotel.goHome")}</Link><Link className="button button-quiet" href="/login">{t("publicHotel.hotelSignIn")}</Link></div></main></div>;
   }
 
   if (publicHotel.error || !publicHotel.data) {
-    return <div className="public-page"><main className="public-loading"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><Link className="button public-button" href="/login">{t("publicHotel.hotelSignIn")}</Link></main></div>;
+    return <div className="public-page"><main className="public-loading" role="alert" data-testid="public-hotel-load-error"><h1>{t("publicHotel.loadErrorTitle")}</h1><p>{t("publicHotel.loadErrorDesc")}</p><button type="button" className="button public-button" onClick={() => void publicHotel.refetch()}>{t("publicHotel.tryAgain")}</button></main></div>;
   }
 
   const { hotel, roomTypes, media } = publicHotel.data;
