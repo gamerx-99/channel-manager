@@ -11,6 +11,39 @@ function canonicalAmount(value: string | number) {
   return `${satang / BigInt(100)}.${String(satang % BigInt(100)).padStart(2, "0")}`;
 }
 
+export async function getSlipOkSettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.slipok.read", now);
+  const [row] = await db.select({ keyHash: hotelPaymentSettings.slipokKeyHash, enabled: hotelPaymentSettings.slipokEnabled, branchId: hotelPaymentSettings.slipokBranchId })
+    .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  if (!row) return { configured: false, enabled: false, branchId: null };
+  return { configured: Boolean(row.keyHash), enabled: Boolean(row.enabled), branchId: row.branchId };
+}
+
+export async function saveSlipOkSettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, encryptedKey: string, keyHash: string, branchId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.slipok.save", now);
+  await db.insert(hotelPaymentSettings).values({ hotelId, slipokKeyEnc: encryptedKey, slipokKeyHash: keyHash, slipokBranchId: branchId, slipokEnabled: true, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { slipokKeyEnc: encryptedKey, slipokKeyHash: keyHash, slipokBranchId: branchId, slipokEnabled: true, updatedAt: now } });
+}
+
+export async function removeSlipOkKey(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.slipok.remove", now);
+  await db.insert(hotelPaymentSettings).values({ hotelId, slipokKeyEnc: null, slipokKeyHash: null, slipokBranchId: null, slipokEnabled: false, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { slipokKeyEnc: null, slipokKeyHash: null, slipokBranchId: null, slipokEnabled: false, updatedAt: now } });
+}
+
+/** Server-only; the result must never be returned from a procedure. */
+export async function getSlipOkCredentialsForVerification(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "payment.slipok.verify_credentials", now);
+  const [row] = await db.select({
+    slipokKeyEnc: hotelPaymentSettings.slipokKeyEnc,
+    slipokBranchId: hotelPaymentSettings.slipokBranchId,
+  }).from(hotelPaymentSettings).where(and(
+    eq(hotelPaymentSettings.hotelId, hotelId),
+    eq(hotelPaymentSettings.slipokEnabled, true),
+  )).limit(1);
+  return row ? { slipok_key_enc: row.slipokKeyEnc, slipok_branch_id: row.slipokBranchId } : null;
+}
+
 export async function savePromptPaySettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, promptPayId: string, timeoutMinutes: number, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.promptpay.save", now);
   if (!Number.isInteger(timeoutMinutes) || timeoutMinutes < 5 || timeoutMinutes > 60) throw new TRPCError({ code: "BAD_REQUEST", message: "Payment timeout must be between 5 and 60 minutes." });

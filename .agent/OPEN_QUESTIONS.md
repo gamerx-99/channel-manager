@@ -14,8 +14,6 @@ answer noted.
 - [ ] Spec 17: the last platform admin cannot delete their account. ASSUMPTION: refuse, because no screen can create another one. Confirm this is acceptable for a PDPA request from that person. Raised 2026-10-31.
 - [ ] Spec 17: no record is kept that a deletion happened, and no confirmation email is sent, so there is no proof for a later complaint. ASSUMPTION: none, because a log would need a migration and a decision on what it may store. Backups and Cloudflare logs are outside this code: D1 Time Travel keeps deleted rows until its retention ends. Raised 2026-10-31.
 - [ ] Spec 17: a user who lost their authenticator cannot pass the step-up, so cannot delete their account until 2FA recovery exists. ASSUMPTION: they contact support. Raised 2026-10-31.
-- [2026-10-31, updated 2026-10-31 on `feat/hayhost-hardening`] SlipOK receiver check: a comparable `receiver.proxy.value` still decides alone (mismatch = rejected). When the slip shows only a bank account number (`receiver.account.value`), a match is accepted but a mismatch now goes to staff manual review instead of being rejected, because a hotel's PromptPay ID is often linked to a bank account whose number differs. ASSUMPTION: auto-accepting a bank-account match is kept as before. Revisit after the first live slips.
-- [2026-10-31] `hotel_payment_settings.slipok_key_enc/_hash/_branch_id/slipok_enabled` are kept but no code reads them, and `slipokCrypto.ts` is gone, so old encrypted keys cannot be decrypted or purged in code. A later migration can drop the columns.
 - [2026-10-31] "OTA sync stays hidden": the sidebar still shows OTA sync to holders of `ota.view_status`. It was left unchanged.
 - [2026-10-31, fixed on `feat/hayhost-hardening`] Staff BookingWizard `availableRooms` hid every room when any booking overlapped. It now compares room ids (`client/src/lib/roomAvailability.ts`). ASSUMPTION: held and pending bookings block their room in the list even if expired, because the list has no `expires_at`; the server still decides.
 
@@ -94,6 +92,8 @@ answer noted.
       for fail-closed. Raised 2026-10-30.
 
 ## Resolved
+
+- [x] [2026-11-01] Central SlipOK receiver fallback and the unused `slipok_*` columns: both closed when the owner returned to per-hotel keys. `log: true` checks the receiver, and the columns and `slipokCrypto.ts` are in use again.
 
 - [x] 13-06a private-network DNS protection. ASSUMPTION (2026-10-28): Cloudflare Workers cannot
       reach private networks, so the Worker iCal guard validates literal IP ranges and local

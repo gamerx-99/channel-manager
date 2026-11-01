@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const payment = vi.hoisted(() => ({
   getHotelPaymentConfig: vi.fn(),
+  getSlipOkCredentialsForVerification: vi.fn(),
   getLatestPaymentSession: vi.fn(),
   createPaymentSession: vi.fn(),
   updateBookingPaymentStatus: vi.fn(),
@@ -10,11 +11,14 @@ const payment = vi.hoisted(() => ({
 }));
 const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn() }));
 const verify = vi.hoisted(() => vi.fn());
+const decrypt = vi.hoisted(() => vi.fn());
 
 vi.mock("./d1/payment", () => payment);
 vi.mock("./d1/booking", () => booking);
+vi.mock("./slipokCrypto", () => ({ decryptSlipOkKey: decrypt }));
 vi.mock("./slipVerification", async importOriginal => ({ ...(await importOriginal<typeof import("./slipVerification")>()), verifySlipWithSlipOk: verify }));
 
+import { TRPCError } from "@trpc/server";
 import { SlipOkError } from "./slipVerification";
 import { paymentRouter } from "./routers/paymentRouter";
 
@@ -51,13 +55,8 @@ beforeEach(() => {
   payment.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
   booking.expireBookingIfPast.mockResolvedValue({ status: "pending_payment" });
   booking.claimBookingNights.mockResolvedValue(true);
-  process.env.SLIPOK_API_KEY = "central-key";
-  process.env.SLIPOK_BRANCH_ID = "central-branch";
-});
-
-afterEach(() => {
-  delete process.env.SLIPOK_API_KEY;
-  delete process.env.SLIPOK_BRANCH_ID;
+  payment.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "encrypted", slipok_branch_id: "hotel-branch" });
+  decrypt.mockResolvedValue("hotel-key");
 });
 
 const loggedReasons = () => booking.logBookingStatusChange.mock.calls.map(call => call[2].reason);
@@ -78,7 +77,7 @@ describe("verifySlip outcomes", () => {
   });
 
   it("rejects a refused slip and closes the session", async () => {
-    verify.mockResolvedValueOnce({ matched: false, needsManualReview: false, receiverCheck: null, transactionRef: null, amount: null, raw: { code: 1014 } });
+    verify.mockResolvedValueOnce({ matched: false, transactionRef: null, amount: null, raw: { code: 1014 } });
     const { db, writes } = fakeDb();
 
     await expect(submit(db, 2)).resolves.toMatchObject({ verified: false });
@@ -88,7 +87,7 @@ describe("verifySlip outcomes", () => {
   });
 
   it("does not fail the session when a concurrent submit already moved the booking", async () => {
-    verify.mockResolvedValueOnce({ matched: false, needsManualReview: false, receiverCheck: null, transactionRef: null, amount: null, raw: { code: 1012 } });
+    verify.mockResolvedValueOnce({ matched: false, transactionRef: null, amount: null, raw: { code: 1012 } });
     const { db } = fakeDb([]);
 
     await expect(submit(db, 3)).resolves.toMatchObject({ verified: false, pendingManualReview: true });
@@ -97,18 +96,18 @@ describe("verifySlip outcomes", () => {
     expect(payment.updateBookingPaymentStatus).not.toHaveBeenCalled();
   });
 
-  it("verifies with the central SlipOK account against the hotel PromptPay ID", async () => {
-    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-1", amount: 120, raw: {} });
+  it("verifies with the hotel's own SlipOK key", async () => {
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-1", amount: 120, raw: {} });
     const { db, writes } = fakeDb();
 
     await expect(submit(db, 5)).resolves.toMatchObject({ verified: true });
 
-    expect(verify).toHaveBeenCalledWith({ apiKey: "central-key", branchId: "central-branch" }, expect.objectContaining({ expectedAmount: 120, expectedReceiver: "0812345678" }));
+    expect(verify).toHaveBeenCalledWith({ apiKey: "hotel-key", branchId: "hotel-branch" }, expect.objectContaining({ expectedAmount: 120 }));
     expect(writes.at(-1)).toEqual({ status: "confirmed" });
   });
 
-  it("sends the slip to manual review when the central secrets are missing", async () => {
-    delete process.env.SLIPOK_API_KEY;
+  it("sends the slip to manual review when the hotel has no SlipOK key", async () => {
+    payment.getSlipOkCredentialsForVerification.mockResolvedValueOnce(null);
     const { db, writes } = fakeDb();
 
     await expect(submit(db, 6)).resolves.toMatchObject({ verified: false, pendingManualReview: true });
@@ -118,28 +117,7 @@ describe("verifySlip outcomes", () => {
     expect(loggedReasons()).toContain("slipok_not_configured_manual_review_required");
   });
 
-  it("sends the slip to manual review when the receiver cannot be compared", async () => {
-    verify.mockResolvedValueOnce({ matched: false, needsManualReview: true, receiverCheck: "unknown", transactionRef: "TX-2", amount: 120, raw: {} });
-    const { db, writes } = fakeDb();
-
-    await expect(submit(db, 7)).resolves.toMatchObject({ verified: false, pendingManualReview: true });
-
-    expect(writes.at(-1)).toMatchObject({ status: "pending_verification" });
-    expect(payment.finalizePaymentSession).not.toHaveBeenCalled();
-    expect(loggedReasons()).toContain("slipok_receiver_unverified_manual_review_required");
-  });
-
-  it("rejects a slip paid to another receiver", async () => {
-    verify.mockResolvedValueOnce({ matched: false, needsManualReview: false, receiverCheck: "mismatch", transactionRef: "TX-3", amount: 120, raw: {} });
-    const { db, writes } = fakeDb();
-
-    await expect(submit(db, 8)).resolves.toMatchObject({ verified: false });
-
-    expect(writes.at(-1)).toEqual({ status: "payment_rejected" });
-    expect(loggedReasons()).toContain("slipok_receiver_mismatch");
-  });
-
-  it("sends the slip to manual review when SlipOK refuses the central key", async () => {
+  it("sends the slip to manual review when SlipOK refuses the hotel key", async () => {
     verify.mockRejectedValueOnce(new SlipOkError("bad key", "INVALID_KEY"));
     const { db } = fakeDb();
 
@@ -148,8 +126,26 @@ describe("verifySlip outcomes", () => {
     expect(loggedReasons()).toContain("slipok_key_rejected_manual_review_required");
   });
 
+  it("sends the slip to manual review when the stored key cannot be decrypted", async () => {
+    decrypt.mockRejectedValueOnce(new Error("SLIPOK_ENCRYPTION_KEY must be set"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { db } = fakeDb();
+
+    await expect(submit(db, 16)).resolves.toMatchObject({ pendingManualReview: true });
+    expect(verify).not.toHaveBeenCalled();
+  });
+
+  it("hands the booking to staff when the hotel credentials cannot be read after the claim", async () => {
+    payment.getSlipOkCredentialsForVerification.mockRejectedValueOnce(new TRPCError({ code: "FORBIDDEN", message: "Hotel access denied." }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { db } = fakeDb();
+
+    await expect(submit(db, 17)).resolves.toMatchObject({ pendingManualReview: true });
+    expect(loggedReasons()).toContain("verification_error_manual_review_required");
+  });
+
   it("keeps the booking for staff when the slip reference was already used", async () => {
-    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-USED", amount: 120, raw: {} });
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-USED", amount: 120, raw: {} });
     payment.finalizePaymentSession.mockResolvedValueOnce({ duplicateRef: true });
     const { db, writes } = fakeDb();
 
@@ -169,7 +165,7 @@ describe("verifySlip outcomes", () => {
   });
 
   it("rechecks the room before confirming a booking that was payment_rejected", async () => {
-    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-4", amount: 120, raw: {} });
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-4", amount: 120, raw: {} });
     const { db, writes } = fakeDb(undefined, true, "payment_rejected");
 
     await expect(submit(db, 12)).resolves.toMatchObject({ verified: true });
@@ -179,7 +175,7 @@ describe("verifySlip outcomes", () => {
   });
 
   it("sends a payment_rejected booking to manual review when its room is taken", async () => {
-    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-5", amount: 120, raw: {} });
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-5", amount: 120, raw: {} });
     booking.claimBookingNights.mockResolvedValueOnce(false);
     const { db, writes } = fakeDb(undefined, true, "payment_rejected");
 
@@ -190,7 +186,7 @@ describe("verifySlip outcomes", () => {
   });
 
   it("does not recheck the room for a booking that kept its hold", async () => {
-    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-6", amount: 120, raw: {} });
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-6", amount: 120, raw: {} });
     const { db } = fakeDb();
 
     await expect(submit(db, 14)).resolves.toMatchObject({ verified: true });
@@ -199,7 +195,7 @@ describe("verifySlip outcomes", () => {
   });
 
   it("hands the booking to staff when an unexpected error follows the claim", async () => {
-    verify.mockResolvedValueOnce({ matched: true, needsManualReview: false, receiverCheck: "match", transactionRef: "TX-7", amount: 120, raw: {} });
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-7", amount: 120, raw: {} });
     payment.finalizePaymentSession.mockRejectedValueOnce(new Error("D1 down"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { db } = fakeDb();

@@ -64,3 +64,11 @@ describe("Account deletion contract", () => {
     }
   });
 });
+
+describe("Security settings page contract", () => {
+  it("shows the SlipOK panel only to holders of property.manage_profile", () => {
+    const page = readFileSync(resolve(process.cwd(), "client/src/pages/SecuritySettings.tsx"), "utf8");
+    expect(page).toContain('"property.manage_profile"');
+    expect(page).toContain("canManageSlipOk && <SlipOkSettings");
+  });
+});
