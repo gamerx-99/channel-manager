@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
 import { getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
+import { formatDateDDMMYYYY } from "@/lib/formatDate";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 
@@ -21,8 +22,9 @@ function addDays(date: Date, amount: number) {
   return next;
 }
 
-function monthLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(date);
+function monthLabel(date: Date, language: "en" | "th") {
+  const locale = language === "th" ? "th-TH-u-ca-gregory" : "en-GB";
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date);
 }
 
 function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: boolean }> {
@@ -58,7 +60,7 @@ function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: bo
 const MONTH_WEEKDAY_KEYS = ["weekdaySun", "weekdayMon", "weekdayTue", "weekdayWed", "weekdayThu", "weekdayFri", "weekdaySat"];
 
 export default function Calendar({ id }: { id: string }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [monthAnchor, setMonthAnchor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -303,7 +305,7 @@ export default function Calendar({ id }: { id: string }) {
             <ChevronLeft size={16} />
           </button>
           <div>
-            <strong>{monthLabel(monthAnchor)}</strong>
+            <strong>{monthLabel(monthAnchor, language)}</strong>
             <span>{t("availability.monthOverviewNote")}</span>
           </div>
           <button
@@ -378,7 +380,7 @@ export default function Calendar({ id }: { id: string }) {
             <div className="calendar-selected-day-heading">
             <div>
               <div className="eyebrow">{t("availability.selectedDates")}</div>
-              <h2>{inDate ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${inDate}T12:00:00`)) : t("availability.selectStartDate")}{outDate ? ` – ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${outDate}T12:00:00`))}` : ""}</h2>
+              <h2>{inDate ? formatDateDDMMYYYY(inDate) : t("availability.selectStartDate")}{outDate ? ` – ${formatDateDDMMYYYY(outDate)}` : ""}</h2>
               <p>{outDate ? t("availability.rangeSelected", { count: String(selectedDates.length) }) : t("availability.clickForOut")}</p>
             </div>
             <div className="calendar-range-actions">
@@ -419,7 +421,7 @@ export default function Calendar({ id }: { id: string }) {
                 </div>
               </div>
             </div>;
-          }) : <p className="empty-cell">No room types configured yet. Add a room type before editing availability.</p>}
+          }) : <p className="empty-cell">{t("availability.noRoomTypesCalendar")}</p>}
         </div>
 
         <div className="calendar-footer">

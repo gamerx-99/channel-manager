@@ -34,7 +34,7 @@ export function getOtaStatusMeta(item: Pick<OtaSummaryItem, "status" | "latest_l
     return { tone: "error", label: "Booking conflict" };
   }
 
-  if (status === "connected" || status === "healthy" || status === "synced") {
+  if (status === "active" || status === "connected" || status === "healthy" || status === "synced") {
     return { tone: "healthy", label: "Healthy" };
   }
 

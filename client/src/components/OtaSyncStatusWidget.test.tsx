@@ -52,10 +52,10 @@ describe("OtaSyncStatusWidget", () => {
   it("renders the latest sync time, recent sync count, and a property-scoped logs link", () => {
     render(<OtaSyncStatusWidget {...defaultProps} />);
 
-    expect(screen.getByRole("heading", { name: "Connected channels summary" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Connected channels" })).toBeTruthy();
     expect(screen.getByText("Booking")).toBeTruthy();
     expect(screen.getByText("Little Bro")).toBeTruthy();
-    expect(screen.getByText("Updated items")).toBeTruthy();
+    expect(screen.getByText("Items updated")).toBeTruthy();
     expect(screen.getByText("3")).toBeTruthy();
     expect(screen.getByText(formatOtaSyncDate(healthyItem.last_sync_at))).toBeTruthy();
     expect(screen.getByRole("link", { name: "View sync logs" }).getAttribute("href")).toBe("/hotels/hotel-1/ota");
@@ -66,9 +66,9 @@ describe("OtaSyncStatusWidget", () => {
     const onSync = vi.fn();
     render(<OtaSyncStatusWidget {...defaultProps} items={[failedItem]} onSync={onSync} />);
 
-    expect(screen.getByText("Sync error")).toBeTruthy();
+    expect(screen.getByText("Sync failed")).toBeTruthy();
     expect(screen.getByText("iCal feed timed out")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Sync Now for Agoda at Little Bro" }));
+    await user.click(screen.getByRole("button", { name: "Sync now Agoda for Little Bro" }));
     expect(onSync).toHaveBeenCalledWith(failedItem);
   });
 
@@ -77,7 +77,7 @@ describe("OtaSyncStatusWidget", () => {
     const onSync = vi.fn();
     render(<OtaSyncStatusWidget {...defaultProps} onSync={onSync} />);
 
-    const syncButton = screen.getByRole("button", { name: "Sync Now for Booking at Little Bro" });
+    const syncButton = screen.getByRole("button", { name: "Sync now Booking for Little Bro" });
     syncButton.focus();
     await user.keyboard("{Enter}");
     syncButton.focus();
@@ -94,15 +94,15 @@ describe("OtaSyncStatusWidget", () => {
     const onRetry = vi.fn();
     const { rerender } = render(<OtaSyncStatusWidget {...defaultProps} isLoading />);
     expect(screen.getByRole("status")).toBeTruthy();
-    expect(screen.getByText("Loading OTA calendar sync status…")).toBeTruthy();
+    expect(screen.getByText("Loading OTA connection status…")).toBeTruthy();
 
     rerender(<OtaSyncStatusWidget {...defaultProps} isLoading={false} errorMessage="Network unavailable" onRetry={onRetry} />);
     expect(screen.getByRole("alert")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: /Retry/ }));
+    await user.click(screen.getByRole("button", { name: /Try again/ }));
     expect(onRetry).toHaveBeenCalledOnce();
 
     rerender(<OtaSyncStatusWidget {...defaultProps} isLoading={false} items={[]} />);
     expect(screen.getByRole("status")).toBeTruthy();
-    expect(screen.getByText(/No OTA channels connected yet/)).toBeTruthy();
+    expect(screen.getByText(/No OTA channels are connected yet/)).toBeTruthy();
   });
 });

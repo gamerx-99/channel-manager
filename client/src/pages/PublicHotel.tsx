@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle2, MapPin, Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { formatDateDDMMYYYY } from "@/lib/formatDate";
 import { PaymentQR } from "@/components/PaymentQR";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
 import { useTranslation } from "@/lib/i18n";
@@ -542,8 +543,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px", color: "#e8eee8", marginBottom: "16px" }}>
               <div><strong>{t("publicHotel.summaryProperty")}</strong> {hotel.name}</div>
               <div><strong>{t("publicHotel.summaryRoomType")}</strong> {heldBooking?.roomTypeName} {heldBooking?.roomNumber ? `(${heldBooking.roomNumber})` : ""}</div>
-              <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn}</div>
-              <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
+              <div><strong>{t("publicHotel.summaryCheckIn")}</strong> {checkIn ? formatDateDDMMYYYY(checkIn) : ""}</div>
+              <div><strong>{t("publicHotel.summaryCheckOut")}</strong> {checkOut ? formatDateDDMMYYYY(checkOut) : ""} ({heldBooking?.nights ?? 0} {t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
               <div><strong>{t("publicHotel.summaryGuests")}</strong> {t("publicHotel.adultsLabel")}: {adults}, {t("publicHotel.childrenLabel")}: {children.length}</div>
             </div>
             {(servicesQuery.data ?? []).some((s) => (selectedServiceQty[s.id] ?? 0) > 0) && (
@@ -596,8 +597,8 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 <div style={{ background: "#f6f4ee", padding: "16px", borderRadius: "8px", fontSize: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
                   <div><strong>{t("publicHotel.confirmedProperty")}</strong> {hotel.name}</div>
                   <div><strong>{t("publicHotel.confirmedRoomType")}</strong> {heldBooking?.roomTypeName} {heldBooking?.roomNumber ? `(${heldBooking.roomNumber})` : ""}</div>
-                  <div><strong>{t("publicHotel.confirmedCheckIn")}</strong> {checkIn}</div>
-                  <div><strong>{t("publicHotel.confirmedCheckOut")}</strong> {checkOut} ({(heldBooking?.nights ?? 0) > 1 ? t("publicHotel.confirmedNightsPlural", { count: heldBooking?.nights ?? 0 }) : t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
+                  <div><strong>{t("publicHotel.confirmedCheckIn")}</strong> {checkIn ? formatDateDDMMYYYY(checkIn) : ""}</div>
+                  <div><strong>{t("publicHotel.confirmedCheckOut")}</strong> {checkOut ? formatDateDDMMYYYY(checkOut) : ""} ({(heldBooking?.nights ?? 0) > 1 ? t("publicHotel.confirmedNightsPlural", { count: heldBooking?.nights ?? 0 }) : t("publicHotel.confirmedNights", { count: heldBooking?.nights ?? 0 })})</div>
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2ddd0", paddingTop: "10px", fontSize: "14px", fontWeight: 700, color: "var(--pine)" }}>
                     {t("publicHotel.confirmedTotalStay", { amount: (confirmDetailsMutation.data?.amount ?? Number(heldBooking?.totalPrice ?? 0)).toLocaleString() })}
                   </div>
