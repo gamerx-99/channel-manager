@@ -61,6 +61,7 @@ crons = ["*/15 * * * *"]
 [env.production]
 name = "hayhost"
 workers_dev = false
+routes = [{ pattern = "www.hayhostth.com", custom_domain = true }]
 
 [env.production.vars]
 NODE_ENV = "production"

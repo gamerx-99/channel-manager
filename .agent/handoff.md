@@ -1,5 +1,10 @@
 # Handoff log
 
+## [2026-11-01] www route for production (branch `feat/hayhost-hardening`)
+- **What happened**: The owner asked for the landing page to go live first, so `routes` for `www.hayhostth.com` was added to `[env.production]`, the same change approved on 2026-10-30 in `cloud/custom-domain`. `wrangler deploy --dry-run --env production` exit 0.
+- **Found read-only**: `www` serves an old build that redirects to `/login`. The apex already 301s to `www`. `hayhost-production` has migrations up to `20261030000000_rate_limit_hold_ip.sql`; `20261031000000_support_accounts.sql` and `20261031010000_platform_admins.sql` are not applied.
+- **Owner steps**: apply the two migrations, confirm the production secrets, remove `www` from the Worker that holds it, then deploy. Not deployed. Secrets could not be checked with the tools here.
+
 ## [2026-11-01] 2FA is optional for hotel accounts (branch `feat/hayhost-hardening`)
 - **What happened**: The owner asked for 2FA to be voluntary. SlipOK settings and PromptPay saves ask for a code only when the account has 2FA on; accounts without it are no longer sent to `/mfa/enroll`. The enrol pointers and their text are gone, and the SlipOK panel text now says the code applies only with 2FA on.
 - **Tests changed on purpose**: `client/src/lib/mfa.test.ts`, `Financials.contract.test.ts` and `slipOkSettings.d1.test.ts` asserted the old rule that owners must enrol. The step-up tests still run with 2FA on, and a new test covers an account without it.
