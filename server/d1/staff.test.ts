@@ -61,6 +61,18 @@ describe("D1 staff repository", () => {
     expect(staff.find(row => row.user_id === "worker")).toMatchObject({ email: "worker@test", confirmed_at: null, last_sign_in_at: null });
   });
 
+  it("counts a member who signs in only through a social login as confirmed", async () => {
+    await seed();
+    await db.insert(user).values([
+      { id: "ua", name: "Owner", email: "owner@test" },
+      { id: "worker", name: "Worker", email: "worker@test" },
+    ]);
+    await db.insert(account).values({ id: "acc-worker", accountId: "U123", providerId: "line", userId: "worker", createdAt: new Date("2026-10-02T00:00:00Z"), updatedAt: new Date("2026-10-02T00:00:00Z") });
+
+    const staff = await listHotelStaff(db, { userId: "ua" }, "a");
+    expect(staff.find(row => row.user_id === "worker")).toMatchObject({ confirmed_at: "2026-10-02T00:00:00.000Z" });
+  });
+
   it("scopes staff management and records admin transfer atomically", async () => {
     await seed(); const owner = { userId: "ua" };
     await expect(listHotelStaff(db, owner, "a", [{ id: "worker", email: "worker@test", confirmed_at: null, last_sign_in_at: null }])).resolves.toHaveLength(2);

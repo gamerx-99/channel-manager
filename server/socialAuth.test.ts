@@ -158,15 +158,117 @@ describe("social sign-in through Better Auth", () => {
     expect(await sessionCount()).toBe(1);
   });
 
-  it("refuses to join a verified Google login to an existing account with that email", async () => {
+  it("joins a verified Google login to the verified account with that email", async () => {
     await addUser("existing", "owner@gmail.com", { emailVerified: true });
-    stubProviderProfile({ sub: "g-1", email: "owner@gmail.com", email_verified: true, name: "Attacker" });
+    stubProviderProfile({ sub: "g-1", email: "Owner@gmail.com", email_verified: true, name: "Owner" });
+
+    const response = await signInWith("google");
+
+    expect(response.headers.get("location")).toBe("/signup");
+    expect(await db.select().from(user)).toHaveLength(1);
+    const [linked] = await db.select().from(account);
+    expect(linked).toMatchObject({ userId: "existing", providerId: "google", accountId: "g-1" });
+    const [opened] = await db.select().from(session);
+    expect(opened.userId).toBe("existing");
+  });
+
+  it("refuses to join an existing account whose own email is unverified", async () => {
+    await addUser("squatter", "victim@gmail.com", { emailVerified: false });
+    stubProviderProfile({ sub: "g-1", email: "victim@gmail.com", email_verified: true, name: "Victim" });
 
     const response = await signInWith("google");
 
     expect(response.headers.get("location")).toContain("error=account_not_linked");
     expect(await sessionCount()).toBe(0);
     expect(await db.select().from(account)).toEqual([]);
+  });
+
+  it("refuses to join when Google does not state the email is verified", async () => {
+    await addUser("existing", "owner@gmail.com", { emailVerified: true });
+    stubProviderProfile({ sub: "g-1", email: "owner@gmail.com", email_verified: false, name: "Stranger" });
+
+    await signInWith("google");
+
+    const [created] = (await db.select().from(account)) as Array<{ userId: string }>;
+    expect(created.userId).not.toBe("existing");
+    expect(await db.select().from(user)).toHaveLength(2);
+  });
+
+  it("never joins a LINE login by email, even a trusted provider sharing a matching one", async () => {
+    await addUser("existing", "owner@gmail.com", { emailVerified: true });
+    stubProviderProfile({ sub: "U123", email: "owner@gmail.com", name: "Stranger" });
+
+    await signInWith("line");
+
+    const [created] = (await db.select().from(account)) as Array<{ userId: string }>;
+    expect(created.userId).not.toBe("existing");
+  });
+
+  it("still asks for 2FA the first time a verified login joins a protected account", async () => {
+    await addUser("protected", "owner@gmail.com", { emailVerified: true, twoFactorEnabled: true });
+    stubProviderProfile({ sub: "g-1", email: "owner@gmail.com", email_verified: true, name: "Owner" });
+
+    const response = await signInWith("google");
+
+    expect(response.headers.get("location")).toBe("/login?two_factor=1");
+    expect(await sessionCount()).toBe(0);
+  });
+
+  it("lets a signed-in person connect LINE, which then opens the same account", async () => {
+    const signUp = await auth.handler(new Request(`${baseURL}/api/auth/sign-up/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseURL },
+      body: JSON.stringify({ email: "owner@gmail.com", password: "long-enough-password", name: "Owner" }),
+    }));
+    const signedIn = signUp.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");
+    const [owner] = await db.select().from(user);
+    stubProviderProfile({ sub: "U123", name: "Owner" });
+
+    const start = await auth.handler(new Request(`${baseURL}/api/auth/link-social`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseURL, cookie: signedIn },
+      body: JSON.stringify({ provider: "line", callbackURL: "/settings/security", errorCallbackURL: "/settings/security" }),
+    }));
+    const { url } = (await start.json()) as { url: string };
+    const cookie = [signedIn, ...start.headers.getSetCookie().map(value => value.split(";")[0])].join("; ");
+    const linked = await auth.handler(new Request(
+      `${baseURL}/api/auth/callback/line?code=code&state=${new URL(url).searchParams.get("state")}`,
+      { headers: { cookie } },
+    ));
+
+    expect(linked.headers.get("location")).toBe("/settings/security");
+    await db.delete(session);
+    await signInWith("line");
+    const [opened] = await db.select().from(session);
+    expect(opened.userId).toBe(owner.id);
+    expect(await db.select().from(user)).toHaveLength(1);
+  });
+
+  it("refuses to connect a provider account that already belongs to someone else", async () => {
+    await addUser("other", "other@gmail.com");
+    await db.insert(account).values({ id: "a-1", accountId: "U123", providerId: "line", userId: "other", updatedAt: new Date() });
+    const signUp = await auth.handler(new Request(`${baseURL}/api/auth/sign-up/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseURL },
+      body: JSON.stringify({ email: "owner@gmail.com", password: "long-enough-password", name: "Owner" }),
+    }));
+    const signedIn = signUp.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");
+    stubProviderProfile({ sub: "U123", name: "Owner" });
+
+    const start = await auth.handler(new Request(`${baseURL}/api/auth/link-social`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseURL, cookie: signedIn },
+      body: JSON.stringify({ provider: "line", callbackURL: "/settings/security", errorCallbackURL: "/settings/security" }),
+    }));
+    const { url } = (await start.json()) as { url: string };
+    const cookie = [signedIn, ...start.headers.getSetCookie().map(value => value.split(";")[0])].join("; ");
+    const refused = await auth.handler(new Request(
+      `${baseURL}/api/auth/callback/line?code=code&state=${new URL(url).searchParams.get("state")}`,
+      { headers: { cookie } },
+    ));
+
+    expect(refused.headers.get("location")?.toLowerCase()).toContain("error=account_already_linked_to_different_user");
+    expect((await db.select().from(account)).filter((row: { providerId: string }) => row.providerId === "line")).toHaveLength(1);
   });
 
   it("challenges a linked account with 2FA instead of opening a session", async () => {

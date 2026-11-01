@@ -74,19 +74,19 @@ type StaffAuthUser = { id: string; email: string | null; confirmed_at: string | 
 
 /**
  * Email and sign-in state for this hotel's members, from the Better Auth tables.
- * A member is confirmed once they hold a password (self-signup or an accepted
- * invite); last sign-in is the newest live session, since sign-out deletes it.
+ * A member is confirmed once they hold any sign-in method (a password from self-signup
+ * or an accepted invite, or a social login); an invited user has none until then.
+ * Last sign-in is the newest live session, since sign-out deletes it.
  */
 async function loadStaffAuthUsers(db: D1ScopedDatabase, userIds: string[]): Promise<StaffAuthUser[]> {
   if (!userIds.length) return [];
-  const [users, credentials, sessions] = await Promise.all([
+  const [users, signInMethods, sessions] = await Promise.all([
     db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.id, userIds)),
-    db.select({ userId: account.userId, createdAt: account.createdAt }).from(account)
-      .where(and(inArray(account.userId, userIds), eq(account.providerId, "credential"))),
+    db.select({ userId: account.userId, createdAt: account.createdAt }).from(account).where(inArray(account.userId, userIds)),
     db.select({ userId: session.userId, createdAt: session.createdAt }).from(session).where(inArray(session.userId, userIds)),
   ]);
   const earliest = new Map<string, Date>();
-  for (const row of credentials) if (!earliest.has(row.userId) || row.createdAt < earliest.get(row.userId)!) earliest.set(row.userId, row.createdAt);
+  for (const row of signInMethods) if (!earliest.has(row.userId) || row.createdAt < earliest.get(row.userId)!) earliest.set(row.userId, row.createdAt);
   const latest = new Map<string, Date>();
   for (const row of sessions) if (!latest.has(row.userId) || row.createdAt > latest.get(row.userId)!) latest.set(row.userId, row.createdAt);
   return users.map(row => ({

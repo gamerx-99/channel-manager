@@ -21,9 +21,15 @@ and `/signup/:token`, using Better Auth's built-in providers (LINE included, no 
   `completeHotelOwnerSignup`. The token stays the credential, as with email signup.
 
 ## Account safety
-- `accountLinking.enabled` is false. A provider login never joins an account by email, and
-  `/link-social` is refused. A matching email redirects with `account_not_linked`, and the page
-  asks the person to use their email and password.
+- One email is one account. A login joins an existing account by email only when the provider
+  states the email is verified and the local account is verified too. That is Google against an
+  invited or provider-verified account.
+- A password signup is unverified today, so it does not join automatically: `account_not_linked`
+  tells the person to sign in with the password and press Connect in Security settings. Joining it
+  would leave a working password with whoever registered the address.
+- Facebook and LINE state no verified email, so they never join by email. Connect in Security
+  settings (`/link-social`) works for them while signed in. A provider account already owned by
+  someone else is refused.
 - Only an email the provider states is verified is stored. In practice that is Google. Facebook
   and LINE accounts get `<provider>.<id>@no-email.hayhost.invalid`, which works when the provider
   shares no email and stops an unverified address being claimed. Those addresses cannot sign up

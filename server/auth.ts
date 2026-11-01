@@ -83,9 +83,16 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
     },
     socialProviders: resolveSocialProviders(opts.socialEnv ?? (typeof process !== "undefined" ? process.env : {})),
     account: {
-      // ASSUMPTION: a matching email never joins accounts, because email signup is unverified
-      // and anyone may already hold an address they do not own. It also blocks /link-social.
-      accountLinking: { enabled: false },
+      accountLinking: {
+        enabled: true,
+        // Both sides must be verified to join by email. Email signup is unverified, so without
+        // this someone could register a victim's address and keep a password on their account.
+        requireLocalEmailVerified: true,
+        // For signed-in linking only: these providers state no verified email, and they can never
+        // match an account by email because socialUserIdentity gives them a placeholder.
+        trustedProviders: ["facebook", "line"],
+        allowDifferentEmails: true,
+      },
       encryptOAuthTokens: true,
     },
     databaseHooks: {

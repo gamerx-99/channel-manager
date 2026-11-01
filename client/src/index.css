@@ -749,3 +749,8 @@ body { background: var(--paper); color: var(--ink); }
 .social-button svg{width:20px;height:20px;flex:none}
 .social-divider{display:flex;align-items:center;gap:12px;margin-top:6px;color:var(--ink-soft);font-size:13px}
 .social-divider::before,.social-divider::after{content:"";flex:1;border-top:1px solid var(--border)}
+
+.linked-accounts-list{display:grid;gap:10px;margin:16px 0 0;padding:0;list-style:none}
+.linked-accounts-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.linked-accounts-name{display:flex;align-items:center;gap:10px;font-weight:600}
+.linked-accounts-name svg{width:20px;height:20px;flex:none}

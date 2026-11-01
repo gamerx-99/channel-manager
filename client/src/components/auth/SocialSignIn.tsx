@@ -4,9 +4,9 @@ import { authClient } from "@/lib/auth-client";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 
-const PROVIDER_LABELS: Record<SocialProviderId, string> = { google: "Google", facebook: "Facebook", line: "LINE" };
+export const PROVIDER_LABELS: Record<SocialProviderId, string> = { google: "Google", facebook: "Facebook", line: "LINE" };
 
-const PROVIDER_ICONS: Record<SocialProviderId, React.ReactNode> = {
+export const PROVIDER_ICONS: Record<SocialProviderId, React.ReactNode> = {
   google: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.7h3.5c2.1-1.9 3.3-4.7 3.3-8.1z" />
@@ -32,6 +32,7 @@ export function socialErrorKey(code: string | null) {
   if (!code) return null;
   if (code === "account_not_linked") return "socialAuth.accountExists";
   if (code === "access_denied") return "socialAuth.cancelled";
+  if (code.toLowerCase() === "account_already_linked_to_different_user") return "socialAuth.alreadyLinked";
   return "socialAuth.failed";
 }
 

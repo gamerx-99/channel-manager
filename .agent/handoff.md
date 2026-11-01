@@ -1966,3 +1966,9 @@ Not tested in a browser or with a real email.
 - **Migration**: ไม่มี ไม่ได้ merge, push เข้า main หรือ deploy
 - **ผลตรวจ**: `pnpm test` ได้ Test Files 156 passed (156), Tests 1112 passed (1112); `pnpm check` (`tsc --noEmit`) exit 0; `pnpm build` exit 0 (`built in 7.19s`, `Total Upload: 3737.97 KiB`, `--dry-run: exiting now.`)
 - **Reviewer** (subagent อิสระ ไม่ได้เขียนโค้ดนี้): VERDICT: APPROVE ไม่มี blocker ตรวจ test ที่ถูกแก้ทั้ง 5 ไฟล์แล้วว่าเป็นการแก้ test ที่ตรึงบั๊กไว้ ไม่ใช่การผ่อน assertion และลองป้อน URL แปลก ๆ หลายแบบให้ตัว override ของ SlipOK แล้ว รับเฉพาะ loopback ข้อที่ยังค้าง: (should-fix) ข้อความใน `PaymentQR.tsx` ทั้ง component ยังเขียนภาษาไทยตายตัว แขกต่างชาติจึงเห็นเป็นภาษาไทย ควรแยกเป็น ticket แปลทั้ง component; (nit) ถ้ารายการจองส่ง `expires_at` มาด้วย ห้องที่ถูกจองไว้แต่หมดเวลาแล้วจะกลับมาแสดง; (nit) `loadStaffAuthUsers` อ่าน role ที่ถูกกรองทิ้งภายหลังด้วย
+
+## 2026-11-01 Social sign-in: one email, one account (spec 18 update)
+- **Owner decision**: the same email must reach the same account. This replaces the earlier "never link" rule in the entry above. Branch now includes `origin/feat/hayhost-hardening` (`96a51be`).
+- **Done**: a login joins by email when both the provider and the local account are verified. Unverified password accounts, Facebook and LINE join only through Connect in Security settings (`LinkedAccountsSettings`). 2FA still applies on a first join. `loadStaffAuthUsers` now treats any sign-in method as confirmed.
+- **Evidence**: `pnpm test` 160 files, 1138/1138 before this entry; final run is in the session report. Browser: Connect list shows Google and LINE and the "already linked" error on a signed-in local account. The real provider redirect back is covered by stubbed tests only.
+- **Tests changed**: the old "refuses to join" case in `socialAuth.test.ts` was replaced because the owner's rule changed. The unverified-account refusal stays as its own test.

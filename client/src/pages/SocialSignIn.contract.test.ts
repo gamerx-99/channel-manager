@@ -48,8 +48,17 @@ describe("Social sign-in contract", () => {
     expect(Object.keys(th.ownerSignup).sort()).toEqual(Object.keys(en.ownerSignup).sort());
   });
 
+  it("offers manual linking in Security settings, only for configured providers", () => {
+    const linked = read("client/src/components/LinkedAccountsSettings.tsx");
+    expect(read("client/src/pages/SecuritySettings.tsx")).toContain("<LinkedAccountsSettings />");
+    expect(linked).toContain("authClient.linkSocial");
+    expect(linked).toContain("trpc.auth.socialProviders.useQuery");
+    expect(linked).toContain("if (!providers.data?.length) return null;");
+  });
+
   it("explains a duplicate email without a generic failure", () => {
     expect(socialErrorKey("account_not_linked")).toBe("socialAuth.accountExists");
+    expect(socialErrorKey("ACCOUNT_ALREADY_LINKED_TO_DIFFERENT_USER")).toBe("socialAuth.alreadyLinked");
     expect(socialErrorKey("access_denied")).toBe("socialAuth.cancelled");
     expect(socialErrorKey("anything_else")).toBe("socialAuth.failed");
     expect(socialErrorKey(null)).toBeNull();
