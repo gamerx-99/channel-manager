@@ -1,5 +1,9 @@
 # Handoff log
 
+## [2026-11-01] OTA removed from the legal documents (branch `claude/priceless-galileo-e5dfc3`)
+- **What happened**: The owner took OTA sync out for now, so Terms 2.1, 2.2, 6.3 and 10.1, Privacy 2, 4.3 and 12, and the ROPA no longer offer or list it. Terms 2.1 says the Service has no OTA connection. Clause numbers moved: Terms 2.3 is now 2.2, Privacy 4.4 is now 4.3.
+- **When OTA returns**: put these clauses back and give the 30-day sub-processor notice in DPA 4.2.
+
 ## [2026-11-01] Owner's second answers, ROPA and spec 19 (branch `claude/priceless-galileo-e5dfc3`)
 - **What happened**: Documents only, no code. Terms: provider's name and address, 4.1, refund name check, 6.5, 10.1 to 10.3, 15.1 now names the court of the Provider's domicile. Privacy: 90-day identity archive, 5-year tax records, system-cycle wording, contact details, refund data. Added `docs/legal/hayhost-ropa.xlsx` and `specs/19-retention-and-guest-data-protection.md`.
 - **Ahead of the system**: Privacy clause 6 describes spec 19 parts A and B, which are not built. The legal pages must stay draft until they ship.

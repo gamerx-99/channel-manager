@@ -21,9 +21,8 @@ const th: Record<LegalKind, LegalDocument> = {
         "1.4 \"ข้อมูลของโรงแรม\" หมายถึง ข้อมูลทั้งหมดที่โรงแรมหรือแขกบันทึกเข้าสู่ระบบ รวมถึงข้อมูลส่วนบุคคลของแขก",
       ] },
       { heading: "ข้อ 2. บริการที่ให้", items: [
-        "2.1 บริหารห้องพัก ประเภทห้อง ราคา และห้องว่าง บันทึกและจัดการการจองตลอดวงจร งานแม่บ้าน รายงานการเงิน ส่งออกแบบ ตม.30 หน้าจองและเว็บไซต์ของโรงแรม และซิงก์ปฏิทินกับ OTA ผ่าน iCal",
-        "2.2 การซิงก์กับ OTA ทำผ่านลิงก์ iCal ซึ่งมีความล่าช้าตามรอบการอัปเดตของระบบ (ปัจจุบันทุก 15 นาที) และของ OTA แต่ละราย บริการนี้ไม่ใช่การเชื่อมต่อแบบเรียลไทม์ผ่าน API ของ OTA",
-        "2.3 ผู้ให้บริการอาจปรับปรุง เพิ่ม หรือยกเลิกฟีเจอร์ โดยจะแจ้งล่วงหน้าอย่างสมเหตุสมผลหากการเปลี่ยนแปลงกระทบการใช้งานหลักอย่างมีนัยสำคัญ",
+        "2.1 บริหารห้องพัก ประเภทห้อง ราคา และห้องว่าง บันทึกและจัดการการจองตลอดวงจร งานแม่บ้าน รายงานการเงิน ส่งออกแบบ ตม.30 หน้าจองและเว็บไซต์ของโรงแรม บริการนี้ไม่รวมการเชื่อมต่อกับ OTA",
+        "2.2 ผู้ให้บริการอาจปรับปรุง เพิ่ม หรือยกเลิกฟีเจอร์ โดยจะแจ้งล่วงหน้าอย่างสมเหตุสมผลหากการเปลี่ยนแปลงกระทบการใช้งานหลักอย่างมีนัยสำคัญ",
       ] },
       { heading: "ข้อ 3. การสมัครและบัญชีผู้ใช้", items: [
         "3.1 โรงแรมต้องให้ข้อมูลที่ถูกต้อง และรับผิดชอบการเชิญ กำหนดสิทธิ์ และยกเลิกบัญชีของพนักงาน",
@@ -50,7 +49,7 @@ const th: Record<LegalKind, LegalDocument> = {
       { heading: "ข้อ 6. หน้าที่ของโรงแรม", items: [
         "6.1 ใช้บริการโดยชอบด้วยกฎหมาย รวมถึงกฎหมายโรงแรม กฎหมายคนเข้าเมือง (การแจ้ง ตม.30) และกฎหมายคุ้มครองข้อมูลส่วนบุคคล",
         "6.2 ในฐานะผู้ควบคุมข้อมูลของแขก โรงแรมต้องมีฐานทางกฎหมายในการเก็บข้อมูล แจ้งนโยบายความเป็นส่วนตัวของโรงแรมให้แขกทราบ และตอบสนองคำขอใช้สิทธิของแขก",
-        "6.3 ตรวจสอบความถูกต้องของราคา ห้องว่าง และลิงก์ iCal ที่ตั้งค่าไว้ และตรวจความสอดคล้องกับ OTA เป็นระยะ",
+        "6.3 ตรวจสอบความถูกต้องของราคาและห้องว่างในระบบเป็นระยะ รวมถึงการจองที่รับจากช่องทางอื่นนอกระบบ ซึ่งโรงแรมต้องบันทึกหรือปรับเอง",
         "6.4 ไม่ใช้บริการเพื่อส่งข้อความรบกวน หลอกลวง หรือเผยแพร่เนื้อหาที่ผิดกฎหมายบนเว็บไซต์ของโรงแรม",
         "6.5 จัดให้มีมาตรการความปลอดภัยและควบคุมพนักงานของตนในการเข้าถึงและรักษาความลับของข้อมูลแขก หากข้อมูลรั่วไหลเพราะอุปกรณ์หรือบุคลากรของผู้ใช้บริการเอง ผู้ใช้บริการต้องรับผิดชอบตามกฎหมาย",
       ] },
@@ -69,7 +68,7 @@ const th: Record<LegalKind, LegalDocument> = {
         "9.2 ผู้ให้บริการอาจหยุดให้บริการชั่วคราวเพื่อบำรุงรักษา โดยจะแจ้งล่วงหน้าเมื่อทำได้",
       ] },
       { heading: "ข้อ 10. ข้อจำกัดความรับผิด", items: [
-        "10.1 ผู้ให้บริการไม่รับผิดต่อความเสียหายทางอ้อม ความเสียหายเชิงลงโทษ การสูญเสียรายได้หรือผลกำไรทางธุรกิจ รวมถึงการจองซ้อน (overbooking) ที่เกิดจากความล่าช้าของการซิงก์ iCal ข้อมูลจาก OTA หรือการตั้งค่าของโรงแรม",
+        "10.1 ผู้ให้บริการไม่รับผิดต่อความเสียหายทางอ้อม ความเสียหายเชิงลงโทษ การสูญเสียรายได้หรือผลกำไรทางธุรกิจ รวมถึงการจองซ้อน (overbooking) ที่เกิดจากการตั้งค่าของโรงแรมหรือการจองผ่านช่องทางอื่นนอกระบบ",
         "10.2 ความรับผิดรวมของผู้ให้บริการไม่เกินจำนวนค่าบริการที่ผู้ใช้บริการชำระจริงในรอบ 12 เดือนล่าสุดก่อนเกิดเหตุ หรือตามระยะเวลาที่ใช้บริการจริงหากน้อยกว่า 12 เดือน",
         "10.3 ข้อ 10.1 และ 10.2 ไม่ตัดความรับผิดเพื่อกลฉ้อฉลหรือความประมาทเลินเล่ออย่างร้ายแรงของผู้ให้บริการ และความรับผิดอื่นที่กฎหมายห้ามมิให้จำกัด",
       ] },
@@ -106,7 +105,7 @@ const th: Record<LegalKind, LegalDocument> = {
         ["ข้อมูลโรงแรม", "ชื่อ ที่อยู่ ช่องทางติดต่อเจ้าของ บัญชีพร้อมเพย์ ช่องทางที่รู้จักเรา", "โรงแรมกรอก"],
         ["การคืนเงินค่าบริการ", "ชื่อและเลขบัญชีรับเงินคืน และเอกสารยืนยันตัวตนเมื่อชื่อบัญชีไม่ตรงกับผู้ลงทะเบียน", "โรงแรมกรอกหรือส่งให้เรา"],
         ["ตัวแทนขาย", "ชื่อ เบอร์โทร อีเมล", "ตัวแทนหรือเรากรอก"],
-        ["ข้อมูลแขก (ในฐานะผู้ประมวลผล)", "ชื่อผู้จอง วันเข้าพัก จำนวนผู้เข้าพัก สถานะการจองและการชำระเงิน ข้อมูลสลิปและผลการตรวจสลิป ความยินยอมทางการตลาด และสำหรับ ตม.30: ชื่อ-นามสกุล เพศ เลขหนังสือเดินทาง สัญชาติ วันเกิด เบอร์โทร", "โรงแรมบันทึก / แขกกรอกผ่านหน้าจอง / ซิงก์จาก OTA"],
+        ["ข้อมูลแขก (ในฐานะผู้ประมวลผล)", "ชื่อผู้จอง วันเข้าพัก จำนวนผู้เข้าพัก สถานะการจองและการชำระเงิน ข้อมูลสลิปและผลการตรวจสลิป ความยินยอมทางการตลาด และสำหรับ ตม.30: ชื่อ-นามสกุล เพศ เลขหนังสือเดินทาง สัญชาติ วันเกิด เบอร์โทร", "โรงแรมบันทึก / แขกกรอกผ่านหน้าจอง"],
       ] } },
       { heading: "ข้อ 3. วัตถุประสงค์และฐานทางกฎหมาย", table: { head: ["วัตถุประสงค์", "ฐานทางกฎหมาย"], rows: [
         ["สร้างและดูแลบัญชี ให้บริการตามสัญญา ส่งอีเมลเชิญและรีเซ็ตรหัสผ่าน", "การปฏิบัติตามสัญญา (มาตรา 24(3))"],
@@ -120,8 +119,7 @@ const th: Record<LegalKind, LegalDocument> = {
       { heading: "ข้อ 4. การเปิดเผยข้อมูล", items: [
         "4.1 เราไม่ขายข้อมูลส่วนบุคคล",
         "4.2 เราเปิดเผยข้อมูลให้ผู้ให้บริการที่จำเป็นต่อการให้บริการ ตามรายชื่อในข้อ 12",
-        "4.3 ข้อมูลการจองที่ซิงก์ผ่าน iCal จะถูกส่งไปยังหรือรับมาจาก OTA ที่โรงแรมตั้งค่าไว้",
-        "4.4 เปิดเผยต่อหน่วยงานรัฐเมื่อกฎหมายกำหนด",
+        "4.3 เปิดเผยต่อหน่วยงานรัฐเมื่อกฎหมายกำหนด",
       ] },
       { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) บริการโครงสร้างพื้นฐานบนคลาวด์และบริการส่งอีเมลจึงอาจจัดเก็บหรือส่งข้อมูลไปยังเซิร์ฟเวอร์ในต่างประเทศ เราจะส่งหรือโอนข้อมูลตามมาตรา 28 และมาตรา 29 และประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลเรื่องหลักเกณฑ์การให้ความคุ้มครองข้อมูลส่วนบุคคลที่ส่งหรือโอนไปยังต่างประเทศ พ.ศ. 2566 โดยใช้มาตรการคุ้มครองตามข้อสัญญามาตรฐานสากลกับผู้ให้บริการที่รับข้อมูล"] },
       { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล เมื่อครบระยะเวลาด้านล่าง เราจะทำลายข้อมูลหรือทำให้ไม่สามารถระบุตัวบุคคลได้ตามรอบการประมวลผลของระบบ"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
@@ -153,7 +151,6 @@ const th: Record<LegalKind, LegalDocument> = {
         ["Resend", "ส่งอีเมลของระบบ (เชิญผู้ใช้ รีเซ็ตรหัสผ่าน)", "สหรัฐฯ"],
         ["Google (Gmail)", "รับอีเมลที่ส่งถึงทีมงาน", "ตามผู้ให้บริการ"],
         ["SlipOK (บริษัท สลิปโอเค จำกัด)", "ตรวจสลิปโอนเงิน (ใช้ key ของโรงแรม)", "บริษัทตั้งอยู่ในประเทศไทย ไม่ได้ระบุที่ตั้งเซิร์ฟเวอร์"],
-        ["OTA ที่โรงแรมตั้งค่า (เช่น Agoda, Booking.com)", "ซิงก์ปฏิทินผ่าน iCal", "ตามผู้ให้บริการแต่ละราย"],
       ] } },
     ],
   },
@@ -202,9 +199,8 @@ const en: Record<LegalKind, LegalDocument> = {
         "1.4 \"Hotel Data\" means all data the Hotel or its Guests enter into the system, including Guests' personal data.",
       ] },
       { heading: "2. The Service", items: [
-        "2.1 Managing rooms, room types, rates and availability; recording and managing bookings through their life cycle; housekeeping; financial reports; TM.30 export; booking pages and hotel websites; and calendar sync with OTAs by iCal.",
-        "2.2 OTA sync uses iCal links, so it is delayed by the update cycle of the system (currently every 15 minutes) and of each OTA. It is not a real-time connection through an OTA's API.",
-        "2.3 The Provider may improve, add or remove features, and will give reasonable notice if a change materially affects core use.",
+        "2.1 Managing rooms, room types, rates and availability; recording and managing bookings through their life cycle; housekeeping; financial reports; TM.30 export; and booking pages and hotel websites. The Service does not include any connection to OTAs.",
+        "2.2 The Provider may improve, add or remove features, and will give reasonable notice if a change materially affects core use.",
       ] },
       { heading: "3. Signing up and accounts", items: [
         "3.1 The Hotel must give accurate information and is responsible for inviting staff, setting their permissions and closing their accounts.",
@@ -231,7 +227,7 @@ const en: Record<LegalKind, LegalDocument> = {
       { heading: "6. The Hotel's duties", items: [
         "6.1 Use the Service lawfully, including hotel law, immigration law (TM.30 reporting) and personal data protection law.",
         "6.2 As data controller for Guests, the Hotel must have a lawful basis to collect data, give Guests its privacy notice, and respond to their requests.",
-        "6.3 Check that rates, availability and iCal links are correct, and check them against OTAs from time to time.",
+        "6.3 Check rates and availability in the system from time to time, including bookings taken through channels outside the system, which the Hotel must record or adjust itself.",
         "6.4 Do not use the Service to send spam, deceive people or publish unlawful content on the Hotel's website.",
         "6.5 Keep security measures in place and control the Customer's staff in reaching Guest data and keeping it confidential. If data leaks through the Customer's own devices or people, the Customer is responsible as the law provides.",
       ] },
@@ -250,7 +246,7 @@ const en: Record<LegalKind, LegalDocument> = {
         "9.2 The Provider may pause the Service for maintenance and will give notice where it can.",
       ] },
       { heading: "10. Limit of liability", items: [
-        "10.1 The Provider is not liable for indirect, consequential or punitive damages, lost revenue or lost business profits, or for overbooking caused by iCal sync delay, OTA data or the Hotel's settings.",
+        "10.1 The Provider is not liable for indirect, consequential or punitive damages, lost revenue or lost business profits, or for overbooking caused by the Hotel's settings or by bookings through channels outside the system.",
         "10.2 The Provider's total liability is limited to the fees the Customer actually paid in the 12 months before the event, or over the actual period of use if shorter.",
         "10.3 Clauses 10.1 and 10.2 do not exclude liability for the Provider's fraud or gross negligence, or any other liability the law does not allow to be limited.",
       ] },
@@ -285,7 +281,7 @@ const en: Record<LegalKind, LegalDocument> = {
         ["Hotel details", "Name, address, owner contact, PromptPay account, how they found us", "The hotel"],
         ["Fee refunds", "Refund account name and number, and identity documents when the account name differs from the registered name", "The hotel"],
         ["Sales agents", "Name, phone, email", "The agent or us"],
-        ["Guest data (as processor)", "Booker's name, stay dates, number of guests, booking and payment status, slip data and check results, marketing consent, and for TM.30: full name, gender, passport number, nationality, date of birth, phone", "The hotel / the guest on the booking page / OTA sync"],
+        ["Guest data (as processor)", "Booker's name, stay dates, number of guests, booking and payment status, slip data and check results, marketing consent, and for TM.30: full name, gender, passport number, nationality, date of birth, phone", "The hotel / the guest on the booking page"],
       ] } },
       { heading: "3. Purposes and legal bases", table: { head: ["Purpose", "Legal basis"], rows: [
         ["Create and run accounts, provide the contracted service, send invite and password emails", "Contract (s. 24(3))"],
@@ -299,8 +295,7 @@ const en: Record<LegalKind, LegalDocument> = {
       { heading: "4. Disclosure", items: [
         "4.1 We do not sell personal data.",
         "4.2 We disclose data to the service providers needed to run the service, listed in clause 12.",
-        "4.3 Booking data synced by iCal goes to or comes from the OTAs the hotel sets up.",
-        "4.4 We disclose data to state authorities when the law requires it.",
+        "4.3 We disclose data to state authorities when the law requires it.",
       ] },
       { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google, so cloud infrastructure and email services may store or send data on servers abroad. We transfer data under sections 28 and 29 and the Personal Data Protection Committee's 2023 notifications on transfers abroad, with safeguards under international standard contract clauses with the provider receiving the data."] },
       { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. When a period below ends, we destroy the data or make it unidentifiable on the system's processing cycle."], table: { head: ["Data", "Period"], rows: [
@@ -332,7 +327,6 @@ const en: Record<LegalKind, LegalDocument> = {
         ["Resend", "System email (invites, password resets)", "USA"],
         ["Google (Gmail)", "Receiving email sent to our team", "Per provider"],
         ["SlipOK (SLIPOK CO., LTD.)", "Slip checking (with the hotel's key)", "Company based in Thailand; server location not stated"],
-        ["OTAs the hotel sets up (such as Agoda, Booking.com)", "Calendar sync by iCal", "Per provider"],
       ] } },
     ],
   },
