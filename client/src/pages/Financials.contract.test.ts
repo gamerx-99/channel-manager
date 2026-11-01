@@ -48,11 +48,10 @@ describe("Financials dashboard contract", () => {
     expect(component).toContain('t("financials.pendingRevenue")');
   });
 
-  it("asks for an authenticator step-up before saving PromptPay and guides owners without one", () => {
+  it("asks for an authenticator code before saving PromptPay and does not send owners without 2FA to enrol", () => {
     expect(component).toContain("useMfaStepUp()");
     expect(component).toContain('(await triggerStepUp()) === "verified"');
     expect(component).toContain('id="promptpay-totp-input"');
-    expect(component).toContain('mfaState.status === "needs_enroll"');
-    expect(component).toContain('href="/mfa/enroll?next=/dashboard/financials"');
+    expect(component).not.toContain("/mfa/enroll");
   });
 });

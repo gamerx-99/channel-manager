@@ -5,6 +5,7 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] 2FA is optional for hotel accounts, but platform roles (super_admin, admin, support) must still enrol. ASSUMPTION: they reach every hotel, so the rule stays until the owner says otherwise. Raised 2026-11-01.
 - [ ] Spec 17: how long must bookings, payments, guest records and audit rows be kept, and which of them does the law require (Hotel Act/TM.30, tax, PDPA)? Nothing here is confirmed by a lawyer.
       ASSUMPTION: every such row stays, with the person replaced by `deleted-user`, and nothing is deleted on a timer. Raised 2026-10-31.
 - [ ] Spec 17: do audit rows need the real actor kept for a dispute or a legal request? ASSUMPTION: no; the actor becomes `deleted-user` and no mapping is kept, so the deletion cannot be undone or traced later. Raised 2026-10-31.

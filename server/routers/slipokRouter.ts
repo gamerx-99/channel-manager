@@ -13,12 +13,17 @@ import { requireRecentMfaVerification } from '../mfa';
 
 const hotelIdSchema = z.string().uuid();
 
+/** 2FA is optional for hotel accounts: those who turned it on prove it again here. */
+function requireStepUpIfEnabled(user: Parameters<typeof requireRecentMfaVerification>[0] & { twoFactorEnabled?: boolean | null }) {
+  if (user.twoFactorEnabled) requireRecentMfaVerification(user);
+}
+
 export const slipokRouter = router({
   getSettings: protectedProcedure
     .input(z.object({ hotel_id: hotelIdSchema }))
     .query(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
+      requireStepUpIfEnabled(ctx.user);
       if (!ctx.db) throw new Error('D1 database required.');
       try {
         return await getSlipOkSettings(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
@@ -37,7 +42,7 @@ export const slipokRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
+      requireStepUpIfEnabled(ctx.user);
       if (!ctx.db) throw new Error('D1 database required.');
       try {
         const [encryptedKey, keyHash] = await Promise.all([encryptSlipOkKey(input.api_key), hashSlipOkKey(input.api_key)]).catch(error => {
@@ -56,7 +61,7 @@ export const slipokRouter = router({
     .input(z.object({ hotel_id: hotelIdSchema }))
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
+      requireStepUpIfEnabled(ctx.user);
       if (!ctx.db) throw new Error('D1 database required.');
       try {
         await removeSlipOkKey(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
@@ -74,7 +79,7 @@ export const slipokRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
-      requireRecentMfaVerification(ctx.user);
+      requireStepUpIfEnabled(ctx.user);
       if (!ctx.db) throw new Error('D1 database required.');
       try {
         await savePromptPaySettings(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.promptpay_id, input.payment_timeout_minutes);

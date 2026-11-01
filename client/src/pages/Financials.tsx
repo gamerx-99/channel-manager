@@ -18,7 +18,6 @@ import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
 import { useMfaStepUp } from "@/lib/mfa";
-import { Link } from "wouter";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -226,7 +225,7 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [totpCode, setTotpCode] = useState("");
-  // Changing where guests pay needs a recent authenticator code (server/mfa.ts).
+  // With 2FA on, changing where guests pay needs a recent authenticator code (server/mfa.ts).
   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
 
   const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
@@ -359,14 +358,6 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
             </div>
           )}
           {mfaState.status === "pending" && <p className="text-xs text-[#6c7e75]" role="status">{t("financials.mfaChecking")}</p>}
-          {mfaState.status === "needs_enroll" && (
-            <div id="promptpay-mfa-enroll" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
-              <p>{t("financials.mfaEnrollNeeded")}</p>
-              <Link href="/mfa/enroll?next=/dashboard/financials" className="mt-2 inline-block font-medium underline">
-                {t("financials.mfaEnrollLink")}
-              </Link>
-            </div>
-          )}
           {mfaState.status === "error" && <p className="text-xs text-red-600" role="alert">{mfaState.message}</p>}
           {saveError && <p className="text-xs text-red-600" role="alert">{saveError}</p>}
           {saved && <p className="text-xs text-[#1d6b56]" role="status">{t("financials.savedSuccess")}</p>}

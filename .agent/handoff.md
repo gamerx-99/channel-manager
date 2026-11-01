@@ -1,5 +1,12 @@
 # Handoff log
 
+## [2026-11-01] 2FA is optional for hotel accounts (branch `feat/hayhost-hardening`)
+- **What happened**: The owner asked for 2FA to be voluntary. SlipOK settings and PromptPay saves ask for a code only when the account has 2FA on; accounts without it are no longer sent to `/mfa/enroll`. The enrol pointers and their text are gone, and the SlipOK panel text now says the code applies only with 2FA on.
+- **Tests changed on purpose**: `client/src/lib/mfa.test.ts`, `Financials.contract.test.ts` and `slipOkSettings.d1.test.ts` asserted the old rule that owners must enrol. The step-up tests still run with 2FA on, and a new test covers an account without it.
+- **Kept**: platform roles (`super_admin`, `admin`, `support`) must still enrol, because they reach every hotel. ASSUMPTION logged in `.agent/OPEN_QUESTIONS.md`.
+- **Risk accepted by this change**: on an account without 2FA, a stolen password can change the PromptPay ID guests pay to.
+- **Verification**: `pnpm test`: 158 files, 1109 tests passed. `pnpm check`: exit 0. `pnpm build`: exit 0. Not opened in a browser. Not pushed or deployed.
+
 ## [2026-11-01] Three branches merged (branch `feat/hayhost-hardening`)
 - **What happened**: With the owner's approval, `feat/financials-owner-grant` went into `feat/account-deletion` (`83efabf`), and that went into `feat/hayhost-hardening` (`93e0bda`). The Security page keeps the SlipOK panel gated on `property.manage_profile` beside the delete account panel. `server/slipVerification.ts` takes the per-hotel version.
 - **Removed from PR #5 on purpose**: the bank-account receiver compare and its tests (`log: true` replaces it), and the loopback mock `SLIPOK_API_BASE_URL` with its tests, because only the central path read it and nothing in the repo used it.

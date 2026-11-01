@@ -115,7 +115,6 @@ export async function enrollTotpFactor(): Promise<EnrollTotpResult> {
 export type MfaStepUpState =
   | { status: "idle" }
   | { status: "pending" }
-  | { status: "needs_enroll" }
   | { status: "needs_challenge"; factorId?: string; error?: string }
   | { status: "verified" }
   | { status: "error"; message: string };
@@ -133,7 +132,7 @@ function errorMessage(error: unknown, fallback: string) {
  *
  * Usage:
  *   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
- *   const step = await triggerStepUp(); // "verified" | "needs_enroll" | "needs_challenge" | "error"
+ *   const step = await triggerStepUp(); // "verified" | "needs_challenge" | "error"
  *   // If "needs_challenge", render a code input and call:
  *   const ok = await submitTotp(code);
  */
@@ -142,18 +141,15 @@ export function useMfaStepUp() {
   const [mfaState, setMfaState] = useState<MfaStepUpState>({ status: "idle" });
 
   const triggerStepUp = useCallback(async (): Promise<
-    "verified" | "needs_enroll" | "needs_challenge" | "error"
+    "verified" | "needs_challenge" | "error"
   > => {
     setMfaState({ status: "pending" });
     try {
       const { status } = await utils.client.auth.mfaStepUpStatus.query();
-      if (status === "verified") {
+      // 2FA is optional: an account without it has nothing to prove here.
+      if (status === "verified" || status === "needs_enroll") {
         setMfaState({ status: "verified" });
         return "verified";
-      }
-      if (status === "needs_enroll") {
-        setMfaState({ status: "needs_enroll" });
-        return "needs_enroll";
       }
       if (status === "needs_challenge") {
         setMfaState({ status: "needs_challenge", factorId: "totp" });

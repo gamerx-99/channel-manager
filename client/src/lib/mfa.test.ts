@@ -135,12 +135,12 @@ describe("useMfaStepUp Hook (server-backed step-up)", () => {
     expect(result.current.mfaState).toEqual({ status: "error", message: "Please login (10001)" });
   });
 
-  it("returns needs_enroll when the user has no authenticator", async () => {
+  it("lets an account without 2FA through, because 2FA is optional", async () => {
     serverMocks.status.mockResolvedValueOnce({ status: "needs_enroll", expiresAtMs: null });
     const { result } = renderHook(() => useMfaStepUp());
 
-    expect(await trigger(result)).toBe("needs_enroll");
-    expect(result.current.mfaState).toEqual({ status: "needs_enroll" });
+    expect(await trigger(result)).toBe("verified");
+    expect(result.current.mfaState).toEqual({ status: "verified" });
   });
 
   it("returns needs_challenge when the session has no recent step-up", async () => {

@@ -53,10 +53,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
 
   async function handleOpenSettings() {
     setSaveError(null);
-    const result = await triggerStepUp();
-    if (result === "needs_enroll") {
-      window.location.href = "/mfa/enroll";
-    }
+    await triggerStepUp();
   }
 
   async function handleSaveKey(hotelId: string) {
@@ -82,7 +79,6 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
       return;
     }
     const result = await triggerStepUp();
-    if (result === "needs_enroll") { window.location.href = "/mfa/enroll"; return; }
     if (result === "verified" || mfaState.status === "verified") {
       try {
         await removeKey.mutateAsync({ hotel_id: hotelId });
@@ -184,12 +180,6 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
             <div className="flex items-center gap-2 text-sm text-[#6c7e75]">
               <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-hidden="true" />
               {t("slipOk.verifying")}
-            </div>
-          )}
-
-          {mfaState.status === "needs_enroll" && (
-            <div className="text-sm text-[#6c7e75]">
-              {t("slipOk.needsEnroll")} <a href="/mfa/enroll" className="text-[#1d6b56] underline">{t("slipOk.enrollLink")}</a>
             </div>
           )}
 

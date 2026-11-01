@@ -25,7 +25,7 @@ beforeEach(() => {
   mfaMocks.requireRecentMfaVerification.mockReset();
 });
 
-function caller(role: 'hotel_owner' | 'super_admin' | 'front_desk' = 'hotel_owner') {
+function caller(role: 'hotel_owner' | 'super_admin' | 'front_desk' = 'hotel_owner', twoFactorEnabled = true) {
   return import('./routers').then(({ appRouter }) => appRouter.createCaller({
     req: {} as Request,
     res: {} as Response,
@@ -39,6 +39,7 @@ function caller(role: 'hotel_owner' | 'super_admin' | 'front_desk' = 'hotel_owne
       role,
       roles: [role],
       memberships: [{ hotelId: HOME_HOTEL, role }],
+      twoFactorEnabled,
     },
     db: {} as any,
     caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: [role], access: 'authenticated' } as any,
@@ -107,6 +108,13 @@ describe('SlipOK settings access boundaries', () => {
     await expect(app.slipok[operation](input)).rejects.toMatchObject({ code: 'FORBIDDEN', message: 'Recent MFA verification required.' });
     for (const mock of Object.values(dbMocks)) expect(mock).not.toHaveBeenCalled();
     expect(cryptoMocks.encryptSlipOkKey).not.toHaveBeenCalled();
+  });
+
+  it('skips the step-up for an account that has not turned 2FA on', async () => {
+    dbMocks.saveSlipOkSettings.mockResolvedValueOnce(undefined);
+    const app = await caller('hotel_owner', false);
+    await expect(app.slipok.saveKey(input)).resolves.toEqual({ success: true });
+    expect(mfaMocks.requireRecentMfaVerification).not.toHaveBeenCalled();
   });
 });
 
