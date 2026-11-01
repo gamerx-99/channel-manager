@@ -1914,3 +1914,26 @@ Not tested in a browser or with a real email.
 - **Done**: `/` is now a public Landing page instead of a redirect. `/signup` creates an account, then `channelManager.registerOwnHotel` creates one private hotel with the caller as owner. Web addresses that match app routes are refused.
 - **Evidence**: `pnpm test`, `pnpm check` and `pnpm build` pass. In a local Worker, a test signup reached `/dashboard`, a reserved address showed the Thai error, retry kept the account, and D1 showed `baan-test`, `public_enabled = 0`, `hotel_owner`.
 - **Not done**: not deployed; no reviewer; email is not verified; no prices or terms on the page, see `.agent/OPEN_QUESTIONS.md`.
+
+## 2026-11-01 Calendar date format and Thai landing copy
+- **Done**: Calendar date ranges and public booking summaries now use `DD/MM/YYYY`, formatted from ISO dates without local timezone shifts. Thai landing page copy was rewritten to sound more natural while preserving the existing product claims and page structure.
+- **Evidence**: `pnpm check` exited 0. `pnpm build` exited 0; Wrangler ran with `--dry-run`. `git diff --check` reported no whitespace errors. Tests were not run.
+- **Not done**: no browser/visual check; not deployed.
+
+## 2026-11-01 Thai font refinement
+- **Done**: Added Noto Sans Thai Looped to the shared font stack and every explicit heading/page stack in the app, retaining DM Sans/Fraunces for Latin text. Increased tight title line heights so Thai marks do not collide. Added Google Fonts preconnect hints. Inspected the local login page after the global update.
+- **Evidence**: `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler `--dry-run`. Existing Vite chunk-size advisory remains.
+- **Not done**: no production deploy; no tests run.
+
+## 2026-11-01 Separate personal signup from hotel setup
+- **Requested flow**: register an individual with first name, last name, phone, email and password credentials; after signing in, a hotel owner can set up a hotel, while a staff member can use an invitation from an existing hotel.
+- **Changed**: `/signup` now collects those personal details and does not create a hotel or grant a hotel role. First name, last name and phone are persisted as Better Auth additional fields. The roleless dashboard entry shows the post-signup hotel setup form and invitation guidance. Hotel creation still goes through `registerOwnHotel`, only from that next step. The existing invite acceptance path grants the hotel membership after the invite is accepted.
+- **Migration**: `20261101000000_add_user_phone.sql` adds nullable `user.phone`; `20261101010000_add_user_names.sql` adds nullable `user.first_name` and `user.last_name`. Both are unapplied; the human must apply them to staging/production using the repository migration process before rollout. Drizzle generation initially hit a UTF-8 BOM in `_journal.json`; the BOM was removed, and generated schema snapshots were aligned to the timestamped migrations. The generated SQL was narrowed to these profile fields because existing hand-authored migrations already cover the other schema differences.
+- **Evidence**: `pnpm check` exited 0; `pnpm build` exited 0 and Wrangler ran with `--dry-run`; `git diff --check` passed. Tests were not run. The existing landing contract was updated to assert account-first onboarding; it was not executed.
+- **Not done**: migration application and production deployment. The independent reviewer returned REJECT because `pnpm test` was not run and there are no new behavioral tests for this flow. No spec covers this flow yet.
+
+## 2026-11-02 Thai UI copy and calendar localization follow-up
+- **Changed**: Reworded the remaining “Live = สด” Thai labels and booking count; localized the OTA status widget and dashboard calendar labels, empty states, actions, and accessibility text in both languages. Calendar month and dashboard date labels now use the selected language while retaining Gregorian years and `DD/MM/YYYY` numeric ranges.
+- **Evidence**: `pnpm check` passed; `pnpm build` passed with Wrangler `--dry-run`; `git diff --check` reported no whitespace errors. Browser inspection verified Thai OTA empty state, calendar empty state, and month label (`พฤศจิกายน 2026`). After restarting the local Worker for final verification, the dashboard displayed “Unable to verify your property access” while the local tRPC requests returned HTTP 200; the final dashboard calendar copy could not be rechecked in that browser session. Browser session and local server were stopped.
+- **Tests**: Existing OTA widget text expectations were updated for the copy changes. Tests were not run.
+- **Not done**: No deployment. No spec covers this copy/localization follow-up.
