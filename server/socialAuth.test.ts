@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { account, authSchema, session, user } from "../drizzle/auth-schema";
 import { isSocialPlaceholderEmail } from "../shared/socialAuth";
 import { createAuth } from "./auth";
+import { MockEmailSender, ResendEmailSender } from "./email";
 import { enabledSocialProviders, resolveSocialProviders, socialUserIdentity } from "./socialAuth";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../drizzle/d1");
@@ -332,6 +333,92 @@ describe("social sign-in through Better Auth", () => {
     const verified = await jsonPost("/two-factor/verify-totp", { code: totp(secret) }, challenge);
     expect(verified.status).toBe(200);
     expect(await sessionCount()).toBe(1);
+  });
+
+  describe("email verification", () => {
+    const password = "long-enough-password";
+    let mail: MockEmailSender;
+
+    const post = (path: string, body: object) => auth.handler(new Request(`${baseURL}/api/auth${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseURL },
+      body: JSON.stringify(body),
+    }));
+    const lastLink = () => /https?:\/\/\S+/.exec(mail.getLastEmail()!.text!)![0];
+    const signIn = (email: string) => post("/sign-in/email", { email, password });
+
+    beforeEach(() => {
+      mail = new MockEmailSender();
+      auth = createAuth({ db, baseURL, secret: "test-secret-with-at-least-32-characters!", socialEnv, emailSender: mail, requireEmailVerification: true });
+    });
+
+    it("is enforced only with a real mail provider", async () => {
+      auth = createAuth({ db, baseURL, secret: "test-secret-with-at-least-32-characters!", emailSender: new MockEmailSender() });
+      await post("/sign-up/email", { email: "owner@gmail.com", password, name: "Owner" });
+      expect((await signIn("owner@gmail.com")).status).toBe(200);
+
+      const context = await createAuth({
+        db, baseURL, secret: "test-secret-with-at-least-32-characters!", emailSender: new ResendEmailSender("key"),
+      }).$context;
+      expect(context.options.emailAndPassword?.requireEmailVerification).toBe(true);
+    });
+
+    it("emails a link and opens no session until it is used", async () => {
+      const signUp = await post("/sign-up/email", { email: "owner@gmail.com", password, name: "Owner" });
+
+      expect(((await signUp.json()) as { token: string | null }).token).toBeNull();
+      expect(mail.getLastEmail()?.to).toBe("owner@gmail.com");
+      expect(lastLink()).toContain("callbackURL=%2Flogin%3Fverified%3D1");
+      expect((await signIn("owner@gmail.com")).status).toBe(403);
+      expect(await sessionCount()).toBe(0);
+    });
+
+    it("marks the email without logging in, so the link cannot skip the password or 2FA", async () => {
+      await post("/sign-up/email", { email: "owner@gmail.com", password, name: "Owner" });
+
+      const opened = await auth.handler(new Request(lastLink()));
+
+      expect(opened.status).toBe(302);
+      expect(opened.headers.get("location")).toBe("/login?verified=1");
+      expect(opened.headers.getSetCookie().join("\n")).not.toContain("session_token=");
+      expect(await sessionCount()).toBe(0);
+      expect((await db.select().from(user))[0].emailVerified).toBe(true);
+      expect((await signIn("owner@gmail.com")).status).toBe(200);
+    });
+
+    it("joins a matching Google login once the password account is confirmed", async () => {
+      await post("/sign-up/email", { email: "owner@gmail.com", password, name: "Owner" });
+      await auth.handler(new Request(lastLink()));
+      const [owner] = await db.select().from(user);
+      stubProviderProfile({ sub: "g-1", email: "owner@gmail.com", email_verified: true, name: "Owner" });
+
+      await signInWith("google");
+
+      const [linked] = await db.select().from(account).where(eq(account.providerId, "google"));
+      expect(linked.userId).toBe(owner.id);
+      expect(await db.select().from(user)).toHaveLength(1);
+    });
+
+    it("refuses that Google login while the password account is unconfirmed", async () => {
+      await post("/sign-up/email", { email: "owner@gmail.com", password, name: "Owner" });
+      stubProviderProfile({ sub: "g-1", email: "owner@gmail.com", email_verified: true, name: "Owner" });
+
+      const response = await signInWith("google");
+
+      expect(response.headers.get("location")).toContain("error=account_not_linked");
+      expect(await db.select().from(account).where(eq(account.providerId, "google"))).toEqual([]);
+    });
+
+    it("does not lock out an existing unverified superadmin", async () => {
+      await post("/sign-up/email", { email: "root@gmail.com", password, name: "Root" });
+      await auth.handler(new Request(lastLink().replace(/token=[^&]+/, "token=expired")));
+      mail.clear();
+
+      expect((await signIn("root@gmail.com")).status).toBe(403);
+      await auth.handler(new Request(lastLink()));
+
+      expect((await signIn("root@gmail.com")).status).toBe(200);
+    });
   });
 
   it("rejects an email signup on the placeholder domain", async () => {

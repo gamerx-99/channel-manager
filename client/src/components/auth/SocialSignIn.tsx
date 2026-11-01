@@ -32,6 +32,7 @@ export function socialErrorKey(code: string | null) {
   if (!code) return null;
   if (code === "account_not_linked") return "socialAuth.accountExists";
   if (code === "access_denied") return "socialAuth.cancelled";
+  if (code.toLowerCase().includes("token")) return "verifyEmail.linkInvalid";
   if (code.toLowerCase() === "account_already_linked_to_different_user") return "socialAuth.alreadyLinked";
   return "socialAuth.failed";
 }

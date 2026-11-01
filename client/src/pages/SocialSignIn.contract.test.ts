@@ -48,6 +48,17 @@ describe("Social sign-in contract", () => {
     expect(Object.keys(th.ownerSignup).sort()).toEqual(Object.keys(en.ownerSignup).sort());
   });
 
+  it("sends new accounts to confirm their email before the hotel step", () => {
+    const checkEmail = read("client/src/components/auth/CheckEmail.tsx");
+    expect(signup).toContain("data.token === null");
+    expect(signup).toContain("<CheckEmail");
+    expect(ownerSignup).toContain("<CheckEmail");
+    expect(login).toContain('"EMAIL_NOT_VERIFIED"');
+    expect(checkEmail).toContain("authClient.sendVerificationEmail");
+    expect(Object.keys(th.verifyEmail).sort()).toEqual(Object.keys(en.verifyEmail).sort());
+    expect(socialErrorKey("INVALID_TOKEN")).toBe("verifyEmail.linkInvalid");
+  });
+
   it("offers manual linking in Security settings, only for configured providers", () => {
     const linked = read("client/src/components/LinkedAccountsSettings.tsx");
     expect(read("client/src/pages/SecuritySettings.tsx")).toContain("<LinkedAccountsSettings />");

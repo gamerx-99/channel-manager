@@ -22,10 +22,16 @@ export interface SendPasswordResetEmailParams {
   userName?: string;
 }
 
+export interface SendVerificationEmailParams {
+  to: string;
+  verifyUrl: string;
+}
+
 export interface EmailSender {
   sendEmail(payload: EmailPayload): Promise<{ id: string; success: boolean }>;
   sendInviteEmail(params: SendInviteEmailParams): Promise<void>;
   sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<void>;
+  sendVerificationEmail(params: SendVerificationEmailParams): Promise<void>;
 }
 
 export class ResendEmailSender implements EmailSender {
@@ -132,6 +138,38 @@ export class ResendEmailSender implements EmailSender {
 
     await this.sendEmail({ to: params.to, subject, html, text });
   }
+
+  async sendVerificationEmail(params: SendVerificationEmailParams): Promise<void> {
+    const subject = "ยืนยันอีเมลของคุณ / Confirm your email on hayhost";
+    const verifyUrlHtml = escapeHtml(params.verifyUrl);
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;">
+        <h2 style="color: #0f172a; margin-bottom: 16px;">ยืนยันอีเมลของคุณ</h2>
+        <p style="font-size: 16px; line-height: 24px;">
+          กดปุ่มด้านล่างเพื่อยืนยันอีเมล แล้วเข้าสู่ระบบ <strong>hayhost</strong> ได้เลย
+        </p>
+        <p style="font-size: 14px; line-height: 22px; color: #475569;">
+          Press the button below to confirm your email, then sign in to <strong>hayhost</strong>.
+        </p>
+        <div style="margin: 32px 0;">
+          <a href="${verifyUrlHtml}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
+            ยืนยันอีเมล / Confirm email
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #64748b; line-height: 20px;">
+          ถ้ากดปุ่มไม่ได้ ให้คัดลอกลิงก์นี้ไปเปิดในเบราว์เซอร์ / If the button does not work, open this link:<br/>
+          <a href="${verifyUrlHtml}" style="color: #2563eb;">${verifyUrlHtml}</a>
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+        <p style="font-size: 12px; color: #94a3b8;">
+          ลิงก์นี้ใช้ได้ 24 ชั่วโมง ถ้าคุณไม่ได้สมัคร ไม่ต้องทำอะไร / This link works for 24 hours. If you did not sign up, you can ignore this email.
+        </p>
+      </div>
+    `;
+    const text = `ยืนยันอีเมลของคุณ / Confirm your email on hayhost\n\n${params.verifyUrl}\n\nลิงก์นี้ใช้ได้ 24 ชั่วโมง / This link works for 24 hours.`;
+
+    await this.sendEmail({ to: params.to, subject, html, text });
+  }
 }
 
 export class MockEmailSender implements EmailSender {
@@ -157,6 +195,15 @@ export class MockEmailSender implements EmailSender {
       subject: "Reset your password on hayhost",
       html: `<p>Reset password: <a href="${params.resetUrl}">Reset</a></p>`,
       text: `Reset password: ${params.resetUrl}`,
+    });
+  }
+
+  async sendVerificationEmail(params: SendVerificationEmailParams): Promise<void> {
+    await this.sendEmail({
+      to: params.to,
+      subject: "Confirm your email on hayhost",
+      html: `<p>Confirm email: <a href="${params.verifyUrl}">Confirm</a></p>`,
+      text: `Confirm email: ${params.verifyUrl}`,
     });
   }
 

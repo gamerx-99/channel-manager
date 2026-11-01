@@ -23,10 +23,10 @@ and `/signup/:token`, using Better Auth's built-in providers (LINE included, no 
 ## Account safety
 - One email is one account. A login joins an existing account by email only when the provider
   states the email is verified and the local account is verified too. That is Google against an
-  invited or provider-verified account.
-- A password signup is unverified today, so it does not join automatically: `account_not_linked`
-  tells the person to sign in with the password and press Connect in Security settings. Joining it
-  would leave a working password with whoever registered the address.
+  confirmed password account, an accepted invite or another provider-verified account.
+- A password signup that has not confirmed its email does not join automatically:
+  `account_not_linked` tells the person to sign in and press Connect in Security settings. Joining
+  it would leave a working password with whoever registered the address.
 - Facebook and LINE state no verified email, so they never join by email. Connect in Security
   settings (`/link-social`) works for them while signed in. A provider account already owned by
   someone else is refused.
@@ -35,6 +35,19 @@ and `/signup/:token`, using Better Auth's built-in providers (LINE included, no 
   shares no email and stops an unverified address being claimed. Those addresses cannot sign up
   by email and no reset mail is sent to them.
 - OAuth tokens are encrypted at rest.
+
+## Email verification
+- With `RESEND_API_KEY` set, signup sends a link, opens no session, and sign-in is refused until
+  the email is confirmed. Without a real mail provider nothing is enforced, because the mock sender
+  drops every message and accounts could never be confirmed.
+- The check-email page has a resend button. A refused sign-in also sends a fresh link, so an old
+  unverified account recovers by itself as long as mail is delivered.
+- The link marks the email and returns to `/login?verified=1`. It does not log in, so it cannot
+  skip the password or 2FA. Links last 24 hours.
+- `/signup` now asks for the account first and the hotel after sign-in. An owner link resumes
+  through `/login?next=/signup/:token`; `next` accepts only that path shape.
+- Invites set `emailVerified` when accepted, so invited staff, support and platform admins sign in
+  as before.
 
 ## Two-factor
 Better Auth's plugin challenges only credential sign-ins. `requireTwoFactorOnSocialCallback` runs

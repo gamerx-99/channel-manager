@@ -170,10 +170,28 @@ describe("HotelOwnerSignup Component Empirical Verification", () => {
         email: "owner@example.com",
         password: "secret12345",
         name: "owner",
+        callbackURL: "/login?verified=1&next=%2Fsignup%2Fvalid-token",
       });
       expect(mocks.completeMutation).toHaveBeenCalledWith({ token: "valid-token" });
       expect(navigate).toHaveBeenCalledWith("/dashboard");
     });
+  });
+
+  it("waits for the email confirmation when signup opens no session", async () => {
+    const user = userEvent.setup();
+    mocks.validateQuery.mockReturnValue({ isLoading: false, data: { valid: true, hotelName: "Grand Palace Hotel" } });
+    mocks.signUpEmail.mockResolvedValue({ data: { token: null, user: { id: "user-999" } }, error: null });
+
+    render(<HotelOwnerSignup token="valid-token" />);
+
+    await user.type(screen.getByLabelText(/^Email address$/i), "owner@example.com");
+    await user.type(screen.getByLabelText(/^Password$/i), "secret12345");
+    await user.type(screen.getByLabelText(/^Confirm password$/i), "secret12345");
+    await user.click(screen.getByRole("button", { name: /Create account/i }));
+
+    expect(await screen.findByTestId("check-email")).toBeTruthy();
+    expect(mocks.completeMutation).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("handles Better Auth signup failure gracefully and shows error", async () => {

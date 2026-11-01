@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { PageState } from "@/components/PageState";
+import { CheckEmail } from "@/components/auth/CheckEmail";
 import { readSocialError, SocialSignIn } from "@/components/auth/SocialSignIn";
 import { useTranslation } from "@/lib/i18n";
 
@@ -28,6 +29,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
 
   const signedIn = Boolean(me.data);
   const hotelName = validation.data?.hotelName ?? "";
+  const verifiedPath = `/login?verified=1&next=${encodeURIComponent(`/signup/${encodeURIComponent(token)}`)}`;
 
   async function finishSetup() {
     await completeSignup.mutateAsync({ token });
@@ -60,10 +62,16 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
     }
     setSubmitting(true);
     const name = email.split("@")[0] || "Hotel Owner";
-    const { data, error: signUpError } = await authClient.signUp.email({ email, password, name });
+    const { data, error: signUpError } = await authClient.signUp.email({ email, password, name, callbackURL: verifiedPath });
     if (signUpError || !data?.user) {
       setSubmitting(false);
       setError(signUpError?.message ?? t("ownerSignup.accountFailed"));
+      return;
+    }
+    // No session until the email is confirmed; signing in afterwards returns to this link.
+    if (data.token === null) {
+      setSubmitting(false);
+      setPendingEmailConfirmation(true);
       return;
     }
     try {
@@ -74,11 +82,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
       return;
     }
     setSubmitting(false);
-    if (data?.user) {
-      navigate("/dashboard");
-    } else {
-      setPendingEmailConfirmation(true);
-    }
+    navigate("/dashboard");
   }
 
   if (validation.isLoading) {
@@ -103,11 +107,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
     return (
       <div className="login-page">
         <main className="login-main">
-          <PageState
-            tone="empty"
-            title={t("ownerSignup.pendingTitle")}
-            description={t("ownerSignup.pendingDesc", { email, hotel: hotelName })}
-          />
+          <CheckEmail email={email} callbackURL={verifiedPath} />
         </main>
       </div>
     );

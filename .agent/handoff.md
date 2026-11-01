@@ -1972,3 +1972,18 @@ Not tested in a browser or with a real email.
 - **Done**: a login joins by email when both the provider and the local account are verified. Unverified password accounts, Facebook and LINE join only through Connect in Security settings (`LinkedAccountsSettings`). 2FA still applies on a first join. `loadStaffAuthUsers` now treats any sign-in method as confirmed.
 - **Evidence**: `pnpm test` 160 files, 1138/1138 before this entry; final run is in the session report. Browser: Connect list shows Google and LINE and the "already linked" error on a signed-in local account. The real provider redirect back is covered by stubbed tests only.
 - **Tests changed**: the old "refuses to join" case in `socialAuth.test.ts` was replaced because the owner's rule changed. The unverified-account refusal stays as its own test.
+
+## 2026-11-01 Email verification at signup (spec 18 update)
+- **Done**: with `RESEND_API_KEY` set, signup sends a confirmation link, opens no session and refuses sign-in until confirmed. A check-email page with resend appears on `/signup`, `/signup/:token` and `/login`. `/signup` now asks for the account first and the hotel after sign-in. A confirmed password account joins a matching verified Google login automatically.
+- **Decisions**: enforcement needs a real mail provider, otherwise the mock sender would strand every account. The link marks the email only and does not log in, so it cannot skip the password or 2FA. A refused sign-in sends a fresh link, which is how an unverified superadmin recovers.
+- **Invites**: `acceptStaffInvite` sets `emailVerified: true`, for staff, support and platform invites, and `server/d1/supportAccess.ts` only writes `false` on a new row, so those flows did not change.
+- **Tests changed**: `HotelOwnerSignup.test.tsx` expects the new `callbackURL` argument and gained a waiting-for-email case; no other assertion changed.
+- **Not tested**: delivery of a real email. Locally a fake Resend key gave 401, which proved the pages but not the inbox. A failed send is logged and the page still says sent, so nobody can probe which emails exist.
+- **Owner steps before deploying this to any environment that has `RESEND_API_KEY`**:
+  1. Check the superadmin account. Staging and production each have their own database:
+     `pnpm exec wrangler d1 execute hayhost-production --env production --remote --command "SELECT email, email_verified FROM user"`
+  2. If `email_verified` is 1, nothing more is needed.
+  3. If it is 0, keep `RESEND_API_KEY` and `EMAIL_FROM` set and confirm that address receives mail. After deploy, sign in once, open the link in the email, then sign in again.
+  4. If mail is not working, set the flag yourself, with your own address:
+     `pnpm exec wrangler d1 execute hayhost-production --env production --remote --command "UPDATE user SET email_verified = 1 WHERE email = 'your-admin-email'"`
+  5. If you are ever locked out after deploy, step 4 still works, because it needs no sign-in.
