@@ -38,15 +38,16 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain('trpc.channelManager.dashboardCalendar.useQuery');
     expect(component).toContain('setSelectedHotelId');
     expect(component).toContain('setSelectedDate');
-    expect(component).toContain('aria-label="Select property for calendar"');
-    expect(component).toContain('aria-label="Previous calendar window"');
-    expect(component).toContain('aria-label="Next calendar window"');
-    expect(component).toContain('แก้ไขห้องว่างของวันที่เลือก');
+    // Labels moved to the dashboardCalendar i18n section in b799f92.
+    expect(component).toContain("aria-label={t('dashboardCalendar.selectProperty')}");
+    expect(component).toContain("aria-label={t('dashboardCalendar.previousWindowAria')}");
+    expect(component).toContain("aria-label={t('dashboardCalendar.nextWindowAria')}");
+    expect(component).toContain("t('dashboardCalendar.editSelectedDay')");
     expect(component).toContain("action: 'allotment'");
     expect(component).toContain("action: 'stop_sell'");
-    expect(component).toContain('View only · Revenue Manager or Hotel Admin can edit');
+    expect(component).toContain("t('dashboardCalendar.viewOnly')");
     expect(component).toContain('Save');
-    expect(component).toContain('Stop Sell');
+    expect(component).toContain("t('dashboardCalendar.stopSellingTitle')");
   });
 
   it('protects the availability mutation with property scope and distinct revenue permissions', () => {
@@ -61,7 +62,7 @@ describe('Dashboard Calendar View contract', () => {
   it('keeps sync markers and details readable on narrow screens', () => {
     expect(component).toContain('dashboard-calendar-scroll-hint');
     expect(component).toContain('dashboard-calendar-sync-details');
-    expect(component).toContain('No iCal sync activity recorded for this day.');
+    expect(component).toContain("t('dashboardCalendar.noSyncActivity')");
     expect(css).toContain('.dashboard-calendar-table{width:100%;min-width:880px');
     expect(css).toContain('.dashboard-calendar-scroll-hint{display:flex}');
     expect(css).toContain('.dashboard-calendar-sync-item{grid-template-columns:26px minmax(0,1fr)}');
@@ -77,9 +78,9 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain('calendar-legend-healthy');
     expect(component).toContain('calendar-legend-low');
     expect(component).toContain('calendar-legend-closed');
-    expect(component).toContain('Full / closed');
-    expect(component).toContain('Low availability');
-    expect(component).toContain('Healthy availability');
+    expect(component).toContain("t('dashboardCalendar.fullOrClosed')");
+    expect(component).toContain("t('dashboardCalendar.lowAvailability')");
+    expect(component).toContain("t('dashboardCalendar.healthyAvailability')");
     expect(component).toContain('aria-hidden="true"');
     expect(css).toContain('.dashboard-calendar-cell.closed');
     expect(css).toContain('.dashboard-calendar-cell.low');
