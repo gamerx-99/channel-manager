@@ -1,6 +1,9 @@
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink } from "@trpc/client";
+import { httpBatchLink, type TRPCLink } from "@trpc/client";
+import { observable } from "@trpc/server/observable";
+import type { AppRouter } from "../../server/routers";
+import { localizeServerMessage, storedLanguage } from "@/lib/serverErrors";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
@@ -32,9 +35,21 @@ export async function getTrpcHeaders(): Promise<Record<string, string>> {
   return {};
 }
 
+/** Shows known server error messages in the viewer's language (servers answer in English). */
+export const localizeErrorsLink: TRPCLink<AppRouter> = () => ({ next, op }) =>
+  observable(observer => next(op).subscribe({
+    next: value => observer.next(value),
+    error: error => {
+      error.message = localizeServerMessage(error.message, storedLanguage());
+      observer.error(error);
+    },
+    complete: () => observer.complete(),
+  }));
+
 export function createTrpcClient() {
   return trpc.createClient({
     links: [
+      localizeErrorsLink,
       httpBatchLink({
         url: "/api/trpc",
         transformer: superjson,

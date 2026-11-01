@@ -8,7 +8,7 @@ import type { D1Database, R2Bucket, R2ObjectBody } from "@cloudflare/workers-typ
 import { d1Schema, hotelMedia, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { createWorkerApp, type WorkerEnv } from "../../worker/app";
-import { deleteHotelMediaFromR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload } from "./media";
+import { deleteHotelMediaFromR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload, servedMediaUrl } from "./media";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -166,7 +166,7 @@ describe("D1 hotel media on R2", () => {
     const media = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "photo.png", content_type: "image/png", data: bytes });
     const app = createWorkerApp({ createContext: fakeContext(null), createDatabase: () => db });
     const env = { DB: {} as D1Database, MEDIA: bucket as unknown as R2Bucket } as WorkerEnv;
-    const response = await app.request(media.url, {}, env);
+    const response = await app.request(servedMediaUrl(media.url), {}, env);
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/png");
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
@@ -175,6 +175,9 @@ describe("D1 hotel media on R2", () => {
     expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-site");
     expect(response.headers.get("ETag")).toBe('"test-etag"');
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes);
+    // Old /media links still work for anything that reaches the Worker.
+    expect((await app.request(media.url, {}, env)).status).toBe(200);
+    expect((await app.request("/api/media/hotel-a/00000000-0000-4000-8000-000000000000.png", {}, env)).status).toBe(404);
     expect((await app.request("/media/hotel-a/00000000-0000-4000-8000-000000000000.png", {}, env)).status).toBe(404);
     expect((await app.request("/media/hotel-a/not-valid", {}, env)).status).toBe(404);
   });
@@ -191,7 +194,8 @@ describe("D1 hotel media on R2", () => {
     }, env);
     expect(response.status).toBe(201);
     const media = await response.json() as { id: string; url: string; is_hero: boolean };
-    expect(media).toMatchObject({ url: expect.stringMatching(/^\/media\/hotel-a\//), is_hero: true });
+    // Handed out under /api/: in a deployed Worker only /api/* runs before static assets.
+    expect(media).toMatchObject({ url: expect.stringMatching(/^\/api\/media\/hotel-a\//), is_hero: true });
     const deleted = await app.request(`/api/media/hotel-a/${media.id}`, { method: "DELETE", headers: { authorization: "Bearer test" } }, env);
     expect(deleted.status).toBe(200);
     expect(await deleted.json()).toEqual({ id: media.id });
@@ -291,5 +295,14 @@ describe("D1 hotel media on R2", () => {
     expect(result).toEqual({ id: media.id });
     const remaining = await db.select().from(hotelMedia).where(eq(hotelMedia.id, media.id));
     expect(remaining).toHaveLength(0);
+  });
+});
+
+describe("servedMediaUrl", () => {
+  it("routes stored /media paths through /api, which run_worker_first sends to the Worker", () => {
+    expect(servedMediaUrl("/media/hotel-a/x.png")).toBe("/api/media/hotel-a/x.png");
+    expect(servedMediaUrl("https://cdn.example/x.png")).toBe("https://cdn.example/x.png");
+    const toml = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../wrangler.toml"), "utf8");
+    expect(toml).toMatch(/run_worker_first = \["\/api\/\*"\]/);
   });
 });

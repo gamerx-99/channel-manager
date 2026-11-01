@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
+import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { SUPPORT_GRANT_DURATION_HOURS, isSupportGrantActive } from "@shared/permissions";
 import { hasHotelPermission } from "@shared/authorization";
 
@@ -17,7 +18,7 @@ export default function SupportAccess({ hotelId }: { hotelId: string }) {
   const refresh = async () => { await Promise.all([access.refetch(), utils.auth.me.invalidate(), utils.channelManager.hotels.invalidate()]); setError(null); };
   const grant = trpc.access.grantSupport.useMutation({ onSuccess: refresh, onError: e => setError(e.message) });
   const revoke = trpc.access.revokeSupport.useMutation({ onSuccess: refresh, onError: e => setError(e.message) });
-  const supportLabel = (id: string) => access.data?.supportEmails?.[id] ?? id;
+  const supportLabel = (id: string) => id === DELETED_USER_ID ? t("accountDeletion.deletedUser") : access.data?.supportEmails?.[id] ?? id;
   const modeLabel = (value: string) => value === "edit" ? t("supportAccess.modeEdit") : t("supportAccess.modeView");
   if (!allowed) return <div role="alert">{t("supportAccess.ownerOnly")}</div>;
   return <div className="page-content">

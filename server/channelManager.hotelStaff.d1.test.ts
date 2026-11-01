@@ -110,11 +110,11 @@ describe('channelManager.hotelStaff (D1 router)', () => {
       hotel: { id: HOTEL_ID, name: '' },
       staff: [staffMembership],
     });
+    // No auth-user override: passing [] here blanked every member's email and status.
     expect(staffMocks.listHotelStaff).toHaveBeenCalledWith(
       {},
       { userId: OWNER_ID, roles: ['hotel_owner'], access: 'authenticated' },
       HOTEL_ID,
-      [],
     );
   });
 });

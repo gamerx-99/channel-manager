@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
-import { getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
+import { countRoomsByType, getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 
@@ -117,10 +117,7 @@ export default function Calendar({ id }: { id: string }) {
   }
 
   const hotel = hotelQuery.data as any;
-  const roomCountByType = hotel.rooms.reduce((counts: Record<string, number>, room: any) => {
-    counts[room.roomTypeId] = (counts[room.roomTypeId] ?? 0) + 1;
-    return counts;
-  }, {});
+  const roomCountByType = countRoomsByType(hotel.rooms);
   const occupancy = bookingOccupancyQuery.data ?? [];
 
   function getAllotment(roomTypeId: string, date: string, totalRooms: number) {
@@ -175,7 +172,10 @@ export default function Calendar({ id }: { id: string }) {
     try {
       await Promise.all(changes.map(([key, value]) => {
         const [room_type_id, date] = key.split(":");
-        return updateAvailability.mutateAsync({ room_type_id, date, price: value.price, rooms_available: value.available });
+        // The server checks the permission for the kind of change on this hotel.
+        const savedAllotment = getAllotment(room_type_id, date, roomCountByType[room_type_id] ?? 0);
+        const action = value.available === savedAllotment ? "rate" : value.available === 0 ? "stop_sell" : "allotment";
+        return updateAvailability.mutateAsync({ hotel_id: id, room_type_id, date, price: value.price, rooms_available: value.available, action });
       }));
       setDraft({});
       setEditing(false);
@@ -400,7 +400,7 @@ export default function Calendar({ id }: { id: string }) {
               <div className="calendar-room-label">
                 <span className={`room-type-bar ${index % 3 === 0 ? "pine" : index % 3 === 1 ? "slate" : "amber"}`} />
                 <strong>{roomType.name}</strong>
-                <small>{totalRooms} rooms</small>
+                <small>{t("availability.roomsCount", { count: totalRooms })}</small>
               </div>
               <div className="calendar-room-controls">
                 <span className={`calendar-booked-state ${bookings.length ? "is-booked" : ""}`}>

@@ -102,7 +102,7 @@ export const hotelStaff = protectedProcedure.input(hotelStaffListSchema).query(a
   try {
     return {
       hotel: { id: input.hotel_id, name: '' },
-      staff: await listHotelStaff(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, []),
+      staff: await listHotelStaff(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id),
     };
   } catch (error) {
     if (error instanceof TRPCError) throw error;

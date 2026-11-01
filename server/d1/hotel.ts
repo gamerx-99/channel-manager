@@ -9,6 +9,7 @@ import { bookings, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, roo
 import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang, satangToMoney } from "../db/money";
 import type { CreateHotelInput, CreateHotelServiceInput, CreateRoomTypeInput, DeleteRoomTypeInput, DeleteHotelServiceInput, HotelRecord, RoomTypeRecord, UpdateHotelServiceInput, UpdateRoomTypeInput } from "../db/types";
+import { servedMediaUrl } from "./media";
 
 function canonicalMoney(value: string | number): string {
   const satang = moneyToSatang(String(value));
@@ -253,7 +254,8 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
   const [hotelRoomTypes, media] = await Promise.all([
     db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id)),
     db.select({ id: hotelMedia.id, url: hotelMedia.url, caption: hotelMedia.caption, is_hero: hotelMedia.isHero, display_order: hotelMedia.displayOrder })
-      .from(hotelMedia).where(eq(hotelMedia.hotelId, hotel.id)).orderBy(asc(hotelMedia.displayOrder)),
+      .from(hotelMedia).where(eq(hotelMedia.hotelId, hotel.id)).orderBy(asc(hotelMedia.displayOrder))
+      .then(rows => rows.map(row => ({ ...row, url: servedMediaUrl(row.url) }))),
   ]);
   hotelRoomTypes.sort((left, right) => {
     const leftPrice = moneyToSatang(left.basePrice);

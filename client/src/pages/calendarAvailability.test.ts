@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAvailableRoomCount, getBookedRoomCountForDate } from './calendarAvailability';
+import { countRoomsByType, getAvailableRoomCount, getBookedRoomCountForDate } from './calendarAvailability';
 
 describe('calendar booking occupancy', () => {
   it('subtracts occupying bookings for the selected room type and night', () => {
@@ -29,5 +29,11 @@ describe('calendar booking occupancy', () => {
       { roomId: 'room-1', checkIn: '2026-10-01', checkOut: '2026-10-04', status: 'confirmed', expiresAt: null },
       { roomId: 'room-1', checkIn: '2026-10-02', checkOut: '2026-10-05', status: 'confirmed', expiresAt: null },
     ])).toBe(1);
+  });
+});
+
+describe('countRoomsByType', () => {
+  it('reads room_type_id as getManagedHotel returns it', () => {
+    expect(countRoomsByType([{ id: 'a', room_type_id: 't1' }, { id: 'b', room_type_id: 't1' }, { id: 'c', room_type_id: 't2' }])).toEqual({ t1: 2, t2: 1 });
   });
 });

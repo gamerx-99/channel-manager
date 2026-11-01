@@ -175,6 +175,18 @@ describe("HotelStaff", () => {
     expect(within(inviteDialog).getByText(/Hotel Admin is unavailable because this hotel already has one administrator/)).toBeTruthy();
   });
 
+  it("does not offer to remove the hotel admin, which the server always refuses", () => {
+    mocks.query.data.staff = [
+      { id: "membership-owner", hotel_id: "hotel-1", user_id: "owner-1", role: "hotel_owner", email: "owner@example.com", created_at: "2026-08-18T04:00:00.000Z", confirmed_at: "2026-08-18T04:10:00.000Z", last_sign_in_at: null },
+      ...mocks.query.data.staff,
+    ];
+    render(<HotelStaff id="hotel-1" />);
+    const ownerRow = screen.getByText("owner@example.com").closest("tr")!;
+    expect(within(ownerRow).getByRole("button", { name: "Remove" })).toHaveProperty("disabled", true);
+    const staffRow = screen.getByText("frontdesk@example.com").closest("tr")!;
+    expect(within(staffRow).getByRole("button", { name: "Remove" })).toHaveProperty("disabled", false);
+  });
+
   it("invites a hotel-level staff member with the selected role", async () => {
     const user = userEvent.setup();
     render(<HotelStaff id="hotel-1" />);

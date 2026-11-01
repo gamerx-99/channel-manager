@@ -8,6 +8,16 @@ type LanguageContextValue = {
   toggleLanguage: () => void;
 };
 
+/**
+ * Language before the visitor picks one (a stored choice always wins).
+ * ASSUMPTION: the landing and signup pages are Thai; any other page follows the
+ * browser's first language, Thai for th-*, otherwise English.
+ */
+export function pickInitialLanguage(pathname: string, browserLanguages: readonly (string | undefined)[]): Language {
+  if (pathname === "/" || pathname === "/signup") return "th";
+  return browserLanguages.find(Boolean)?.toLowerCase().startsWith("th") ? "th" : "en";
+}
+
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
 export function LanguageProvider({ children, defaultLanguage = "en" }: { children: React.ReactNode; defaultLanguage?: Language }) {

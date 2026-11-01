@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { trpc } from '../lib/trpc';
+import { generateQrDataUrl } from '../lib/qr';
 
 interface PaymentQRProps {
   bookingId: string;
@@ -35,12 +36,16 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [slipError, setSlipError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
+  // The slip reached staff review: the QR timer no longer applies.
+  const [underReview, setUnderReview] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const createSession = trpc.payment.createSession.useMutation({
     onSuccess(data) {
       setSessionId(data.sessionId);
-      setQrImageUrl(data.qrImageUrl);
+      // Drawn locally from the EMVCo payload; the PromptPay ID and amount are
+      // not sent to an outside QR image service.
+      setQrImageUrl(data.qrString ? generateQrDataUrl(data.qrString) : null);
       setAmount(data.amount);
       setExpiresAt(data.expiresAt);
     },
@@ -49,7 +54,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   const checkStatus = trpc.payment.checkStatus.useQuery(
     { booking_id: bookingId, session_id: sessionId ?? '' },
     {
-      enabled: !!sessionId,
+      enabled: !!sessionId && !underReview,
       refetchInterval: 10_000,
       refetchIntervalInBackground: false,
     },
@@ -60,6 +65,8 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
       setVerifying(false);
       if (data.verified) {
         onSuccess();
+      } else if ('pendingManualReview' in data && data.pendingManualReview) {
+        setUnderReview(true);
       } else {
         setSlipError(data.message);
       }
@@ -78,7 +85,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
 
   // Countdown timer
   useEffect(() => {
-    if (!expiresAt) return;
+    if (!expiresAt || underReview) return;
     const tick = () => {
       const ms = new Date(expiresAt).getTime() - Date.now();
       setRemaining(Math.max(0, ms));
@@ -87,12 +94,13 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [expiresAt, onExpired]);
+  }, [expiresAt, onExpired, underReview]);
 
   // React to polled status
   useEffect(() => {
     const status = checkStatus.data?.status;
     if (status === 'paid') onSuccess();
+    if (status === 'under_review') setUnderReview(true);
     if (status === 'expired' || status === 'failed') onExpired();
   }, [checkStatus.data, onSuccess, onExpired]);
 
@@ -117,6 +125,15 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   }
 
   const isExpired = remaining <= 0 && !!expiresAt;
+
+  if (underReview) {
+    return (
+      <div className="payment-qr payment-qr--review" role="status" aria-live="polite">
+        <p className="payment-review-title">ได้รับสลิปของคุณแล้ว</p>
+        <p className="payment-error-sub">ที่พักกำลังตรวจสอบการชำระเงิน การจองของคุณจะได้รับการยืนยันเมื่อเจ้าหน้าที่ตรวจสอบเสร็จ ไม่ต้องชำระเงินซ้ำ</p>
+      </div>
+    );
+  }
 
   if (createSession.isPending) {
     return (

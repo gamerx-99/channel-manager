@@ -584,11 +584,12 @@ body { background: var(--paper); color: var(--ink); }
 
 /* -- Phase 12B: PaymentQR component --------------------------------------- */
 .payment-qr{display:flex;flex-direction:column;gap:16px;max-width:420px;margin:0 auto;padding:20px}
-.payment-qr--loading,.payment-qr--error{align-items:center;text-align:center;padding:40px 20px;gap:12px}
+.payment-qr--loading,.payment-qr--error,.payment-qr--review{align-items:center;text-align:center;padding:40px 20px;gap:12px}
 .payment-spinner{width:40px;height:40px;border-radius:50%;border:3px solid #dce4df;border-top-color:#1d6b56;animation:spin 0.9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .payment-error-msg{color:#a63d31;font-weight:600;font-size:0.95rem}
 .payment-error-sub{color:#789087;font-size:0.8rem}
+.payment-review-title{font-weight:700;font-size:1rem}
 .payment-qr-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#f6faf7;border-radius:12px;border:1px solid #dce4df}
 .payment-amount{display:flex;flex-direction:column;gap:2px}
 .payment-amount-label{font-size:0.7rem;color:#789087;text-transform:uppercase;letter-spacing:0.08em}

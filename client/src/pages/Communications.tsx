@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
+import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
 
@@ -123,7 +124,7 @@ export default function Communications() {
       id: m.id,
       body: m.body,
       created_at: m.created_at,
-      sender_label: m.sender_user_id === authMe?.id ? t("communications.senderYou") : m.sender_user_id ? (staffById.get(m.sender_user_id) ?? m.sender_user_id) : t("communications.senderSystem"),
+      sender_label: m.sender_user_id === authMe?.id ? t("communications.senderYou") : m.sender_user_id === DELETED_USER_ID ? t("accountDeletion.deletedUser") : m.sender_user_id ? (staffById.get(m.sender_user_id) ?? m.sender_user_id) : t("communications.senderSystem"),
     })),
     [messagesQuery.data, staffById, authMe?.id, t],
   );

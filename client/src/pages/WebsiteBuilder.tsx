@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { uploadHotelMediaFile } from "@/lib/hotelMedia";
 import { Clock3, Eye, Globe, Image as ImageIcon, Palette, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,9 +101,11 @@ export default function WebsiteBuilder() {
     { enabled: !!effectiveHotelId }
   );
 
-  const uploadMediaMut = trpc.channelManager.uploadHotelMedia.useMutation({
+  // Uploads go to the Worker's /api/media route; the tRPC procedure refuses them.
+  const uploadMediaMut = useMutation({
+    mutationFn: ({ hotel_id, ...file }: { hotel_id: string; base64: string; filename: string }) => uploadHotelMediaFile(hotel_id, file),
     onSuccess: () => { toast.success(t("websiteBuilder.toastImageUploaded")); refetchMedia(); },
-    onError: (e) => setFormError(e.message)
+    onError: (e: Error) => setFormError(e.message)
   });
 
   const deleteMediaMut = trpc.channelManager.deleteHotelMedia.useMutation({
@@ -518,7 +522,7 @@ export default function WebsiteBuilder() {
                 <Textarea
                   id="wb-hero-copy"
                   value={draft.heroCopy}
-                  onChange={e => setDraft(p => ({ ...p, hero_copy: e.target.value }))}
+                  onChange={e => setDraft(p => ({ ...p, heroCopy: e.target.value }))}
                   disabled={!canManage}
                   className="min-h-[96px] border-[#dce4df]"
                   placeholder={t("websiteBuilder.heroCopyPlaceholder")}
@@ -537,7 +541,7 @@ export default function WebsiteBuilder() {
                     id="wb-accent-color"
                     type="color"
                     value={isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56"}
-                    onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
+                    onChange={e => setDraft(p => ({ ...p, accentColor: e.target.value }))}
                     disabled={!canManage}
                     className="h-9 w-14 border-[#dce4df] p-1"
                     aria-label="accent_color picker"
@@ -545,7 +549,7 @@ export default function WebsiteBuilder() {
                   <Input
                     placeholder="#1d6b56"
                     value={draft.accentColor}
-                    onChange={e => setDraft(p => ({ ...p, accent_color: e.target.value }))}
+                    onChange={e => setDraft(p => ({ ...p, accentColor: e.target.value }))}
                     disabled={!canManage}
                     className="flex-1 border-[#dce4df] font-mono text-sm"
                     aria-label="accent_color"

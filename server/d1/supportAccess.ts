@@ -165,6 +165,8 @@ export async function getSupportMemberships(db: D1ScopedDatabase, caller: D1Call
 /** Audit the procedure boundary too, including denials before a repository is called.
  * Only resource identifiers are recorded; request bodies can contain guest secrets. */
 export async function logSupportProcedure(db: D1ScopedDatabase, caller: D1CallerContext, path: string, input: unknown, denied: boolean) {
+  // Account actions touch no hotel, and a row written after auth.deleteAccount would bring the deleted id back.
+  if (path.startsWith("auth.")) return;
   const object = input && typeof input === "object" ? input as Record<string, unknown> : {};
   const hotelStringPaths = ["channelManager.hotel", "channelManager.bookings", "channelManager.availability", "channelManager.exportTm30", "channelManager.previewTm30", "channelManager.listHotelServicesProcedure"];
   const camelHotel = ["access.", "channelManager.ota.", "notifications."].some(prefix => path.startsWith(prefix));

@@ -58,6 +58,16 @@ export function validateHotelMediaObjectKey(hotelId: string, candidate: string):
   return `${hotelId}/${filename}`;
 }
 
+/**
+ * The URL a browser should load. Rows keep `/media/<key>`, but in a deployed
+ * Worker only `/api/*` reaches the Worker first (wrangler.toml
+ * `run_worker_first`); `/media/*` gets the SPA's index.html. So media is
+ * handed out under `/api/media/<key>`, which the Worker serves.
+ */
+export function servedMediaUrl(url: string) {
+  return url.startsWith("/media/") ? `/api${url}` : url;
+}
+
 function storedR2Key(hotelId: string, url: string) {
   if (/^https?:\/\//i.test(url)) return null; // Existing Supabase media is not stored in this R2 bucket.
   if (url.startsWith("/media/")) return validateHotelMediaObjectKey(hotelId, url.slice("/media/".length));

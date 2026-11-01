@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { d1Schema, hotelAdminAuditLogs, hotelUsers, hotels } from "../../drizzle/d1-schema";
+import { account, session, user } from "../../drizzle/auth-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { createHotelUserAssignment, deleteHotelUserAssignment, listHotelAdminAuditLogs, listHotelOptions, listHotelStaff, listHotelUserAssignments, transferHotelAdmin, updateHotelUserAssignmentRole } from "./staff";
 
@@ -40,6 +41,26 @@ async function seed() {
 }
 
 describe("D1 staff repository", () => {
+  it("refuses to let the owner remove their own membership", async () => {
+    await seed();
+    await expect(deleteHotelUserAssignment(db, { userId: "ua" }, "owner-a")).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("shows each member's email and whether they have set a password (regression: every row read 'no email, invitation pending')", async () => {
+    await seed();
+    await db.insert(user).values([
+      { id: "ua", name: "Owner", email: "owner@test" },
+      { id: "worker", name: "Worker", email: "worker@test" },
+    ]);
+    await db.insert(account).values({ id: "acc-ua", accountId: "ua", providerId: "credential", userId: "ua", password: "hash", createdAt: new Date("2026-10-01T00:00:00Z"), updatedAt: new Date("2026-10-01T00:00:00Z") });
+    await db.insert(session).values({ id: "s-ua", token: "t-ua", userId: "ua", expiresAt: new Date("2099-01-01T00:00:00Z"), createdAt: new Date("2026-10-30T00:00:00Z"), updatedAt: new Date("2026-10-30T00:00:00Z") });
+
+    const staff = await listHotelStaff(db, { userId: "ua" }, "a");
+    expect(staff.find(row => row.user_id === "ua")).toMatchObject({ email: "owner@test", confirmed_at: "2026-10-01T00:00:00.000Z", last_sign_in_at: "2026-10-30T00:00:00.000Z" });
+    // Invited but has not set a password yet.
+    expect(staff.find(row => row.user_id === "worker")).toMatchObject({ email: "worker@test", confirmed_at: null, last_sign_in_at: null });
+  });
+
   it("scopes staff management and records admin transfer atomically", async () => {
     await seed(); const owner = { userId: "ua" };
     await expect(listHotelStaff(db, owner, "a", [{ id: "worker", email: "worker@test", confirmed_at: null, last_sign_in_at: null }])).resolves.toHaveLength(2);

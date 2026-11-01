@@ -35,7 +35,7 @@ import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
-import { LanguageProvider } from "./contexts/LanguageContext";
+import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContext";
 import { communicationsEnabled } from "./lib/featureFlags";
 
 function Router() {
@@ -114,8 +114,8 @@ function DashboardEntry() {
   return hasAnyPermission(me?.roles ?? [], "platform.view_system_logs") ? <PlatformOverview /> : <Dashboard />;
 }
 
-// Hotel owners are sold to in Thai; every other page keeps the existing default.
-const initialLanguage = ["/", "/signup"].includes(window.location.pathname) ? "th" : "en";
+// Hotel owners are sold to in Thai; elsewhere a Thai browser gets Thai.
+const initialLanguage = pickInitialLanguage(window.location.pathname, navigator.languages ?? [navigator.language]);
 
 export default function App() {
   return (

@@ -1,5 +1,17 @@
 # Handoff log
 
+## [2026-11-01] Three branches merged (branch `feat/hayhost-hardening`)
+- **What happened**: With the owner's approval, `feat/financials-owner-grant` went into `feat/account-deletion` (`83efabf`), and that went into `feat/hayhost-hardening` (`93e0bda`). The Security page keeps the SlipOK panel gated on `property.manage_profile` beside the delete account panel. `server/slipVerification.ts` takes the per-hotel version.
+- **Removed from PR #5 on purpose**: the bank-account receiver compare and its tests (`log: true` replaces it), and the loopback mock `SLIPOK_API_BASE_URL` with its tests, because only the central path read it and nothing in the repo used it.
+- **Verification**: `pnpm test`:
+```
+Test Files  158 passed (158)
+     Tests  1108 passed (1108)
+```
+  `pnpm check`: exit 0. `pnpm build`: exit 0. PR #5's logic diff was read by hand, without a separate Reviewer pass; no blocker found.
+- **Known gaps**: the guest "slip received" text in `PaymentQR.tsx` is hard-coded Thai. `saveAvailability` returns silently if a user can edit allotment but cannot see rates. `loadStaffAuthUsers` treats a member as confirmed only with a `credential` account, so social sign-in will show as invitation pending until it is updated.
+- **Not done**: not pushed or deployed. Stage still runs an older build, so password reset cannot be tested there yet.
+
 ## [2026-11-01] SlipOK back to per-hotel keys (branch `feat/financials-owner-grant`)
 - **What happened**: The owner dropped the central account (spec 14-05): SlipOK's terms forbid resale without authorisation, and one branch would have to hold every hotel's accounts. Restored the hotel key form, `slipok.getSettings/saveKey/removeKey` and `slipokCrypto.ts`. `verifySlip` uses the hotel's key with `log: true`; our own receiver compare is gone. No key, a refused key or an undecryptable key goes to manual review. Kept: fixed base URL, duplicate check on `verified_transaction_ref`, claim and room recheck.
 - **Review fixes**: `payment.slipok.verify_credentials` added to `GUEST_PAYMENT_ACTIONS` (without it every guest slip failed with FORBIDDEN and stranded the booking); only CONFLICT is rethrown after the claim, everything else goes to staff; `payment.secretLeak.test.ts` rewritten to reach the D1 repositories, because the old mocks never ran the code; encryption key errors stay out of responses; `SLIPOK_ENCRYPTION_KEY` must be hex; the settings panel shows only to `property.manage_profile`.
@@ -1923,3 +1935,34 @@ Not tested in a browser or with a real email.
 - **Not done**: no real provider login, because the OAuth apps do not exist yet (`docs/social-login-setup.md`). The hotel-link connect step was tested by component test only, not in a browser. No reviewer. Not pushed or deployed.
 - **Merge order**: branched from `feat/financials-owner-grant` without account deletion. Expect small conflicts in the i18n files, `authRouter.ts` and `Login` copy. Account deletion needs a decision for password-less accounts, see `.agent/OPEN_QUESTIONS.md`.
 - **Worktree note**: with `core.autocrlf=true` a fresh checkout gives `client/public/_headers` CRLF, which fails `PasswordReset.contract.test.ts`. It was normalised to LF locally; git shows no diff.
+## 2026-10-31 Spec 17: self-service account deletion (branch `feat/account-deletion`, from `feat/financials-owner-grant`)
+- **Done**: `auth.accountDeletionStatus` and `auth.deleteAccount`, `server/d1/accountDeletion.ts`, and a delete panel on `/settings/security`. One D1 batch deletes the user and removes or anonymizes them everywhere; see the table in `specs/17-account-deletion.md`. Owners and the last platform admin are refused. No hotel, booking or guest row is deleted. No migration.
+- **Found by running the app, not by tests**: an account with no hotel could not open `/settings/security`, and real D1 counts cascaded rows in `meta.changes`, so a successful deletion was reported as a failure. Both fixed, with tests.
+- **Reviewer fixes**: password attempts counted atomically; `auth.` paths skipped by the support audit, which could otherwise write the deleted id back. The limiter's outage and expiry tests changed with that redesign; the reviewer confirmed they were not loosened.
+- **Evidence**: `pnpm test` Test Files 145 passed (145), Tests 1058 passed (1058); `pnpm check` exit 0; `pnpm build` exit 0 (`--dry-run: exiting now`). On a local Worker with real Better Auth and local D1: wrong password, deletion to `/login`, owner refusal, full MFA path through the API, and 8 parallel guesses limited to 5.
+- **Reviewer**: VERDICT: APPROVE, twice (subagent, independent of the author).
+- **Not done**: not merged, pushed or deployed. The MFA path was run through the API, not typed in the UI. Staff, support and platform-admin deletion ran in tests only, not on a local Worker. `client/public/_headers` fails its contract test on a CRLF checkout (not from this ticket). Legal retention and other questions are in `.agent/OPEN_QUESTIONS.md`.
+## 2026-10-31 hayhost hardening: slip review, booking wizard, full UI pass (branch `feat/hayhost-hardening`, from `feat/account-deletion` `42432d6`)
+- **ข้อ 1 สลิป** (`a60cc93`): ถ้าเทียบได้แค่เลขบัญชีธนาคาร (ไม่มีเบอร์พร้อมเพย์ที่เทียบได้) และไม่ตรง จะส่งให้พนักงานตรวจ ไม่ปฏิเสธ ถ้าเบอร์พร้อมเพย์ (proxy) ไม่ตรงยังปฏิเสธเหมือนเดิม ทดสอบผ่าน UI กับ mock SlipOK แล้ว: ได้ `pending_verification` + `slipok_receiver_unverified_manual_review_required`
+- **ข้อ 2 BookingWizard** (`b4f36fb`): ซ่อนเฉพาะห้องที่ถูกจองทับ (`client/src/lib/roomAvailability.ts`) ไม่เสนอห้อง `maintenance` และล้างห้องที่เลือกไว้เมื่อเปลี่ยนวันจนห้องไม่ว่าง เซิร์ฟเวอร์ปฏิเสธการจองซ้อนอยู่แล้ว เพิ่ม test ไว้ ใน UI: จอง 001 แล้ว 002 และ 003 ยังเลือกได้ ส่วน 001 หายจากรายการ
+- **บั๊กที่เจอตอนรันแอปจริง** (ทุกข้อมี regression test ที่ fail กับโค้ดเดิม):
+  - `8fd280c` สรุปการจองหน้าเว็บแสดง "(2 2 night)"
+  - `dff79f5` QR พร้อมเพย์โหลดจาก api.qrserver.com (ส่งเบอร์พร้อมเพย์และยอดเงินให้บุคคลที่สาม และถ้าบริการนั้นล่ม แขกจะจ่ายเงินไม่ได้) ตอนนี้วาดในเบราว์เซอร์ ตรวจแล้วว่า decode กลับได้ payload เดิม (OpenCV)
+  - `6c94e84` สลิปที่รอพนักงานตรวจ: หน้าแขกยังนับถอยหลังแล้วบอกให้เริ่มใหม่ และ `checkStatus` ตั้ง payment เป็น failed ตอนนี้แสดงว่า "ได้รับสลิปแล้ว" และคืนค่า `under_review`
+  - `c04f1d8` เพิ่ม/แก้การเชื่อมต่อ OTA ไม่ได้เลย (500 `value.getTime is not a function`)
+  - `9397cdf` หน้าพนักงานแสดงทุกคน (รวมเจ้าของ) เป็น "ไม่มีอีเมล / รอยืนยันคำเชิญ" และปุ่มลบเจ้าของกดได้ทั้งที่เซิร์ฟเวอร์ปฏิเสธ
+  - `d608ee1` พนักงานต้อนรับและแม่บ้านเปิดหน้าแรกแล้วปฏิทินโหลดไม่ได้ (403)
+  - `1203f0b` อัปโหลดรูปในหน้าสร้างเว็บไซต์ไม่ได้เลย
+  - `b3a10f7` ข้อความหลักและสีเน้นที่พิมพ์ไม่ถูกบันทึก
+  - `b99d851` รูปโรงแรมทุกรูปโหลดไม่ขึ้นบนเว็บที่ deploy แล้ว เพราะ `/media/*` ได้ index.html (`run_worker_first` มีแค่ `/api/*`) ตอนนี้เสิร์ฟที่ `/api/media/*` โดยไม่ได้แก้ wrangler.toml
+  - `bdd3bfd` หน้าห้องว่างและราคาแสดง 0/0 ห้องทุกวัน
+  - `511ce2e` บันทึกราคาหรือ IN/OUT ในหน้าห้องว่างไม่ได้ ("hotel_id is required.")
+- **ข้อ 4 i18n**: ปฏิทินหน้าแรก (`0129f5d`), การ์ด MFA (`d4d0bc6`), หน้าไม่มีสิทธิ์และคำว่า "ห้อง" (`83c1e69`), แปลข้อความ error จากเซิร์ฟเวอร์ที่พบบ่อย 31 ข้อความ (`d9dd494`), และเปิดหน้าเป็นภาษาไทยเมื่อเบราว์เซอร์เป็นภาษาไทย (`50d1cb3`)
+- **ใช้ทดสอบอย่างเดียว** (`a045b1d`): ตัวแปร `SLIPOK_API_BASE_URL` ให้ `wrangler dev` เรียก mock SlipOK ได้ รับเฉพาะ URL loopback
+- **Test ที่แก้ (ไม่ได้เพิ่มใหม่) พร้อมเหตุผล**: `server/channelManager.hotelStaff.d1.test.ts` เคยบังคับให้ส่ง `[]` ซึ่งคือตัวบั๊กที่ทำให้อีเมลหาย; `client/src/pages/WebsiteBuilder.contract.test.ts` เคยบังคับให้เรียก tRPC upload ที่ปฏิเสธทุกครั้ง; `server/d1/media.test.ts` เคยคาดว่าได้ URL `/media/` ซึ่งโหลดไม่ได้บนเว็บที่ deploy; `client/src/dashboardCalendar.contract.test.ts` เคยตรึงข้อความอังกฤษที่ hard-code ไว้ ตอนนี้ตรวจ key และข้อความใน dictionary แทน; `client/src/pages/Calendar.test.tsx` เพิ่ม assertion ใหม่เท่านั้น
+- **Flow ที่ทดสอบผ่านใน UI** (local Worker กับ D1/R2 local, Better Auth จริง, mock SlipOK): สมัครและล็อกอิน; สร้างที่พัก; ประเภทห้องและราคา และแก้ราคารายวัน; สร้างเว็บไซต์ (อัปโหลดรูป ข้อความ สี) และเปิด/ปิดหน้าเว็บ (ตอนปิด หน้าเว็บและรูปเป็น 404); จองจากหน้าเว็บ; พร้อมเพย์และตรวจสลิป 4 แบบ (ตรงแล้วยืนยันอัตโนมัติ, proxy ไม่ตรงแล้วปฏิเสธ, มีแต่เลขบัญชีและไม่ตรงแล้วรอพนักงาน, พนักงานอนุมัติ); พนักงานเพิ่มการจองและจองซ้อน; iCal export และบันทึกการเชื่อมต่อ OTA; ตม.30 (ดูตัวอย่างและไฟล์ .xlsx ที่มีข้อมูลถูกต้อง); หน้าการเงิน; เชิญพนักงาน รับคำเชิญ และหน้าแรกของพนักงานต้อนรับ; MFA (ลงทะเบียน, รหัสผิด, ล็อกอินด้วยรหัส, step-up ตอนเปลี่ยนพร้อมเพย์); ลืมรหัสผ่าน (รหัสใหม่ใช้ได้ รหัสเก่าใช้ไม่ได้); ลบบัญชีพนักงาน (แถวใน user และ hotel_users หายไป และกลับไปหน้า /login)
+- **ทดสอบไม่ได้ พร้อมเหตุผล**: iCal import หรือซิงก์จาก OTA จริง (sandbox ไม่มีเน็ตออกนอก และ Worker บล็อก URL loopback โดยตั้งใจ จึงมีแค่ unit test); SlipOK จริง (ไม่มี key ใช้ mock); อีเมลจริง (ไม่มี `RESEND_API_KEY` จึงดึง token จาก D1 local แทน); การลบบัญชีเจ้าของ (ปฏิเสธโดยออกแบบไว้ มี test อยู่แล้วจาก spec 17); สแกน QR ด้วยแอปธนาคารจริง (ตรวจด้วย OpenCV แทน); ซ่อนหน้าแม่บ้าน/บริการเสริม/ตั้งราคาขั้นสูงแค่เปิดดูว่าไม่มี error ยังไม่ได้ทดสอบทุกปุ่ม
+- **คำถามใหม่ใน OPEN_QUESTIONS**: สิทธิ์ดู allotment/ราคาของพนักงานต้อนรับ; การจองจากเว็บถูกบันทึก source เป็น `manual` (ต้องมี migration จึงยังไม่ได้ทำ); พนักงานไม่เห็นรูปสลิปตอนตรวจเอง; ภาษาเริ่มต้นของหน้าเว็บโรงแรม; ข้อความ error ที่ยังไม่ได้แปล
+- **Migration**: ไม่มี ไม่ได้ merge, push เข้า main หรือ deploy
+- **ผลตรวจ**: `pnpm test` ได้ Test Files 156 passed (156), Tests 1112 passed (1112); `pnpm check` (`tsc --noEmit`) exit 0; `pnpm build` exit 0 (`built in 7.19s`, `Total Upload: 3737.97 KiB`, `--dry-run: exiting now.`)
+- **Reviewer** (subagent อิสระ ไม่ได้เขียนโค้ดนี้): VERDICT: APPROVE ไม่มี blocker ตรวจ test ที่ถูกแก้ทั้ง 5 ไฟล์แล้วว่าเป็นการแก้ test ที่ตรึงบั๊กไว้ ไม่ใช่การผ่อน assertion และลองป้อน URL แปลก ๆ หลายแบบให้ตัว override ของ SlipOK แล้ว รับเฉพาะ loopback ข้อที่ยังค้าง: (should-fix) ข้อความใน `PaymentQR.tsx` ทั้ง component ยังเขียนภาษาไทยตายตัว แขกต่างชาติจึงเห็นเป็นภาษาไทย ควรแยกเป็น ticket แปลทั้ง component; (nit) ถ้ารายการจองส่ง `expires_at` มาด้วย ห้องที่ถูกจองไว้แต่หมดเวลาแล้วจะกลับมาแสดง; (nit) `loadStaffAuthUsers` อ่าน role ที่ถูกกรองทิ้งภายหลังด้วย
