@@ -5,6 +5,9 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] Legal: Computer Crime Act 2007 s.26 keeps traffic data 90 days and data identifying a service user 90 days after the service ends. If hayhost counts as a service provider, account deletion (at once) and hotel purge (day 59) are too early, and nothing keeps traffic data. The 2017 amendment could not be read. ASSUMPTION: unchanged until a lawyer answers. Raised 2026-11-01.
+- [ ] Legal: Privacy clause 6 still says periods are being set, but PDPA s.23(3) requires a period or an expected one at collection. Needs the owner's numbers. Raised 2026-11-01.
+- [ ] Legal: the Hotel Act, its guest register rules and the Unfair Contract Terms Act were not readable in `C:\thai-law`, and the 2022 breach and processor-record notifications failed to load. Nothing here cites their text. Raised 2026-11-01.
 - [ ] Spec 18: a closed hotel is deleted outright on day 66, bookings and TM.30 data included. Do the Hotel Act, immigration or tax rules require anything to be kept longer, and by the hotel or by hayhost? ASSUMPTION: these are the hotel's duties, met by the export. A lawyer must confirm. Raised 2026-11-01.
 - [ ] Spec 18: Terms 4.2 says the service ends on the day of cancellation, but closure has a 7-day wait. No fees are charged yet, so nothing is wrong today. ASSUMPTION: the service ends when the wait ends; the text needs the owner's wording before billing starts. Raised 2026-11-01.
 - [ ] Spec 18: a purged hotel leaves `hotel_purge_log` (id and dates only) as proof, with no end date. ASSUMPTION: it holds no personal data, so it stays. Raised 2026-11-01.

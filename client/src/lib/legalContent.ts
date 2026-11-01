@@ -43,7 +43,7 @@ const th: Record<LegalKind, LegalDocument> = {
       { heading: "ข้อ 5. การรับชำระเงินจากแขก", items: [
         "5.1 เงินที่แขกชำระ (พร้อมเพย์ โอนเงิน หรือเงินสด) เข้าบัญชีของโรงแรมโดยตรง ผู้ให้บริการไม่ได้รับ ถือ หรือโอนเงินแทนโรงแรม",
         "5.2 การตรวจสลิปอัตโนมัติใช้บริการของ SlipOK ด้วย API key ของโรงแรมเอง ผลการตรวจเป็นเครื่องมือช่วย โรงแรมยังต้องรับผิดชอบการตรวจสอบยอดเงินในบัญชีของตนเอง",
-        "5.3 การจองออนไลน์ที่ยังไม่ชำระเงินจะถูกพักห้องไว้ชั่วคราวตามเวลาที่โรงแรมกำหนด (ค่าเริ่มต้น 15 นาที) เมื่อหมดเวลา ระบบจะปล่อยห้องคืนอัตโนมัติ",
+        "5.3 การจองออนไลน์ที่ยังไม่ชำระเงินจะถูกพักห้องไว้ชั่วคราว (ปัจจุบัน 15 นาที) เมื่อหมดเวลา ระบบจะปล่อยห้องคืนอัตโนมัติ",
         "5.4 เงื่อนไขการยกเลิกและการคืนเงินให้แขกเป็นความรับผิดชอบของโรงแรม ระบบเพียงบันทึกสถานะการคืนเงิน",
       ] },
       { heading: "ข้อ 6. หน้าที่ของโรงแรม", items: [
@@ -55,12 +55,12 @@ const th: Record<LegalKind, LegalDocument> = {
       { heading: "ข้อ 7. ข้อมูลของโรงแรมและข้อมูลส่วนบุคคล", items: [
         "7.1 ข้อมูลของโรงแรมเป็นของโรงแรม ผู้ให้บริการใช้ข้อมูลดังกล่าวเพื่อให้บริการเท่านั้น ตามข้อตกลงการประมวลผลข้อมูลส่วนบุคคล ซึ่งถือเป็นส่วนหนึ่งของข้อกำหนดนี้",
         "7.2 ระบบแยกข้อมูลของแต่ละโรงแรมออกจากกัน ผู้ใช้เข้าถึงได้เฉพาะโรงแรมที่ได้รับสิทธิ์ และตามสิทธิ์ที่กำหนดให้แต่ละบทบาท",
-        "7.3 เมื่อเลิกใช้บริการ โรงแรมขอส่งออกข้อมูลได้ภายใน 30 วัน หลังจากนั้นผู้ให้บริการจะลบหรือทำให้ข้อมูลไม่สามารถระบุตัวบุคคลได้ เว้นแต่กฎหมายกำหนดให้เก็บต่อ",
+        "7.3 เจ้าของที่พักปิดที่พักได้ในระบบ และยกเลิกได้ภายใน 7 วันนับจากวันที่แจ้ง เมื่อครบ 7 วันถือว่าสิ้นสุดการใช้บริการของที่พักนั้น โรงแรมดาวน์โหลดข้อมูลได้อีก 30 วัน และผู้ให้บริการจะลบข้อมูลภายใน 60 วันนับจากวันที่สิ้นสุด เว้นแต่กฎหมายกำหนดให้เก็บต่อ โรงแรมมีหน้าที่ดาวน์โหลดและเก็บเอกสารที่กฎหมายกำหนดให้โรงแรมต้องเก็บไว้เอง",
       ] },
       { heading: "ข้อ 8. การเข้าถึงข้อมูลโดยทีมงาน", items: [
         "8.1 ทีมซัพพอร์ตจะเข้าถึงข้อมูลของโรงแรมเพื่อแก้ปัญหาได้ก็ต่อเมื่อโรงแรมอนุญาตผ่านระบบเท่านั้น โดยกำหนดได้ว่าให้ดูอย่างเดียวหรือแก้ไขได้ และมีวันหมดอายุ",
         "8.2 โรงแรมเพิกถอนสิทธิ์ได้ทุกเมื่อ และการเข้าถึงของทีมซัพพอร์ตถูกบันทึกเป็นหลักฐาน",
-        "8.3 ผู้ดูแลระบบสูงสุดของผู้ให้บริการมีสิทธิ์ระดับแพลตฟอร์ม และจะใช้เข้าถึงข้อมูลของโรงแรมเท่าที่จำเป็นเพื่อดูแลระบบ รักษาความปลอดภัย หรือปฏิบัติตามกฎหมายหรือคำสั่งของหน่วยงานรัฐ",
+        "8.3 ผ่านหน้าจอของระบบ ผู้ดูแลระบบสูงสุดของผู้ให้บริการเห็นเฉพาะข้อมูลสรุปของโรงแรมและจัดการบัญชีผู้ใช้ได้ แต่ไม่เห็นการจองหรือข้อมูลแขก อย่างไรก็ตาม ผู้ให้บริการยังเข้าถึงฐานข้อมูลได้โดยตรงในระดับโครงสร้างพื้นฐาน และจะทำเช่นนั้นเท่าที่จำเป็นเพื่อดูแลระบบ รักษาความปลอดภัย หรือปฏิบัติตามกฎหมายหรือคำสั่งของหน่วยงานรัฐ",
       ] },
       { heading: "ข้อ 9. ความพร้อมให้บริการ", items: [
         "9.1 ผู้ให้บริการจะพยายามให้บริการอย่างต่อเนื่อง แต่ไม่รับประกันว่าบริการจะไม่หยุดชะงักหรือไม่มีข้อผิดพลาด เนื่องจากอาศัยโครงสร้างพื้นฐานของผู้ให้บริการภายนอก",
@@ -68,7 +68,7 @@ const th: Record<LegalKind, LegalDocument> = {
       ] },
       { heading: "ข้อ 10. ข้อจำกัดความรับผิด", items: [
         "10.1 ผู้ให้บริการไม่รับผิดต่อความเสียหายทางอ้อม การสูญเสียรายได้ หรือการจองซ้อน (overbooking) ที่เกิดจากความล่าช้าของการซิงก์ iCal ข้อมูลจาก OTA หรือการตั้งค่าของโรงแรม",
-        "10.2 ความรับผิดรวมของผู้ให้บริการไม่เกินค่าบริการที่โรงแรมชำระในรอบ 12 เดือนก่อนเกิดเหตุ ทั้งนี้ไม่ตัดความรับผิดที่กฎหมายห้ามมิให้จำกัด",
+        "10.2 ความรับผิดรวมของผู้ให้บริการไม่เกินค่าบริการที่โรงแรมชำระในรอบ 12 เดือนก่อนเกิดเหตุ ทั้งนี้ไม่ตัดความรับผิดเพื่อกลฉ้อฉลหรือความประมาทเลินเล่ออย่างร้ายแรงของผู้ให้บริการ และความรับผิดอื่นที่กฎหมายห้ามมิให้จำกัด",
       ] },
       { heading: "ข้อ 11. การระงับและการยกเลิกบริการ", items: [
         "11.1 ผู้ให้บริการอาจระงับบัญชีที่ใช้บริการผิดข้อกำหนด ผิดกฎหมาย หรือค้างชำระ โดยแจ้งเหตุผลให้ทราบ",
@@ -94,9 +94,9 @@ const th: Record<LegalKind, LegalDocument> = {
       { heading: "ข้อ 1. นโยบายนี้ใช้กับใคร", items: [
         "1.1 ผู้ประกอบการที่พัก เจ้าของ และพนักงานที่มีบัญชีในระบบ Hayhost เราเป็นผู้ควบคุมข้อมูล",
         "1.2 ผู้เข้าชมเว็บไซต์ www.hayhostth.com และผู้ติดต่อเรา เราเป็นผู้ควบคุมข้อมูล",
-        "1.3 แขกของโรงแรม โรงแรมแต่ละแห่งเป็นผู้ควบคุมข้อมูล เราประมวลผลข้อมูลแขกในฐานะผู้ประมวลผลข้อมูลตามคำสั่งของโรงแรม แขกควรอ่านนโยบายความเป็นส่วนตัวของโรงแรมนั้นด้วย และส่งคำขอใช้สิทธิไปที่โรงแรมเป็นหลัก",
+        "1.3 แขกของโรงแรม โรงแรมแต่ละแห่งเป็นผู้ควบคุมข้อมูล เราประมวลผลข้อมูลแขกในฐานะผู้ประมวลผลข้อมูลตามคำสั่งของโรงแรม แขกควรอ่านนโยบายความเป็นส่วนตัวของโรงแรมนั้นด้วย และส่งคำขอใช้สิทธิไปที่โรงแรมเป็นหลัก ยกเว้นค่า hash ของ IP ตอนสร้างการจองออนไลน์ ซึ่งเราเก็บเพื่อความปลอดภัยของระบบในฐานะผู้ควบคุมข้อมูล",
       ] },
-      { heading: "ข้อ 2. ข้อมูลที่เราเก็บ", table: { head: ["กลุ่ม", "ข้อมูล", "ที่มา"], rows: [
+      { heading: "ข้อ 2. ข้อมูลที่เราเก็บ", items: ["ผู้ใช้ต้องให้ชื่อและอีเมล และโรงแรมต้องให้ข้อมูลที่พัก เพื่อเข้าทำสัญญาและใช้บริการ หากไม่ให้ เราจะเปิดบัญชีหรือให้บริการไม่ได้"], table: { head: ["กลุ่ม", "ข้อมูล", "ที่มา"], rows: [
         ["บัญชีผู้ใช้", "ชื่อ อีเมล รหัสผ่าน (เก็บแบบเข้ารหัสทางเดียว) ข้อมูลยืนยันตัวตนสองชั้น บทบาทและสิทธิ์", "ผู้ใช้กรอกเอง / โรงแรมเชิญ"],
         ["การใช้งานระบบ", "หมายเลข IP และข้อมูลเบราว์เซอร์ของ session ที่ล็อกอิน บันทึกการกระทำที่สำคัญ (audit log) และค่า hash ของ IP ตอนสร้างการจองออนไลน์เพื่อป้องกันการใช้งานเกินจำกัด", "เก็บอัตโนมัติ"],
         ["การเข้าชมเว็บไซต์", "สถิติการเข้าชมแบบไม่ใช้คุกกี้ผ่าน Cloudflare Web Analytics", "เก็บอัตโนมัติ"],
@@ -117,24 +117,24 @@ const th: Record<LegalKind, LegalDocument> = {
         "4.3 ข้อมูลการจองที่ซิงก์ผ่าน iCal จะถูกส่งไปยังหรือรับมาจาก OTA ที่โรงแรมตั้งค่าไว้",
         "4.4 เปิดเผยต่อหน่วยงานรัฐเมื่อกฎหมายกำหนด",
       ] },
-      { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) เราจะดำเนินการให้มีมาตรการคุ้มครองที่เหมาะสมตามมาตรา 28-29"] },
+      { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) เราจะส่งหรือโอนข้อมูลตามมาตรา 28 และมาตรา 29 และประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลเรื่องหลักเกณฑ์การให้ความคุ้มครองข้อมูลส่วนบุคคลที่ส่งหรือโอนไปยังต่างประเทศ พ.ศ. 2566 เช่นโดยใช้ข้อสัญญากับผู้ให้บริการที่รับข้อมูล"] },
       { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล ส่วนกรณีอื่นยังไม่มีการลบตามเวลา และตัวเลขระยะเวลาอยู่ระหว่างกำหนด"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
-        ["บัญชีผู้ใช้", "ตลอดระยะเวลาใช้บริการ เมื่อลบบัญชี ระบบนำตัวตนของเจ้าของบัญชีออกทันที แต่ระเบียนการจอง การเงิน และ audit log ยังคงอยู่โดยไม่ระบุตัวบุคคล"],
+        ["บัญชีผู้ใช้", "ตลอดระยะเวลาใช้บริการ เมื่อลบบัญชี ระบบนำตัวตนของเจ้าของบัญชีออกทันที แต่ระเบียนการจอง การเงิน และ audit log ยังคงอยู่ โดยนำตัวตนออกเท่าที่ระบบจับคู่ได้ ข้อความอิสระที่พิมพ์ไว้อาจยังมีชื่ออยู่"],
         ["Session และ IP", "ตามอายุ session"],
         ["Audit log และบันทึกการเข้าถึงของทีมซัพพอร์ต", "อยู่ระหว่างกำหนด"],
-        ["เอกสารบัญชีและใบแจ้งหนี้ค่าบริการ", "ตามกฎหมายบัญชีและภาษี"],
+        ["เอกสารบัญชีและใบแจ้งหนี้ค่าบริการ", "ไม่น้อยกว่า 5 ปีนับแต่วันปิดบัญชีตามกฎหมายการบัญชี และตามกฎหมายภาษี"],
         ["ข้อมูลแขก", "ตามที่โรงแรมกำหนด และตามข้อตกลงการประมวลผลข้อมูลเมื่อเลิกใช้บริการ"],
       ] } },
       { heading: "ข้อ 7. ความปลอดภัย", items: [
         "7.1 เข้ารหัสการรับส่งข้อมูล (HTTPS) แยกข้อมูลแต่ละโรงแรม ควบคุมสิทธิ์ตามบทบาท รองรับการยืนยันตัวตนสองชั้น เข้ารหัส API key ของ SlipOK ก่อนจัดเก็บ จำกัดการเข้าถึงของทีมซัพพอร์ตด้วยการอนุญาตจากโรงแรม และบันทึกการเข้าถึง",
-        "7.2 หากเกิดการละเมิดข้อมูลส่วนบุคคล เราจะแจ้งสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลภายใน 72 ชั่วโมงตามที่กฎหมายกำหนด และแจ้งโรงแรมที่ได้รับผลกระทบโดยไม่ชักช้า",
+        "7.2 หากเกิดการละเมิดข้อมูลที่เราเป็นผู้ควบคุม เราจะแจ้งสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลโดยไม่ชักช้าภายใน 72 ชั่วโมงนับแต่ทราบเหตุเท่าที่ทำได้ เว้นแต่เหตุนั้นไม่มีความเสี่ยงที่จะกระทบสิทธิและเสรีภาพของบุคคล หากมีความเสี่ยงสูง เราจะแจ้งเจ้าของข้อมูลพร้อมแนวทางเยียวยาด้วย ส่วนข้อมูลแขก เราจะแจ้งโรงแรมตามข้อตกลงการประมวลผลข้อมูล",
       ] },
       { heading: "ข้อ 8. คุกกี้และการเก็บข้อมูลในเบราว์เซอร์", items: [
         "8.1 เราใช้คุกกี้ที่จำเป็นต่อการล็อกอินและรักษาความปลอดภัยของ session ไม่ใช้คุกกี้เพื่อการโฆษณา",
         "8.2 เราเก็บค่าที่คุณเลือก เช่นภาษาและโรงแรมที่กำลังใช้งาน ไว้ในเบราว์เซอร์ของคุณ และใช้ Cloudflare Web Analytics นับสถิติการเข้าชมโดยไม่ใช้คุกกี้ หากเพิ่มการวิเคราะห์หรือโฆษณาที่ต้องใช้คุกกี้ เราจะขอความยินยอมก่อน",
       ] },
       { heading: "ข้อ 9. สิทธิของเจ้าของข้อมูลและการขอลบข้อมูล", items: [
-        "9.1 ท่านมีสิทธิขอเข้าถึงและรับสำเนา ขอให้แก้ไข ขอให้ลบหรือทำลาย ขอให้ระงับการใช้ คัดค้านการประมวลผล ขอโอนย้ายข้อมูล และถอนความยินยอม",
+        "9.1 ท่านมีสิทธิขอเข้าถึงและรับสำเนา ขอให้แก้ไข ขอให้ลบหรือทำลาย ขอให้ระงับการใช้ คัดค้านการประมวลผล ขอโอนย้ายข้อมูล และถอนความยินยอม เราจะตอบโดยไม่ชักช้า คำขอเข้าถึงและรับสำเนาไม่เกิน 30 วัน (ขยายได้อีกไม่เกิน 30 วันเมื่อมีเหตุจำเป็นและแจ้งให้ทราบ) และคำขอลบไม่เกิน 90 วันนับจากวันที่ได้รับคำขอ",
         "9.2 ผู้มีบัญชีลบบัญชีของตนเองได้ที่หน้าการตั้งค่าความปลอดภัย หรือส่งอีเมลหัวข้อ \"ขอลบข้อมูล\" มาที่ support@hayhostth.com จากอีเมลของบัญชี",
         "9.3 แขกของโรงแรมโปรดติดต่อโรงแรมโดยตรง หากส่งคำขอมาที่เรา เราจะส่งต่อให้โรงแรมและช่วยโรงแรมดำเนินการ",
         "9.4 ท่านมีสิทธิร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล",
@@ -158,10 +158,11 @@ const th: Record<LegalKind, LegalDocument> = {
         "1.2 วัตถุประสงค์: ให้บริการตามข้อกำหนดการใช้บริการเท่านั้น ระยะเวลา: ตลอดระยะเวลาใช้บริการและช่วงส่งคืนหรือลบข้อมูลตามข้อ 7",
       ] },
       { heading: "ข้อ 2. หน้าที่ของผู้ประมวลผลข้อมูล", items: [
-        "2.1 ประมวลผลตามคำสั่งที่เป็นลายลักษณ์อักษรของผู้ควบคุมข้อมูลเท่านั้น โดยการตั้งค่าและการใช้งานระบบถือเป็นคำสั่ง",
+        "2.1 ประมวลผลตามคำสั่งที่เป็นลายลักษณ์อักษรของผู้ควบคุมข้อมูลเท่านั้น เว้นแต่คำสั่งนั้นขัดต่อกฎหมาย โดยข้อตกลงนี้ การตั้งค่า และการใช้งานระบบถือเป็นคำสั่ง",
         "2.2 ไม่ใช้ข้อมูลของแขกเพื่อวัตถุประสงค์ของตนเอง รวมถึงไม่นำไปทำการตลาดหรือฝึกโมเดล AI",
         "2.3 จัดให้บุคลากรที่เข้าถึงข้อมูลมีหน้าที่รักษาความลับ",
         "2.4 จัดให้มีมาตรการความปลอดภัยตามข้อ 7 ของนโยบายความเป็นส่วนตัว",
+        "2.5 จัดทำและเก็บรักษาบันทึกรายการของกิจกรรมการประมวลผลตามมาตรา 40 (3)",
       ] },
       { heading: "ข้อ 3. หน้าที่ของผู้ควบคุมข้อมูล", items: [
         "3.1 มีฐานทางกฎหมายในการเก็บข้อมูลแขก และแจ้งนโยบายความเป็นส่วนตัวของโรงแรมแก่แขก",
@@ -171,12 +172,12 @@ const th: Record<LegalKind, LegalDocument> = {
         "4.1 ผู้ควบคุมข้อมูลอนุญาตให้ใช้ผู้ประมวลผลข้อมูลช่วงตามรายชื่อในข้อ 12 ของนโยบายความเป็นส่วนตัว",
         "4.2 ผู้ประมวลผลข้อมูลจะแจ้งล่วงหน้า 30 วัน ก่อนเพิ่มหรือเปลี่ยนผู้ประมวลผลข้อมูลช่วง ผู้ควบคุมข้อมูลคัดค้านได้ด้วยเหตุผลอันสมควร",
       ] },
-      { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ประมวลผลข้อมูลจะส่งหรือโอนข้อมูลไปต่างประเทศเฉพาะผ่านผู้ประมวลผลข้อมูลช่วงตามข้อ 4 และภายใต้มาตรการตามมาตรา 28-29"] },
+      { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ประมวลผลข้อมูลจะส่งหรือโอนข้อมูลไปต่างประเทศเฉพาะผ่านผู้ประมวลผลข้อมูลช่วงตามข้อ 4 และตามมาตรา 28 และมาตรา 29 กับประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลที่เกี่ยวข้อง"] },
       { heading: "ข้อ 6. การเข้าถึงโดยทีมงาน", items: [
         "6.1 ทีมซัพพอร์ตเข้าถึงข้อมูลของโรงแรมได้เมื่อโรงแรมอนุญาตผ่านระบบเท่านั้น จำกัดโหมด (ดูอย่างเดียวหรือแก้ไข) และระยะเวลา เพิกถอนได้ และบันทึกการเข้าถึง",
-        "6.2 ผู้ดูแลระบบสูงสุดของผู้ประมวลผลข้อมูลจะเข้าถึงข้อมูลเท่าที่จำเป็นเพื่อดูแลระบบ รักษาความปลอดภัย หรือปฏิบัติตามกฎหมาย",
+        "6.2 หน้าจอของผู้ดูแลระบบสูงสุดไม่แสดงการจองหรือข้อมูลแขก ผู้ควบคุมข้อมูลอนุญาตให้ผู้ประมวลผลข้อมูลเข้าถึงฐานข้อมูลในระดับโครงสร้างพื้นฐานได้เท่าที่จำเป็นเพื่อดูแลระบบ รักษาความปลอดภัย หรือปฏิบัติตามกฎหมาย",
       ] },
-      { heading: "ข้อ 7. การสิ้นสุดและการลบข้อมูล", items: ["7.1 เมื่อสิ้นสุดการใช้บริการ ผู้ประมวลผลข้อมูลจะให้ผู้ควบคุมข้อมูลส่งออกข้อมูลภายใน 30 วัน แล้วลบข้อมูลภายใน 60 วัน รวมถึงในสำเนาสำรองตามรอบการสำรองข้อมูล เว้นแต่กฎหมายกำหนดให้เก็บ"] },
+      { heading: "ข้อ 7. การสิ้นสุดและการลบข้อมูล", items: ["7.1 เมื่อสิ้นสุดการใช้บริการตามข้อ 7.3 ของข้อกำหนดการใช้บริการ ผู้ประมวลผลข้อมูลจะให้ผู้ควบคุมข้อมูลส่งออกข้อมูลภายใน 30 วัน แล้วลบข้อมูลภายใน 60 วันนับจากวันที่สิ้นสุด รวมถึงในสำเนาสำรองตามรอบการสำรองข้อมูล เว้นแต่กฎหมายกำหนดให้เก็บ ระหว่างรอรอบดังกล่าว ผู้ประมวลผลข้อมูลจะไม่เข้าถึงหรือนำสำเนาสำรองนั้นมาใช้"] },
       { heading: "ข้อ 8. การแจ้งเหตุละเมิด", items: ["8.1 แจ้งผู้ควบคุมข้อมูลโดยไม่ชักช้า ภายใน 48 ชั่วโมงนับแต่ทราบเหตุ พร้อมข้อมูลเท่าที่มีเพื่อให้ผู้ควบคุมข้อมูลแจ้งสำนักงานฯ ได้ภายใน 72 ชั่วโมง"] },
       { heading: "ข้อ 9. การช่วยเหลือผู้ควบคุมข้อมูล", items: ["9.1 ช่วยตอบคำขอใช้สิทธิของแขก (เช่นส่งออก แก้ไข หรือลบข้อมูล) และให้ข้อมูลที่จำเป็นเพื่อพิสูจน์การปฏิบัติตามข้อตกลงนี้"] },
     ],
@@ -217,7 +218,7 @@ const en: Record<LegalKind, LegalDocument> = {
       { heading: "5. Payments from Guests", items: [
         "5.1 Money Guests pay (PromptPay, transfer or cash) goes directly to the Hotel. The Provider does not receive, hold or transfer money for the Hotel.",
         "5.2 Automatic slip checking uses SlipOK with the Hotel's own API key. The result is an aid. The Hotel remains responsible for checking its own account balance.",
-        "5.3 An unpaid online booking holds the room for the time the Hotel sets (15 minutes by default). When the time ends, the system releases the room.",
+        "5.3 An unpaid online booking holds the room for a short time (currently 15 minutes). When the time ends, the system releases the room.",
         "5.4 Cancellation terms and refunds to Guests are the Hotel's responsibility. The system only records the refund status.",
       ] },
       { heading: "6. The Hotel's duties", items: [
@@ -229,12 +230,12 @@ const en: Record<LegalKind, LegalDocument> = {
       { heading: "7. Hotel Data and personal data", items: [
         "7.1 Hotel Data belongs to the Hotel. The Provider uses it only to provide the Service, under the Data Processing Agreement, which forms part of these terms.",
         "7.2 The system keeps each Hotel's data separate. Users reach only the Hotels they have rights to, within the permissions of their role.",
-        "7.3 After leaving the Service, the Hotel may ask for a data export within 30 days. The Provider then deletes the data or makes it unidentifiable, unless the law requires it to be kept.",
+        "7.3 The owner may close a property in the system and may cancel within 7 days of the request. After those 7 days the Service ends for that property. The Hotel may download its data for another 30 days, and the Provider deletes the data within 60 days of the end date, unless the law requires it to be kept. The Hotel must download and keep any records the law requires the Hotel itself to keep.",
       ] },
       { heading: "8. Staff access to data", items: [
         "8.1 Support staff reach a Hotel's data to solve a problem only when the Hotel allows it in the system, as view-only or edit, with an expiry date.",
         "8.2 The Hotel may revoke access at any time, and support access is logged.",
-        "8.3 The Provider's top-level system administrator has platform-wide rights, and uses them to reach Hotel Data only as needed to run and secure the system, or to comply with the law or an order of a state authority.",
+        "8.3 Through the system's screens, the Provider's top-level administrator sees only hotel summaries and can manage user accounts, and cannot see bookings or Guest data. The Provider can still reach the database directly at infrastructure level, and does so only as needed to run and secure the system, or to comply with the law or an order of a state authority.",
       ] },
       { heading: "9. Availability", items: [
         "9.1 The Provider tries to keep the Service running but does not guarantee it will be uninterrupted or error-free, because it relies on third-party infrastructure.",
@@ -242,7 +243,7 @@ const en: Record<LegalKind, LegalDocument> = {
       ] },
       { heading: "10. Limit of liability", items: [
         "10.1 The Provider is not liable for indirect loss, lost revenue or overbooking caused by iCal sync delay, OTA data or the Hotel's settings.",
-        "10.2 The Provider's total liability is limited to the fees the Hotel paid in the 12 months before the event. This does not exclude liability that the law does not allow to be limited.",
+        "10.2 The Provider's total liability is limited to the fees the Hotel paid in the 12 months before the event. This does not exclude liability for the Provider's fraud or gross negligence, or any other liability the law does not allow to be limited.",
       ] },
       { heading: "11. Suspension and cancellation", items: [
         "11.1 The Provider may suspend an account that breaches these terms, breaks the law or is overdue, and will give the reason.",
@@ -266,9 +267,9 @@ const en: Record<LegalKind, LegalDocument> = {
       { heading: "1. Who this policy covers", items: [
         "1.1 Accommodation operators, owners and staff with a Hayhost account. We are the data controller.",
         "1.2 Visitors to www.hayhostth.com and people who contact us. We are the data controller.",
-        "1.3 Hotel guests. Each hotel is the data controller, and we process guest data as a data processor on the hotel's instructions. Guests should also read that hotel's privacy notice and send requests to the hotel first.",
+        "1.3 Hotel guests. Each hotel is the data controller, and we process guest data as a data processor on the hotel's instructions. Guests should also read that hotel's privacy notice and send requests to the hotel first. The exception is the IP hash taken when an online booking is made, which we keep for system security as data controller.",
       ] },
-      { heading: "2. What we collect", table: { head: ["Group", "Data", "Source"], rows: [
+      { heading: "2. What we collect", items: ["Users must give a name and email, and hotels must give their property details, to enter the contract and use the service. Without them we cannot open an account or provide the service."], table: { head: ["Group", "Data", "Source"], rows: [
         ["User accounts", "Name, email, password (one-way hashed), two-factor data, role and permissions", "The user / a hotel invite"],
         ["System use", "IP address and browser details of signed-in sessions, a log of important actions (audit log), and a hash of the IP when an online booking is made, to prevent overuse", "Automatic"],
         ["Website visits", "Cookie-free visit statistics through Cloudflare Web Analytics", "Automatic"],
@@ -289,24 +290,24 @@ const en: Record<LegalKind, LegalDocument> = {
         "4.3 Booking data synced by iCal goes to or comes from the OTAs the hotel sets up.",
         "4.4 We disclose data to state authorities when the law requires it.",
       ] },
-      { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google. We will put suitable safeguards in place under sections 28-29."] },
+      { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google. We transfer data under sections 28 and 29 and the Personal Data Protection Committee's 2023 notifications on transfers abroad, for example through contract clauses with the provider receiving the data."] },
       { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. Nothing else is deleted on a schedule yet, and retention periods are still being set."], table: { head: ["Data", "Period"], rows: [
-        ["User accounts", "While the service is used. When an account is deleted, the holder's identity is removed at once, while booking, financial and audit records stay without identifying them"],
+        ["User accounts", "While the service is used. When an account is deleted, the holder's identity is removed at once, while booking, financial and audit records stay, with the holder removed as far as the system can match them. Free text typed into them may still contain a name"],
         ["Sessions and IP", "For the life of the session"],
         ["Audit logs and support access logs", "Being set"],
-        ["Accounting records and invoices", "As accounting and tax law requires"],
+        ["Accounting records and invoices", "At least 5 years from the closing date under the Accounting Act, and as tax law requires"],
         ["Guest data", "As the hotel decides, and under the Data Processing Agreement on leaving the service"],
       ] } },
       { heading: "7. Security", items: [
         "7.1 Encrypted transport (HTTPS), separation of each hotel's data, role-based permissions, optional two-factor authentication, encrypted SlipOK API keys, support access limited by hotel permission, and access logs.",
-        "7.2 If a personal data breach occurs, we will notify the Personal Data Protection Committee office within 72 hours as the law requires, and tell affected hotels without delay.",
+        "7.2 If a breach affects data we control, we will notify the Personal Data Protection Committee office without delay, within 72 hours of becoming aware where feasible, unless it poses no risk to people's rights and freedoms. If the risk is high, we will also tell the people affected and how to remedy it. For guest data, we tell the hotel under the Data Processing Agreement.",
       ] },
       { heading: "8. Cookies and browser storage", items: [
         "8.1 We use cookies needed for sign-in and session security. We do not use advertising cookies.",
         "8.2 We keep your choices, such as language and current hotel, in your browser, and use Cloudflare Web Analytics to count visits without cookies. If we add analytics or advertising that need cookies, we will ask for consent first.",
       ] },
       { heading: "9. Your rights and data deletion", items: [
-        "9.1 You may ask to access and copy, correct, delete or destroy, or restrict the use of your data, object to processing, move your data, and withdraw consent.",
+        "9.1 You may ask to access and copy, correct, delete or destroy, or restrict the use of your data, object to processing, move your data, and withdraw consent. We reply without delay: within 30 days for access and copies (extendable by up to 30 days if needed, with notice), and within 90 days for deletion, from the day we receive the request.",
         "9.2 Account holders can delete their own account on the security settings page, or email support@hayhostth.com from the account's address with the subject \"Data deletion request\".",
         "9.3 Hotel guests should contact the hotel directly. If you send a request to us, we will pass it to the hotel and help it respond.",
         "9.4 You may complain to the Personal Data Protection Committee office.",
@@ -330,10 +331,11 @@ const en: Record<LegalKind, LegalDocument> = {
         "1.2 Purpose: only to provide the service under the terms of service. Duration: while the service is used and during return or deletion under clause 7.",
       ] },
       { heading: "2. The Processor's duties", items: [
-        "2.1 Process data only on the Controller's written instructions. Settings and use of the system count as instructions.",
+        "2.1 Process data only on the Controller's written instructions, unless an instruction is against the law. This agreement, settings and use of the system count as instructions.",
         "2.2 Not use Guest data for its own purposes, including marketing or training AI models.",
         "2.3 Bind staff who reach the data to confidentiality.",
         "2.4 Keep the security measures in clause 7 of the Privacy Policy.",
+        "2.5 Keep a record of processing activities under section 40(3).",
       ] },
       { heading: "3. The Controller's duties", items: [
         "3.1 Have a lawful basis to collect Guest data, and give Guests the Hotel's privacy notice.",
@@ -343,12 +345,12 @@ const en: Record<LegalKind, LegalDocument> = {
         "4.1 The Controller allows the sub-processors listed in clause 12 of the Privacy Policy.",
         "4.2 The Processor gives 30 days' notice before adding or changing a sub-processor. The Controller may object on reasonable grounds.",
       ] },
-      { heading: "5. Transfers abroad", items: ["5.1 The Processor transfers data abroad only through the sub-processors in clause 4 and under measures under sections 28-29."] },
+      { heading: "5. Transfers abroad", items: ["5.1 The Processor transfers data abroad only through the sub-processors in clause 4, and under sections 28 and 29 and the related Personal Data Protection Committee notifications."] },
       { heading: "6. Staff access", items: [
         "6.1 Support staff reach Hotel data only when the Hotel allows it in the system, limited by mode (view-only or edit) and time, revocable, and logged.",
-        "6.2 The Processor's top-level system administrator reaches data only as needed to run and secure the system, or to comply with the law.",
+        "6.2 The top-level administrator's screens do not show bookings or Guest data. The Controller allows the Processor to reach the database at infrastructure level only as needed to run and secure the system, or to comply with the law.",
       ] },
-      { heading: "7. Ending and deletion", items: ["7.1 When the service ends, the Processor lets the Controller export data within 30 days, then deletes it within 60 days, including from backups on their normal cycle, unless the law requires it to be kept."] },
+      { heading: "7. Ending and deletion", items: ["7.1 When the service ends under clause 7.3 of the terms of service, the Processor lets the Controller export data within 30 days, then deletes it within 60 days of the end date, including from backups on their normal cycle, unless the law requires it to be kept. Until that cycle ends, the Processor does not access or use those backups."] },
       { heading: "8. Breach notice", items: ["8.1 The Processor tells the Controller without delay, within 48 hours of becoming aware, with the information available, so the Controller can notify the office within 72 hours."] },
       { heading: "9. Help for the Controller", items: ["9.1 The Processor helps answer Guests' requests, such as export, correction or deletion, and gives the information needed to show compliance with this agreement."] },
     ],

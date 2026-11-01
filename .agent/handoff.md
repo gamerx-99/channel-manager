@@ -1,5 +1,10 @@
 # Handoff log
 
+## [2026-11-01] Legal text checked against the Acts and notifications (branch `claude/priceless-galileo-e5dfc3`)
+- **What happened**: The owner asked for the documents to be corrected first. Text only, in `client/src/lib/legalContent.ts`, Thai and English, checked against PDPA text and gazette notifications read from `C:\thai-law`. Added what s.23(2) needs, the breach exceptions in s.37(4), response times (access notification 2026, erasure notification 2024), the 2023 transfer notifications, s.40(1) and (3) in the DPA, Civil Code s.373 in Terms 10.2, and the closure timeline in Terms 7.3.
+- **Corrected to the system**: hotels cannot set the hold time, as no code writes it. A super admin has no hotel scope in `resolveScope` and sees summaries and accounts only, so Terms 8.3 and DPA 6.2 now say that, and that database access at infrastructure level remains. This differs from the earlier handoff note that a super admin can reach hotel data.
+- **Open**: see OPEN_QUESTIONS. A lawyer has not reviewed this.
+
 ## [2026-11-01] Closing a hotel and deleting its data, spec 18 (branch `claude/priceless-galileo-e5dfc3`)
 - **What happened**: The owner chose to make the code match the legal text, not soften the text. Terms 7.3 and DPA 7.1 promised an export for 30 days and deletion within 60, and nothing did either. An owner can now close a hotel from `/settings/security` and answer on `/hotel-closure`: 7-day wait, cancellable; export until day 37; the Worker cron deletes on day 66 (59 days after the service ends). `resolveScope` refuses everything else on a closing hotel. New owner-reserved permission `property.close_hotel`. A sole owner can delete their account once the service has ended. Privacy clause 6 now says closure deletes automatically.
 - **Tests changed on purpose**: `d1SchemaParity.test.ts` lists the new table; `App.privateRoute.mfa.test.tsx` and `adversarial_m2_auth.test.tsx` mock the new `hotelClosure.mine` query. No assertion was loosened.
