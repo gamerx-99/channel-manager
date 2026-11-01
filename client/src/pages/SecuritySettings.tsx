@@ -1,10 +1,17 @@
+import { hasHotelPermission } from "@shared/authorization";
 import DeleteAccountSettings from "@/components/DeleteAccountSettings";
 import MfaSettings from "@/components/MfaSettings";
 import SlipOkSettings from "@/components/SlipOkSettings";
+import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
+import { trpc } from "@/lib/trpc";
 
 export default function SecuritySettings() {
   const { t } = useTranslation();
+  const { selectedHotel } = useHotel();
+  const authMeQuery = trpc.auth.me.useQuery();
+  const hotelId = selectedHotel?.id;
+  const canManageSlipOk = Boolean(hotelId) && hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], hotelId!, "property.manage_profile");
 
   return (
     <div className="page-content">
@@ -18,7 +25,7 @@ export default function SecuritySettings() {
         </div>
       </section>
       <MfaSettings />
-      <SlipOkSettings />
+      {hotelId && canManageSlipOk && <SlipOkSettings hotelId={hotelId} />}
       <DeleteAccountSettings />
     </div>
   );
