@@ -1,5 +1,8 @@
 # Handoff log
 
+## [2026-11-01] Less internal detail in the legal pages (branch `claude/priceless-galileo-e5dfc3`)
+- **What happened**: The owner wants public text true and complete under PDPA s.23, without internal detail. Removed the hash and session wording, the security list detail, hold time and vendor names. Privacy 12 now lists provider groups, and DPA 4.1 gives names when a hotel asks. Terms 5.2 still names SlipOK because the hotel holds that account. Names stay in the ROPA.
+
 ## [2026-11-01] Keep Cloudflare headers in LF format
 - **What happened**: Added a Git attribute so `client/public/_headers` stays LF on Windows checkouts. This fixes the password-reset header contract without changing the test or header rules.
 - **Evidence**: `pnpm test` 161 files / 1136 tests passed; `pnpm check` passed. `git ls-files --eol` reported `w/lf` and `attr/text eol=lf`. No deployment.
