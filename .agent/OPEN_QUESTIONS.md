@@ -1,7 +1,10 @@
 # Open questions
 
 Format: `- [ ] <question> — ASSUMPTION used in the meantime: <default>, raised <date>`
-Move to a `## Resolved` section (don't delete) once the human answers, with the
+Move to a `## - [2026-11-01] Owner's decisions now in the legal text, for a lawyer to confirm: Computer-Related Crime Act s.26 applies to Hayhost and overrides erasure for 90 days; 5-year tax retention for a natural person (Revenue Code not in local data); forum clause by the Provider's domicile; EU/UK clauses meet clause 10(2) of the s.29 notification; a liability cap that is zero while no fee is charged; whether SlipOK with the hotel's own key is the hotel's processor or a Hayhost sub-processor.
+- [2026-11-01] Retention still undecided: booking IP hash, sales agents, support email. See the ROPA sheet.
+
+Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open

@@ -1,5 +1,9 @@
 # Handoff log
 
+## [2026-11-01] Owner's second answers, ROPA and spec 19 (branch `claude/priceless-galileo-e5dfc3`)
+- **What happened**: Documents only, no code. Terms: provider's name and address, 4.1, refund name check, 6.5, 10.1 to 10.3, 15.1 now names the court of the Provider's domicile. Privacy: 90-day identity archive, 5-year tax records, system-cycle wording, contact details, refund data. Added `docs/legal/hayhost-ropa.xlsx` and `specs/19-retention-and-guest-data-protection.md`.
+- **Ahead of the system**: Privacy clause 6 describes spec 19 parts A and B, which are not built. The legal pages must stay draft until they ship.
+- **Not verified**: Revenue Code and Civil Procedure Code are not in the local data, so the owner's citations were taken as given. A lawyer has not reviewed this. Not pushed or deployed.
 ## [2026-11-01] Owner's answers on the legal list (branch `claude/priceless-galileo-e5dfc3`)
 - **What happened**: Text only. Terms 4.2 now has the 7-day check and refunds to the PromptPay account in the owner's name. Terms 15.1 names the Mae Hong Son Provincial Court. Privacy 6 sets 3 years for audit logs and removes the 5-year accounting figure, because Accounting Act s.8 lists juristic persons and the owner starts as a natural person. SlipOK's row says what its terms state.
 - **Verification**: `pnpm check`: exit 0. `pnpm test`: 1133 of 1134 passed; the failure is the CRLF one in `PasswordReset.contract.test.ts`.

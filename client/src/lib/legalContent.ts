@@ -2,6 +2,7 @@
  * Draft legal pages, from the owner's Hayhost legal pack (DRAFT, 2026-11-01).
  * The notes to the lawyer are left out. Text is corrected to what the system does today,
  * so change it here when the system changes. A lawyer has not reviewed it.
+ * The retention and purge wording is ahead of the system until spec 19 ships.
  */
 
 export type LegalKind = "terms" | "privacy" | "dpa";
@@ -11,7 +12,7 @@ export type LegalDocument = { intro: string; sections: LegalSection[] };
 
 const th: Record<LegalKind, LegalDocument> = {
   terms: {
-    intro: "ข้อกำหนดนี้เป็นข้อตกลงระหว่างผู้ให้บริการ Hayhost (\"ผู้ให้บริการ\" หรือ \"Hayhost\") กับผู้ประกอบการที่พักที่สมัครใช้บริการ (\"ผู้ใช้บริการ\" หรือ \"โรงแรม\") การสมัครหรือใช้บริการถือว่าผู้ใช้บริการได้อ่าน เข้าใจ และตกลงตามข้อกำหนดนี้",
+    intro: "ข้อกำหนดนี้เป็นข้อตกลงระหว่าง ธนัชชา ศรีมณี ผู้ให้บริการ Hayhost Thailand (\"ผู้ให้บริการ\" หรือ \"Hayhost\") ที่อยู่ 41/3 หมู่ 5 ตำบลปางหมู อำเภอเมือง จังหวัดแม่ฮ่องสอน กับผู้ประกอบการที่พักที่สมัครใช้บริการ (\"ผู้ใช้บริการ\" หรือ \"โรงแรม\") การสมัครหรือใช้บริการถือว่าผู้ใช้บริการได้อ่าน เข้าใจ และตกลงตามข้อกำหนดนี้",
     sections: [
       { heading: "ข้อ 1. คำนิยาม", items: [
         "1.1 \"บริการ\" หมายถึง ระบบ Hayhost ที่ให้บริการผ่าน www.hayhostth.com รวมถึงหน้าจองออนไลน์และเว็บไซต์ของโรงแรมที่สร้างผ่านระบบ",
@@ -30,9 +31,9 @@ const th: Record<LegalKind, LegalDocument> = {
         "3.3 โรงแรมต้องแจ้งผู้ให้บริการทันทีเมื่อสงสัยว่าบัญชีถูกใช้งานโดยไม่ได้รับอนุญาต",
       ] },
       { heading: "ข้อ 4. ค่าบริการ", items: [
-        "4.1 ค่าบริการ แพ็กเกจ และรอบการเรียกเก็บเป็นไปตามที่ประกาศบนเว็บไซต์ ปัจจุบันยังไม่มีการเรียกเก็บค่าบริการ",
+        "4.1 อัตราค่าบริการและเงื่อนไขแพ็กเกจเป็นไปตามที่ผู้ให้บริการประกาศกำหนดไว้บนหน้าเว็บไซต์หรือแอปพลิเคชัน ณ วันทำรายการ ปัจจุบันยังไม่มีการเรียกเก็บค่าบริการ",
         "4.2 การคืนเงินค่าบริการ: ผู้ใช้บริการแจ้งยกเลิกบริการได้ทุกเมื่อ ผู้ให้บริการจะคืนเงินค่าบริการสำหรับระยะเวลาที่เหลือของรอบการชำระปัจจุบัน ตามสูตร (ค่าบริการที่ชำระจริงในรอบนั้น ÷ 30) × จำนวนวันที่เหลือ นับจากวันถัดจากวันที่แจ้งยกเลิกจนถึงวันสิ้นสุดรอบ เงินคืนต่ำสุดเป็นศูนย์บาท และปัดเศษสตางค์ลง",
-        "บริการหยุดให้ใช้งานในวันที่แจ้งยกเลิก และสิ้นสุดเมื่อครบกำหนดตามข้อ 7.3 ผู้ให้บริการจะตรวจสอบข้อเท็จจริงและยอดเงินภายใน 7 วันนับจากวันที่แจ้ง แล้วคืนเงินเข้าบัญชีพร้อมเพย์ที่ตั้งไว้ในระบบ หรือบัญชีธนาคารที่ผู้ใช้บริการแจ้ง ภายใน 15 วันนับจากวันที่แจ้ง โดยบัญชีต้องเป็นชื่อของผู้ใช้บริการ หากยกเลิกการปิดที่พักตามข้อ 7.3 จะไม่มีการคืนเงิน",
+        "บริการหยุดให้ใช้งานในวันที่แจ้งยกเลิก และสิ้นสุดเมื่อครบกำหนดตามข้อ 7.3 ผู้ให้บริการจะตรวจสอบข้อเท็จจริงและยอดเงินภายใน 7 วันนับจากวันที่แจ้ง แล้วคืนเงินเข้าบัญชีพร้อมเพย์ที่ตั้งไว้ในระบบ หรือบัญชีธนาคารที่ผู้ใช้บริการแจ้ง ภายใน 15 วันนับจากวันที่แจ้ง โดยบัญชีต้องเป็นชื่อเดียวกับผู้ลงทะเบียนใช้บริการ หากชื่อบัญชีไม่ตรง ผู้ให้บริการมีสิทธิระงับการคืนเงินจนกว่าจะยืนยันตัวตนเพิ่มเติมแล้วเสร็จ เพื่อป้องกันการโจรกรรมบัญชีและการฟอกเงิน หากยกเลิกการปิดที่พักตามข้อ 7.3 จะไม่มีการคืนเงิน",
         "ตัวอย่าง: แพ็กเกจเดือนละ 900 บาท ใช้ไป 10 วันแล้วแจ้งยกเลิก ได้รับเงินคืน (900 ÷ 30) × 20 = 600 บาท",
         "4.3 ข้อยกเว้น: ผู้ให้บริการไม่คืนเงินค่าบริการ ในกรณีที่บัญชีถูกระงับหรือยกเลิกเนื่องจากผู้ใช้บริการฝ่าฝืนข้อกำหนดนี้หรือใช้บริการโดยมิชอบด้วยกฎหมาย ตามข้อ 11.1",
         "4.4 การเปลี่ยนแพ็กเกจ: อัปเกรดได้ทุกเมื่อ โดยชำระส่วนต่างตามสูตร (ค่าบริการแพ็กเกจใหม่ − ค่าบริการแพ็กเกจเดิม) ÷ 30 × จำนวนวันที่เหลือของรอบ แพ็กเกจใหม่มีผลทันทีเมื่อชำระเงินแล้ว และรอบถัดไปคิดตามราคาใหม่โดยไม่เปลี่ยนวันตัดรอบ",
@@ -51,6 +52,7 @@ const th: Record<LegalKind, LegalDocument> = {
         "6.2 ในฐานะผู้ควบคุมข้อมูลของแขก โรงแรมต้องมีฐานทางกฎหมายในการเก็บข้อมูล แจ้งนโยบายความเป็นส่วนตัวของโรงแรมให้แขกทราบ และตอบสนองคำขอใช้สิทธิของแขก",
         "6.3 ตรวจสอบความถูกต้องของราคา ห้องว่าง และลิงก์ iCal ที่ตั้งค่าไว้ และตรวจความสอดคล้องกับ OTA เป็นระยะ",
         "6.4 ไม่ใช้บริการเพื่อส่งข้อความรบกวน หลอกลวง หรือเผยแพร่เนื้อหาที่ผิดกฎหมายบนเว็บไซต์ของโรงแรม",
+        "6.5 จัดให้มีมาตรการความปลอดภัยและควบคุมพนักงานของตนในการเข้าถึงและรักษาความลับของข้อมูลแขก หากข้อมูลรั่วไหลเพราะอุปกรณ์หรือบุคลากรของผู้ใช้บริการเอง ผู้ใช้บริการต้องรับผิดชอบตามกฎหมาย",
       ] },
       { heading: "ข้อ 7. ข้อมูลของโรงแรมและข้อมูลส่วนบุคคล", items: [
         "7.1 ข้อมูลของโรงแรมเป็นของโรงแรม ผู้ให้บริการใช้ข้อมูลดังกล่าวเพื่อให้บริการเท่านั้น ตามข้อตกลงการประมวลผลข้อมูลส่วนบุคคล ซึ่งถือเป็นส่วนหนึ่งของข้อกำหนดนี้",
@@ -67,8 +69,9 @@ const th: Record<LegalKind, LegalDocument> = {
         "9.2 ผู้ให้บริการอาจหยุดให้บริการชั่วคราวเพื่อบำรุงรักษา โดยจะแจ้งล่วงหน้าเมื่อทำได้",
       ] },
       { heading: "ข้อ 10. ข้อจำกัดความรับผิด", items: [
-        "10.1 ผู้ให้บริการไม่รับผิดต่อความเสียหายทางอ้อม การสูญเสียรายได้ หรือการจองซ้อน (overbooking) ที่เกิดจากความล่าช้าของการซิงก์ iCal ข้อมูลจาก OTA หรือการตั้งค่าของโรงแรม",
-        "10.2 ความรับผิดรวมของผู้ให้บริการไม่เกินค่าบริการที่โรงแรมชำระในรอบ 12 เดือนก่อนเกิดเหตุ ทั้งนี้ไม่ตัดความรับผิดเพื่อกลฉ้อฉลหรือความประมาทเลินเล่ออย่างร้ายแรงของผู้ให้บริการ และความรับผิดอื่นที่กฎหมายห้ามมิให้จำกัด",
+        "10.1 ผู้ให้บริการไม่รับผิดต่อความเสียหายทางอ้อม ความเสียหายเชิงลงโทษ การสูญเสียรายได้หรือผลกำไรทางธุรกิจ รวมถึงการจองซ้อน (overbooking) ที่เกิดจากความล่าช้าของการซิงก์ iCal ข้อมูลจาก OTA หรือการตั้งค่าของโรงแรม",
+        "10.2 ความรับผิดรวมของผู้ให้บริการไม่เกินจำนวนค่าบริการที่ผู้ใช้บริการชำระจริงในรอบ 12 เดือนล่าสุดก่อนเกิดเหตุ หรือตามระยะเวลาที่ใช้บริการจริงหากน้อยกว่า 12 เดือน",
+        "10.3 ข้อ 10.1 และ 10.2 ไม่ตัดความรับผิดเพื่อกลฉ้อฉลหรือความประมาทเลินเล่ออย่างร้ายแรงของผู้ให้บริการ และความรับผิดอื่นที่กฎหมายห้ามมิให้จำกัด",
       ] },
       { heading: "ข้อ 11. การระงับและการยกเลิกบริการ", items: [
         "11.1 ผู้ให้บริการอาจระงับบัญชีที่ใช้บริการผิดข้อกำหนด ผิดกฎหมาย หรือค้างชำระ โดยแจ้งเหตุผลให้ทราบ",
@@ -85,11 +88,11 @@ const th: Record<LegalKind, LegalDocument> = {
         "14.1 ผู้ให้บริการอาจโอนสิทธิและหน้าที่ตามข้อกำหนดนี้ทั้งหมดหรือบางส่วนให้แก่นิติบุคคลที่ผู้ให้บริการจัดตั้งหรือเป็นผู้ถือหุ้น โดยแจ้งล่วงหน้าไม่น้อยกว่า 30 วัน การโอนดังกล่าวไม่กระทบสิทธิของผู้ใช้บริการ รวมถึงข้อมูลของโรงแรมและเงื่อนไขการคืนเงิน",
         "14.2 ผู้ใช้บริการจะโอนสิทธิตามข้อกำหนดนี้ให้บุคคลอื่นไม่ได้ เว้นแต่ได้รับความยินยอมเป็นหนังสือจากผู้ให้บริการ",
       ] },
-      { heading: "ข้อ 15. กฎหมายที่ใช้บังคับ", items: ["15.1 ข้อกำหนดนี้อยู่ภายใต้กฎหมายไทย ข้อพิพาทให้อยู่ในเขตอำนาจของศาลจังหวัดแม่ฮ่องสอน เว้นแต่กฎหมายกำหนดให้ต้องฟ้องที่ศาลอื่น"] },
+      { heading: "ข้อ 15. กฎหมายที่ใช้บังคับ", items: ["15.1 ข้อกำหนดและความตกลงนี้ให้อยู่ภายใต้บังคับและตีความตามกฎหมายไทย ข้อพิพาทใด ๆ ที่เกิดขึ้นจากหรือเกี่ยวข้องกับข้อกำหนดนี้ ให้อยู่ในเขตอำนาจของศาลที่มีเขตอำนาจเหนือภูมิลำเนาของผู้ให้บริการ เว้นแต่บทบัญญัติแห่งกฎหมายที่มีผลใช้บังคับจะกำหนดไว้เป็นอย่างอื่นโดยเด็ดขาด"] },
     ],
   },
   privacy: {
-    intro: "ผู้ให้บริการ Hayhost (\"เรา\") ให้ความสำคัญกับการคุ้มครองข้อมูลส่วนบุคคลตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) นโยบายนี้อธิบายว่าเราเก็บ ใช้ และเปิดเผยข้อมูลส่วนบุคคลอย่างไร",
+    intro: "ธนัชชา ศรีมณี ผู้ให้บริการ Hayhost Thailand (\"เรา\") ให้ความสำคัญกับการคุ้มครองข้อมูลส่วนบุคคลตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) นโยบายนี้อธิบายว่าเราเก็บ ใช้ และเปิดเผยข้อมูลส่วนบุคคลอย่างไร",
     sections: [
       { heading: "ข้อ 1. นโยบายนี้ใช้กับใคร", items: [
         "1.1 ผู้ประกอบการที่พัก เจ้าของ และพนักงานที่มีบัญชีในระบบ Hayhost เราเป็นผู้ควบคุมข้อมูล",
@@ -101,6 +104,7 @@ const th: Record<LegalKind, LegalDocument> = {
         ["การใช้งานระบบ", "หมายเลข IP และข้อมูลเบราว์เซอร์ของ session ที่ล็อกอิน บันทึกการกระทำที่สำคัญ (audit log) และค่า hash ของ IP ตอนสร้างการจองออนไลน์เพื่อป้องกันการใช้งานเกินจำกัด", "เก็บอัตโนมัติ"],
         ["การเข้าชมเว็บไซต์", "สถิติการเข้าชมแบบไม่ใช้คุกกี้ผ่าน Cloudflare Web Analytics", "เก็บอัตโนมัติ"],
         ["ข้อมูลโรงแรม", "ชื่อ ที่อยู่ ช่องทางติดต่อเจ้าของ บัญชีพร้อมเพย์ ช่องทางที่รู้จักเรา", "โรงแรมกรอก"],
+        ["การคืนเงินค่าบริการ", "ชื่อและเลขบัญชีรับเงินคืน และเอกสารยืนยันตัวตนเมื่อชื่อบัญชีไม่ตรงกับผู้ลงทะเบียน", "โรงแรมกรอกหรือส่งให้เรา"],
         ["ตัวแทนขาย", "ชื่อ เบอร์โทร อีเมล", "ตัวแทนหรือเรากรอก"],
         ["ข้อมูลแขก (ในฐานะผู้ประมวลผล)", "ชื่อผู้จอง วันเข้าพัก จำนวนผู้เข้าพัก สถานะการจองและการชำระเงิน ข้อมูลสลิปและผลการตรวจสลิป ความยินยอมทางการตลาด และสำหรับ ตม.30: ชื่อ-นามสกุล เพศ เลขหนังสือเดินทาง สัญชาติ วันเกิด เบอร์โทร", "โรงแรมบันทึก / แขกกรอกผ่านหน้าจอง / ซิงก์จาก OTA"],
       ] } },
@@ -108,6 +112,8 @@ const th: Record<LegalKind, LegalDocument> = {
         ["สร้างและดูแลบัญชี ให้บริการตามสัญญา ส่งอีเมลเชิญและรีเซ็ตรหัสผ่าน", "การปฏิบัติตามสัญญา (มาตรา 24(3))"],
         ["รักษาความปลอดภัย ป้องกันการเข้าถึงโดยมิชอบ เก็บ audit log", "ประโยชน์โดยชอบด้วยกฎหมาย (มาตรา 24(5))"],
         ["ออกใบแจ้งหนี้และเก็บเอกสารบัญชี", "หน้าที่ตามกฎหมาย (มาตรา 24(6))"],
+        ["เก็บข้อมูลระบุตัวผู้ใช้บริการ 90 วันหลังเลิกใช้บริการ ตาม พ.ร.บ.ว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ มาตรา 26", "หน้าที่ตามกฎหมาย (มาตรา 24(6))"],
+        ["ตรวจสอบบัญชีรับเงินคืน ป้องกันการโจรกรรมบัญชีและการฟอกเงิน", "การปฏิบัติตามสัญญา (มาตรา 24(3)) และประโยชน์โดยชอบด้วยกฎหมาย (มาตรา 24(5))"],
         ["ส่งข่าวสารผลิตภัณฑ์ให้โรงแรม", "ความยินยอม หรือประโยชน์โดยชอบด้วยกฎหมาย"],
         ["ประมวลผลข้อมูลแขก", "ตามคำสั่งของโรงแรม (ผู้ควบคุมข้อมูล) ภายใต้ข้อตกลงการประมวลผลข้อมูล"],
       ] } },
@@ -117,12 +123,13 @@ const th: Record<LegalKind, LegalDocument> = {
         "4.3 ข้อมูลการจองที่ซิงก์ผ่าน iCal จะถูกส่งไปยังหรือรับมาจาก OTA ที่โรงแรมตั้งค่าไว้",
         "4.4 เปิดเผยต่อหน่วยงานรัฐเมื่อกฎหมายกำหนด",
       ] },
-      { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) เราจะส่งหรือโอนข้อมูลตามมาตรา 28 และมาตรา 29 และประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลเรื่องหลักเกณฑ์การให้ความคุ้มครองข้อมูลส่วนบุคคลที่ส่งหรือโอนไปยังต่างประเทศ พ.ศ. 2566 เช่นโดยใช้ข้อสัญญากับผู้ให้บริการที่รับข้อมูล"] },
-      { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล ส่วนกรณีอื่นระบบยังไม่ลบตามเวลาโดยอัตโนมัติ ระยะเวลาด้านล่างจึงเป็นกำหนดที่เราใช้ และเราจะลบเองเมื่อครบกำหนด"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
-        ["บัญชีผู้ใช้", "ตลอดระยะเวลาใช้บริการ เมื่อลบบัญชี ระบบนำตัวตนของเจ้าของบัญชีออกทันที แต่ระเบียนการจอง การเงิน และ audit log ยังคงอยู่ โดยนำตัวตนออกเท่าที่ระบบจับคู่ได้ ข้อความอิสระที่พิมพ์ไว้อาจยังมีชื่ออยู่"],
+      { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) บริการโครงสร้างพื้นฐานบนคลาวด์และบริการส่งอีเมลจึงอาจจัดเก็บหรือส่งข้อมูลไปยังเซิร์ฟเวอร์ในต่างประเทศ เราจะส่งหรือโอนข้อมูลตามมาตรา 28 และมาตรา 29 และประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลเรื่องหลักเกณฑ์การให้ความคุ้มครองข้อมูลส่วนบุคคลที่ส่งหรือโอนไปยังต่างประเทศ พ.ศ. 2566 โดยใช้มาตรการคุ้มครองตามข้อสัญญามาตรฐานสากลกับผู้ให้บริการที่รับข้อมูล"] },
+      { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล เมื่อครบระยะเวลาด้านล่าง เราจะทำลายข้อมูลหรือทำให้ไม่สามารถระบุตัวบุคคลได้ตามรอบการประมวลผลของระบบ"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
+        ["บัญชีผู้ใช้", "ตลอดระยะเวลาใช้บริการ เมื่อลบบัญชี ระบบนำตัวตนของเจ้าของบัญชีออกจากฐานข้อมูลหลัก แต่ระเบียนการจอง การเงิน และ audit log ยังคงอยู่ โดยนำตัวตนออกเท่าที่ระบบจับคู่ได้ ข้อความอิสระที่พิมพ์ไว้อาจยังมีชื่ออยู่"],
+        ["ข้อมูลระบุตัวผู้ใช้บริการ (รหัสผู้ใช้ อีเมลที่ลงทะเบียน วันที่สมัคร วันที่เลิกใช้ และ IP ล่าสุด)", "90 วันนับจากวันที่เลิกใช้บริการ แยกเก็บจากฐานข้อมูลหลัก ตาม พ.ร.บ.ว่าด้วยการกระทำความผิดเกี่ยวกับคอมพิวเตอร์ มาตรา 26 ระหว่างนี้เราลบตามคำขอไม่ได้ ตามมาตรา 33 วรรคสอง แห่ง PDPA"],
         ["Session และ IP", "ตามอายุ session"],
-        ["Audit log และบันทึกการเข้าถึงของทีมซัพพอร์ต", "3 ปีนับจากวันที่บันทึก เพื่อใช้เป็นหลักฐานหากมีข้อพิพาท หรือจนกว่าที่พักจะถูกลบ แล้วแต่อย่างใดถึงก่อน"],
-        ["เอกสารบัญชีและใบแจ้งหนี้ค่าบริการ", "ตามกฎหมายบัญชีและภาษีที่ใช้กับผู้ให้บริการ"],
+        ["Audit log และบันทึกการเข้าถึงของทีมซัพพอร์ต", "3 ปีนับจากวันที่บันทึก เพื่อการรักษาความมั่นคงปลอดภัยและการปกป้องสิทธิเรียกร้องทางกฎหมาย หรือจนกว่าที่พักจะถูกลบ แล้วแต่อย่างใดถึงก่อน"],
+        ["เอกสารบัญชี ใบแจ้งหนี้ บันทึกการรับชำระเงิน สลิป และข้อมูลการคืนเงินค่าบริการ", "5 ปี เพื่อการตรวจสอบภาษีตามประมวลรัษฎากร"],
         ["ข้อมูลแขก", "ตามที่โรงแรมกำหนด และตามข้อตกลงการประมวลผลข้อมูลเมื่อเลิกใช้บริการ"],
       ] } },
       { heading: "ข้อ 7. ความปลอดภัย", items: [
@@ -139,7 +146,7 @@ const th: Record<LegalKind, LegalDocument> = {
         "9.3 แขกของโรงแรมโปรดติดต่อโรงแรมโดยตรง หากส่งคำขอมาที่เรา เราจะส่งต่อให้โรงแรมและช่วยโรงแรมดำเนินการ",
         "9.4 ท่านมีสิทธิร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล",
       ] },
-      { heading: "ข้อ 10. ช่องทางติดต่อ", items: ["10.1 ผู้ควบคุมข้อมูล: ผู้ให้บริการ Hayhost อีเมล: support@hayhostth.com"] },
+      { heading: "ข้อ 10. ช่องทางติดต่อ", items: ["10.1 ผู้ควบคุมข้อมูล: ธนัชชา ศรีมณี (Hayhost Thailand) ที่อยู่ 41/3 หมู่ 5 ตำบลปางหมู อำเภอเมือง จังหวัดแม่ฮ่องสอน โทร 061-512-5679 อีเมล: support@hayhostth.com"] },
       { heading: "ข้อ 11. การเปลี่ยนแปลงนโยบาย", items: ["11.1 เราอาจปรับปรุงนโยบายนี้ และจะแจ้งการเปลี่ยนแปลงที่สำคัญผ่านระบบหรืออีเมล พร้อมระบุวันที่มีผลบังคับ"] },
       { heading: "ข้อ 12. ผู้ให้บริการที่เราใช้", table: { head: ["ผู้ให้บริการ", "ใช้ทำอะไร", "ที่ตั้งการประมวลผล"], rows: [
         ["Cloudflare, Inc.", "โฮสต์ระบบ ฐานข้อมูล เก็บไฟล์และรูป รับอีเมลขาเข้า และสถิติการเข้าชม", "เครือข่ายทั่วโลก / สหรัฐฯ"],
@@ -186,7 +193,7 @@ const th: Record<LegalKind, LegalDocument> = {
 
 const en: Record<LegalKind, LegalDocument> = {
   terms: {
-    intro: "These terms are an agreement between the provider of Hayhost (\"the Provider\" or \"Hayhost\") and the accommodation operator that signs up (\"the Customer\" or \"the Hotel\"). By signing up or using the service, the Customer has read, understood and agreed to these terms.",
+    intro: "These terms are an agreement between Tanutcha Seemrnee, provider of Hayhost Thailand (\"the Provider\" or \"Hayhost\"), of 41/3 Moo 5, Pang Mu, Mueang Mae Hong Son, Mae Hong Son, and the accommodation operator that signs up (\"the Customer\" or \"the Hotel\"). By signing up or using the service, the Customer has read, understood and agreed to these terms.",
     sections: [
       { heading: "1. Definitions", items: [
         "1.1 \"Service\" means the Hayhost system provided at www.hayhostth.com, including booking pages and hotel websites created through it.",
@@ -205,9 +212,9 @@ const en: Record<LegalKind, LegalDocument> = {
         "3.3 The Hotel must tell the Provider at once if it suspects unauthorised use of an account.",
       ] },
       { heading: "4. Fees", items: [
-        "4.1 Fees, packages and billing cycles are as published on the website. No fees are charged at present.",
+        "4.1 Fees and package terms are as the Provider publishes on the website or application on the day of the transaction. No fees are charged at present.",
         "4.2 Refunds: the Customer may cancel at any time. The Provider refunds the rest of the current billing cycle using (fee actually paid for that cycle ÷ 30) × days remaining, counted from the day after cancellation to the end of the cycle. The minimum refund is zero baht, and satang are rounded down.",
-        "The Service stops on the day of the cancellation notice and ends when the period in clause 7.3 runs out. The Provider checks the facts and amount within 7 days of the notice, then refunds within 15 days of the notice to the PromptPay account set in the system or a bank account the Customer gives, which must be in the Customer's name. If the Customer withdraws the closure under clause 7.3, no refund is made.",
+        "The Service stops on the day of the cancellation notice and ends when the period in clause 7.3 runs out. The Provider checks the facts and amount within 7 days of the notice, then refunds within 15 days of the notice to the PromptPay account set in the system or a bank account the Customer gives, which must be in the same name as the registered Customer. If the name differs, the Provider may hold the refund until further identity checks are complete, to prevent account theft and money laundering. If the Customer withdraws the closure under clause 7.3, no refund is made.",
         "Example: on a 900 baht monthly package, cancelling after 10 days refunds (900 ÷ 30) × 20 = 600 baht.",
         "4.3 Exception: no refund is given where an account is suspended or cancelled because the Customer breached these terms or used the Service unlawfully, under clause 11.1.",
         "4.4 Changing package: the Customer may upgrade at any time by paying (new fee − old fee) ÷ 30 × days remaining in the cycle. The new package applies once paid, and the next cycle uses the new price with the same billing date.",
@@ -226,6 +233,7 @@ const en: Record<LegalKind, LegalDocument> = {
         "6.2 As data controller for Guests, the Hotel must have a lawful basis to collect data, give Guests its privacy notice, and respond to their requests.",
         "6.3 Check that rates, availability and iCal links are correct, and check them against OTAs from time to time.",
         "6.4 Do not use the Service to send spam, deceive people or publish unlawful content on the Hotel's website.",
+        "6.5 Keep security measures in place and control the Customer's staff in reaching Guest data and keeping it confidential. If data leaks through the Customer's own devices or people, the Customer is responsible as the law provides.",
       ] },
       { heading: "7. Hotel Data and personal data", items: [
         "7.1 Hotel Data belongs to the Hotel. The Provider uses it only to provide the Service, under the Data Processing Agreement, which forms part of these terms.",
@@ -242,8 +250,9 @@ const en: Record<LegalKind, LegalDocument> = {
         "9.2 The Provider may pause the Service for maintenance and will give notice where it can.",
       ] },
       { heading: "10. Limit of liability", items: [
-        "10.1 The Provider is not liable for indirect loss, lost revenue or overbooking caused by iCal sync delay, OTA data or the Hotel's settings.",
-        "10.2 The Provider's total liability is limited to the fees the Hotel paid in the 12 months before the event. This does not exclude liability for the Provider's fraud or gross negligence, or any other liability the law does not allow to be limited.",
+        "10.1 The Provider is not liable for indirect, consequential or punitive damages, lost revenue or lost business profits, or for overbooking caused by iCal sync delay, OTA data or the Hotel's settings.",
+        "10.2 The Provider's total liability is limited to the fees the Customer actually paid in the 12 months before the event, or over the actual period of use if shorter.",
+        "10.3 Clauses 10.1 and 10.2 do not exclude liability for the Provider's fraud or gross negligence, or any other liability the law does not allow to be limited.",
       ] },
       { heading: "11. Suspension and cancellation", items: [
         "11.1 The Provider may suspend an account that breaches these terms, breaks the law or is overdue, and will give the reason.",
@@ -258,11 +267,11 @@ const en: Record<LegalKind, LegalDocument> = {
         "14.1 The Provider may transfer its rights and duties, in whole or in part, to a juristic person it sets up or holds shares in, with at least 30 days' notice. The transfer does not affect the Customer's rights, including Hotel Data and refund terms.",
         "14.2 The Customer may not transfer its rights to anyone else without the Provider's written consent.",
       ] },
-      { heading: "15. Governing law", items: ["15.1 These terms are governed by Thai law. Disputes fall under the Mae Hong Son Provincial Court, unless the law requires another court."] },
+      { heading: "15. Governing law", items: ["15.1 These terms are governed by and read under Thai law. Any dispute arising from or relating to them falls under the court with jurisdiction over the Provider's domicile, unless applicable law strictly provides otherwise."] },
     ],
   },
   privacy: {
-    intro: "The provider of Hayhost (\"we\") protects personal data under Thailand's Personal Data Protection Act B.E. 2562 (PDPA). This policy explains how we collect, use and disclose personal data.",
+    intro: "Tanutcha Seemrnee, provider of Hayhost Thailand (\"we\"), protects personal data under Thailand's Personal Data Protection Act B.E. 2562 (PDPA). This policy explains how we collect, use and disclose personal data.",
     sections: [
       { heading: "1. Who this policy covers", items: [
         "1.1 Accommodation operators, owners and staff with a Hayhost account. We are the data controller.",
@@ -274,6 +283,7 @@ const en: Record<LegalKind, LegalDocument> = {
         ["System use", "IP address and browser details of signed-in sessions, a log of important actions (audit log), and a hash of the IP when an online booking is made, to prevent overuse", "Automatic"],
         ["Website visits", "Cookie-free visit statistics through Cloudflare Web Analytics", "Automatic"],
         ["Hotel details", "Name, address, owner contact, PromptPay account, how they found us", "The hotel"],
+        ["Fee refunds", "Refund account name and number, and identity documents when the account name differs from the registered name", "The hotel"],
         ["Sales agents", "Name, phone, email", "The agent or us"],
         ["Guest data (as processor)", "Booker's name, stay dates, number of guests, booking and payment status, slip data and check results, marketing consent, and for TM.30: full name, gender, passport number, nationality, date of birth, phone", "The hotel / the guest on the booking page / OTA sync"],
       ] } },
@@ -281,6 +291,8 @@ const en: Record<LegalKind, LegalDocument> = {
         ["Create and run accounts, provide the contracted service, send invite and password emails", "Contract (s. 24(3))"],
         ["Keep the system secure, prevent unauthorised access, keep audit logs", "Legitimate interest (s. 24(5))"],
         ["Issue invoices and keep accounting records", "Legal duty (s. 24(6))"],
+        ["Keep data identifying service users for 90 days after they leave, under section 26 of the Computer-Related Crime Act", "Legal duty (s. 24(6))"],
+        ["Check refund accounts, and prevent account theft and money laundering", "Contract (s. 24(3)) and legitimate interest (s. 24(5))"],
         ["Send product news to hotels", "Consent or legitimate interest"],
         ["Process guest data", "On the hotel's instructions (data controller) under the Data Processing Agreement"],
       ] } },
@@ -290,12 +302,13 @@ const en: Record<LegalKind, LegalDocument> = {
         "4.3 Booking data synced by iCal goes to or comes from the OTAs the hotel sets up.",
         "4.4 We disclose data to state authorities when the law requires it.",
       ] },
-      { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google. We transfer data under sections 28 and 29 and the Personal Data Protection Committee's 2023 notifications on transfers abroad, for example through contract clauses with the provider receiving the data."] },
-      { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. Nothing else is deleted automatically yet, so the periods below are the limits we work to, and we delete by hand when they end."], table: { head: ["Data", "Period"], rows: [
-        ["User accounts", "While the service is used. When an account is deleted, the holder's identity is removed at once, while booking, financial and audit records stay, with the holder removed as far as the system can match them. Free text typed into them may still contain a name"],
+      { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google, so cloud infrastructure and email services may store or send data on servers abroad. We transfer data under sections 28 and 29 and the Personal Data Protection Committee's 2023 notifications on transfers abroad, with safeguards under international standard contract clauses with the provider receiving the data."] },
+      { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. When a period below ends, we destroy the data or make it unidentifiable on the system's processing cycle."], table: { head: ["Data", "Period"], rows: [
+        ["User accounts", "While the service is used. When an account is deleted, the holder's identity is removed from the main database, while booking, financial and audit records stay, with the holder removed as far as the system can match them. Free text typed into them may still contain a name"],
+        ["Data identifying service users (user ID, registered email, sign-up date, end date and last known IP)", "90 days from the day the user leaves, kept apart from the main database, under section 26 of the Computer-Related Crime Act. During this time we cannot delete it on request, under section 33 paragraph 2 of the PDPA"],
         ["Sessions and IP", "For the life of the session"],
-        ["Audit logs and support access logs", "3 years from the entry, as evidence for a dispute, or until the property is deleted, whichever comes first"],
-        ["Accounting records and invoices", "As the accounting and tax laws that apply to the Provider require"],
+        ["Audit logs and support access logs", "3 years from the entry, for security and to protect legal claims, or until the property is deleted, whichever comes first"],
+        ["Accounting records, invoices, payment records, slips and fee refund data", "5 years, for tax review under the Revenue Code"],
         ["Guest data", "As the hotel decides, and under the Data Processing Agreement on leaving the service"],
       ] } },
       { heading: "7. Security", items: [
@@ -312,7 +325,7 @@ const en: Record<LegalKind, LegalDocument> = {
         "9.3 Hotel guests should contact the hotel directly. If you send a request to us, we will pass it to the hotel and help it respond.",
         "9.4 You may complain to the Personal Data Protection Committee office.",
       ] },
-      { heading: "10. Contact", items: ["10.1 Data controller: the provider of Hayhost. Email: support@hayhostth.com"] },
+      { heading: "10. Contact", items: ["10.1 Data controller: Tanutcha Seemrnee (Hayhost Thailand), 41/3 Moo 5, Pang Mu, Mueang Mae Hong Son, Mae Hong Son. Phone: 061-512-5679. Email: support@hayhostth.com"] },
       { heading: "11. Changes to this policy", items: ["11.1 We may update this policy and will announce important changes in the system or by email, with the effective date."] },
       { heading: "12. Service providers", table: { head: ["Provider", "Used for", "Location"], rows: [
         ["Cloudflare, Inc.", "Hosting, database, file and image storage, inbound email, visit statistics", "Global network / USA"],
