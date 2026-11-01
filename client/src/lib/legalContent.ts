@@ -193,7 +193,7 @@ const th: Record<LegalKind, LegalDocument> = {
 
 const en: Record<LegalKind, LegalDocument> = {
   terms: {
-    intro: "These terms are an agreement between Tanutcha Seemrnee, provider of Hayhost Thailand (\"the Provider\" or \"Hayhost\"), of 41/3 Moo 5, Pang Mu, Mueang Mae Hong Son, Mae Hong Son, and the accommodation operator that signs up (\"the Customer\" or \"the Hotel\"). By signing up or using the service, the Customer has read, understood and agreed to these terms.",
+    intro: "These terms are an agreement between Tanutcha Srimanee, provider of Hayhost Thailand (\"the Provider\" or \"Hayhost\"), of 41/3 Moo 5, Pang Mu, Mueang Mae Hong Son, Mae Hong Son, and the accommodation operator that signs up (\"the Customer\" or \"the Hotel\"). By signing up or using the service, the Customer has read, understood and agreed to these terms.",
     sections: [
       { heading: "1. Definitions", items: [
         "1.1 \"Service\" means the Hayhost system provided at www.hayhostth.com, including booking pages and hotel websites created through it.",
@@ -271,7 +271,7 @@ const en: Record<LegalKind, LegalDocument> = {
     ],
   },
   privacy: {
-    intro: "Tanutcha Seemrnee, provider of Hayhost Thailand (\"we\"), protects personal data under Thailand's Personal Data Protection Act B.E. 2562 (PDPA). This policy explains how we collect, use and disclose personal data.",
+    intro: "Tanutcha Srimanee, provider of Hayhost Thailand (\"we\"), protects personal data under Thailand's Personal Data Protection Act B.E. 2562 (PDPA). This policy explains how we collect, use and disclose personal data.",
     sections: [
       { heading: "1. Who this policy covers", items: [
         "1.1 Accommodation operators, owners and staff with a Hayhost account. We are the data controller.",
@@ -325,7 +325,7 @@ const en: Record<LegalKind, LegalDocument> = {
         "9.3 Hotel guests should contact the hotel directly. If you send a request to us, we will pass it to the hotel and help it respond.",
         "9.4 You may complain to the Personal Data Protection Committee office.",
       ] },
-      { heading: "10. Contact", items: ["10.1 Data controller: Tanutcha Seemrnee (Hayhost Thailand), 41/3 Moo 5, Pang Mu, Mueang Mae Hong Son, Mae Hong Son. Phone: 061-512-5679. Email: support@hayhostth.com"] },
+      { heading: "10. Contact", items: ["10.1 Data controller: Tanutcha Srimanee (Hayhost Thailand), 41/3 Moo 5, Pang Mu, Mueang Mae Hong Son, Mae Hong Son. Phone: 061-512-5679. Email: support@hayhostth.com"] },
       { heading: "11. Changes to this policy", items: ["11.1 We may update this policy and will announce important changes in the system or by email, with the effective date."] },
       { heading: "12. Service providers", table: { head: ["Provider", "Used for", "Location"], rows: [
         ["Cloudflare, Inc.", "Hosting, database, file and image storage, inbound email, visit statistics", "Global network / USA"],
