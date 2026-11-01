@@ -21,6 +21,7 @@ import { type Permission } from "@shared/authorization";
 import { BrandMark } from "./BrandMark";
 import { useTranslation } from "@/lib/i18n";
 import { communicationsEnabled } from "@/lib/featureFlags";
+import { otaConnectivityEnabled } from "@shared/otaAvailability";
 
 type SidebarProps = {
   open: boolean;
@@ -72,7 +73,7 @@ export function Sidebar({
       ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomOperations"), icon: BedDouble }] : []),
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
-      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
+      ...(otaConnectivityEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
       ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
       ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: ShieldCheck }] : []),
     ]

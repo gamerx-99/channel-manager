@@ -3,6 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+// Exercise export behavior independently of the temporary product shutdown.
+vi.mock("../shared/otaAvailability", () => ({ otaConnectivityEnabled: true }));
 import { bookings, d1Schema, hotelUsers, hotels, otaConnections, rooms, roomTypes } from "../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "./db/scope";
 import { createWorkerApp } from "../worker/app";

@@ -38,6 +38,13 @@ describe("worker app", () => {
     expect(await res.text()).toBe("Calendar not found.");
   });
 
+  it("keeps iCal exports closed before querying the database", async () => {
+    const db = { prepare: () => { throw new Error("Database must not be queried"); } };
+    const res = await app.request(`/api/ical/${"a".repeat(64)}.ics`, {}, { DB: db } as any);
+    expect(res.status).toBe(404);
+    expect(await res.text()).toBe("Calendar not found.");
+  });
+
   it("returns JSON 404 for unknown API routes instead of the SPA shell", async () => {
     const res = await app.request("/api/does-not-exist");
 

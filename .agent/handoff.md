@@ -1,5 +1,9 @@
 # Handoff log
 
+## [2026-11-01] OTA connectivity disabled in application code
+- **What happened**: Shared OTA availability switch is off. The hotel OTA menu and route are hidden, all OTA tRPC procedures return NOT_FOUND, the public iCal export returns 404 before reading D1, and the scheduled Worker no longer invokes OTA sync. Existing implementation remains for a later policy decision.
+- **Evidence**: `pnpm test` 161 files / 1136 tests passed; `pnpm check` passed; `pnpm build` passed with Wrangler dry-run. Reviewer approved after disabled-state tests were added. No deployment.
+
 ## [2026-11-01] OTA removed from the legal documents (branch `claude/priceless-galileo-e5dfc3`)
 - **What happened**: The owner took OTA sync out for now, so Terms 2.1, 2.2, 6.3 and 10.1, Privacy 2, 4.3 and 12, and the ROPA no longer offer or list it. Terms 2.1 says the Service has no OTA connection. Clause numbers moved: Terms 2.3 is now 2.2, Privacy 4.4 is now 4.3.
 - **When OTA returns**: put these clauses back and give the 30-day sub-processor notice in DPA 4.2.

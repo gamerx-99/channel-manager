@@ -35,6 +35,7 @@ import PlatformOverview from "./pages/PlatformOverview";
 import HotelStaff from "./pages/HotelStaff";
 import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
+import { otaConnectivityEnabled } from "@shared/otaAvailability";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContext";
@@ -94,7 +95,7 @@ function Router() {
         {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/ota">
-        {(params) => <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute>}
+        {(params) => <PrivateRoute>{otaConnectivityEnabled ? <OtaSync hotelId={params.id} /> : <NotFound />}</PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/staff">
         {(params) => <PrivateRoute><HotelStaff id={params.id} /></PrivateRoute>}

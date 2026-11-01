@@ -20,7 +20,6 @@ export const handleScheduledHotelPurge = (env: Pick<WorkerEnv, "DB" | "MEDIA">) 
 const worker: ExportedHandler<WorkerEnv> = {
   fetch: app.fetch as unknown as NonNullable<ExportedHandler<WorkerEnv>["fetch"]>,
   scheduled(_controller, env, ctx) {
-    ctx.waitUntil(handleScheduledOtaSync(env));
     ctx.waitUntil(handleScheduledHotelPurge(env));
   },
 };
