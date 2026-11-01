@@ -1942,3 +1942,8 @@ Not tested in a browser or with a real email.
 - **Changed**: Aligned authentication footers with the form width, right-aligned the forgot-password link, added a sign-up button to sign-in, and styled the existing sign-in link on signup as a button. The signup form contains personal account details only; hotel name and website remain in the dashboard hotel setup step (`AccountOnboarding`).
 - **Evidence**: `pnpm check` passed; `pnpm build` passed with Wrangler `--dry-run`; `git diff --check` passed. Tests were not run.
 - **Not done**: No deployment or browser verification. No dedicated spec covers these authentication-page adjustments.
+
+## 2026-11-02 LINE login button
+- **Changed**: Added a LINE Login action to the email sign-in form using Better Auth's `line` social provider, with pending and error states plus Thai/English labels. Added the official LINE login icon and brand-green button styling. The existing server provider reads `LINE_CLIENT_ID` and `LINE_CLIENT_SECRET`; `.env.example` lists their placeholder names.
+- **Evidence**: `pnpm check` passed; `pnpm build` passed with Wrangler `--dry-run`; `git diff --check` passed. Tests and browser OAuth flow were not run.
+- **Not done**: LINE credentials and the exact callback URL must be configured in the LINE Developers Console and Worker environment. No deployment. LINE requires approval for the email scope when email is requested.

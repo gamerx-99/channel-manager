@@ -756,4 +756,13 @@ body { background: var(--paper); color: var(--ink); }
 .login-signup-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-muted);font-size:12px}
 .login-form-action{display:flex;justify-content:flex-end;margin:-5px 0 16px}
 .signup-footer{margin-top:18px}
+.login-or-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--ink-muted);font-size:11px}
+.login-or-divider:before,.login-or-divider:after{content:"";height:1px;flex:1;background:var(--rule)}
+.line-login-button{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;width:100%;height:48px;padding:2px 16px;border:1px solid #06c755;border-radius:8px;background:#06c755;color:#fff;font-size:14px;font-weight:700;transition:background-color .16s ease,transform .16s ease}
+.line-login-button img{display:block;width:44px;height:44px;object-fit:contain}
+.line-login-button span{text-align:center}
+.line-login-button:hover{background-color:#05b34c}
+.line-login-button:active{background-color:#048b3c}
+.line-login-button:disabled{border-color:#e5e5e5;background:#fff;color:rgba(30,30,30,.45);cursor:wait}
+.line-login-button:disabled img{filter:brightness(0) opacity(.2)}
 @media (max-width:760px){.login-main{display:block}.login-footer,.login-signup-prompt{width:min(380px,100%);margin-right:auto;margin-left:auto}.login-footer{flex-wrap:wrap}.login-signup-prompt{margin-top:14px}}
