@@ -212,6 +212,15 @@ const en = {
     otaSync: "OTA Sync",
     hotels: "Hotels",
   },
+  legal: {
+    backToHome: "Back to home",
+    updated: "Last updated 1 November 2026",
+    draftNotice: "This page is a draft. A lawyer has not reviewed it, it is not yet in force, and it may change before full launch. The Thai text is the main version.",
+    contact: "For questions or to reach us, email",
+    termsTitle: "Terms of Service",
+    privacyTitle: "Privacy Policy",
+    dpaTitle: "Data Processing Agreement",
+  },
   landing: {
     skipToContent: "Skip to content",
     navAriaLabel: "Main menu",

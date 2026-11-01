@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-01] Draft legal pages from the owner's legal pack (branch `feat/hayhost-hardening`)
+- **What happened**: Added public `/terms`, `/privacy` and `/dpa` in Thai and English, linked from the landing footer, with a draft notice. Text is in `client/src/lib/legalContent.ts`. `dpa`, `privacy` and `terms` are reserved hotel slugs. The owner's `Hayhost_ชุดเอกสารกฎหมาย_DRAFT.docx` was read but not changed, and its note to the lawyer was left out.
+- **Corrected to match the system**: 2FA is optional; a super admin can reach hotel data without a grant, so "only with the hotel's permission" now covers support staff only; retention no longer states 90-day and 2-year periods that nothing enforces; added the booking IP hash, Cloudflare Web Analytics, browser storage and Google (Gmail); removed Supabase and Vercel; contact is support@ because privacy@ is not confirmed; added data deletion steps for Facebook.
+- **Verification**: `pnpm test`: 158 files, 1111 tests passed. `pnpm check`: exit 0. `pnpm build`: exit 0. All three pages opened locally in Thai, with the privacy page checked at phone width. English pages were not opened. Not deployed or pushed. `auth.me` returned 500 on local `wrangler dev`; it was not investigated because these pages do not depend on it.
+- **For the owner and lawyer**: provider name and address are still missing, and the web text says "ศาลไทยที่มีอำนาจ" until a court is chosen. Social sign-in, when it ships, must add its providers to the privacy page.
+
 ## [2026-11-01] www route for production (branch `feat/hayhost-hardening`)
 - **What happened**: The owner asked for the landing page to go live first, so `routes` for `www.hayhostth.com` was added to `[env.production]`, the same change approved on 2026-10-30 in `cloud/custom-domain`. `wrangler deploy --dry-run --env production` exit 0.
 - **Found read-only**: `www` serves an old build that redirects to `/login`. The apex already 301s to `www`. `hayhost-production` has migrations up to `20261030000000_rate_limit_hold_ip.sql`; `20261031000000_support_accounts.sql` and `20261031010000_platform_admins.sql` are not applied.

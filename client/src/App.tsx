@@ -19,6 +19,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
 import Landing from "./pages/Landing";
+import LegalPage from "./pages/LegalPage";
 import Signup from "./pages/Signup";
 import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
@@ -51,6 +52,9 @@ function Router() {
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
       <Route path="/accept-invite" component={AcceptInvite} />
+      <Route path="/terms"><LegalPage kind="terms" /></Route>
+      <Route path="/privacy"><LegalPage kind="privacy" /></Route>
+      <Route path="/dpa"><LegalPage kind="dpa" /></Route>
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>

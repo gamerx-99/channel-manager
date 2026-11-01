@@ -111,6 +111,9 @@ export default function Landing() {
         <span>{t("landing.footerTagline")}</span>
         <nav aria-label={t("landing.footerNavAriaLabel")}>
           <a href="mailto:support@hayhostth.com">support@hayhostth.com</a>
+          <Link href="/terms">{t("legal.termsTitle")}</Link>
+          <Link href="/privacy">{t("legal.privacyTitle")}</Link>
+          <Link href="/dpa">{t("legal.dpaTitle")}</Link>
           <Link href="/login">{t("landing.signIn")}</Link>
         </nav>
       </footer>
