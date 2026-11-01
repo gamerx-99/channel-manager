@@ -42,9 +42,10 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     : memberships.filter(m => !["support", "admin", "super_admin"].includes(m.role));
   const output = [];
   for (const { hotelId } of safeMemberships) {
-    const scope = await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
+    // A closing hotel leaves the list quietly; authorizing it first would fail the whole list.
     const [hotel] = await db.select().from(hotels).where(eq(hotels.id, hotelId)).limit(1);
-    if (!hotel) continue;
+    if (!hotel || hotel.closureRequestedAt) continue;
+    const scope = await authorizeHotelAction(db, caller, hotelId, "property.view", "hotels.list", new Date());
     const canViewFinancials = scope.permissions.includes("property.view_financials");
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
       db.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
@@ -73,6 +74,8 @@ export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, calle
   const memberships = allMemberships.filter(row => resolveMembershipPermissions(row.role as AppRole, { grants: row.grants, revokes: row.revokes }).includes("property.view_financials"));
   const output = [];
   for (const membership of memberships) {
+    const [hotel] = await db.select({ closureRequestedAt: hotels.closureRequestedAt }).from(hotels).where(eq(hotels.id, membership.hotelId)).limit(1);
+    if (hotel?.closureRequestedAt) continue;
     await authorizeHotelAction(db, caller, membership.hotelId, "property.view_financials", "financials.list_hotels", new Date());
     const rows = await db.select({
       id: bookings.id, status: bookings.status, payment_status: bookings.paymentStatus, check_in: bookings.checkIn, check_out: bookings.checkOut,
@@ -126,7 +129,7 @@ export async function setHotelPublicEnabled(db: D1ScopedDatabase, caller: D1Call
 
 // A hotel page lives at /:slug, so a slug must not shadow an app route.
 const RESERVED_HOTEL_SLUGS = new Set([
-  "accept-invite", "api", "assets", "communications", "dashboard", "dpa", "forgot-password", "hotels", "housekeeping", "login", "media", "mfa",
+  "accept-invite", "api", "assets", "communications", "dashboard", "dpa", "forgot-password", "hotel-closure", "hotels", "housekeeping", "login", "media", "mfa",
   "platform", "privacy", "reset-password", "settings", "signup", "terms", "website-builder",
 ]);
 

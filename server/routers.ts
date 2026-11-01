@@ -3,6 +3,7 @@ import { router } from './_core/trpc';
 import { systemRouter } from './_core/systemRouter';
 import { notificationsRouter } from './routers/notificationsRouter';
 import { authRouter } from './routers/authRouter';
+import { hotelClosureRouter } from './routers/hotelClosureRouter';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
 import { otaRouter } from './routers/otaRouter';
@@ -86,6 +87,7 @@ export const appRouter = router({
   system: systemRouter,
   notifications: notificationsRouter,
   auth: authRouter,
+  hotelClosure: hotelClosureRouter,
   staff: staffRouter,
   channelManager: router({
     dashboard,

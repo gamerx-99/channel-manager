@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { DELETED_USER_ID } from "@shared/accountDeletion";
+import { serviceEndedCutoff } from "@shared/hotelClosure";
 import { hotelUsers, hotels, platformAdmins } from "../../drizzle/d1-schema";
 import { user, verification } from "../../drizzle/auth-schema";
 import type { AuthInstance } from "../auth";
@@ -19,11 +20,13 @@ function selfId(caller: D1CallerContext) {
 }
 
 /** What stops this user deleting their own account. Empty hotels and false mean nothing does. */
-export async function getAccountDeletionBlockers(db: D1ScopedDatabase, caller: D1CallerContext) {
+export async function getAccountDeletionBlockers(db: D1ScopedDatabase, caller: D1CallerContext, now = new Date()) {
   const userId = selfId(caller);
+  // A hotel whose service has ended no longer needs an owner: its data goes on schedule.
   const ownedHotels = await db.select({ id: hotels.id, name: hotels.name })
     .from(hotelUsers).innerJoin(hotels, eq(hotelUsers.hotelId, hotels.id))
-    .where(and(eq(hotelUsers.userId, userId), eq(hotelUsers.role, "hotel_owner")));
+    .where(and(eq(hotelUsers.userId, userId), eq(hotelUsers.role, "hotel_owner"),
+      or(isNull(hotels.closureRequestedAt), gt(hotels.closureRequestedAt, serviceEndedCutoff(now)))));
 
   const admin = and(isNotNull(platformAdmins.acceptedAt), isNull(platformAdmins.disabledAt));
   const [ownAdmin] = await db.select({ id: platformAdmins.id }).from(platformAdmins).where(and(eq(platformAdmins.userId, userId), admin)).limit(1);
@@ -102,12 +105,13 @@ export async function deleteOwnAccount(db: D1ScopedDatabase, caller: D1CallerCon
   const activeAdmin = `accepted_at is not null and disabled_at is null`;
   await db.$client.batch([
     db.$client.prepare(`delete from "user" where id = ?
-      and not exists (select 1 from hotel_users where user_id = ? and role = 'hotel_owner')
+      and not exists (select 1 from hotel_users join hotels on hotels.id = hotel_users.hotel_id where hotel_users.user_id = ? and hotel_users.role = 'hotel_owner'
+        and (hotels.closure_requested_at is null or hotels.closure_requested_at > ?))
       and (
         not (exists (select 1 from platform_admins where user_id = ? and ${activeAdmin}) or exists (select 1 from hotel_users where user_id = ? and role = 'super_admin'))
         or exists (select 1 from platform_admins where user_id <> ? and ${activeAdmin})
         or exists (select 1 from hotel_users where user_id <> ? and role = 'super_admin')
-      )`).bind(userId, userId, userId, userId, userId, userId),
+      )`).bind(userId, userId, serviceEndedCutoff(now).getTime(), userId, userId, userId, userId),
 
     // The cascades cover these three; explicit so the outcome never rests on the pragma.
     run(`delete from session where user_id = ?`, userId),
@@ -158,7 +162,7 @@ export async function deleteOwnAccount(db: D1ScopedDatabase, caller: D1CallerCon
   // D1 counts cascaded rows in meta.changes, so ask for the row instead of reading that count.
   const [remaining] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1);
   if (remaining) {
-    assertNotBlocked(await getAccountDeletionBlockers(db, caller));
+    assertNotBlocked(await getAccountDeletionBlockers(db, caller, now));
     throw new TRPCError({ code: "CONFLICT", message: "Your account changed; reload and try again." });
   }
   return { success: true as const };

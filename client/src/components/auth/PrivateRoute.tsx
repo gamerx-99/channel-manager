@@ -9,6 +9,7 @@ import { SELECTED_HOTEL_STORAGE_KEY } from "../../contexts/HotelContext";
 import { type AppRole } from "@shared/authorization";
 import { AppShell } from "../layout/AppShell";
 import { useTranslation } from "@/lib/i18n";
+import { HotelClosureRedirect } from "@/pages/HotelClosure";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -73,6 +74,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   return (
     <HotelProvider hotels={visibleHotels} isLoading={hotelsLoading} isError={hotelsError}>
+      <HotelClosureRedirect />
       <AppShell userName={user.name ?? user.email ?? "User"} userEmail={user.email} roles={authRoles} memberships={authMe?.memberships ?? []} onLogout={() => void logout()}>
         {children}
       </AppShell>

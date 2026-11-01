@@ -29,6 +29,7 @@ import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
+import HotelClosure from "./pages/HotelClosure";
 import SupportAccess from "./pages/SupportAccess";
 import PlatformOverview from "./pages/PlatformOverview";
 import HotelStaff from "./pages/HotelStaff";
@@ -82,6 +83,9 @@ function Router() {
       </Route>
       <Route path="/settings/security">
         <PrivateRoute><SecuritySettings /></PrivateRoute>
+      </Route>
+      <Route path="/hotel-closure">
+        <PrivateRoute><HotelClosure /></PrivateRoute>
       </Route>
       <Route path="/hotels/:id/bookings">
         {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}

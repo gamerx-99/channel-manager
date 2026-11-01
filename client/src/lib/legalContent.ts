@@ -118,7 +118,7 @@ const th: Record<LegalKind, LegalDocument> = {
         "4.4 เปิดเผยต่อหน่วยงานรัฐเมื่อกฎหมายกำหนด",
       ] },
       { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) เราจะดำเนินการให้มีมาตรการคุ้มครองที่เหมาะสมตามมาตรา 28-29"] },
-      { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["ขณะนี้ระบบยังไม่มีการลบข้อมูลอัตโนมัติตามระยะเวลา ตัวเลขระยะเวลาอยู่ระหว่างกำหนด"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
+      { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล ส่วนกรณีอื่นยังไม่มีการลบตามเวลา และตัวเลขระยะเวลาอยู่ระหว่างกำหนด"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
         ["บัญชีผู้ใช้", "ตลอดระยะเวลาใช้บริการ เมื่อลบบัญชี ระบบนำตัวตนของเจ้าของบัญชีออกทันที แต่ระเบียนการจอง การเงิน และ audit log ยังคงอยู่โดยไม่ระบุตัวบุคคล"],
         ["Session และ IP", "ตามอายุ session"],
         ["Audit log และบันทึกการเข้าถึงของทีมซัพพอร์ต", "อยู่ระหว่างกำหนด"],
@@ -290,7 +290,7 @@ const en: Record<LegalKind, LegalDocument> = {
         "4.4 We disclose data to state authorities when the law requires it.",
       ] },
       { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google. We will put suitable safeguards in place under sections 28-29."] },
-      { heading: "6. How long we keep data", items: ["The system does not yet delete data automatically on a schedule. Retention periods are still being set."], table: { head: ["Data", "Period"], rows: [
+      { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. Nothing else is deleted on a schedule yet, and retention periods are still being set."], table: { head: ["Data", "Period"], rows: [
         ["User accounts", "While the service is used. When an account is deleted, the holder's identity is removed at once, while booking, financial and audit records stay without identifying them"],
         ["Sessions and IP", "For the life of the session"],
         ["Audit logs and support access logs", "Being set"],

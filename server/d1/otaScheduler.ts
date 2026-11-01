@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, ne } from "drizzle-orm";
-import { otaConnections } from "../../drizzle/d1-schema";
+import { and, eq, isNotNull, isNull, ne } from "drizzle-orm";
+import { hotels, otaConnections } from "../../drizzle/d1-schema";
 import { createD1SystemCallerContext, isD1SystemCallerContext, type D1ScopedDatabase, type D1SystemCallerContext } from "../db/scope";
 import { ICAL_FETCH_ERROR } from "./icalUrl";
 import { fetchAndSyncOtaConnection, type OtaIcalSyncResult } from "./ota";
@@ -25,7 +25,8 @@ export async function runScheduledD1OtaSync(
   dependencies: { fetchImpl?: typeof fetch; syncConnection?: SyncConnection } = {},
 ): Promise<ScheduledOtaSyncSummary> {
   const connections = await db.select({ id: otaConnections.id, provider: otaConnections.provider })
-    .from(otaConnections).where(and(isNotNull(otaConnections.icalImportUrl), ne(otaConnections.status, "disconnected")));
+    .from(otaConnections).innerJoin(hotels, eq(otaConnections.hotelId, hotels.id))
+    .where(and(isNotNull(otaConnections.icalImportUrl), ne(otaConnections.status, "disconnected"), isNull(hotels.closureRequestedAt)));
   const summary: ScheduledOtaSyncSummary = { total: connections.length, succeeded: 0, failed: 0, conflicts: 0, failures: [] };
   const systemCaller = createD1SystemCallerContext();
   if (!isD1SystemCallerContext(systemCaller)) throw new Error("System caller creation failed.");

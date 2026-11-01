@@ -31,6 +31,7 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     auth: { me: { useQuery: () => mocks.useAuthMeQuery() } },
     channelManager: { hotels: { useQuery: () => mocks.useHotelsQuery() } },
+    hotelClosure: { mine: { useQuery: () => ({ data: [] }) } },
   },
 }));
 

@@ -1,5 +1,18 @@
 # Handoff log
 
+## [2026-11-01] Closing a hotel and deleting its data, spec 18 (branch `claude/priceless-galileo-e5dfc3`)
+- **What happened**: The owner chose to make the code match the legal text, not soften the text. Terms 7.3 and DPA 7.1 promised an export for 30 days and deletion within 60, and nothing did either. An owner can now close a hotel from `/settings/security` and answer on `/hotel-closure`: 7-day wait, cancellable; export until day 37; the Worker cron deletes on day 66 (59 days after the service ends). `resolveScope` refuses everything else on a closing hotel. New owner-reserved permission `property.close_hotel`. A sole owner can delete their account once the service has ended. Privacy clause 6 now says closure deletes automatically.
+- **Tests changed on purpose**: `d1SchemaParity.test.ts` lists the new table; `App.privateRoute.mfa.test.tsx` and `adversarial_m2_auth.test.tsx` mock the new `hotelClosure.mine` query. No assertion was loosened.
+- **Verification**: `pnpm check`: exit 0. `pnpm build`: exit 0. `pnpm test`:
+```
+Test Files  1 failed | 160 passed (161)
+     Tests  1 failed | 1133 passed (1134)
+```
+  The failure is `PasswordReset.contract.test.ts`: it expects LF in `client/public/_headers`, this Windows checkout has CRLF (`git ls-files --eol`: `i/lf w/crlf`), and this ticket did not touch that file. Opened locally on `wrangler dev`, with a throwaway `.dev.vars` removed afterwards: close, sent to the status page on the next visit, export (17 sections), public page 404, Continue, Cancel. The 2FA path, staff screens and English text were not opened. Deletion was tested on SQLite with a fake R2, not on real R2.
+- **`auth.me` 500 on local `wrangler dev`**: cause found. `BETTER_AUTH_SECRET` is missing there, so a local `.dev.vars` is needed.
+- **Owner must**: apply `20261101000000_hotel_closure.sql` with `wrangler d1 migrations apply <database> --env staging|production --remote` before deploying this. Without it every hotel call fails, because `resolveScope` reads the new column.
+- **Not done**: no independent Reviewer pass. Not pushed or deployed. Not merged into `feat/hayhost-hardening`. Terms 4.2 still says the service ends on the day of cancellation (see OPEN_QUESTIONS). What must legally be kept after closure needs a lawyer.
+
 ## [2026-11-01] Draft legal pages from the owner's legal pack (branch `feat/hayhost-hardening`)
 - **What happened**: Added public `/terms`, `/privacy` and `/dpa` in Thai and English, linked from the landing footer, with a draft notice. Text is in `client/src/lib/legalContent.ts`. `dpa`, `privacy` and `terms` are reserved hotel slugs. The owner's `Hayhost_ชุดเอกสารกฎหมาย_DRAFT.docx` was read but not changed, and its note to the lawyer was left out.
 - **Corrected to match the system**: 2FA is optional; a super admin can reach hotel data without a grant, so "only with the hotel's permission" now covers support staff only; retention no longer states 90-day and 2-year periods that nothing enforces; added the booking IP hash, Cloudflare Web Analytics, browser storage and Google (Gmail); removed Supabase and Vercel; contact is support@ because privacy@ is not confirmed; added data deletion steps for Facebook.

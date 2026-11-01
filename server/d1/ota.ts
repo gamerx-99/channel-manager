@@ -426,7 +426,7 @@ export async function getOtaIcalExport(db: D1ScopedDatabase, caller: D1CallerCon
     hotelName: hotels.name, roomNumber: rooms.roomNumber, roomTypeName: roomTypes.name,
   }).from(otaConnections).innerJoin(hotels, eq(otaConnections.hotelId, hotels.id))
     .leftJoin(rooms, eq(otaConnections.roomId, rooms.id)).leftJoin(roomTypes, eq(otaConnections.roomTypeId, roomTypes.id))
-    .where(and(eq(otaConnections.icalExportToken, exportToken), ne(otaConnections.status, "disconnected"))).limit(1);
+    .where(and(eq(otaConnections.icalExportToken, exportToken), ne(otaConnections.status, "disconnected"), isNull(hotels.closureRequestedAt))).limit(1);
   if (!connection) return null;
   const today = localToday(now);
   const events: Array<{ uid: string; start: string; end: string }> = [];
