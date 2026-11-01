@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   signUpEmail: vi.fn(),
   validateQuery: vi.fn(),
   completeMutation: vi.fn(),
+  meQuery: vi.fn(),
 }));
 
 vi.mock("wouter", async () => {
@@ -30,6 +31,10 @@ vi.mock("@/lib/auth-client", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    auth: {
+      me: { useQuery: () => mocks.meQuery() },
+      socialProviders: { useQuery: () => ({ data: [] }) },
+    },
     channelManager: {
       validateSignupLink: {
         useQuery: (input: { token: string }) => mocks.validateQuery(input),
@@ -54,9 +59,26 @@ beforeEach(() => {
   mocks.signUpEmail.mockReset();
   mocks.validateQuery.mockReset();
   mocks.completeMutation.mockReset();
+  mocks.meQuery.mockReset();
+  mocks.meQuery.mockReturnValue({ data: null });
 });
 
 describe("HotelOwnerSignup Component Empirical Verification", () => {
+  it("connects a signed-in social account without asking for a password", async () => {
+    mocks.validateQuery.mockReturnValue({ isLoading: false, data: { valid: true, hotelName: "Baan Test" } });
+    mocks.meQuery.mockReturnValue({ data: { id: "social-user" } });
+    mocks.completeMutation.mockResolvedValue({ success: true });
+
+    render(<HotelOwnerSignup token="test-token" />);
+
+    expect(screen.queryByLabelText("Password")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /Connect this hotel/ }));
+
+    await waitFor(() => expect(mocks.completeMutation).toHaveBeenCalledWith({ token: "test-token" }));
+    expect(mocks.signUpEmail).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith("/dashboard");
+  });
+
   it("displays loading state while validating signup link", async () => {
     mocks.validateQuery.mockReturnValue({
       isLoading: true,

@@ -2,16 +2,21 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { bearer } from "better-auth/plugins/bearer";
+import { APIError } from "better-auth/api";
 import { drizzle } from "drizzle-orm/d1";
 import type { D1Database } from "@cloudflare/workers-types/index.ts";
 import { authSchema } from "../drizzle/auth-schema";
+import { isSocialPlaceholderEmail } from "../shared/socialAuth";
 import type { EmailSender } from "./email";
+import { isSocialCallback, requireTwoFactorOnSocialCallback, resolveSocialProviders } from "./socialAuth";
 
 export type CreateAuthOptions = {
   db: D1Database | any;
   baseURL?: string;
   secret?: string;
   emailSender?: EmailSender;
+  /** Where OAuth client ids and secrets come from; tests pass their own. */
+  socialEnv?: Record<string, string | undefined>;
 };
 
 /**
@@ -62,7 +67,7 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
       // A reset ends every other session, so a stolen session cannot outlive it.
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
-        if (!opts.emailSender) return;
+        if (!opts.emailSender || isSocialPlaceholderEmail(user.email)) return;
         try {
           await opts.emailSender.sendPasswordResetEmail({
             to: user.email,
@@ -74,6 +79,31 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
           // tell anyone which emails are registered.
           console.error("[Auth] Password reset email failed:", error instanceof Error ? error.message : error);
         }
+      },
+    },
+    socialProviders: resolveSocialProviders(opts.socialEnv ?? (typeof process !== "undefined" ? process.env : {})),
+    account: {
+      // ASSUMPTION: a matching email never joins accounts, because email signup is unverified
+      // and anyone may already hold an address they do not own. It also blocks /link-social.
+      accountLinking: { enabled: false },
+      encryptOAuthTokens: true,
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (user, ctx) => {
+            if (isSocialPlaceholderEmail(user.email) && !isSocialCallback(ctx)) {
+              throw new APIError("BAD_REQUEST", { message: "This email address cannot be used." });
+            }
+          },
+        },
+      },
+      session: {
+        create: {
+          before: async (session, ctx) => {
+            await requireTwoFactorOnSocialCallback(session.userId, ctx as never);
+          },
+        },
       },
     },
     plugins: [

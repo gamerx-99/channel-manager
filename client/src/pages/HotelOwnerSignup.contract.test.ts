@@ -39,7 +39,9 @@ describe("Hotel owner signup link contract", () => {
   });
 
   it("handles the invalid/expired-or-used link state without leaking which", () => {
-    expect(component).toContain("This signup link is no longer valid");
+    // The copy moved to i18n, so the literal is checked in the dictionary.
+    expect(readFileSync(resolve(process.cwd(), "client/src/lib/i18n/en.ts"), "utf8")).toContain("This signup link is no longer valid");
+    expect(component).toContain('t("ownerSignup.invalidTitle")');
     expect(component).toContain("authClient.signUp.email");
     expect(component).toContain("completeHotelOwnerSignup");
   });

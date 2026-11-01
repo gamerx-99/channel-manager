@@ -1914,3 +1914,12 @@ Not tested in a browser or with a real email.
 - **Done**: `/` is now a public Landing page instead of a redirect. `/signup` creates an account, then `channelManager.registerOwnHotel` creates one private hotel with the caller as owner. Web addresses that match app routes are refused.
 - **Evidence**: `pnpm test`, `pnpm check` and `pnpm build` pass. In a local Worker, a test signup reached `/dashboard`, a reserved address showed the Thai error, retry kept the account, and D1 showed `baan-test`, `public_enabled = 0`, `hotel_owner`.
 - **Not done**: not deployed; no reviewer; email is not verified; no prices or terms on the page, see `.agent/OPEN_QUESTIONS.md`.
+
+## 2026-11-01 Social signup and sign-in (spec 18)
+- **Done**: Google, Facebook and LINE through Better Auth's built-in providers on `/login`, `/signup` and `/signup/:token`. Buttons show only when both credentials exist. `/signup/:token` gained a signed-in "connect hotel" step and all its copy moved to `t()`. No migration and no `wrangler.toml` change.
+- **Security**: account linking is off, only verified provider emails are stored, tokens are encrypted, and `requireTwoFactorOnSocialCallback` stops a session being created for a 2FA account. A test completes the real TOTP step after a stubbed Google callback.
+- **Evidence**: `pnpm test` 147 files, 1036/1036 pass; `pnpm check` pass; `pnpm build` pass; browser check on a local Worker with fake Google and LINE ids confirmed Thai buttons, no Facebook button, LINE authorize URL with `openid profile`, 404 for Facebook, error message, 2FA screen and 375px layout.
+- **Tests changed**: `HotelOwnerSignup.contract.test.ts` reads the copy from `en.ts` because it moved to i18n. `Login.*` and `adversarial_m2_auth` mocks gained `socialProviders`, a new dependency; no assertion changed.
+- **Not done**: no real provider login, because the OAuth apps do not exist yet (`docs/social-login-setup.md`). The hotel-link connect step was tested by component test only, not in a browser. No reviewer. Not pushed or deployed.
+- **Merge order**: branched from `feat/financials-owner-grant` without account deletion. Expect small conflicts in the i18n files, `authRouter.ts` and `Login` copy. Account deletion needs a decision for password-less accounts, see `.agent/OPEN_QUESTIONS.md`.
+- **Worktree note**: with `core.autocrlf=true` a fresh checkout gives `client/public/_headers` CRLF, which fails `PasswordReset.contract.test.ts`. It was normalised to LF locally; git shows no diff.

@@ -43,6 +43,7 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
     }),
+    auth: { socialProviders: { useQuery: () => ({ data: [] }) } },
   },
 }));
 

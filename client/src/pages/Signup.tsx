@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
+import { readSocialError, SocialSignIn } from "@/components/auth/SocialSignIn";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -21,7 +22,10 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    const socialError = readSocialError();
+    return socialError ? t(socialError) : null;
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const signedIn = Boolean(me.data);
@@ -94,6 +98,7 @@ export default function Signup() {
           <div className="eyebrow">{t("signup.eyebrow")}</div>
           <h2>{t("signup.title")}</h2>
           <p>{signedIn ? t("signup.continueLede") : t("signup.lede")}</p>
+          {!signedIn && <SocialSignIn callbackURL="/signup" errorCallbackURL="/signup" mode="signup" />}
           <label>{t("signup.hotelName")}<input type="text" value={name} onChange={event => setName(event.target.value)} maxLength={160} required /></label>
           <label>
             {t("signup.slug")}

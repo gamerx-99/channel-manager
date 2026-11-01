@@ -7,6 +7,7 @@ import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
 import { SELECTED_HOTEL_STORAGE_KEY } from "../../contexts/HotelContext";
 import { type AppRole } from "@shared/authorization";
+import { isSocialPlaceholderEmail } from "@shared/socialAuth";
 import { AppShell } from "../layout/AppShell";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -71,7 +72,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   return (
     <HotelProvider hotels={visibleHotels} isLoading={hotelsLoading} isError={hotelsError}>
-      <AppShell userName={user.name ?? user.email ?? "User"} userEmail={user.email} roles={authRoles} memberships={authMe?.memberships ?? []} onLogout={() => void logout()}>
+      <AppShell userName={user.name ?? user.email ?? "User"} userEmail={isSocialPlaceholderEmail(user.email) ? null : user.email} roles={authRoles} memberships={authMe?.memberships ?? []} onLogout={() => void logout()}>
         {children}
       </AppShell>
     </HotelProvider>

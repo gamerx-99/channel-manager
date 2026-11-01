@@ -5,6 +5,7 @@ import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
 import { MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
 import { useTranslation } from '@/lib/i18n';
+import { readSocialError, SocialSignIn } from '@/components/auth/SocialSignIn';
 
 export default function Login() {
   const [, navigate] = useLocation();
@@ -12,8 +13,13 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [totpCode, setTotpCode] = useState('');
-  const [isTwoFactor, setIsTwoFactor] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // A social sign-in on a 2FA account comes back here with the challenge already started.
+  const [socialTwoFactor] = useState(() => new URLSearchParams(window.location.search).get("two_factor") === "1");
+  const [isTwoFactor, setIsTwoFactor] = useState(socialTwoFactor);
+  const [error, setError] = useState<string | null>(() => {
+    const socialError = readSocialError();
+    return socialError ? t(socialError) : null;
+  });
   const [submitting, setSubmitting] = useState(false);
 
   // Safely resolve tRPC utils (handling environments rendered outside trpc.Provider)
@@ -134,8 +140,8 @@ export default function Login() {
         {isTwoFactor ? (
           <form className="login-card" onSubmit={handleTotpSubmit} data-testid="login-totp-form">
             <div className="eyebrow">{t("mfaEnroll.eyebrow") || "Two-Factor Authentication"}</div>
-            <h2>{t("mfaEnroll.title") || "Enter Authenticator Code"}</h2>
-            <p>{t("mfaEnroll.lede") || "Enter the 6-digit verification code from your authenticator app."}</p>
+            <h2>{socialTwoFactor ? t("socialAuth.twoFactorTitle") : t("mfaEnroll.title") || "Enter Authenticator Code"}</h2>
+            <p>{socialTwoFactor ? t("socialAuth.twoFactorRequired") : t("mfaEnroll.lede") || "Enter the 6-digit verification code from your authenticator app."}</p>
             <label>
               {t("mfaEnroll.codeInputLabel") || "Verification code"}
               <input
@@ -181,6 +187,8 @@ export default function Login() {
             <div className="eyebrow">{t("login.eyebrowCard")}</div>
             <h2>{t("login.titleCard")}</h2>
             <p>{t("login.descCard")}</p>
+            {/* /signup sends people with a hotel on to the dashboard, and finishes setup for those without one. */}
+            <SocialSignIn callbackURL="/signup" errorCallbackURL="/login" mode="login" />
             <label>
               {t("login.emailLabel")}
               <input
