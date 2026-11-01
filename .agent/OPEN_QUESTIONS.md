@@ -5,6 +5,10 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] Legal: the owner will register as a natural person once there is income. PDPA s.23(5) needs the controller's identity and contact when data is collected, so a name and contact are needed before real hotels sign up. Raised 2026-11-01.
+- [ ] Legal: the Mae Hong Son court clause was chosen by the owner. The Civil Procedure Code is not in `C:\thai-law`, so whether it holds against a hotel elsewhere is unverified. Raised 2026-11-01.
+- [ ] Legal: Cloudflare's DPA takes effect on signature or agreement, and the owner must confirm it is accepted on this account. Cloudflare and Resend clauses name EU, UK and Swiss transfers, not Thailand. Whether they meet the 2023 s.29 notification needs a lawyer. Support mail goes to a Gmail account. Raised 2026-11-01.
+- [ ] Legal: Privacy clause 6 says 3 years for audit logs, chosen from PDPA s.78, and nothing deletes them on a timer. Raised 2026-11-01.
 - [ ] Legal: Computer Crime Act 2007 s.26 keeps traffic data 90 days and data identifying a service user 90 days after the service ends. If hayhost counts as a service provider, account deletion (at once) and hotel purge (day 59) are too early, and nothing keeps traffic data. The 2017 amendment could not be read. ASSUMPTION: unchanged until a lawyer answers. Raised 2026-11-01.
 - [ ] Legal: Privacy clause 6 still says periods are being set, but PDPA s.23(3) requires a period or an expected one at collection. Needs the owner's numbers. Raised 2026-11-01.
 - [ ] Legal: the Hotel Act, its guest register rules and the Unfair Contract Terms Act were not readable in `C:\thai-law`, and the 2022 breach and processor-record notifications failed to load. Nothing here cites their text. Raised 2026-11-01.

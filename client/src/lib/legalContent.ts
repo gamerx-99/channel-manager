@@ -32,7 +32,7 @@ const th: Record<LegalKind, LegalDocument> = {
       { heading: "ข้อ 4. ค่าบริการ", items: [
         "4.1 ค่าบริการ แพ็กเกจ และรอบการเรียกเก็บเป็นไปตามที่ประกาศบนเว็บไซต์ ปัจจุบันยังไม่มีการเรียกเก็บค่าบริการ",
         "4.2 การคืนเงินค่าบริการ: ผู้ใช้บริการแจ้งยกเลิกบริการได้ทุกเมื่อ ผู้ให้บริการจะคืนเงินค่าบริการสำหรับระยะเวลาที่เหลือของรอบการชำระปัจจุบัน ตามสูตร (ค่าบริการที่ชำระจริงในรอบนั้น ÷ 30) × จำนวนวันที่เหลือ นับจากวันถัดจากวันที่แจ้งยกเลิกจนถึงวันสิ้นสุดรอบ เงินคืนต่ำสุดเป็นศูนย์บาท และปัดเศษสตางค์ลง",
-        "ผู้ให้บริการจะคืนเงินเข้าบัญชีธนาคารที่ผู้ใช้บริการแจ้ง ภายใน 15 วันนับจากวันที่ได้รับแจ้งยกเลิก บริการจะสิ้นสุดในวันที่แจ้งยกเลิก และผู้ใช้บริการขอส่งออกข้อมูลได้ตามข้อ 7.3",
+        "บริการหยุดให้ใช้งานในวันที่แจ้งยกเลิก และสิ้นสุดเมื่อครบกำหนดตามข้อ 7.3 ผู้ให้บริการจะตรวจสอบข้อเท็จจริงและยอดเงินภายใน 7 วันนับจากวันที่แจ้ง แล้วคืนเงินเข้าบัญชีพร้อมเพย์ที่ตั้งไว้ในระบบ หรือบัญชีธนาคารที่ผู้ใช้บริการแจ้ง ภายใน 15 วันนับจากวันที่แจ้ง โดยบัญชีต้องเป็นชื่อของผู้ใช้บริการ หากยกเลิกการปิดที่พักตามข้อ 7.3 จะไม่มีการคืนเงิน",
         "ตัวอย่าง: แพ็กเกจเดือนละ 900 บาท ใช้ไป 10 วันแล้วแจ้งยกเลิก ได้รับเงินคืน (900 ÷ 30) × 20 = 600 บาท",
         "4.3 ข้อยกเว้น: ผู้ให้บริการไม่คืนเงินค่าบริการ ในกรณีที่บัญชีถูกระงับหรือยกเลิกเนื่องจากผู้ใช้บริการฝ่าฝืนข้อกำหนดนี้หรือใช้บริการโดยมิชอบด้วยกฎหมาย ตามข้อ 11.1",
         "4.4 การเปลี่ยนแพ็กเกจ: อัปเกรดได้ทุกเมื่อ โดยชำระส่วนต่างตามสูตร (ค่าบริการแพ็กเกจใหม่ − ค่าบริการแพ็กเกจเดิม) ÷ 30 × จำนวนวันที่เหลือของรอบ แพ็กเกจใหม่มีผลทันทีเมื่อชำระเงินแล้ว และรอบถัดไปคิดตามราคาใหม่โดยไม่เปลี่ยนวันตัดรอบ",
@@ -85,7 +85,7 @@ const th: Record<LegalKind, LegalDocument> = {
         "14.1 ผู้ให้บริการอาจโอนสิทธิและหน้าที่ตามข้อกำหนดนี้ทั้งหมดหรือบางส่วนให้แก่นิติบุคคลที่ผู้ให้บริการจัดตั้งหรือเป็นผู้ถือหุ้น โดยแจ้งล่วงหน้าไม่น้อยกว่า 30 วัน การโอนดังกล่าวไม่กระทบสิทธิของผู้ใช้บริการ รวมถึงข้อมูลของโรงแรมและเงื่อนไขการคืนเงิน",
         "14.2 ผู้ใช้บริการจะโอนสิทธิตามข้อกำหนดนี้ให้บุคคลอื่นไม่ได้ เว้นแต่ได้รับความยินยอมเป็นหนังสือจากผู้ให้บริการ",
       ] },
-      { heading: "ข้อ 15. กฎหมายที่ใช้บังคับ", items: ["15.1 ข้อกำหนดนี้อยู่ภายใต้กฎหมายไทย ข้อพิพาทให้อยู่ในเขตอำนาจของศาลไทยที่มีอำนาจพิจารณา"] },
+      { heading: "ข้อ 15. กฎหมายที่ใช้บังคับ", items: ["15.1 ข้อกำหนดนี้อยู่ภายใต้กฎหมายไทย ข้อพิพาทให้อยู่ในเขตอำนาจของศาลจังหวัดแม่ฮ่องสอน เว้นแต่กฎหมายกำหนดให้ต้องฟ้องที่ศาลอื่น"] },
     ],
   },
   privacy: {
@@ -118,11 +118,11 @@ const th: Record<LegalKind, LegalDocument> = {
         "4.4 เปิดเผยต่อหน่วยงานรัฐเมื่อกฎหมายกำหนด",
       ] },
       { heading: "ข้อ 5. การส่งข้อมูลไปต่างประเทศ", items: ["5.1 ผู้ให้บริการบางรายของเราประมวลผลข้อมูลนอกประเทศไทย (เช่น Cloudflare, Resend และ Google) เราจะส่งหรือโอนข้อมูลตามมาตรา 28 และมาตรา 29 และประกาศคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลเรื่องหลักเกณฑ์การให้ความคุ้มครองข้อมูลส่วนบุคคลที่ส่งหรือโอนไปยังต่างประเทศ พ.ศ. 2566 เช่นโดยใช้ข้อสัญญากับผู้ให้บริการที่รับข้อมูล"] },
-      { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล ส่วนกรณีอื่นยังไม่มีการลบตามเวลา และตัวเลขระยะเวลาอยู่ระหว่างกำหนด"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
+      { heading: "ข้อ 6. ระยะเวลาการเก็บรักษา", items: ["เมื่อโรงแรมปิดที่พัก ระบบจะลบข้อมูลของที่พักนั้นอัตโนมัติตามข้อตกลงการประมวลผลข้อมูล ส่วนกรณีอื่นระบบยังไม่ลบตามเวลาโดยอัตโนมัติ ระยะเวลาด้านล่างจึงเป็นกำหนดที่เราใช้ และเราจะลบเองเมื่อครบกำหนด"], table: { head: ["ข้อมูล", "ระยะเวลา"], rows: [
         ["บัญชีผู้ใช้", "ตลอดระยะเวลาใช้บริการ เมื่อลบบัญชี ระบบนำตัวตนของเจ้าของบัญชีออกทันที แต่ระเบียนการจอง การเงิน และ audit log ยังคงอยู่ โดยนำตัวตนออกเท่าที่ระบบจับคู่ได้ ข้อความอิสระที่พิมพ์ไว้อาจยังมีชื่ออยู่"],
         ["Session และ IP", "ตามอายุ session"],
-        ["Audit log และบันทึกการเข้าถึงของทีมซัพพอร์ต", "อยู่ระหว่างกำหนด"],
-        ["เอกสารบัญชีและใบแจ้งหนี้ค่าบริการ", "ไม่น้อยกว่า 5 ปีนับแต่วันปิดบัญชีตามกฎหมายการบัญชี และตามกฎหมายภาษี"],
+        ["Audit log และบันทึกการเข้าถึงของทีมซัพพอร์ต", "3 ปีนับจากวันที่บันทึก เพื่อใช้เป็นหลักฐานหากมีข้อพิพาท หรือจนกว่าที่พักจะถูกลบ แล้วแต่อย่างใดถึงก่อน"],
+        ["เอกสารบัญชีและใบแจ้งหนี้ค่าบริการ", "ตามกฎหมายบัญชีและภาษีที่ใช้กับผู้ให้บริการ"],
         ["ข้อมูลแขก", "ตามที่โรงแรมกำหนด และตามข้อตกลงการประมวลผลข้อมูลเมื่อเลิกใช้บริการ"],
       ] } },
       { heading: "ข้อ 7. ความปลอดภัย", items: [
@@ -145,7 +145,7 @@ const th: Record<LegalKind, LegalDocument> = {
         ["Cloudflare, Inc.", "โฮสต์ระบบ ฐานข้อมูล เก็บไฟล์และรูป รับอีเมลขาเข้า และสถิติการเข้าชม", "เครือข่ายทั่วโลก / สหรัฐฯ"],
         ["Resend", "ส่งอีเมลของระบบ (เชิญผู้ใช้ รีเซ็ตรหัสผ่าน)", "สหรัฐฯ"],
         ["Google (Gmail)", "รับอีเมลที่ส่งถึงทีมงาน", "ตามผู้ให้บริการ"],
-        ["SlipOK", "ตรวจสลิปโอนเงิน (ใช้ key ของโรงแรม)", "ประเทศไทย"],
+        ["SlipOK (บริษัท สลิปโอเค จำกัด)", "ตรวจสลิปโอนเงิน (ใช้ key ของโรงแรม)", "บริษัทตั้งอยู่ในประเทศไทย ไม่ได้ระบุที่ตั้งเซิร์ฟเวอร์"],
         ["OTA ที่โรงแรมตั้งค่า (เช่น Agoda, Booking.com)", "ซิงก์ปฏิทินผ่าน iCal", "ตามผู้ให้บริการแต่ละราย"],
       ] } },
     ],
@@ -207,7 +207,7 @@ const en: Record<LegalKind, LegalDocument> = {
       { heading: "4. Fees", items: [
         "4.1 Fees, packages and billing cycles are as published on the website. No fees are charged at present.",
         "4.2 Refunds: the Customer may cancel at any time. The Provider refunds the rest of the current billing cycle using (fee actually paid for that cycle ÷ 30) × days remaining, counted from the day after cancellation to the end of the cycle. The minimum refund is zero baht, and satang are rounded down.",
-        "The Provider refunds to the bank account the Customer gives, within 15 days of the cancellation notice. The Service ends on the day of cancellation, and the Customer may ask for a data export under clause 7.3.",
+        "The Service stops on the day of the cancellation notice and ends when the period in clause 7.3 runs out. The Provider checks the facts and amount within 7 days of the notice, then refunds within 15 days of the notice to the PromptPay account set in the system or a bank account the Customer gives, which must be in the Customer's name. If the Customer withdraws the closure under clause 7.3, no refund is made.",
         "Example: on a 900 baht monthly package, cancelling after 10 days refunds (900 ÷ 30) × 20 = 600 baht.",
         "4.3 Exception: no refund is given where an account is suspended or cancelled because the Customer breached these terms or used the Service unlawfully, under clause 11.1.",
         "4.4 Changing package: the Customer may upgrade at any time by paying (new fee − old fee) ÷ 30 × days remaining in the cycle. The new package applies once paid, and the next cycle uses the new price with the same billing date.",
@@ -258,7 +258,7 @@ const en: Record<LegalKind, LegalDocument> = {
         "14.1 The Provider may transfer its rights and duties, in whole or in part, to a juristic person it sets up or holds shares in, with at least 30 days' notice. The transfer does not affect the Customer's rights, including Hotel Data and refund terms.",
         "14.2 The Customer may not transfer its rights to anyone else without the Provider's written consent.",
       ] },
-      { heading: "15. Governing law", items: ["15.1 These terms are governed by Thai law. Disputes fall under the competent Thai courts."] },
+      { heading: "15. Governing law", items: ["15.1 These terms are governed by Thai law. Disputes fall under the Mae Hong Son Provincial Court, unless the law requires another court."] },
     ],
   },
   privacy: {
@@ -291,11 +291,11 @@ const en: Record<LegalKind, LegalDocument> = {
         "4.4 We disclose data to state authorities when the law requires it.",
       ] },
       { heading: "5. Transfers abroad", items: ["5.1 Some of our providers process data outside Thailand, such as Cloudflare, Resend and Google. We transfer data under sections 28 and 29 and the Personal Data Protection Committee's 2023 notifications on transfers abroad, for example through contract clauses with the provider receiving the data."] },
-      { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. Nothing else is deleted on a schedule yet, and retention periods are still being set."], table: { head: ["Data", "Period"], rows: [
+      { heading: "6. How long we keep data", items: ["When a hotel closes, the system deletes that hotel's data automatically under the Data Processing Agreement. Nothing else is deleted automatically yet, so the periods below are the limits we work to, and we delete by hand when they end."], table: { head: ["Data", "Period"], rows: [
         ["User accounts", "While the service is used. When an account is deleted, the holder's identity is removed at once, while booking, financial and audit records stay, with the holder removed as far as the system can match them. Free text typed into them may still contain a name"],
         ["Sessions and IP", "For the life of the session"],
-        ["Audit logs and support access logs", "Being set"],
-        ["Accounting records and invoices", "At least 5 years from the closing date under the Accounting Act, and as tax law requires"],
+        ["Audit logs and support access logs", "3 years from the entry, as evidence for a dispute, or until the property is deleted, whichever comes first"],
+        ["Accounting records and invoices", "As the accounting and tax laws that apply to the Provider require"],
         ["Guest data", "As the hotel decides, and under the Data Processing Agreement on leaving the service"],
       ] } },
       { heading: "7. Security", items: [
@@ -318,7 +318,7 @@ const en: Record<LegalKind, LegalDocument> = {
         ["Cloudflare, Inc.", "Hosting, database, file and image storage, inbound email, visit statistics", "Global network / USA"],
         ["Resend", "System email (invites, password resets)", "USA"],
         ["Google (Gmail)", "Receiving email sent to our team", "Per provider"],
-        ["SlipOK", "Slip checking (with the hotel's key)", "Thailand"],
+        ["SlipOK (SLIPOK CO., LTD.)", "Slip checking (with the hotel's key)", "Company based in Thailand; server location not stated"],
         ["OTAs the hotel sets up (such as Agoda, Booking.com)", "Calendar sync by iCal", "Per provider"],
       ] } },
     ],

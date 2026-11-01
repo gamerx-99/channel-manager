@@ -1,5 +1,10 @@
 # Handoff log
 
+## [2026-11-01] Owner's answers on the legal list (branch `claude/priceless-galileo-e5dfc3`)
+- **What happened**: Text only. Terms 4.2 now has the 7-day check and refunds to the PromptPay account in the owner's name. Terms 15.1 names the Mae Hong Son Provincial Court. Privacy 6 sets 3 years for audit logs and removes the 5-year accounting figure, because Accounting Act s.8 lists juristic persons and the owner starts as a natural person. SlipOK's row says what its terms state.
+- **Verification**: `pnpm check`: exit 0. `pnpm test`: 1133 of 1134 passed; the failure is the CRLF one in `PasswordReset.contract.test.ts`.
+- **Open**: see OPEN_QUESTIONS. Not pushed or deployed. A lawyer has not reviewed this.
+
 ## [2026-11-01] Legal text checked against the Acts and notifications (branch `claude/priceless-galileo-e5dfc3`)
 - **What happened**: The owner asked for the documents to be corrected first. Text only, in `client/src/lib/legalContent.ts`, Thai and English, checked against PDPA text and gazette notifications read from `C:\thai-law`. Added what s.23(2) needs, the breach exceptions in s.37(4), response times (access notification 2026, erasure notification 2024), the 2023 transfer notifications, s.40(1) and (3) in the DPA, Civil Code s.373 in Terms 10.2, and the closure timeline in Terms 7.3.
 - **Corrected to the system**: hotels cannot set the hold time, as no code writes it. A super admin has no hotel scope in `resolveScope` and sees summaries and accounts only, so Terms 8.3 and DPA 6.2 now say that, and that database access at infrastructure level remains. This differs from the earlier handoff note that a super admin can reach hotel data.
