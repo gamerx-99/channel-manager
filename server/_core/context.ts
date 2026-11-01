@@ -29,6 +29,9 @@ export type AppUserIdentity = {
   id: string;
   email: string | null;
   name: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
   role?: AppRole | null;
   roles?: AppRole[];
   memberships?: SupabaseMembership[];
@@ -207,6 +210,9 @@ export async function createContextFromRequest(
           id: authUser.id,
           email: authUser.email ?? null,
           name: authUser.name ?? authUser.email ?? null,
+          firstName: authUser.firstName ?? null,
+          lastName: authUser.lastName ?? null,
+          phone: authUser.phone ?? null,
           role: resolvedRole,
           roles,
           memberships: scopedMemberships,

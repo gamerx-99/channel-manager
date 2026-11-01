@@ -12,6 +12,8 @@ export type CreateAuthOptions = {
   baseURL?: string;
   secret?: string;
   emailSender?: EmailSender;
+  lineClientId?: string;
+  lineClientSecret?: string;
 };
 
 /**
@@ -48,14 +50,34 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
     (typeof process !== "undefined" ? process.env?.PUBLIC_APP_URL : undefined) ||
     "http://localhost:3000";
   const secret = resolveAuthSecret(opts.secret);
+  const env = typeof process !== "undefined" ? process.env : undefined;
+  const lineClientId = opts.lineClientId || env?.LINE_CLIENT_ID || env?.LINE_CHANNEL_ID;
+  const lineClientSecret = opts.lineClientSecret || env?.LINE_CLIENT_SECRET || env?.LINE_CHANNEL_SECRET;
 
   return betterAuth({
     baseURL,
     secret,
+    socialProviders: {
+      ...(lineClientId && lineClientSecret
+        ? {
+            line: {
+              clientId: lineClientId,
+              clientSecret: lineClientSecret,
+            },
+          }
+        : {}),
+    },
     database: drizzleAdapter(drizzleDb, {
       provider: "sqlite",
       schema: authSchema,
     }),
+    user: {
+      additionalFields: {
+        firstName: { type: "string", required: false, input: true },
+        lastName: { type: "string", required: false, input: true },
+        phone: { type: "string", required: false, input: true },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,

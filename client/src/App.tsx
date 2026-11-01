@@ -20,6 +20,7 @@ import ResetPassword from "./pages/ResetPassword";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
 import Landing from "./pages/Landing";
 import Signup from "./pages/Signup";
+import AccountOnboarding from "./pages/AccountOnboarding";
 import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
@@ -110,7 +111,9 @@ function Router() {
 }
 
 function DashboardEntry() {
-  const { data: me } = trpc.auth.me.useQuery();
+  const { data: me, isLoading } = trpc.auth.me.useQuery();
+  if (isLoading) return <main className="auth-loading">Checking your account…</main>;
+  if (me && !me.roles?.length && !me.role && !me.memberships?.length) return <AccountOnboarding />;
   return hasAnyPermission(me?.roles ?? [], "platform.view_system_logs") ? <PlatformOverview /> : <Dashboard />;
 }
 
