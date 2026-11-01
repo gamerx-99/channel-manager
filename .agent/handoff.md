@@ -1,5 +1,9 @@
 # Handoff log
 
+## [2026-11-01] Keep Cloudflare headers in LF format
+- **What happened**: Added a Git attribute so `client/public/_headers` stays LF on Windows checkouts. This fixes the password-reset header contract without changing the test or header rules.
+- **Evidence**: `pnpm test` 161 files / 1136 tests passed; `pnpm check` passed. `git ls-files --eol` reported `w/lf` and `attr/text eol=lf`. No deployment.
+
 ## [2026-11-01] OTA connectivity disabled in application code
 - **What happened**: Shared OTA availability switch is off. The hotel OTA menu and route are hidden, all OTA tRPC procedures return NOT_FOUND, the public iCal export returns 404 before reading D1, and the scheduled Worker no longer invokes OTA sync. Existing implementation remains for a later policy decision.
 - **Evidence**: `pnpm test` 161 files / 1136 tests passed; `pnpm check` passed; `pnpm build` passed with Wrangler dry-run. Reviewer approved after disabled-state tests were added. No deployment.
