@@ -233,7 +233,7 @@ body { background: var(--paper); color: var(--ink); }
 .table-footer { border-top-color: var(--rule); }
 .login-aside { background: var(--pine); }
 .login-main { background: var(--paper); }
-.login-card { border-radius: 18px; box-shadow: var(--shadow); }
+.login-card { border-radius: 18px; }
 .login-button { border-radius: 11px; }
 
 @media (max-width: 1120px) {
