@@ -88,7 +88,10 @@ export default function Signup() {
           </button>
           <div className="login-security"><ShieldCheck size={15} /><span>{t("signup.securityNote")}</span></div>
         </form>
-        <div className="login-footer"><span>{t("signup.haveAccount")}</span><Link href="/login">{t("signup.signIn")}</Link></div>
+        <div className="login-footer signup-footer">
+          <span>{t("signup.haveAccount")}</span>
+          <Link href="/login" className="button button-quiet">{t("signup.signIn")}</Link>
+        </div>
       </main>
     </div>
   );

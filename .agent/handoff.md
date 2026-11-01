@@ -1937,3 +1937,8 @@ Not tested in a browser or with a real email.
 - **Evidence**: `pnpm check` passed; `pnpm build` passed with Wrangler `--dry-run`; `git diff --check` reported no whitespace errors. Browser inspection verified Thai OTA empty state, calendar empty state, and month label (`พฤศจิกายน 2026`). After restarting the local Worker for final verification, the dashboard displayed “Unable to verify your property access” while the local tRPC requests returned HTTP 200; the final dashboard calendar copy could not be rechecked in that browser session. Browser session and local server were stopped.
 - **Tests**: Existing OTA widget text expectations were updated for the copy changes. Tests were not run.
 - **Not done**: No deployment. No spec covers this copy/localization follow-up.
+
+## 2026-11-02 Sign-in and signup actions
+- **Changed**: Aligned authentication footers with the form width, right-aligned the forgot-password link, added a sign-up button to sign-in, and styled the existing sign-in link on signup as a button. The signup form contains personal account details only; hotel name and website remain in the dashboard hotel setup step (`AccountOnboarding`).
+- **Evidence**: `pnpm check` passed; `pnpm build` passed with Wrangler `--dry-run`; `git diff --check` passed. Tests were not run.
+- **Not done**: No deployment or browser verification. No dedicated spec covers these authentication-page adjustments.

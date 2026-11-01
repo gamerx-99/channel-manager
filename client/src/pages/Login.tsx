@@ -201,7 +201,9 @@ export default function Login() {
                 required
               />
             </label>
-            <Link href="/forgot-password" className="text-link" data-testid="forgot-password-link">{t("login.forgotPassword")}</Link>
+            <div className="login-form-action">
+              <Link href="/forgot-password" className="text-link" data-testid="forgot-password-link">{t("login.forgotPassword")}</Link>
+            </div>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
             <button className="button button-primary login-button" type="submit" disabled={submitting}>
               {submitting ? t("login.signingIn") : t("login.continue")} <ArrowRight size={16} />
@@ -216,6 +218,12 @@ export default function Login() {
           <span><LockKeyhole size={13} /> {t("login.privateWorkspace")}</span>
           <span>{t("login.needHelp")}</span>
         </div>
+        {!isTwoFactor ? (
+          <div className="login-signup-prompt">
+            <span>{t("login.noAccount")}</span>
+            <Link href="/signup" className="button button-quiet">{t("login.signUp")}</Link>
+          </div>
+        ) : null}
       </main>
     </div>
   );

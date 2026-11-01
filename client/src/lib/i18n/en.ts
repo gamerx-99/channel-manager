@@ -200,6 +200,8 @@ const en = {
     invalidCredentials: "The email or password is incorrect.",
     signingIn: "Signing in…",
     continue: "Continue",
+    noAccount: "Don’t have an account yet?",
+    signUp: "Sign up",
     securityNote: "Your hotel data is scoped by hayhost scoped authorization.",
     privateWorkspace: "Private workspace",
     needHelp: "Need help? Contact support",

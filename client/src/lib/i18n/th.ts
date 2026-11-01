@@ -202,6 +202,8 @@ const th: TranslationDictionary = {
     invalidCredentials: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
     signingIn: "กำลังเข้าสู่ระบบ…",
     continue: "ดำเนินการต่อ",
+    noAccount: "ยังไม่มีบัญชีใช่ไหม",
+    signUp: "สมัครสมาชิก",
     securityNote: "Your hotel data is scoped by hayhost scoped authorization.",
     privateWorkspace: "พื้นที่ทำงานส่วนตัว",
     needHelp: "ต้องการความช่วยเหลือ? ติดต่อฝ่ายสนับสนุน",

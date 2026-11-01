@@ -746,3 +746,14 @@ body { background: var(--paper); color: var(--ink); }
 
 .publish-control{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}.publish-control .subtle-block{font-size:12px;margin:0}
 .public-state-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
+
+/* Keep authentication actions aligned with their form instead of the full viewport. */
+.login-main{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.login-card{margin:0 auto}
+.login-footer,.login-signup-prompt{width:min(380px,100%);margin:18px auto 0}
+.login-footer{position:static;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.login-footer span{min-width:0}
+.login-signup-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-muted);font-size:12px}
+.login-form-action{display:flex;justify-content:flex-end;margin:-5px 0 16px}
+.signup-footer{margin-top:18px}
+@media (max-width:760px){.login-main{display:block}.login-footer,.login-signup-prompt{width:min(380px,100%);margin-right:auto;margin-left:auto}.login-footer{flex-wrap:wrap}.login-signup-prompt{margin-top:14px}}
