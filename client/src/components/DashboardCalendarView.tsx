@@ -257,7 +257,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
                 {isSaved && <span className="dashboard-calendar-saved-state" role="status">Saved</span>}
               </div>
             </div>;
-          })}</div> : <p className="dashboard-calendar-empty-sync">ไม่มีประเภทห้องพักสำหรับแก้ไขในวันนี้</p>}
+          })}</div> : <p className="dashboard-calendar-empty-sync">ไม่มี room type สำหรับแก้ไขในวันนี้</p>}
         </div>
       </div>
       <div className="calendar-footer"><span>Availability and sync markers are limited to properties visible under Supabase RLS.</span><span className="signal-text"><i /> {calendarQuery.data.generatedAt ? `Updated ${formatSyncTime(calendarQuery.data.generatedAt)}` : 'Live query'}</span></div>
