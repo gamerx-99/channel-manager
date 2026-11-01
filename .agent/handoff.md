@@ -1,5 +1,17 @@
 # Handoff log
 
+## [2026-11-01] Three branches merged (branch `feat/hayhost-hardening`)
+- **What happened**: With the owner's approval, `feat/financials-owner-grant` went into `feat/account-deletion` (`83efabf`), and that went into `feat/hayhost-hardening` (`93e0bda`). The Security page keeps the SlipOK panel gated on `property.manage_profile` beside the delete account panel. `server/slipVerification.ts` takes the per-hotel version.
+- **Removed from PR #5 on purpose**: the bank-account receiver compare and its tests (`log: true` replaces it), and the loopback mock `SLIPOK_API_BASE_URL` with its tests, because only the central path read it and nothing in the repo used it.
+- **Verification**: `pnpm test`:
+```
+Test Files  158 passed (158)
+     Tests  1108 passed (1108)
+```
+  `pnpm check`: exit 0. `pnpm build`: exit 0. PR #5's logic diff was read by hand, without a separate Reviewer pass; no blocker found.
+- **Known gaps**: the guest "slip received" text in `PaymentQR.tsx` is hard-coded Thai. `saveAvailability` returns silently if a user can edit allotment but cannot see rates. `loadStaffAuthUsers` treats a member as confirmed only with a `credential` account, so social sign-in will show as invitation pending until it is updated.
+- **Not done**: not pushed or deployed. Stage still runs an older build, so password reset cannot be tested there yet.
+
 ## [2026-11-01] SlipOK back to per-hotel keys (branch `feat/financials-owner-grant`)
 - **What happened**: The owner dropped the central account (spec 14-05): SlipOK's terms forbid resale without authorisation, and one branch would have to hold every hotel's accounts. Restored the hotel key form, `slipok.getSettings/saveKey/removeKey` and `slipokCrypto.ts`. `verifySlip` uses the hotel's key with `log: true`; our own receiver compare is gone. No key, a refused key or an undecryptable key goes to manual review. Kept: fixed base URL, duplicate check on `verified_transaction_ref`, claim and room recheck.
 - **Review fixes**: `payment.slipok.verify_credentials` added to `GUEST_PAYMENT_ACTIONS` (without it every guest slip failed with FORBIDDEN and stranded the booking); only CONFLICT is rethrown after the claim, everything else goes to staff; `payment.secretLeak.test.ts` rewritten to reach the D1 repositories, because the old mocks never ran the code; encryption key errors stay out of responses; `SLIPOK_ENCRYPTION_KEY` must be hex; the settings panel shows only to `property.manage_profile`.
