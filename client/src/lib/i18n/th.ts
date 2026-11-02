@@ -488,6 +488,7 @@ const th: TranslationDictionary = {
     tm30CalloutTitle: "การส่งออก ตม.30 ใช้ข้อมูลที่บันทึกแล้ว",
     tm30CalloutDesc: "เซิร์ฟเวอร์จะตรวจสอบความถูกต้องของข้อมูลผู้เข้าพักและกรอกลงในเทมเพลต ตม. ทางการก่อนดาวน์โหลด โรงแรมต้องนำไฟล์ไปอัปโหลดด้วยตนเอง",
     reviewExport: "ตรวจสอบการส่งออก",
+    openTm30Portal: "ไปที่เว็บ ตม.30",
     searchPlaceholder: "ค้นหาชื่อผู้เข้าพัก",
     searchAriaLabel: "ค้นหาการจอง",
     filterStatusAriaLabel: "กรองตามสถานะ",

@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, Filter, MessageCircle, MoreHorizontal, Plus, Search, UserRoundPlus, X } from 'lucide-react';
+import { Download, ExternalLink, FileSpreadsheet, Filter, MessageCircle, MoreHorizontal, Plus, Search, UserRoundPlus, X } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
 import { formatIsoToDisplayDate, parseDisplayDateToIso } from '@shared/dateUtils';
 import { Link } from 'wouter';
@@ -9,6 +9,9 @@ import { useTranslation } from '@/lib/i18n';
 import { communicationsEnabled } from '@/lib/featureFlags';
 import { buildTm30PrintHtml } from '@/lib/tm30Print';
 import { hasHotelPermission } from '@shared/authorization';
+
+// The Immigration Bureau's own TM.30 site, where the hotel uploads the exported file.
+const TM30_PORTAL_URL = 'https://tm30.immigration.go.th/tm30api/loginExternal.jsp';
 
 type BookingStatus = 'held' | 'pending_payment' | 'pending_verification' | 'confirmed' | 'expired' | 'payment_rejected' | 'cancelled' | 'refund_pending' | 'refunded' | 'checked_in' | 'checked_out';
 
@@ -174,7 +177,7 @@ export default function Bookings({ id }: { id: string }) {
           <button className="button button-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> {t('bookings.addBooking')}</button>
         </div>
       </section>
-      <div className="tm30-callout"><div className="callout-icon"><FileSpreadsheet size={17} /></div><div><strong>{t('bookings.tm30CalloutTitle')}</strong><span>{t('bookings.tm30CalloutDesc')}</span></div><button className="text-link" onClick={() => setShowExport(true)} disabled={!bookings.length}>{t('bookings.reviewExport')} <Download size={14} /></button></div>
+      <div className="tm30-callout"><div className="callout-icon"><FileSpreadsheet size={17} /></div><div><strong>{t('bookings.tm30CalloutTitle')}</strong><span>{t('bookings.tm30CalloutDesc')}</span></div><button className="text-link" onClick={() => setShowExport(true)} disabled={!bookings.length}>{t('bookings.reviewExport')} <Download size={14} /></button><a className="text-link" href={TM30_PORTAL_URL} target="_blank" rel="noopener noreferrer">{t('bookings.openTm30Portal')} <ExternalLink size={14} /></a></div>
       <section className="panel table-panel">
         <div className="list-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('bookings.searchPlaceholder')} aria-label={t('bookings.searchAriaLabel')} /></div><div className="toolbar-actions"><select className="select-control" value={status} onChange={event => setStatus(event.target.value as 'all' | BookingStatus)} aria-label={t('bookings.filterStatusAriaLabel')}><option value="all">{t('bookings.allStatuses')}</option><option value="held">{t('bookings.statusHeld')}</option><option value="pending_payment">{t('bookings.statusPendingPayment')}</option><option value="pending_verification">{t('bookings.statusPendingVerification')}</option><option value="confirmed">{t('bookings.statusConfirmed')}</option><option value="checked_in">{t('bookings.statusCheckedIn')}</option><option value="checked_out">{t('bookings.statusCheckedOut')}</option><option value="cancelled">{t('bookings.statusCancelled')}</option><option value="expired">{t('bookings.statusExpired')}</option><option value="payment_rejected">{t('bookings.statusPaymentRejected')}</option><option value="refund_pending">{t('bookings.statusRefundPending')}</option><option value="refunded">{t('bookings.statusRefunded')}</option></select><button className="filter-button" type="button" disabled><Filter size={14} /> {t('bookings.moreFilters')}</button></div></div>
         {formError && <div className="form-error" role="alert">{formError}</div>}

@@ -500,6 +500,7 @@ const en = {
     tm30CalloutTitle: "TM.30 export uses persisted records",
     tm30CalloutDesc: "The server validates guest details and writes the supplied Immigration template before download. The hotel uploads it manually.",
     reviewExport: "Review export",
+    openTm30Portal: "Open the TM.30 website",
     searchPlaceholder: "Search guest name",
     searchAriaLabel: "Search bookings",
     filterStatusAriaLabel: "Filter by status",

@@ -2023,3 +2023,9 @@ Not tested in a browser or with a real email.
 - **Test**: `Signup.contract.test.ts` checks the redirect and the login destination.
 - **Evidence**: `pnpm test` — Test Files 162 passed (162), Tests 1160 passed (1160). `pnpm check` — exit 0. `pnpm build` — exit 0. `git diff --check` — only CRLF warnings.
 - **Not done**: not deployed yet; the real verification flow on www is not rechecked.
+## 2026-11-02 Link to the Immigration TM.30 site from bookings
+
+- **Change**: the TM.30 callout on `Bookings.tsx` now has a link to `https://tm30.immigration.go.th/tm30api/loginExternal.jsp`, which opens in a new tab with `rel="noopener noreferrer"`. The owner asked for it because the hotel still downloads the export and uploads it there by hand. New i18n key `bookings.openTm30Portal` in Thai and English.
+- **Test**: `client/src/pages/Bookings.tm30Portal.contract.test.ts`.
+- **Evidence**: `pnpm test`: Test Files 163 passed (163), Tests 1162 passed (1162). `pnpm check`: exit 0. `pnpm build`: exit 0.
+- **Not done**: not pushed or deployed; the link has not been seen in a browser.
