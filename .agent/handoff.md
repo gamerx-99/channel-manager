@@ -2029,3 +2029,12 @@ Not tested in a browser or with a real email.
 - **Test**: `client/src/pages/Bookings.tm30Portal.contract.test.ts`.
 - **Evidence**: `pnpm test`: Test Files 163 passed (163), Tests 1162 passed (1162). `pnpm check`: exit 0. `pnpm build`: exit 0.
 - **Not done**: not pushed or deployed; the link has not been seen in a browser.
+
+## 2026-11-02 Production walkthrough batch (items 1-9)
+
+- **Changes**: Completed onboarding card spacing; profile/workspace translations and hotel-aware links; safe scoped pricing data; no-hotel navigation; hotel profile editing; hidden dead controls; OTA UI flag; live hotel-page link; and related alignment changes. Added the slug-editing assumption to `.agent/OPEN_QUESTIONS.md`.
+- **Tests**: Added/updated contract, mocked-router and D1 tests for the changed behavior. `WorkspaceMenu.test.tsx` reads the English label from the dictionary because it should track the translation key rather than duplicate copy. `Sidebar.contract.test.ts` no longer expects the removed booking-engine link.
+- **Other English in Thai shell**: the visible hayhost brand remains intentionally untranslated. Shell navigation labels and the dashboard private-workspace footer are translated. I found English-only text elsewhere in the broader app, including the `/platform` heading and `Connected to Supabase` status label; those were outside the specific requested translations.
+- **Checks**: pnpm test / pnpm check cannot run because pnpm’s package-manager store lock/config under C:\Users\littl\AppData\Local is access denied. Equivalent direct `vitest`, `tsc --noEmit`, Vite build, Wrangler local dry-run, and git diff --check were run. First full Vitest run found one stale English aria-label assertion; updated it to assert the translation key. The full rerun is required after the test-only correction.
+- **Browser/alignment**: local Wrangler dev returned HTTP 200 on 127.0.0.1:8787. The CUA browser host was unavailable, and no authenticated local test account walkthrough or desktop/375px visual inspection could be completed.
+- **Not done**: no push or deploy; no browser walkthrough; reviewer approval remains outstanding.
