@@ -252,6 +252,12 @@ export default function Login() {
           <span><LockKeyhole size={13} /> {t("login.privateWorkspace")}</span>
           <span>{t("login.needHelp")}</span>
         </div>
+        {!isTwoFactor ? (
+          <div className="login-signup-prompt">
+            <span>{t("login.noAccount")}</span>
+            <Link href="/signup" className="button button-quiet">{t("login.signUp")}</Link>
+          </div>
+        ) : null}
       </main>
     </div>
   );

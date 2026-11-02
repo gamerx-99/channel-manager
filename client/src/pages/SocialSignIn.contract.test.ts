@@ -67,6 +67,17 @@ describe("Social sign-in contract", () => {
     expect(linked).toContain("if (!providers.data?.length) return null;");
   });
 
+  it("styles the buttons so a provider icon stays small", () => {
+    const css = read("client/src/index.css");
+    expect(css).toContain(".social-button svg{width:20px;height:20px;flex:none}");
+    expect(css).toContain(".social-button{");
+  });
+
+  it("links sign-in to signup outside the authenticator step", () => {
+    expect(login).toContain('className="login-signup-prompt"');
+    expect(login).toContain('href="/signup"');
+  });
+
   it("explains a duplicate email without a generic failure", () => {
     expect(socialErrorKey("account_not_linked")).toBe("socialAuth.accountExists");
     expect(socialErrorKey("ACCOUNT_ALREADY_LINKED_TO_DIFFERENT_USER")).toBe("socialAuth.alreadyLinked");
