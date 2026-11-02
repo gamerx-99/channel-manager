@@ -49,9 +49,12 @@ describe("landing and public signup contract", () => {
     expect(landing).toContain('href="#features"');
   });
 
-  it("creates the account first and then the hotel on the server", () => {
-    expect(signup.indexOf("authClient.signUp.email")).toBeLessThan(signup.indexOf("registerHotel.mutateAsync"));
-    expect(signup).toContain("trpc.channelManager.registerOwnHotel.useMutation");
+  it("creates a personal account first and keeps hotel setup for the onboarding step", () => {
+    const onboarding = readFileSync(resolve(process.cwd(), "client/src/pages/AccountOnboarding.tsx"), "utf8");
+    expect(signup).toContain("authClient.signUp.email");
+    expect(signup).not.toContain("registerOwnHotel");
+    expect(onboarding).toContain("trpc.channelManager.registerOwnHotel.useMutation");
+    expect(onboarding).toContain("onboarding.staffDesc");
     expect(signup).toContain('role="alert"');
   });
 

@@ -32,6 +32,7 @@ export default function Login() {
     return socialError ? t(socialError) : null;
   });
   const [submitting, setSubmitting] = useState(false);
+  const [lineSubmitting, setLineSubmitting] = useState(false);
 
   // Safely resolve tRPC utils (handling environments rendered outside trpc.Provider)
   let trpcUtils: ReturnType<typeof trpc.useUtils> | null = null;
@@ -144,6 +145,22 @@ export default function Login() {
     }
   }
 
+  async function handleLineSignIn() {
+    setError(null);
+    setLineSubmitting(true);
+    try {
+      const { error: lineError } = await authClient.signIn.social({
+        provider: "line",
+        callbackURL: "/dashboard",
+      });
+      if (lineError) setError(t("login.lineFailed"));
+    } catch {
+      setError(t("login.lineFailed"));
+    } finally {
+      setLineSubmitting(false);
+    }
+  }
+
   return (
     <div className="login-page">
       <div className="login-aside">
@@ -237,10 +254,23 @@ export default function Login() {
                 required
               />
             </label>
-            <Link href="/forgot-password" className="text-link" data-testid="forgot-password-link">{t("login.forgotPassword")}</Link>
+            <div className="login-form-action">
+              <Link href="/forgot-password" className="text-link" data-testid="forgot-password-link">{t("login.forgotPassword")}</Link>
+            </div>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
-            <button className="button button-primary login-button" type="submit" disabled={submitting}>
+            <button className="button button-primary login-button" type="submit" disabled={submitting || lineSubmitting}>
               {submitting ? t("login.signingIn") : t("login.continue")} <ArrowRight size={16} />
+            </button>
+            <div className="login-or-divider"><span>{t("login.or")}</span></div>
+            <button
+              className="button line-login-button"
+              type="button"
+              onClick={() => void handleLineSignIn()}
+              disabled={submitting || lineSubmitting}
+            >
+              <img src="/line-login-icon.png" alt="" />
+              <span>{lineSubmitting ? t("login.lineSigningIn") : t("login.lineLogin")}</span>
+              <span aria-hidden="true" />
             </button>
             <div className="login-security">
               <ShieldCheck size={15} />
@@ -252,6 +282,12 @@ export default function Login() {
           <span><LockKeyhole size={13} /> {t("login.privateWorkspace")}</span>
           <span>{t("login.needHelp")}</span>
         </div>
+        {!isTwoFactor ? (
+          <div className="login-signup-prompt">
+            <span>{t("login.noAccount")}</span>
+            <Link href="/signup" className="button button-quiet">{t("login.signUp")}</Link>
+          </div>
+        ) : null}
       </main>
     </div>
   );

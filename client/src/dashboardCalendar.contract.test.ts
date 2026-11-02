@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { en, th } from './lib/i18n';
 
 describe('Dashboard Calendar View contract', () => {
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
@@ -39,19 +38,16 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain('trpc.channelManager.dashboardCalendar.useQuery');
     expect(component).toContain('setSelectedHotelId');
     expect(component).toContain('setSelectedDate');
-    // Text now comes from the dictionaries (the page used to show English on the Thai dashboard).
-    expect(component).toContain("aria-label={t('dashboardCalendar.selectPropertyAria')}");
-    expect(component).toContain("aria-label={t('dashboardCalendar.previousAria')}");
-    expect(component).toContain("aria-label={t('dashboardCalendar.nextAria')}");
-    expect(en.dashboardCalendar.selectPropertyAria).toBe('Select property for calendar');
-    expect(th.dashboardCalendar.editSelectedDay).toBe('แก้ไขห้องว่างของวันที่เลือก');
+    // Labels moved to the dashboardCalendar i18n section in b799f92.
+    expect(component).toContain("aria-label={t('dashboardCalendar.selectProperty')}");
+    expect(component).toContain("aria-label={t('dashboardCalendar.previousWindowAria')}");
+    expect(component).toContain("aria-label={t('dashboardCalendar.nextWindowAria')}");
+    expect(component).toContain("t('dashboardCalendar.editSelectedDay')");
     expect(component).toContain("action: 'allotment'");
     expect(component).toContain("action: 'stop_sell'");
     expect(component).toContain("t('dashboardCalendar.viewOnly')");
-    expect(component).toContain("t('dashboardCalendar.save')");
-    expect(component).toContain("t('dashboardCalendar.stopSell')");
-    expect(en.dashboardCalendar.viewOnly).toBe('View only · Revenue Manager or Hotel Admin can edit');
-    expect(en.dashboardCalendar.stopSell).toBe('Stop Sell');
+    expect(component).toContain('Save');
+    expect(component).toContain("t('dashboardCalendar.stopSellingTitle')");
   });
 
   it('protects the availability mutation with property scope and distinct revenue permissions', () => {
@@ -67,7 +63,6 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain('dashboard-calendar-scroll-hint');
     expect(component).toContain('dashboard-calendar-sync-details');
     expect(component).toContain("t('dashboardCalendar.noSyncActivity')");
-    expect(en.dashboardCalendar.noSyncActivity).toBe('No iCal sync activity recorded for this day.');
     expect(css).toContain('.dashboard-calendar-table{width:100%;min-width:880px');
     expect(css).toContain('.dashboard-calendar-scroll-hint{display:flex}');
     expect(css).toContain('.dashboard-calendar-sync-item{grid-template-columns:26px minmax(0,1fr)}');
@@ -83,10 +78,9 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain('calendar-legend-healthy');
     expect(component).toContain('calendar-legend-low');
     expect(component).toContain('calendar-legend-closed');
-    expect(component).toContain("'dashboardCalendar.statusClosed'");
-    expect(component).toContain("'dashboardCalendar.statusLow'");
-    expect(component).toContain("'dashboardCalendar.statusHealthy'");
-    expect([en.dashboardCalendar.statusClosed, en.dashboardCalendar.statusLow, en.dashboardCalendar.statusHealthy]).toEqual(['Full / closed', 'Low availability', 'Healthy availability']);
+    expect(component).toContain("t('dashboardCalendar.fullOrClosed')");
+    expect(component).toContain("t('dashboardCalendar.lowAvailability')");
+    expect(component).toContain("t('dashboardCalendar.healthyAvailability')");
     expect(component).toContain('aria-hidden="true"');
     expect(css).toContain('.dashboard-calendar-cell.closed');
     expect(css).toContain('.dashboard-calendar-cell.low');

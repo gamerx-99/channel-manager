@@ -57,7 +57,10 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     visibleHotelIds: (visibleHotels ?? []).map(hotel => hotel.id),
   });
 
-  if (!decision.allowed) {
+  // New personal accounts land on the dashboard route for their next step;
+  // they may create a hotel or wait for a staff invitation, but have no hotel role yet.
+  const canAccessAccountSetup = location === "/dashboard" && authRoles.length === 0 && authMe?.memberships?.length === 0;
+  if (!decision.allowed && !canAccessAccountSetup) {
     const message = decision.reason === "hotel_not_visible"
       ? t("accessRestricted.hotelNotVisible")
       : decision.reason === "permission_required"
