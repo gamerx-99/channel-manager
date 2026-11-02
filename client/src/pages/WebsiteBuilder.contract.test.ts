@@ -22,6 +22,14 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(wbSource).toContain('trpc.channelManager.saveHotelSiteConfig.useMutation');
   });
 
+  it('links to the public hotel page and offers publishing while private', () => {
+    expect(wbSource).toContain('websiteBuilder.viewHotelPage');
+    expect(wbSource).toContain('window.open(`/${selectedHotel.slug}`');
+    expect(wbSource).toContain('websiteBuilder.privatePageNote');
+    expect(wbSource).toContain('websiteBuilder.publishPage');
+    expect(wbSource).toContain('trpc.channelManager.setHotelPublished.useMutation');
+  });
+
   // ── Permission gating ────────────────────────────────────────────────────
   it('WebsiteBuilder gates upload/delete/save behind property.manage_profile', () => {
     expect(wbSource).toContain("property.manage_profile");

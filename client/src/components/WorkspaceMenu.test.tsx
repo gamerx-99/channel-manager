@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceMenu } from "./WorkspaceMenu";
+import { en } from "@/lib/i18n";
 
 afterEach(() => cleanup());
 
@@ -44,12 +45,12 @@ describe("WorkspaceMenu", () => {
       />,
     );
 
-    const menu = screen.getByRole("menu", { name: "Workspace options" });
+    const menu = screen.getByRole("menu", { name: en.workspaceMenu.workspaceOptions });
     expect(menu.className).toContain("workspace-dropdown");
-    expect(screen.getByRole("menuitem", { name: "All properties overview" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: en.workspaceMenu.allPropertiesOverview })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: /Little Bro/ })).toBeTruthy();
 
-    await user.click(screen.getByRole("menuitem", { name: "All properties overview" }));
+    await user.click(screen.getByRole("menuitem", { name: en.workspaceMenu.allPropertiesOverview }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -69,10 +70,16 @@ describe("WorkspaceMenu", () => {
     );
 
     expect(screen.getByRole("button", { name: "เลือกโรงแรม Little Bro" })).toBeTruthy();
-    expect(screen.getByText("Property workspace")).toBeTruthy();
-    expect(screen.getByRole("menuitem", { name: "Property overview" })).toBeTruthy();
-    expect(screen.queryByRole("menuitem", { name: "All properties overview" })).toBeNull();
+    expect(screen.getByText(en.workspaceMenu.propertyWorkspace)).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: en.workspaceMenu.propertyOverview })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: en.workspaceMenu.allPropertiesOverview })).toBeNull();
     expect(screen.getByRole("menuitem", { name: /Little Bro/ })).toBeTruthy();
     expect(screen.queryByRole("menuitem", { name: /Other Hotel/ })).toBeNull();
+  });
+
+  it("shows an empty state after the hotel query has loaded with no hotels", () => {
+    render(<WorkspaceMenu open onToggle={vi.fn()} onClose={vi.fn()} hotels={[]} />);
+    expect(screen.getByText(en.workspaceMenu.emptyHotels)).toBeTruthy();
+    expect(screen.queryByText(en.workspaceMenu.loadingAssignedProperties)).toBeNull();
   });
 });

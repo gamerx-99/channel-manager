@@ -20,7 +20,7 @@ import { useHotel } from "../../contexts/HotelContext";
 import { type Permission } from "@shared/authorization";
 import { BrandMark } from "./BrandMark";
 import { useTranslation } from "@/lib/i18n";
-import { communicationsEnabled } from "@/lib/featureFlags";
+import { communicationsEnabled, otaSyncEnabled } from "@/lib/featureFlags";
 
 type SidebarProps = {
   open: boolean;
@@ -72,13 +72,13 @@ export function Sidebar({
       ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomOperations"), icon: BedDouble }] : []),
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
-      ...(can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
+      ...(otaSyncEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
       ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
       ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: ShieldCheck }] : []),
     ]
     : [];
   const navItems = [
-    ...(can("platform.view_system_logs") ? [{ href: "/platform", label: "Platform overview", icon: LayoutDashboard }] : []),
+    ...(can("platform.view_system_logs") ? [{ href: "/platform", label: t("sidebar.platformOverview"), icon: LayoutDashboard }] : []),
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
     ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: t("sidebar.hotelsManagement"), icon: Hotel }] : []),
     ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: t("sidebar.adminUsers"), icon: ShieldCheck }] : []),
@@ -111,7 +111,7 @@ export function Sidebar({
         onSelectHotelId={setSelectedHotelId}
       />
 
-      <nav className="nav-list" aria-label="Main navigation">
+      <nav className="nav-list" aria-label={t("common.mainNavigation")}>
         <p className="nav-label">{t("sidebar.workspace")}</p>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -172,31 +172,13 @@ export function Sidebar({
           </Link>
         )}
         <Link
-          href="/website-builder"
+          href={selectedHotelId ? "/website-builder" : "/dashboard"}
           className={`nav-link ${location === "/website-builder" ? "active" : ""}`}
           onClick={() => onClose()}
         >
           <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
           <span>{t("sidebar.websiteBuilder")}</span>
         </Link>
-        <button
-          type="button"
-          className="nav-link w-full text-left bg-transparent border-0 cursor-pointer"
-          onClick={() => {
-            const hotel = visibleHotels?.find(h => h.id === selectedHotelId) || visibleHotels?.[0];
-            if (!hotel?.slug) {
-              toast.info(t("sidebar.bookingEnginesSelectPrompt"));
-            } else if (!hotel.public_enabled) {
-              // A private hotel page shows guests nothing, so say how to open it.
-              toast.info(t("sidebar.bookingEnginesPrivatePrompt"));
-            } else {
-              window.open(`/${hotel.slug}#book`, "_blank", "noopener");
-            }
-          }}
-        >
-          <CalendarDays size={17} strokeWidth={1.8} />
-          <span>{t("sidebar.bookingEngines")}</span>
-        </button>
         {can("revenue.manage_pricing_rules") && (
           <Link
             href="/dashboard/pricing"
@@ -208,10 +190,7 @@ export function Sidebar({
           </Link>
         )}
         <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>
-        {can("operations.export_tm30") && <a className="nav-link" href="#" onClick={(event) => { event.preventDefault(); toast.info(t("sidebar.exportsPrompt")); }}>
-          <FileSpreadsheet size={17} strokeWidth={1.8} />
-          <span>{t("sidebar.exports")}</span>
-        </a>}
+        {/* Exports returns when the system export page is built; TM.30 remains on Bookings. */}
         {can("platform.manage_users") && (
           <Link
             href="/settings/admin-users"

@@ -776,3 +776,17 @@ html[lang="th"] .page-intro h1,html[lang="th"] .panel-heading h2,html[lang="th"]
 .social-button svg{width:20px;height:20px;flex:none}
 .social-divider{display:flex;align-items:center;gap:12px;margin-top:6px;color:var(--ink-soft);font-size:13px}
 .social-divider::before,.social-divider::after{content:"";flex:1;border-top:1px solid var(--rule)}
+.page-content:after{content:none}
+.page-content-footer{margin-top:26px;color:#a5aaa5;font-size:9px;letter-spacing:.13em;text-align:right}
+.onboarding-card-heading h2{display:flex;align-items:center;gap:9px;margin:0}
+.onboarding-card-heading h2 svg{flex:0 0 auto}
+.onboarding-card-body{padding:0 22px 22px}
+.onboarding-card-body>p{margin:0 0 18px;color:var(--ink-muted);line-height:1.6}
+.onboarding-card-body form{margin:0}
+.onboarding-card-body .form-grid{margin-bottom:18px}
+.onboarding-card-body .button{margin-top:2px}
+.signup-slug{display:flex;align-items:stretch;min-height:36px;margin-top:6px;border:1px solid var(--rule-strong);border-radius:7px;background:var(--white);overflow:hidden}
+.signup-slug>span{display:flex;align-items:center;padding:0 10px;color:var(--ink-muted);font-size:12px;white-space:nowrap;background:var(--paper)}
+.signup-slug input{height:auto;min-width:0;margin-top:0;padding:8px 11px;border:0;border-radius:0;box-shadow:none}
+.signup-slug input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--pine)}
+@media(max-width:600px){.onboarding-card-body{padding:0 16px 18px}.onboarding-card-heading{padding:18px 16px 14px}.onboarding-card-body .form-grid{grid-template-columns:minmax(0,1fr)}.onboarding-card-body .form-span-two{grid-column:auto}.signup-slug>span{font-size:10px;padding:0 7px}}

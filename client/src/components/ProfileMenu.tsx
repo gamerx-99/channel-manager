@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "wouter";
 import { LogOut } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export type ProfileMenuProps = {
   /** `super_admin` or `admin`: sees every property. */
@@ -11,6 +12,7 @@ export type ProfileMenuProps = {
   userEmail: string | null;
   userName: string;
   propertyName?: string;
+  propertyId?: string | null;
   initials: string;
   onLogout: () => void;
   onClose: () => void;
@@ -23,27 +25,29 @@ export function ProfileMenu({
   userEmail,
   userName,
   propertyName,
+  propertyId,
   initials,
   onLogout,
   onClose,
 }: ProfileMenuProps) {
+  const { t } = useTranslation();
   const propertyLabel = isPlatformAdmin
-    ? "Manage Properties"
-    : `Manage ${propertyName ? `${propertyName} property` : "My Property"}`;
+    ? t("profileMenu.manageProperties")
+    : propertyId ? t("profileMenu.manageProperty", { name: propertyName ?? t("profileMenu.myProperty") }) : t("profileMenu.setupHotel");
 
   return (
     <div
       className="profile-menu menu-surface menu-surface--profile"
       role="menu"
-      aria-label="เมนูบัญชีผู้ใช้"
+      aria-label={t("profileMenu.ariaLabel")}
     >
       <div className="menu-surface-header">
-        <p className="menu-surface-kicker">Signed in as</p>
+        <p className="menu-surface-kicker">{t("profileMenu.signedInAs")}</p>
         <p className="menu-surface-title truncate" title={userEmail ?? userName}>
           {userEmail ?? userName}
         </p>
         <p className="menu-surface-meta">
-          {isPlatformAdmin ? `${roleLabel ?? "Super Admin"} · Global access` : `${propertyName ?? "My property"} · ${roleLabel ?? "Hotel Admin"}`}
+          {isPlatformAdmin ? `${roleLabel ?? t("profileMenu.superAdmin")} · ${t("profileMenu.globalAccess")}` : propertyId ? `${propertyName ?? t("profileMenu.propertyLabel")} · ${roleLabel ?? t("profileMenu.hotelAdmin")}` : roleLabel ?? t("profileMenu.hotelAdmin")}
         </p>
       </div>
       {canManageUsers && (
@@ -53,7 +57,7 @@ export function ProfileMenu({
           role="menuitem"
           onClick={onClose}
         >
-          Admin Users &amp; Access
+          {t("profileMenu.adminUsers")}
         </Link>
       )}
       <Link
@@ -61,11 +65,11 @@ export function ProfileMenu({
         className="menu-surface-item"
         role="menuitem"
         onClick={onClose}
-      >
-        Security &amp; MFA
+        >
+        {t("profileMenu.security")}
       </Link>
       <Link
-        href={isPlatformAdmin ? "/hotels" : "/dashboard"}
+        href={isPlatformAdmin ? "/hotels" : propertyId ? `/hotels/${propertyId}` : "/dashboard"}
         className="menu-surface-item"
         role="menuitem"
         onClick={onClose}
@@ -81,7 +85,7 @@ export function ProfileMenu({
         className="menu-surface-item menu-surface-item--danger"
         role="menuitem"
       >
-        <LogOut size={14} /> Sign out
+        <LogOut size={14} /> {t("profileMenu.signOut")}
       </button>
     </div>
   );

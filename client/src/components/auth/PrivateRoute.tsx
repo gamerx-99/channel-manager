@@ -63,6 +63,8 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
   if (!decision.allowed && !canAccessAccountSetup) {
     const message = decision.reason === "hotel_not_visible"
       ? t("accessRestricted.hotelNotVisible")
+      : decision.reason === "role_required"
+        ? t("accessRestricted.hotelRequired")
       : decision.reason === "permission_required"
         ? t("accessRestricted.permissionRequired")
         : t("accessRestricted.platformOnly");

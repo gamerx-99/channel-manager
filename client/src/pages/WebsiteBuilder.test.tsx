@@ -12,6 +12,7 @@ const { saveConfig, query, mutation } = vi.hoisted(() => ({
 
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: "en", setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
 vi.mock("@/lib/trpc", () => ({ trpc: {
+  useUtils: () => ({ channelManager: { hotels: { invalidate: vi.fn() } } }),
   channelManager: {
     hotels: query([{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]),
     listHotelMedia: query([]),
@@ -19,6 +20,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     deleteHotelMedia: mutation(),
     setHotelMediaHero: mutation(),
     saveHotelSiteConfig: mutation(saveConfig),
+    setHotelPublished: mutation(),
   },
   auth: { me: query({ roles: ["hotel_owner"], role: "hotel_owner" }) },
 } }));

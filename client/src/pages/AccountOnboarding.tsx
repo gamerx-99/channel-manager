@@ -45,9 +45,10 @@ export default function AccountOnboarding() {
         <h1>{t("onboarding.title")}<span className="title-mark">.</span></h1>
         <p className="lede">{t("onboarding.lede")}</p>
       </section>
-      <section className="panel" style={{ maxWidth: 760 }}>
-        <h2><HotelIcon size={19} /> {t("onboarding.createTitle")}</h2>
-        <p>{t("onboarding.createDesc")}</p>
+      <section className="panel onboarding-card" style={{ maxWidth: 760 }}>
+        <div className="panel-heading onboarding-card-heading"><h2><HotelIcon size={19} /> {t("onboarding.createTitle")}</h2></div>
+        <div className="onboarding-card-body">
+        <p className="text-muted-foreground">{t("onboarding.createDesc")}</p>
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <label>{t("onboarding.hotelName")}<input value={name} onChange={event => setName(event.target.value)} maxLength={160} required /></label>
@@ -60,10 +61,11 @@ export default function AccountOnboarding() {
             {createHotel.isPending ? t("onboarding.creating") : t("onboarding.createButton")} <ArrowRight size={16} />
           </button>
         </form>
+        </div>
       </section>
-      <section className="panel" style={{ maxWidth: 760, marginTop: 20 }}>
-        <h2><Mail size={19} /> {t("onboarding.staffTitle")}</h2>
-        <p>{t("onboarding.staffDesc")}</p>
+      <section className="panel onboarding-card" style={{ maxWidth: 760, marginTop: 20 }}>
+        <div className="panel-heading onboarding-card-heading"><h2><Mail size={19} /> {t("onboarding.staffTitle")}</h2></div>
+        <div className="onboarding-card-body"><p className="text-muted-foreground">{t("onboarding.staffDesc")}</p></div>
       </section>
     </div>
   );

@@ -5,8 +5,10 @@ import { Sidebar } from "./Sidebar";
 import { useHotel } from "../../contexts/HotelContext";
 import { SupportAccessBanner } from "../SupportAccessBanner";
 import { Topbar } from "./Topbar";
+import { useTranslation } from "@/lib/i18n";
 
 export function AppShell({ children, userName, userEmail, onLogout, roles, memberships = [] }: { children: React.ReactNode; userName: string; userEmail: string | null; onLogout: () => void; roles: readonly AppRole[]; memberships?: readonly (PermissionMembership & { expiresAt?: Date | string; mode?: "view" | "edit" })[] }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -36,7 +38,7 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
         onCloseWorkspaceMenu={() => setWorkspaceMenuOpen(false)}
       />
 
-      {open && <button className="mobile-scrim" aria-label="Close menu" onClick={() => setOpen(false)} />}
+      {open && <button className="mobile-scrim" aria-label={t("common.closeMenu")} onClick={() => setOpen(false)} />}
 
       <main className="main-canvas">
         <Topbar

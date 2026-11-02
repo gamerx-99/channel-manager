@@ -80,6 +80,8 @@ function LoadingWebsiteBuilder() {
 
 export default function WebsiteBuilder() {
   const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const setPublished = trpc.channelManager.setHotelPublished.useMutation({ onSuccess: async () => { await utils.channelManager.hotels.invalidate(); } });
   const { data: hotels, isLoading, isError, refetch, isFetching } = trpc.channelManager.hotels.useQuery();
   const { data: authMe } = trpc.auth.me.useQuery();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
@@ -284,6 +286,18 @@ export default function WebsiteBuilder() {
           {isFetching || isFetchingMedia || isFetchingConfig || uploadMediaMut.isPending || saveConfigMut.isPending || deleteMediaMut.isPending || setHeroMut.isPending ? <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("websiteBuilder.updatingDataAriaLabel")} /> : null}
         </div>
       </section>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" disabled={!selectedHotel?.slug} onClick={() => selectedHotel?.slug && window.open(`/${selectedHotel.slug}`, "_blank", "noopener,noreferrer")}>
+          <Eye size={15} /> {t("websiteBuilder.viewHotelPage")}
+        </Button>
+        {!selectedHotel?.public_enabled && <>
+          <p className="m-0 text-sm text-[#6c7e75]">{t("websiteBuilder.privatePageNote")}</p>
+          {canManage && <Button type="button" onClick={() => setPublished.mutate({ hotel_id: effectiveHotelId, public_enabled: true })} disabled={setPublished.isPending}>
+            <Globe size={15} /> {setPublished.isPending ? t("hotelDetail.publishSaving") : t("websiteBuilder.publishPage")}
+          </Button>}
+        </>}
+      </div>
 
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label={t("websiteBuilder.hotelSelectorAria")}>
         <div className="flex items-center gap-2 text-sm font-semibold text-[#263b31]">

@@ -4,13 +4,12 @@ import {
   ChevronDown,
   Menu,
   Plus,
-  Search,
 } from "lucide-react";
 import ProfileMenu from "../ProfileMenu";
 import NotificationBell from "../NotificationBell";
 import LanguageSwitcher from "../LanguageSwitcher";
 import { useHotel } from "../../contexts/HotelContext";
-import { ROLE_LABELS, type AppRole, type Permission } from "@shared/authorization";
+import { type AppRole, type Permission } from "@shared/authorization";
 import { BrandMark } from "./BrandMark";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
@@ -30,7 +29,6 @@ const BREADCRUMB_INCLUDES_KEYS: Array<[string, TranslationKey]> = [
   ["staff", "breadcrumb.hotelStaff"],
   ["bookings", "breadcrumb.bookings"],
   ["calendar", "breadcrumb.availability"],
-  ["ota", "breadcrumb.otaSync"],
 ];
 
 function getBreadcrumbKey(location: string): TranslationKey {
@@ -100,11 +98,7 @@ export function Topbar({
         <span className="current-crumb">{t(getBreadcrumbKey(location))}</span>
       </div>
       <div className="topbar-actions">
-        <label className="topbar-search">
-          <Search size={15} aria-hidden="true" />
-          <span className="sr-only">{t("topbar.searchSystemSr")}</span>
-          <input placeholder={t("topbar.searchSystem")} aria-label={t("topbar.searchSystemSr")} />
-        </label>
+        {/* Search returns when the system search is implemented. */}
         {isSuperAdmin && (
           <div className="dropdown-anchor">
             <button
@@ -115,7 +109,7 @@ export function Topbar({
               <Plus size={15} /> <span>{t("topbar.addNew")}</span> <ChevronDown size={14} />
             </button>
             {addMenuOpen && (
-              <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label="Add new menu">
+              <div className="menu-surface menu-surface--compact menu-surface--topbar" role="menu" aria-label={t("common.addNewMenu")}>
                 <Link href="/hotels" className="menu-surface-item" onClick={onCloseAddMenu}>
                   {t("topbar.addNewHotel")}
                 </Link>
@@ -143,10 +137,11 @@ export function Topbar({
             <ProfileMenu
               isPlatformAdmin={isPlatformAdmin}
               canManageUsers={can("platform.manage_users")}
-              roleLabel={roles[0] ? ROLE_LABELS[roles[0]] : t("topbar.authorizedUser")}
+              roleLabel={roles[0] === "super_admin" ? t("topbar.superAdminRole") : roles[0] === "admin" ? t("topbar.platformAdminRole") : roles[0] === "support" ? t("topbar.supportRole") : roles[0] ? t("topbar.hotelAdminRole") : t("topbar.authorizedUser")}
               userEmail={userEmail}
               userName={userName}
               propertyName={selectedHotelName}
+              propertyId={selectedHotelId}
               initials={initials}
               onClose={onCloseUserMenu}
               onLogout={onLogout}

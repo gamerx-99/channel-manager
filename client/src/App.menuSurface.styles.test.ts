@@ -10,7 +10,7 @@ describe("Topbar menu surface contract", () => {
     // The Add menu markup moved into Topbar during the Phase 4 shell refactor.
     expect(topbar).toContain('className="dropdown-anchor"');
     expect(topbar).toContain('className="menu-surface menu-surface--compact menu-surface--topbar"');
-    expect(topbar).toContain('aria-label="Add new menu"');
+    expect(topbar).toContain('aria-label={t("common.addNewMenu")}');
   });
 
   it("closes competing menus before opening the Add or Profile menu", () => {
