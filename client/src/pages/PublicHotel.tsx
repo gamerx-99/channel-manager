@@ -24,7 +24,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const themed = (content: React.ReactNode) => {
     if (selectedTheme === "minimal-white") return <MinimalWhiteLanding hotelName={hotel.name} accentColor={accentColor}>{content}</MinimalWhiteLanding>;
     if (selectedTheme === "lanna-teak") return <LannaTeakLanding {...data} hotelName={hotel.name} accentColor={accentColor} booking={<PublicBookingSection page={data} />} />;
-    if (selectedTheme === "cafe-homestay") return <CafeHomestayLanding hotelName={hotel.name} accentColor={accentColor}>{content}</CafeHomestayLanding>;
+    if (selectedTheme === "cafe-homestay") return <CafeHomestayLanding {...data} hotelName={hotel.name} accentColor={accentColor} booking={<PublicBookingSection page={data} />} />;
     return content;
   };
   const page = (
@@ -125,6 +125,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
       </footer>}
     </div>
   );
+  if (selectedTheme === "cafe-homestay") return themed(page);
   return selectedTheme ? themed(page) : page;
 }
 

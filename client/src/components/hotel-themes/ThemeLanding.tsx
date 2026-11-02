@@ -17,7 +17,7 @@ export type ThemeLandingProps = {
 const fonts: Record<ThemeLandingProps["themeId"], string> = {
   "minimal-white": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
   "lanna-teak": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
-  "cafe-homestay": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
+  "cafe-homestay": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Epilogue:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
 };
 
 export function ThemeLanding({ themeId, accentColor, children }: ThemeLandingProps) {
