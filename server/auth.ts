@@ -75,6 +75,13 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
       provider: "sqlite",
       schema: authSchema,
     }),
+    user: {
+      additionalFields: {
+        firstName: { type: "string", required: false, input: true },
+        lastName: { type: "string", required: false, input: true },
+        phone: { type: "string", required: false, input: true },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification,
