@@ -43,6 +43,7 @@ describe("WebsiteBuilder editing", () => {
   it("renders all three theme cards and saves a selected theme through the site config mutation", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(3);
+    expect(document.querySelectorAll('button[data-theme-id] img[src^="/themes/"]')).toHaveLength(3);
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
     expect(saveConfig).toHaveBeenCalledWith({ hotel_id: "hotel-1", theme: "lanna-teak" });
   });

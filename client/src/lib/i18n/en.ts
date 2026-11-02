@@ -1529,7 +1529,7 @@ const en = {
     addressFallback: "Address from hotel profile",
     allSectionsHidden: "All sections hidden — toggle at least one visible section.",
     publicHotelFallbackNote: "A hotel without its own settings shows the default headline and colour. This preview shows the same.",
-    themePickerTitle: "Choose a website design", themePickerDesc: "Choose a look for your public hotel page.", themeNotLiveYet: "The selected design will appear on your public page after the designs are added.", currentTheme: "Current choice", themeSaved: "Website design saved.",
+    themePickerTitle: "Choose a website design", themePickerDesc: "Choose a look for your public hotel page.", currentTheme: "Current choice", themeSaved: "Website design saved.",
     siteConfigTitle: "Site config",
     siteConfigDesc: "Headline, accent colour and the sections guests see. Only the hotel owner can change these.",
     requiresManageProfile: "Requires property.manage_profile to save.",

@@ -369,14 +369,13 @@ export default function WebsiteBuilder() {
               <CardDescription>{t("websiteBuilder.themePickerDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
-              <p className="text-xs leading-5 text-[#795548]">{t("websiteBuilder.themeNotLiveYet")}</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label={t("websiteBuilder.themePickerTitle")}>
                 {HOTEL_THEMES.map(theme => {
                   const selected = (config as SiteConfig).theme === theme.id;
                   return <button key={theme.id} type="button" onClick={() => handleSaveTheme(theme.id)} disabled={!canManage || saveThemeMut.isPending}
                     aria-pressed={selected} data-theme-id={theme.id}
                     className={`min-w-0 overflow-hidden rounded-xl border text-left transition ${selected ? "border-[#1d6b56] ring-2 ring-[#1d6b56]/20" : "border-[#e6eee9] hover:border-[#91b3a5]"}`}>
-                    <div className="h-20 w-full border-b border-black/5" style={{ backgroundColor: theme.primaryColor }} aria-hidden="true" />
+                    <img src={`/themes/${theme.id}.jpg`} alt="" className="h-24 w-full border-b border-black/5 object-cover object-top" />
                     <div className="space-y-1 p-3">
                       <div className="flex items-center justify-between gap-2"><span className="font-semibold text-[#263b31]">{theme.name}</span>
                         {theme.tier === "premium" ? <span className="shrink-0 rounded-full bg-[#f5eadf] px-2 py-0.5 text-[10px] font-semibold text-[#795548]">Pro</span> : null}</div>

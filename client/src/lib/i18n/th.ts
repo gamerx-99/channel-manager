@@ -1517,7 +1517,7 @@ const th: TranslationDictionary = {
     addressFallback: "ที่อยู่จากโปรไฟล์โรงแรม",
     allSectionsHidden: "ทุกส่วนถูกซ่อนอยู่ — กรุณาเปิดอย่างน้อยหนึ่งส่วน",
     publicHotelFallbackNote: "ที่พักที่ยังไม่ได้ตั้งค่าจะแสดงข้อความหลักและสีเริ่มต้น ตัวอย่างนี้แสดงแบบเดียวกัน",
-    themePickerTitle: "เลือกดีไซน์เว็บไซต์", themePickerDesc: "เลือกหน้าตาของเว็บไซต์สาธารณะสำหรับที่พัก", themeNotLiveYet: "ตอนนี้ดีไซน์ที่เลือกยังไม่เปลี่ยนหน้าเว็บจริง เพราะกำลังจัดทำแบบเว็บไซต์อยู่", currentTheme: "แบบที่เลือกอยู่", themeSaved: "บันทึกดีไซน์เว็บไซต์แล้ว",
+    themePickerTitle: "เลือกดีไซน์เว็บไซต์", themePickerDesc: "เลือกหน้าตาของเว็บไซต์สาธารณะสำหรับที่พัก", currentTheme: "แบบที่เลือกอยู่", themeSaved: "บันทึกดีไซน์เว็บไซต์แล้ว",
     siteConfigTitle: "การตั้งค่าเว็บไซต์",
     siteConfigDesc: "ข้อความหลัก สีเน้น และส่วนที่แขกจะเห็น เฉพาะเจ้าของที่พักเท่านั้นที่แก้ไขได้",
     requiresManageProfile: "ต้องใช้สิทธิ์ property.manage_profile ในการบันทึก",
