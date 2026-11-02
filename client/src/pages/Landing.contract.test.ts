@@ -35,7 +35,7 @@ describe("landing and public signup contract", () => {
     const legal = readFileSync(resolve(process.cwd(), "client/src/pages/LegalPage.tsx"), "utf8");
     const hotelRepo = readFileSync(resolve(process.cwd(), "server/d1/hotel.ts"), "utf8");
     for (const path of ["terms", "privacy", "dpa"] as const) {
-      expect(app.indexOf(`<Route path="/${path}"><LegalPage kind="${path}" /></Route>`)).toBeGreaterThan(-1);
+      expect(app).toContain(`<Route path="/${path}"><LegalPage kind="${path}" /></Route>`);
       expect(app.indexOf(`path="/${path}"`)).toBeLessThan(slugRoute);
       expect(landing).toContain(`<Link href="/${path}">`);
       expect(hotelRepo).toContain(`"${path}"`);

@@ -135,6 +135,19 @@ describe("Server Better Auth on D1 Test Suite", () => {
     expect(a.password).toBe("hashed_password_123");
   });
 
+  it("accepts and persists personal signup details in the Better Auth user schema", async () => {
+    const { createAuth } = await import("./auth");
+    const auth = createAuth({ db, baseURL: "http://localhost:8787", secret: "test-secret-with-at-least-32-characters!", requireEmailVerification: false });
+    const response = await auth.handler(new Request("http://localhost:8787/api/auth/sign-up/email", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "http://localhost:8787" },
+      body: JSON.stringify({ email: "personal@example.test", password: "long-enough-password", name: "Ada Owner", firstName: "Ada", lastName: "Owner", phone: "+66 81 234 5678" }),
+    }));
+    expect(response.status).toBe(200);
+    const [created] = await db.select().from(user).where(eq(user.email, "personal@example.test"));
+    expect(created).toMatchObject({ firstName: "Ada", lastName: "Owner", phone: "+66 81 234 5678" });
+  });
+
   // Test 2: Login Session Creation
   it("creates an active session on valid login", async () => {
     const now = new Date();

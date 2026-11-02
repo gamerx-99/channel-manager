@@ -14,3 +14,24 @@ describe("auth.me", () => {
     expect(JSON.stringify(me)).not.toContain("session-token");
   });
 });
+
+describe("auth.socialProviders", () => {
+  it("exposes configured provider names only, never OAuth credentials", async () => {
+    const prior = { ...process.env };
+    process.env.GOOGLE_CLIENT_ID = "test-google-id";
+    process.env.GOOGLE_CLIENT_SECRET = "test-google-secret";
+    delete process.env.FACEBOOK_CLIENT_ID;
+    delete process.env.FACEBOOK_CLIENT_SECRET;
+    delete process.env.LINE_CLIENT_ID;
+    delete process.env.LINE_CLIENT_SECRET;
+    try {
+      const caller = authRouter.createCaller({} as any);
+      const providers = await caller.socialProviders();
+      expect(providers).toEqual(["google"]);
+      expect(JSON.stringify(providers)).not.toContain("test-google-id");
+      expect(JSON.stringify(providers)).not.toContain("test-google-secret");
+    } finally {
+      process.env = prior;
+    }
+  });
+});

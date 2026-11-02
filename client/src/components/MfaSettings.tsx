@@ -167,6 +167,7 @@ export default function MfaSettings() {
       <p className="lede" style={{ marginTop: 8 }}>
         {t("mfaSettings.intro")}
       </p>
+      <p className="lede">{t("mfaSettings.worksForEveryRole")}</p>
 
       {loading && (
         <p role="status" className="lede">
