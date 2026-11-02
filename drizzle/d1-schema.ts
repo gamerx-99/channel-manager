@@ -356,6 +356,7 @@ export const hotelSiteConfig = sqliteTable("hotel_site_config", {
   heroCopy: text("hero_copy"),
   accentColor: text("accent_color"),
   visibleSections: json<unknown>("visible_sections"),
+  theme: text("theme"),
   updatedAt: updatedAt(),
 }, table => [
   check("hotel_site_config_accent_color_check", sql`${table.accentColor} is null or (substr(${table.accentColor}, 1, 1) = '#' and length(${table.accentColor}) in (4, 7) and substr(${table.accentColor}, 2) not glob '*[^A-Fa-f0-9]*')`),

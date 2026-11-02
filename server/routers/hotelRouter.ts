@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { HOTEL_THEMES, isHotelThemeId } from '@shared/hotelThemes';
 import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
@@ -168,6 +169,7 @@ export const hotelSiteConfigSaveSchema = z.object({
   hero_copy: z.string().trim().max(500).nullable().optional(),
   accent_color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Use a hex color like #954831.').nullable().optional(),
   visible_sections: z.record(z.string(), z.boolean()).nullable().optional(),
+  theme: z.string().nullable().optional().refine(value => value == null || isHotelThemeId(value), 'Unknown hotel theme.'),
 });
 
 export const uploadHotelMediaSchema = z.object({
@@ -500,6 +502,7 @@ export const saveHotelSiteConfig = protectedProcedure.input(hotelSiteConfigSaveS
       hero_copy: input.hero_copy,
       accent_color: input.accent_color,
       visible_sections: input.visible_sections,
+      theme: input.theme,
     } as any);
   } catch (error) {
     if (error instanceof TRPCError) throw error;

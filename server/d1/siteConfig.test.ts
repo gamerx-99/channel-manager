@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { eq } from "drizzle-orm";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { d1Schema, hotelMedia, hotelUsers, hotels } from "../../drizzle/d1-schema";
+import { d1Schema, hotelMedia, hotelSiteConfig, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { createHotelMedia, deleteHotelMedia, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, saveHotelSiteConfig, setHotelMediaHero } from "./siteConfig";
 
@@ -79,8 +79,8 @@ describe("D1 site config and media repository", () => {
   it("allows public config lookup only for server-created public context and published hotels", async () => {
     await seedHotel("a", "owner-a", true);
     await seedHotel("b", "owner-b", false);
-    await saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", hero_copy: "Public" });
-    await expect(getHotelSiteConfigBySlug(db, { userId: "", access: "public" }, "a-slug")).resolves.toMatchObject({ heroCopy: "Public" });
+  await saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", hero_copy: "Public", theme: "cafe-homestay" });
+  await expect(getHotelSiteConfigBySlug(db, { userId: "", access: "public" }, "a-slug")).resolves.toMatchObject({ heroCopy: "Public", theme: "cafe-homestay" });
     await expect(getHotelSiteConfigBySlug(db, { userId: "", access: "public" }, "b-slug")).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(getHotelSiteConfigBySlug(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
@@ -113,6 +113,27 @@ describe("D1 site config and media repository", () => {
     expect(await db.select().from(hotelMedia)).toHaveLength(1);
   });
 
+  it("stores only known theme ids and rejects unknown ids", async () => {
+    await seedHotel("a", "owner-a");
+    await expect(saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", theme: "lanna-teak" }))
+      .resolves.toMatchObject({ theme: "lanna-teak" });
+    await expect(saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", theme: "invented-theme" }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("validates theme ids at the router boundary and refuses users without website edit permission", async () => {
+    const { appRouter } = await import("../routers");
+    const hotelId = "88ed76e4-cc93-4aa7-9c4d-30999d35ada4";
+    const caller = appRouter.createCaller({
+      req: {} as Request, res: {} as Response, db: {} as any, caller: { userId: "desk", roles: ["front_desk"], access: "authenticated" },
+      user: { id: "desk", email: null, name: null, accessToken: "t", appMetadata: {}, userMetadata: {}, role: "front_desk", roles: ["front_desk"], memberships: [{ hotelId, role: "front_desk" }] },
+    } as never);
+    await expect(caller.channelManager.saveHotelSiteConfig({ hotel_id: hotelId, theme: "unknown" }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.channelManager.saveHotelSiteConfig({ hotel_id: hotelId, theme: "minimal-white" }))
+      .rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("serializes concurrent hero creates so exactly one remains hero", async () => {
     await seedHotel("a", "owner-a");
     await Promise.all([
@@ -120,6 +141,17 @@ describe("D1 site config and media repository", () => {
       createHotelMedia(db, { userId: "owner-a" }, { hotel_id: "a", url: "hero-2", is_hero: true }),
     ]);
     expect((await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, "a"))).filter(media => media.isHero)).toHaveLength(1);
+  });
+});
+
+describe("public hotel theme", () => {
+  it("returns the saved theme id with public hotel data", async () => {
+    await seedHotel("pub", "owner-pub", true);
+    await saveHotelSiteConfig(db, { userId: "owner-pub" }, { hotel_id: "pub", theme: "lanna-teak" });
+    const { getPublicHotel } = await import("./hotel");
+    await expect(getPublicHotel(db, { userId: "", access: "public" }, "pub-slug"))
+      .resolves.toMatchObject({ hotel: { theme: "lanna-teak" } });
+    expect(await db.select({ theme: hotelSiteConfig.theme }).from(hotelSiteConfig)).toEqual([{ theme: "lanna-teak" }]);
   });
 });
 
@@ -148,8 +180,8 @@ describe('site config reads', () => {
     const publicCaller = { userId: '', access: 'public' as const };
     await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toBeNull();
     await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toBeNull();
-    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Welcome', accent_color: '#123456', visible_sections: { rooms: false } });
-    const expected = { heroCopy: 'Welcome', accentColor: '#123456', visibleSections: { rooms: false } };
+    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Welcome', accent_color: '#123456', visible_sections: { rooms: false }, theme: 'minimal-white' });
+    const expected = { heroCopy: 'Welcome', accentColor: '#123456', visibleSections: { rooms: false }, theme: 'minimal-white' };
     await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toMatchObject(expected);
     await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toMatchObject(expected);
   });

@@ -5,7 +5,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { defaultChildRateConfig, defaultOccupancyPricing } from "@shared/occupancyPricing";
 import type { AppRole } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
-import { bookings, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookings, hotelMedia, hotelServices, hotelSiteConfig, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang, satangToMoney } from "../db/money";
 import type { CreateHotelInput, CreateHotelServiceInput, CreateRoomTypeInput, DeleteRoomTypeInput, DeleteHotelServiceInput, HotelRecord, RoomTypeRecord, UpdateHotelServiceInput, UpdateRoomTypeInput } from "../db/types";
@@ -259,11 +259,12 @@ export async function listActiveHotelServicesBySlug(db: D1ScopedDatabase, caller
 
 export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerContext, slug: string) {
   const hotel = await requirePublicHotel(db, caller, slug);
-  const [hotelRoomTypes, media] = await Promise.all([
+  const [hotelRoomTypes, media, siteConfig] = await Promise.all([
     db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id)),
     db.select({ id: hotelMedia.id, url: hotelMedia.url, caption: hotelMedia.caption, is_hero: hotelMedia.isHero, display_order: hotelMedia.displayOrder })
       .from(hotelMedia).where(eq(hotelMedia.hotelId, hotel.id)).orderBy(asc(hotelMedia.displayOrder))
       .then(rows => rows.map(row => ({ ...row, url: servedMediaUrl(row.url) }))),
+    db.select({ theme: hotelSiteConfig.theme }).from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotel.id)).limit(1),
   ]);
   hotelRoomTypes.sort((left, right) => {
     const leftPrice = moneyToSatang(left.basePrice);
@@ -272,7 +273,7 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
     return priceOrder || left.id.localeCompare(right.id);
   });
   return {
-    hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, created_at: hotel.createdAt },
+    hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, created_at: hotel.createdAt, theme: siteConfig[0]?.theme ?? null },
     roomTypes: hotelRoomTypes,
     media,
   };

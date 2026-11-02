@@ -3,6 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { hotelMedia, hotelSiteConfig } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { servedMediaUrl } from "./media";
+import { isHotelThemeId } from "../../shared/hotelThemes";
 
 export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = "#954831";
@@ -22,22 +23,28 @@ export async function getHotelSiteConfigBySlug(db: D1ScopedDatabase, caller: D1C
 export async function saveHotelSiteConfig(
   db: D1ScopedDatabase,
   caller: D1CallerContext,
-  input: { hotel_id: string; hero_copy?: string | null; accent_color?: string | null; visible_sections?: Record<string, boolean> | null },
+  input: { hotel_id: string; hero_copy?: string | null; accent_color?: string | null; visible_sections?: Record<string, boolean> | null; theme?: string | null },
   now = new Date(),
 ) {
   await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_profile", "site_config.save", now);
-  const [row] = await db.insert(hotelSiteConfig).values({
+  if (input.theme != null && !isHotelThemeId(input.theme)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown hotel theme." });
+  const values = {
     hotelId: input.hotel_id,
-    heroCopy: input.hero_copy ?? null,
-    accentColor: input.accent_color ?? null,
-    visibleSections: input.visible_sections ?? null,
+    ...(input.hero_copy !== undefined ? { heroCopy: input.hero_copy } : {}),
+    ...(input.accent_color !== undefined ? { accentColor: input.accent_color } : {}),
+    ...(input.visible_sections !== undefined ? { visibleSections: input.visible_sections } : {}),
+    ...(input.theme !== undefined ? { theme: input.theme } : {}),
     updatedAt: now,
+  };
+  const [row] = await db.insert(hotelSiteConfig).values({
+    ...values,
   }).onConflictDoUpdate({
     target: hotelSiteConfig.hotelId,
     set: {
       ...(input.hero_copy !== undefined ? { heroCopy: input.hero_copy } : {}),
       ...(input.accent_color !== undefined ? { accentColor: input.accent_color } : {}),
       ...(input.visible_sections !== undefined ? { visibleSections: input.visible_sections } : {}),
+      ...(input.theme !== undefined ? { theme: input.theme } : {}),
       updatedAt: now,
     },
   }).returning();
