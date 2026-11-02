@@ -2,6 +2,7 @@ import type { TranslationDictionary } from "./en";
 
 const th: TranslationDictionary = {
   common: {
+    mainNavigation: "เมนูหลัก", closeMenu: "ปิดเมนู", addNewMenu: "เมนูเพิ่มรายการ",
     loading: "กำลังโหลด...",
     checkingAccount: "กำลังตรวจสอบบัญชีของคุณ…",
     save: "บันทึก",
@@ -13,6 +14,7 @@ const th: TranslationDictionary = {
     back: "ย้อนกลับ",
   },
   sidebar: {
+    platformOverview: "ภาพรวมแพลตฟอร์ม",
     overview: "ภาพรวม",
     hotelsManagement: "จัดการโรงแรม",
     adminUsers: "ผู้ดูแลระบบ",
@@ -29,13 +31,8 @@ const th: TranslationDictionary = {
     communications: "การสื่อสารและแชท",
     housekeeping: "แม่บ้านและทำความสะอาด",
     websiteBuilder: "สร้างเว็บไซต์",
-    bookingEngines: "ระบบจองห้องพัก",
-    bookingEnginesSelectPrompt: "กรุณาเลือกหรือเพิ่มโรงแรมก่อนเพื่อเปิดหน้าระบบจอง",
-    bookingEnginesPrivatePrompt: "หน้าเว็บที่พักนี้ยังเป็นส่วนตัว เปิดหน้าเว็บจากหน้าที่พักก่อน แล้วแขกจึงจองได้",
     advancedPricing: "ตั้งราคาขั้นสูง",
     system: "ระบบ",
-    exports: "ส่งออกข้อมูล",
-    exportsPrompt: "การส่งออก TM.30 และรายงาน สามารถทำได้ในหน้ารายการจองของแต่ละโรงแรม",
     settings: "การตั้งค่า",
     supportMode: "โหมดสนับสนุน",
     supportModeDesc: "ดูข้อมูล แนะนำ และแก้ไขปัญหา",
@@ -55,6 +52,23 @@ const th: TranslationDictionary = {
     openMenu: "เปิดเมนู",
     accountMenu: "เมนูบัญชี",
     authorizedUser: "ผู้ใช้ที่ได้รับอนุญาต",
+    superAdminRole: "ผู้ดูแลสูงสุด", platformAdminRole: "ผู้ดูแลแพลตฟอร์ม", supportRole: "ฝ่ายสนับสนุน", hotelAdminRole: "ผู้ดูแลโรงแรม",
+  },
+  profileMenu: {
+    ariaLabel: "เมนูบัญชีผู้ใช้", signedInAs: "เข้าสู่ระบบในชื่อ", manageProperties: "จัดการโรงแรม",
+    manageProperty: "จัดการโรงแรม {{name}}", myProperty: "โรงแรมของฉัน", propertyLabel: "โรงแรมของฉัน",
+    superAdmin: "ผู้ดูแลแพลตฟอร์ม", globalAccess: "เข้าถึงได้ทุกโรงแรม", hotelAdmin: "ผู้ดูแลโรงแรม",
+    setupHotel: "ตั้งค่าโรงแรมของคุณ", adminUsers: "ผู้ใช้และสิทธิ์เข้าถึง", security: "ความปลอดภัยและ MFA", signOut: "ออกจากระบบ",
+  },
+  shell: { privateWorkspaceFooter: "HAYHOST · พื้นที่ทำงานส่วนตัว" },
+  workspaceMenu: {
+    supportConsole: "หน้าจอสนับสนุน", hotelWorkspace: "พื้นที่ทำงานของโรงแรม", workspace: "พื้นที่ทำงาน",
+    propertyWorkspace: "พื้นที่ทำงานของโรงแรม", visibleHotelWorkspaces: "โรงแรมที่ดูแลได้",
+    assignedProperty: "โรงแรมที่ได้รับมอบหมาย", loadingAssignedProperties: "กำลังโหลดรายชื่อโรงแรม…",
+    emptyHotels: "ยังไม่มีโรงแรม", activeWorkspace: "พื้นที่ทำงานปัจจุบัน", workspaceOptions: "ตัวเลือกพื้นที่ทำงาน",
+    allPropertiesOverview: "ภาพรวมโรงแรมทั้งหมด", propertyOverview: "ภาพรวมโรงแรม",
+    currentActiveWorkspace: "พื้นที่ทำงานที่เลือกอยู่", currentProperty: "โรงแรมที่เลือก: {{name}}",
+    selectWorkspace: "เลือกพื้นที่ทำงาน", selectProperty: "เลือกโรงแรม {{name}}",
   },
   breadcrumb: {
     overview: "ภาพรวม",
@@ -157,7 +171,7 @@ const th: TranslationDictionary = {
   ownerSignup: {
     checkingLink: "กำลังตรวจสอบลิงก์สมัคร…", invalidTitle: "ลิงก์สมัครนี้ใช้ไม่ได้แล้ว", invalidDesc: "ลิงก์อาจหมดอายุหรือถูกใช้แล้ว กรุณาขอลิงก์ใหม่จากผู้ดูแลระบบ", eyebrowAside: "ระบบจัดการโรงแรม / คอนโซลกลาง", headlineAside: "ตั้งค่า", descAside: "สร้างบัญชีเพื่อเริ่มจัดการที่พักนี้", privateOperations: "ระบบจัดการโรงแรมส่วนตัว", secureWorkspace: "พื้นที่ทำงานปลอดภัย", eyebrowCard: "สมัครผู้ดูแลโรงแรม", titleCard: "สร้างบัญชี", descCard: "คุณกำลังสร้างบัญชี Hotel Admin สำหรับ {{hotel}}", finishTitle: "ตั้งค่าโรงแรมให้เสร็จ", finishDesc: "เข้าสู่ระบบแล้ว ยืนยันเพื่อเป็น Hotel Admin ของ {{hotel}}", finish: "เชื่อมโรงแรมนี้", finishing: "กำลังเชื่อม…", emailLabel: "อีเมล", passwordLabel: "รหัสผ่าน", confirmPasswordLabel: "ยืนยันรหัสผ่าน", passwordTooShort: "ตั้งรหัสผ่านอย่างน้อย 8 ตัวอักษร", passwordMismatch: "รหัสผ่านไม่ตรงกัน", accountFailed: "สร้างบัญชีไม่สำเร็จ", finishFailed: "ตั้งค่าบัญชีโรงแรมไม่สำเร็จ", creating: "กำลังสร้างบัญชี…", create: "สร้างบัญชี", securityNote: "ข้อมูลโรงแรมจะแสดงเฉพาะกับผู้ที่คุณอนุญาต", privateWorkspace: "พื้นที่ทำงานส่วนตัว", needHelp: "ต้องการความช่วยเหลือ ติดต่อฝ่ายสนับสนุน", alreadyAssigned: "ผู้ใช้นี้ได้รับสิทธิ์ในโรงแรมนี้แล้ว", invitationInvalid: "ลิงก์คำเชิญไม่ถูกต้องหรือหมดอายุแล้ว",
   },
-  accessRestricted: { title: "ไม่มีสิทธิ์เข้าถึง", hotelNotVisible: "ที่พักนี้อยู่นอกพื้นที่โรงแรมที่คุณได้รับมอบหมาย", permissionRequired: "บทบาทของคุณไม่มีสิทธิ์เปิดพื้นที่นี้", platformOnly: "ส่วนนี้เปิดให้ผู้ดูแลแพลตฟอร์มเท่านั้น", returnToDashboard: "กลับไปหน้าภาพรวม" },
+  accessRestricted: { title: "ไม่มีสิทธิ์เข้าถึง", hotelNotVisible: "ที่พักนี้อยู่นอกพื้นที่โรงแรมที่คุณได้รับมอบหมาย", permissionRequired: "บทบาทของคุณไม่มีสิทธิ์เปิดพื้นที่นี้", hotelRequired: "ตั้งค่าโรงแรมก่อน หรือให้ผู้ดูแลโรงแรมเชิญคุณเข้าร่วม", platformOnly: "ส่วนนี้เปิดให้ผู้ดูแลแพลตฟอร์มเท่านั้น", returnToDashboard: "กลับไปหน้าภาพรวม" },
   serverErrors: {
     roomTypeUnavailable: "ประเภทห้องที่เลือกไม่ว่างแล้วในวันที่นี้ กรุณาเลือกวันหรือประเภทห้องอื่น", roomUnavailable: "ห้องที่เลือกไม่ว่างแล้วในวันที่นี้", roomOverlap: "ห้องที่เลือกมีการจองซ้อนช่วงวันที่นี้แล้ว", checkOutAfterCheckIn: "วันเช็คเอาท์ต้องอยู่หลังวันเช็คอิน", checkOutLaterThanCheckIn: "วันเช็คเอาท์ต้องอยู่หลังวันเช็คอิน", holdExpired: "เวลาจองห้องชั่วคราวหมดแล้ว กรุณาเริ่มจองใหม่", hotelNotPublished: "ไม่พบที่พักนี้ หรือที่พักยังไม่เปิดหน้าเว็บ", promptPayMissing: "ที่พักนี้ยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาติดต่อที่พักโดยตรง", paymentExpired: "หมดเวลาชำระเงินแล้ว", bookingNotReadyForPayment: "การจองนี้ยังไม่พร้อมชำระเงิน", notAwaitingPayment: "การจองนี้ไม่ได้รอตรวจสอบการชำระเงิน", alreadyVerifying: "กำลังตรวจสอบการชำระเงินของการจองนี้อยู่ กรุณารอผล", slipReused: "สลิปนี้ถูกใช้ยืนยันการชำระเงินรายการอื่นไปแล้ว กรุณาติดต่อที่พัก", notAwaitingManualVerification: "การจองนี้ไม่ได้รอให้เจ้าหน้าที่ตรวจสอบ", bookingStatusChanged: "สถานะการจองเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง", hotelAccessDenied: "คุณไม่มีสิทธิ์ทำรายการนี้ในที่พักนี้", noHotelAccess: "คุณไม่มีสิทธิ์เข้าถึงที่พักนี้", hotelNotAvailable: "บัญชีของคุณเข้าถึงที่พักนี้ไม่ได้", signInAgain: "กรุณาเข้าสู่ระบบอีกครั้ง", icalFetchFailed: "ดึงหรือตรวจสอบปฏิทิน iCal ไม่สำเร็จ กรุณาตรวจลิงก์ปฏิทินจาก OTA อีกครั้ง", staffChangeNotAllowed: "ไม่สามารถเปลี่ยนสิทธิ์พนักงานแบบนี้ได้", lastAdminRemove: "ลบผู้ดูแลโรงแรมคนสุดท้ายไม่ได้", alreadyAssigned: "ผู้ใช้นี้เป็นสมาชิกของที่พักนี้อยู่แล้ว", invitationInvalid: "ลิงก์คำเชิญนี้ใช้ไม่ได้หรือหมดอายุแล้ว", incorrectPassword: "รหัสผ่านไม่ถูกต้อง", rateOverlap: "ประเภทห้องนี้มีราคาพิเศษที่ทับช่วงวันที่เลือกอยู่แล้ว", duplicateDetails: "มีที่พักหรือประเภทห้องที่ใช้ข้อมูลนี้อยู่แล้ว", invalidValues: "ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง", maxOccupancyBase: "จำนวนผู้เข้าพักสูงสุดต้องไม่น้อยกว่าจำนวนผู้เข้าพักที่รวมในราคา", imageTooLarge: "รูปภาพต้องมีขนาดไม่เกิน 5 MB", invalidImage: "อัปโหลดรูปภาพไม่สำเร็จ ไฟล์ไม่ถูกต้อง",
   },
@@ -325,6 +339,7 @@ const th: TranslationDictionary = {
     noRoomTypesCalendar: "ยังไม่มีประเภทห้องพัก เพิ่มประเภทห้องเพื่อเริ่มจัดการห้องว่างได้เลย",
   },
   dashboardCalendar: {
+    loadingDescNoOta: "กำลังตรวจสอบห้องว่างของโรงแรมที่คุณดูแล…", emptyDescNoOta: "เพิ่มโรงแรมและประเภทห้องเพื่อดูข้อมูลที่นี่", eyebrowNoOta: "สถานะห้องว่าง", subtitleNoOta: "ดูห้องว่างและห้องที่มีผู้เข้าพักได้ในหน้าเดียว",
     loadingTitle: "กำลังโหลดปฏิทินการดำเนินงาน",
     loadingDesc: "กำลังตรวจสอบห้องว่างและข้อมูล iCal ของโรงแรมที่คุณดูแล…",
     errorTitle: "โหลดปฏิทินการดำเนินงานไม่สำเร็จ",
@@ -556,6 +571,7 @@ const th: TranslationDictionary = {
     checkOutAction: "เช็คเอาท์",
   },
   hotelDetail: {
+    editProfileDescription: "แก้ไขชื่อ ที่อยู่ และเบอร์ติดต่อของโรงแรม", hotelNameLabel: "ชื่อโรงแรม", addressLabel: "ที่อยู่", contactLabel: "เบอร์ติดต่อเจ้าของ", saveProfile: "บันทึกข้อมูล", savingProfile: "กำลังบันทึก…",
     loadingTitle: "กำลังโหลดข้อมูลโรงแรม",
     loadingDesc: "กำลังตรวจสอบข้อมูลตามสิทธิ์ของสมาชิกโรงแรม…",
     errorTitle: "โหลดข้อมูลโรงแรมไม่สำเร็จ",
@@ -1437,6 +1453,7 @@ const th: TranslationDictionary = {
     lede: "จัดการแอปยืนยันตัวตน การตรวจสลิป และการยืนยันตัวตนซ้ำก่อนทำรายการสำคัญ",
   },
   websiteBuilder: {
+    viewHotelPage: "ดูหน้าเว็บที่พัก", privatePageNote: "ผู้เข้าพักจะยังไม่เห็นหน้านี้จนกว่าจะเผยแพร่", publishPage: "เผยแพร่หน้าเว็บ",
     loadingAriaLabel: "กำลังโหลดเว็บไซต์โรงแรม",
     loadingBuilder: "กำลังโหลดโปรแกรมสร้างเว็บไซต์…",
     toastImageUploaded: "อัปโหลดรูปภาพสำเร็จ",

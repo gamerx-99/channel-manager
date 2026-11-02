@@ -1,5 +1,6 @@
 const en = {
   common: {
+    mainNavigation: "Main navigation", closeMenu: "Close menu", addNewMenu: "Add new menu",
     loading: "Loading...",
     checkingAccount: "Checking your account…",
     save: "Save",
@@ -11,6 +12,7 @@ const en = {
     back: "Back",
   },
   sidebar: {
+    platformOverview: "Platform overview",
     overview: "Overview",
     hotelsManagement: "Hotels Management",
     adminUsers: "Admin Users",
@@ -27,13 +29,8 @@ const en = {
     communications: "Communications",
     housekeeping: "Housekeeping",
     websiteBuilder: "Website Builder",
-    bookingEngines: "Booking Engines",
-    bookingEnginesSelectPrompt: "Select or add a hotel first to open its live booking engine.",
-    bookingEnginesPrivatePrompt: "This hotel page is private. Publish it from the hotel page first, then guests can book.",
     advancedPricing: "Advanced Pricing",
     system: "System",
-    exports: "Exports",
-    exportsPrompt: "TM.30 and report exports are available directly inside each hotel's Bookings workspace.",
     settings: "Settings",
     supportMode: "Support mode",
     supportModeDesc: "Read, guide, resolve",
@@ -53,6 +50,23 @@ const en = {
     openMenu: "Open menu",
     accountMenu: "Account menu",
     authorizedUser: "Authorized user",
+    superAdminRole: "Super Admin", platformAdminRole: "Platform Admin", supportRole: "Support", hotelAdminRole: "Hotel Admin",
+  },
+  profileMenu: {
+    ariaLabel: "User account menu", signedInAs: "Signed in as", manageProperties: "Manage Properties",
+    manageProperty: "Manage {{name}} property", myProperty: "My Property", propertyLabel: "My property",
+    superAdmin: "Super Admin", globalAccess: "Global access", hotelAdmin: "Hotel Admin",
+    setupHotel: "Set up your hotel", adminUsers: "Admin Users & Access", security: "Security & MFA", signOut: "Sign out",
+  },
+  shell: { privateWorkspaceFooter: "HAYHOST · PRIVATE WORKSPACE" },
+  workspaceMenu: {
+    supportConsole: "Support console", hotelWorkspace: "Hotel workspace", workspace: "Workspace",
+    propertyWorkspace: "Property workspace", visibleHotelWorkspaces: "Visible hotel workspaces",
+    assignedProperty: "Assigned property", loadingAssignedProperties: "Loading assigned properties…",
+    emptyHotels: "No hotels yet", activeWorkspace: "Active workspace", workspaceOptions: "Workspace options",
+    allPropertiesOverview: "All properties overview", propertyOverview: "Property overview",
+    currentActiveWorkspace: "Current active workspace", currentProperty: "Current property: {{name}}",
+    selectWorkspace: "Select workspace", selectProperty: "Select property {{name}}",
   },
   breadcrumb: {
     overview: "Overview",
@@ -166,7 +180,7 @@ const en = {
     eyebrowCard: "Hotel admin signup", titleCard: "Create your account", descCard: "You are creating the Hotel Admin login for {{hotel}}.", finishTitle: "Finish setting up your hotel", finishDesc: "You are signed in. Confirm to become the Hotel Admin of {{hotel}}.",
     finish: "Connect this hotel", finishing: "Connecting…", emailLabel: "Email address", passwordLabel: "Password", confirmPasswordLabel: "Confirm password", passwordTooShort: "Choose a password with at least 8 characters.", passwordMismatch: "Passwords do not match.", accountFailed: "Could not create your account.", finishFailed: "Could not finish setting up your hotel account.", creating: "Creating account…", create: "Create account", securityNote: "Your hotel data is scoped by hayhost scoped authorization.", privateWorkspace: "Private workspace", needHelp: "Need help? Contact support.", alreadyAssigned: "This user is already assigned to the selected hotel.", invitationInvalid: "This invitation link is invalid or has expired.",
   },
-  accessRestricted: { title: "Access restricted", hotelNotVisible: "This property is outside your assigned hotel workspace.", permissionRequired: "Your current role does not have permission to open this workspace.", platformOnly: "This area is available only to platform administrators.", returnToDashboard: "Return to dashboard" },
+  accessRestricted: { title: "Access restricted", hotelNotVisible: "This property is outside your assigned hotel workspace.", permissionRequired: "Your current role does not have permission to open this workspace.", hotelRequired: "Set up a hotel or ask its administrator to invite you before opening this page.", platformOnly: "This area is available only to platform administrators.", returnToDashboard: "Return to dashboard" },
   serverErrors: {
     roomTypeUnavailable: "The selected room type is no longer available for the requested dates. Please choose another date or room type.",
     roomUnavailable: "The selected room is no longer available for the requested dates.", roomOverlap: "The selected room already has an overlapping booking.", checkOutAfterCheckIn: "Check-out date must be after check-in date.", checkOutLaterThanCheckIn: "Check-out date must be later than check-in date.", holdExpired: "This room hold has expired or is no longer available. Please start again.", hotelNotPublished: "Hotel not found or not published.", promptPayMissing: "This hotel has not configured PromptPay. Please contact the hotel directly.", paymentExpired: "This payment window has expired.", bookingNotReadyForPayment: "This booking is not ready for payment.", notAwaitingPayment: "This booking is not awaiting payment verification.", alreadyVerifying: "This booking is already being verified. Please wait for the result.", slipReused: "This slip has already been used to verify a different payment. Please contact the hotel.", notAwaitingManualVerification: "This booking is not awaiting manual verification.", bookingStatusChanged: "Booking status changed; reload and try again.", hotelAccessDenied: "Hotel access denied.", noHotelAccess: "You do not have access to this hotel.", hotelNotAvailable: "This hotel is not available to your account.", signInAgain: "Please sign in again.", icalFetchFailed: "Could not fetch or validate the iCal calendar.", staffChangeNotAllowed: "This staff permission change is not allowed.", lastAdminRemove: "The last Hotel Admin cannot be removed.", alreadyAssigned: "This user is already assigned to the selected hotel.", invitationInvalid: "This invitation link is invalid or has expired.", incorrectPassword: "Incorrect password.", rateOverlap: "This room type already has a rate override overlapping the selected dates.", duplicateDetails: "A hotel or room type with the same unique details already exists.", invalidValues: "The submitted values are not valid for this record.", maxOccupancyBase: "Maximum occupancy must be at least base occupancy.", imageTooLarge: "Images must be 5 MiB or smaller.", invalidImage: "Invalid image upload.",
@@ -337,6 +351,7 @@ const en = {
     noRoomTypesCalendar: "No room types set up yet. Add a room type to manage availability.",
   },
   dashboardCalendar: {
+    loadingDescNoOta: "Checking room availability for your hotels…", emptyDescNoOta: "Add a hotel and room types to see activity here.", eyebrowNoOta: "Room availability", subtitleNoOta: "Review availability and occupied rooms in one place.",
     loadingTitle: "Loading operations calendar",
     loadingDesc: "Checking room availability and iCal updates for your hotels…",
     errorTitle: "Could not load the operations calendar",
@@ -568,6 +583,7 @@ const en = {
     checkOutAction: "Check out",
   },
   hotelDetail: {
+    editProfileDescription: "Update your hotel's name, address and contact number.", hotelNameLabel: "Hotel name", addressLabel: "Address", contactLabel: "Owner contact", saveProfile: "Save details", savingProfile: "Saving…",
     loadingTitle: "Loading hotel details…",
     loadingDesc: "Verifying permissions under your hotel membership…",
     errorTitle: "Failed to load hotel details",
@@ -1449,6 +1465,7 @@ const en = {
     lede: "Manage your authenticator app, slip checking, and step-up verification for sensitive actions.",
   },
   websiteBuilder: {
+    viewHotelPage: "View hotel page", privatePageNote: "Guests cannot see this page until you publish it.", publishPage: "Publish page",
     loadingAriaLabel: "Loading website builder",
     loadingBuilder: "Loading website builder…",
     toastImageUploaded: "Image uploaded",
