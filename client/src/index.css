@@ -753,6 +753,9 @@ body { background: var(--paper); color: var(--ink); }
 .login-footer,.login-signup-prompt{width:min(380px,100%);margin:18px auto 0}
 .login-footer{position:static;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .login-footer span{min-width:0}
+.signup-legal-notice{margin:2px 0 0;color:var(--ink-muted);font-size:12px;line-height:1.6;text-align:center}
+.signup-legal-notice a{color:var(--pine);text-decoration:underline;text-underline-offset:2px}
+html[lang="th"] .page-intro h1,html[lang="th"] .panel-heading h2,html[lang="th"] .landing-hero h1{letter-spacing:0}
 .login-signup-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-muted);font-size:12px}
 .login-form-action{display:flex;justify-content:flex-end;margin:-5px 0 16px}
 .signup-footer{margin-top:18px}
