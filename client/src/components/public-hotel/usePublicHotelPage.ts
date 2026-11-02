@@ -20,7 +20,7 @@ function getDayAfterTomorrowDateString(): string {
 }
 
 export function usePublicHotelPage(slug: string) {
-  const { t, language } = useTranslation();
+  const { t, language, setLanguage, toggleLanguage } = useTranslation();
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [checkIn, setCheckIn] = useState<string | null>(getTomorrowDateString());
   const [checkOut, setCheckOut] = useState<string | null>(getDayAfterTomorrowDateString());
@@ -228,7 +228,8 @@ export function usePublicHotelPage(slug: string) {
 
   return {
     hotel, roomTypes, media, heroImage, siteConfig, accentColor, visibleSections, heroCopy,
-    language, t, loading, error, notFound, refetch: publicHotel.refetch,
+    language, setLanguage, toggleLanguage, t, loading, error, notFound, refetch: publicHotel.refetch,
+    isVisible,
     booking: {
       wizardStep, setWizardStep, checkIn, setCheckIn, checkOut, setCheckOut, adults, setAdults,
       children, setChildren, preferredRoomTypeId, setPreferredRoomTypeId, heldBooking, setHeldBooking,

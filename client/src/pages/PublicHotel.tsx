@@ -23,7 +23,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   const selectedTheme = isHotelThemeId(data.siteConfig?.theme) ? data.siteConfig.theme : null;
   const themed = (content: React.ReactNode) => {
     if (selectedTheme === "minimal-white") return <MinimalWhiteLanding hotelName={hotel.name} accentColor={accentColor}>{content}</MinimalWhiteLanding>;
-    if (selectedTheme === "lanna-teak") return <LannaTeakLanding hotelName={hotel.name} accentColor={accentColor}>{content}</LannaTeakLanding>;
+    if (selectedTheme === "lanna-teak") return <LannaTeakLanding {...data} hotelName={hotel.name} accentColor={accentColor} booking={<PublicBookingSection page={data} />} />;
     if (selectedTheme === "cafe-homestay") return <CafeHomestayLanding hotelName={hotel.name} accentColor={accentColor}>{content}</CafeHomestayLanding>;
     return content;
   };

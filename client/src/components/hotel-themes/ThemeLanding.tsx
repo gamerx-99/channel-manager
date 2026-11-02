@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import type { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
 
-export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & { booking: React.ReactNode };
+export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & {
+  booking: React.ReactNode;
+  setLanguage: (language: "en" | "th") => void;
+  isVisible: (key: string) => boolean;
+};
 
 export type ThemeLandingProps = {
   themeId: "minimal-white" | "lanna-teak" | "cafe-homestay";
@@ -12,7 +16,7 @@ export type ThemeLandingProps = {
 
 const fonts: Record<ThemeLandingProps["themeId"], string> = {
   "minimal-white": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
-  "lanna-teak": "https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&display=swap",
+  "lanna-teak": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
   "cafe-homestay": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
 };
 
