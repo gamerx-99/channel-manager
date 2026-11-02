@@ -1,6 +1,6 @@
 # 18. Social signup and sign-in
 
-Status: code complete on `feat/social-signup`; OAuth apps and real provider logins not tested yet.
+Status: integrated on `feat/signup-integration`; OAuth apps and real provider logins not tested yet.
 
 ## Goal
 Hotel owners can sign up and sign in with Google, Facebook or LINE from `/login`, `/signup`

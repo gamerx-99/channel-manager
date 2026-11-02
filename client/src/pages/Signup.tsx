@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { authClient } from "@/lib/auth-client";
@@ -7,19 +7,13 @@ import { useTranslation } from "@/lib/i18n";
 import { CheckEmail } from "@/components/auth/CheckEmail";
 import { readSocialError, SocialSignIn } from "@/components/auth/SocialSignIn";
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export default function Signup() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
-  const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const utils = trpc.useUtils();
-  const registerHotel = trpc.channelManager.registerOwnHotel.useMutation();
-
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [address, setAddress] = useState("");
-  const [contact, setContact] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,23 +24,9 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
 
-  const signedIn = Boolean(me.data);
-  const hasRole = Boolean(me.data?.roles?.length || me.data?.role);
-
-  useEffect(() => {
-    if (hasRole) navigate("/dashboard");
-  }, [hasRole, navigate]);
-
-  function registrationError(mutationError: unknown) {
-    const code = (mutationError as { data?: { code?: string } } | null)?.data?.code;
-    if (code === "CONFLICT") return t("signup.slugTaken");
-    if (code === "BAD_REQUEST") return t("signup.slugReserved");
-    if (code === "TOO_MANY_REQUESTS") return t("signup.tooManyRequests");
-    return t("signup.createFailed");
-  }
-
-  /** The hotel step comes after this, once the person has a session. */
-  async function createAccount() {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
     if (password.length < 8) {
       setError(t("signup.passwordTooShort"));
       return;
@@ -55,38 +35,32 @@ export default function Signup() {
       setError(t("signup.passwordMismatch"));
       return;
     }
+
     setSubmitting(true);
-    const { data, error: signUpError } = await authClient.signUp.email({ email, password, name: email.split("@")[0] || "Hotel Owner" });
-    setSubmitting(false);
-    if (signUpError || !data?.user) {
+    let data: Awaited<ReturnType<typeof authClient.signUp.email>>["data"];
+    let signUpError: Awaited<ReturnType<typeof authClient.signUp.email>>["error"];
+    try {
+      ({ data, error: signUpError } = await authClient.signUp.email({
+        email: email.trim(), password, name: `${firstName.trim()} ${lastName.trim()}`,
+        firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim(),
+      }));
+    } catch {
+      setSubmitting(false);
       setError(t("signup.accountFailed"));
       return;
     }
-    if (data.token === null) setAwaitingVerification(true);
-    else await me.refetch();
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    if (!signedIn) {
-      await createAccount();
-      return;
-    }
-    if (!SLUG_PATTERN.test(slug)) {
-      setError(t("signup.slugInvalid"));
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await registerHotel.mutateAsync({ name, slug, address, owner_contact: contact });
-      await utils.auth.me.invalidate();
-      navigate("/dashboard");
-    } catch (mutationError) {
-      setError(registrationError(mutationError));
+    if (signUpError || !data?.user) {
       setSubmitting(false);
+      setError(t("signup.accountFailed"));
+      return;
     }
+    if (data.token === null) {
+      setSubmitting(false);
+      setAwaitingVerification(true);
+      return;
+    }
+    await utils.auth.me.invalidate();
+    navigate("/dashboard");
   }
 
   return (
@@ -94,9 +68,9 @@ export default function Signup() {
       <div className="login-aside">
         <Link href="/" className="login-brand"><span className="brand-mark"><span /></span><strong>hay<em>host</em></strong></Link>
         <div className="login-aside-copy">
-          <div className="eyebrow">{t("landing.heroEyebrow")}</div>
-          <h1>{t("landing.heroHeadline")}</h1>
-          <p>{t("landing.heroLede")}</p>
+          <div className="eyebrow">{t("signup.eyebrow")}</div>
+          <h1>{t("signup.asideTitle")}</h1>
+          <p>{t("signup.asideLede")}</p>
         </div>
       </div>
       <main className="login-main">
@@ -104,34 +78,23 @@ export default function Signup() {
           <form className="login-card signup-card" onSubmit={handleSubmit}>
             <div className="eyebrow">{t("signup.eyebrow")}</div>
             <h2>{t("signup.title")}</h2>
-            <p>{signedIn ? t("signup.continueLede") : t("signup.lede")}</p>
-            {signedIn ? (
-              <>
-                <label>{t("signup.hotelName")}<input type="text" value={name} onChange={event => setName(event.target.value)} maxLength={160} required /></label>
-                <label>
-                  {t("signup.slug")}
-                  <span className="signup-slug"><span>{window.location.host}/</span><input type="text" value={slug} onChange={event => setSlug(event.target.value.toLowerCase())} maxLength={100} aria-describedby="signup-slug-help" autoCapitalize="none" spellCheck={false} required /></span>
-                </label>
-                <small id="signup-slug-help">{t("signup.slugHelp")}</small>
-                <label>{t("signup.address")}<input type="text" value={address} onChange={event => setAddress(event.target.value)} maxLength={500} autoComplete="street-address" required /></label>
-                <label>{t("signup.contact")}<input type="tel" value={contact} onChange={event => setContact(event.target.value)} maxLength={180} autoComplete="tel" required /></label>
-              </>
-            ) : (
-              <>
-                <SocialSignIn callbackURL="/signup" errorCallbackURL="/signup" mode="signup" />
-                <label>{t("signup.email")}<input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>
-                <label>{t("signup.password")}<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-                <label>{t("signup.confirmPassword")}<input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-              </>
-            )}
+            <p>{t("signup.lede")}</p>
+            <SocialSignIn callbackURL="/signup" errorCallbackURL="/signup" mode="signup" />
+            <label>{t("signup.firstName")}<input type="text" value={firstName} onChange={event => setFirstName(event.target.value)} maxLength={100} autoComplete="given-name" required /></label>
+            <label>{t("signup.lastName")}<input type="text" value={lastName} onChange={event => setLastName(event.target.value)} maxLength={100} autoComplete="family-name" required /></label>
+            <label>{t("signup.phone")}<input type="tel" value={phone} onChange={event => setPhone(event.target.value)} maxLength={40} autoComplete="tel" required /></label>
+            <label>{t("signup.email")}<input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>
+            <label>{t("signup.password")}<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+            <label>{t("signup.confirmPassword")}<input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
             <button className="button button-primary login-button" type="submit" disabled={submitting}>
-              {submitting ? t("signup.creating") : signedIn ? t("signup.create") : t("signup.createAccount")} <ArrowRight size={16} />
+              {submitting ? t("signup.creating") : t("signup.createAccount")} <ArrowRight size={16} />
             </button>
+            <p className="signup-legal-notice">{t("signup.legalNoticePrefix")} <a href="/terms" target="_blank" rel="noreferrer">{t("signup.termsLink")}</a> {t("signup.legalNoticeAnd")} <a href="/privacy" target="_blank" rel="noreferrer">{t("signup.privacyLink")}</a>.</p>
             <div className="login-security"><ShieldCheck size={15} /><span>{t("signup.securityNote")}</span></div>
           </form>
         )}
-        {!signedIn && <div className="login-footer"><span>{t("signup.haveAccount")}</span><Link href="/login">{t("signup.signIn")}</Link></div>}
+        <div className="login-footer signup-footer"><span>{t("signup.haveAccount")}</span><Link href="/login" className="button button-quiet">{t("signup.signIn")}</Link></div>
       </main>
     </div>
   );

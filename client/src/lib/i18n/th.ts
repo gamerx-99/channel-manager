@@ -3,6 +3,7 @@ import type { TranslationDictionary } from "./en";
 const th: TranslationDictionary = {
   common: {
     loading: "กำลังโหลด...",
+    checkingAccount: "กำลังตรวจสอบบัญชีของคุณ…",
     save: "บันทึก",
     cancel: "ยกเลิก",
     close: "ปิด",
@@ -140,7 +141,31 @@ const th: TranslationDictionary = {
     haveAccount: "มีบัญชีอยู่แล้ว?",
     signIn: "เข้าสู่ระบบ",
     securityNote: "บัญชีของคุณจะยังไม่ผูกกับโรงแรม จนกว่าจะสร้างโรงแรมหรือเข้าร่วมด้วยคำเชิญ",
+    legalNoticePrefix: "เมื่อสร้างบัญชี แสดงว่าคุณยอมรับ",
+    termsLink: "ข้อกำหนดการใช้งาน",
+    legalNoticeAnd: "และ",
+    privacyLink: "นโยบายความเป็นส่วนตัว",
   },
+  socialAuth: {
+    signInWith: "เข้าสู่ระบบด้วย {{provider}}", signUpWith: "สมัครด้วย {{provider}}", orEmailSignIn: "หรือเข้าสู่ระบบด้วยอีเมล", orEmailSignUp: "หรือสมัครด้วยอีเมล",
+    accountExists: "อีเมลนี้มีบัญชี hayhost อยู่แล้ว แต่ยังยืนยันไม่ได้ว่าเป็นบัญชีของคุณ เข้าสู่ระบบด้วยรหัสผ่านแล้วเชื่อมบัญชีนี้ในตั้งค่าความปลอดภัย", alreadyLinked: "บัญชีนี้เชื่อมกับบัญชี hayhost อื่นแล้ว",
+    linkedEyebrow: "วิธีเข้าสู่ระบบ", linkedTitle: "บัญชีที่เชื่อมไว้", linkedLede: "เชื่อมอีกวิธีเพื่อเข้าสู่บัญชีเดียวกัน", linked: "เชื่อมแล้ว", connect: "เชื่อมบัญชี", cancelled: "ยกเลิกการเข้าสู่ระบบแล้ว ลองใหม่ได้เมื่อต้องการ", failed: "เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้ง", twoFactorTitle: "กรอกรหัสยืนยัน", twoFactorRequired: "กรอกรหัสจากแอปยืนยันตัวตนเพื่อเข้าสู่ระบบต่อ",
+  },
+  verifyEmail: {
+    eyebrow: "ยืนยันอีเมล", title: "ตรวจสอบอีเมล", desc: "เราส่งลิงก์ยืนยันไปที่ {{email}} แล้ว เปิดลิงก์แล้วเข้าสู่ระบบ", hint: "ไม่พบอีเมลใช่ไหม ตรวจสอบจดหมายขยะหรือส่งอีกครั้ง", resend: "ส่งอีเมลอีกครั้ง", sending: "กำลังส่ง…", sent: "ส่งแล้ว กรุณาตรวจสอบกล่องจดหมาย", sendFailed: "ส่งอีเมลไม่สำเร็จ รอสักครู่แล้วลองอีกครั้ง", back: "กลับไปเข้าสู่ระบบ", verified: "ยืนยันอีเมลแล้ว เข้าสู่ระบบเพื่อดำเนินการต่อ", linkInvalid: "ลิงก์ยืนยันหมดอายุหรือไม่ถูกต้อง เข้าสู่ระบบเพื่อขอลิงก์ใหม่",
+  },
+  ownerSignup: {
+    checkingLink: "กำลังตรวจสอบลิงก์สมัคร…", invalidTitle: "ลิงก์สมัครนี้ใช้ไม่ได้แล้ว", invalidDesc: "ลิงก์อาจหมดอายุหรือถูกใช้แล้ว กรุณาขอลิงก์ใหม่จากผู้ดูแลระบบ", eyebrowAside: "ระบบจัดการโรงแรม / คอนโซลกลาง", headlineAside: "ตั้งค่า", descAside: "สร้างบัญชีเพื่อเริ่มจัดการที่พักนี้", privateOperations: "ระบบจัดการโรงแรมส่วนตัว", secureWorkspace: "พื้นที่ทำงานปลอดภัย", eyebrowCard: "สมัครผู้ดูแลโรงแรม", titleCard: "สร้างบัญชี", descCard: "คุณกำลังสร้างบัญชี Hotel Admin สำหรับ {{hotel}}", finishTitle: "ตั้งค่าโรงแรมให้เสร็จ", finishDesc: "เข้าสู่ระบบแล้ว ยืนยันเพื่อเป็น Hotel Admin ของ {{hotel}}", finish: "เชื่อมโรงแรมนี้", finishing: "กำลังเชื่อม…", emailLabel: "อีเมล", passwordLabel: "รหัสผ่าน", confirmPasswordLabel: "ยืนยันรหัสผ่าน", passwordTooShort: "ตั้งรหัสผ่านอย่างน้อย 8 ตัวอักษร", passwordMismatch: "รหัสผ่านไม่ตรงกัน", accountFailed: "สร้างบัญชีไม่สำเร็จ", finishFailed: "ตั้งค่าบัญชีโรงแรมไม่สำเร็จ", creating: "กำลังสร้างบัญชี…", create: "สร้างบัญชี", securityNote: "ข้อมูลโรงแรมจะแสดงเฉพาะกับผู้ที่คุณอนุญาต", privateWorkspace: "พื้นที่ทำงานส่วนตัว", needHelp: "ต้องการความช่วยเหลือ ติดต่อฝ่ายสนับสนุน", alreadyAssigned: "ผู้ใช้นี้ได้รับสิทธิ์ในโรงแรมนี้แล้ว", invitationInvalid: "ลิงก์คำเชิญไม่ถูกต้องหรือหมดอายุแล้ว",
+  },
+  accessRestricted: { title: "ไม่มีสิทธิ์เข้าถึง", hotelNotVisible: "ที่พักนี้อยู่นอกพื้นที่โรงแรมที่คุณได้รับมอบหมาย", permissionRequired: "บทบาทของคุณไม่มีสิทธิ์เปิดพื้นที่นี้", platformOnly: "ส่วนนี้เปิดให้ผู้ดูแลแพลตฟอร์มเท่านั้น", returnToDashboard: "กลับไปหน้าภาพรวม" },
+  serverErrors: {
+    roomTypeUnavailable: "ประเภทห้องที่เลือกไม่ว่างแล้วในวันที่นี้ กรุณาเลือกวันหรือประเภทห้องอื่น", roomUnavailable: "ห้องที่เลือกไม่ว่างแล้วในวันที่นี้", roomOverlap: "ห้องที่เลือกมีการจองซ้อนช่วงวันที่นี้แล้ว", checkOutAfterCheckIn: "วันเช็คเอาท์ต้องอยู่หลังวันเช็คอิน", checkOutLaterThanCheckIn: "วันเช็คเอาท์ต้องอยู่หลังวันเช็คอิน", holdExpired: "เวลาจองห้องชั่วคราวหมดแล้ว กรุณาเริ่มจองใหม่", hotelNotPublished: "ไม่พบที่พักนี้ หรือที่พักยังไม่เปิดหน้าเว็บ", promptPayMissing: "ที่พักนี้ยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาติดต่อที่พักโดยตรง", paymentExpired: "หมดเวลาชำระเงินแล้ว", bookingNotReadyForPayment: "การจองนี้ยังไม่พร้อมชำระเงิน", notAwaitingPayment: "การจองนี้ไม่ได้รอตรวจสอบการชำระเงิน", alreadyVerifying: "กำลังตรวจสอบการชำระเงินของการจองนี้อยู่ กรุณารอผล", slipReused: "สลิปนี้ถูกใช้ยืนยันการชำระเงินรายการอื่นไปแล้ว กรุณาติดต่อที่พัก", notAwaitingManualVerification: "การจองนี้ไม่ได้รอให้เจ้าหน้าที่ตรวจสอบ", bookingStatusChanged: "สถานะการจองเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง", hotelAccessDenied: "คุณไม่มีสิทธิ์ทำรายการนี้ในที่พักนี้", noHotelAccess: "คุณไม่มีสิทธิ์เข้าถึงที่พักนี้", hotelNotAvailable: "บัญชีของคุณเข้าถึงที่พักนี้ไม่ได้", signInAgain: "กรุณาเข้าสู่ระบบอีกครั้ง", icalFetchFailed: "ดึงหรือตรวจสอบปฏิทิน iCal ไม่สำเร็จ กรุณาตรวจลิงก์ปฏิทินจาก OTA อีกครั้ง", staffChangeNotAllowed: "ไม่สามารถเปลี่ยนสิทธิ์พนักงานแบบนี้ได้", lastAdminRemove: "ลบผู้ดูแลโรงแรมคนสุดท้ายไม่ได้", alreadyAssigned: "ผู้ใช้นี้เป็นสมาชิกของที่พักนี้อยู่แล้ว", invitationInvalid: "ลิงก์คำเชิญนี้ใช้ไม่ได้หรือหมดอายุแล้ว", incorrectPassword: "รหัสผ่านไม่ถูกต้อง", rateOverlap: "ประเภทห้องนี้มีราคาพิเศษที่ทับช่วงวันที่เลือกอยู่แล้ว", duplicateDetails: "มีที่พักหรือประเภทห้องที่ใช้ข้อมูลนี้อยู่แล้ว", invalidValues: "ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง", maxOccupancyBase: "จำนวนผู้เข้าพักสูงสุดต้องไม่น้อยกว่าจำนวนผู้เข้าพักที่รวมในราคา", imageTooLarge: "รูปภาพต้องมีขนาดไม่เกิน 5 MB", invalidImage: "อัปโหลดรูปภาพไม่สำเร็จ ไฟล์ไม่ถูกต้อง",
+  },
+  accountDeletion: {
+    eyebrow: "บัญชี", title: "ลบบัญชี", warning: "การลบเป็นการถาวรและกู้คืนไม่ได้", goesTitle: "สิ่งที่จะถูกลบ", goesAccount: "ชื่อ อีเมล รหัสผ่าน และแอปยืนยันตัวตน", goesAccess: "สิทธิ์เข้าโรงแรมและเซสชันทั้งหมด", goesInvites: "คำเชิญที่ยังรอดำเนินการ", staysTitle: "ข้อมูลที่ยังอยู่", staysRecords: "ข้อมูลโรงแรมยังอยู่ โดยลบชื่อคุณออกและแสดงเป็นผู้ใช้ที่ถูกลบ", start: "ลบบัญชีของฉัน", confirmTitle: "ยืนยันการลบบัญชี", emailLabel: "พิมพ์อีเมลของคุณ ({email})", passwordLabel: "รหัสผ่าน", codeLabel: "รหัส 6 หลักจากแอปยืนยันตัวตน", codeVerified: "ยืนยันรหัสแล้ว", confirm: "ลบบัญชีถาวร", deleting: "กำลังลบ…", cancel: "ยกเลิก", loading: "กำลังตรวจสอบบัญชี…", loadFailed: "ตรวจสอบบัญชีไม่ได้ กรุณาโหลดหน้าใหม่", blockedOwner: "คุณเป็นเจ้าของโรงแรมด้านล่าง จึงยังลบบัญชีไม่ได้", blockedHowTo: "โอนความเป็นเจ้าของจากหน้าทีมงานของแต่ละโรงแรม หากต้องการปิดโรงแรม กรุณาติดต่อ {email}", manageStaff: "หน้าทีมงาน", blockedLastAdmin: "คุณเป็นผู้ดูแลแพลตฟอร์มคนเดียว จึงยังลบบัญชีไม่ได้", errorPassword: "รหัสผ่านไม่ถูกต้อง", errorTooManyPasswords: "ใส่รหัสผิดหลายครั้ง กรุณารอ 15 นาที", errorCode: "รหัสไม่ถูกต้อง กรุณารอรหัสถัดไป", errorTooManyCodes: "ใส่รหัสผิดหลายครั้ง กรุณารอสักครู่", errorCodeExpired: "การยืนยันหมดอายุ กรุณาใส่รหัสใหม่", errorGeneric: "ลบบัญชีไม่สำเร็จ ไม่มีข้อมูลถูกเปลี่ยนแปลง กรุณาลองอีกครั้ง", deletedUser: "ผู้ใช้ที่ถูกลบ",
+  },
+  mfaSettings: { eyebrow: "ความปลอดภัย / MFA", title: "การยืนยันตัวตนสองขั้นตอน", enabled: "เปิดใช้แล้ว", disabled: "ปิดใช้", notEnabled: "ยังไม่ได้เปิดใช้", noneEnrolled: "ยังไม่ได้ตั้งค่าแอปยืนยันตัวตน", enrollAuthenticator: "ลงทะเบียนแอปยืนยันตัวตน", intro: "เพิ่มแอปสร้างรหัสเพื่อปกป้องบัญชีของคุณ", authenticatorName: "แอปยืนยันตัวตน", activeDesc: "แอปยืนยันตัวตนกำลังปกป้องบัญชีนี้", verifyWithCode: "ยืนยันด้วยรหัส", removeAuthenticator: "นำแอปยืนยันตัวตนออก", removing: "กำลังนำออก…", passwordLabel: "รหัสผ่านบัญชี", enterPassword: "กรอกรหัสผ่าน", enrolling: "กำลังลงทะเบียน…", confirmEnroll: "ยืนยันและลงทะเบียน", scanQr: "สแกนคิวอาร์โค้ด", scanQrDesc: "สแกนคิวอาร์โค้ดนี้ด้วยแอปยืนยันตัวตน หรือกรอกรหัสลับเอง", qrAlt: "คิวอาร์โค้ดสำหรับ MFA", secret: "รหัสลับ:", verifyActivate: "ยืนยันและเปิดใช้", loadingStatus: "กำลังโหลดสถานะแอปยืนยันตัวตน…", dismissError: "ปิดข้อความผิดพลาด", confirmRemove: "นำแอปยืนยันตัวตนนี้ออกหรือไม่?", promptDisablePassword: "กรอกรหัสผ่านเพื่อนำแอปยืนยันตัวตนออก", removed: "นำแอปยืนยันตัวตนออกแล้ว", promptEnablePassword: "กรอกรหัสผ่านเพื่อตั้งค่าแอปยืนยันตัวตน", enrollFailed: "เริ่มตั้งค่าแอปยืนยันตัวตนไม่สำเร็จ", secretFailed: "โหลดรหัสลับของแอปยืนยันตัวตนไม่สำเร็จ", enterCode: "กรอกรหัส 6 หลักจากแอปยืนยันตัวตน", incorrectCode: "รหัสไม่ถูกต้อง รอรหัสใหม่แล้วลองอีกครั้ง", verifyFailed: "ยืนยันรหัสไม่สำเร็จ", enrolledVerified: "เปิดใช้แอปยืนยันตัวตนแล้ว", codeVerified: "ยืนยันรหัสแล้ว", unenrollFailed: "นำแอปยืนยันตัวตนออกไม่สำเร็จ", enterVerificationCode: "กรอกรหัสยืนยัน", enterCodeDesc: "กรอกรหัสปัจจุบันจากแอปยืนยันตัวตน", verificationCode: "รหัสยืนยัน", verifying: "กำลังยืนยัน…", verifyCode: "ยืนยันรหัส", cancel: "ยกเลิก", confirmPassword: "ยืนยันรหัสผ่าน", confirmPasswordDesc: "กรอกรหัสผ่านเพื่อตั้งค่าการยืนยันตัวตนสองขั้นตอนต่อ", worksForEveryRole: "ใช้ได้กับทุกบทบาท" },
+  legal: { backToHome: "กลับไป hayhost", updated: "อัปเดต พฤศจิกายน 2026", draftNotice: "ฉบับร่าง รอตรวจทานทางกฎหมาย", contact: "สอบถามได้ที่", termsTitle: "ข้อกำหนดการใช้งาน", privacyTitle: "นโยบายความเป็นส่วนตัว", dpaTitle: "ข้อตกลงการประมวลผลข้อมูล" },
   onboarding: {
     eyebrow: "ขั้นตอนถัดไป",
     title: "บัญชีของคุณพร้อมแล้ว",
@@ -208,7 +233,7 @@ const th: TranslationDictionary = {
     lineLogin: "ล็อกอินด้วย LINE",
     lineSigningIn: "กำลังเชื่อมต่อ LINE…",
     lineFailed: "ยังเข้าสู่ระบบด้วย LINE ไม่ได้ ลองอีกครั้งได้เลย",
-    securityNote: "Your hotel data is scoped by hayhost scoped authorization.",
+    securityNote: "ข้อมูลโรงแรมจะแสดงเฉพาะกับผู้ที่คุณอนุญาต",
     privateWorkspace: "พื้นที่ทำงานส่วนตัว",
     needHelp: "ต้องการความช่วยเหลือ? ติดต่อฝ่ายสนับสนุน",
   },
@@ -1083,6 +1108,7 @@ const th: TranslationDictionary = {
     errorOverlapExists: "มีช่วงการปรับราคาพิเศษที่ทับซ้อนกันอยู่แล้วสำหรับประเภทห้องและช่วงเวลานี้",
   },
   hotelStaff: {
+    ownerCannotBeRemoved: "ไม่สามารถนำเจ้าของโรงแรมออกจากโรงแรมนี้ได้",
     eyebrow: "โรงแรม / สิทธิ์การเข้าถึงของทีม",
     title: "พนักงานโรงแรม",
     lede: "เชิญพนักงานและกำหนดบทบาทเฉพาะระดับโรงแรมที่พวกเขาต้องการ บทบาทระดับแพลตฟอร์มและบัญชีบริการจะอยู่นอกพื้นที่ทำงานนี้",

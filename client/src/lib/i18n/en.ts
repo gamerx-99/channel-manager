@@ -1,6 +1,7 @@
 const en = {
   common: {
     loading: "Loading...",
+    checkingAccount: "Checking your account…",
     save: "Save",
     cancel: "Cancel",
     close: "Close",
@@ -138,7 +139,45 @@ const en = {
     haveAccount: "Already have an account?",
     signIn: "Sign in",
     securityNote: "Your account is not linked to a hotel until you create one or accept an invitation.",
+    legalNoticePrefix: "By creating an account, you agree to our",
+    termsLink: "Terms of Service",
+    legalNoticeAnd: "and",
+    privacyLink: "Privacy Policy",
   },
+  socialAuth: {
+    signInWith: "Sign in with {{provider}}", signUpWith: "Sign up with {{provider}}",
+    orEmailSignIn: "or sign in with email", orEmailSignUp: "or sign up with email",
+    accountExists: "This email already has a hayhost account, but we could not confirm it is yours. Sign in with your password, then connect this login in Security settings.",
+    alreadyLinked: "This login already belongs to another hayhost account.", linkedEyebrow: "Sign-in methods",
+    linkedTitle: "Connected accounts", linkedLede: "Connect another way to sign in to this same account.",
+    linked: "Connected", connect: "Connect", cancelled: "Sign-in was cancelled. Try again whenever you're ready.",
+    failed: "We could not sign you in that way. Please try again.", twoFactorTitle: "Enter your code",
+    twoFactorRequired: "Enter the code from your authenticator app to finish signing in.",
+  },
+  verifyEmail: {
+    eyebrow: "Confirm your email", title: "Check your email", desc: "We sent a confirmation link to {{email}}. Open it, then sign in.",
+    hint: "No email? Check your spam folder or send it again.", resend: "Send the email again", sending: "Sending…", sent: "Sent. Please check your inbox.",
+    sendFailed: "We could not send the email. Please wait a moment and try again.", back: "Back to sign in", verified: "Your email is confirmed. Sign in to continue.",
+    linkInvalid: "This confirmation link has expired or is not valid. Sign in to get a new one.",
+  },
+  ownerSignup: {
+    checkingLink: "Checking your signup link…", invalidTitle: "This signup link is no longer valid", invalidDesc: "It may have expired or already been used. Ask the platform administrator for a new one.",
+    eyebrowAside: "Hotel operations / Central console", headlineAside: "Set up", descAside: "Create your login to start managing this property.", privateOperations: "Private hotel operations", secureWorkspace: "Secure workspace",
+    eyebrowCard: "Hotel admin signup", titleCard: "Create your account", descCard: "You are creating the Hotel Admin login for {{hotel}}.", finishTitle: "Finish setting up your hotel", finishDesc: "You are signed in. Confirm to become the Hotel Admin of {{hotel}}.",
+    finish: "Connect this hotel", finishing: "Connecting…", emailLabel: "Email address", passwordLabel: "Password", confirmPasswordLabel: "Confirm password", passwordTooShort: "Choose a password with at least 8 characters.", passwordMismatch: "Passwords do not match.", accountFailed: "Could not create your account.", finishFailed: "Could not finish setting up your hotel account.", creating: "Creating account…", create: "Create account", securityNote: "Your hotel data is scoped by hayhost scoped authorization.", privateWorkspace: "Private workspace", needHelp: "Need help? Contact support.", alreadyAssigned: "This user is already assigned to the selected hotel.", invitationInvalid: "This invitation link is invalid or has expired.",
+  },
+  accessRestricted: { title: "Access restricted", hotelNotVisible: "This property is outside your assigned hotel workspace.", permissionRequired: "Your current role does not have permission to open this workspace.", platformOnly: "This area is available only to platform administrators.", returnToDashboard: "Return to dashboard" },
+  serverErrors: {
+    roomTypeUnavailable: "The selected room type is no longer available for the requested dates. Please choose another date or room type.",
+    roomUnavailable: "The selected room is no longer available for the requested dates.", roomOverlap: "The selected room already has an overlapping booking.", checkOutAfterCheckIn: "Check-out date must be after check-in date.", checkOutLaterThanCheckIn: "Check-out date must be later than check-in date.", holdExpired: "This room hold has expired or is no longer available. Please start again.", hotelNotPublished: "Hotel not found or not published.", promptPayMissing: "This hotel has not configured PromptPay. Please contact the hotel directly.", paymentExpired: "This payment window has expired.", bookingNotReadyForPayment: "This booking is not ready for payment.", notAwaitingPayment: "This booking is not awaiting payment verification.", alreadyVerifying: "This booking is already being verified. Please wait for the result.", slipReused: "This slip has already been used to verify a different payment. Please contact the hotel.", notAwaitingManualVerification: "This booking is not awaiting manual verification.", bookingStatusChanged: "Booking status changed; reload and try again.", hotelAccessDenied: "Hotel access denied.", noHotelAccess: "You do not have access to this hotel.", hotelNotAvailable: "This hotel is not available to your account.", signInAgain: "Please sign in again.", icalFetchFailed: "Could not fetch or validate the iCal calendar.", staffChangeNotAllowed: "This staff permission change is not allowed.", lastAdminRemove: "The last Hotel Admin cannot be removed.", alreadyAssigned: "This user is already assigned to the selected hotel.", invitationInvalid: "This invitation link is invalid or has expired.", incorrectPassword: "Incorrect password.", rateOverlap: "This room type already has a rate override overlapping the selected dates.", duplicateDetails: "A hotel or room type with the same unique details already exists.", invalidValues: "The submitted values are not valid for this record.", maxOccupancyBase: "Maximum occupancy must be at least base occupancy.", imageTooLarge: "Images must be 5 MiB or smaller.", invalidImage: "Invalid image upload.",
+  },
+  accountDeletion: {
+    eyebrow: "Account", title: "Delete account", warning: "This is permanent. Your account cannot be restored afterwards.", goesTitle: "What is deleted", goesAccount: "Your name, email, password and authenticator", goesAccess: "Your access to every hotel, and all open sessions", goesInvites: "Invitations sent to you or by you that are still pending", staysTitle: "What stays", staysRecords: "Hotel records stay with the hotel. Your name is removed from them, and they show ‘Deleted user’ instead.", start: "Delete my account", confirmTitle: "Confirm deletion", emailLabel: "Type your email ({email})", passwordLabel: "Password", codeLabel: "6-digit code from your authenticator app", codeVerified: "Authenticator code accepted.", confirm: "Permanently delete my account", deleting: "Deleting…", cancel: "Cancel", loading: "Checking your account…", loadFailed: "Could not check your account. Reload the page and try again.", blockedOwner: "You own the hotels below, so this account cannot be deleted yet.", blockedHowTo: "Transfer ownership from each hotel's staff page. To close a hotel instead, email {email}.", manageStaff: "Staff page", blockedLastAdmin: "You are the only platform administrator, so this account cannot be deleted.", errorPassword: "Incorrect password.", errorTooManyPasswords: "Too many wrong passwords. Please wait 15 minutes and try again.", errorCode: "Incorrect code. Wait for the next 6-digit code and try again.", errorTooManyCodes: "Too many wrong codes. Please wait a few minutes and try again.", errorCodeExpired: "Your authenticator check has expired. Enter a new code.", errorGeneric: "The account could not be deleted. Nothing was changed. Please try again.", deletedUser: "Deleted user",
+  },
+  mfaSettings: {
+    eyebrow: "Security / MFA", title: "Two-factor authentication", enabled: "Enabled", disabled: "Disabled", notEnabled: "Not enabled", noneEnrolled: "No authenticator app is set up yet.", enrollAuthenticator: "Enroll authenticator", intro: "Add a time-based authenticator to protect your account.", authenticatorName: "Authenticator app", activeDesc: "Your authenticator is protecting this account.", verifyWithCode: "Verify with code", removeAuthenticator: "Remove authenticator", removing: "Removing…", passwordLabel: "Account password", enterPassword: "Enter your password", enrolling: "Enrolling…", confirmEnroll: "Confirm & Enroll", scanQr: "Scan QR code", scanQrDesc: "Scan this QR code in your authenticator app, or enter the secret manually.", qrAlt: "MFA QR code", secret: "Secret:", verifyActivate: "Verify and activate", loadingStatus: "Loading authenticator status…", dismissError: "Dismiss error", confirmRemove: "Remove this authenticator?", promptDisablePassword: "Enter your password to remove the authenticator.", removed: "Authenticator removed", promptEnablePassword: "Enter your password to set up an authenticator.", enrollFailed: "Could not start authenticator setup.", secretFailed: "Could not load the authenticator secret.", enterCode: "Enter the 6-digit code from your authenticator app.", incorrectCode: "Incorrect code", verifyFailed: "Could not verify the code.", enrolledVerified: "Authenticator enrolled and verified", codeVerified: "Code verified successfully", unenrollFailed: "Could not remove the authenticator.", enterVerificationCode: "Enter verification code", enterCodeDesc: "Enter the current code from your authenticator app.", verificationCode: "Verification code", verifying: "Verifying…", verifyCode: "Verify code", cancel: "Cancel", confirmPassword: "Confirm your password", confirmPasswordDesc: "Enter your password to continue setting up two-factor authentication.", worksForEveryRole: "Works for every role",
+  },
+  legal: { backToHome: "Back to hayhost", updated: "Updated November 2026", draftNotice: "Draft for legal review", contact: "Questions? Contact", termsTitle: "Terms of Service", privacyTitle: "Privacy Policy", dpaTitle: "Data Processing Agreement" },
   onboarding: {
     eyebrow: "Next step",
     title: "Your account is ready",
@@ -206,7 +245,7 @@ const en = {
     lineLogin: "Log in with LINE",
     lineSigningIn: "Connecting to LINE…",
     lineFailed: "Could not sign in with LINE. Please try again.",
-    securityNote: "Your hotel data is scoped by hayhost scoped authorization.",
+    securityNote: "Your hotel data is visible only to people you allow.",
     privateWorkspace: "Private workspace",
     needHelp: "Need help? Contact support",
   },
@@ -1081,6 +1120,7 @@ const en = {
     errorOverlapExists: "An overlapping rate override already exists for this room type and date range.",
   },
   hotelStaff: {
+    ownerCannotBeRemoved: "The hotel owner cannot be removed from this hotel.",
     eyebrow: "Property / Team access",
     title: "Hotel staff",
     lede: "Invite staff and assign only the hotel-level role they need. Platform roles and service identities stay outside this workspace.",

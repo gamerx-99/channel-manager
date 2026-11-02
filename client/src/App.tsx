@@ -19,7 +19,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import HotelOwnerSignup from "./pages/HotelOwnerSignup";
 import Landing from "./pages/Landing";
-import LegalPage from "./pages/LegalPage";
 import Signup from "./pages/Signup";
 import AccountOnboarding from "./pages/AccountOnboarding";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -39,6 +38,8 @@ import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContext";
 import { communicationsEnabled } from "./lib/featureFlags";
+import { useTranslation } from "./lib/i18n";
+import LegalPage from "./pages/LegalPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -49,13 +50,13 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/signup" component={Signup} />
+      <Route path="/terms"><LegalPage kind="terms" /></Route>
+      <Route path="/privacy"><LegalPage kind="privacy" /></Route>
+      <Route path="/dpa"><LegalPage kind="dpa" /></Route>
       <Route path="/signup/:token">
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
       <Route path="/accept-invite" component={AcceptInvite} />
-      <Route path="/terms"><LegalPage kind="terms" /></Route>
-      <Route path="/privacy"><LegalPage kind="privacy" /></Route>
-      <Route path="/dpa"><LegalPage kind="dpa" /></Route>
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
@@ -115,13 +116,14 @@ function Router() {
 }
 
 function DashboardEntry() {
+  const { t } = useTranslation();
   const { data: me, isLoading } = trpc.auth.me.useQuery();
-  if (isLoading) return <main className="auth-loading">Checking your account…</main>;
+  if (isLoading) return <main className="auth-loading">{t("common.checkingAccount")}</main>;
   if (me && !me.roles?.length && !me.role && !me.memberships?.length) return <AccountOnboarding />;
   return hasAnyPermission(me?.roles ?? [], "platform.view_system_logs") ? <PlatformOverview /> : <Dashboard />;
 }
 
-// Hotel owners are sold to in Thai; elsewhere a Thai browser gets Thai.
+// Hotel owners are sold to in Thai; elsewhere respect the browser language.
 const initialLanguage = pickInitialLanguage(window.location.pathname, navigator.languages ?? [navigator.language]);
 
 export default function App() {
