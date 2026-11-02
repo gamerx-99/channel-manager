@@ -1,6 +1,6 @@
 import React, { FormEvent, useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link, Redirect, useLocation } from "wouter";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
@@ -11,6 +11,7 @@ export default function Signup() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
   const utils = trpc.useUtils();
+  const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -62,6 +63,9 @@ export default function Signup() {
     await utils.auth.me.invalidate();
     navigate("/dashboard");
   }
+
+  // A signed-in account never needs this form again; /dashboard shows hotel setup to an account without one.
+  if (me.data) return <Redirect to="/dashboard" />;
 
   return (
     <div className="login-page signup-page">

@@ -100,7 +100,7 @@ export default function Login() {
         // Confirming an email comes before the hotel step, so a new owner resumes it here.
         if (signedInWithoutRole) {
           setSubmitting(false);
-          navigate(next ?? '/signup');
+          navigate(next ?? '/dashboard');
           return;
         }
       } catch {

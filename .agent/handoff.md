@@ -2015,3 +2015,11 @@ Not tested in a browser or with a real email.
 - **Migration generation**: `pnpm exec drizzle-kit generate --config drizzle.d1.config.ts` reported “No schema changes, nothing to migrate”; no migration was generated.
 - **Evidence**: `pnpm test` — Test Files 162 passed (162), Tests 1157 passed (1157). `pnpm check` — `tsc --noEmit`, exit 0. `pnpm build` — Vite build and Wrangler `--dry-run`, exit 0; Vite reports the main JS chunk exceeds 500 KiB and Wrangler warns that no target environment was supplied to dry-run. `git diff --check` — exit 0.
 - **Not done**: no push, deployment, remote migration or `main` checkout. `client/public/_headers` remains modified but unstaged, as instructed. Real provider OAuth and real email delivery were not attempted. Legal text remains draft pending counsel; route links use the existing pages. Reviewer approval remains outstanding.
+
+## 2026-11-02 Fix the signup loop after email verification
+
+- **Bug**: on www a verified personal account with no hotel went login → `/signup` form → verify email → login again. `Login.tsx` sent an account without a role to `/signup`, and `Signup.tsx` always drew the form, even for a signed-in user. Social sign-in also lands on `/signup`, so it hit the same form.
+- **Fix**: `Signup.tsx` redirects a signed-in user (`auth.me` returns data) to `/dashboard`, where `DashboardEntry` already shows `AccountOnboarding` to an account without a role or membership. `Login.tsx` sends an account without a role to `next ?? '/dashboard'`. An owner signup link (`next`) still resumes there.
+- **Test**: `Signup.contract.test.ts` checks the redirect and the login destination.
+- **Evidence**: `pnpm test` — Test Files 162 passed (162), Tests 1160 passed (1160). `pnpm check` — exit 0. `pnpm build` — exit 0. `git diff --check` — only CRLF warnings.
+- **Not done**: not deployed yet; the real verification flow on www is not rechecked.

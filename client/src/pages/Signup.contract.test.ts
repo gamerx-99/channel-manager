@@ -37,6 +37,13 @@ describe("personal signup contract", () => {
     expect(read("client/src/pages/AccountOnboarding.tsx")).toContain("registerOwnHotel.useMutation()");
   });
 
+  it("sends a signed-in account to the dashboard instead of the form again", () => {
+    expect(signup).toContain('if (me.data) return <Redirect to="/dashboard" />;');
+    const login = read("client/src/pages/Login.tsx");
+    expect(login).toContain("navigate(next ?? '/dashboard');");
+    expect(login).not.toContain("navigate(next ?? '/signup');");
+  });
+
   it("permits account setup on the dashboard but keeps other private pages gated", () => {
     const privateRoute = read("client/src/components/auth/PrivateRoute.tsx");
     expect(privateRoute).toContain('location === "/dashboard"');
