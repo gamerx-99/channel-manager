@@ -116,6 +116,8 @@ misses them even if it never reads the master prompt)
       ticket above trivial size
 
 ## Where to start
+- `.agent/DECISIONS.md` — read the "Current owner decisions" register at the top first.
+  Never contradict it; when the owner decides something new, update it in the same turn.
 - `.agent/handoff.md` — what happened most recently
 - `specs/00-OVERVIEW.md` — the full roadmap and dependency graph
 - `todo.md` — the historical build log for everything before this workflow existed

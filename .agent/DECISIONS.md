@@ -4,6 +4,59 @@ Format: `## <date> — <short title>` then **Decision**, **Why**, **Status** (op
 Newest first. Log the reasoning, not just the outcome — the reasoning is what keeps a
 future ticket from accidentally reversing a decision that was actually deliberate.
 
+## Current owner decisions (register — read first)
+
+The owner's standing decisions and whether the code matches yet. Every agent (Claude, Codex, any other) reads this register before starting work or writing a prompt. When the owner decides something, update this register in the same turn; a decision kept only in a chat or one agent's private memory gets lost. The dated entries below it keep the reasoning.
+
+Status: **done** = the code matches. **pending** = decided but the code does not match yet; name the
+prompt or ticket that will fix it. **open** = not decided; never present it to customers as decided.
+
+### Product scope
+
+| Date | Decision | Status |
+|---|---|---|
+| 2026-10-30 | No OTA API (Channex etc.) until there is funding. | done |
+| 2026-10-30 | Hide OTA / iCal sync in the UI. Keep the code, do not delete it. | pending: Batch A item 7, `.agent/codex-prompt-onboarding-panel-spacing.md` |
+| 2026-10-30 | The landing page sells TM.30 and direct booking, not OTA sync. | done |
+| 2026-10-30 | Product is a hotel website platform: website, booking engine, back office, hosting. Closed platform: no theme uploads or marketplace. | done |
+| 2026-11-02 | TM.30 is a report only: export foreign guests, the hotel uploads it to the Immigration site itself. The bookings page links to `https://tm30.immigration.go.th/tm30api/loginExternal.jsp`. | done (9f5e07a) |
+| 2026-11-02 | The website builder is a template picker: the owner clicks a ready-made design. | pending: Batch B, `.agent/codex-prompt-website-templates.md` |
+| 2026-11-02 | Remove the "ระบบจองห้องพัก" sidebar button; the website builder gets a "ดูหน้าเว็บที่พัก" link instead. | pending: Batch A item 8 |
+| 2026-11-02 | Hide controls that do nothing yet (more filters, global search, exports toast). | pending: Batch A item 6 |
+| — | Customer domain registration / custom domains. Not built; do by hand for the first customers. Who owns the domain (hayhost's Cloudflare account vs customer) is unresolved. | open |
+
+### Plans and pricing
+
+| Date | Decision | Status |
+|---|---|---|
+| 2026-11-02 | Free, 0 baht: basic theme, basic booking, manual slip check, up to 3 rooms. | pending: no plan enforcement in code |
+| 2026-11-02 | Pro: premium themes, automatic slip check. More than 3 rooms requires Pro. Free exists to help very small homestays. | pending: no plan enforcement in code |
+| — | Pro monthly price: 390 or 299 baht. | open |
+| — | Discounts or trials for early customers. Never offer one the owner has not set. | open |
+| 2026-11-01 | SlipOK: each hotel uses its own SlipOK key; no central account. Without a key, staff check slips by hand. | done |
+
+### Accounts and access
+
+| Date | Decision | Status |
+|---|---|---|
+| 2026-10-31 | Support access: invite by email, two tiers. The owner chooses who sees the financial report. | done |
+| 2026-10-31 | Deactivate, delete property and delete account are separate. Deletion waits a fixed 7 days; logging in does not cancel it. | see `specs/` |
+| 2026-11-02 | lannatc@gmail.com is the only production superadmin, password + MFA, not linked to LINE. | done (production `platform_admins`) |
+| 2026-11-02 | The LINE account "C - Game" on production is a regular test owner (hotel "โรงแรมลานนาโคซี่"). Keep it. | done |
+| 2026-11-02 | `ASSUMPTION:` the hotel web address (slug) is not editable by the owner, so shared links do not break. | open: owner to confirm |
+
+### How agents work with the owner
+
+| Date | Decision |
+|---|---|
+| 2026-11-02 | The owner judges by using production (www.hayhostth.com), not local. |
+| 2026-11-02 | Commit without asking. Ask once per finished batch: "push and deploy?" Never stop mid-batch for approval. |
+| 2026-11-02 | Batch fixes. Do not send the owner one bug fix at a time. |
+| 2026-11-02 | Code work goes to Codex; Claude writes prompts, reviews, verifies and deploys after approval. |
+| 2026-11-01 | Thai copy must read naturally, never a word-for-word translation. |
+
+---
+
 ## 2026-10-26 — Move the whole platform to Cloudflare before launch (spec 13)
 **Decision** (human): leave Vercel and Supabase entirely. Target stack: one Worker (Hono +
 tRPC), D1 via Drizzle, Better Auth, R2, Cron Triggers, Cloudflare Registrar domain. The move
