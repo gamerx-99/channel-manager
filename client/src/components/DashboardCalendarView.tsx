@@ -17,7 +17,7 @@ type CalendarDay = {
     roomTypeId: string;
     available: number;
     totalRooms: number;
-    price: number;
+  price: number | null;
     status: 'healthy' | 'low' | 'closed';
   }>;
   syncEvents: Array<{
@@ -116,7 +116,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
         hotel_id: activeHotel.hotel.id,
         room_type_id: roomType.roomTypeId,
         date: activeDay.date,
-        price: roomType.price,
+        price: roomType.price ?? 0,
         rooms_available: draftValue(roomType.roomTypeId, roomType.available),
         action: 'allotment',
       });
@@ -141,7 +141,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
         hotel_id: activeHotel.hotel.id,
         room_type_id: roomType.roomTypeId,
         date: activeDay.date,
-        price: roomType.price,
+        price: roomType.price ?? 0,
         rooms_available: nextAvailable,
         action: 'stop_sell',
       });
@@ -224,7 +224,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
                 const dayLabel = formatDayLabel(day.date, { day: 'numeric', month: 'long' }, language);
                 const available = cell?.available ?? 0;
                 const total = cell?.totalRooms ?? 0;
-                return <td key={`${roomType.id}:${day.date}`} className={day.date === selectedDate ? 'is-selected' : ''}><button className={`dashboard-calendar-cell ${status}`} type="button" onClick={() => setSelectedDate(day.date)} aria-label={t('dashboardCalendar.cellAria', { roomType: roomType.name, date: dayLabel, available, total, status: statusText })} title={t('dashboardCalendar.cellTitle', { status: statusText, available, total })}><span className="dashboard-calendar-status-badge" aria-hidden="true"><i className={`dashboard-calendar-status-dot status-${statusColorName(status)}`} />{statusText}</span><strong>{available}<small>/{total}</small></strong><span>฿{(cell?.price ?? 0).toLocaleString()}</span>{syncCount > 0 && <i className="calendar-sync-marker" title={t('dashboardCalendar.syncEvents', { count: syncCount })}><CloudDownload size={11} /></i>}</button></td>;
+                return <td key={`${roomType.id}:${day.date}`} className={day.date === selectedDate ? 'is-selected' : ''}><button className={`dashboard-calendar-cell ${status}`} type="button" onClick={() => setSelectedDate(day.date)} aria-label={t('dashboardCalendar.cellAria', { roomType: roomType.name, date: dayLabel, available, total, status: statusText })} title={t('dashboardCalendar.cellTitle', { status: statusText, available, total })}><span className="dashboard-calendar-status-badge" aria-hidden="true"><i className={`dashboard-calendar-status-dot status-${statusColorName(status)}`} />{statusText}</span><strong>{available}<small>/{total}</small></strong>{cell?.price !== null && cell?.price !== undefined && <span>฿{cell.price.toLocaleString()}</span>}{syncCount > 0 && <i className="calendar-sync-marker" title={t('dashboardCalendar.syncEvents', { count: syncCount })}><CloudDownload size={11} /></i>}</button></td>;
               })}
             </tr>) : <tr><td colSpan={days.length + 1} className="empty-cell">{t("availability.noRoomTypesCalendar")}</td></tr>}
           </tbody>
