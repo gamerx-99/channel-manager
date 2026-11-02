@@ -85,4 +85,12 @@ describe("D1 availability repository", () => {
     await seedHotel("a", "owner-a");
     await expect(db.insert(availability).values({ roomTypeId: "rt-a", date: "2026-11-01", price, roomsAvailable: 1 })).rejects.toThrow();
   });
+
+  it("returns override prices only to callers with property.view_financials", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(hotelUsers).values({ id: "m-rate-staff", hotelId: "a", userId: "rate-staff", role: "front_desk", permissionGrants: ["revenue.manage_rates", "revenue.manage_pricing_rules"], permissionRevokes: [] });
+    await createRateOverride(db, { userId: "owner-a" }, { hotelId: "a", roomTypeId: "rt-a", startDate: "2026-11-01", endDate: "2026-11-02", overridePrice: "120.00", minStayNights: null });
+    expect(await listRateOverrides(db, { userId: "owner-a" }, "a")).toMatchObject([{ overridePrice: "120.00" }]);
+    expect(await listRateOverrides(db, { userId: "rate-staff" }, "a")).toMatchObject([{ overridePrice: null }]);
+  });
 });

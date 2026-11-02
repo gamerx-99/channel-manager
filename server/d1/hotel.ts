@@ -47,7 +47,7 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     if (!hotel) continue;
     const canViewFinancials = scope.permissions.includes("property.view_financials");
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
-      db.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
+      db.select({ id: roomTypes.id, name: roomTypes.name, base_price: roomTypes.basePrice }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
       db.select({ id: rooms.id, status: rooms.status }).from(rooms).where(eq(rooms.hotelId, hotelId)),
       scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
         .from(bookings).where(eq(bookings.hotelId, hotelId)) : Promise.resolve([]),
@@ -55,7 +55,7 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     output.push({
       id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address,
       public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
-      room_types: hotelRoomTypes, rooms: hotelRooms,
+      room_types: hotelRoomTypes.map(roomType => ({ ...roomType, base_price: canViewFinancials ? roomType.base_price : null })), rooms: hotelRooms,
       bookings: hotelBookings.map(b => ({ ...b, price: canViewFinancials ? b.price : null })) as any,
     });
   }

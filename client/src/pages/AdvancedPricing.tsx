@@ -14,7 +14,7 @@ type RateOverride = {
   room_type_id: string;
   start_date: string;
   end_date: string;
-  override_price: number;
+  override_price: number | null;
   min_stay_nights: number | null;
 };
 
@@ -60,7 +60,8 @@ function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string) {
   return aStart <= bEnd && bStart <= aEnd;
 }
 
-function formatCurrency(value: number) {
+function formatCurrency(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
   return new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 }).format(value);
 }
 
@@ -105,7 +106,7 @@ export default function AdvancedPricing() {
     { enabled: Boolean(selectedRoomType?.hotelId && effectiveRoomTypeId) },
   );
   const overrides: RateOverride[] = useMemo(
-    () => (overridesQuery.data ?? []).map((o: any) => ({ ...o, override_price: Number(o.override_price) })),
+    () => (overridesQuery.data ?? []).map((o: any) => ({ ...o, override_price: o.override_price == null ? null : Number(o.override_price) })),
     [overridesQuery.data],
   );
 
@@ -146,7 +147,7 @@ export default function AdvancedPricing() {
   function resolveEffectiveRate(dateStr: string): { price: number; source: "base" | "override"; overrideId?: string } {
     if (!selectedRoomType) return { price: 0, source: "base" };
     const matching = overridesForRoom.filter((o) => isDateInRange(dateStr, o.start_date, o.end_date));
-    if (!matching.length) return { price: Number(selectedRoomType.base_price), source: "base" };
+    if (!matching.length) return { price: selectedRoomType.base_price == null ? Number.NaN : Number(selectedRoomType.base_price), source: "base" };
     // precedence: narrowest range wins (overlapping ranges are rejected server-side,
     // so in practice at most one override matches any given date; the narrowest-wins
     // rule is a defensive tie-break for any residual ambiguity, not the primary guard)
@@ -159,7 +160,7 @@ export default function AdvancedPricing() {
         bestSpan = span;
       }
     }
-    return { price: best.override_price, source: "override", overrideId: best.id };
+    return { price: best.override_price == null ? Number.NaN : best.override_price, source: "override", overrideId: best.id };
   }
 
   function handleCreate() {
@@ -260,7 +261,7 @@ export default function AdvancedPricing() {
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("advancedPricing.basePrice")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">
-              {selectedRoomType ? formatCurrency(Number(selectedRoomType.base_price)) : "—"}
+              {selectedRoomType ? formatCurrency(selectedRoomType.base_price == null ? null : Number(selectedRoomType.base_price)) : "—"}
             </p>
             <p className="mt-1 text-xs text-[#778a80]">{selectedRoomType?.name ?? t("advancedPricing.selectRoomTypeFirst")}</p>
           </CardContent>
@@ -293,7 +294,7 @@ export default function AdvancedPricing() {
             <SelectContent>
               {roomTypes.map((rt) => (
                 <SelectItem key={rt.id} value={rt.id}>
-                  {rt.name} · {rt.hotelName} · {formatCurrency(Number(rt.base_price))}
+                  {rt.name} · {rt.hotelName} · {formatCurrency(rt.base_price == null ? null : Number(rt.base_price))}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -1,5 +1,6 @@
 # 02 Advanced Pricing — seasonal/date-range rate rules
-Status: DONE — 2026-08-30 (deepseek-v4-pro, 4 tickets T02-01→04); UI-wiring gap
+Status: DONE — 2026-08-30 (deepseek-v4-pro, 4 tickets T02-01→04); 2026-11-02 room type
+name and price fields restored, hidden prices render as an em dash; UI-wiring gap
 fixed 2026-08-31 (Claude). `AdvancedPricing.tsx` was originally pure `useState`
 local mock data (never called the real `createRateOverride`/`listRateOverrides`/
 `deleteRateOverride` procedures despite the checked acceptance criteria below) —

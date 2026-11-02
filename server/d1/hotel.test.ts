@@ -65,6 +65,7 @@ describe("D1 hotel repository", () => {
     await seedHotel("b", "owner-b");
     const caller = { userId: "owner-a" };
     expect(await listManagedHotels(db, caller)).toHaveLength(1);
+    expect(await listManagedHotels(db, caller)).toMatchObject([{ room_types: [{ id: "rt-a", name: "Standard", base_price: "100.00" }] }]);
     expect(await getManagedHotel(db, caller, "a")).toMatchObject({ id: "a", room_types: [{ id: "rt-a" }] });
     await expect(getManagedHotel(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(await listManagedHotelsForFinancials(db, caller)).toMatchObject([{ id: "a", bookings: [{ price: "100.00" }] }]);
@@ -125,6 +126,12 @@ describe("D1 hotel repository", () => {
       { id: "m-newer", hotelId: "newer", userId: "owner", role: "hotel_owner", permissionGrants: [], permissionRevokes: [] },
     ]);
     expect((await listManagedHotels(db, { userId: "owner" })).map(hotel => hotel.id)).toEqual(["newer", "older"]);
+  });
+
+  it("hides room type prices from callers without financial access", async () => {
+    await seedHotel("a", "owner-a");
+    await db.insert(hotelUsers).values({ id: "m-staff", hotelId: "a", userId: "staff", role: "front_desk", permissionGrants: [], permissionRevokes: [] });
+    expect(await listManagedHotels(db, { userId: "staff" })).toMatchObject([{ room_types: [{ name: "Standard", base_price: null }] }]);
   });
 
   it("orders public room types by numeric money value and stable id", async () => {

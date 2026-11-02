@@ -20,6 +20,7 @@ describe("AdvancedPricing dashboard contract", () => {
 
   it("no longer shows the placeholder toast for Advanced Pricing", () => {
     expect(app).not.toContain("Advanced Pricing module is coming soon");
+    expect(component).toContain("if (value == null || !Number.isFinite(value)) return");
   });
 
   it("grants revenue.manage_pricing_rules to hotel_owner and revenue_manager", () => {

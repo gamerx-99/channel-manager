@@ -92,7 +92,7 @@ export async function assertBookingMinStay(
 }
 
 export async function listRateOverrides(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, roomTypeId?: string, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "rate_overrides.list", now);
+  const scope = await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "rate_overrides.list", now);
   const rows = await db.select({
     id: rateOverrides.id, roomTypeId: rateOverrides.roomTypeId, startDate: rateOverrides.startDate,
     endDate: rateOverrides.endDate, overridePrice: rateOverrides.overridePrice,
@@ -100,7 +100,7 @@ export async function listRateOverrides(db: D1ScopedDatabase, caller: D1CallerCo
   }).from(rateOverrides).innerJoin(roomTypes, eq(rateOverrides.roomTypeId, roomTypes.id))
     .where(and(eq(roomTypes.hotelId, hotelId), roomTypeId ? eq(rateOverrides.roomTypeId, roomTypeId) : undefined))
     .orderBy(asc(rateOverrides.startDate));
-  return rows;
+  return rows.map(row => ({ ...row, overridePrice: scope.permissions.includes("property.view_financials") ? row.overridePrice : null }));
 }
 
 export async function createRateOverride(
