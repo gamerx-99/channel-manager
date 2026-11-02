@@ -1742,6 +1742,11 @@ const th: TranslationDictionary = {
     locationTitleHighlight: "ยังโรงแรม",
     footerManagedSecurely: "ข้อมูลโรงแรมได้รับการจัดการอย่างปลอดภัย",
   },
+  hotelThemes: {
+    lannaTeak: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เลือกภาษา", kicker: "พักสบายในบรรยากาศสงบ", exploreRooms: "ดูห้องพัก", restWell: "พักผ่อนให้เต็มที่", roomsTitle: "ห้องพัก|สำหรับคุณ", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", galleryKicker: "บรรยากาศรอบที่พัก", galleryTitle: "ช่วงเวลาเล็ก ๆ|ที่น่าจดจำ", findWay: "เดินทางมาได้ที่", locationTitle: "ยินดีต้อนรับ", footerBooking: "จองผ่าน hayhost" },
+    cafeHomestay: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เปลี่ยนภาษา", heroKicker: "พักสบาย ใจสบาย", exploreRooms: "ดูห้องพัก", homeKicker: "พักได้ตามสบาย", roomsTitle: "ห้องพักสำหรับวันพักผ่อน", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", galleryKicker: "ภาพบรรยากาศ", galleryTitle: "มุมเล็ก ๆ ของที่พัก", comeFindUs: "แวะมาหาเราได้", locationTitle: "เดินทางมาที่นี่", footerBooking: "จองผ่าน hayhost" },
+    minimalWhite: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เปลี่ยนภาษา", stay: "01 · ห้องพัก", room: "ห้อง {{number}}", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", details: "02 · รูปที่พัก", findUs: "03 · ที่ตั้ง", footerBooking: "จองผ่าน hayhost" }
+  },
 };
 
 export default th;

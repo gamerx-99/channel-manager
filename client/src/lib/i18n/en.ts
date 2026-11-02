@@ -1754,6 +1754,11 @@ const en = {
     locationTitleHighlight: "the hotel.",
     footerManagedSecurely: "Property information is managed securely.",
   },
+  hotelThemes: {
+    lannaTeak: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language", kicker: "A quiet stay", exploreRooms: "Explore rooms", restWell: "Rest well", roomsTitle: "Rooms for|your stay", capacity: "Up to {{capacity}} guests", perNight: "/ night", galleryKicker: "The feeling of here", galleryTitle: "Small moments,|well kept.", findWay: "Find your way", locationTitle: "A warm welcome", footerBooking: "Booking powered by hayhost" },
+    cafeHomestay: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language switch", heroKicker: "A little pause, a little comfort", exploreRooms: "Explore rooms", homeKicker: "Make yourself at home", roomsTitle: "Rooms for resting well", capacity: "Up to {{capacity}} guests", perNight: "/ night", galleryKicker: "Little moments", galleryTitle: "A glimpse of the stay", comeFindUs: "Come find us", locationTitle: "Find your way here", footerBooking: "Booking powered by hayhost" },
+    minimalWhite: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language switch", stay: "01 · Stay", room: "Room {{number}}", capacity: "Up to {{capacity}} guests", perNight: "/ night", details: "02 · Details", findUs: "03 · Find us", footerBooking: "Booking powered by hayhost" }
+  },
 } as const;
 
 type DeepStringDictionary<T> = {

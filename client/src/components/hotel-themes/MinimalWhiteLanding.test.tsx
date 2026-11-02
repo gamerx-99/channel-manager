@@ -19,7 +19,7 @@ describe("Minimal White landing", () => {
       setLanguage={() => {}}
       isVisible={() => true}
       booking={<div id="booking-slot">Booking slot</div>}
-      siteConfig={null} visibleSections={null} t={(key: string) => key} loading={false} error={null} notFound={false} refetch={async () => ({}) as any}
+      siteConfig={null} visibleSections={null} t={(key: string, params?: Record<string, string | number>) => key === "hotelThemes.minimalWhite.room" ? `Room ${params?.number}` : key} loading={false} error={null} notFound={false} refetch={async () => ({}) as any}
     />);
 
     expect(html).toContain("Haus Nimman");
