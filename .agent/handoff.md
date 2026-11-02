@@ -2084,3 +2084,12 @@ Not tested in a browser or with a real email.
 - **Verification**: `pnpm test` could not start because pnpm was denied access to its global store operation lock. The documented equivalent, `node_modules\.bin\vitest run --pool=forks --maxWorkers=1 --minWorkers=1` with worktree-local `TEMP`/`TMP`, passed: 168 files, 1,182 tests. `pnpm check` was not run because pnpm could not start; `node_modules\.bin\tsc --noEmit` passed (exit 0). `pnpm build` was not run because pnpm could not start; `node_modules\.bin\vite build` passed (exit 0, existing large-chunk warning). `git diff --check` passed (exit 0; Git printed line-ending normalization warnings, including pre-existing `_headers`).
 - **Visual review**: No browser rendering was available, so desktop and 375px matching is based on the inspected references and responsive CSS, not a visual comparison.
 - **Not done**: No commit, push or deploy.
+
+
+## 2026-11-03 Fix browser findings in the first three hotel themes (Batch B3c)
+
+- **Copy and language**: Moved the visible template labels, navigation, room capacity and per-night text, section headings, and footer booking label into `hotelThemes.lannaTeak`, `hotelThemes.cafeHomestay`, and `hotelThemes.minimalWhite` in both i18n dictionaries. Added short natural Thai copy and kept TH/EN controls connected to the shared language context.
+- **Data and layout**: Removed Lamphun references from the Lanna template and used neutral copy; the hotel-provided address remains. Removed the repeated hero copy intro sections from all three themes and removed Minimal White's `01 / 04` hero counter.
+- **Regression test**: Added `PublicHotel.render.test.tsx`; each case renders loading then rerenders with mocked tRPC hotel data for null theme and each of the three theme IDs. The loading-to-data transition now completes without a hook-order crash.
+- **Verification**: `pnpm test` could not start because the global pnpm store lock was denied. Direct Vitest with a worktree-local temp directory passed: Test Files 170 passed (170), Tests 1187 passed (1187). `node_modules\.bin\tsc --noEmit` passed (exit 0). `node_modules\.bin\vite build` passed (exit 0; existing large-chunk warning). `git diff --check` passed (exit 0; line-ending warnings only).
+- **Not done**: No commit, push or deploy. The spec draft is in the parent checkout and was read only. Existing `_headers`, `docs/sales/`, and session-handoff changes were preserved.
