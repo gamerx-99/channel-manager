@@ -9,13 +9,14 @@ import { formatIsoToDisplayDate } from '@shared/dateUtils';
 import { isPlatformRole, ROLE_LABELS } from '@shared/authorization';
 import PageState from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
+import { otaSyncEnabled } from '@/lib/featureFlags';
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
 
 export default function Home() {
   const { t } = useTranslation();
   const { data, isLoading, error, refetch: refetchDashboard } = trpc.channelManager.dashboard.useQuery();
-  const { data: otaSummary, isLoading: otaLoading, error: otaError, refetch: refetchOta } = trpc.channelManager.ota.summary.useQuery();
+  const { data: otaSummary, isLoading: otaLoading, error: otaError, refetch: refetchOta } = trpc.channelManager.ota.summary.useQuery(undefined, { enabled: otaSyncEnabled });
   const { data: authMe } = trpc.auth.me.useQuery();
   const triggerSync = trpc.channelManager.ota.triggerSync.useMutation();
   const utils = trpc.useUtils();
@@ -139,7 +140,7 @@ export default function Home() {
 
     <section className="content-grid lower-grid"><div className="panel bookings-panel"><div className="panel-heading"><div><div className="eyebrow">{t('home.latestActivity', { count: summary?.recentBookings.length ?? 0 })}</div><h2>{t('home.recentBookings')}</h2></div><Link href={data?.hotels[0] ? `/hotels/${data.hotels[0].id}/bookings` : '/hotels'} className="text-link">{t('home.openBookings')} <ArrowUpRight size={14} /></Link></div><div className="table-wrap"><table className="data-table compact-table"><thead><tr><th>{t('home.bookingCol')}</th><th>{t('home.stayCol')}</th><th>{t('home.sourceCol')}</th><th>{t('home.statusCol')}</th><th className="align-right">{t('home.valueCol')}</th></tr></thead><tbody>{summary?.recentBookings.length ? summary.recentBookings.map(booking => <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('home.confirmedRecord')}</small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('home.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status] ?? booking.status}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td></tr>) : <tr><td colSpan={5} className="empty-cell">{t('home.noConfirmedBookings')}</td></tr>}</tbody></table></div></div><div className="panel insight-panel"><div className="eyebrow">{t('home.latestConfirmedBookings')}</div><div className="insight-number">{formatCurrency(revenue)}</div><h3>{t('home.recordedBookingValue')}</h3><p>{t('home.bookingValueDesc')}</p><div className="sparkline"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="insight-footer"><span><i className="dot pine" /> {t('home.supabaseData')}</span><strong>{t('home.live')}</strong></div></div></section>
 
-    <OtaSyncStatusWidget
+    {otaSyncEnabled && <OtaSyncStatusWidget
       items={otaSummary ?? []}
       isLoading={otaLoading}
       errorMessage={otaError?.message}
@@ -147,6 +148,7 @@ export default function Home() {
       onSync={(item) => handleSync(item.hotel_id, item.provider, item.hotel_name)}
       syncingId={syncingId}
       manageHref={primaryHotel ? `/hotels/${primaryHotel.id}/ota` : '/hotels'}
-    />
+    />}
+    <div className="page-content-footer">{t('shell.privateWorkspaceFooter')}</div>
   </div>;
 }

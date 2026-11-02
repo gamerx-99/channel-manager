@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import PageState from '@/components/PageState';
 import { formatDateDDMMYYYY } from '@/lib/formatDate';
 import { useTranslation } from '@/lib/i18n';
+import { otaSyncEnabled } from '@/lib/featureFlags';
 
 type CalendarViewProps = {
   defaultDays?: number;
@@ -157,7 +158,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
   };
 
   if (calendarQuery.isLoading) {
-    return <section className="panel dashboard-calendar-panel"><PageState tone="loading" title={t('dashboardCalendar.loadingTitle')} description={t('dashboardCalendar.loadingDesc')} /></section>;
+    return <section className="panel dashboard-calendar-panel"><PageState tone="loading" title={t('dashboardCalendar.loadingTitle')} description={t(otaSyncEnabled ? 'dashboardCalendar.loadingDesc' : 'dashboardCalendar.loadingDescNoOta')} /></section>;
   }
 
   if (calendarQuery.error || !calendarQuery.data) {
@@ -165,16 +166,16 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
   }
 
   if (!activeHotel) {
-    return <section className="panel dashboard-calendar-panel"><PageState tone="empty" title={t('dashboardCalendar.emptyTitle')} description={t('dashboardCalendar.emptyDesc')} /></section>;
+    return <section className="panel dashboard-calendar-panel"><PageState tone="empty" title={t('dashboardCalendar.emptyTitle')} description={t(otaSyncEnabled ? 'dashboardCalendar.emptyDesc' : 'dashboardCalendar.emptyDescNoOta')} /></section>;
   }
 
   return (
     <section className="panel dashboard-calendar-panel" aria-labelledby="dashboard-calendar-title">
       <div className="panel-heading dashboard-calendar-heading">
         <div>
-          <div className="eyebrow">{t('dashboardCalendar.eyebrow')}</div>
+          <div className="eyebrow">{t(otaSyncEnabled ? 'dashboardCalendar.eyebrow' : 'dashboardCalendar.eyebrowNoOta')}</div>
           <h2 id="dashboard-calendar-title">{t('dashboardCalendar.title')}</h2>
-          <p className="dashboard-calendar-subtitle">{t('dashboardCalendar.subtitle')}</p>
+          <p className="dashboard-calendar-subtitle">{t(otaSyncEnabled ? 'dashboardCalendar.subtitle' : 'dashboardCalendar.subtitleNoOta')}</p>
         </div>
         <div className="dashboard-calendar-heading-actions">
           <span className="calendar-live-status"><i /> {t('dashboardCalendar.liveData')}</span>
@@ -198,7 +199,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
         <span className="calendar-legend-item calendar-legend-healthy"><i className="calendar-status-swatch" aria-hidden="true" /> {t('dashboardCalendar.healthyAvailability')}</span>
         <span className="calendar-legend-item calendar-legend-low"><i className="calendar-status-swatch" aria-hidden="true" /> {t('dashboardCalendar.lowAvailability')}</span>
         <span className="calendar-legend-item calendar-legend-closed"><i className="calendar-status-swatch" aria-hidden="true" /> {t('dashboardCalendar.fullOrClosed')}</span>
-        <span className="calendar-legend-item calendar-legend-sync"><CloudDownload size={14} aria-hidden="true" /> {t('dashboardCalendar.syncMarker')}</span>
+        {otaSyncEnabled && <span className="calendar-legend-item calendar-legend-sync"><CloudDownload size={14} aria-hidden="true" /> {t('dashboardCalendar.syncMarker')}</span>}
       </div>
 
       <p className="mobile-scroll-hint dashboard-calendar-scroll-hint" role="note">{t('dashboardCalendar.scrollHint')}</p>
@@ -218,7 +219,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
               <th><div className="dashboard-calendar-room-label"><span className={`room-type-bar ${index % 3 === 0 ? 'pine' : index % 3 === 1 ? 'slate' : 'amber'}`} /><strong>{roomType.name}</strong><small>{t('dashboardCalendar.rooms', { count: roomType.totalRooms })}</small></div></th>
               {days.map(day => {
                 const cell = day.roomTypes.find(item => item.roomTypeId === roomType.id);
-                const syncCount = day.syncEvents.length;
+                const syncCount = otaSyncEnabled ? day.syncEvents.length : 0;
                 const status = cell?.status ?? 'closed';
                 const statusText = status === 'closed' ? t('dashboardCalendar.fullOrClosed') : status === 'low' ? t('dashboardCalendar.lowAvailability') : t('dashboardCalendar.healthyAvailability');
                 const dayLabel = formatDayLabel(day.date, { day: 'numeric', month: 'long' }, language);
@@ -237,10 +238,10 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           <h3>{activeDay ? formatDayLabel(activeDay.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }, language) : t('dashboardCalendar.noDateSelected')}</h3>
           <div className="dashboard-calendar-summary-stats"><span><strong>{availabilitySummary.available}</strong>/{availabilitySummary.total} {t('dashboardCalendar.roomsAvailable')}</span><span><strong>{availabilitySummary.booked}</strong> {t('dashboardCalendar.activeBookings')}</span></div>
         </div>
-        <div className="dashboard-calendar-sync-details">
+        {otaSyncEnabled && <div className="dashboard-calendar-sync-details">
           <div className="eyebrow">{t('dashboardCalendar.syncActivity')}</div>
           {activeDay?.syncEvents.length ? <div className="dashboard-calendar-sync-list">{activeDay.syncEvents.map((event, index) => <div className={`dashboard-calendar-sync-item ${event.status === 'failed' ? 'is-error' : ''}`} key={`${event.provider}:${event.createdAt}:${index}`}><span className="dashboard-calendar-sync-icon">{event.status === 'failed' ? <CircleAlert size={14} /> : <CloudDownload size={14} />}</span><div><strong>{event.provider} · {event.status === 'success' ? t('dashboardCalendar.synced') : t('dashboardCalendar.failed')}</strong><small>{formatSyncTime(event.createdAt, language)} · {t('dashboardCalendar.updatedItems', { count: event.updatedItemCount })}</small></div><span className="dashboard-calendar-sync-message">{event.message}</span></div>)}</div> : <p className="dashboard-calendar-empty-sync">{t('dashboardCalendar.noSyncActivity')}</p>}
-        </div>
+        </div>}
         <div className="dashboard-calendar-quick-actions" aria-labelledby="dashboard-calendar-quick-actions-title">
           <div className="dashboard-calendar-quick-actions-heading">
             <div><div className="eyebrow">{t('dashboardCalendar.dailyControls')}</div><h4 id="dashboard-calendar-quick-actions-title">{t('dashboardCalendar.editSelectedDay')}</h4></div>

@@ -1,7 +1,7 @@
 import { trpc } from "./lib/trpc";
 import { hasAnyPermission } from "@shared/authorization";
 // Quiet Ledger reminder: global shell uses rail-and-canvas navigation, charcoal ink, warm paper, and pine signal color.
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch } from "wouter";
 import React from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,7 +37,7 @@ import OtaSync from "./pages/OtaSync";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContext";
-import { communicationsEnabled } from "./lib/featureFlags";
+import { communicationsEnabled, otaSyncEnabled } from "./lib/featureFlags";
 import { useTranslation } from "./lib/i18n";
 import LegalPage from "./pages/LegalPage";
 
@@ -92,7 +92,7 @@ function Router() {
         {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/ota">
-        {(params) => <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute>}
+        {(params) => otaSyncEnabled ? <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute> : <Redirect to={`/hotels/${params.id}`} />}
       </Route>
       <Route path="/hotels/:id/staff">
         {(params) => <PrivateRoute><HotelStaff id={params.id} /></PrivateRoute>}
