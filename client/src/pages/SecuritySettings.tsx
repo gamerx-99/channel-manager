@@ -1,5 +1,6 @@
 import { hasHotelPermission } from "@shared/authorization";
 import DeleteAccountSettings from "@/components/DeleteAccountSettings";
+import LinkedAccountsSettings from "@/components/LinkedAccountsSettings";
 import MfaSettings from "@/components/MfaSettings";
 import SlipOkSettings from "@/components/SlipOkSettings";
 import { useHotel } from "@/contexts/HotelContext";
@@ -25,6 +26,7 @@ export default function SecuritySettings() {
         </div>
       </section>
       <MfaSettings />
+      <LinkedAccountsSettings />
       {hotelId && canManageSlipOk && <SlipOkSettings hotelId={hotelId} />}
       <DeleteAccountSettings />
     </div>

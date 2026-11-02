@@ -1945,6 +1945,15 @@ Not tested in a browser or with a real email.
 - **Done**: `/` is now a public Landing page instead of a redirect. `/signup` creates an account, then `channelManager.registerOwnHotel` creates one private hotel with the caller as owner. Web addresses that match app routes are refused.
 - **Evidence**: `pnpm test`, `pnpm check` and `pnpm build` pass. In a local Worker, a test signup reached `/dashboard`, a reserved address showed the Thai error, retry kept the account, and D1 showed `baan-test`, `public_enabled = 0`, `hotel_owner`.
 - **Not done**: not deployed; no reviewer; email is not verified; no prices or terms on the page, see `.agent/OPEN_QUESTIONS.md`.
+
+## 2026-11-01 Social signup and sign-in (spec 18)
+- **Done**: Google, Facebook and LINE through Better Auth's built-in providers on `/login`, `/signup` and `/signup/:token`. Buttons show only when both credentials exist. `/signup/:token` gained a signed-in "connect hotel" step and all its copy moved to `t()`. No migration and no `wrangler.toml` change.
+- **Security**: account linking is off, only verified provider emails are stored, tokens are encrypted, and `requireTwoFactorOnSocialCallback` stops a session being created for a 2FA account. A test completes the real TOTP step after a stubbed Google callback.
+- **Evidence**: `pnpm test` 147 files, 1036/1036 pass; `pnpm check` pass; `pnpm build` pass; browser check on a local Worker with fake Google and LINE ids confirmed Thai buttons, no Facebook button, LINE authorize URL with `openid profile`, 404 for Facebook, error message, 2FA screen and 375px layout.
+- **Tests changed**: `HotelOwnerSignup.contract.test.ts` reads the copy from `en.ts` because it moved to i18n. `Login.*` and `adversarial_m2_auth` mocks gained `socialProviders`, a new dependency; no assertion changed.
+- **Not done**: no real provider login, because the OAuth apps do not exist yet (`docs/social-login-setup.md`). The hotel-link connect step was tested by component test only, not in a browser. No reviewer. Not pushed or deployed.
+- **Merge order**: branched from `feat/financials-owner-grant` without account deletion. Expect small conflicts in the i18n files, `authRouter.ts` and `Login` copy. Account deletion needs a decision for password-less accounts, see `.agent/OPEN_QUESTIONS.md`.
+- **Worktree note**: with `core.autocrlf=true` a fresh checkout gives `client/public/_headers` CRLF, which fails `PasswordReset.contract.test.ts`. It was normalised to LF locally; git shows no diff.
 ## 2026-10-31 Spec 17: self-service account deletion (branch `feat/account-deletion`, from `feat/financials-owner-grant`)
 - **Done**: `auth.accountDeletionStatus` and `auth.deleteAccount`, `server/d1/accountDeletion.ts`, and a delete panel on `/settings/security`. One D1 batch deletes the user and removes or anonymizes them everywhere; see the table in `specs/17-account-deletion.md`. Owners and the last platform admin are refused. No hotel, booking or guest row is deleted. No migration.
 - **Found by running the app, not by tests**: an account with no hotel could not open `/settings/security`, and real D1 counts cascaded rows in `meta.changes`, so a successful deletion was reported as a failure. Both fixed, with tests.
@@ -1976,3 +1985,24 @@ Not tested in a browser or with a real email.
 - **Migration**: ไม่มี ไม่ได้ merge, push เข้า main หรือ deploy
 - **ผลตรวจ**: `pnpm test` ได้ Test Files 156 passed (156), Tests 1112 passed (1112); `pnpm check` (`tsc --noEmit`) exit 0; `pnpm build` exit 0 (`built in 7.19s`, `Total Upload: 3737.97 KiB`, `--dry-run: exiting now.`)
 - **Reviewer** (subagent อิสระ ไม่ได้เขียนโค้ดนี้): VERDICT: APPROVE ไม่มี blocker ตรวจ test ที่ถูกแก้ทั้ง 5 ไฟล์แล้วว่าเป็นการแก้ test ที่ตรึงบั๊กไว้ ไม่ใช่การผ่อน assertion และลองป้อน URL แปลก ๆ หลายแบบให้ตัว override ของ SlipOK แล้ว รับเฉพาะ loopback ข้อที่ยังค้าง: (should-fix) ข้อความใน `PaymentQR.tsx` ทั้ง component ยังเขียนภาษาไทยตายตัว แขกต่างชาติจึงเห็นเป็นภาษาไทย ควรแยกเป็น ticket แปลทั้ง component; (nit) ถ้ารายการจองส่ง `expires_at` มาด้วย ห้องที่ถูกจองไว้แต่หมดเวลาแล้วจะกลับมาแสดง; (nit) `loadStaffAuthUsers` อ่าน role ที่ถูกกรองทิ้งภายหลังด้วย
+
+## 2026-11-01 Social sign-in: one email, one account (spec 18 update)
+- **Owner decision**: the same email must reach the same account. This replaces the earlier "never link" rule in the entry above. Branch now includes `origin/feat/hayhost-hardening` (`96a51be`).
+- **Done**: a login joins by email when both the provider and the local account are verified. Unverified password accounts, Facebook and LINE join only through Connect in Security settings (`LinkedAccountsSettings`). 2FA still applies on a first join. `loadStaffAuthUsers` now treats any sign-in method as confirmed.
+- **Evidence**: `pnpm test` 160 files, 1138/1138 before this entry; final run is in the session report. Browser: Connect list shows Google and LINE and the "already linked" error on a signed-in local account. The real provider redirect back is covered by stubbed tests only.
+- **Tests changed**: the old "refuses to join" case in `socialAuth.test.ts` was replaced because the owner's rule changed. The unverified-account refusal stays as its own test.
+
+## 2026-11-01 Email verification at signup (spec 18 update)
+- **Done**: with `RESEND_API_KEY` set, signup sends a confirmation link, opens no session and refuses sign-in until confirmed. A check-email page with resend appears on `/signup`, `/signup/:token` and `/login`. `/signup` now asks for the account first and the hotel after sign-in. A confirmed password account joins a matching verified Google login automatically.
+- **Decisions**: enforcement needs a real mail provider, otherwise the mock sender would strand every account. The link marks the email only and does not log in, so it cannot skip the password or 2FA. A refused sign-in sends a fresh link, which is how an unverified superadmin recovers.
+- **Invites**: `acceptStaffInvite` sets `emailVerified: true`, for staff, support and platform invites, and `server/d1/supportAccess.ts` only writes `false` on a new row, so those flows did not change.
+- **Tests changed**: `HotelOwnerSignup.test.tsx` expects the new `callbackURL` argument and gained a waiting-for-email case; no other assertion changed.
+- **Not tested**: delivery of a real email. Locally a fake Resend key gave 401, which proved the pages but not the inbox. A failed send is logged and the page still says sent, so nobody can probe which emails exist.
+- **Owner steps before deploying this to any environment that has `RESEND_API_KEY`**:
+  1. Check the superadmin account. Staging and production each have their own database:
+     `pnpm exec wrangler d1 execute hayhost-production --env production --remote --command "SELECT email, email_verified FROM user"`
+  2. If `email_verified` is 1, nothing more is needed.
+  3. If it is 0, keep `RESEND_API_KEY` and `EMAIL_FROM` set and confirm that address receives mail. After deploy, sign in once, open the link in the email, then sign in again.
+  4. If mail is not working, set the flag yourself, with your own address:
+     `pnpm exec wrangler d1 execute hayhost-production --env production --remote --command "UPDATE user SET email_verified = 1 WHERE email = 'your-admin-email'"`
+  5. If you are ever locked out after deploy, step 4 still works, because it needs no sign-in.

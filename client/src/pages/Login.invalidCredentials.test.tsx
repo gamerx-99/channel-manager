@@ -12,7 +12,7 @@ vi.mock("wouter", async () => {
   return { ...actual, useLocation: () => ["/login", vi.fn()], Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a> };
 });
 vi.mock("@/lib/auth-client", () => ({ authClient: { signIn: { email: signInEmail }, twoFactor: { verifyTotp: vi.fn() } } }));
-vi.mock("@/lib/trpc", () => ({ trpc: { useUtils: () => ({ auth: { me: { fetch: vi.fn() } } }) } }));
+vi.mock("@/lib/trpc", () => ({ trpc: { useUtils: () => ({ auth: { me: { fetch: vi.fn() } } }), auth: { socialProviders: { useQuery: () => ({ data: [] }) } } } }));
 
 import Login from "./Login";
 

@@ -4,6 +4,8 @@ import { Link, useLocation } from "wouter";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
+import { CheckEmail } from "@/components/auth/CheckEmail";
+import { readSocialError, SocialSignIn } from "@/components/auth/SocialSignIn";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -21,8 +23,12 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    const socialError = readSocialError();
+    return socialError ? t(socialError) : null;
+  });
   const [submitting, setSubmitting] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const signedIn = Boolean(me.data);
   const hasRole = Boolean(me.data?.roles?.length || me.data?.role);
@@ -39,41 +45,45 @@ export default function Signup() {
     return t("signup.createFailed");
   }
 
+  /** The hotel step comes after this, once the person has a session. */
+  async function createAccount() {
+    if (password.length < 8) {
+      setError(t("signup.passwordTooShort"));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t("signup.passwordMismatch"));
+      return;
+    }
+    setSubmitting(true);
+    const { data, error: signUpError } = await authClient.signUp.email({ email, password, name: email.split("@")[0] || "Hotel Owner" });
+    setSubmitting(false);
+    if (signUpError || !data?.user) {
+      setError(t("signup.accountFailed"));
+      return;
+    }
+    if (data.token === null) setAwaitingVerification(true);
+    else await me.refetch();
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    if (!signedIn) {
+      await createAccount();
+      return;
+    }
     if (!SLUG_PATTERN.test(slug)) {
       setError(t("signup.slugInvalid"));
       return;
     }
-    if (!signedIn) {
-      if (password.length < 8) {
-        setError(t("signup.passwordTooShort"));
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError(t("signup.passwordMismatch"));
-        return;
-      }
-    }
 
     setSubmitting(true);
-    if (!signedIn) {
-      const { data, error: signUpError } = await authClient.signUp.email({ email, password, name: email.split("@")[0] || name });
-      if (signUpError || !data?.user) {
-        setSubmitting(false);
-        setError(t("signup.accountFailed"));
-        return;
-      }
-    }
-
     try {
       await registerHotel.mutateAsync({ name, slug, address, owner_contact: contact });
       await utils.auth.me.invalidate();
       navigate("/dashboard");
     } catch (mutationError) {
-      // The account exists by now, so the retry must only send the hotel details.
-      await me.refetch();
       setError(registrationError(mutationError));
       setSubmitting(false);
     }
@@ -90,31 +100,37 @@ export default function Signup() {
         </div>
       </div>
       <main className="login-main">
-        <form className="login-card signup-card" onSubmit={handleSubmit}>
-          <div className="eyebrow">{t("signup.eyebrow")}</div>
-          <h2>{t("signup.title")}</h2>
-          <p>{signedIn ? t("signup.continueLede") : t("signup.lede")}</p>
-          <label>{t("signup.hotelName")}<input type="text" value={name} onChange={event => setName(event.target.value)} maxLength={160} required /></label>
-          <label>
-            {t("signup.slug")}
-            <span className="signup-slug"><span>{window.location.host}/</span><input type="text" value={slug} onChange={event => setSlug(event.target.value.toLowerCase())} maxLength={100} aria-describedby="signup-slug-help" autoCapitalize="none" spellCheck={false} required /></span>
-          </label>
-          <small id="signup-slug-help">{t("signup.slugHelp")}</small>
-          <label>{t("signup.address")}<input type="text" value={address} onChange={event => setAddress(event.target.value)} maxLength={500} autoComplete="street-address" required /></label>
-          <label>{t("signup.contact")}<input type="tel" value={contact} onChange={event => setContact(event.target.value)} maxLength={180} autoComplete="tel" required /></label>
-          {!signedIn && (
-            <>
-              <label>{t("signup.email")}<input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>
-              <label>{t("signup.password")}<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-              <label>{t("signup.confirmPassword")}<input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
-            </>
-          )}
-          {error ? <p className="form-error" role="alert">{error}</p> : null}
-          <button className="button button-primary login-button" type="submit" disabled={submitting}>
-            {submitting ? t("signup.creating") : t("signup.create")} <ArrowRight size={16} />
-          </button>
-          <div className="login-security"><ShieldCheck size={15} /><span>{t("signup.securityNote")}</span></div>
-        </form>
+        {awaitingVerification ? <CheckEmail email={email} /> : (
+          <form className="login-card signup-card" onSubmit={handleSubmit}>
+            <div className="eyebrow">{t("signup.eyebrow")}</div>
+            <h2>{t("signup.title")}</h2>
+            <p>{signedIn ? t("signup.continueLede") : t("signup.lede")}</p>
+            {signedIn ? (
+              <>
+                <label>{t("signup.hotelName")}<input type="text" value={name} onChange={event => setName(event.target.value)} maxLength={160} required /></label>
+                <label>
+                  {t("signup.slug")}
+                  <span className="signup-slug"><span>{window.location.host}/</span><input type="text" value={slug} onChange={event => setSlug(event.target.value.toLowerCase())} maxLength={100} aria-describedby="signup-slug-help" autoCapitalize="none" spellCheck={false} required /></span>
+                </label>
+                <small id="signup-slug-help">{t("signup.slugHelp")}</small>
+                <label>{t("signup.address")}<input type="text" value={address} onChange={event => setAddress(event.target.value)} maxLength={500} autoComplete="street-address" required /></label>
+                <label>{t("signup.contact")}<input type="tel" value={contact} onChange={event => setContact(event.target.value)} maxLength={180} autoComplete="tel" required /></label>
+              </>
+            ) : (
+              <>
+                <SocialSignIn callbackURL="/signup" errorCallbackURL="/signup" mode="signup" />
+                <label>{t("signup.email")}<input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" required /></label>
+                <label>{t("signup.password")}<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+                <label>{t("signup.confirmPassword")}<input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+              </>
+            )}
+            {error ? <p className="form-error" role="alert">{error}</p> : null}
+            <button className="button button-primary login-button" type="submit" disabled={submitting}>
+              {submitting ? t("signup.creating") : signedIn ? t("signup.create") : t("signup.createAccount")} <ArrowRight size={16} />
+            </button>
+            <div className="login-security"><ShieldCheck size={15} /><span>{t("signup.securityNote")}</span></div>
+          </form>
+        )}
         {!signedIn && <div className="login-footer"><span>{t("signup.haveAccount")}</span><Link href="/login">{t("signup.signIn")}</Link></div>}
       </main>
     </div>

@@ -61,6 +61,7 @@ vi.mock("@/lib/trpc", () => ({
       me: {
         useQuery: () => trpcMocks.authMeQuery(),
       },
+      socialProviders: { useQuery: () => ({ data: [] }) },
     },
     channelManager: {
       hotels: {

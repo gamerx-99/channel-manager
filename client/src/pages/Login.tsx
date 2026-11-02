@@ -5,15 +5,32 @@ import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
 import { MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
 import { useTranslation } from '@/lib/i18n';
+import { readSocialError, SocialSignIn } from '@/components/auth/SocialSignIn';
+import { CheckEmail } from '@/components/auth/CheckEmail';
+
+/** Only an owner signup link may be resumed here, so 
+ext cannot send anyone off the site. */
+function returnPath(search: string) {
+  const next = new URLSearchParams(search).get('next');
+  return next && /^\/signup\/[^/?#\\]+$/.test(next) ? next : null;
+}
 
 export default function Login() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [emailVerified] = useState(() => new URLSearchParams(window.location.search).get('verified') === '1');
+  const [next] = useState(() => returnPath(window.location.search));
   const [totpCode, setTotpCode] = useState('');
-  const [isTwoFactor, setIsTwoFactor] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // A social sign-in on a 2FA account comes back here with the challenge already started.
+  const [socialTwoFactor] = useState(() => new URLSearchParams(window.location.search).get("two_factor") === "1");
+  const [isTwoFactor, setIsTwoFactor] = useState(socialTwoFactor);
+  const [error, setError] = useState<string | null>(() => {
+    const socialError = readSocialError();
+    return socialError ? t(socialError) : null;
+  });
   const [submitting, setSubmitting] = useState(false);
 
   // Safely resolve tRPC utils (handling environments rendered outside trpc.Provider)
@@ -37,6 +54,11 @@ export default function Login() {
 
       if (signInError) {
         setSubmitting(false);
+        // The server has just sent a fresh link to this address.
+        if (signInError.code === "EMAIL_NOT_VERIFIED") {
+          setPendingVerification(true);
+          return;
+        }
         // Better Auth's own message is English; a wrong email or password gets ours.
         const wrongCredentials = signInError.code === "INVALID_EMAIL_OR_PASSWORD" || signInError.status === 401;
         setError(wrongCredentials || !signInError.message ? t("login.invalidCredentials") : signInError.message);
@@ -54,6 +76,7 @@ export default function Login() {
       try {
         let roles: string[] = [];
         let twoFactorEnabled = false;
+        let signedInWithoutRole = false;
 
         if (trpcUtils) {
           try {
@@ -61,6 +84,7 @@ export default function Login() {
             if (me) {
               roles = (me.roles?.length ? me.roles : me.role ? [me.role] : []) as string[];
               twoFactorEnabled = Boolean(me.twoFactorEnabled);
+              signedInWithoutRole = roles.length === 0;
             }
           } catch {
             // Ignore tRPC fetch errors — fail open
@@ -70,6 +94,13 @@ export default function Login() {
         if (!twoFactorEnabled && shouldEnforceMfaForRoles(roles)) {
           setSubmitting(false);
           navigate(MFA_ENROLL_PATH);
+          return;
+        }
+
+        // Confirming an email comes before the hotel step, so a new owner resumes it here.
+        if (signedInWithoutRole) {
+          setSubmitting(false);
+          navigate(next ?? '/signup');
           return;
         }
       } catch {
@@ -106,7 +137,7 @@ export default function Login() {
       }
 
       setSubmitting(false);
-      navigate('/dashboard');
+      navigate(next ?? '/dashboard');
     } catch (err) {
       setSubmitting(false);
       setError(err instanceof Error ? err.message : "Verification failed");
@@ -131,11 +162,13 @@ export default function Login() {
         </div>
       </div>
       <main className="login-main">
-        {isTwoFactor ? (
+        {pendingVerification ? (
+          <CheckEmail email={email} onBack={() => setPendingVerification(false)} />
+        ) : isTwoFactor ? (
           <form className="login-card" onSubmit={handleTotpSubmit} data-testid="login-totp-form">
             <div className="eyebrow">{t("mfaEnroll.eyebrow") || "Two-Factor Authentication"}</div>
-            <h2>{t("mfaEnroll.title") || "Enter Authenticator Code"}</h2>
-            <p>{t("mfaEnroll.lede") || "Enter the 6-digit verification code from your authenticator app."}</p>
+            <h2>{socialTwoFactor ? t("socialAuth.twoFactorTitle") : t("mfaEnroll.title") || "Enter Authenticator Code"}</h2>
+            <p>{socialTwoFactor ? t("socialAuth.twoFactorRequired") : t("mfaEnroll.lede") || "Enter the 6-digit verification code from your authenticator app."}</p>
             <label>
               {t("mfaEnroll.codeInputLabel") || "Verification code"}
               <input
@@ -181,6 +214,9 @@ export default function Login() {
             <div className="eyebrow">{t("login.eyebrowCard")}</div>
             <h2>{t("login.titleCard")}</h2>
             <p>{t("login.descCard")}</p>
+            {emailVerified ? <p role="status">{t("verifyEmail.verified")}</p> : null}
+            {/* /signup sends people with a hotel on to the dashboard, and finishes setup for those without one. */}
+            <SocialSignIn callbackURL="/signup" errorCallbackURL="/login" mode="login" />
             <label>
               {t("login.emailLabel")}
               <input

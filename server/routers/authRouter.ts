@@ -5,6 +5,7 @@ import { assertNotBlocked, checkAccountPassword, deleteOwnAccount, getAccountDel
 import { checkMfaStepUpStatus, requireRecentMfaVerification } from '../mfa';
 import { verifyMfaStepUp } from '../mfaStepUp';
 import { rethrowDomainError } from '../routerUtils';
+import { enabledSocialProviders } from '../socialAuth';
 
 export const authRouter = router({
   me: publicProcedure.query(({ ctx }) => {
@@ -13,6 +14,9 @@ export const authRouter = router({
     return rest;
   }),
   logout: publicProcedure.mutation(() => ({ success: true as const })),
+
+  /** Names only, so the sign-in pages can hide a provider that has no credentials yet. */
+  socialProviders: publicProcedure.query(() => enabledSocialProviders(process.env)),
 
   /** Whether this session may do an action that needs a recent authenticator code. */
   mfaStepUpStatus: protectedProcedure.query(({ ctx }) => {

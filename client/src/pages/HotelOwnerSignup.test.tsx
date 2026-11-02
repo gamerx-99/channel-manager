@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   signUpEmail: vi.fn(),
   validateQuery: vi.fn(),
   completeMutation: vi.fn(),
+  meQuery: vi.fn(),
 }));
 
 vi.mock("wouter", async () => {
@@ -30,6 +31,10 @@ vi.mock("@/lib/auth-client", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    auth: {
+      me: { useQuery: () => mocks.meQuery() },
+      socialProviders: { useQuery: () => ({ data: [] }) },
+    },
     channelManager: {
       validateSignupLink: {
         useQuery: (input: { token: string }) => mocks.validateQuery(input),
@@ -54,9 +59,26 @@ beforeEach(() => {
   mocks.signUpEmail.mockReset();
   mocks.validateQuery.mockReset();
   mocks.completeMutation.mockReset();
+  mocks.meQuery.mockReset();
+  mocks.meQuery.mockReturnValue({ data: null });
 });
 
 describe("HotelOwnerSignup Component Empirical Verification", () => {
+  it("connects a signed-in social account without asking for a password", async () => {
+    mocks.validateQuery.mockReturnValue({ isLoading: false, data: { valid: true, hotelName: "Baan Test" } });
+    mocks.meQuery.mockReturnValue({ data: { id: "social-user" } });
+    mocks.completeMutation.mockResolvedValue({ success: true });
+
+    render(<HotelOwnerSignup token="test-token" />);
+
+    expect(screen.queryByLabelText("Password")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /Connect this hotel/ }));
+
+    await waitFor(() => expect(mocks.completeMutation).toHaveBeenCalledWith({ token: "test-token" }));
+    expect(mocks.signUpEmail).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith("/dashboard");
+  });
+
   it("displays loading state while validating signup link", async () => {
     mocks.validateQuery.mockReturnValue({
       isLoading: true,
@@ -148,10 +170,28 @@ describe("HotelOwnerSignup Component Empirical Verification", () => {
         email: "owner@example.com",
         password: "secret12345",
         name: "owner",
+        callbackURL: "/login?verified=1&next=%2Fsignup%2Fvalid-token",
       });
       expect(mocks.completeMutation).toHaveBeenCalledWith({ token: "valid-token" });
       expect(navigate).toHaveBeenCalledWith("/dashboard");
     });
+  });
+
+  it("waits for the email confirmation when signup opens no session", async () => {
+    const user = userEvent.setup();
+    mocks.validateQuery.mockReturnValue({ isLoading: false, data: { valid: true, hotelName: "Grand Palace Hotel" } });
+    mocks.signUpEmail.mockResolvedValue({ data: { token: null, user: { id: "user-999" } }, error: null });
+
+    render(<HotelOwnerSignup token="valid-token" />);
+
+    await user.type(screen.getByLabelText(/^Email address$/i), "owner@example.com");
+    await user.type(screen.getByLabelText(/^Password$/i), "secret12345");
+    await user.type(screen.getByLabelText(/^Confirm password$/i), "secret12345");
+    await user.click(screen.getByRole("button", { name: /Create account/i }));
+
+    expect(await screen.findByTestId("check-email")).toBeTruthy();
+    expect(mocks.completeMutation).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("handles Better Auth signup failure gracefully and shows error", async () => {
