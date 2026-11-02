@@ -1,0 +1,28 @@
+import React, { useEffect } from "react";
+
+export type ThemeLandingProps = {
+  themeId: "minimal-white" | "lanna-teak" | "cafe-homestay";
+  hotelName: string;
+  accentColor: string;
+  children: React.ReactNode;
+};
+
+const fonts: Record<ThemeLandingProps["themeId"], string> = {
+  "minimal-white": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
+  "lanna-teak": "https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&display=swap",
+  "cafe-homestay": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
+};
+
+export function ThemeLanding({ themeId, accentColor, children }: ThemeLandingProps) {
+  useEffect(() => {
+    const existing = document.querySelector<HTMLLinkElement>(`link[data-hotel-theme-font="${themeId}"]`);
+    if (existing) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = fonts[themeId];
+    link.dataset.hotelThemeFont = themeId;
+    document.head.appendChild(link);
+  }, [themeId]);
+
+  return <div className={`public-page theme-${themeId}`} style={{ "--t-primary": accentColor } as React.CSSProperties}>{children}</div>;
+}

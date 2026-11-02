@@ -1,0 +1,20 @@
+.theme-minimal-white,.theme-lanna-teak,.theme-cafe-homestay{--t-bg:#f9f9f7;--t-surface:#fff;--t-text:#1a1c1b;--t-muted:#666b64;--t-primary:#52604b;--t-on-primary:#fff;--t-radius:3px;background:var(--t-bg);color:var(--t-text);font-family:var(--t-font-body);}
+.theme-minimal-white{--t-font-heading:'IBM Plex Sans','IBM Plex Sans Thai',sans-serif;--t-font-body:'IBM Plex Sans','IBM Plex Sans Thai',sans-serif;--t-bg:#f9f9f7;--t-surface:#fff;--t-text:#1a1c1b;--t-muted:#656962;--t-radius:2px;}
+.theme-lanna-teak{--t-font-heading:'Noto Serif','Noto Serif Thai',serif;--t-font-body:'Noto Serif','Noto Serif Thai',serif;--t-bg:#fff8f5;--t-surface:#fff1e9;--t-text:#221a14;--t-muted:#76675f;--t-primary:#41240d;--t-radius:0px;}
+.theme-cafe-homestay{--t-font-heading:'Epilogue','Noto Sans Thai',sans-serif;--t-font-body:'Epilogue','Noto Sans Thai',sans-serif;--t-bg:#fff8f0;--t-surface:#f9f3ea;--t-text:#1e1b16;--t-muted:#756a60;--t-primary:#735949;--t-radius:12px;}
+.theme-minimal-white .public-nav,.theme-lanna-teak .public-nav,.theme-cafe-homestay .public-nav{background:var(--t-bg);color:var(--t-text);border-bottom:1px solid color-mix(in srgb,var(--t-text) 12%,transparent);font-family:var(--t-font-body);}
+.theme-hotel-name{font-weight:600;color:inherit;text-decoration:none;font-size:18px;}
+.theme-minimal-white .public-intro,.theme-lanna-teak .public-intro,.theme-cafe-homestay .public-intro{display:none;}
+.theme-minimal-white .public-hero-caption span:first-child,.theme-lanna-teak .public-hero-caption span:first-child,.theme-cafe-homestay .public-hero-caption span:first-child{display:none;}
+.theme-minimal-white .public-hero,.theme-lanna-teak .public-hero,.theme-cafe-homestay .public-hero{height:min(720px,75vh);min-height:500px;}
+.theme-minimal-white .public-hero-content h1,.theme-minimal-white .public-rooms h2,.theme-minimal-white .public-intro h2{font-family:var(--t-font-heading);font-weight:500;letter-spacing:-.04em;}
+.theme-minimal-white .public-rooms,.theme-minimal-white .public-details{background:#f4f4f2;color:var(--t-text);}
+.theme-lanna-teak .public-hero-content h1,.theme-lanna-teak .public-rooms h2,.theme-lanna-teak .public-intro h2{font-family:var(--t-font-heading);font-weight:500;}
+.theme-lanna-teak .public-rooms,.theme-lanna-teak .public-details{background:#e8d7cd;color:var(--t-text);}
+.theme-cafe-homestay .public-hero-content h1,.theme-cafe-homestay .public-rooms h2,.theme-cafe-homestay .public-intro h2{font-family:var(--t-font-heading);font-weight:600;}
+.theme-cafe-homestay .public-rooms,.theme-cafe-homestay .public-details{background:#f4ede4;color:var(--t-text);}
+.theme-minimal-white .public-button,.theme-lanna-teak .public-button,.theme-cafe-homestay .public-button,.theme-minimal-white .public-nav-cta,.theme-lanna-teak .public-nav-cta,.theme-cafe-homestay .public-nav-cta{background:var(--t-primary)!important;border-color:var(--t-primary)!important;color:var(--t-on-primary)!important;border-radius:var(--t-radius);}
+.theme-minimal-white .public-booking,.theme-lanna-teak .public-booking,.theme-cafe-homestay .public-booking{background:var(--t-primary)!important;color:var(--t-on-primary);font-family:var(--t-font-body);}
+.theme-minimal-white .theme-footer,.theme-lanna-teak .theme-footer,.theme-cafe-homestay .theme-footer{display:flex;justify-content:space-between;padding:24px 6%;border-top:1px solid color-mix(in srgb,var(--t-text) 15%,transparent);color:var(--t-muted);font-size:12px;background:var(--t-bg);}
+.theme-minimal-white .public-page,.theme-lanna-teak .public-page,.theme-cafe-homestay .public-page{max-width:none;}
+@media(max-width:760px){.theme-minimal-white .public-nav,.theme-lanna-teak .public-nav,.theme-cafe-homestay .public-nav{padding:0 6%;}.theme-minimal-white .theme-footer,.theme-lanna-teak .theme-footer,.theme-cafe-homestay .theme-footer{padding:20px 7%;gap:12px;flex-wrap:wrap}.theme-minimal-white .public-hero,.theme-lanna-teak .public-hero,.theme-cafe-homestay .public-hero{height:620px;min-height:0}.theme-minimal-white .public-hero-content h1,.theme-lanna-teak .public-hero-content h1,.theme-cafe-homestay .public-hero-content h1{font-size:clamp(34px,10vw,48px);overflow-wrap:anywhere}}

@@ -9,6 +9,11 @@ import { useTranslation } from "@/lib/i18n";
 import { usePageMeta } from "@/lib/pageMeta";
 import { nightsLabel } from "@/lib/nightsLabel";
 import { calculateServiceTotal } from "@shared/pricingModels";
+import MinimalWhiteLanding from "@/components/hotel-themes/MinimalWhiteLanding";
+import LannaTeakLanding from "@/components/hotel-themes/LannaTeakLanding";
+import CafeHomestayLanding from "@/components/hotel-themes/CafeHomestayLanding";
+import "@/components/hotel-themes/themes.css";
+import { isHotelThemeId } from "@shared/hotelThemes";
 
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_ACCENT_COLOR = "#954831";
@@ -636,10 +641,18 @@ export default function PublicHotel({ slug }: { slug: string }) {
     }
   };
 
-  return (
+  const selectedTheme = isHotelThemeId(siteConfig?.theme) ? siteConfig.theme : null;
+  const themed = (content: React.ReactNode) => {
+    if (selectedTheme === "minimal-white") return <MinimalWhiteLanding hotelName={hotel.name} accentColor={accentColor}>{content}</MinimalWhiteLanding>;
+    if (selectedTheme === "lanna-teak") return <LannaTeakLanding hotelName={hotel.name} accentColor={accentColor}>{content}</LannaTeakLanding>;
+    if (selectedTheme === "cafe-homestay") return <CafeHomestayLanding hotelName={hotel.name} accentColor={accentColor}>{content}</CafeHomestayLanding>;
+    return content;
+  };
+
+  const page = (
     <div className="public-page">
       <header className="public-nav">
-        <Link href={`/${hotel.slug}`} className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></Link>
+        {selectedTheme ? <a className="theme-hotel-name" href={`/${hotel.slug}`}>{hotel.name}</a> : <Link href={`/${hotel.slug}`} className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></Link>}
         <nav className={menuOpen ? "is-open" : ""}>
           <a href="#stay">{t("publicHotel.navRooms")}</a>
           <a href="#location">{t("publicHotel.navLocation")}</a>
@@ -749,12 +762,13 @@ export default function PublicHotel({ slug }: { slug: string }) {
           </div>
         </section>
       </main>
-      <footer className="public-footer">
+      {selectedTheme ? <footer className="theme-footer"><span>{hotel.name}</span><span>Booking powered by hayhost</span></footer> : <footer className="public-footer">
         <div className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></div>
         <span>© {new Date().getFullYear()} {hotel.name}</span>
         <span>{t("publicHotel.footerManagedSecurely")}</span>
-      </footer>
+      </footer>}
     </div>
   );
+  return selectedTheme ? themed(page) : page;
 }
 
