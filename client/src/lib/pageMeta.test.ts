@@ -37,7 +37,7 @@ describe("applyPageMeta", () => {
 });
 
 describe("PublicHotel page metadata", () => {
-  const source = readFileSync(resolve(process.cwd(), "client/src/pages/PublicHotel.tsx"), "utf8");
+  const source = readFileSync(resolve(process.cwd(), "client/src/components/public-hotel/usePublicHotelPage.ts"), "utf8");
 
   it("uses the hotel's name and its own copy for the title and description", () => {
     expect(source).toContain('t("publicHotel.metaTitle", { name: metaHotel.name })');

@@ -1,4 +1,7 @@
 import React, { useEffect } from "react";
+import type { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
+
+export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & { booking: React.ReactNode };
 
 export type ThemeLandingProps = {
   themeId: "minimal-white" | "lanna-teak" | "cafe-homestay";

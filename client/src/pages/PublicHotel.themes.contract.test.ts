@@ -3,9 +3,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const page = readFileSync(resolve(process.cwd(), "client/src/pages/PublicHotel.tsx"), "utf8");
+const themeData = readFileSync(resolve(process.cwd(), "client/src/components/public-hotel/usePublicHotelPage.ts"), "utf8");
 describe("PublicHotel stored theme rendering", () => {
   it("switches on all stored theme ids and falls back when null or unknown", () => {
-    expect(page).toContain("isHotelThemeId(siteConfig?.theme)");
+    expect(page).toContain("isHotelThemeId(data.siteConfig?.theme)");
     expect(page).toContain('selectedTheme === "minimal-white"');
     expect(page).toContain('selectedTheme === "lanna-teak"');
     expect(page).toContain('selectedTheme === "cafe-homestay"');

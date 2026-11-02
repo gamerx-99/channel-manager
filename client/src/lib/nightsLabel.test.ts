@@ -12,7 +12,7 @@ describe('nightsLabel', () => {
   });
 
   it('is what the public booking summary and confirmation use (regression: "2 2 night")', () => {
-    const source = readFileSync(new URL('../pages/PublicHotel.tsx', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('../components/public-hotel/PublicBookingSection.tsx', import.meta.url), 'utf8');
     expect(source).not.toMatch(/nights \?\? 0\} \{t\("publicHotel\.confirmedNights/);
     expect(source.match(/nightsLabel\(t, heldBooking\?\.nights \?\? 0\)/g)?.length).toBe(2);
   });

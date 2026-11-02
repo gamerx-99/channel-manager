@@ -3,7 +3,9 @@ import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
 describe('PublicHotel site config fallback contract (T06-03)', () => {
-  const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+  const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/usePublicHotelPage.ts'), 'utf8') + readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8') + readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/PublicBookingSection.tsx'), 'utf8');
+  const publicHotelPage = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+  const publicBookingSource = readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/PublicBookingSection.tsx'), 'utf8');
   const siteConfigSource = readFileSync(resolve(process.cwd(), 'server/d1/siteConfig.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
@@ -30,7 +32,7 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   });
 
   it('PublicHotel applies accent_color to CTA buttons and hero copy comes from config', () => {
-    expect(publicHotelSource).toContain('{heroCopy}');
+    expect(publicHotelPage).toContain('{heroCopy}');
     expect(publicHotelSource).toContain('accentColor');
     expect(publicHotelSource).toContain('backgroundColor: accentColor');
   });
@@ -67,7 +69,8 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
 });
 
 describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
-  const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+  const publicHotelSource = readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/usePublicHotelPage.ts'), 'utf8') + readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/PublicBookingSection.tsx'), 'utf8');
+  const publicBookingSource = readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/PublicBookingSection.tsx'), 'utf8');
   const dbSource = readFileSync(resolve(process.cwd(), 'server/d1/booking.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const bookingRouterText = readFileSync(resolve(process.cwd(), 'server/routers/bookingRouter.ts'), 'utf8');
@@ -82,8 +85,8 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
   });
 
   it('PublicHotel renders BookingDateRangePicker for date selection instead of raw date inputs', () => {
-    expect(publicHotelSource).toContain('BookingDateRangePicker');
-    expect(publicHotelSource).toMatch(/from ['"]@\/components\/BookingDateRangePicker['"]/);
+    expect(publicBookingSource).toContain('BookingDateRangePicker');
+    expect(publicBookingSource).toMatch(/from ['"]@\/components\/BookingDateRangePicker['"]/);
     // The old single-form date inputs are gone; the wizard now uses the calendar component.
     expect(publicHotelSource).not.toContain('type="date"');
   });
@@ -93,14 +96,14 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(publicHotelSource).toContain('guestPhone');
     expect(publicHotelSource).toContain('guestEmail');
     expect(publicHotelSource).toContain('specialRequests');
-    expect(publicHotelSource).toContain('<PaymentQR');
-    expect(publicHotelSource).toContain('publicHotel.bookingConfirmedTitle');
-    expect(publicHotelSource).toContain('publicHotel.bookAnotherStay');
+    expect(publicBookingSource).toContain('<PaymentQR');
+    expect(publicBookingSource).toContain('publicHotel.bookingConfirmedTitle');
+    expect(publicBookingSource).toContain('publicHotel.bookAnotherStay');
   });
 
   it('collects party size before selecting exactly one occupancy-matched room type', () => {
-    expect(publicHotelSource).toContain('publicHotel.adultsLabel');
-    expect(publicHotelSource).toContain('publicHotel.childrenLabel');
+    expect(publicBookingSource).toContain('publicHotel.adultsLabel');
+    expect(publicBookingSource).toContain('publicHotel.childrenLabel');
     expect(publicHotelSource).toContain('childMeasurements');
     expect(dbSource).toContain('getPublicRoomTypeAvailabilityForGuests');
     expect(publicHotelSource).not.toContain('roomTypes.map((rt) => (');
@@ -122,7 +125,7 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
 });
 
 describe('PublicHotel private or unknown hotel state', () => {
-  const source = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8');
+  const source = readFileSync(resolve(process.cwd(), 'client/src/pages/PublicHotel.tsx'), 'utf8') + readFileSync(resolve(process.cwd(), 'client/src/components/public-hotel/usePublicHotelPage.ts'), 'utf8');
 
   it('does not retry NOT_FOUND, so a private or unknown hotel answers at once', () => {
     expect(source).toContain('retry: (failureCount, error) => error.data?.code !== "NOT_FOUND" && failureCount < 2');
@@ -133,7 +136,7 @@ describe('PublicHotel private or unknown hotel state', () => {
     expect(source).toContain('data-testid="public-hotel-not-found"');
     expect(source).toContain('t("publicHotel.hotelUnavailableTitle")');
     expect(source).toContain('data-testid="public-hotel-load-error"');
-    expect(source).toContain('onClick={() => void publicHotel.refetch()}');
+    expect(source).toContain('onClick={() => void data.refetch?.()}');
   });
 });
 
