@@ -113,6 +113,42 @@ export function usePublicHotelPage(slug: string) {
     }
     : notFound ? { title: t("publicHotel.hotelUnavailableTitle"), description: t("publicHotel.hotelUnavailableDesc"), noindex: true } : null);
 
+  const handleResetBooking = () => {
+    setWizardStep(1);
+    setCheckIn(getTomorrowDateString());
+    setCheckOut(getDayAfterTomorrowDateString());
+    setAdults(2);
+    setChildren([]);
+    setPreferredRoomTypeId(null);
+    setHeldBooking(null);
+    setSelectedServiceQty({});
+    setGuestName("");
+    setGuestPhone("");
+    setGuestEmail("");
+    setSpecialRequests("");
+    setConfirmedBookingId(null);
+    setWizardError(null);
+    setPaymentSuccess(false);
+    setRemainingMs(0);
+  };
+
+  // Lazy-expiry countdown for the held/pending booking (steps 2-5).
+  // Every hook must run before the early return below, or React throws error #310.
+  useEffect(() => {
+    if (!heldBooking?.expiresAt || wizardStep < 2 || wizardStep > 5) return;
+    const tick = () => {
+      const ms = new Date(heldBooking.expiresAt).getTime() - Date.now();
+      setRemainingMs(Math.max(0, ms));
+      if (ms <= 0) {
+        setWizardError(t("publicHotel.holdExpiredRestart"));
+        handleResetBooking();
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [heldBooking?.expiresAt, wizardStep, t]);
+
   if (!publicHotel.data) return { hotel: null, roomTypes: [], media: [], heroImage: undefined, siteConfig: null, accentColor: DEFAULT_ACCENT_COLOR, visibleSections: null, heroCopy: DEFAULT_HERO_COPY, language: undefined, t, loading, error, notFound, refetch: publicHotel.refetch, booking: null };
   const { hotel, roomTypes, media } = publicHotel.data;
   const heroImage = media.find(item => item.is_hero)?.url ?? media[0]?.url;
@@ -133,25 +169,6 @@ export function usePublicHotelPage(slug: string) {
     if (bookElem) {
       bookElem.scrollIntoView({ behavior: "smooth" });
     }
-  };
-
-  const handleResetBooking = () => {
-    setWizardStep(1);
-    setCheckIn(getTomorrowDateString());
-    setCheckOut(getDayAfterTomorrowDateString());
-    setAdults(2);
-    setChildren([]);
-    setPreferredRoomTypeId(null);
-    setHeldBooking(null);
-    setSelectedServiceQty({});
-    setGuestName("");
-    setGuestPhone("");
-    setGuestEmail("");
-    setSpecialRequests("");
-    setConfirmedBookingId(null);
-    setWizardError(null);
-    setPaymentSuccess(false);
-    setRemainingMs(0);
   };
 
   const handleHoldRoom = (roomTypeId: string) => {
@@ -208,23 +225,6 @@ export function usePublicHotelPage(slug: string) {
     (sum, s) => sum + serviceLineTotal(s, selectedServiceQty[s.id] ?? 0),
     0,
   );
-
-  // Lazy-expiry countdown for the held/pending booking (steps 2-5).
-  useEffect(() => {
-    if (!heldBooking?.expiresAt || wizardStep < 2 || wizardStep > 5) return;
-    const tick = () => {
-      const ms = new Date(heldBooking.expiresAt).getTime() - Date.now();
-      setRemainingMs(Math.max(0, ms));
-      if (ms <= 0) {
-        setWizardError(t("publicHotel.holdExpiredRestart"));
-        handleResetBooking();
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [heldBooking?.expiresAt, wizardStep, t]);
-
 
   return {
     hotel, roomTypes, media, heroImage, siteConfig, accentColor, visibleSections, heroCopy,
