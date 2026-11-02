@@ -16,7 +16,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
   channelManager: {
     hotels: query([{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]),
     listHotelMedia: query([]),
-    getHotelSiteConfigByHotelId: query({ hotelId: "hotel-1", heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } }),
+    getHotelSiteConfigByHotelId: query({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } }),
     deleteHotelMedia: mutation(),
     setHotelMediaHero: mutation(),
     saveHotelSiteConfig: mutation(saveConfig),
@@ -38,5 +38,12 @@ describe("WebsiteBuilder editing", () => {
     fireEvent.change(screen.getByLabelText("accent_color"), { target: { value: "#aa3300" } });
     fireEvent.click(screen.getAllByRole("button").find(button => /save site config/i.test(button.textContent ?? ""))!);
     expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline", accent_color: "#aa3300" }));
+  });
+
+  it("renders all three theme cards and saves a selected theme through the site config mutation", () => {
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(3);
+    fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
+    expect(saveConfig).toHaveBeenCalledWith({ hotel_id: "hotel-1", theme: "lanna-teak" });
   });
 });

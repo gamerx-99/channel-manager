@@ -16,6 +16,7 @@ import type { AppRouter } from "../../../server/routers";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
+import { HOTEL_THEMES, type HotelThemeId } from "@shared/hotelThemes";
 
 // Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path
 // (uploadHotelMedia / deleteHotelMedia / listHotelMedia / setHotelMediaHero).
@@ -28,6 +29,7 @@ type HotelMediaItem = inferRouterOutputs<AppRouter>["channelManager"]["listHotel
 
 type SiteConfig = {
   hotelId: string;
+  theme: HotelThemeId | null;
   heroCopy: string;
   accentColor: string;
   visibleSections: {
@@ -50,6 +52,7 @@ const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visibleSections"] = {
 function defaultConfig(hotelId: string): SiteConfig {
   return {
     hotelId,
+    theme: null,
     heroCopy: "Explore room types, rates, and availability directly from this hotel.",
     accentColor: "#1d6b56",
     visibleSections: { ...DEFAULT_VISIBLE_SECTIONS },
@@ -123,6 +126,11 @@ export default function WebsiteBuilder() {
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({
     onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); },
     onError: (e) => setFormError(e.message)
+  });
+
+  const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({
+    onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); },
+    onError: (e) => setFormError(e.message),
   });
 
   const [formError, setFormError] = useState<string | null>(null);
@@ -234,6 +242,13 @@ export default function WebsiteBuilder() {
       accent_color: draft.accentColor,
       visible_sections: draft.visibleSections,
     });
+  }
+
+  function handleSaveTheme(theme: HotelThemeId) {
+    setFormError(null);
+    if (!canManage) { setFormError(t("websiteBuilder.errorNoPermissionSave")); return; }
+    if (!effectiveHotelId) { setFormError(t("websiteBuilder.errorSelectHotelFirst")); return; }
+    saveThemeMut.mutate({ hotel_id: effectiveHotelId, theme });
   }
 
   if (isLoading) return <LoadingWebsiteBuilder />;
@@ -348,6 +363,32 @@ export default function WebsiteBuilder() {
 
       <section className="grid gap-5 xl:grid-cols-[1.4fr_0.9fr]">
         <div className="space-y-5">
+          <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+            <CardHeader className="border-b border-[#edf2ee] pb-4">
+              <CardTitle className="text-lg text-[#263b31]">{t("websiteBuilder.themePickerTitle")}</CardTitle>
+              <CardDescription>{t("websiteBuilder.themePickerDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-5">
+              <p className="text-xs leading-5 text-[#795548]">{t("websiteBuilder.themeNotLiveYet")}</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label={t("websiteBuilder.themePickerTitle")}>
+                {HOTEL_THEMES.map(theme => {
+                  const selected = (config as SiteConfig).theme === theme.id;
+                  return <button key={theme.id} type="button" onClick={() => handleSaveTheme(theme.id)} disabled={!canManage || saveThemeMut.isPending}
+                    aria-pressed={selected} data-theme-id={theme.id}
+                    className={`min-w-0 overflow-hidden rounded-xl border text-left transition ${selected ? "border-[#1d6b56] ring-2 ring-[#1d6b56]/20" : "border-[#e6eee9] hover:border-[#91b3a5]"}`}>
+                    <div className="h-20 w-full border-b border-black/5" style={{ backgroundColor: theme.primaryColor }} aria-hidden="true" />
+                    <div className="space-y-1 p-3">
+                      <div className="flex items-center justify-between gap-2"><span className="font-semibold text-[#263b31]">{theme.name}</span>
+                        {theme.tier === "premium" ? <span className="shrink-0 rounded-full bg-[#f5eadf] px-2 py-0.5 text-[10px] font-semibold text-[#795548]">Pro</span> : null}</div>
+                      <p className="text-xs leading-5 text-[#6c7e75]">{theme.description}</p>
+                      {selected ? <span className="text-xs font-semibold text-[#1d6b56]">{t("websiteBuilder.currentTheme")}</span> : null}
+                    </div>
+                  </button>;
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
               <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
