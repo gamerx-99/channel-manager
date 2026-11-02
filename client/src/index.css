@@ -116,9 +116,12 @@ body { background: var(--paper); color: var(--ink); }
 .app-shell { background: var(--paper); }
 .sidebar { width: 236px; padding: 28px 16px 20px; background: #fff; border-right-color: var(--rule); }
 .sidebar-head { padding: 0 12px 36px; }
-.brand-mark { width: 29px; height: 29px; border-radius: 8px; background: var(--pine); }
-.brand-mark:before { background: #fff6f2; }
-.brand-mark span { border-color: #fff6f2; }
+.brand-mark { width: 29px; height: 29px; border-radius: 8px; background: url("/logo-mark.svg") center / contain no-repeat; }
+.brand-mark:before { content: none; }
+.brand-mark span { display: none; }
+/* A hotel's own page shows its name only, not the hayhost mark. */
+.public-brand .brand-mark { display: none; }
+.login-brand strong em, .sidebar-head strong em, .topbar-brand strong em { color: #c9410e; font-style: normal; }
 .workspace-switcher { margin: 0 4px 32px; padding: 12px 11px; border-color: var(--rule); border-radius: 13px; background: #fff; }
 .nav-label { color: #a09895; }
 .nav-link { padding: 11px 11px; border-radius: 12px; color: #615b58; }
@@ -131,7 +134,7 @@ body { background: var(--paper); color: var(--ink); }
 .main-canvas { width: calc(100% - 236px); margin-left: 236px; }
 .topbar { height: 76px; padding: 0 44px; background: rgba(255,255,255,.92); border-bottom-color: var(--rule); }
 .topbar-brand { font-size: 12px; }
-.topbar-brand .brand-mark { background: var(--pine); }
+.topbar-brand .brand-mark { background: url("/logo-mark.svg") center / contain no-repeat; }
 .topbar-rule { margin: 0 20px; background: var(--rule-strong); }
 .breadcrumbs { font-size: 12px; }
 .topbar-actions { gap: 13px; }
