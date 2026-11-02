@@ -1454,6 +1454,7 @@ const th: TranslationDictionary = {
     lede: "จัดการแอปยืนยันตัวตน การตรวจสลิป และการยืนยันตัวตนซ้ำก่อนทำรายการสำคัญ",
   },
   websiteBuilder: {
+    yourHotelName: "โรงแรมของคุณ",
     viewHotelPage: "ดูหน้าเว็บที่พัก", privatePageNote: "ผู้เข้าพักจะยังไม่เห็นหน้านี้จนกว่าจะเผยแพร่", publishPage: "เผยแพร่หน้าเว็บ",
     loadingAriaLabel: "กำลังโหลดเว็บไซต์โรงแรม",
     loadingBuilder: "กำลังโหลดโปรแกรมสร้างเว็บไซต์…",

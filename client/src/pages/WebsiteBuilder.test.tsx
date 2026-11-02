@@ -4,18 +4,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { saveConfig, query, mutation } = vi.hoisted(() => ({
+const { saveConfig, query, mutation, language, hotelsData, mediaData } = vi.hoisted(() => ({
   saveConfig: vi.fn(),
+  language: { current: "en" as "en" | "th" },
+  hotelsData: { current: [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }] as Array<{ id: string; name?: string; slug: string; room_types: unknown[]; rooms: unknown[] }> },
+  mediaData: { current: [] as Array<{ id: string; url: string; isHero: boolean; displayOrder: number }> },
   query: (data: unknown) => ({ useQuery: () => ({ data, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) }),
   mutation: (mutate: (...args: unknown[]) => void = () => undefined) => ({ useMutation: () => ({ mutate, isPending: false }) }),
 }));
 
-vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: "en", setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
+vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: language.current, setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
 vi.mock("@/lib/trpc", () => ({ trpc: {
   useUtils: () => ({ channelManager: { hotels: { invalidate: vi.fn() } } }),
   channelManager: {
-    hotels: query([{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]),
-    listHotelMedia: query([]),
+    hotels: { useQuery: () => ({ data: hotelsData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
+    listHotelMedia: { useQuery: () => ({ data: mediaData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
     getHotelSiteConfigByHotelId: query({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } }),
     deleteHotelMedia: mutation(),
     setHotelMediaHero: mutation(),
@@ -27,7 +30,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
-afterEach(() => { cleanup(); saveConfig.mockReset(); });
+afterEach(() => { cleanup(); saveConfig.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
   it("saves the headline and accent colour the owner typed (regression: edits were dropped)", () => {
@@ -43,8 +46,29 @@ describe("WebsiteBuilder editing", () => {
   it("renders all three theme cards and saves a selected theme through the site config mutation", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(3);
-    expect(document.querySelectorAll('button[data-theme-id] img[src^="/themes/"]')).toHaveLength(3);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Baan", "Baan", "Baan"]);
+    expect(document.querySelectorAll(".template-card-preview")).toHaveLength(3);
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
     expect(saveConfig).toHaveBeenCalledWith({ hotel_id: "hotel-1", theme: "lanna-teak" });
+  });
+
+  it("shows the localized fallback when the selected hotel has no name", () => {
+    hotelsData.current = [{ id: "hotel-1", name: "", slug: "baan", room_types: [], rooms: [] }];
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Your hotel", "Your hotel", "Your hotel"]);
+    cleanup();
+    language.current = "th";
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ"]);
+  });
+
+  it("uses the selected hotel's uploaded hero photo in each card preview", () => {
+    mediaData.current = [{ id: "hero-1", url: "https://media.example/hotel-hero.jpg", isHero: true, displayOrder: 0 }];
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    expect(Array.from(document.querySelectorAll<HTMLElement>(".template-card-preview .preview-hero"), node => node.style.backgroundImage)).toEqual([
+      'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
+    ]);
   });
 });

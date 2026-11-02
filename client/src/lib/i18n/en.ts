@@ -1466,6 +1466,7 @@ const en = {
     lede: "Manage your authenticator app, slip checking, and step-up verification for sensitive actions.",
   },
   websiteBuilder: {
+    yourHotelName: "Your hotel",
     viewHotelPage: "View hotel page", privatePageNote: "Guests cannot see this page until you publish it.", publishPage: "Publish page",
     loadingAriaLabel: "Loading website builder",
     loadingBuilder: "Loading website builder…",

@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Epilogue:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600&family=Noto+Serif+Thai:wght@400;500;600&display=swap');
+
+.template-card-preview{height:96px;position:relative;overflow:hidden;padding:9px 12px 8px;background:var(--preview-bg);color:var(--preview-ink);}
+.preview-topline{height:16px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.preview-mark{width:31%;height:5px;border-radius:4px;background:var(--preview-accent);opacity:.88}
+.preview-lines{display:flex;gap:5px}.preview-lines i{display:block;width:18px;height:2px;background:var(--preview-muted);opacity:.55}
+.preview-hero{position:absolute;inset:20px 12px 17px;background-color:var(--preview-surface);background-position:center;background-size:cover;display:flex;align-items:center;padding:7px 10px;overflow:hidden}
+.preview-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--preview-bg) 0%,color-mix(in srgb,var(--preview-bg) 92%,transparent) 48%,transparent 100%);opacity:.92}
+.preview-hero h3{position:relative;z-index:1;max-width:77%;margin:0;font-size:clamp(12px,3.5vw,16px);line-height:1.2;font-weight:500;overflow-wrap:anywhere}
+.preview-bottomline{position:absolute;left:12px;right:12px;bottom:8px;display:flex;gap:5px}.preview-bottomline i{height:2px;width:22%;background:var(--preview-muted);opacity:.26}
+.preview-minimal-white{font-family:'IBM Plex Sans','IBM Plex Sans Thai',Arial,sans-serif}.preview-minimal-white .preview-hero{border-top:1px solid #d9d9d4;border-bottom:1px solid #d9d9d4;border-radius:0}.preview-minimal-white .preview-hero:before{background:linear-gradient(90deg,var(--preview-bg) 0%,color-mix(in srgb,var(--preview-bg) 94%,transparent) 50%,transparent 100%)}
+.preview-lanna-teak{font-family:'Noto Serif','Noto Serif Thai',Georgia,serif}.preview-lanna-teak .preview-hero{inset:17px 12px 14px;border-radius:54px 54px 2px 2px}.preview-lanna-teak .preview-hero:before{background:linear-gradient(90deg,rgba(45,27,15,.78),rgba(45,27,15,.18) 100%)}.preview-lanna-teak .preview-hero h3{color:#fff8f5}
+.preview-cafe-homestay{font-family:'Epilogue','Noto Sans Thai',Arial,sans-serif}.preview-cafe-homestay .preview-hero{inset:20px 14px 17px;border-radius:13px;box-shadow:0 2px 0 #e6c9ad}.preview-cafe-homestay .preview-hero:before{background:linear-gradient(90deg,rgba(50,31,18,.68),rgba(50,31,18,.08) 100%)}.preview-cafe-homestay .preview-hero h3{color:white}.preview-cafe-homestay .preview-mark{border-radius:9px}
