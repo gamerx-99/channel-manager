@@ -5,6 +5,7 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] `ASSUMPTION:` hotel owners cannot change the public hotel slug in profile editing, because changing it may break guest links already shared. Confirm whether slug changes should remain unavailable or use a redirect. Raised 2026-11-02.
 - [ ] 2FA is optional for hotel accounts, but platform roles (super_admin, admin, support) must still enrol. ASSUMPTION: they reach every hotel, so the rule stays until the owner says otherwise. Raised 2026-11-01.
 - [ ] Spec 17: how long must bookings, payments, guest records and audit rows be kept, and which of them does the law require (Hotel Act/TM.30, tax, PDPA)? Nothing here is confirmed by a lawyer.
       ASSUMPTION: every such row stays, with the person replaced by `deleted-user`, and nothing is deleted on a timer. Raised 2026-10-31.

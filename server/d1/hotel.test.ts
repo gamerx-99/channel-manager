@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookings, d1Schema, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelService, createManagedHotel, createManagedRoomType, deleteHotelService, deleteManagedRoomType, getManagedHotel, getPublicHotel, listActiveHotelServicesBySlug, listHotelServices, listManagedHotels, listManagedHotelsForFinancials, updateHotelService, updateManagedRoomType } from "./hotel";
+import { createHotelService, createManagedHotel, createManagedRoomType, deleteHotelService, deleteManagedRoomType, getManagedHotel, getPublicHotel, listActiveHotelServicesBySlug, listHotelServices, listManagedHotels, listManagedHotelsForFinancials, updateHotelService, updateManagedRoomType, updateManagedHotelProfile } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -132,6 +132,13 @@ describe("D1 hotel repository", () => {
     await seedHotel("a", "owner-a");
     await db.insert(hotelUsers).values({ id: "m-staff", hotelId: "a", userId: "staff", role: "front_desk", permissionGrants: [], permissionRevokes: [] });
     expect(await listManagedHotels(db, { userId: "staff" })).toMatchObject([{ room_types: [{ name: "Standard", base_price: null }] }]);
+  });
+
+  it("updates hotel profile fields only within the caller's property scope", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "a", name: "  New Name  ", address: "  New address  ", owner_contact: "  12345  " })).resolves.toMatchObject({ name: "New Name", address: "New address", owner_contact: "12345" });
+    await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "b", name: "X", address: "Y", owner_contact: "Z" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("orders public room types by numeric money value and stable id", async () => {

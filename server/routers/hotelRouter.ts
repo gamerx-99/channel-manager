@@ -18,6 +18,7 @@ import {
   listActiveHotelServicesBySlug as d1ListActiveHotelServicesBySlug,
   getPublicHotel as d1GetPublicHotel,
   setHotelPublicEnabled as d1SetHotelPublicEnabled,
+  updateManagedHotelProfile as d1UpdateManagedHotelProfile,
 } from '../d1/hotel';
 import {
   getHotelSiteConfig as d1GetHotelSiteConfig,
@@ -276,6 +277,19 @@ export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx,
     return rethrowDomainError(error);
   }
 });
+
+export const updateHotelProfile = protectedProcedure
+  // ASSUMPTION: the hotel slug stays fixed because changing it would break shared guest links.
+  .input(z.object({ hotel_id: hotelIdSchema, name: z.string().trim().min(1).max(160), address: z.string().trim().min(1).max(500), owner_contact: z.string().trim().min(1).max(180) }))
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    try {
+      return await d1UpdateManagedHotelProfile(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
 
 export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_room_structure');
@@ -568,4 +582,5 @@ export const hotelRouter = router({
   uploadHotelMedia,
   deleteHotelMedia,
   setHotelMediaHero,
+  updateHotelProfile,
 });

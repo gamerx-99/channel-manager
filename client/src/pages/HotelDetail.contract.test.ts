@@ -32,6 +32,15 @@ describe('Hotel Detail calendar navigation', () => {
     expect(hotelDetail).toContain("t('hotelDetail.confirmUnpublish')");
   });
 
+  it('opens the hotel profile form and saves name, address and owner contact', () => {
+    expect(hotelDetail).toContain('trpc.channelManager.updateHotelProfile.useMutation');
+    expect(hotelDetail).toContain('onClick={openHotelEditor}');
+    expect(hotelDetail).toContain("t('hotelDetail.hotelNameLabel')");
+    expect(hotelDetail).toContain("t('hotelDetail.addressLabel')");
+    expect(hotelDetail).toContain("t('hotelDetail.contactLabel')");
+    expect(hotelDetail).not.toContain('hotelDetail.comingSoon');
+  });
+
   it('has no dead href="#" tabs: Photos opens the website builder for this hotel, Domains is gone', () => {
     const services = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelServices.tsx'), 'utf8');
     const builder = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8');

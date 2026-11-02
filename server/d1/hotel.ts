@@ -85,7 +85,7 @@ export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, calle
 }
 
 export async function getManagedHotel(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "property.view", "hotel.read", now);
+  const scope = await authorizeHotelAction(db, caller, hotelId, "property.view", "hotel.read", now);
   const [hotel] = await db.select().from(hotels).where(eq(hotels.id, hotelId)).limit(1);
   if (!hotel) return null;
   const [hotelRoomTypes, hotelRooms] = await Promise.all([
@@ -93,7 +93,7 @@ export async function getManagedHotel(db: D1ScopedDatabase, caller: D1CallerCont
     db.select().from(rooms).where(eq(rooms.hotelId, hotelId)),
   ]);
   return {
-    id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address,
+    id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, owner_contact: scope.permissions.includes("property.manage_profile") ? hotel.ownerContact : null,
     public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
     room_types: hotelRoomTypes.map(row => ({
       id: row.id, hotel_id: row.hotelId, name: row.name, capacity: row.capacity, base_price: row.basePrice,
@@ -122,6 +122,14 @@ export async function setHotelPublicEnabled(db: D1ScopedDatabase, caller: D1Call
     .returning({ id: hotels.id, publicEnabled: hotels.publicEnabled });
   if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
   return { id: hotel.id, public_enabled: hotel.publicEnabled };
+}
+
+export async function updateManagedHotelProfile(db: D1ScopedDatabase, caller: D1CallerContext, input: { hotel_id: string; name: string; address: string; owner_contact: string }, now = new Date()) {
+  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_profile", "hotel.profile.update", now);
+  const [hotel] = await db.update(hotels).set({ name: input.name.trim(), address: input.address.trim(), ownerContact: input.owner_contact.trim() })
+    .where(eq(hotels.id, input.hotel_id)).returning({ id: hotels.id, name: hotels.name, address: hotels.address, owner_contact: hotels.ownerContact });
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
+  return hotel;
 }
 
 // A hotel page lives at /:slug, so a slug must not shadow an app route.

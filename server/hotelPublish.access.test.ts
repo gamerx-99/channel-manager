@@ -77,4 +77,14 @@ describe("channelManager.setHotelPublished", () => {
     await expect(app.channelManager.setHotelPublished({ hotel_id: HOTEL, public_enabled: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it("updates details only for a hotel member with property.manage_profile", async () => {
+    const app = await routerCaller("hotel_owner");
+    await expect(app.channelManager.updateHotelProfile({ hotel_id: HOTEL, name: "New Name", address: "New address", owner_contact: "12345" })).resolves.toMatchObject({ name: "New Name" });
+    const desk = await routerCaller("front_desk");
+    const spy = vi.spyOn(db, "update");
+    await expect(desk.channelManager.updateHotelProfile({ hotel_id: HOTEL, name: "Refused", address: "X", owner_contact: "Y" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(app.channelManager.updateHotelProfile({ hotel_id: OTHER, name: "Refused", address: "X", owner_contact: "Y" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
