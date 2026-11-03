@@ -90,3 +90,9 @@
 /* Guest count fields: label above a readable white field. */
 .public-booking .booking-guests label{display:grid;gap:6px}
 .public-booking .booking-guests input,.public-booking .booking-guests select{width:100%;min-height:40px;padding:8px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;color:#1a1c1b;font:inherit;font-weight:500}
+/* Step 1 "Next" button: a clear, full-size call to action; full width on phones. */
+.public-booking .booking-next-row{margin-top:22px;display:flex;justify-content:flex-end}
+.public-booking .booking-next{min-height:50px;min-width:200px;padding:0 26px;border-radius:12px;font-size:15px;font-weight:600;letter-spacing:.01em;display:inline-flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:transform .15s ease,box-shadow .15s ease}
+.public-booking .booking-next:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,0,0,.22)}
+.theme-minimal-white .public-booking .booking-next,.theme-lanna-teak .public-booking .booking-next,.theme-cafe-homestay .public-booking .booking-next{background:var(--t-on-primary)!important;border-color:var(--t-on-primary)!important;color:var(--t-primary)!important}
+@media (max-width:640px){.public-booking .booking-next-row{display:block}.public-booking .booking-next{width:100%}}

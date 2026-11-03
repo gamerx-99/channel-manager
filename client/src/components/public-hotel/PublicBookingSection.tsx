@@ -50,10 +50,10 @@ export default function PublicBookingSection({ page }: { page: Page }) {
                 <input type="number" min="0" max={propertyChildRule === 'age' ? 17 : 250} step={propertyChildRule === 'age' ? 1 : 0.5} value={value} onChange={event => setChildren(current => current.map((child, childIndex) => childIndex === index ? event.target.value : child))} />
               </label>)}
             </div>
-            <div style={{ marginTop: "18px", textAlign: "right" }}>
+            <div className="booking-next-row">
               <button
                 type="button"
-                className="button public-button"
+                className="button public-button booking-next"
                 disabled={!isDatesValid || !guestsValid}
                 onClick={() => setWizardStep(2)}
                 style={{

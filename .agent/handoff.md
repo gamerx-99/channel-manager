@@ -2131,3 +2131,10 @@ Not tested in a browser or with a real email.
 - Tests: the three enforcement suites (adversarial_m2_auth, App.privateRoute.mfa, Login.mfa) now stub VITE_FEATURE_MFA=true so they still test enforcement with the flag on; no assertion changed. New featureFlags.mfa.test.ts covers the flag off. pnpm test 174 files / 1204 passed; pnpm check passed; vite build passed.
 - Investigation notes: local enrol, sign-out and re-login with a fresh code passes. Production had no 2FA rows; two social sign-ins at 10:38 on 2026-11-03 left unconsumed auth-state rows. Cause of the reported failure not confirmed.
 
+
+## 2026-11-03 - Booking calendar fills its card; stronger Next button
+
+- index.css: the date picker's day cells share the card width (root max 620px), so the month no longer sits small in a wide card; fits 375px with 40px cells.
+- PublicBookingSection step 1 Next button gets booking-next: 50px tall, full width under 640px, shadow; on themes it is the light on-primary colour with primary text.
+- Checked locally at desktop and 375px (Minimal White). pnpm test 174 files / 1204 passed; pnpm check passed; vite build passed.
+
