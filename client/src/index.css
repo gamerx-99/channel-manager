@@ -642,6 +642,8 @@ body { background: var(--paper); color: var(--ink); }
 .view-mode-divider{width:1px;height:14px;background:var(--rule);margin:0 1px;flex-shrink:0}
 
 .calendar-month-scroll{overflow-x:auto}
+.calendar-month-hint{display:none}
+@media (max-width:760px){.calendar-month-hint{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--paper-deep);color:var(--ink-soft);font-size:11px;line-height:1.5}.calendar-month-hint svg{flex:none;color:var(--pine)}.calendar-month-viewport{position:relative}.calendar-month-viewport::after{content:"";position:absolute;top:0;right:0;bottom:0;width:28px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(246,244,239,.86))}}
 .calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(100px,1fr));background:var(--rule);gap:1px;border-bottom:1px solid var(--rule);min-width:700px}
 .calendar-month-header{background:#f9f8f4;padding:10px 8px;text-align:center;font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.05em}
 .calendar-month-cell{background:var(--white);min-height:96px;padding:10px 12px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:0;cursor:pointer;transition:background .16s ease,transform .16s ease;width:100%}

@@ -2204,3 +2204,7 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 ## 2026-11-03 - Phase 1 S3 compact mobile login banner
 - Login and password-reset shells use a compact mobile banner that retains brand and language toggle while showing the form directly below it.
 - Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+## 2026-11-03 - Phase 1 S3 mobile availability calendar cue
+- Added a mobile-only horizontal-scroll hint with chevron and right-edge fade above/over the month grid; reused the existing `availability.mobileScrollHint` copy.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
