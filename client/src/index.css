@@ -799,6 +799,10 @@ html[lang="th"] .page-intro h1,html[lang="th"] .panel-heading h2,html[lang="th"]
 .social-button:hover:not(:disabled){background:var(--pine-soft)}
 .social-button:disabled{opacity:.6;cursor:wait}
 .social-button svg{width:20px;height:20px;flex:none}
+.linked-accounts-list{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
+.linked-accounts-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--rule);border-radius:10px}
+.linked-accounts-name{display:inline-flex;align-items:center;gap:10px;font-weight:600}
+.linked-accounts-name svg{width:20px;height:20px;flex:none}
 .social-divider{display:flex;align-items:center;gap:12px;margin-top:6px;color:var(--ink-soft);font-size:13px}
 .social-divider::before,.social-divider::after{content:"";flex:1;border-top:1px solid var(--rule)}
 .page-content:after{content:none}
