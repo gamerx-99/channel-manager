@@ -26,7 +26,7 @@ export default function SupportAccess({ hotelId }: { hotelId: string }) {
   };
   if (!allowed) return <div className="page-content"><section role="alert" className="panel empty-state">{t("supportAccess.ownerOnly")}</section></div>;
   return <div className="page-content">
-    <section className="page-intro"><div className="eyebrow">{t("supportAccess.eyebrow")}</div><h1 aria-label={t("supportAccess.title")}>{t("supportAccess.title")}<span className="title-mark" aria-hidden="true">.</span></h1><p className="lede">{t("supportAccess.lede")}</p></section>
+    <section className="page-intro"><div className="eyebrow">{t("sidebar.hotelSettings")}</div><h1 aria-label={t("supportAccess.title")}>{t("supportAccess.title")}<span className="title-mark" aria-hidden="true">.</span></h1><p className="lede">{t("supportAccess.lede")}</p></section>
     {(error || access.error) && <div role="alert" className="panel empty-state form-error">{error ?? access.error?.message}</div>}
     <form className="panel mb-5" onSubmit={e => { e.preventDefault(); grant.mutate({ hotelId, supportEmail, durationHours, mode }); }}>
       <div className="panel-heading"><div><div className="eyebrow">{t("supportAccess.eyebrow")}</div><h2>{t("supportAccess.formTitle")}</h2></div></div>

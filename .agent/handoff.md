@@ -2144,3 +2144,14 @@ Not tested in a browser or with a real email.
 - PublicBookingSection step 1 Next button gets booking-next: 50px tall, full width under 640px, shadow; on themes it is the light on-primary colour with primary text.
 - Checked locally at desktop and 375px (Minimal White). pnpm test 174 files / 1204 passed; pnpm check passed; vite build passed.
 
+
+## 2026-11-03 - Owner-only Hotel settings group in the sidebar
+
+- Owner request: move hotel staff and support access out of the main sidebar list into a 'ตั้งค่าโรงแรม' (Hotel settings) button only the owner sees, and rename support access to familiar Thai.
+- Sidebar.tsx: new getHotelSettingsItems() returns the two links when the user has property.manage_staff / property.manage_support_access (owner-only permissions; no role-name gate). The button sits under the 'ระบบ' label, expands to the two links, and opens by itself on those pages. The 'ระบบ' label now hides when that section is empty (front desk saw an empty heading before). support-access added to the active-path list so 'จัดการห้องพัก' no longer lights up on that page.
+- Copy: supportAccess Thai values now say 'ให้ทีม hayhost ช่วยดูแล' (nav, title), with the rest reworded around 'ทีม hayhost' / 'สิทธิ์' instead of 'ทีมช่วยเหลือ' / 'กุญแจ'. English nav/title: 'hayhost support access'. Key names unchanged. Page eyebrow now shows 'ตั้งค่าโรงแรม'.
+- Test change: BookingWizard.i18n.test.tsx 'shows support access in Thai' asserted the old Thai heading, button and empty text; updated to the new owner-requested wording (same checks, new text).
+- New Sidebar.hotelSettings.test.ts: owner gets both links; front_desk/housekeeping/revenue_manager get none; nothing without a hotel; links no longer in the main list.
+- Checked locally (port 8788, seeded owner + front desk): desktop and 375px, toggle open/close, active highlight, front desk sees no button.
+- pnpm test: 1207 passed, 1 failed - PasswordReset.contract.test.ts reads client/public/_headers, which this fresh worktree checked out with CRLF (core.autocrlf=true), so its LF match fails. Not touched here; it passes in the account-deletion worktree. pnpm check and pnpm build passed.
+
