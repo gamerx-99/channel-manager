@@ -2177,3 +2177,13 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 - pnpm test 175 files / 1206 passed; pnpm check passed; vite build passed.
 - Decision recorded: cancellation policy is the hotel's; no preset; warning popup + acknowledgement in the back office; guests told to ask the property when unset.
 
+## 2026-11-03 - Owner-only Hotel settings group in the sidebar
+
+- Owner request: move hotel staff and support access out of the main sidebar list into a 'ตั้งค่าโรงแรม' (Hotel settings) button only the owner sees, and rename support access to familiar Thai.
+- Sidebar.tsx: new getHotelSettingsItems() returns the two links when the user has property.manage_staff / property.manage_support_access (owner-only permissions; no role-name gate). The button sits under the 'ระบบ' label, expands to the two links, and opens by itself on those pages. The 'ระบบ' label now hides when that section is empty (front desk saw an empty heading before). support-access added to the active-path list so 'จัดการห้องพัก' no longer lights up on that page.
+- Copy: only supportAccess.navLabel and supportAccess.title change, to 'ให้ทีม hayhost ช่วยดูแล' (English 'hayhost support access'), plus the new sidebar.hotelSettings key. The parent session rewrites the other supportAccess Thai values (glossary bans 'กุญแจ') on feat/signup-integration, so they stay unchanged here to avoid a merge conflict. The page intro eyebrow now shows sidebar.hotelSettings.
+- Test change: BookingWizard.i18n.test.tsx 'shows support access in Thai' asserted the old Thai heading; it now expects the owner-requested title. The button and empty-state checks are unchanged.
+- New Sidebar.hotelSettings.test.ts: owner gets both links; front_desk/housekeeping/revenue_manager get none; nothing without a hotel; links no longer in the main list.
+- Checked locally (port 8788, seeded owner + front desk): desktop and 375px, toggle open/close, active highlight, front desk sees no button.
+- pnpm test: 1207 passed, 1 failed - PasswordReset.contract.test.ts reads client/public/_headers, which this fresh worktree checked out with CRLF (core.autocrlf=true), so its LF match fails. Not touched here; it passes in the account-deletion worktree. pnpm check and pnpm build passed.
+

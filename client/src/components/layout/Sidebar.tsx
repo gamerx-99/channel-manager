@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BarChart3,
   BedDouble,
   Bell,
   CalendarDays,
+  ChevronDown,
   FileSpreadsheet,
   Globe,
   Hotel,
@@ -37,9 +39,25 @@ type SidebarProps = {
   onCloseWorkspaceMenu: () => void;
 };
 
+/**
+ * Links under the sidebar's "Hotel settings" button. Both permissions belong only to the
+ * hotel owner (and the super_admin blanket grant), so the button is owner-only.
+ */
+export function getHotelSettingsItems(
+  selectedHotelId: string | null | undefined,
+  can: (permission: Permission) => boolean,
+  t: (key: string) => string,
+) {
+  if (!selectedHotelId) return [];
+  return [
+    ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: Users }] : []),
+    ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
+  ];
+}
+
 function getActivePath(location: string, selectedHotelId?: string | null) {
   if (!selectedHotelId) return location;
-  const hotelSubPaths = ["bookings", "calendar", "ota", "staff"];
+  const hotelSubPaths = ["bookings", "calendar", "ota", "staff", "support-access"];
   for (const subPath of hotelSubPaths) {
     const prefix = `/hotels/${selectedHotelId}/${subPath}`;
     if (location.startsWith(prefix)) return prefix;
@@ -73,10 +91,14 @@ export function Sidebar({
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
       ...(otaSyncEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
-      ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
-      ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: ShieldCheck }] : []),
     ]
     : [];
+  const settingsItems = getHotelSettingsItems(selectedHotelId, can, t);
+  const onSettingsPage = settingsItems.some(item => location.startsWith(item.href));
+  const [settingsOpen, setSettingsOpen] = useState(onSettingsPage);
+  useEffect(() => {
+    if (onSettingsPage) setSettingsOpen(true);
+  }, [onSettingsPage]);
   const navItems = [
     ...(can("platform.view_system_logs") ? [{ href: "/platform", label: t("sidebar.platformOverview"), icon: LayoutDashboard }] : []),
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
@@ -189,7 +211,36 @@ export function Sidebar({
             <span>{t("sidebar.advancedPricing")}</span>
           </Link>
         )}
-        <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>
+        {(settingsItems.length > 0 || can("platform.manage_users")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}
+        {settingsItems.length > 0 && (
+          <>
+            <button
+              type="button"
+              className={`nav-link nav-group-toggle w-full text-left bg-transparent border-0 cursor-pointer ${onSettingsPage ? "is-current" : ""}`}
+              aria-expanded={settingsOpen}
+              aria-controls="sidebar-hotel-settings"
+              onClick={() => setSettingsOpen(open => !open)}
+            >
+              <Settings2 size={17} strokeWidth={onSettingsPage ? 2.3 : 1.8} />
+              <span>{t("sidebar.hotelSettings")}</span>
+              <ChevronDown size={15} className={`nav-group-chevron ${settingsOpen ? "is-open" : ""}`} aria-hidden="true" />
+            </button>
+            {settingsOpen && (
+              <div id="sidebar-hotel-settings" className="nav-sublist">
+                {settingsItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = location.startsWith(item.href);
+                  return (
+                    <Link key={item.href} href={item.href} className={`nav-link nav-sublink ${isActive ? "active" : ""}`} onClick={() => onClose()}>
+                      <Icon size={16} strokeWidth={isActive ? 2.3 : 1.8} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
         {/* Exports returns when the system export page is built; TM.30 remains on Bookings. */}
         {can("platform.manage_users") && (
           <Link

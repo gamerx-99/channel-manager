@@ -37,7 +37,7 @@ describe("Thai translation", () => {
 
   it("shows support access in Thai", () => {
     render(<SupportAccess hotelId="h" />);
-    expect(screen.getByRole("heading", { name: "สิทธิ์ทีมช่วยเหลือ" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "ให้ทีม hayhost ช่วยดูแล" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "อนุญาต" })).toBeTruthy();
     expect(screen.getByText("ยังไม่ได้อนุญาตให้ใครเข้าช่วย")).toBeTruthy();
   });
