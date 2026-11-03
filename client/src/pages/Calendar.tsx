@@ -6,6 +6,7 @@ import PageState from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
 import { countRoomsByType, getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
 import { formatDateDDMMYYYY } from "@/lib/formatDate";
+import { dateLocale } from "@/lib/dateLocale";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 
@@ -23,7 +24,7 @@ function addDays(date: Date, amount: number) {
 }
 
 function monthLabel(date: Date, language: "en" | "th") {
-  const locale = language === "th" ? "th-TH-u-ca-gregory" : "en-GB";
+  const locale = dateLocale(language);
   return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date);
 }
 
@@ -292,7 +293,9 @@ export default function Calendar({ id }: { id: string }) {
       {saved && <div className="save-toast"><span className="check-circle">✓</span> {t("availability.savedToast")}</div>}
       {(saveError || updateAvailability.error) && <div className="save-toast error-state" role="alert">{saveError || updateAvailability.error?.message}<button className="text-link" type="button" onClick={() => void saveCalendar()}>{t("availability.retrySave")}</button></div>}
 
-      <section className="calendar-toolbar">
+      <section className="panel calendar-controls-panel">
+        <div className="panel-heading"><div><div className="eyebrow">{t("availability.selectedDates")}</div><h2>{t("availability.monthOverviewNote")}</h2></div></div>
+      <div className="calendar-toolbar">
         <div className="calendar-nav-group">
           <button
             className="icon-button bordered"
@@ -321,9 +324,11 @@ export default function Calendar({ id }: { id: string }) {
           </button>
         </div>
 
+      </div>
       </section>
 
       <section className="panel calendar-panel">
+      <div className="panel-heading"><div><div className="eyebrow">{t("availability.eyebrow")}</div><h2>{t("availability.title")}</h2></div><span className="status-pill live"><i />{t("availability.monthView")}</span></div>
       <div className="calendar-legend">
           <span><i className="dot pine" /> {t("availability.healthyInventory")}</span>
           <span><i className="dot amber" /> {t("availability.lowInventory")}</span>
@@ -429,13 +434,8 @@ export default function Calendar({ id }: { id: string }) {
         </div>
       </section>
 
-      <section className="calendar-notes">
-        <div>
-          <div className="eyebrow">{t("availability.howItWorks")}</div>
-          <p>
-            {t("availability.howItWorksMonth")}
-          </p>
-        </div>
+      <section className="panel calendar-notes">
+        <div className="panel-heading"><div><div className="eyebrow">{t("availability.howItWorks")}</div><h2>{t("availability.howItWorksMonth")}</h2></div></div>
         <Link href={`/hotels/${hotel.id}/bookings`} className="text-link">{t("availability.goToBookings")} <ChevronRight size={14} /></Link>
       </section>
     </div>

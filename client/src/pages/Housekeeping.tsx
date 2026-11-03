@@ -9,6 +9,7 @@ import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
+import { dateLocale } from "@/lib/dateLocale";
 
 type HousekeepingStatus = "pending" | "in_progress" | "done";
 
@@ -41,8 +42,8 @@ function addDays(date: Date, amount: number) {
   return next;
 }
 
-function formatDayLabel(iso: string) {
-  return new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" }).format(
+function formatDayLabel(iso: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { weekday: "long", day: "2-digit", month: "short", year: "numeric" }).format(
     new Date(`${iso}T00:00:00.000Z`),
   );
 }
@@ -72,7 +73,8 @@ function LoadingHousekeeping() {
 }
 
 export default function Housekeeping() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const locale = dateLocale(language);
   const utils = trpc.useUtils();
   const [selectedDate, setSelectedDate] = useState(() => toIsoDate(new Date()));
   const [selectedHotelId, setSelectedHotelId] = useState<string>("");
@@ -226,22 +228,22 @@ export default function Housekeeping() {
   }
 
   return (
-    <div className="space-y-7 pb-8">
-      <section className="flex flex-col gap-5 border-b border-[#dce4df] pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="page-content space-y-7 pb-8">
+      <section className="page-intro intro-split">
         <div>
-          <p className="eyebrow">{t("housekeeping.eyebrow")}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">{t("housekeeping.title")}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6c7e75]">{t("housekeeping.lede")}</p>
+          <div className="eyebrow">{t("housekeeping.eyebrow")}</div>
+          <h1>{t("housekeeping.title")}<span className="title-mark">.</span></h1>
+          <p className="lede">{t("housekeeping.lede")}</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-[#70837a]">
           <Clock3 size={14} aria-hidden="true" />
-          <span>{t("housekeeping.dayView", { date: formatDayLabel(selectedDate) })}</span>
+          <span>{t("housekeeping.dayView", { date: formatDayLabel(selectedDate, locale) })}</span>
           {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("housekeeping.updatingDataAriaLabel")} />}
         </div>
       </section>
 
       {(hotels ?? []).length > 1 && (
-        <section className="flex items-center gap-2 text-sm" aria-label={t("housekeeping.hotelSelectorAria")}>
+        <section className="panel flex flex-wrap items-center gap-2 text-sm" aria-label={t("housekeeping.hotelSelectorAria")}>
           <span className="text-[#52655b]">{t("housekeeping.property")}</span>
           <Select value={effectiveHotelId} onValueChange={setSelectedHotelId}>
             <SelectTrigger className="w-full max-w-sm border-[#dce4df] bg-white">
@@ -256,7 +258,9 @@ export default function Housekeeping() {
         </section>
       )}
 
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label={t("housekeeping.daySelectorAria")}>
+      <section className="panel" aria-label={t("housekeeping.daySelectorAria")}>
+        <div className="panel-heading"><div><div className="eyebrow">{t("housekeeping.eyebrow")}</div><h2>{t("housekeeping.dayViewGroupedByRoom")}</h2></div></div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="h-8 w-8 border-[#dce4df]" onClick={() => setSelectedDate(toIsoDate(addDays(parseIsoDate(selectedDate), -1)))} aria-label={t("housekeeping.prevDayAria")}>
             <ChevronLeft size={16} />
@@ -283,9 +287,12 @@ export default function Housekeeping() {
             <i className="h-2.5 w-2.5 rounded-full bg-[#edf7f1] border border-[#c2e0d0]" aria-hidden="true" /> {t("housekeeping.statusDone")}
           </span>
         </div>
+        </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3" aria-label={t("housekeeping.summaryAria")}>
+      <section className="panel" aria-label={t("housekeeping.summaryAria")}>
+        <div className="panel-heading"><div><div className="eyebrow">{t("housekeeping.eyebrow")}</div><h2>{t("housekeeping.tasksForDay")}</h2></div></div>
+        <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.tasksForDay")}</p>
@@ -309,16 +316,19 @@ export default function Housekeeping() {
             <p className="mt-1 text-xs text-[#778a80]">{t("housekeeping.needAssignee")}</p>
           </CardContent>
         </Card>
+        </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.7fr_0.85fr]">
+      <section className="panel" aria-label={t("housekeeping.summaryAria")}>
+        <div className="panel-heading"><div><div className="eyebrow">{t("housekeeping.eyebrow")}</div><h2>{t("housekeeping.dayViewGroupedByRoom")}</h2></div></div>
+        <div className="grid gap-5 xl:grid-cols-[1.7fr_0.85fr]">
         <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardHeader className="border-b border-[#edf2ee] pb-4">
             <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
               <BedDouble size={18} aria-hidden="true" /> {t("housekeeping.dayViewGroupedByRoom")}
             </CardTitle>
             <CardDescription>
-              {t("housekeeping.dayViewGroupedByRoomDesc", { date: formatDayLabel(selectedDate) })}
+              {t("housekeeping.dayViewGroupedByRoomDesc", { date: formatDayLabel(selectedDate, locale) })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 pt-5">
@@ -343,7 +353,7 @@ export default function Housekeeping() {
                       <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-[#e5ebe7] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_TONE[task.status]}`}>
+                            <span className={`status-pill ${task.status === "done" ? "live" : "setup"}`}>
                               {task.status === "done" && <Check size={12} aria-hidden="true" />} {statusLabel[task.status]}
                             </span>
                             <span className="inline-flex items-center gap-1 text-xs text-[#6c7e75]">
@@ -384,7 +394,7 @@ export default function Housekeeping() {
                 </div>
               ))
             ) : (
-              <PageState tone="empty" title={t("housekeeping.noTasksForDayTitle")} description={t("housekeeping.noTasksForDayDesc")} />
+              <div className="panel empty-state"><strong>{t("housekeeping.noTasksForDayTitle")}</strong><span>{t("housekeeping.noTasksForDayDesc")}</span></div>
             )}
           </CardContent>
         </Card>
@@ -395,7 +405,7 @@ export default function Housekeeping() {
               <CardTitle className="text-lg text-[#263b31]">{t("housekeeping.createAssignTaskTitle")}</CardTitle>
               <CardDescription>{t("housekeeping.createAssignTaskDesc")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-5">
+            <CardContent className="form-grid pt-5">
               {formError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
                   {formError}
@@ -461,12 +471,13 @@ export default function Housekeeping() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="button" onClick={handleCreate} disabled={!canUpdate || createMutation.isPending} className="w-full bg-[#1d6b56] hover:bg-[#155442] disabled:opacity-50">
+              <Button type="button" onClick={handleCreate} disabled={!canUpdate || createMutation.isPending} className="form-submit button button-primary w-full">
                 <Plus size={15} /> {createMutation.isPending ? t("housekeeping.creating") : t("housekeeping.createTask")}
               </Button>
               <p className="text-xs leading-5 text-[#778a80]">{t("housekeeping.permissionsFootnote")}</p>
             </CardContent>
           </Card>
+        </div>
         </div>
       </section>
     </div>

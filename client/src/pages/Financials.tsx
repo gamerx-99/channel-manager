@@ -18,6 +18,7 @@ import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
 import { useMfaStepUp } from "@/lib/mfa";
+import { dateLocale } from "@/lib/dateLocale";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -36,8 +37,8 @@ function formatCompactNumber(value: number) {
   return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
-function formatDateLabel(value: string) {
-  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" }).format(new Date(`${value}T00:00:00.000Z`));
+function formatDateLabel(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }).format(new Date(`${value}T00:00:00.000Z`));
 }
 
 function escapeCsv(value: string) {
@@ -83,7 +84,8 @@ function LoadingDashboard() {
 }
 
 export default function Financials() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const locale = dateLocale(language);
   const { hotels, selectedHotelId } = useHotel();
   const hotelId = selectedHotelId ?? hotels[0]?.id;
   const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery();
@@ -103,36 +105,42 @@ export default function Financials() {
   }
 
   return (
-    <div className="space-y-7 pb-8">
-      <section className="flex flex-col gap-5 border-b border-[#dce4df] pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="page-content">
+      <section className="page-intro intro-split">
         <div>
-          <p className="eyebrow">{t("financials.eyebrow")}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">{t("financials.title")}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6c7e75]">
-            {t("financials.lede")}
-          </p>
+          <div className="eyebrow">{t("financials.eyebrow")}</div>
+          <h1>{t("financials.title")}<span className="title-mark">.</span></h1>
+          <p className="lede">{t("financials.lede")}</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[#70837a]">
+        <div className="field-help flex items-center gap-2">
           <Clock3 size={14} aria-hidden="true" />
-          <span>{t("financials.last30Days", { start: formatDateLabel(data.periodStart), end: formatDateLabel(data.periodEnd) })}</span>
+          <span>{t("financials.last30Days", { start: formatDateLabel(data.periodStart, locale), end: formatDateLabel(data.periodEnd, locale) })}</span>
           {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("financials.updatingDataAriaLabel")} />}
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("financials.summaryAria")}>
+      <section className="panel">
+        <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.summaryAria")}</h2></div></div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("financials.summaryAria")}>
         <MetricCard label={t("financials.totalRevenue")} value={formatCurrency(data.totals.revenue)} detail={t("financials.cancelledCount", { count: data.totals.cancelledBookings })} icon={CircleDollarSign} tone="amber" />
         <MetricCard label={t("financials.avgBookingValue")} value={formatCurrency(data.totals.averageBookingValue)} detail={t("financials.activeBookingsCount", { count: data.totals.bookings })} icon={TrendingUp} tone="pine" />
         <MetricCard label={t("financials.occupiedNights")} value={formatCompactNumber(data.totals.occupancyNights)} detail={t("financials.last30DaysDetail")} icon={Percent} tone="slate" />
         <MetricCard label={t("financials.properties")} value={formatCompactNumber(data.totals.hotelCount)} detail={t("financials.includedInReport")} icon={BarChart3} tone="pine" />
+        </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
+      <section className="panel">
+        <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.paymentCollectionAria")}</h2></div></div>
+        <div className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
         <MetricCard label={t("financials.collectedRevenue")} value={formatCurrency(data.totals.collectedRevenue ?? 0)} detail={t("financials.collectedRevenueDetail")} icon={CircleDollarSign} tone="pine" />
         <MetricCard label={t("financials.outstandingRevenue")} value={formatCurrency(data.totals.outstandingRevenue ?? 0)} detail={t("financials.outstandingRevenueDetail")} icon={Clock3} tone="amber" />
         <MetricCard label={t("financials.pendingRevenue")} value={formatCurrency(data.totals.pendingRevenue ?? 0)} detail={t("financials.pendingRevenueDetail")} icon={QrCode} tone="slate" />
+        </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+      <section className="panel">
+        <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.revenueTrendTitle")}</h2></div></div>
+        <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardHeader className="border-b border-[#edf2ee] pb-4">
             <CardTitle className="text-lg text-[#263b31]">{t("financials.revenueTrendTitle")}</CardTitle>
@@ -148,9 +156,9 @@ export default function Financials() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="#e8efea" />
-                <XAxis dataKey="date" tickFormatter={formatDateLabel} tickLine={false} axisLine={false} minTickGap={24} />
+                <XAxis dataKey="date" tickFormatter={(value) => formatDateLabel(String(value), locale)} tickLine={false} axisLine={false} minTickGap={24} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={44} />
-                <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => formatDateLabel(String(value))} formatter={(value) => <><span className="text-muted-foreground">{t("financials.revenue")}</span><span className="font-mono font-medium">{formatCurrency(Number(value))}</span></>} />} />
+                <ChartTooltip content={<ChartTooltipContent labelFormatter={(value) => formatDateLabel(String(value), locale)} formatter={(value) => <><span className="text-muted-foreground">{t("financials.revenue")}</span><span className="font-mono font-medium">{formatCurrency(Number(value))}</span></>} />} />
                 <Area type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2.5} fill="url(#financialsRevenueFill)" activeDot={{ r: 5 }} />
               </AreaChart>
             </ChartContainer>
@@ -189,6 +197,7 @@ export default function Financials() {
             )}
           </CardContent>
         </Card>
+        </div>
       </section>
 
       {hotelId && <PromptPaySettings hotelId={hotelId} />}
@@ -273,7 +282,8 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
   }
 
   return (
-    <section aria-labelledby="promptpay-settings-heading">
+    <section className="panel" aria-labelledby="promptpay-settings-heading">
+      <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.promptPayTitle")}</h2></div></div>
       <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
@@ -291,11 +301,8 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="promptpay-id-input" className="mb-1 block text-xs font-medium text-[#456156]">
-                {t("financials.promptPayIdLabel")}
-              </label>
+          <div className="form-grid">
+              <label className="form-span-two">{t("financials.promptPayIdLabel")}
               <input
                 id="promptpay-id-input"
                 type="text"
@@ -307,11 +314,8 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
                 maxLength={13}
                 className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
               />
-            </div>
-            <div className="w-44">
-              <label htmlFor="promptpay-timeout" className="mb-1 block text-xs font-medium text-[#456156]">
-                {t("financials.timeoutLabel")}
               </label>
+              <label>{t("financials.timeoutLabel")}
               <select
                 id="promptpay-timeout"
                 value={timeoutMin}
@@ -322,14 +326,14 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
                   <option key={m} value={m}>{t("financials.minutes", { count: m })}</option>
                 ))}
               </select>
-            </div>
+              </label>
           </div>
 
           {mfaState.status === "needs_challenge" && (
             <div className="flex flex-col gap-2 rounded-lg border border-[#dce4df] bg-[#f6faf7] p-4">
               <label htmlFor="promptpay-totp-input" className="text-sm font-medium text-[#263b31]">{t("financials.mfaPrompt")}</label>
               <div className="flex flex-wrap gap-2">
-                <input
+                <label className="form-grid">{t("financials.mfaCodeLabel")}<input
                   id="promptpay-totp-input"
                   type="text"
                   inputMode="numeric"
@@ -340,17 +344,17 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
                   value={totpCode}
                   onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
                   className="w-32 rounded-lg border border-[#dce4df] px-3 py-2 text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
-                />
+                /></label>
                 <button
                   id="promptpay-totp-submit"
                   type="button"
                   disabled={totpCode.length !== 6}
                   onClick={() => void handleVerify()}
-                  className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+                  className="button button-primary min-h-11 rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
                 >
                   {t("financials.mfaVerify")}
                 </button>
-                <button type="button" onClick={handleCancel} className="rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-white">
+                <button type="button" onClick={handleCancel} className="button button-quiet min-h-11 rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-white">
                   {t("financials.mfaCancel")}
                 </button>
               </div>
@@ -367,7 +371,7 @@ function PromptPaySettings({ hotelId }: { hotelId: string }) {
             type="button"
             disabled={promptPayId.replace(/\D/g, "").length < 10 || savePromptPay.isPending || mfaState.status === "pending"}
             onClick={() => void handleSave()}
-            className="w-max rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
+            className="button button-primary min-h-11 w-max rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
           >
             {savePromptPay.isPending ? t("financials.saving") : t("financials.savePromptPayId")}
           </button>

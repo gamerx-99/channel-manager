@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AppRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
+import { dateLocale } from "@/lib/dateLocale";
 
 type HotelStaffProps = { id: string };
 
@@ -58,7 +59,8 @@ function roleLabel(role: HumanRole) {
 }
 
 export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const locale = dateLocale(language);
   const utils = trpc.useUtils();
   const { data: authMe } = trpc.auth.me.useQuery();
   const actorMembership = authMe?.memberships?.find(m => m.hotelId === hotelId);
@@ -312,10 +314,11 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                     <tr><td colSpan={5}><div className="table-empty"><Users size={18} /><strong>{t("hotelStaff.noStaffYetTitle")}</strong><span>{t("hotelStaff.noStaffYetDesc")}</span></div></td></tr>
                   ) : staff.map(member => (
                     <tr key={member.id}>
-                      <td><strong>{member.email ?? t("hotelStaff.noEmail")}</strong><small>{member.user_id}</small>
+                      <td><strong>{member.email ?? t("hotelStaff.noEmail")}</strong>
                         {member.permissions && actorMembership && authMe && <StaffPermissionToggles
                           hotelId={hotelId}
                           target={{ userId: member.user_id, role: member.role as AppRole, permissions: member.permissions }}
+                          targetLabel={member.email}
                           actor={{ userId: authMe.id, role: actorMembership.role, permissions: actorMembership.permissions ?? [] }}
                           onSaved={async () => { await Promise.all([staffQuery.refetch(), utils.auth.me.invalidate()]); }}
                         />}
@@ -384,7 +387,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                   <article className="audit-log-row" key={event.id}>
                     <div className="audit-log-marker" aria-hidden="true"><ShieldCheck size={15} /></div>
                     <div className="audit-log-main">
-                      <div className="audit-log-title"><strong>{t("hotelStaff.adminTransferredTitle")}</strong><time dateTime={String(event.createdAt)}>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.createdAt))}</time></div>
+                      <div className="audit-log-title"><strong>{t("hotelStaff.adminTransferredTitle")}</strong><time dateTime={String(event.createdAt)}>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.createdAt))}</time></div>
                       <p>{t("hotelStaff.transferredAccessSummary", {
                         actor: auditUserLabel(event.actorUserId),
                         previous: auditUserLabel(event.previousAdminUserId),
@@ -510,7 +513,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
                 <div className="confirmation-body" id="audit-detail-description">
                   <p className="modal-lede">{t("hotelStaff.recordedBy", {
                     actor: auditUserLabel(event.actorUserId),
-                    date: new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeStyle: "short" }).format(new Date(event.createdAt)),
+                    date: new Intl.DateTimeFormat(locale, { dateStyle: "full", timeStyle: "short" }).format(new Date(event.createdAt)),
                   })}</p>
                   <div className="audit-detail-grid">
                     <div><span>{t("hotelStaff.previousHotelAdmin")}</span><strong>{auditUserLabel(event.previousAdminUserId)}</strong></div>
