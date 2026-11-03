@@ -1405,7 +1405,7 @@ const en = {
     title: "hayhost support access",
     lede: "Approve access for a support account. You can revoke a key at any time. Staff management is always excluded.",
     formTitle: "Give support a new key",
-    eyebrow: "hayhost support",
+    eyebrow: "Support access",
     emailLabel: "Support email",
     durationLabel: "Duration",
     hours: "{{count}} hours",
