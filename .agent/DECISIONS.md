@@ -35,7 +35,7 @@ prompt or ticket that will fix it. **open** = not decided; never present it to c
 |---|---|---|
 | 2026-11-02 | Free, 0 baht: basic theme, basic booking, manual slip check, up to 3 rooms. | pending: no plan enforcement in code |
 | 2026-11-02 | Pro: premium themes, automatic slip check. More than 3 rooms requires Pro. Free exists to help very small homestays. | pending: no plan enforcement in code |
-| — | Pro monthly price: 390 or 299 baht. | open |
+| 2026-11-03 | Pro monthly price: 299 baht (owner: "ตอนนี้ผมคิดไว้ 299", i.e. current plan, may still change; 390 was the other option). | decided, provisional (no billing code yet; first customers are billed by hand) |
 | — | Discounts or trials for early customers. Never offer one the owner has not set. | open |
 | 2026-11-01 | SlipOK: each hotel uses its own SlipOK key; no central account. Without a key, staff check slips by hand. | done |
 

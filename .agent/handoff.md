@@ -1,5 +1,20 @@
 # Handoff log
 
+## [2026-11-03] Site-wide security headers and GitHub Actions CI
+- **Task 1: Security headers (`client/public/_headers`)**:
+  - Added a `/*` block at the top of `client/public/_headers` defining `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and `Content-Security-Policy-Report-Only`.
+  - Audited external origins across the codebase: Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`), OAuth redirects (`accounts.google.com`, `access.line.me`, `www.facebook.com`), QR fallback (`api.qrserver.com`), plus `'self'`, `data:`, `blob:`, and `'unsafe-inline'`. Kept as Report-Only so nothing breaks.
+  - Preserved existing uncommitted changes and specific path blocks (`https://:worker.lannatc.workers.dev/*`, `/login`, `/accept-invite`, `/forgot-password`, `/reset-password`) with `X-Robots-Tag: noindex`.
+  - Added contract test `client/src/securityHeaders.contract.test.ts` verifying all security headers and path preservation.
+  - Commit: `3cd4a70` (`chore(security): add site-wide security headers`).
+- **Task 2: GitHub Actions CI (`.github/workflows/ci.yml`)**:
+  - Created `.github/workflows/ci.yml` triggering on `push` and `pull_request` across all branches.
+  - Configured steps: `actions/checkout@v4`, `pnpm/action-setup@v4` (reading `packageManager` from `package.json`), `actions/setup-node@v4` with `node-version: 22` and `cache: pnpm`, `pnpm install --frozen-lockfile`, `pnpm check`, `pnpm test`, and `pnpm build`.
+  - Confirmed `pnpm build` (`vite build && wrangler deploy --dry-run --outdir dist-worker`) runs cleanly without requiring Cloudflare login or secrets. Major tags pinned to `@v4` with zero secrets.
+  - Commit: `533b603` (`ci: run check, test and build on GitHub Actions`).
+- **Verification**: `pnpm test` (177 files passed, 1213 tests passed), `pnpm check` (exit 0), `pnpm build` (exit 0).
+- **Post-deploy guidance**: Monitor browser console for any CSP report-only violations over a few days before enforcing the CSP.
+
 ## [2026-11-03] Hotel pages house-style pass
 - Updated Hotels, HotelDetail and HotelServices with the shared page intro, panel headings, wrapped hotel directory, empty-state panels, and short translated page descriptions. Existing data calls, mutations, permission checks, and contract markers remain in place.
 - Added matching English and Thai strings for the two missing page descriptions and the hotel count pill.
