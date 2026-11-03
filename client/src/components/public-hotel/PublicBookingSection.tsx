@@ -36,7 +36,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
               minDateIso={new Date().toISOString().slice(0, 10)}
               accentColor={accentColor}
             />
-            <div style={{ width: "min(100%, 520px)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
+            <div className="booking-guests" style={{ width: "min(100%, 520px)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
               <label style={{ color: "var(--public-text)", fontSize: 12, fontWeight: 600 }}>{t("publicHotel.adultsLabel")}
                 <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} />
               </label>

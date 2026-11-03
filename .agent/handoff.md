@@ -2116,3 +2116,11 @@ Not tested in a browser or with a real email.
 - Theme footers (Lanna Teak, Cafe Homestay, Minimal White) and the themed footer in PublicHotel.tsx now link the word hayhost to https://www.hayhostth.com/ in a new tab, via PoweredByHayhost.tsx.
 - Tests: pnpm test 173 files / 1202 tests passed; pnpm check passed; vite build passed.
 
+
+## 2026-11-03 - Booking calendar follows the template and language
+
+- BookingDateRangePicker uses the Thai locale in Thai mode, with the Buddhist year in the month heading.
+- react-day-picker variables now sit on .rdp-root (the library resets them there), so arrows and selected-day outlines are no longer the default blue. Themed pages use --t-primary for the calendar; the plain page keeps the owner's accent.
+- Day cells scale with width and the month is centred; it fits a 375px screen. Guest count fields have a label above a white field.
+- Checked locally (Lanna Teak desktop and 375px, plain page). pnpm test 1202 passed; pnpm check passed; vite build passed.
+

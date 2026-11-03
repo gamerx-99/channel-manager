@@ -1,6 +1,8 @@
 import React from 'react';
 import { DayPicker } from 'react-day-picker';
+import { enUS, th } from 'react-day-picker/locale';
 import 'react-day-picker/style.css';
+import { useTranslation } from '@/lib/i18n';
 
 export interface BookingDateRangePickerProps {
   /** ISO date string (YYYY-MM-DD) or null/undefined if not yet selected. */
@@ -35,6 +37,7 @@ export function BookingDateRangePicker({
   minDateIso,
   accentColor,
 }: BookingDateRangePickerProps) {
+  const { language } = useTranslation();
   function handleDayClick(day: Date) {
     const dayIso = toLocalIsoDate(day);
     if (!checkIn || (checkIn && checkOut)) {
@@ -58,6 +61,11 @@ export function BookingDateRangePicker({
     >
       <DayPicker
         mode="range"
+        locale={language === 'th' ? th : enUS}
+        formatters={language === 'th'
+          // Thai readers expect the Buddhist year (2569, not 2026) in a month heading.
+          ? { formatCaption: month => month.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) }
+          : undefined}
         selected={{
           from: checkIn ? new Date(`${checkIn}T00:00:00`) : undefined,
           to: checkOut ? new Date(`${checkOut}T00:00:00`) : undefined,
