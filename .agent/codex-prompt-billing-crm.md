@@ -12,7 +12,22 @@ Read `CLAUDE.md`, `.agent/BANNED_ZONE.md`, `.agent/DECISIONS.md` (the "Plans and
 
 **This run: do ticket B only, then stop and report.**
 - Ticket A is done (`8131dab`): the schema, `shared/plans.ts` and its tests. Build on them; do not change them unless a bug forces it. If one does, say so in the report.
-- Apply the ticket A migration locally first: `pnpm exec wrangler d1 migrations apply hayhost-dev --local`.
+- Claude has already applied the ticket A migration to local D1 (`hayhost-dev`).
+- **If `pnpm` fails with `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK`**, call the binaries directly. Do not stop.
+  - `.\node_modules\.bin\vitest.cmd run`
+  - `.\node_modules\.bin\tsc.cmd --noEmit`
+  - `.\node_modules\.bin\vite.cmd build`
+  - `.\node_modules\.bin\wrangler.cmd deploy --dry-run --outdir dist-worker --env production`
+  - `.\node_modules\.bin\wrangler.cmd dev --var BETTER_AUTH_SECRET:local-preview-only-not-a-real-secret-0123456789`
+
+  Say in the report which one you used.
+- **Local platform admin for the browser check.** No credentials are stored.
+  1. Sign up on `wrangler dev` (http://localhost:8787/signup) with a made-up email and password.
+  2. Run `.\node_modules\.bin\wrangler.cmd d1 execute hayhost-dev --local --command "..."` to:
+     - set `email_verified = 1` on that row in `user`;
+     - insert a row into `platform_admins` (`id`, `user_id`, `email`, `invited_by`, `accepted_at`, `created_at`). Use the new user's id; `invited_by` may be the same id; the timestamps are `unixepoch()*1000`.
+  3. Log in again.
+- **If the browser check is impossible, do not stop.** Build the ticket, run the tests, and say plainly what you could not check.
 - Write the `.agent/handoff.md` entry and the report file **before** your final checks, so a crash does not lose them. The last run ended without a report.
 - Ticket C follows in a later run.
 
@@ -146,5 +161,5 @@ The Free limits (3 rooms, basic theme, manual slip check) are not enforced in co
 2. The procedures added, each with its permission.
 3. The tests added.
 4. Test, check and build output.
-5. Pages checked in the browser at 1280px and 375px: `/platform`, `/platform/crm`, `/platform/coupons`. Use a local platform admin (see `.agent/codex-prompt-superadmin-pages.md`, "Local check"). Never claim a check you did not do.
+5. Pages checked in the browser at 1280px and 375px: `/platform`, `/platform/crm`, `/platform/coupons`. Use the local platform admin described above. Never claim a check you did not do.
 6. Every ASSUMPTION you added and every question you logged.
