@@ -69,6 +69,9 @@ bindings, D1 ids and crons per environment — changes need extra care).
   `server/financials.access.test.ts`); new pages get a string-contract test (see
   `client/src/pages/Financials.contract.test.ts`) asserting the route is registered,
   the permission gate is present, and key UI markers exist.
+- Thai UI copy: read `docs/thai-glossary.md` before writing or changing any Thai string. It lists the
+  approved wording for each term in context and the literal translations that are banned.
+  `client/src/lib/i18n/thaiGlossary.test.ts` fails on a banned term or a missing th/en key.
 - Git: commits are conventional (`feat(scope): ...`, `fix(scope): ...`). One ticket
   = one concern per commit, per the Hard Rules below — this repo's history before
   this workflow existed doesn't always follow that; new work should.

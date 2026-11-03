@@ -38,8 +38,8 @@ describe("Thai translation", () => {
   it("shows support access in Thai", () => {
     render(<SupportAccess hotelId="h" />);
     expect(screen.getByRole("heading", { name: "สิทธิ์ทีมช่วยเหลือ" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "อนุมัติกุญแจทีมช่วยเหลือ" })).toBeTruthy();
-    expect(screen.getByText("ยังไม่มีกุญแจที่ออกให้")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "อนุญาต" })).toBeTruthy();
+    expect(screen.getByText("ยังไม่ได้อนุญาตให้ใครเข้าช่วย")).toBeTruthy();
   });
 });
 
