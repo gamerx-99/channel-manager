@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BarChart3,
@@ -99,6 +99,15 @@ export function Sidebar({
   useEffect(() => {
     if (onSettingsPage) setSettingsOpen(true);
   }, [onSettingsPage]);
+  // On a phone the group sits at the bottom of the scrolling menu, so its links open
+  // below the fold. Bring them into view when the owner opens the group themselves.
+  const settingsListRef = useRef<HTMLDivElement>(null);
+  const revealSettings = useRef(false);
+  useEffect(() => {
+    if (!settingsOpen || !revealSettings.current) return;
+    revealSettings.current = false;
+    settingsListRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [settingsOpen]);
   const navItems = [
     ...(can("platform.view_system_logs") ? [{ href: "/platform", label: t("sidebar.platformOverview"), icon: LayoutDashboard }] : []),
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
@@ -219,14 +228,14 @@ export function Sidebar({
               className={`nav-link nav-group-toggle w-full text-left bg-transparent border-0 cursor-pointer ${onSettingsPage ? "is-current" : ""}`}
               aria-expanded={settingsOpen}
               aria-controls="sidebar-hotel-settings"
-              onClick={() => setSettingsOpen(open => !open)}
+              onClick={() => { revealSettings.current = !settingsOpen; setSettingsOpen(open => !open); }}
             >
               <Settings2 size={17} strokeWidth={onSettingsPage ? 2.3 : 1.8} />
               <span>{t("sidebar.hotelSettings")}</span>
               <ChevronDown size={15} className={`nav-group-chevron ${settingsOpen ? "is-open" : ""}`} aria-hidden="true" />
             </button>
             {settingsOpen && (
-              <div id="sidebar-hotel-settings" className="nav-sublist">
+              <div id="sidebar-hotel-settings" className="nav-sublist" ref={settingsListRef}>
                 {settingsItems.map(item => {
                   const Icon = item.icon;
                   const isActive = location.startsWith(item.href);
