@@ -790,6 +790,7 @@ html[lang="th"] .page-intro h1,html[lang="th"] .panel-heading h2,html[lang="th"]
 .line-login-button:disabled{border-color:#e5e5e5;background:#fff;color:rgba(30,30,30,.45);cursor:wait}
 .line-login-button:disabled img{filter:brightness(0) opacity(.2)}
 @media (max-width:760px){.login-main{display:block}.login-footer,.login-signup-prompt{width:min(380px,100%);margin-right:auto;margin-left:auto}.login-footer{flex-wrap:wrap}.login-signup-prompt{margin-top:14px}}
+@media (max-width:760px){.auth-login-page .login-aside{min-height:0;padding:16px 20px}.auth-login-page .login-aside-copy,.auth-login-page .login-aside-foot{display:none}.auth-login-page .login-main{min-height:0;padding:24px 20px}.auth-login-page .login-card{margin-top:0}}
 .social-sign-in{display:grid;gap:10px;margin:4px 0 16px}
 .social-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;border:1px solid var(--pine);border-radius:10px;background:var(--white);color:var(--pine);font:inherit;font-weight:600;cursor:pointer;transition:background .15s ease}
 .social-button:hover:not(:disabled){background:var(--pine-soft)}

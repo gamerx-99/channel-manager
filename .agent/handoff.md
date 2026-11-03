@@ -2200,3 +2200,7 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 - Login and the shared password-reset shell now render the existing LanguageSwitcher. The switcher uses the existing translation hook so standalone auth screens render without a provider in tests.
 - Thai copy: `ระบบปฏิบัติการโรงแรม / คอนโซลส่วนกลาง` → `จัดการโรงแรมในที่เดียว`; `ทีมงานผู้สนับสนุน` → `ทีมงานของโรงแรม`.
 - Verification after fixing the standalone rendering failure: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+## 2026-11-03 - Phase 1 S3 compact mobile login banner
+- Login and password-reset shells use a compact mobile banner that retains brand and language toggle while showing the form directly below it.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.

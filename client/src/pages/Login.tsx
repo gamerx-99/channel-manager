@@ -147,7 +147,7 @@ export default function Login() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page auth-login-page">
       <div className="login-aside">
         <div className="login-header"><div className="login-brand">
           <span className="brand-mark"><span /></span>

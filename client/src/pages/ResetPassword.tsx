@@ -11,7 +11,7 @@ const MIN_PASSWORD_LENGTH = 8;
 export function PasswordResetShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <div className="login-page">
+    <div className="login-page auth-login-page">
       <div className="login-aside">
         <div className="login-header"><div className="login-brand">
           <span className="brand-mark"><span /></span>
