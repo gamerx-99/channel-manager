@@ -646,7 +646,11 @@ body { background: var(--paper); color: var(--ink); }
 .calendar-month-cell:hover .month-cell-hint{opacity:1}
 
 /* -- Public booking date-range picker (react-day-picker v9) --------------- */
-.booking-calendar .rdp-root{--rdp-accent-color:var(--booking-calendar-accent);--rdp-accent-background-color:color-mix(in srgb,var(--booking-calendar-accent) 14%,white);--rdp-day-width:clamp(34px,9vw,52px);--rdp-day-height:clamp(34px,9vw,48px);--rdp-day_button-width:100%;--rdp-day_button-height:100%;}
+.booking-calendar .rdp-root{--rdp-accent-color:var(--booking-calendar-accent);--rdp-accent-background-color:color-mix(in srgb,var(--booking-calendar-accent) 14%,white);--rdp-day-width:auto;--rdp-day-height:clamp(36px,9vw,52px);--rdp-day_button-width:100%;--rdp-day_button-height:100%;width:100%;max-width:620px;}
+/* The month fills the card (up to the root's max width) instead of sitting small in the middle. */
+.booking-calendar .rdp-months{max-width:none;width:100%;}
+.booking-calendar .rdp-month,.booking-calendar .rdp-month_grid{width:100%;}
+.booking-calendar .rdp-day_button{font-size:13px;}
 .booking-calendar{--booking-calendar-accent:var(--pine);background:var(--white);border-radius:var(--radius);padding:clamp(8px,2vw,14px);color:var(--ink);display:flex;justify-content:center;}
 .booking-calendar .rdp-chevron{fill:var(--booking-calendar-accent);}
 .booking-calendar .rdp-selected .rdp-day_button{border-color:transparent;}
