@@ -1,5 +1,13 @@
 # Handoff log
 
+## [2026-11-04] Move public hotel page CSS out of index.css
+- **Done**: Created `client/src/components/public-hotel/public-hotel.css` and moved all `.public-*`, `.payment-*` and `.booking-calendar` rules out of `client/src/index.css` (public page block, PaymentQR block, media-query public parts, and a few standalone public rules). Imported the new file in `PublicHotel.tsx`. `index.css` 799 -> 761 lines; `public-hotel.css` 40 lines.
+- **Rules left in index.css on purpose**: mixed-selector rules where not every selector is public (e.g. `.hotel-thumb img,.property-hero-image img,.public-room-image img`), and `.brand-mark` shared rules; `.public-brand .brand-mark` moved.
+- **Cascade**: kept moved rules after global CSS by importing public-hotel.css via PublicHotel.tsx; no specificity raised.
+- **Computed-style diff**: not performed (browser session unstable); no claim made.
+- **Evidence**: `pnpm test` (pass, one timeout re-run alone), `pnpm check` (exit 0), `pnpm build` (exit 0).
+- **Not done**: no push.
+
 ## [2026-11-04] Move booking wizard logic into useBookingWizard and bookingRules
 - **Done**: Moved all booking-wizard state, effects, mutations and handlers from `usePublicHotelPage.ts` into new `useBookingWizard.ts`. Extracted pure rules into `bookingRules.ts` (`isDatesValid`, `areGuestsValid`, `countNights`, `parseChildMeasurements`, `isChildWithinLimit`, `serviceLineTotal`, `selectedServicesTotal`) with `bookingRules.test.ts` (7 tests). `usePublicHotelPage.ts` now only loads hotel/rooms/media/site config and calls `useBookingWizard`, keeping `booking` in its return. `PublicHotel.contract.test.ts` now reads `useBookingWizard.ts` too.
 - **Evidence**: `pnpm test` (pass), `pnpm check` (exit 0), `pnpm build` (exit 0, wrangler --dry-run). Browser check reached step 2 (room selection) on `/test-owner-hotel`; further steps not completed because the browser session closed.

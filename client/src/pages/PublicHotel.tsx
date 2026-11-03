@@ -7,6 +7,7 @@ import MinimalWhiteLanding from "@/components/hotel-themes/MinimalWhiteLanding";
 import LannaTeakLanding from "@/components/hotel-themes/LannaTeakLanding";
 import CafeHomestayLanding from "@/components/hotel-themes/CafeHomestayLanding";
 import "@/components/hotel-themes/themes.css";
+import "@/components/public-hotel/public-hotel.css";
 import { isHotelThemeId } from "@shared/hotelThemes";
 import { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
 import { PoweredByHayhost } from "@/components/hotel-themes/PoweredByHayhost";
