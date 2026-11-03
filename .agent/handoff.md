@@ -1,5 +1,16 @@
 # Handoff log
 
+## [2026-11-03] Hotel pages house-style pass
+- Updated Hotels, HotelDetail and HotelServices with the shared page intro, panel headings, wrapped hotel directory, empty-state panels, and short translated page descriptions. Existing data calls, mutations, permission checks, and contract markers remain in place.
+- Added matching English and Thai strings for the two missing page descriptions and the hotel count pill.
+- Verification: direct Vitest full suite passed (175 files, 1,206 tests); the requested `--maxWorkers=1` command conflicted with Vitest's configured minimum, so the successful run also set `--minWorkers=1`. `node_modules\\.bin\\tsc --noEmit` passed. The worktree-local Vitest temp directory was removed.
+- Git: no add or commit.
+
+## [2026-11-03] Security settings house-style pass
+- Verified SecuritySettings' intro and existing MFA/linked-account panels. SlipOK now has a shared panel heading and form grid; Delete account uses shared panel/list/form classes. Existing gates, actions and data calls remain unchanged.
+- Verification: direct Vitest full suite passed (174 files, 1,204 tests); `node_modules\\.bin\\tsc --noEmit` passed. `git diff --check` passed with line-ending warnings.
+- No staging or commit.
+
 ## [2026-11-03] Back-office house style pass (partial)
 - **Done**: Added `specs/ui-house-style.md`; rebuilt SupportAccess around the shared intro, panels, form grid, status pills, empty states, and responsive data table. PlatformOverview now has the shared page/panel/table structure, translated labels, and empty/error states. Moved PrivateRoute's two raw English status messages into en/th dictionaries. Updated the three Thai theme footer labels to `ให้บริการโดย hayhost`; PoweredByHayhost links remain unchanged.
 - **Audit**: Recorded findings and completion state for every back-office page and requested settings/platform component in `.agent/owner-ui-fixes-2026-11-03.md`. Remaining page groups are explicitly marked unfinished; the broad 375px audit is not complete.
@@ -2143,4 +2154,26 @@ Not tested in a browser or with a real email.
 - index.css: the date picker's day cells share the card width (root max 620px), so the month no longer sits small in a wide card; fits 375px with 40px cells.
 - PublicBookingSection step 1 Next button gets booking-next: 50px tall, full width under 640px, shadow; on themes it is the light on-primary colour with primary text.
 - Checked locally at desktop and 375px (Minimal White). pnpm test 174 files / 1204 passed; pnpm check passed; vite build passed.
+
+
+
+## 2026-11-03 - Bookings and calendar house style
+
+Bookings now has headed TM.30 and records panels with status pills. Calendar controls, month view, and guidance use headed panels while preserving the existing navigation labels and interactions.
+
+## 2026-11-03 - Financials and pricing house style
+
+Financials and Advanced Pricing now use the shared page intro and headed outer panels; the pricing form and PromptPay fields use responsive form-grid/label patterns. Existing chart and pricing widgets remain inner Cards. Ran direct Vitest and TypeScript checks; see this task report for command output.
+
+
+## 2026-11-03 — Housekeeping and website builder house style
+
+Housekeeping and WebsiteBuilder now use the shared page intro and headed outer panels; housekeeping statuses use status pills and the builder config uses the shared form grid. Existing interaction, permission, and tRPC markers were preserved. Direct Vitest and TypeScript results are recorded in the task report.
+
+## 2026-11-03 - Back-office house style pass verified in the browser
+
+- Codex groups g1-g5 restyled settings, hotels, bookings/calendar, financials/pricing, housekeeping and website builder to specs/ui-house-style.md.
+- Claude checked 12 back-office pages as a local hotel owner at 1280px and 375px: every page has page-intro and headed panels, no page scrolls sideways. Fixed what the check found: hotel hero title overflow at 375px (index.css), pricing month toolbar overflow (flex-wrap), English month/weekday/date labels in Thai mode (new client/src/lib/dateLocale.ts, Buddhist year, used by Financials, AdvancedPricing, Housekeeping, HotelStaff, Calendar), English staff permission toggles and raw account ids (StaffPermissionToggles now uses i18n and shows the email), raw zod error text on the bookings load error (now the friendly fallback).
+- pnpm test 175 files / 1206 passed; pnpm check passed; vite build passed.
+- Decision recorded: cancellation policy is the hotel's; no preset; warning popup + acknowledgement in the back office; guests told to ask the property when unset.
 
