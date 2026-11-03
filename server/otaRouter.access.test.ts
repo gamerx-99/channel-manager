@@ -8,8 +8,11 @@ const otaMocks = vi.hoisted(() => ({
   getOtaSummary: vi.fn(),
   triggerOtaCalendarSyncD1: vi.fn(),
 }));
+const otaFlag = vi.hoisted(() => ({ enabled: true }));
 
 vi.mock('./d1/ota', () => otaMocks);
+// Exercise permission boundaries for when OTA connectivity is re-enabled.
+vi.mock('../shared/otaAvailability', () => ({ get otaConnectivityEnabled() { return otaFlag.enabled; } }));
 
 const HOME_HOTEL = '88ed76e4-cc93-4aa7-9c4d-30999d35ada4';
 const OTHER_HOTEL = '11111111-1111-4111-8111-111111111111';
@@ -20,6 +23,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  otaFlag.enabled = true;
 });
 
 function caller(role: 'admin' | 'hotel_owner' | 'revenue_manager' | 'front_desk', hotelId = HOME_HOTEL) {
@@ -43,6 +47,16 @@ function caller(role: 'admin' | 'hotel_owner' | 'revenue_manager' | 'front_desk'
 }
 
 describe('OTA router access', () => {
+  it('rejects OTA requests before reaching repositories while connectivity is disabled', async () => {
+    otaFlag.enabled = false;
+    const app = await caller('hotel_owner');
+    await expect(app.channelManager.ota.listConnections({ hotelId: HOME_HOTEL })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(app.channelManager.ota.upsertConnection({ hotelId: HOME_HOTEL, provider: 'airbnb', status: 'active' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(app.channelManager.ota.triggerSync({ hotelId: HOME_HOTEL, provider: 'airbnb' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(otaMocks.listOtaConnections).not.toHaveBeenCalled();
+    expect(otaMocks.upsertOtaConnection).not.toHaveBeenCalled();
+    expect(otaMocks.triggerOtaCalendarSyncD1).not.toHaveBeenCalled();
+  });
   it('lets hotel_owner manage connections and trigger sync for its hotel', async () => {
     otaMocks.triggerOtaCalendarSyncD1.mockResolvedValueOnce({ success: true });
     otaMocks.upsertOtaConnection.mockResolvedValueOnce({ id: 'connection-1' });

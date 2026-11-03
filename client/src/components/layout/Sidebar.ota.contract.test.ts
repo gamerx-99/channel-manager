@@ -8,8 +8,9 @@ const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
 
 describe("OTA UI flag contract", () => {
   it("gates the sidebar entry and dashboard widget, and redirects the disabled route", () => {
-    expect(sidebar).toContain("otaSyncEnabled && can(\"ota.view_status\")");
+    // Since the legal-branch merge (2026-11-03) the OTA UI also needs the server-side connectivity switch.
+    expect(sidebar).toContain("otaSyncEnabled && otaConnectivityEnabled && can(\"ota.view_status\")");
     expect(home).toContain("otaSyncEnabled && <OtaSyncStatusWidget");
-    expect(app).toContain("otaSyncEnabled ? <PrivateRoute>");
+    expect(app).toContain("otaSyncEnabled && otaConnectivityEnabled ? <PrivateRoute>");
   });
 });

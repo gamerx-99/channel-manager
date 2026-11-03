@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/d1";
 import type { ExportedHandler } from "@cloudflare/workers-types/index.ts";
 import { d1Schema } from "../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../server/db/scope";
+import { purgeClosedHotels } from "../server/d1/hotelClosure";
 import { runScheduledD1OtaSync } from "../server/d1/otaScheduler";
 import type { WorkerEnv } from "./app";
 
@@ -13,10 +14,13 @@ export const handleScheduledOtaSync = (env: Pick<WorkerEnv, "DB">, fetchImpl: ty
   return runScheduledD1OtaSync(db, { fetchImpl });
 };
 
+export const handleScheduledHotelPurge = (env: Pick<WorkerEnv, "DB" | "MEDIA">) =>
+  purgeClosedHotels(drizzle(env.DB, { schema: d1Schema }) as unknown as D1ScopedDatabase, env.MEDIA);
+
 const worker: ExportedHandler<WorkerEnv> = {
   fetch: app.fetch as unknown as NonNullable<ExportedHandler<WorkerEnv>["fetch"]>,
   scheduled(_controller, env, ctx) {
-    ctx.waitUntil(handleScheduledOtaSync(env));
+    ctx.waitUntil(handleScheduledHotelPurge(env));
   },
 };
 

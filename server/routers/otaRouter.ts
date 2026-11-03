@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import { otaConnectivityEnabled } from '../../shared/otaAvailability';
 import { protectedProcedure, router } from '../_core/trpc';
 import { hasHotelPermission } from '@shared/authorization';
 import {
@@ -19,6 +21,7 @@ import { ICAL_URL_ERROR, isPublicIcalUrl } from '../icalUrl';
 
 export const otaRouter = router({
   summary: protectedProcedure.query(async ({ ctx }) => {
+    if (!otaConnectivityEnabled) throw new TRPCError({ code: 'NOT_FOUND', message: 'OTA connectivity is unavailable.' });
     if (!ctx.db) throw new Error('D1 database required.');
     try {
       return await getOtaSummary(ctx.db, ctx.caller ?? { userId: ctx.user.id });
@@ -27,6 +30,7 @@ export const otaRouter = router({
     }
   }),
   listConnections: protectedProcedure.input(z.object({ hotelId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    if (!otaConnectivityEnabled) throw new TRPCError({ code: 'NOT_FOUND', message: 'OTA connectivity is unavailable.' });
     requireHotelPermission(ctx.user, input.hotelId, 'ota.view_status');
     if (!ctx.db) throw new Error('D1 database required.');
     try {
@@ -56,6 +60,7 @@ export const otaRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!otaConnectivityEnabled) throw new TRPCError({ code: 'NOT_FOUND', message: 'OTA connectivity is unavailable.' });
       requireHotelPermission(ctx.user, input.hotelId, 'ota.manage_ical_connection');
       if (!ctx.db) throw new Error('D1 database required.');
       try {
@@ -79,6 +84,7 @@ export const otaRouter = router({
       }
     }),
   listLogs: protectedProcedure.input(z.object({ hotelId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    if (!otaConnectivityEnabled) throw new TRPCError({ code: 'NOT_FOUND', message: 'OTA connectivity is unavailable.' });
     requireHotelPermission(ctx.user, input.hotelId, 'ota.view_sync_logs');
     if (!ctx.db) throw new Error('D1 database required.');
     try {
@@ -95,6 +101,7 @@ export const otaRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!otaConnectivityEnabled) throw new TRPCError({ code: 'NOT_FOUND', message: 'OTA connectivity is unavailable.' });
       requireHotelPermission(ctx.user, input.hotelId, 'ota.manage_ical_connection');
       if (!ctx.db) throw new Error('D1 database required.');
       try {
@@ -112,6 +119,7 @@ export const otaRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!otaConnectivityEnabled) throw new TRPCError({ code: 'NOT_FOUND', message: 'OTA connectivity is unavailable.' });
       requireHotelPermission(ctx.user, input.hotelId, 'ota.trigger_ical_sync');
       if (!ctx.db) throw new Error('D1 database required.');
       try {

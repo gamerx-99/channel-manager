@@ -66,6 +66,7 @@ vi.mock("@/lib/trpc", () => ({
       },
       socialProviders: { useQuery: () => ({ data: [] }) },
     },
+    hotelClosure: { mine: { useQuery: () => ({ data: [] }) } },
     channelManager: {
       hotels: {
         useQuery: () => trpcMocks.hotelsQuery(),

@@ -22,6 +22,7 @@ import { useHotel } from "../../contexts/HotelContext";
 import { type Permission } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
 import { communicationsEnabled, otaSyncEnabled } from "@/lib/featureFlags";
+import { otaConnectivityEnabled } from "@shared/otaAvailability";
 
 type SidebarProps = {
   open: boolean;
@@ -89,7 +90,7 @@ export function Sidebar({
       ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomOperations"), icon: BedDouble }] : []),
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
-      ...(otaSyncEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
+      ...(otaSyncEnabled && otaConnectivityEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
     ]
     : [];
   const settingsItems = getHotelSettingsItems(selectedHotelId, can, t);

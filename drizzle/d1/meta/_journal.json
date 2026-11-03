@@ -92,6 +92,13 @@
       "when": 1793671200000,
       "tag": "20261103010000_add_hotel_media_object_position",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1793678400000,
+      "tag": "20261103020000_hotel_closure",
+      "breakpoints": true
     }
   ]
 }

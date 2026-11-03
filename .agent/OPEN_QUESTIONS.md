@@ -1,7 +1,12 @@
 # Open questions
 
 Format: `- [ ] <question> — ASSUMPTION used in the meantime: <default>, raised <date>`
-Move to a `## Resolved` section (don't delete) once the human answers, with the
+Move to a `## - [2026-11-01] Owner's decisions now in the legal text, for a lawyer to confirm: Computer-Related Crime Act s.26 applies to Hayhost and overrides erasure for 90 days; 5-year tax retention for a natural person (Revenue Code not in local data); forum clause by the Provider's domicile; EU/UK clauses meet clause 10(2) of the s.29 notification; a liability cap that is zero while no fee is charged; whether SlipOK with the hotel's own key is the hotel's processor or a Hayhost sub-processor.
+- [2026-11-01] Retention still undecided: booking IP hash, sales agents, support email. See the ROPA sheet.
+
+- [2026-11-01] For a lawyer: is a list of sub-processor groups, with names on request, enough for DPA clause 4 and the transfer notice under the s.29 notification clause 11(1)?
+
+Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
@@ -9,13 +14,22 @@ answer noted.
 - [ ] Landing page demo link: previous `Landing.tsx` linked to `#features`; no existing public demo URL is configured. `ASSUMPTION:` `/sample-stay` is the demo slug, using the public-hotel render fixture as the available example. Confirm the intended production demo slug. Raised 2026-11-03.
 - [ ] `ASSUMPTION:` every hotel can pick every website template for now. `minimal-white` is marked basic and `lanna-teak` / `cafe-homestay` premium with a "Pro" tag, but no plan check exists yet. Decide when Free/Pro enforcement is built. Raised 2026-11-03.
 - [ ] `ASSUMPTION:` hotel owners cannot change the public hotel slug in profile editing, because changing it may break guest links already shared. Confirm whether slug changes should remain unavailable or use a redirect. Raised 2026-11-02.
+- [ ] Legal: the owner will register as a natural person once there is income. PDPA s.23(5) needs the controller's identity and contact when data is collected, so a name and contact are needed before real hotels sign up. Raised 2026-11-01.
+- [ ] Legal: the Mae Hong Son court clause was chosen by the owner. The Civil Procedure Code is not in `C:\thai-law`, so whether it holds against a hotel elsewhere is unverified. Raised 2026-11-01.
+- [ ] Legal: Cloudflare's DPA takes effect on signature or agreement, and the owner must confirm it is accepted on this account. Cloudflare and Resend clauses name EU, UK and Swiss transfers, not Thailand. Whether they meet the 2023 s.29 notification needs a lawyer. Support mail goes to a Gmail account. Raised 2026-11-01.
+- [ ] Legal: Privacy clause 6 says 3 years for audit logs, chosen from PDPA s.78, and nothing deletes them on a timer. Raised 2026-11-01.
+- [ ] Legal: Computer Crime Act 2007 s.26 keeps traffic data 90 days and data identifying a service user 90 days after the service ends. If hayhost counts as a service provider, account deletion (at once) and hotel purge (day 59) are too early, and nothing keeps traffic data. The 2017 amendment could not be read. ASSUMPTION: unchanged until a lawyer answers. Raised 2026-11-01.
+- [ ] Legal: Privacy clause 6 still says periods are being set, but PDPA s.23(3) requires a period or an expected one at collection. Needs the owner's numbers. Raised 2026-11-01.
+- [ ] Legal: the Hotel Act, its guest register rules and the Unfair Contract Terms Act were not readable in `C:\thai-law`, and the 2022 breach and processor-record notifications failed to load. Nothing here cites their text. Raised 2026-11-01.
+- [ ] Spec 18: a closed hotel is deleted outright on day 66, bookings and TM.30 data included. Do the Hotel Act, immigration or tax rules require anything to be kept longer, and by the hotel or by hayhost? ASSUMPTION: these are the hotel's duties, met by the export. A lawyer must confirm. Raised 2026-11-01.
+- [ ] Spec 18: Terms 4.2 says the service ends on the day of cancellation, but closure has a 7-day wait. No fees are charged yet, so nothing is wrong today. ASSUMPTION: the service ends when the wait ends; the text needs the owner's wording before billing starts. Raised 2026-11-01.
+- [ ] Spec 18: a purged hotel leaves `hotel_purge_log` (id and dates only) as proof, with no end date. ASSUMPTION: it holds no personal data, so it stays. Raised 2026-11-01.
 - [ ] 2FA is optional for hotel accounts, but platform roles (super_admin, admin, support) must still enrol. ASSUMPTION: they reach every hotel, so the rule stays until the owner says otherwise. Raised 2026-11-01.
 - [ ] Spec 17: how long must bookings, payments, guest records and audit rows be kept, and which of them does the law require (Hotel Act/TM.30, tax, PDPA)? Nothing here is confirmed by a lawyer.
       ASSUMPTION: every such row stays, with the person replaced by `deleted-user`, and nothing is deleted on a timer. Raised 2026-10-31.
 - [ ] Spec 17: do audit rows need the real actor kept for a dispute or a legal request? ASSUMPTION: no; the actor becomes `deleted-user` and no mapping is kept, so the deletion cannot be undone or traced later. Raised 2026-10-31.
 - [ ] Spec 17: guests have no account, so they cannot use this. Who handles a guest's PDPA deletion request, the hotel or hayhost? Not built. ASSUMPTION: requests go to the hotel as data controller; none are handled in code. Raised 2026-10-31.
 - [ ] Spec 17: free text that may name a person is kept as it is: `messages.body`, `booking_status_log.reason`, `hotels.owner_contact` when it is not exactly the account email, and notifications. ASSUMPTION: these are the hotel's records and cannot be matched reliably. Decide whether an admin process is needed. Raised 2026-10-31.
-- [ ] Spec 17: an owner with nobody to transfer to, or one who wants to close the hotel, has no self-service path, because the app cannot delete a hotel. ASSUMPTION: they email support@hayhostth.com, and that process is manual and undefined. Raised 2026-10-31.
 - [ ] Spec 17: the last platform admin cannot delete their account. ASSUMPTION: refuse, because no screen can create another one. Confirm this is acceptable for a PDPA request from that person. Raised 2026-10-31.
 - [ ] Spec 17: no record is kept that a deletion happened, and no confirmation email is sent, so there is no proof for a later complaint. ASSUMPTION: none, because a log would need a migration and a decision on what it may store. Backups and Cloudflare logs are outside this code: D1 Time Travel keeps deleted rows until its retention ends. Raised 2026-10-31.
 - [ ] Spec 17: a user who lost their authenticator cannot pass the step-up, so cannot delete their account until 2FA recovery exists. ASSUMPTION: they contact support. Raised 2026-10-31.
@@ -97,6 +111,8 @@ answer noted.
       for fail-closed. Raised 2026-10-30.
 
 ## Resolved
+
+- [x] [2026-11-01] Spec 17: an owner with nobody to transfer to had no self-service way to close a hotel. Spec 18 adds one on the security settings page.
 
 - [x] [2026-11-01] Central SlipOK receiver fallback and the unused `slipok_*` columns: both closed when the owner returned to per-hotel keys. `log: true` checks the receiver, and the columns and `slipokCrypto.ts` are in use again.
 

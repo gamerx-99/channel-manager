@@ -18,6 +18,7 @@ import {
   servedMediaUrl,
 } from "../server/d1/media";
 import { getOtaIcalExport } from "../server/d1/ota";
+import { otaConnectivityEnabled } from "../shared/otaAvailability";
 import { createD1SystemCallerContext } from "../server/db/scope";
 import { createAuth, type AuthInstance } from "../server/auth";
 import { createEmailSender } from "../server/email";
@@ -309,6 +310,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
 
   // Public: OTAs poll this URL; the token is the only credential. Mirrors handleIcalExport.
   app.get("/api/ical/:file", async c => {
+    if (!otaConnectivityEnabled) return c.text("Calendar not found.", 404);
     const token = c.req.param("file").replace(/\.ics$/i, "").toLowerCase();
     try {
       if (!c.env?.DB) return c.text("Calendar not found.", 404);

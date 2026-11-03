@@ -51,9 +51,12 @@ export const hotels = sqliteTable("hotels", {
   acquisitionSource: text("acquisition_source").notNull().default("direct"),
   referredByHotelId: text("referred_by_hotel_id"),
   agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  closureRequestedAt: integer("closure_requested_at", { mode: "timestamp_ms" }),
+  closureWasPublic: integer("closure_was_public", { mode: "boolean" }),
 }, table => [
   check("hotels_acquisition_source_check", sql`${table.acquisitionSource} in ('direct', 'referral', 'agent')`),
   uniqueIndex("hotels_slug_key").on(table.slug),
+  index("idx_hotels_closure_requested_at").on(table.closureRequestedAt).where(sql`${table.closureRequestedAt} is not null`),
   foreignKey({
     name: "hotels_referred_by_hotel_id_hotels_id_fk",
     columns: [table.referredByHotelId],
@@ -515,6 +518,14 @@ export const platformAdmins = sqliteTable("platform_admins", {
   uniqueIndex("uq_platform_admins_email").on(table.email),
 ]);
 
+// Proof that a closed hotel's data was deleted, so it holds no name and no foreign key.
+export const hotelPurgeLog = sqliteTable("hotel_purge_log", {
+  id: id(),
+  hotelId: text("hotel_id").notNull(),
+  closureRequestedAt: integer("closure_requested_at", { mode: "timestamp_ms" }).notNull(),
+  purgedAt: integer("purged_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const d1Schema = {
   agents,
   hotels,
@@ -548,4 +559,5 @@ export const d1Schema = {
   supportAccessLog,
   supportAccounts,
   platformAdmins,
+  hotelPurgeLog,
 };

@@ -32,6 +32,9 @@ const GUEST_PAYMENT_ACTIONS = new Set([
   "bookings.nights.claim",
 ]);
 
+/** All a hotel in closure still answers to. Its owner's closure page uses these and nothing else. */
+const CLOSURE_ACTIONS = new Set(["hotel.closure.cancel", "hotel.closure.export"]);
+
 /** Construct this context from the verified server identity, never from client input. */
 export type D1CallerContext = {
   userId: string;
@@ -94,11 +97,17 @@ async function resolveScope(
   action: string,
   now: Date,
 ): Promise<Scope> {
+  // A guest needs a published hotel to get here, and closing a hotel unpublishes it.
   if (caller.access === "guest_payment") {
     if (caller[GUEST_PAYMENT_BRAND] !== true || caller.guestPaymentHotelId !== hotelId || !GUEST_PAYMENT_ACTIONS.has(action)) forbidden();
     return { hotelId, userId: "", role: "front_desk", permissions: [required] };
   }
   if (!caller.userId || caller.access === "public") forbidden();
+  // One check here covers staff, support and the owner on every repository.
+  if (!CLOSURE_ACTIONS.has(action)) {
+    const [hotel] = await db.select({ closureRequestedAt: hotels.closureRequestedAt }).from(hotels).where(eq(hotels.id, hotelId)).limit(1);
+    if (hotel?.closureRequestedAt) forbidden();
+  }
   if (caller.roles?.includes("super_admin")) {
     resolveMembershipPermissions("super_admin");
     forbidden();

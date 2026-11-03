@@ -29,11 +29,13 @@ import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
+import HotelClosure from "./pages/HotelClosure";
 import SupportAccess from "./pages/SupportAccess";
 import PlatformOverview from "./pages/PlatformOverview";
 import HotelStaff from "./pages/HotelStaff";
 import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
+import { otaConnectivityEnabled } from "@shared/otaAvailability";
 import WebsiteBuilder from "./pages/WebsiteBuilder";
 import NotFound from "./pages/NotFound";
 import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContext";
@@ -85,6 +87,9 @@ function Router() {
       <Route path="/settings/security">
         <PrivateRoute><SecuritySettings /></PrivateRoute>
       </Route>
+      <Route path="/hotel-closure">
+        <PrivateRoute><HotelClosure /></PrivateRoute>
+      </Route>
       <Route path="/hotels/:id/bookings">
         {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}
       </Route>
@@ -92,7 +97,7 @@ function Router() {
         {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/ota">
-        {(params) => otaSyncEnabled ? <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute> : <Redirect to={`/hotels/${params.id}`} />}
+        {(params) => otaSyncEnabled && otaConnectivityEnabled ? <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute> : <Redirect to={`/hotels/${params.id}`} />}
       </Route>
       <Route path="/hotels/:id/staff">
         {(params) => <PrivateRoute><HotelStaff id={params.id} /></PrivateRoute>}
