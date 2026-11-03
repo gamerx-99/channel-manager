@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-04] Booking box split into one component per step
+- Split `PublicBookingSection.tsx` render switch into six step components under `client/src/components/public-hotel/`: `BookingStepDates`, `BookingStepRooms`, `BookingStepServices`, `BookingStepGuest`, `BookingStepPayment` (summary + PromptPay QR) and `BookingConfirmed`. `PublicBookingSection.tsx` is now a thin wrapper (400 -> 162 lines) keeping the section, heading, step counter, error banner and switch. Logic/state stays in `usePublicHotelPage`.
+- Tests changed: `client/src/pages/PublicHotel.contract.test.ts` (reads the booking step files too), `client/src/lib/nightsLabel.test.ts` (reads `BookingStepPayment.tsx` + `BookingConfirmed.tsx`), reason: markers moved out of `PublicBookingSection.tsx`.
+- Evidence: `pnpm test` (1261 passed), `pnpm check` (exit 0), `pnpm build` (exit 0, wrangler --dry-run). Visual check on `http://127.0.0.1:8802/demo-theme` at 1280px and 375px; booking box renders. Before/after pixel comparison not captured because the refactor was already applied in this tree; no behaviour change intended.
+- Not done: no push (human approval required).
+
 ## [2026-11-03] Restore platform user and hotel directories
 - `adminUsers` now reads a permission-scoped D1 account directory with an explicit field allowlist (`id`, `email`, `name`, `created_at`, and hotel/platform roles). `adminHotels` now reads a separate D1 summary projection with only `id`, `name`, `slug`, `public_enabled`, and `created_at`; both endpoints retain their named platform permission checks.
 - `/hotels` shows an owner-permission empty state for platform roles with no hotel memberships and omits the `/platform` link unless the caller has `platform.view_system_logs`. It keeps platform hotel memberships out of hotel data access. Sync status codes now use translated labels, Admin Users says “user accounts,” and Thai account dates use the Buddhist year.
