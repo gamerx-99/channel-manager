@@ -62,6 +62,19 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
   return output.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
 }
 
+/** Platform directory exposes only hotel profile summary fields. */
+export async function listPlatformHotelDirectory(db: D1ScopedDatabase, caller: D1CallerContext) {
+  await authorizePlatformAction(db, caller, "platform.manage_hotels");
+  const rows = await db.select({
+    id: hotels.id,
+    name: hotels.name,
+    slug: hotels.slug,
+    public_enabled: hotels.publicEnabled,
+    created_at: hotels.createdAt,
+  }).from(hotels).orderBy(desc(hotels.createdAt));
+  return rows;
+}
+
 export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, caller: D1CallerContext) {
   if (!caller.userId || caller.access === "public") throw new TRPCError({ code: "FORBIDDEN" });
   const allMemberships = await db.select({

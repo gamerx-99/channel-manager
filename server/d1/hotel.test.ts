@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookings, d1Schema, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelService, createManagedHotel, createManagedRoomType, deleteHotelService, deleteManagedRoomType, getManagedHotel, getPublicHotel, listActiveHotelServicesBySlug, listHotelServices, listManagedHotels, listManagedHotelsForFinancials, updateHotelService, updateManagedRoomType, updateManagedHotelProfile } from "./hotel";
+import { createHotelService, createManagedHotel, createManagedRoomType, deleteHotelService, deleteManagedRoomType, getManagedHotel, getPublicHotel, listActiveHotelServicesBySlug, listHotelServices, listManagedHotels, listManagedHotelsForFinancials, listPlatformHotelDirectory, updateHotelService, updateManagedRoomType, updateManagedHotelProfile } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -60,6 +60,15 @@ async function seedHotel(id: string, owner: string, role = "hotel_owner", public
 }
 
 describe("D1 hotel repository", () => {
+  it("lists only the platform hotel directory summary fields", async () => {
+    await seedHotel("a", "root", "super_admin");
+    const rows = await listPlatformHotelDirectory(db, { userId: "root" });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: "a", name: "Hotel a", slug: "a-slug", public_enabled: true });
+    expect(Object.keys(rows[0]!).sort()).toEqual(["created_at", "id", "name", "public_enabled", "slug"]);
+    expect(JSON.stringify(rows)).not.toMatch(/booking|guest|price|payment|address|ownerContact/i);
+  });
+
   it("reads and mutates hotel, room, and service data within the caller's scope", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");

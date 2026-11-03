@@ -3,10 +3,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { d1Schema, hotelAdminAuditLogs, hotelUsers, hotels } from "../../drizzle/d1-schema";
+import { d1Schema, hotelAdminAuditLogs, hotelUsers, hotels, platformAdmins } from "../../drizzle/d1-schema";
 import { account, session, user } from "../../drizzle/auth-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelUserAssignment, deleteHotelUserAssignment, listHotelAdminAuditLogs, listHotelOptions, listHotelStaff, listHotelUserAssignments, transferHotelAdmin, updateHotelUserAssignmentRole } from "./staff";
+import { createHotelUserAssignment, deleteHotelUserAssignment, listHotelAdminAuditLogs, listHotelOptions, listHotelStaff, listHotelUserAssignments, listPlatformUsers, transferHotelAdmin, updateHotelUserAssignmentRole } from "./staff";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -41,6 +41,26 @@ async function seed() {
 }
 
 describe("D1 staff repository", () => {
+  it("lists allowlisted account fields with hotel and active platform roles only", async () => {
+    await seed();
+    await db.insert(user).values([
+      { id: "root", name: "Platform Admin", email: "root@example.test" },
+      { id: "ua", name: "Hotel Owner", email: "owner@example.test" },
+    ]);
+    await db.insert(account).values({ id: "root-account", accountId: "root", providerId: "credential", userId: "root", password: "must-not-leak", createdAt: new Date("2026-10-01T00:00:00Z"), updatedAt: new Date("2026-10-01T00:00:00Z") });
+    await db.insert(session).values({ id: "root-session", token: "must-not-leak", userId: "root", expiresAt: new Date("2099-01-01T00:00:00Z"), createdAt: new Date("2026-10-30T00:00:00Z"), updatedAt: new Date("2026-10-30T00:00:00Z") });
+    await db.insert(platformAdmins).values({ id: "active-platform-admin", userId: "root", email: "root@example.test", invitedBy: "bootstrap", acceptedAt: new Date("2026-10-01T00:00:00Z") });
+
+    const rows = await listPlatformUsers(db, { userId: "root" });
+    expect(rows.find(row => row.id === "root")).toMatchObject({ id: "root", email: "root@example.test", name: "Platform Admin" });
+    expect(rows.find(row => row.id === "root")?.roles).toEqual(expect.arrayContaining([{ role: "super_admin" }]));
+    expect(rows.find(row => row.id === "ua")).toMatchObject({
+      id: "ua", email: "owner@example.test", name: "Hotel Owner", roles: [{ role: "hotel_owner", hotel_id: "a" }],
+    });
+    expect(Object.keys(rows[0]!).sort()).toEqual(["created_at", "email", "id", "name", "roles"]);
+    expect(JSON.stringify(rows)).not.toMatch(/must-not-leak|password|token|session/i);
+  });
+
   it("refuses to let the owner remove their own membership", async () => {
     await seed();
     await expect(deleteHotelUserAssignment(db, { userId: "ua" }, "owner-a")).rejects.toMatchObject({ code: "FORBIDDEN" });

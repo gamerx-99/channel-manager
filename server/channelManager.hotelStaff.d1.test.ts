@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.setConfig({ testTimeout: 10000 });
 
 const staffMocks = vi.hoisted(() => ({
+  listPlatformUsers: vi.fn(),
   listHotelUserAssignments: vi.fn(),
   listHotelStaff: vi.fn(),
   listHotelAdminAuditLogs: vi.fn(),
@@ -81,6 +82,7 @@ beforeEach(() => {
   Object.values(inviteMocks).forEach(mock => mock.mockReset());
   Object.values(signupLinkMocks).forEach(mock => mock.mockReset());
   staffMocks.listHotelStaff.mockResolvedValue([staffMembership]);
+  staffMocks.listPlatformUsers.mockResolvedValue([{ id: OWNER_ID, email: 'owner@example.com', name: 'Owner', created_at: new Date('2026-01-01T00:00:00Z'), roles: [{ role: 'hotel_owner', hotel_id: HOTEL_ID }] }]);
   staffMocks.listHotelUserAssignments.mockResolvedValue([ownerMembership, staffMembership]);
   staffMocks.listHotelAdminAuditLogs.mockResolvedValue([]);
   staffMocks.updateHotelUserAssignmentRole.mockResolvedValue({ ...staffMembership, role: 'revenue_manager' });
@@ -362,8 +364,11 @@ describe('platform staff listing port', () => {
     await expect(caller('hotel_owner').channelManager.adminUsers()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(staffMocks.listHotelUserAssignments).not.toHaveBeenCalled();
   });
-  it('lists D1 assignments for a super admin with the retired Auth user list empty', async () => {
-    await expect(caller('super_admin').channelManager.adminUsers()).resolves.toEqual({ users: [], assignments: [ownerMembership, staffMembership] });
-    expect(staffMocks.listHotelUserAssignments).toHaveBeenCalledWith({}, expect.objectContaining({ roles: ['super_admin'] }));
+  it('lists only the safe D1 user directory for a super admin', async () => {
+    await expect(caller('super_admin').channelManager.adminUsers()).resolves.toEqual({
+      users: [{ id: OWNER_ID, email: 'owner@example.com', name: 'Owner', created_at: new Date('2026-01-01T00:00:00Z'), roles: [{ role: 'hotel_owner', hotel_id: HOTEL_ID }] }],
+    });
+    expect(staffMocks.listPlatformUsers).toHaveBeenCalledWith({}, expect.objectContaining({ roles: ['super_admin'] }));
+    expect(staffMocks.listHotelUserAssignments).not.toHaveBeenCalled();
   });
 });

@@ -1,14 +1,20 @@
 import { ShieldCheck, Users } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { canLoadAdminHotels, formatAdminDate } from '@/lib/adminUsers';
-import { HUMAN_ROLES, ROLE_LABELS, isPlatformRole, type HumanRole } from '@shared/authorization';
-import { useTranslation } from '@/lib/i18n';
+import { type AppRole, type HumanRole } from '@shared/authorization';
+import { useTranslation, type TranslationKey } from '@/lib/i18n';
 import { SupportAccountsPanel } from '@/components/SupportAccountsPanel';
 
 type AdminRole = HumanRole;
 
+const ROLE_LABEL_KEYS: Record<AppRole, TranslationKey> = {
+  super_admin: 'adminUsers.roleSuperAdmin', admin: 'adminUsers.roleAdmin', support: 'adminUsers.roleSupport',
+  hotel_owner: 'adminUsers.roleHotelOwner', revenue_manager: 'adminUsers.roleRevenueManager', front_desk: 'adminUsers.roleFrontDesk',
+  housekeeping: 'adminUsers.roleHousekeeping', api_service: 'adminUsers.roleApiService',
+};
+
 export default function AdminUsers() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const adminQuery = trpc.channelManager.adminUsers.useQuery();
   const hotelsQuery = trpc.channelManager.adminHotels.useQuery(undefined, {
     enabled: canLoadAdminHotels(Boolean(adminQuery.data), adminQuery.error),
@@ -16,18 +22,10 @@ export default function AdminUsers() {
 
   const adminData = adminQuery.data as any;
   const users = adminData?.users ?? [];
-  const assignments = adminData?.assignments ?? [];
   const hotels = hotelsQuery.data ?? [];
 
-  const roleByUser = new Map<string, AdminRole>();
-  assignments.forEach((assignment: any) => {
-    if (isPlatformRole(assignment.role) || !roleByUser.has(assignment.user_id)) {
-      roleByUser.set(assignment.user_id, assignment.role as AdminRole);
-    }
-  });
-
   function roleLabel(role: AdminRole | null) {
-    return role ? ROLE_LABELS[role] : t('adminUsers.unassigned');
+    return role ? t(ROLE_LABEL_KEYS[role]) : t('adminUsers.unassigned');
   }
 
   return (
@@ -46,7 +44,7 @@ export default function AdminUsers() {
         <>
           <section className="summary-strip">
             <div><span className="strip-label">{t('adminUsers.summaryAuthUsers')}</span><strong>{users.length}</strong></div>
-            <div><span className="strip-label">{t('adminUsers.summaryHotelMemberships')}</span><strong>{assignments.length}</strong></div>
+            <div><span className="strip-label">{t('adminUsers.summaryHotelMemberships')}</span><strong>{users.reduce((total: number, user: any) => total + (user.roles ?? []).filter((role: any) => role.hotel_id).length, 0)}</strong></div>
             <div><span className="strip-label">{t('adminUsers.summaryHotelsAvailable')}</span><strong>{hotels.length}</strong></div>
             <div className="strip-caption"><ShieldCheck size={16} /> {t('adminUsers.summaryCaption')}</div>
           </section>
@@ -59,8 +57,10 @@ export default function AdminUsers() {
                   <thead><tr><th>{t('adminUsers.colEmail')}</th><th>{t('adminUsers.colRole')}</th><th>{t('adminUsers.colMemberships')}</th><th>{t('adminUsers.colCreated')}</th></tr></thead>
                   <tbody>
                     {adminQuery.isLoading ? <tr><td colSpan={4}>{t('adminUsers.loadingAuthUsers')}</td></tr> : users.length === 0 ? <tr><td colSpan={4}>{t('adminUsers.noAuthUsersFound')}</td></tr> : users.map((user: any) => {
-                      const membershipCount = assignments.filter((assignment: any) => assignment.user_id === user.id).length;
-                      return <tr key={user.id}><td><strong>{user.email ?? t('adminUsers.noEmail')}</strong><small>{user.id}</small></td><td><span className={`status-pill ${roleByUser.get(user.id) ? 'live' : 'setup'}`}><i />{roleLabel(roleByUser.get(user.id) ?? null)}</span></td><td>{membershipCount}</td><td>{formatAdminDate(user.created_at)}</td></tr>;
+                      const membershipCount = (user.roles ?? []).filter((role: any) => role.hotel_id).length;
+                      const accountRoles = Array.from(new Set<AdminRole>(((user.roles ?? []) as Array<{ role: AdminRole }>).map(entry => entry.role)));
+                      const displayRoles = accountRoles;
+                      return <tr key={user.id}><td><strong>{user.email ?? t('adminUsers.noEmail')}</strong><small>{user.name ?? user.id}</small></td><td><span className={`status-pill ${displayRoles.length ? 'live' : 'setup'}`}><i />{displayRoles.length ? displayRoles.map(roleLabel).join(', ') : roleLabel(null)}</span></td><td>{membershipCount}</td><td>{formatAdminDate(user.created_at, language)}</td></tr>;
                     })}
                   </tbody>
                 </table>

@@ -1,5 +1,14 @@
 # Handoff log
 
+## [2026-11-03] Restore platform user and hotel directories
+- `adminUsers` now reads a permission-scoped D1 account directory with an explicit field allowlist (`id`, `email`, `name`, `created_at`, and hotel/platform roles). `adminHotels` now reads a separate D1 summary projection with only `id`, `name`, `slug`, `public_enabled`, and `created_at`; both endpoints retain their named platform permission checks.
+- `/hotels` shows an owner-permission empty state for platform roles with no hotel memberships and omits the `/platform` link unless the caller has `platform.view_system_logs`. It keeps platform hotel memberships out of hotel data access. Sync status codes now use translated labels, Admin Users says “user accounts,” and Thai account dates use the Buddhist year.
+- `ASSUMPTION:` `/hotels` uses the owner-permission empty state and links to `/platform` when that route is available. Logged in `.agent/OPEN_QUESTIONS.md` and in the page comment.
+- Updated the legacy admin-users router assertion because it encoded the removed empty-list stub. Added mocked-router tests, D1 allowlist tests, and a role/membership helper test.
+- Local verification setup: signed up a disposable Better Auth user on Wrangler dev, set `email_verified=1`, and inserted an accepted `platform_admins` row in local D1. No credentials were written to `.agent/`.
+- Verification: `pnpm test --pool=forks --maxWorkers=1 --minWorkers=1` passed (180 files, 1236 tests); `pnpm check` exited 0; `pnpm build` exited 0 with the Wrangler dry run. The build retains the existing Vite large-chunk warning. Thai glossary tests passed (2 tests) as part of the full suite.
+- Browser validation at 1280px and 375px is still pending: the in-app browser host was unavailable and computer use was denied access to the available Chrome window. No sideways-scroll claim is made.
+
 ## [2026-11-03] Site-wide security headers and GitHub Actions CI
 - **Task 1: Security headers (`client/public/_headers`)**:
   - Added a `/*` block at the top of `client/public/_headers` defining `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and `Content-Security-Policy-Report-Only`.
@@ -2239,3 +2248,6 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 - Added one WCAG luminance/contrast selector for black or white text. It is used by the plain hotel page CTAs, booking-step CTAs, selected calendar dates, themed CTA variables, and Website Builder previews. The three templates now retain the owner's accent and its computed text on those CTAs.
 - Unit tests cover light, dark, middle, and shorthand hex values at >=4.5:1. PublicHotel render checks cover no template plus all three templates; CSS contract checks themed button rules.
 - Verification after a TS target compatibility fix: `pnpm test` 177 files / 1223 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+- Claude review of the Superadmin batch (2026-11-03): server allowlists checked (no password/token fields). Codex could not open a browser; Claude checked /platform, /hotels and /settings/admin-users as a local platform admin at 1280px and 375px (no sideways scroll). Claude added Thai role labels (adminUsers.role*) in place of the English ROLE_LABELS constants on AdminUsers.
+

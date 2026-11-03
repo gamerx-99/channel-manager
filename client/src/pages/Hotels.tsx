@@ -11,12 +11,16 @@ import {
 } from '@/components/ui/dialog';
 import { trpc } from '@/lib/trpc';
 import { useTranslation } from '@/lib/i18n';
+import { canAccessPlatformSummary, shouldShowPlatformHotelEmptyState } from '@/lib/adminUsers';
+
+// ASSUMPTION: platform users without hotel memberships get an explanation and a link to the summary directory.
 
 const emptyHotelForm = { name: '', slug: '', address: '', owner_contact: '', public_enabled: false };
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export default function Hotels() {
   const { t } = useTranslation();
+  const authMe = trpc.auth.me.useQuery();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'All properties' | 'Live' | 'Private'>('All properties');
   const [showCreate, setShowCreate] = useState(false);
@@ -25,6 +29,11 @@ export default function Hotels() {
   const utils = trpc.useUtils();
   const { data: hotels = [], isLoading, error } = trpc.channelManager.hotels.useQuery();
   const canCreateHotel = trpc.channelManager.canCreateHotel.useQuery();
+  const showPlatformHotelEmptyState = shouldShowPlatformHotelEmptyState({
+    roles: authMe.data?.roles ?? [], memberships: authMe.data?.memberships ?? [],
+    hotelCount: hotels.length, isLoading: isLoading || authMe.isLoading, hasError: Boolean(error),
+  });
+  const canOpenPlatformSummary = canAccessPlatformSummary(authMe.data?.roles ?? []);
   const createHotel = trpc.channelManager.createHotel.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -65,6 +74,10 @@ export default function Hotels() {
     }
     createHotel.mutate({ name, slug, address, owner_contact: ownerContact, public_enabled: form.public_enabled });
   }
+
+  if (hotels.length === 0 && (isLoading || authMe.isLoading)) return <div className="page-content"><section className="page-intro intro-split"><div><div className="eyebrow">{t('hotels.eyebrow')}</div><h1>{t('hotels.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotels.lede')}</p></div></section><section className="panel empty-state">{t('hotels.loadingRecords')}</section></div>;
+
+  if (showPlatformHotelEmptyState) return <div className="page-content"><section className="page-intro intro-split"><div><div className="eyebrow">{t('hotels.eyebrow')}</div><h1>{t('hotels.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotels.lede')}</p></div></section><section className="panel empty-state"><HotelIcon size={20} /><strong>{t('hotels.platformMembershipTitle')}</strong><span>{t('hotels.platformMembershipDescription')}</span>{canOpenPlatformSummary && <Link className="button button-primary" href="/platform">{t('hotels.platformDirectoryLink')}</Link>}</section></div>;
 
   return <div className="page-content"><section className="page-intro intro-split"><div><div className="eyebrow">{t('hotels.eyebrow')}</div><h1>{t('hotels.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotels.lede')}</p></div>{canCreateHotel.data && <button className="button button-primary" type="button" onClick={() => { setFormError(null); setShowCreate(true); }}><Plus size={16} /> {t('hotels.addHotel')}</button>}</section>
     <section className="summary-strip"><div><span className="strip-label">{t('hotels.totalProperties')}</span><strong>{hotels.length}</strong></div><div><span className="strip-label">{t('hotels.roomsUnderManagement')}</span><strong>{totalRooms}</strong></div><div><span className="strip-label">{t('hotels.publiclyLive')}</span><strong>{liveCount}</strong></div><div className="strip-caption"><HotelIcon size={16} /> {t('hotels.stripCaption')}</div></section>

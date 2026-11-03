@@ -2,11 +2,33 @@ import { assertStaffPermissionChange } from "./staffAuthorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
 import { type AppRole } from "@shared/authorization";
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { hotelAdminAuditLogs, hotelUsers, hotels } from "../../drizzle/d1-schema";
+import { and, asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { hotelAdminAuditLogs, hotelUsers, hotels, platformAdmins } from "../../drizzle/d1-schema";
 import { account, session, user } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, authorizePlatformAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { ASSIGNABLE_STAFF_ROLES, isHumanRole, type HumanRole } from "@shared/authorization";
+
+/** Platform directory with an explicit field allowlist; never select auth credentials. */
+export async function listPlatformUsers(db: D1ScopedDatabase, caller: D1CallerContext) {
+  await authorizePlatformAction(db, caller, "platform.manage_users");
+  const [users, memberships, admins] = await Promise.all([
+    db.select({ id: user.id, email: user.email, name: user.name, createdAt: user.createdAt }).from(user).orderBy(asc(user.createdAt)),
+    db.select({ userId: hotelUsers.userId, hotelId: hotelUsers.hotelId, role: hotelUsers.role }).from(hotelUsers),
+    db.select({ userId: platformAdmins.userId }).from(platformAdmins).where(and(isNotNull(platformAdmins.acceptedAt), isNull(platformAdmins.disabledAt))),
+  ]);
+  const rolesByUser = new Map<string, Array<{ role: string; hotel_id?: string }>>();
+  for (const membership of memberships) {
+    const roles = rolesByUser.get(membership.userId) ?? [];
+    roles.push({ role: membership.role, hotel_id: membership.hotelId });
+    rolesByUser.set(membership.userId, roles);
+  }
+  for (const admin of admins) {
+    const roles = rolesByUser.get(admin.userId) ?? [];
+    roles.push({ role: "super_admin" });
+    rolesByUser.set(admin.userId, roles);
+  }
+  return users.map(row => ({ id: row.id, email: row.email, name: row.name, created_at: row.createdAt, roles: rolesByUser.get(row.id) ?? [] }));
+}
 
 export async function listHotelOptions(db: D1ScopedDatabase, caller: D1CallerContext) {
   await authorizePlatformAction(db, caller, "platform.manage_users");

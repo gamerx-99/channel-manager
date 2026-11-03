@@ -14,6 +14,7 @@ import {
   deleteHotelUserAssignment,
   updateHotelUserAssignmentRole,
   transferHotelAdmin as dbTransferHotelAdmin,
+  listPlatformUsers,
 } from '../d1/staff';
 import {
   inviteStaffUser as d1InviteStaffUser,
@@ -83,13 +84,11 @@ export const hotelAdminAuditLogListSchema = z.object({
   limit: z.number().int().min(1).max(100).default(50),
 });
 
-// adminUsers: platform-level, requires Better Auth user listing (Stage 3). Temporarily returns empty.
 export const adminUsers = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'platform.manage_users');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    const assignments = await listHotelUserAssignments(ctx.db, ctx.caller ?? { userId: ctx.user.id });
-    return { users: [], assignments };
+    return { users: await listPlatformUsers(ctx.db, ctx.caller ?? { userId: ctx.user.id }) };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);

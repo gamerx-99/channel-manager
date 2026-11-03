@@ -5,6 +5,7 @@ Move to a `## Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] Platform user with no hotel memberships on `/hotels` (2026-11-03): `listManagedHotels` intentionally excludes platform memberships. `ASSUMPTION:` show an empty-state explaining owner permission is required and link to `/platform`; do not expose hotel data or present a misleading zero count.
 - [ ] Landing page demo link: previous `Landing.tsx` linked to `#features`; no existing public demo URL is configured. `ASSUMPTION:` `/sample-stay` is the demo slug, using the public-hotel render fixture as the available example. Confirm the intended production demo slug. Raised 2026-11-03.
 - [ ] `ASSUMPTION:` every hotel can pick every website template for now. `minimal-white` is marked basic and `lanna-teak` / `cafe-homestay` premium with a "Pro" tag, but no plan check exists yet. Decide when Free/Pro enforcement is built. Raised 2026-11-03.
 - [ ] `ASSUMPTION:` hotel owners cannot change the public hotel slug in profile editing, because changing it may break guest links already shared. Confirm whether slug changes should remain unavailable or use a redirect. Raised 2026-11-02.

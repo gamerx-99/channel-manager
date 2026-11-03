@@ -6,6 +6,7 @@ import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc'
 import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
 import {
   listManagedHotels as d1ListManagedHotels,
+  listPlatformHotelDirectory as d1ListPlatformHotelDirectory,
   getManagedHotel as d1GetManagedHotel,
   createManagedHotel as d1CreateManagedHotel,
   registerOwnHotel as d1RegisterOwnHotel,
@@ -223,8 +224,12 @@ export const canCreateHotel = protectedProcedure.query(async ({ ctx }) => {
 export const adminHotels = protectedProcedure.query(async ({ ctx }) => {
   requirePermission(ctx.user, 'platform.manage_hotels');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
-  // Platform admin: no D1 listHotelOptions; return empty for now
-  return [];
+  try {
+    return await d1ListPlatformHotelDirectory(ctx.db, ctx.caller ?? { userId: ctx.user.id });
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
 });
 
 export const createHotel = protectedProcedure.input(createHotelSchema).mutation(async ({ ctx, input }) => {
