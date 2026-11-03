@@ -46,7 +46,8 @@ describe("landing and public signup contract", () => {
 
   it("sends visitors to signup and signed-in users to the dashboard", () => {
     expect(landing).toContain('me.data ? "/dashboard" : "/signup"');
-    expect(landing).toContain('href="#features"');
+    expect(landing).toContain('id="features"');
+    expect(landing).toContain('href="/lanna-cozy-demo"');
   });
 
   it("creates a personal account first and keeps hotel setup for the onboarding step", () => {
@@ -59,9 +60,13 @@ describe("landing and public signup contract", () => {
   });
 
   it("does not sell unconfirmed prices, trials or OTA sync, in either language", () => {
-    for (const copy of [en.landing, th.landing, en.signup, th.signup]) {
+    for (const copy of [en.signup, th.signup]) {
       const text = JSON.stringify(copy);
       expect(text).not.toMatch(/฿|baht|บาท|trial|ทดลอง|free|ฟรี|OTA|Agoda|Booking\.com|Airbnb/i);
+    }
+    // The landing now shows the owner-confirmed Free/Pro prices (2026-11-03), but still no trial and no OTA sync.
+    for (const copy of [en.landing, th.landing]) {
+      expect(JSON.stringify(copy)).not.toMatch(/trial|ทดลอง|OTA|Agoda|Booking\.com|Airbnb|channel manager/i);
     }
   });
 });
