@@ -53,6 +53,7 @@ export const hotels = sqliteTable("hotels", {
   agentId: text("agent_id").references(() => agents.id, { onDelete: "set null" }),
   closureRequestedAt: integer("closure_requested_at", { mode: "timestamp_ms" }),
   closureWasPublic: integer("closure_was_public", { mode: "boolean" }),
+  province: text("province"),
 }, table => [
   check("hotels_acquisition_source_check", sql`${table.acquisitionSource} in ('direct', 'referral', 'agent')`),
   uniqueIndex("hotels_slug_key").on(table.slug),
@@ -63,6 +64,72 @@ export const hotels = sqliteTable("hotels", {
     foreignColumns: [table.id],
   }).onDelete("set null"),
 ]);
+
+export const hotelSubscriptions = sqliteTable("hotel_subscriptions", {
+  hotelId: text("hotel_id").primaryKey().references(() => hotels.id, { onDelete: "cascade" }),
+  paidUntil: integer("paid_until", { mode: "timestamp_ms" }),
+  updatedAt: updatedAt(),
+});
+
+export const subscriptionPayments = sqliteTable("subscription_payments", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  months: integer("months").notNull(),
+  listAmount: money("list_amount").notNull(),
+  discountAmount: money("discount_amount").notNull(),
+  amount: money("amount").notNull(),
+  couponId: text("coupon_id"),
+  status: text("status").notNull().default("pending"),
+  slipTransRef: text("slip_trans_ref"),
+  qrExpiresAt: integer("qr_expires_at", { mode: "timestamp_ms" }),
+  createdByUserId: text("created_by_user_id").notNull(),
+  verifiedAt: integer("verified_at", { mode: "timestamp_ms" }),
+  createdAt: createdAt(),
+}, table => [
+  check("subscription_payments_months_check", sql`${table.months} > 0`),
+  check("subscription_payments_status_check", sql`${table.status} in ('pending', 'verified', 'failed', 'expired')`),
+  check("subscription_payments_amounts_check", sql`${nonnegativeMoney(table.listAmount)} and ${nonnegativeMoney(table.discountAmount)} and ${nonnegativeMoney(table.amount)}`),
+  uniqueIndex("subscription_payments_slip_trans_ref_unique").on(table.slipTransRef).where(sql`${table.slipTransRef} is not null`),
+  index("subscription_payments_hotel_created_idx").on(table.hotelId, table.createdAt),
+]);
+
+export const coupons = sqliteTable("coupons", {
+  id: id(),
+  code: text("code").notNull(),
+  percentOff: integer("percent_off").notNull(),
+  discountMonths: integer("discount_months").notNull(),
+  maxRedemptions: integer("max_redemptions"),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  note: text("note"),
+  createdByUserId: text("created_by_user_id").notNull(),
+  createdAt: createdAt(),
+}, table => [
+  check("coupons_percent_off_check", sql`${table.percentOff} between 1 and 100`),
+  check("coupons_discount_months_check", sql`${table.discountMonths} > 0`),
+  check("coupons_max_redemptions_check", sql`${table.maxRedemptions} is null or ${table.maxRedemptions} > 0`),
+  uniqueIndex("coupons_code_unique").on(table.code),
+]);
+
+export const couponRedemptions = sqliteTable("coupon_redemptions", {
+  id: id(),
+  couponId: text("coupon_id").notNull().references(() => coupons.id, { onDelete: "cascade" }),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  paymentId: text("payment_id").notNull().references(() => subscriptionPayments.id),
+  createdAt: createdAt(),
+}, table => [
+  unique("coupon_redemptions_coupon_hotel_unique").on(table.couponId, table.hotelId),
+  index("coupon_redemptions_payment_idx").on(table.paymentId),
+]);
+
+export const subscriptionAdminLog = sqliteTable("subscription_admin_log", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  adminUserId: text("admin_user_id").notNull(),
+  action: text("action").notNull(),
+  detail: text("detail").notNull(),
+  createdAt: createdAt(),
+}, table => [index("subscription_admin_log_hotel_created_idx").on(table.hotelId, table.createdAt)]);
 
 export const hotelUsers = sqliteTable("hotel_users", {
   id: id(),
@@ -529,6 +596,11 @@ export const hotelPurgeLog = sqliteTable("hotel_purge_log", {
 export const d1Schema = {
   agents,
   hotels,
+  hotelSubscriptions,
+  subscriptionPayments,
+  coupons,
+  couponRedemptions,
+  subscriptionAdminLog,
   hotelUsers,
   hotelMedia,
   roomTypes,

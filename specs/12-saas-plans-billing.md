@@ -1,7 +1,7 @@
 # 12 SaaS plans, entitlements & subscription billing
-Status: TODO — BLOCKED on the human decisions listed under "Blocking questions" (prices,
-collection method, tax setup). The architecture below does not depend on those answers;
-the first ticket (plan catalogue + entitlements, no money) can start once Q1 is answered.
+Status: IN PROGRESS — Ticket A (subscription, payment, coupon, province and admin-log schema;
+pure plan rules) implemented. Migration application and Tickets B–D are pending. Owner decisions
+dated 2026-11-04 supersede the earlier blocking questions below.
 Depends on: 09-authenticator-mfa (DONE, step-up for billing settings), 01-payments-slipok (DONE, reused for
 platform slip verification)
 Owner-tier: worker-code

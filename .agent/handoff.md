@@ -4311,3 +4311,18 @@ Not tested in a browser or with a real email.
   - `pnpm test`: 183 test files passed, 1261 tests passed.
   - `pnpm build`: exit 0 (wrangler dry-run).
   - Screenshots before and after at 1280px and 375px for both plain page (`/test-owner-hotel`) and themed page (`/demo-theme` with Lanna Teak), across steps 1 and 2.
+
+## 2026-11-04 — Billing ticket A: subscription schema and plan rules (spec 12)
+- **Ticket**: data model and pure rules for the 15-day trial, coupons and PromptPay billing (`.agent/codex-prompt-billing-crm.md`, ticket A).
+- **Done** (Codex; its run ended with exit 255 before writing a report, so Claude reviewed the diff):
+  - New tables `hotel_subscriptions`, `subscription_payments`, `coupons`, `coupon_redemptions`, `subscription_admin_log`, plus `hotels.province`. Migration `drizzle/d1/20261103233539_subscription_billing_ticket_a.sql`, journal in `drizzle/d1/meta`.
+  - `shared/plans.ts`: `PRO_MONTHLY_PRICE`, `TRIAL_DAYS`, `resolvePlan`, `quotePro`, `extendPaidUntil`, with tests in `shared/plans.test.ts`.
+  - `server/d1SchemaParity.test.ts` lists the new D1-only tables and the `province` column. This is an addition, not a loosened check.
+  - The open question on the Free room limit after the trial was logged in `OPEN_QUESTIONS.md`.
+- **Evidence**:
+  - Full `pnpm test` in the Codex run: 185 files, 1275 tests passed.
+  - `pnpm check`: exit 0.
+  - `shared/plans.test.ts` and the parity test: 11/11 passed.
+- **Pending**:
+  - The human must apply the migration to staging and production (`wrangler d1 migrations apply ... --remote`).
+  - Tickets B (dashboard, CRM, coupons) and C (owner plan card, payment) are next.

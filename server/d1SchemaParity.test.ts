@@ -35,7 +35,17 @@ const postgresPublicTables = [
   "support_access_grants",
   "support_access_log",
 ].sort();
-const d1OnlyTables = ["booking_nights", "hotel_purge_log", "platform_admins", "support_accounts"];
+const d1OnlyTables = [
+  "booking_nights",
+  "coupon_redemptions",
+  "coupons",
+  "hotel_purge_log",
+  "hotel_subscriptions",
+  "platform_admins",
+  "subscription_admin_log",
+  "subscription_payments",
+  "support_accounts",
+];
 
 describe("D1 schema parity", () => {
   it("contains every app-owned Postgres table and no Supabase-internal tables", () => {
@@ -48,6 +58,7 @@ describe("D1 schema parity", () => {
       "acquisitionSource",
       "referredByHotelId",
       "agentId",
+      "province",
     ]));
     expect(Object.keys(getTableColumns(agents))).toEqual(expect.arrayContaining([
       "id", "name", "phone", "email", "status", "createdAt",
