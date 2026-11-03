@@ -2191,3 +2191,7 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 ## 2026-11-03 - Phase 1 S1 FAQ tone
 - Removed polite particle from both Thai landing FAQ answers; wording remains direct and neutral.
 - Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run. pnpm emitted a nonfatal store lock warning before scripts.
+
+## 2026-11-03 - Phase 1 S3 mobile sign-in
+- On narrow Landing headers, the sign-in link remains beside the language button with a 44px touch target. The signup action remains in the hero, freeing header width at 320px.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run. Headless Chrome could not start in this sandbox (crashpad setsockopt denied), so live viewport measurement remains pending.
