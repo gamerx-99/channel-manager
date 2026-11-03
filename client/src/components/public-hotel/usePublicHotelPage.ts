@@ -36,6 +36,7 @@ export function usePublicHotelPage(slug: string) {
     t,
     roomTypes: publicHotel.data?.roomTypes,
     visibleSections: (siteConfigQuery.data?.visibleSections as Record<string, boolean> | null) ?? null,
+    hotelReady: !publicHotel.isLoading && !publicHotel.error,
   });
 
   const loading = publicHotel.isLoading;

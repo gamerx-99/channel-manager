@@ -27,8 +27,10 @@ export function useBookingWizard(args: {
   t: TFunction;
   roomTypes: { childRule?: string; childRuleLimit?: string | null }[] | undefined;
   visibleSections: Record<string, boolean> | null;
+  /** False while the hotel is loading or failed to load; availability waits for it. */
+  hotelReady: boolean;
 }) {
-  const { slug, t, roomTypes, visibleSections } = args;
+  const { slug, t, roomTypes, visibleSections, hotelReady } = args;
 
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [checkIn, setCheckIn] = useState<string | null>(getTomorrowDateString());
@@ -69,7 +71,7 @@ export function useBookingWizard(args: {
   const availabilityQuery = trpc.channelManager.publicHotelAvailability.useQuery(
     { slug, check_in: checkIn ?? "", check_out: checkOut ?? "", adults, children: childMeasurements },
     {
-      enabled: Boolean(slug && isDatesValid && wizardStep >= 2),
+      enabled: Boolean(slug && isDatesValid && wizardStep >= 2 && hotelReady),
       staleTime: 30_000,
     },
   );
@@ -164,12 +166,8 @@ export function useBookingWizard(args: {
 
   const handleResetBooking = () => {
     setWizardStep(1);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayAfter = new Date();
-    dayAfter.setDate(dayAfter.getDate() + 2);
-    setCheckIn(tomorrow.toISOString().slice(0, 10));
-    setCheckOut(dayAfter.toISOString().slice(0, 10));
+    setCheckIn(getTomorrowDateString());
+    setCheckOut(getDayAfterTomorrowDateString());
     setAdults(2);
     setChildren([]);
     setPreferredRoomTypeId(null);

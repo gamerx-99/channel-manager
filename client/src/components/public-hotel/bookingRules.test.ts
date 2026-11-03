@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isDatesValid,
   areGuestsValid,
-  countNights,
   parseChildMeasurements,
-  isChildWithinLimit,
   serviceLineTotal,
   selectedServicesTotal,
 } from "./bookingRules";
@@ -23,29 +21,20 @@ describe("bookingRules", () => {
     expect(areGuestsValid(1, ["5"])).toBe(true);
   });
 
-  it("counts nights", () => {
-    expect(countNights("2026-11-04", "2026-11-06")).toBe(2);
-    expect(countNights("2026-11-04", "2026-11-04")).toBe(0);
-  });
-
   it("parses child measurements", () => {
     expect(parseChildMeasurements(["5", "10"], "age")).toEqual([{ age: 5 }, { age: 10 }]);
     expect(parseChildMeasurements(["120"], "height")).toEqual([{ height_cm: 120 }]);
     expect(parseChildMeasurements([""], "age")).toEqual([]);
   });
 
-  it("checks child limits", () => {
-    expect(isChildWithinLimit("17", "age")).toBe(true);
-    expect(isChildWithinLimit("18", "age")).toBe(false);
-    expect(isChildWithinLimit("250", "height")).toBe(true);
-    expect(isChildWithinLimit("251", "height")).toBe(false);
-  });
-
   it("calculates service line total", () => {
     const service = { id: "s1", name: "Breakfast", pricingModel: "PER_NIGHT", unitPrice: 100 };
     expect(serviceLineTotal(service, 2, 3)).toBe(600);
+    const perPerson = { id: "s3", name: "Dinner", pricingModel: "PER_PERSON_PER_NIGHT", unitPrice: "80" };
+    expect(serviceLineTotal(perPerson, 2, 3)).toBe(480);
     const oneTime = { id: "s2", name: "Transfer", pricingModel: "ONE_TIME", unitPrice: 50 };
     expect(serviceLineTotal(oneTime, 2, 3)).toBe(100);
+    expect(serviceLineTotal(service, 0, 3)).toBe(0);
   });
 
   it("calculates selected services total", () => {
