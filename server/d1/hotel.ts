@@ -261,7 +261,7 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
   const hotel = await requirePublicHotel(db, caller, slug);
   const [hotelRoomTypes, media, siteConfig] = await Promise.all([
     db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id)),
-    db.select({ id: hotelMedia.id, url: hotelMedia.url, caption: hotelMedia.caption, is_hero: hotelMedia.isHero, display_order: hotelMedia.displayOrder })
+    db.select({ id: hotelMedia.id, url: hotelMedia.url, caption: hotelMedia.caption, objectPosition: hotelMedia.objectPosition, is_hero: hotelMedia.isHero, display_order: hotelMedia.displayOrder })
       .from(hotelMedia).where(eq(hotelMedia.hotelId, hotel.id)).orderBy(asc(hotelMedia.displayOrder))
       .then(rows => rows.map(row => ({ ...row, url: servedMediaUrl(row.url) }))),
     db.select({ theme: hotelSiteConfig.theme }).from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotel.id)).limit(1),

@@ -85,6 +85,7 @@ export const hotelMedia = sqliteTable("hotel_media", {
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
   caption: text("caption"),
+  objectPosition: text("object_position"),
   isHero: integer("is_hero", { mode: "boolean" }).notNull().default(false),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: createdAt(),

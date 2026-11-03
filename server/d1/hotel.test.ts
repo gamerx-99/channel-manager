@@ -96,7 +96,8 @@ describe("D1 hotel repository", () => {
     await expect(createManagedHotel(db, { userId: "root" }, { name: "New", slug: "new", address: "A", owner_contact: "x", public_enabled: false })).resolves.toMatchObject({ slug: "new" });
 
     const publicCaller = { userId: "", access: "public" as const };
-    expect(await getPublicHotel(db, publicCaller, "a-slug")).toMatchObject({ hotel: { id: "a" }, roomTypes: [{ id: "rt-a" }] });
+    await db.update(hotelMedia).set({ objectPosition: "21% 79%" }).where(eq(hotelMedia.id, "media-a"));
+    expect(await getPublicHotel(db, publicCaller, "a-slug")).toMatchObject({ hotel: { id: "a" }, roomTypes: [{ id: "rt-a" }], media: [{ id: "media-a", objectPosition: "21% 79%" }] });
     expect(await listActiveHotelServicesBySlug(db, publicCaller, "a-slug")).toHaveLength(1);
     await expect(getPublicHotel(db, publicCaller, "b-slug")).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(getPublicHotel(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });

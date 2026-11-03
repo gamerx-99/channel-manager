@@ -6,7 +6,7 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { d1Schema, hotelMedia, hotelSiteConfig, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelMedia, deleteHotelMedia, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, saveHotelSiteConfig, setHotelMediaHero } from "./siteConfig";
+import { createHotelMedia, deleteHotelMedia, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, saveHotelSiteConfig, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -67,6 +67,9 @@ describe("D1 site config and media repository", () => {
 
     const first = await createHotelMedia(db, caller, { hotel_id: "a", url: "r2/a/1", is_hero: true });
     const second = await createHotelMedia(db, caller, { hotel_id: "a", url: "r2/a/2" });
+    await expect(setHotelMediaObjectPosition(db, caller, "a", second.id, "23% 81%")).resolves.toMatchObject({ objectPosition: "23% 81%" });
+    expect(await listHotelMedia(db, caller, "a")).toMatchObject([{ id: first.id, objectPosition: null }, { id: second.id, objectPosition: "23% 81%" }]);
+    await expect(setHotelMediaObjectPosition(db, { userId: "owner-b" }, "a", second.id, null)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await setHotelMediaHero(db, caller, "a", second.id);
     await expect(createHotelMedia(db, caller, { hotel_id: "b", url: "r2/b/1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect((await listHotelMedia(db, caller, "a")).filter(media => media.isHero).map(media => media.id)).toEqual([second.id]);
@@ -131,6 +134,10 @@ describe("D1 site config and media repository", () => {
     await expect(caller.channelManager.saveHotelSiteConfig({ hotel_id: hotelId, theme: "unknown" }))
       .rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller.channelManager.saveHotelSiteConfig({ hotel_id: hotelId, theme: "minimal-white" }))
+      .rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.channelManager.setHotelMediaObjectPosition({ hotel_id: hotelId, media_id: "88ed76e4-cc93-4aa7-9c4d-30999d35ada4", object_position: "101% 50%" }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.channelManager.setHotelMediaObjectPosition({ hotel_id: hotelId, media_id: "88ed76e4-cc93-4aa7-9c4d-30999d35ada4", object_position: "50% 50%" }))
       .rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 

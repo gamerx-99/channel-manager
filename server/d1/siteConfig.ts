@@ -101,6 +101,15 @@ export async function setHotelMediaHero(db: D1ScopedDatabase, caller: D1CallerCo
   if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel media not found." });
 }
 
+export async function setHotelMediaObjectPosition(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, mediaId: string, objectPosition: string | null, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel_media.set_object_position", now);
+  const [row] = await db.update(hotelMedia).set({ objectPosition }).where(and(
+    eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.id, mediaId),
+  )).returning({ id: hotelMedia.id, objectPosition: hotelMedia.objectPosition });
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel media not found." });
+  return row;
+}
+
 async function setHeroWithinHotel(db: D1ScopedDatabase, hotelId: string, mediaId: string | null) {
   const [row] = await db.update(hotelMedia).set({
     isHero: mediaId === null ? false : sql`${hotelMedia.id} = ${mediaId}`,

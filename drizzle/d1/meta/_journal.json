@@ -85,6 +85,13 @@
       "when": 1793664000000,
       "tag": "20261103000000_add_hotel_site_theme",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1793671200000,
+      "tag": "20261103010000_add_hotel_media_object_position",
+      "breakpoints": true
     }
   ]
 }

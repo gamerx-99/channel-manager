@@ -29,6 +29,7 @@ import {
   createHotelMedia as d1CreateHotelMedia,
   deleteHotelMedia as d1DeleteHotelMedia,
   setHotelMediaHero as d1SetHotelMediaHero,
+  setHotelMediaObjectPosition as d1SetHotelMediaObjectPosition,
 } from '../d1/siteConfig';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
@@ -187,6 +188,11 @@ export const deleteHotelMediaSchema = z.object({
 export const setHotelMediaHeroSchema = z.object({
   hotel_id: hotelIdSchema,
   media_id: z.string().uuid(),
+});
+export const setHotelMediaObjectPositionSchema = z.object({
+  hotel_id: hotelIdSchema,
+  media_id: z.string().uuid(),
+  object_position: z.string().regex(/^(?:0|[1-9]\d?|100)% (?:0|[1-9]\d?|100)%$/).nullable(),
 });
 
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
@@ -564,6 +570,17 @@ export const setHotelMediaHero = protectedProcedure.input(setHotelMediaHeroSchem
   }
 });
 
+export const setHotelMediaObjectPosition = protectedProcedure.input(setHotelMediaObjectPositionSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    return await d1SetHotelMediaObjectPosition(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.media_id, input.object_position);
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
 export const hotelRouter = router({
   hotels,
   canCreateHotel,
@@ -585,5 +602,6 @@ export const hotelRouter = router({
   uploadHotelMedia,
   deleteHotelMedia,
   setHotelMediaHero,
+  setHotelMediaObjectPosition,
   updateHotelProfile,
 });

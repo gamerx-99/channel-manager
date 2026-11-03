@@ -70,6 +70,7 @@ import {
   uploadHotelMedia,
   deleteHotelMedia,
   setHotelMediaHero,
+  setHotelMediaObjectPosition,
 } from './routers/hotelRouter';
 import {
   bookings,
@@ -149,6 +150,7 @@ export const appRouter = router({
     uploadHotelMedia,
     deleteHotelMedia,
     setHotelMediaHero,
+    setHotelMediaObjectPosition,
     ota: otaRouter,
   }),
 
