@@ -2214,3 +2214,28 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 
 - Claude review of the Stitch landing (2026-11-03): demo link set to /lanna-cozy-demo (the live demo hotel), contact email contact@hayhostth.com (owner), product mock made inert with role=img and its address bar reads hayhostth.com/your-stay (no per-hotel subdomains exist). Landing.contract.test.ts had dropped the landing from the no-trial/no-OTA guard when prices became allowed; Claude restored that guard for the landing copy. Checked at 1440px and 320px: no sideways scroll, no external requests, 'เข้าสู่ระบบ' visible at 44px.
 
+## 2026-11-03 - Phase 1 S1 FAQ tone
+- Removed polite particle from both Thai landing FAQ answers; wording remains direct and neutral.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run. pnpm emitted a nonfatal store lock warning before scripts.
+
+## 2026-11-03 - Phase 1 S3 mobile sign-in
+- On narrow Landing headers, the sign-in link remains beside the language button with a 44px touch target. The signup action remains in the hero, freeing header width at 320px.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run. Headless Chrome could not start in this sandbox (crashpad setsockopt denied), so live viewport measurement remains pending.
+
+## 2026-11-03 - Phase 1 S3 Login and password-reset language
+- Login and the shared password-reset shell now render the existing LanguageSwitcher. The switcher uses the existing translation hook so standalone auth screens render without a provider in tests.
+- Thai copy: `ระบบปฏิบัติการโรงแรม / คอนโซลส่วนกลาง` → `จัดการโรงแรมในที่เดียว`; `ทีมงานผู้สนับสนุน` → `ทีมงานของโรงแรม`.
+- Verification after fixing the standalone rendering failure: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+## 2026-11-03 - Phase 1 S3 compact mobile login banner
+- Login and password-reset shells use a compact mobile banner that retains brand and language toggle while showing the form directly below it.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+## 2026-11-03 - Phase 1 S3 mobile availability calendar cue
+- Added a mobile-only horizontal-scroll hint with chevron and right-edge fade above/over the month grid; reused the existing `availability.mobileScrollHint` copy.
+- Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+## 2026-11-03 - Phase 1 S4 hotel-accent CTA contrast
+- Added one WCAG luminance/contrast selector for black or white text. It is used by the plain hotel page CTAs, booking-step CTAs, selected calendar dates, themed CTA variables, and Website Builder previews. The three templates now retain the owner's accent and its computed text on those CTAs.
+- Unit tests cover light, dark, middle, and shorthand hex values at >=4.5:1. PublicHotel render checks cover no template plus all three templates; CSS contract checks themed button rules.
+- Verification after a TS target compatibility fix: `pnpm test` 177 files / 1223 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.

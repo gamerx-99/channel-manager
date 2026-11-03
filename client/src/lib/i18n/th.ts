@@ -277,10 +277,10 @@ const th: TranslationDictionary = {
   },
   login: {
     forgotPassword: "ลืมรหัสผ่าน?",
-    eyebrowAside: "ระบบปฏิบัติการโรงแรม / คอนโซลส่วนกลาง",
+    eyebrowAside: "จัดการโรงแรมในที่เดียว",
     headlineAside1: "ดูแลทุกการเข้าพัก",
     headlineAside2: "ให้ราบรื่นไร้รอยต่อ",
-    descAside: "พื้นที่ทำงานที่ออกแบบเฉพาะสำหรับเจ้าของโรงแรมและทีมงานผู้สนับสนุน",
+    descAside: "พื้นที่ทำงานสำหรับเจ้าของโรงแรมและทีมงานของโรงแรม",
     privateOperations: "ระบบการจัดการโรงแรมส่วนตัว",
     secureWorkspace: "พื้นที่ทำงานปลอดภัย",
     eyebrowCard: "เข้าสู่ระบบอย่างปลอดภัย",

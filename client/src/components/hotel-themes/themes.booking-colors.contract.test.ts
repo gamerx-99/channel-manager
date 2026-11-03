@@ -8,4 +8,13 @@ describe("theme booking text colors", () => {
     expect(css).toMatch(new RegExp(`\\.theme-${theme} \\.public-booking h2[^\\{]*\\{[^}]*color:`));
     expect(css).toMatch(new RegExp(`\\.theme-${theme} \\.public-booking h2 i[^\\{]*\\{[^}]*color:`));
   });
+  it("keeps hotel accent and computed text on calls to action in every theme", () => {
+    for (const theme of ["minimal-white", "lanna-teak", "cafe-homestay"]) {
+      expect(css).toContain(`.theme-${theme} .public-button`);
+      expect(css).toContain(`.theme-${theme} .public-booking .booking-next`);
+    }
+    expect(css).toContain("background:var(--owner-accent)!important");
+    expect(css).toContain("color:var(--owner-accent-text)!important");
+    expect(css).not.toContain("--booking-calendar-accent:var(--t-primary)!important");
+  });
 });

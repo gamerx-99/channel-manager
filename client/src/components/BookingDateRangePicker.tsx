@@ -3,6 +3,7 @@ import { DayPicker } from 'react-day-picker';
 import { enUS, th } from 'react-day-picker/locale';
 import 'react-day-picker/style.css';
 import { useTranslation } from '@/lib/i18n';
+import { getContrastText } from '@/lib/contrastText';
 
 export interface BookingDateRangePickerProps {
   /** ISO date string (YYYY-MM-DD) or null/undefined if not yet selected. */
@@ -57,7 +58,7 @@ export function BookingDateRangePicker({
   return (
     <div
       className="booking-calendar"
-      style={accentColor ? ({ '--booking-calendar-accent': accentColor } as React.CSSProperties) : undefined}
+      style={accentColor ? ({ '--booking-calendar-accent': accentColor, '--booking-calendar-accent-text': getContrastText(accentColor) } as React.CSSProperties) : undefined}
     >
       <DayPicker
         mode="range"

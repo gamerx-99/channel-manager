@@ -5,6 +5,7 @@ import { PaymentQR } from "@/components/PaymentQR";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
 import { nightsLabel } from "@/lib/nightsLabel";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
+import { getContrastText } from "@/lib/contrastText";
 
 type Page = ReturnType<typeof usePublicHotelPage>;
 type Booking = NonNullable<Page["booking"]>;
@@ -19,6 +20,7 @@ function formatCountdown(ms: number): string {
 
 export default function PublicBookingSection({ page }: { page: Page }) {
   const { hotel, accentColor, t, booking } = page;
+  const accentTextColor = getContrastText(accentColor);
   if (!booking) return null;
   const { wizardStep, setWizardStep, checkIn, setCheckIn, checkOut, setCheckOut, adults, setAdults, children, setChildren, preferredRoomTypeId, heldBooking, selectedServiceQty, setSelectedServiceQty, guestName, setGuestName, guestPhone, setGuestPhone, guestEmail, setGuestEmail, specialRequests, setSpecialRequests, confirmedBookingId, wizardError, setWizardError, paymentSuccess, setPaymentSuccess, remainingMs, isDatesValid, propertyChildRule, childRulesConfigured, childMeasurements, guestsValid, availabilityQuery, availableRoomTypes, holdRoomTypeMutation, servicesQuery, confirmDetailsMutation, handleResetBooking, handleHoldRoom, handleConfirmDetails, serviceLineTotal, selectedServicesTotal } = booking;
   const renderStepContent = () => {
@@ -59,7 +61,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
                 style={{
                   backgroundColor: accentColor,
                   borderColor: accentColor,
-                  color: "#ffffff",
+                  color: accentTextColor,
                   opacity: !isDatesValid || !guestsValid ? 0.6 : 1,
                   cursor: !isDatesValid || !guestsValid ? "not-allowed" : "pointer",
                 }}
@@ -223,7 +225,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
               <button type="button" className="button button-quiet" onClick={() => setWizardStep(2)}>
                 {t("publicHotel.wizardBack")}
               </button>
-              <button type="button" className="button public-button" onClick={() => setWizardStep(4)} style={{ backgroundColor: accentColor, borderColor: accentColor, color: "#ffffff" }}>
+              <button type="button" className="button public-button" onClick={() => setWizardStep(4)} style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentTextColor }}>
                 {(servicesQuery.data ?? []).length === 0 ? t("publicHotel.wizardSkip") : t("publicHotel.wizardNext")}
               </button>
             </div>
@@ -298,7 +300,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
                 style={{
                   backgroundColor: accentColor,
                   borderColor: accentColor,
-                  color: "#ffffff",
+                  color: accentTextColor,
                   opacity: confirmDetailsMutation.isPending ? 0.6 : 1,
                   cursor: confirmDetailsMutation.isPending ? "not-allowed" : "pointer",
                 }}
@@ -347,7 +349,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
                 type="button"
                 className="button public-button"
                 onClick={() => setWizardStep(6)}
-                style={{ backgroundColor: accentColor, borderColor: accentColor, color: "#ffffff" }}
+                style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentTextColor }}
               >
                 {t("publicHotel.confirmAndPay")}
               </button>
@@ -380,7 +382,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
                   type="button"
                   className="button public-button"
                   onClick={handleResetBooking}
-                  style={{ backgroundColor: accentColor, color: "#fff", borderColor: accentColor, width: "100%" }}
+                  style={{ backgroundColor: accentColor, color: accentTextColor, borderColor: accentColor, width: "100%" }}
                 >
                   {t("publicHotel.bookAnotherStay")}
                 </button>

@@ -337,7 +337,8 @@ export default function Calendar({ id }: { id: string }) {
           <span className="calendar-info"><Info size={14} /> {t("availability.pricesInThb")}</span>
         </div>
 
-        <div className="calendar-month-scroll">
+        <div className="calendar-month-hint"><span>{t("availability.mobileScrollHint")}</span><ChevronRight size={18} aria-hidden="true" /></div>
+        <div className="calendar-month-viewport"><div className="calendar-month-scroll">
             <div className="calendar-month-grid">
               {MONTH_WEEKDAY_KEYS.map(weekdayKey => (
                 <div className="calendar-month-header" key={weekdayKey}>
@@ -378,7 +379,7 @@ export default function Calendar({ id }: { id: string }) {
                 );
               })}
             </div>
-        </div>
+        </div></div>
 
         <div className="calendar-selected-day">
             <div className="calendar-selected-day-heading">
