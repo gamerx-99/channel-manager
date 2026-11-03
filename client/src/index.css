@@ -160,6 +160,7 @@ body { background: var(--paper); color: var(--ink); }
 .lang-option{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--ink-soft);transition:background .15s ease,color .15s ease;user-select:none}
 .lang-option--active{background:var(--pine);color:#fff}
 .lang-divider{width:1px;height:12px;background:var(--rule);margin:0 1px;flex-shrink:0}
+.login-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.login-header .lang-toggle{height:44px;background:var(--white);color:var(--ink)}
 
 .notification-menu{width:min(320px,calc(100vw - 24px));max-width:calc(100vw - 24px);}
 .notif-menu-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--rule)}

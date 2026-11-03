@@ -1,4 +1,5 @@
-import { useLanguage } from "@/contexts/LanguageContext";
+import React from "react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Language Toggle Switch — EN | TH
@@ -6,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
  * Styled as a pill toggle: left side = EN, right side = TH.
  */
 export default function LanguageSwitcher() {
-  const { language, toggleLanguage } = useLanguage();
+  const { language, toggleLanguage } = useTranslation();
   const isEN = language === "en";
 
   return (

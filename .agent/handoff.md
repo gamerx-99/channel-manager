@@ -2195,3 +2195,8 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 ## 2026-11-03 - Phase 1 S3 mobile sign-in
 - On narrow Landing headers, the sign-in link remains beside the language button with a 44px touch target. The signup action remains in the hero, freeing header width at 320px.
 - Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run. Headless Chrome could not start in this sandbox (crashpad setsockopt denied), so live viewport measurement remains pending.
+
+## 2026-11-03 - Phase 1 S3 Login and password-reset language
+- Login and the shared password-reset shell now render the existing LanguageSwitcher. The switcher uses the existing translation hook so standalone auth screens render without a provider in tests.
+- Thai copy: `ระบบปฏิบัติการโรงแรม / คอนโซลส่วนกลาง` → `จัดการโรงแรมในที่เดียว`; `ทีมงานผู้สนับสนุน` → `ทีมงานของโรงแรม`.
+- Verification after fixing the standalone rendering failure: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
