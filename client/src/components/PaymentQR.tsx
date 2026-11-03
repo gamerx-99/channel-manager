@@ -148,7 +148,8 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
     return (
       <div className="payment-qr payment-qr--error" role="alert">
         <p className="payment-error-msg">{createSession.error.message}</p>
-        <p className="payment-error-sub">กรุณาติดต่อที่พักโดยตรง</p>
+        {/* Some server messages already end with this advice; do not print it twice. */}
+        {!createSession.error.message.includes("กรุณาติดต่อที่พักโดยตรง") && <p className="payment-error-sub">กรุณาติดต่อที่พักโดยตรง</p>}
       </div>
     );
   }
