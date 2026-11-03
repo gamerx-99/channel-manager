@@ -47,7 +47,7 @@ describe("landing and public signup contract", () => {
   it("sends visitors to signup and signed-in users to the dashboard", () => {
     expect(landing).toContain('me.data ? "/dashboard" : "/signup"');
     expect(landing).toContain('id="features"');
-    expect(landing).toContain('href="/lanna-cozy-demo"');
+    expect(landing).toContain('href="#templates"');
   });
 
   it("creates a personal account first and keeps hotel setup for the onboarding step", () => {

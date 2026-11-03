@@ -51,7 +51,7 @@ export default function Landing() {
     </header>
     <main id="landing-main">
       <section className="landing-hero landing-section-hero">
-        <div className="landing-hero-copy"><div className="landing-kicker"><i />{t("landing.heroEyebrow")}</div><h1>{t("landing.heroHeadline")}</h1><p>{t("landing.heroLede")}</p><div className="landing-hero-actions"><Link href={primaryHref} className="landing-button landing-button-brick">{primaryLabel}<ArrowRight size={17}/></Link>{/* ASSUMPTION: /lanna-cozy-demo is the example public hotel path; no demo link was present in the previous landing implementation. */}<a href="/lanna-cozy-demo" className="landing-button landing-button-outline">{t("landing.heroSecondary")}</a></div></div>
+        <div className="landing-hero-copy"><div className="landing-kicker"><i />{t("landing.heroEyebrow")}</div><h1>{t("landing.heroHeadline")}</h1><p>{t("landing.heroLede")}</p><div className="landing-hero-actions"><Link href={primaryHref} className="landing-button landing-button-brick">{primaryLabel}<ArrowRight size={17}/></Link>{/* The demo button scrolls to the template previews; there is no public demo hotel since 2026-11-04. */}<a href="#templates" className="landing-button landing-button-outline">{t("landing.heroSecondary")}</a></div></div>
         <ProductMock />
       </section>
       <section className="landing-values" aria-label={t("landing.valueAria")}><div className="landing-value-grid">{VALUES.map((key, i) => { const Icon = [Globe, CreditCard, House][i]; return <article className="landing-value-card" key={key}><span className="landing-icon"><Icon size={23}/></span><h2>{t(`landing.value${key}Title`)}</h2><p>{t(`landing.value${key}Body`)}</p></article>; })}</div></section>
