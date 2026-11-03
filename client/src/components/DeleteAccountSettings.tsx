@@ -94,7 +94,7 @@ export default function DeleteAccountSettings() {
         </div>
       </div>
 
-      <div style={{ padding: "0 22px 22px" }}>
+      <div className="panel-body">
       <div className="form-error" role="note" style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 0 }}>
         <TriangleAlert size={15} aria-hidden="true" style={{ flex: "0 0 auto" }} />
         <span>{t("accountDeletion.warning")}</span>
@@ -109,15 +109,15 @@ export default function DeleteAccountSettings() {
       <h3 style={{ marginTop: 14 }}>{t("accountDeletion.staysTitle")}</h3>
       <p className="lede" style={{ marginTop: 6 }}>{t("accountDeletion.staysRecords")}</p>
 
-      {status.isLoading && <p role="status" className="lede" style={{ marginTop: 12 }}>{t("accountDeletion.loading")}</p>}
+      {status.isLoading && <p role="status" className="field-help">{t("accountDeletion.loading")}</p>}
       {status.isError && <div className="form-error" role="alert">{t("accountDeletion.loadFailed")}</div>}
 
       {ownedHotels.length > 0 && (
         <div data-testid="delete-account-blocked" style={{ marginTop: 14 }}>
           <p>{t("accountDeletion.blockedOwner")}</p>
-          <ul style={{ margin: "8px 0", padding: 0, listStyle: "none" }}>
+          <ul className="task-list">
             {ownedHotels.map(hotel => (
-              <li key={hotel.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "4px 0" }}>
+              <li key={hotel.id} className="task-item">
                 <strong>{hotel.name}</strong>
                 <Link href={`/hotels/${hotel.id}/staff`} className="button button-quiet button-small">{t("accountDeletion.manageStaff")}</Link>
               </li>
@@ -129,15 +129,14 @@ export default function DeleteAccountSettings() {
       {status.data?.lastPlatformAdmin && <p data-testid="delete-account-last-admin" style={{ marginTop: 14 }}>{t("accountDeletion.blockedLastAdmin")}</p>}
 
       {status.isSuccess && !blocked && !confirming && (
-        <button type="button" className="button button-quiet" style={{ marginTop: 14, color: "var(--clay)" }} onClick={() => setConfirming(true)}>
+        <div className="form-submit"><button type="button" className="button button-quiet" onClick={() => setConfirming(true)}>
           {t("accountDeletion.start")}
-        </button>
+        </button></div>
       )}
 
       {status.isSuccess && !blocked && confirming && (
         <form
-          className="admin-form"
-          style={{ marginTop: 14, padding: 0 }}
+          className="delete-account-form"
           data-testid="delete-account-confirm"
           onSubmit={event => {
             event.preventDefault();
@@ -146,9 +145,9 @@ export default function DeleteAccountSettings() {
             void handleDelete().finally(() => { submitting.current = false; });
           }}
         >
-          <h3>{t("accountDeletion.confirmTitle")}</h3>
+          <div className="panel-heading"><div><div className="eyebrow">{t("accountDeletion.eyebrow")}</div><h3>{t("accountDeletion.confirmTitle")}</h3></div></div>
           {error && <div className="form-error" role="alert" style={{ margin: 0 }}>{error}</div>}
-          <label>
+          <div className="form-grid"><label>
             {t("accountDeletion.emailLabel", { email: accountEmail })}
             <input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="off" />
           </label>
@@ -168,8 +167,9 @@ export default function DeleteAccountSettings() {
               />
             </label>
           )}
+          </div>
           {authMe?.twoFactorEnabled && codeAccepted && <p className="lede" role="status">{t("accountDeletion.codeVerified")}</p>}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="form-submit">
             <button type="submit" className="button button-primary" disabled={!canSubmit}>
               {busy ? t("accountDeletion.deleting") : t("accountDeletion.confirm")}
             </button>

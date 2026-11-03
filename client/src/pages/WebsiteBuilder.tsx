@@ -301,12 +301,12 @@ export default function WebsiteBuilder() {
   }
 
   return (
-    <div className="space-y-7 pb-8">
-      <section className="flex flex-col gap-5 border-b border-[#dce4df] pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="page-content space-y-7 pb-8">
+      <section className="page-intro intro-split">
         <div>
-          <p className="eyebrow">{t("websiteBuilder.eyebrow")}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#1b2c25] sm:text-4xl">{t("websiteBuilder.title")}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6c7e75]">
+          <div className="eyebrow">{t("websiteBuilder.eyebrow")}</div>
+          <h1>{t("websiteBuilder.title")}<span className="title-mark">.</span></h1>
+          <p className="lede">
             {t("websiteBuilder.lede")}
           </p>
         </div>
@@ -317,6 +317,8 @@ export default function WebsiteBuilder() {
         </div>
       </section>
 
+      <section className="panel">
+      <div className="panel-heading"><div><div className="eyebrow">{t("websiteBuilder.eyebrow")}</div><h2>{t("websiteBuilder.viewHotelPage")}</h2></div></div>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" variant="outline" disabled={!selectedHotel?.slug} onClick={() => selectedHotel?.slug && window.open(`/${selectedHotel.slug}`, "_blank", "noopener,noreferrer")}>
           <Eye size={15} /> {t("websiteBuilder.viewHotelPage")}
@@ -328,8 +330,11 @@ export default function WebsiteBuilder() {
           </Button>}
         </>}
       </div>
+      </section>
 
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" aria-label={t("websiteBuilder.hotelSelectorAria")}>
+      <section className="panel" aria-label={t("websiteBuilder.hotelSelectorAria")}>
+        <div className="panel-heading"><div><div className="eyebrow">{t("websiteBuilder.eyebrow")}</div><h2>{t("websiteBuilder.hotelLabel")}</h2></div></div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-[#263b31]">
           <Globe size={16} aria-hidden="true" /> {t("websiteBuilder.hotelLabel")}
         </div>
@@ -347,9 +352,12 @@ export default function WebsiteBuilder() {
             </SelectContent>
           </Select>
         </div>
+        </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3" aria-label={t("websiteBuilder.summaryAria")}>
+      <section className="panel" aria-label={t("websiteBuilder.summaryAria")}>
+        <div className="panel-heading"><div><div className="eyebrow">{t("websiteBuilder.eyebrow")}</div><h2>{t("websiteBuilder.summaryVisibleSections")}</h2></div></div>
+        <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryMediaItems")}</p>
@@ -374,9 +382,12 @@ export default function WebsiteBuilder() {
             <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryVisibleHint")}</p>
           </CardContent>
         </Card>
+        </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.4fr_0.9fr]">
+      <section className="panel" aria-label={t("websiteBuilder.summaryAria")}>
+        <div className="panel-heading"><div><div className="eyebrow">{t("websiteBuilder.eyebrow")}</div><h2>{t("websiteBuilder.themePickerTitle")}</h2></div></div>
+        <div className="grid gap-5 xl:grid-cols-[1.4fr_0.9fr]">
         <div className="space-y-5">
           <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
@@ -486,7 +497,7 @@ export default function WebsiteBuilder() {
                   ))}
                 </div>
               ) : (
-                <PageState tone="empty" title={t("websiteBuilder.noMediaTitle")} description={t("websiteBuilder.noMediaDesc")} />
+                <div className="panel empty-state"><strong>{t("websiteBuilder.noMediaTitle")}</strong><span>{t("websiteBuilder.noMediaDesc")}</span></div>
               )}
               <p className="text-xs leading-5 text-[#778a80]">
                 {t("websiteBuilder.mediaFooterHint")}
@@ -575,7 +586,7 @@ export default function WebsiteBuilder() {
               </CardTitle>
               <CardDescription>{t("websiteBuilder.siteConfigDesc")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-5">
+            <CardContent className="form-grid pt-5">
               {formError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
                   {formError}
@@ -654,7 +665,7 @@ export default function WebsiteBuilder() {
                 <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.visibleSectionsHint")}</p>
               </div>
 
-              <Button type="button" onClick={handleSave} disabled={!canManage} className="w-full bg-[#1d6b56] hover:bg-[#155442] disabled:opacity-50">
+              <Button type="button" onClick={handleSave} disabled={!canManage} className="form-submit button button-primary w-full">
                 <Save size={15} /> {t("websiteBuilder.saveSiteConfig")}
               </Button>
               <p className="text-xs leading-5 text-[#778a80]">
@@ -674,6 +685,7 @@ export default function WebsiteBuilder() {
               </p>
             </CardContent>
           </Card>
+        </div>
         </div>
       </section>
     </div>

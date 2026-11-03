@@ -107,12 +107,14 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
   }
 
   return (
-    <section aria-label={t("slipOk.title")} className="border-t border-[#dce4df] pt-7">
-      <div className="mb-4">
-        <p className="eyebrow">{t("slipOk.eyebrow")}</p>
-        <h2 className="mt-1 text-xl font-semibold tracking-tight text-[#1b2c25]">{t("slipOk.title")}</h2>
-        <p className="mt-1 text-sm text-[#6c7e75]">{t("slipOk.description")}</p>
-        <p className="mt-1 text-sm text-[#6c7e75]">{t("slipOk.accountHint")}</p>
+    <section aria-label={t("slipOk.title")} className="panel">
+      <div className="panel-heading">
+        <div>
+          <div className="eyebrow">{t("slipOk.eyebrow")}</div>
+          <h2>{t("slipOk.title")}</h2>
+          <p className="lede">{t("slipOk.description")}</p>
+          <p className="field-help">{t("slipOk.accountHint")}</p>
+        </div>
       </div>
 
       <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
@@ -145,7 +147,8 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
           {mfaState.status === "needs_challenge" && (
             <div className="flex flex-col gap-3">
               <p className="text-sm font-medium text-[#263b31]">{t("slipOk.totpPrompt")}</p>
-              <div className="flex gap-2">
+              <div className="form-grid">
+                <label htmlFor="slipok-totp-input">{t("slipOk.totpPrompt")}
                 <input
                   id="slipok-totp-input"
                   type="text"
@@ -156,6 +159,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                   onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
                   className="w-32 rounded-lg border border-[#dce4df] px-3 py-2 text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
                 />
+                </label>
                 <button
                   id="slipok-totp-submit"
                   type="button"
@@ -168,7 +172,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                 >
                   {t("slipOk.verify")}
                 </button>
-                <button type="button" onClick={() => { reset(); setTotpCode(""); }} className="rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-[#f6faf7]">{t("slipOk.cancel")}</button>
+                <button type="button" onClick={() => { reset(); setTotpCode(""); }} className="button button-quiet">{t("slipOk.cancel")}</button>
               </div>
               {"error" in mfaState && mfaState.error && (
                 <p className="text-xs text-red-600">{mfaState.error}</p>
@@ -244,11 +248,9 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                 <div className="flex flex-col gap-3">
                   <p className="text-xs font-medium text-[#456156]">{isEditing ? t("slipOk.editTitle") : t("slipOk.addTitle")}</p>
                   <p className="text-xs text-[#6c7e75]">{t("slipOk.formHint")}</p>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <div className="flex-1">
-                      <label htmlFor="slipok-branch-id" className="mb-1 block text-xs font-medium text-[#456156]">
-                        {t("slipOk.branchLabel")}
-                      </label>
+                  <div className="form-grid">
+                    <label htmlFor="slipok-branch-id">
+                      {t("slipOk.branchLabel")}
                       <input
                         id="slipok-branch-id"
                         type="text"
@@ -258,11 +260,9 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                         placeholder={t("slipOk.branchPlaceholder")}
                         className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
                       />
-                    </div>
-                    <div className="flex-1">
-                      <label htmlFor="slipok-api-key" className="mb-1 block text-xs font-medium text-[#456156]">
-                        {t("slipOk.keyLabel")}
-                      </label>
+                    </label>
+                    <label htmlFor="slipok-api-key">
+                      {t("slipOk.keyLabel")}
                       <input
                         id="slipok-api-key"
                         type="password"
@@ -271,9 +271,9 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                         onChange={(e) => setApiKey(e.target.value)}
                         className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
                       />
-                    </div>
+                    </label>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="form-submit">
                     <button
                       id="slipok-save-btn"
                       type="button"

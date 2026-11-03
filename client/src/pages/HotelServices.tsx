@@ -174,18 +174,21 @@ export default function HotelServices({ id }: { id: string }) {
 
   const isLoading = hotelLoading || servicesLoading;
   const error = hotelError ?? servicesError;
+  const pageIntro = <section className="page-intro intro-split"><div><div className="eyebrow">{t('hotelServices.eyebrow')}</div><h1>{t('hotelServices.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotelServices.pageLede')}</p></div></section>;
 
   if (isLoading) {
-    return <div className="page-content"><PageState tone="loading" title={t('hotelServices.loadingTitle')} description={t('hotelServices.loadingDesc')} /></div>;
+    return <div className="page-content">{pageIntro}<section className="panel empty-state"><PageState tone="loading" title={t('hotelServices.loadingTitle')} description={t('hotelServices.loadingDesc')} /></section></div>;
   }
   if (error || !hotel) {
-    return <div className="page-content"><PageState tone="error" title={t('hotelServices.errorTitle')} description={error?.message ?? t('hotelServices.errorDescFallback')} actionLabel={t('hotelServices.retryButton')} onAction={() => { void utils.channelManager.hotel.invalidate(id); void utils.channelManager.listHotelServicesProcedure.invalidate(id); }} /></div>;
+    return <div className="page-content">{pageIntro}<section className="panel empty-state"><PageState tone="error" title={t('hotelServices.errorTitle')} description={error?.message ?? t('hotelServices.errorDescFallback')} actionLabel={t('hotelServices.retryButton')} onAction={() => { void utils.channelManager.hotel.invalidate(id); void utils.channelManager.listHotelServicesProcedure.invalidate(id); }} /></section></div>;
   }
 
   return (
     <div className="page-content hotel-detail-page">
+      {pageIntro}
       <div className="detail-back"><Link href="/hotels">{t('hotelDetail.backToHotels')}</Link><ChevronRight size={14} /><span>{hotel.name}</span></div>
-      <section className="property-hero">
+      <section className="property-hero panel">
+        <div className="panel-heading"><div><div className="eyebrow">{t('hotelDetail.propertyId', { id: hotel.id.slice(0, 8) })}</div><h2>{hotel.name}</h2></div><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
         <div className="property-hero-image property-hero-monogram"><span aria-hidden="true">{hotel.name.slice(0, 1)}</span><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
         <div className="property-hero-copy">
           <div className="eyebrow">{t('hotelDetail.propertyId', { id: hotel.id.slice(0, 8) })}</div>
@@ -253,7 +256,7 @@ export default function HotelServices({ id }: { id: string }) {
               </label>
               <label>{t('hotelServices.priceLabel')}<input required min="0" step="0.01" type="number" value={serviceForm.unit_price} onChange={event => setServiceForm({ ...serviceForm, unit_price: event.target.value })} placeholder={t('hotelServices.pricePlaceholder')} /></label>
             </div>
-            <DialogFooter className="modal-actions"><button className="button button-quiet" type="button" onClick={() => closeCreateDialog(false)} disabled={createService.isPending}>{t('hotelServices.cancel')}</button><button className="button button-primary" type="submit" disabled={createService.isPending}>{createService.isPending ? t('hotelServices.creating') : t('hotelServices.createButton')}</button></DialogFooter>
+            <DialogFooter className="modal-actions form-submit"><button className="button button-quiet" type="button" onClick={() => closeCreateDialog(false)} disabled={createService.isPending}>{t('hotelServices.cancel')}</button><button className="button button-primary" type="submit" disabled={createService.isPending}>{createService.isPending ? t('hotelServices.creating') : t('hotelServices.createButton')}</button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -273,7 +276,7 @@ export default function HotelServices({ id }: { id: string }) {
               <label>{t('hotelServices.priceLabel')}<input required min="0" step="0.01" type="number" value={serviceForm.unit_price} onChange={event => setServiceForm({ ...serviceForm, unit_price: event.target.value })} placeholder={t('hotelServices.pricePlaceholder')} /></label>
               <label className="checkbox-field"><input type="checkbox" checked={serviceForm.is_active} onChange={event => setServiceForm({ ...serviceForm, is_active: event.target.checked })} /> {t('hotelServices.activeLabel')}</label>
             </div>
-            <DialogFooter className="modal-actions"><button className="button button-quiet" type="button" onClick={() => closeEditDialog(false)} disabled={updateService.isPending}>{t('hotelServices.cancel')}</button><button className="button button-primary" type="submit" disabled={updateService.isPending}>{updateService.isPending ? t('hotelServices.saving') : t('hotelServices.saveButton')}</button></DialogFooter>
+            <DialogFooter className="modal-actions form-submit"><button className="button button-quiet" type="button" onClick={() => closeEditDialog(false)} disabled={updateService.isPending}>{t('hotelServices.cancel')}</button><button className="button button-primary" type="submit" disabled={updateService.isPending}>{updateService.isPending ? t('hotelServices.saving') : t('hotelServices.saveButton')}</button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
