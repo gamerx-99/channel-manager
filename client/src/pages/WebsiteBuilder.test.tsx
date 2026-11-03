@@ -4,11 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { saveConfig, query, mutation, language, hotelsData, mediaData } = vi.hoisted(() => ({
+const { saveConfig, setObjectPosition, query, mutation, language, hotelsData, mediaData } = vi.hoisted(() => ({
   saveConfig: vi.fn(),
+  setObjectPosition: vi.fn(),
   language: { current: "en" as "en" | "th" },
   hotelsData: { current: [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }] as Array<{ id: string; name?: string; slug: string; room_types: unknown[]; rooms: unknown[] }> },
-  mediaData: { current: [] as Array<{ id: string; url: string; isHero: boolean; displayOrder: number }> },
+  mediaData: { current: [] as Array<{ id: string; url: string; isHero: boolean; displayOrder: number; objectPosition?: string | null }> },
   query: (data: unknown) => ({ useQuery: () => ({ data, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) }),
   mutation: (mutate: (...args: unknown[]) => void = () => undefined) => ({ useMutation: () => ({ mutate, isPending: false }) }),
 }));
@@ -22,6 +23,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     getHotelSiteConfigByHotelId: query({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } }),
     deleteHotelMedia: mutation(),
     setHotelMediaHero: mutation(),
+    setHotelMediaObjectPosition: mutation(setObjectPosition),
     saveHotelSiteConfig: mutation(saveConfig),
     setHotelPublished: mutation(),
   },
@@ -30,7 +32,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
-afterEach(() => { cleanup(); saveConfig.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
+afterEach(() => { cleanup(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
   it("saves the headline and accent colour the owner typed (regression: edits were dropped)", () => {
@@ -70,5 +72,15 @@ describe("WebsiteBuilder editing", () => {
       'url("https://media.example/hotel-hero.jpg")',
       'url("https://media.example/hotel-hero.jpg")',
     ]);
+  });
+
+  it("saves the tapped point on a photo as its focal point", () => {
+    mediaData.current = [{ id: "photo-1", url: "/photo.jpg", isHero: true, displayOrder: 0 }];
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    const photo = screen.getByAltText("Hotel media preview");
+    vi.spyOn(photo, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, toJSON: () => ({}) });
+    fireEvent.pointerDown(photo, { clientX: 50, clientY: 75 });
+    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" });
+    expect(screen.getByText("Choose the part of the photo to keep in view")).toBeTruthy();
   });
 });

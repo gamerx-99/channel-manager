@@ -18,6 +18,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   if (data.notFound || (!data.error && !data.hotel)) return <div className="public-page"><main className="public-loading" data-testid="public-hotel-not-found"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><div className="public-state-actions"><Link className="button public-button" href="/">{t("publicHotel.goHome")}</Link><Link className="button button-quiet" href="/login">{t("publicHotel.hotelSignIn")}</Link></div></main></div>;
   if (data.error || !data.hotel) return <div className="public-page"><main className="public-loading" role="alert" data-testid="public-hotel-load-error"><h1>{t("publicHotel.loadErrorTitle")}</h1><p>{t("publicHotel.loadErrorDesc")}</p><button type="button" className="button public-button" onClick={() => void data.refetch?.()}>{t("publicHotel.tryAgain")}</button></main></div>;
   const { hotel, roomTypes, media, heroImage, accentColor, heroCopy, booking } = data;
+  const heroMedia = media.find(item => item.is_hero) ?? media[0];
   const isVisible = booking!.isVisible;
   const handleSelectRoom = booking!.handleSelectRoom;
   const selectedTheme = isHotelThemeId(data.siteConfig?.theme) ? data.siteConfig.theme : null;
@@ -40,7 +41,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
       </header>
       <main>
         <section className="public-hero">
-          {heroImage ? <img src={heroImage} alt={hotel.name} /> : <div className="public-hero-image-fallback" aria-hidden="true" />}
+          {heroImage ? <img src={heroImage} alt={hotel.name} style={heroMedia?.objectPosition ? { objectPosition: heroMedia.objectPosition } : undefined} /> : <div className="public-hero-image-fallback" aria-hidden="true" />}
           <div className="public-hero-overlay" />
           <div className="public-hero-content">
             <div className="eyebrow light">{t("publicHotel.heroEyebrow")}</div>
@@ -79,9 +80,9 @@ export default function PublicHotel({ slug }: { slug: string }) {
                 >
                   <div className="public-room-image">
                     {media[index + 1]?.url ? (
-                      <img src={media[index + 1].url} alt={media[index + 1].caption ?? room.name} />
+                      <img src={media[index + 1].url} alt={media[index + 1].caption ?? room.name} style={media[index + 1].objectPosition ? { objectPosition: media[index + 1].objectPosition! } : undefined} />
                     ) : heroImage ? (
-                      <img src={heroImage} alt="" />
+                      <img src={heroImage} alt="" style={heroMedia?.objectPosition ? { objectPosition: heroMedia.objectPosition } : undefined} />
                     ) : (
                       <div className="public-room-image-fallback" />
                     )}

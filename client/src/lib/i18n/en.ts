@@ -1504,6 +1504,8 @@ const en = {
     uploadMediaAria: "Upload media",
     uploadImage: "Upload image",
     uploadHint: "PNG/JPG/WebP, max 5 MB. Preview updates immediately.",
+    chooseFocalPoint: "Choose the part of the photo to keep in view",
+    resetFocalPoint: "Reset to centre",
     heroBadge: "Hero",
     heroImageLabel: "Hero image",
     galleryLabel: "Gallery",

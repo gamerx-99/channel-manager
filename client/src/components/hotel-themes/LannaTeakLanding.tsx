@@ -28,7 +28,7 @@ export default function LannaTeakLanding({ hotelName, accentColor, hotel, roomTy
       <main>
         {isVisible("hero") && (heroImage || heroCopy || hotelName) && <section className="lanna-hero">
           <div className="lanna-hero-frame">
-            {heroImage && <img src={heroImage} alt={hotelName} />}
+            {heroImage && <img src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} />}
             <div className="lanna-hero-wash" />
             <div className="lanna-hero-copy"><span className="lanna-kicker">{t("hotelThemes.lannaTeak.kicker")}</span><h1>{hotelName}</h1>{heroCopy && <p>{heroCopy}</p>}<a href="#stay" className="lanna-action">{t("hotelThemes.lannaTeak.exploreRooms")} <ArrowDown size={15} /></a></div>
           </div>
@@ -41,13 +41,13 @@ export default function LannaTeakLanding({ hotelName, accentColor, hotel, roomTy
           <div className="lanna-room-grid">{roomTypes.map((room, index) => {
             const image = media.filter(item => !item.is_hero && item.url)[index];
             return <article className="lanna-room" key={room.id}>
-              {image && <div className="lanna-room-photo"><img src={image.url} alt={image.caption || room.name} /></div>}
+              {image && <div className="lanna-room-photo"><img src={image.url} alt={image.caption || room.name} style={image.objectPosition ? { objectPosition: image.objectPosition } : undefined} /></div>}
               <div className="lanna-room-info"><div><h3>{room.name}</h3><p>{t("hotelThemes.lannaTeak.capacity", { capacity: room.capacity })}</p></div><strong>฿{Number(room.basePrice).toLocaleString()} <small>{t("hotelThemes.lannaTeak.perNight")}</small></strong></div>
             </article>;
           })}</div>
         </section>}
 
-        {isVisible("gallery") && gallery.length > 0 && <section className="lanna-gallery" id="gallery"><div className="lanna-section-title"><span className="lanna-kicker">{t("hotelThemes.lannaTeak.galleryKicker")}</span><h2>{t("hotelThemes.lannaTeak.galleryTitle").split("|")[0]} <i>{t("hotelThemes.lannaTeak.galleryTitle").split("|")[1]}</i></h2></div><div className="lanna-gallery-grid">{gallery.map((photo, index) => <figure key={`${photo.url}-${index}`}><img src={photo.url} alt={photo.caption || ""} />{photo.caption && <figcaption>{photo.caption}</figcaption>}</figure>)}</div></section>}
+        {isVisible("gallery") && gallery.length > 0 && <section className="lanna-gallery" id="gallery"><div className="lanna-section-title"><span className="lanna-kicker">{t("hotelThemes.lannaTeak.galleryKicker")}</span><h2>{t("hotelThemes.lannaTeak.galleryTitle").split("|")[0]} <i>{t("hotelThemes.lannaTeak.galleryTitle").split("|")[1]}</i></h2></div><div className="lanna-gallery-grid">{gallery.map((photo, index) => <figure key={`${photo.url}-${index}`}><img src={photo.url} alt={photo.caption || ""} style={photo.objectPosition ? { objectPosition: photo.objectPosition } : undefined} />{photo.caption && <figcaption>{photo.caption}</figcaption>}</figure>)}</div></section>}
 
         {isVisible("booking") && booking}
 

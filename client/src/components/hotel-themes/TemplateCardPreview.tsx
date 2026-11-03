@@ -8,10 +8,10 @@ const previewStyles: Record<HotelThemeId, CSSProperties> = {
   "cafe-homestay": { "--preview-bg": "#fff8f0", "--preview-surface": "#f2dfc9", "--preview-ink": "#321f12", "--preview-muted": "#7a573d", "--preview-accent": "#a66b4f" } as CSSProperties,
 };
 
-export default function TemplateCardPreview({ theme, hotelName, photo }: { theme: HotelThemeId; hotelName: string; photo: string | null }) {
+export default function TemplateCardPreview({ theme, hotelName, photo, objectPosition }: { theme: HotelThemeId; hotelName: string; photo: string | null; objectPosition?: string | null }) {
   return <div className={`template-card-preview preview-${theme}`} style={previewStyles[theme]} aria-label={hotelName}>
     <div className="preview-topline"><span className="preview-mark" aria-hidden="true" /><span className="preview-lines" aria-hidden="true"><i /><i /></span></div>
-    <div className="preview-hero" style={photo ? { backgroundImage: `url("${photo.replaceAll('"', '%22')}")` } : undefined}>
+    <div className="preview-hero" style={photo ? { backgroundImage: `url("${photo.replaceAll('"', '%22')}")`, backgroundPosition: objectPosition ?? "center" } : undefined}>
       <h3>{hotelName}</h3>
     </div>
     <div className="preview-bottomline" aria-hidden="true"><i /><i /><i /></div>

@@ -28,7 +28,7 @@ vi.mock("@/lib/pageMeta", () => ({ usePageMeta: vi.fn() }));
 const hotelData = {
   hotel: { id: "hotel-1", name: "Sample Stay", slug: "sample-stay", address: "12 River Road" },
   roomTypes: [{ id: "room-1", name: "Garden Room", capacity: 2, basePrice: 1800, childRule: "age" }],
-  media: [{ url: "/hero.jpg", is_hero: true }],
+  media: [{ url: "/hero.jpg", is_hero: true, objectPosition: "27% 73%" }],
 };
 
 beforeEach(() => {
@@ -51,6 +51,7 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("
     mocks.theme = theme;
     expect(() => view.rerender(<PublicHotel slug="sample-stay" />)).not.toThrow();
     expect(screen.getByRole("heading", { name: "Sample Stay" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Sample Stay" }).getAttribute("style")).toContain("object-position: 27% 73%");
     if (theme) expect(screen.getByText("Booking section")).toBeTruthy();
   });
 });

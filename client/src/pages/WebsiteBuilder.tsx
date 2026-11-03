@@ -123,6 +123,7 @@ export default function WebsiteBuilder() {
     onSuccess: () => { toast.success(t("websiteBuilder.toastHeroUpdated")); refetchMedia(); },
     onError: (e) => setFormError(e.message)
   });
+  const setObjectPositionMut = trpc.channelManager.setHotelMediaObjectPosition.useMutation({ onSuccess: () => refetchMedia(), onError: e => setFormError(e.message) });
 
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({
     onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); },
@@ -136,6 +137,7 @@ export default function WebsiteBuilder() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
+  const [focalMediaId, setFocalMediaId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const media = serverMedia;
@@ -214,6 +216,16 @@ export default function WebsiteBuilder() {
   function handleSetHero(id: string) {
     if (!canManage) return;
     setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
+  }
+
+  function handleFocalPoint(event: React.PointerEvent<HTMLImageElement>, item: HotelMediaItem) {
+    if (!canManage) return;
+    setFocalMediaId(item.id);
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
+    const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
+    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` });
   }
 
   function handleSave() {
@@ -378,7 +390,7 @@ export default function WebsiteBuilder() {
                   return <button key={theme.id} type="button" onClick={() => handleSaveTheme(theme.id)} disabled={!canManage || saveThemeMut.isPending}
                     aria-pressed={selected} data-theme-id={theme.id}
                     className={`min-w-0 overflow-hidden rounded-xl border text-left transition ${selected ? "border-[#1d6b56] ring-2 ring-[#1d6b56]/20" : "border-[#e6eee9] hover:border-[#91b3a5]"}`}>
-                    <TemplateCardPreview theme={theme.id} hotelName={previewHotelName} photo={selectedHotelHeroImage} />
+                    <TemplateCardPreview theme={theme.id} hotelName={previewHotelName} photo={selectedHotelHeroImage} objectPosition={media.find(item => item.isHero)?.objectPosition} />
                     <div className="space-y-1 p-3">
                       <div className="flex items-center justify-between gap-2"><span className="font-semibold text-[#263b31]">{theme.name}</span>
                         {theme.tier === "premium" ? <span className="shrink-0 rounded-full bg-[#f5eadf] px-2 py-0.5 text-[10px] font-semibold text-[#795548]">Pro</span> : null}</div>
@@ -429,11 +441,17 @@ export default function WebsiteBuilder() {
                     <div key={item.id} className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.url} alt={item.caption ?? "Hotel media preview"} className="h-full w-full object-cover" />
+                        <img src={item.url} alt={item.caption ?? "Hotel media preview"} className={`h-full w-full object-cover ${canManage ? "cursor-crosshair touch-manipulation" : ""}`} style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} onClick={() => setFocalMediaId(item.id)} onPointerDown={event => handleFocalPoint(event, item)} />
+                        {focalMediaId === item.id && <span className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow" style={{ left: item.objectPosition?.split(" ")[0] ?? "50%", top: item.objectPosition?.split(" ")[1] ?? "50%" }} />}
                         {item.isHero && (
                           <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">{t("websiteBuilder.heroBadge")}</span>
                         )}
                       </div>
+                      {focalMediaId === item.id && <div className="space-y-2 border-t border-[#e6eee9] p-3">
+                        <p className="text-xs font-medium">{t("websiteBuilder.chooseFocalPoint")}</p>
+                        <div className="grid grid-cols-2 gap-2"><div className="aspect-[16/7] overflow-hidden rounded bg-slate-100"><img src={item.url} alt="" className="h-full w-full object-cover" style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} /></div><div className="aspect-[4/3] overflow-hidden rounded bg-slate-100"><img src={item.url} alt="" className="h-full w-full object-cover" style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} /></div></div>
+                        <Button type="button" variant="outline" size="sm" disabled={!canManage || !item.objectPosition} onClick={() => setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: null })}>{t("websiteBuilder.resetFocalPoint")}</Button>
+                      </div>}
                       <div className="flex items-center justify-between gap-2 p-3">
                         <div className="min-w-0">
                           <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>

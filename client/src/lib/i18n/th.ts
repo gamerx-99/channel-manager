@@ -1492,6 +1492,8 @@ const th: TranslationDictionary = {
     uploadMediaAria: "อัปโหลดสื่อ",
     uploadImage: "อัปโหลดรูปภาพ",
     uploadHint: "PNG/JPG/WebP ขนาดไม่เกิน 5 MB ตัวอย่างจะอัปเดตทันที",
+    chooseFocalPoint: "เลือกจุดที่ต้องการให้เห็นในภาพ",
+    resetFocalPoint: "กลับไปตรงกลาง",
     heroBadge: "รูปหลัก",
     heroImageLabel: "รูปภาพหลัก",
     galleryLabel: "แกลเลอรี",
