@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-04] Move booking wizard logic into useBookingWizard and bookingRules
+- **Done**: Moved all booking-wizard state, effects, mutations and handlers from `usePublicHotelPage.ts` into new `useBookingWizard.ts`. Extracted pure rules into `bookingRules.ts` (`isDatesValid`, `areGuestsValid`, `countNights`, `parseChildMeasurements`, `isChildWithinLimit`, `serviceLineTotal`, `selectedServicesTotal`) with `bookingRules.test.ts` (7 tests). `usePublicHotelPage.ts` now only loads hotel/rooms/media/site config and calls `useBookingWizard`, keeping `booking` in its return. `PublicHotel.contract.test.ts` now reads `useBookingWizard.ts` too.
+- **Evidence**: `pnpm test` (pass), `pnpm check` (exit 0), `pnpm build` (exit 0, wrangler --dry-run). Browser check reached step 2 (room selection) on `/test-owner-hotel`; further steps not completed because the browser session closed.
+- **Tests changed**: `client/src/pages/PublicHotel.contract.test.ts` (reads `useBookingWizard.ts`), reason: markers moved; new `bookingRules.test.ts`.
+- **Not done**: no push (human approval required).
+
 ## [2026-11-04] Booking box split into one component per step
 - Split `PublicBookingSection.tsx` render switch into six step components under `client/src/components/public-hotel/`: `BookingStepDates`, `BookingStepRooms`, `BookingStepServices`, `BookingStepGuest`, `BookingStepPayment` (summary + PromptPay QR) and `BookingConfirmed`. `PublicBookingSection.tsx` is now a thin wrapper (400 -> 162 lines) keeping the section, heading, step counter, error banner and switch. Logic/state stays in `usePublicHotelPage`.
 - Tests changed: `client/src/pages/PublicHotel.contract.test.ts` (reads the booking step files too), `client/src/lib/nightsLabel.test.ts` (reads `BookingStepPayment.tsx` + `BookingConfirmed.tsx`), reason: markers moved out of `PublicBookingSection.tsx`.
