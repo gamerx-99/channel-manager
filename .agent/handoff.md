@@ -2208,3 +2208,8 @@ Housekeeping and WebsiteBuilder now use the shared page intro and headed outer p
 ## 2026-11-03 - Phase 1 S3 mobile availability calendar cue
 - Added a mobile-only horizontal-scroll hint with chevron and right-edge fade above/over the month grid; reused the existing `availability.mobileScrollHint` copy.
 - Verification: `pnpm test` 176 files / 1210 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.
+
+## 2026-11-03 - Phase 1 S4 hotel-accent CTA contrast
+- Added one WCAG luminance/contrast selector for black or white text. It is used by the plain hotel page CTAs, booking-step CTAs, selected calendar dates, themed CTA variables, and Website Builder previews. The three templates now retain the owner's accent and its computed text on those CTAs.
+- Unit tests cover light, dark, middle, and shorthand hex values at >=4.5:1. PublicHotel render checks cover no template plus all three templates; CSS contract checks themed button rules.
+- Verification after a TS target compatibility fix: `pnpm test` 177 files / 1223 tests passed; `pnpm check` exited 0; `pnpm build` exited 0 with Wrangler dry run.

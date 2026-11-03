@@ -663,7 +663,7 @@ body { background: var(--paper); color: var(--ink); }
 .booking-calendar .rdp-months{max-width:none;width:100%;}
 .booking-calendar .rdp-month,.booking-calendar .rdp-month_grid{width:100%;}
 .booking-calendar .rdp-day_button{font-size:13px;}
-.booking-calendar{--booking-calendar-accent:var(--pine);background:var(--white);border-radius:var(--radius);padding:clamp(8px,2vw,14px);color:var(--ink);display:flex;justify-content:center;}
+.booking-calendar{--booking-calendar-accent:var(--pine);--booking-calendar-accent-text:#ffffff;background:var(--white);border-radius:var(--radius);padding:clamp(8px,2vw,14px);color:var(--ink);display:flex;justify-content:center;}
 .booking-calendar .rdp-chevron{fill:var(--booking-calendar-accent);}
 .booking-calendar .rdp-selected .rdp-day_button{border-color:transparent;}
 .booking-calendar .rdp-day_button{border-radius:8px;font-size:12px;color:var(--ink);}
@@ -671,7 +671,8 @@ body { background: var(--paper); color: var(--ink); }
 .booking-calendar .rdp-today .rdp-day_button{font-weight:700;color:var(--booking-calendar-accent);}
 .booking-calendar .rdp-disabled .rdp-day_button{color:var(--ink-muted);opacity:.4;}
 .booking-calendar .rdp-outside .rdp-day_button{color:var(--ink-muted);}
-.booking-calendar .rdp-range_start .rdp-day_button,.booking-calendar .rdp-range_end .rdp-day_button{background:var(--booking-calendar-accent);color:var(--white);}
+.booking-calendar .rdp-range_start .rdp-day_button,.booking-calendar .rdp-range_end .rdp-day_button{background:var(--booking-calendar-accent);color:var(--booking-calendar-accent-text);}
+.booking-calendar .rdp-range_start .rdp-day_button:hover:not(:disabled),.booking-calendar .rdp-range_end .rdp-day_button:hover:not(:disabled){background:var(--booking-calendar-accent);color:var(--booking-calendar-accent-text);}
 .booking-calendar .rdp-range_middle{background:color-mix(in srgb,var(--booking-calendar-accent) 14%,white);}
 .booking-calendar .rdp-range_middle .rdp-day_button{color:var(--ink);border-radius:0;}
 .booking-calendar .rdp-weekday{font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;}

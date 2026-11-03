@@ -10,6 +10,7 @@ import "@/components/hotel-themes/themes.css";
 import { isHotelThemeId } from "@shared/hotelThemes";
 import { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
 import { PoweredByHayhost } from "@/components/hotel-themes/PoweredByHayhost";
+import { getContrastText } from "@/lib/contrastText";
 
 export default function PublicHotel({ slug }: { slug: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
   if (data.notFound || (!data.error && !data.hotel)) return <div className="public-page"><main className="public-loading" data-testid="public-hotel-not-found"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><div className="public-state-actions"><Link className="button public-button" href="/">{t("publicHotel.goHome")}</Link><Link className="button button-quiet" href="/login">{t("publicHotel.hotelSignIn")}</Link></div></main></div>;
   if (data.error || !data.hotel) return <div className="public-page"><main className="public-loading" role="alert" data-testid="public-hotel-load-error"><h1>{t("publicHotel.loadErrorTitle")}</h1><p>{t("publicHotel.loadErrorDesc")}</p><button type="button" className="button public-button" onClick={() => void data.refetch?.()}>{t("publicHotel.tryAgain")}</button></main></div>;
   const { hotel, roomTypes, media, heroImage, accentColor, heroCopy, booking } = data;
+  const accentTextColor = getContrastText(accentColor);
   const heroMedia = media.find(item => item.is_hero) ?? media[0];
   const isVisible = booking!.isVisible;
   const handleSelectRoom = booking!.handleSelectRoom;
@@ -36,7 +38,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
         <nav className={menuOpen ? "is-open" : ""}>
           <a href="#stay">{t("publicHotel.navRooms")}</a>
           <a href="#location">{t("publicHotel.navLocation")}</a>
-          <a href="#book" className="public-nav-cta" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>{t("publicHotel.navCheckDates")} <ArrowRight size={14} /></a>
+          <a href="#book" className="public-nav-cta" style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentTextColor } as React.CSSProperties}>{t("publicHotel.navCheckDates")} <ArrowRight size={14} /></a>
         </nav>
         <button className="public-menu" type="button" onClick={() => setMenuOpen(!menuOpen)} aria-label={t("publicHotel.menuToggleAria")}>{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>
       </header>
@@ -48,7 +50,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
             <div className="eyebrow light">{t("publicHotel.heroEyebrow")}</div>
             <h1>{hotel.name}</h1>
             <p>{heroCopy}</p>
-            <a className="button public-button" href="#stay" style={{ backgroundColor: accentColor, borderColor: accentColor } as React.CSSProperties}>{t("publicHotel.heroViewRooms")} <ArrowRight size={15} /></a>
+            <a className="button public-button" href="#stay" style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentTextColor } as React.CSSProperties}>{t("publicHotel.heroViewRooms")} <ArrowRight size={15} /></a>
           </div>
           <div className="public-hero-caption"><span>{t("publicHotel.heroCountry")}</span><span>{hotel.address}</span></div>
         </section>

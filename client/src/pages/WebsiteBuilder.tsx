@@ -17,6 +17,7 @@ import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import { HOTEL_THEMES, type HotelThemeId } from "@shared/hotelThemes";
+import { getContrastText } from "@/lib/contrastText";
 import TemplateCardPreview from "@/components/hotel-themes/TemplateCardPreview";
 
 // Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path
@@ -148,6 +149,7 @@ export default function WebsiteBuilder() {
 
   // Initialize draft form from config when hotel or config changes
   const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
+  const previewAccentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56";
   const [initializedFor, setInitializedFor] = useState<string>("");
 
   useEffect(() => {
@@ -527,8 +529,8 @@ export default function WebsiteBuilder() {
                       <h3 className="text-lg font-semibold text-white">{selectedHotel?.name ?? "Your hotel preview"}</h3>
                       <p className="mt-1 max-w-xl text-sm leading-6 text-white/90">{draft.heroCopy || config.heroCopy}</p>
                       <span
-                        className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white"
-                        style={{ background: draft.accentColor }}
+                        className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ background: previewAccentColor, color: getContrastText(previewAccentColor) }}
                       >
                         {t("websiteBuilder.viewRooms")}
                       </span>
@@ -555,7 +557,7 @@ export default function WebsiteBuilder() {
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                       <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
                       <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
-                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold text-white" style={{ background: draft.accentColor }}>
+                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold" style={{ background: previewAccentColor, color: getContrastText(previewAccentColor) }}>
                         {t("websiteBuilder.planVisit")}
                       </span>
                     </div>

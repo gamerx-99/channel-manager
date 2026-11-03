@@ -54,4 +54,22 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("
     expect(screen.getByRole("img", { name: "Sample Stay" }).getAttribute("style")).toContain("object-position: 27% 73%");
     if (theme) expect(screen.getByText("Booking section")).toBeTruthy();
   });
+
+  it("uses contrast text for hotel-accent calls to action", () => {
+    mocks.loaded = true;
+    mocks.theme = theme;
+    mocks.siteConfigQuery.mockReturnValue({ data: { theme, accentColor: "#ffdd00", heroCopy: "Rest here.", visibleSections: null }, isLoading: false, error: null });
+    const view = render(<PublicHotel slug="sample-stay" />);
+    if (theme) {
+      const themedPage = view.container.querySelector<HTMLElement>(`.theme-${theme}`);
+      expect(themedPage?.style.getPropertyValue("--owner-accent")).toBe("#ffdd00");
+      expect(themedPage?.style.getPropertyValue("--owner-accent-text")).toBe("#000000");
+    } else {
+      for (const selector of [".public-nav-cta", ".public-hero-content .public-button"]) {
+        const cta = view.container.querySelector<HTMLElement>(selector);
+        expect(cta?.style.backgroundColor).toBe("rgb(255, 221, 0)");
+        expect(cta?.style.color).toBe("rgb(0, 0, 0)");
+      }
+    }
+  });
 });

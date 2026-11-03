@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import type { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
+import { getContrastText } from "@/lib/contrastText";
 
 export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & {
   booking: React.ReactNode;
@@ -31,5 +32,5 @@ export function ThemeLanding({ themeId, accentColor, children }: ThemeLandingPro
     document.head.appendChild(link);
   }, [themeId]);
 
-  return <div className={`public-page theme-${themeId}`} style={{ "--owner-accent": accentColor } as React.CSSProperties}>{children}</div>;
+  return <div className={`public-page theme-${themeId}`} style={{ "--owner-accent": accentColor, "--owner-accent-text": getContrastText(accentColor) } as React.CSSProperties}>{children}</div>;
 }
