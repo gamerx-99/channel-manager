@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowDown, MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
+import { PoweredByHayhost } from "./PoweredByHayhost";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
@@ -53,7 +54,7 @@ export default function LannaTeakLanding({ hotelName, accentColor, hotel, roomTy
 
         {isVisible("location") && hasLocation && <section className="lanna-location" id="location"><div><span className="lanna-kicker">{t("hotelThemes.lannaTeak.findWay")}</span><h2>{t("hotelThemes.lannaTeak.locationTitle")}</h2></div><div className="lanna-address"><MapPin size={18} /><div><strong>{hotelName}</strong><p>{address}</p></div></div></section>}
       </main>
-      <footer className="lanna-footer"><span>{hotelName}{hasLocation ? ` · ${address}` : ""}</span><span>{t("hotelThemes.lannaTeak.footerBooking")}</span></footer>
+      <footer className="lanna-footer"><span>{hotelName}{hasLocation ? ` · ${address}` : ""}</span><PoweredByHayhost label={t("hotelThemes.lannaTeak.footerBooking")} /></footer>
     </div>
   </ThemeLanding>;
 }

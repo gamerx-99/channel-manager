@@ -9,6 +9,7 @@ import CafeHomestayLanding from "@/components/hotel-themes/CafeHomestayLanding";
 import "@/components/hotel-themes/themes.css";
 import { isHotelThemeId } from "@shared/hotelThemes";
 import { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
+import { PoweredByHayhost } from "@/components/hotel-themes/PoweredByHayhost";
 
 export default function PublicHotel({ slug }: { slug: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,7 +120,7 @@ export default function PublicHotel({ slug }: { slug: string }) {
           </div>
         </section>
       </main>
-      {selectedTheme ? <footer className="theme-footer"><span>{hotel.name}</span><span>Booking powered by hayhost</span></footer> : <footer className="public-footer">
+      {selectedTheme ? <footer className="theme-footer"><span>{hotel.name}</span><PoweredByHayhost label="Booking powered by hayhost" /></footer> : <footer className="public-footer">
         <div className="public-brand"><span className="brand-mark"><span /></span><span>{hotel.name}</span></div>
         <span>© {new Date().getFullYear()} {hotel.name}</span>
         <span>{t("publicHotel.footerManagedSecurely")}</span>

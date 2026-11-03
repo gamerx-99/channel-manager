@@ -1,6 +1,7 @@
 import React from "react";
 import { MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
+import { PoweredByHayhost } from "./PoweredByHayhost";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
@@ -37,7 +38,7 @@ export default function CafeHomestayLanding({ hotelName, accentColor, hotel, roo
         {isVisible("booking") && booking}
         {isVisible("location") && hasLocation && <section className="cafe-location" id="location"><div><span className="cafe-kicker">{t("hotelThemes.cafeHomestay.comeFindUs")}</span><h2>{t("hotelThemes.cafeHomestay.locationTitle")}</h2></div><div className="cafe-address"><MapPin size={19} aria-hidden="true" /><div><strong>{hotelName}</strong><p>{address}</p></div></div><LeafDecoration /></section>}
       </main>
-      <footer className="cafe-footer"><span>{hotelName}{hasLocation ? ` · ${address}` : ""}</span><span>{t("hotelThemes.cafeHomestay.footerBooking")}</span></footer>
+      <footer className="cafe-footer"><span>{hotelName}{hasLocation ? ` · ${address}` : ""}</span><PoweredByHayhost label={t("hotelThemes.cafeHomestay.footerBooking")} /></footer>
     </div>
   </ThemeLanding>;
 }

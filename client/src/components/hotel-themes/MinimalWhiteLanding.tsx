@@ -1,6 +1,7 @@
 import React from "react";
 import { MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
+import { PoweredByHayhost } from "./PoweredByHayhost";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
@@ -36,7 +37,7 @@ export default function MinimalWhiteLanding({ hotelName, accentColor, hotel, roo
         {isVisible("booking") && booking}
         {isVisible("location") && address && <section className="minimal-location" id="location"><div><span className="minimal-label">{t("hotelThemes.minimalWhite.findUs")}</span><h2>{t("hotelThemes.minimalWhite.location")}</h2></div><div className="minimal-address"><MapPin size={18} aria-hidden="true" /><p>{address}</p></div></section>}
       </main>
-      <footer className="minimal-footer"><span>{hotelName}{address ? ` · ${address}` : ""}</span><span>{t("hotelThemes.minimalWhite.footerBooking")}</span></footer>
+      <footer className="minimal-footer"><span>{hotelName}{address ? ` · ${address}` : ""}</span><PoweredByHayhost label={t("hotelThemes.minimalWhite.footerBooking")} /></footer>
     </div>
   </ThemeLanding>;
 }

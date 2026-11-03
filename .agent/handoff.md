@@ -2110,3 +2110,9 @@ Not tested in a browser or with a real email.
 - **Tests changed**: Expanded `WebsiteBuilder.test.tsx` to assert each selected hotel name appears in all three preview headings, both translated fallbacks appear when the name is blank, and an uploaded hero photo is used in all previews. The name assertion is scoped to preview headings because the hotel selector also displays that name. Used `Array.from` instead of spreading a `NodeList` to match the project's TypeScript target. No prior behavior assertion was removed.
 - **Verification**: `pnpm test`, `pnpm check`, and `pnpm build` each failed to start with `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK` (access denied to the global pnpm store lock). Direct fallback `vitest run --pool=forks --maxWorkers=1 --minWorkers=1` with worktree-local temp passed: 170 files, 1,189 tests. `node_modules\\.bin\\tsc --noEmit` exited 0. `node_modules\\.bin\\vite build` exited 0 (existing >500 kB chunk warning). Temp directory was removed. `git diff --check` exited 0 with only the pre-existing `_headers` line-ending warning; no source references to the removed screenshots remain.
 - **Not done**: No browser walkthrough, commit, push or deploy. The excluded `_headers`, `docs/sales/`, `.agent/session-handoff-2026-11-03.md`, `client/index.html`, `client/src/index.css`, and logo files were left untouched.
+
+## 2026-11-03 - Footer credit links to hayhost
+
+- Theme footers (Lanna Teak, Cafe Homestay, Minimal White) and the themed footer in PublicHotel.tsx now link the word hayhost to https://www.hayhostth.com/ in a new tab, via PoweredByHayhost.tsx.
+- Tests: pnpm test 173 files / 1202 tests passed; pnpm check passed; vite build passed.
+
