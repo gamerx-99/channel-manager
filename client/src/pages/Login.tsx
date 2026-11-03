@@ -4,6 +4,7 @@ import { Link, useLocation } from 'wouter';
 import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
 import { MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
+import { isMfaEnabled } from '@/lib/featureFlags';
 import { useTranslation } from '@/lib/i18n';
 import { readSocialError, SocialSignIn } from '@/components/auth/SocialSignIn';
 import { CheckEmail } from '@/components/auth/CheckEmail';
@@ -91,7 +92,7 @@ export default function Login() {
           }
         }
 
-        if (!twoFactorEnabled && shouldEnforceMfaForRoles(roles)) {
+        if (isMfaEnabled() && !twoFactorEnabled && shouldEnforceMfaForRoles(roles)) {
           setSubmitting(false);
           navigate(MFA_ENROLL_PATH);
           return;

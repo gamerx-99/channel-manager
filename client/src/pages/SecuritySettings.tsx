@@ -4,6 +4,7 @@ import LinkedAccountsSettings from "@/components/LinkedAccountsSettings";
 import MfaSettings from "@/components/MfaSettings";
 import SlipOkSettings from "@/components/SlipOkSettings";
 import { useHotel } from "@/contexts/HotelContext";
+import { isMfaEnabled } from "@/lib/featureFlags";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 
@@ -25,7 +26,7 @@ export default function SecuritySettings() {
           <p className="lede">{t("securitySettings.lede")}</p>
         </div>
       </section>
-      <MfaSettings />
+      {isMfaEnabled() && <MfaSettings />}
       <LinkedAccountsSettings />
       {hotelId && canManageSlipOk && <SlipOkSettings hotelId={hotelId} />}
       <DeleteAccountSettings />

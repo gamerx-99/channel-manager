@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "../../_core/hooks/useAuth";
 import { trpc } from "../../lib/trpc";
 import { shouldRedirectToMfaEnroll, MFA_ENROLL_PATH } from "@/lib/mfa";
+import { isMfaEnabled } from "@/lib/featureFlags";
 import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
 import { SELECTED_HOTEL_STORAGE_KEY } from "../../contexts/HotelContext";
@@ -26,6 +27,7 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
   // Derives MFA requirement from Better Auth session / tRPC authMe without raw Supabase calls.
   const twoFactorEnabled = Boolean(authMe?.twoFactorEnabled);
   const needsMfaEnroll = Boolean(
+    isMfaEnabled() &&
     isAuthenticated &&
     user &&
     !roleLoading &&

@@ -2124,3 +2124,10 @@ Not tested in a browser or with a real email.
 - Day cells scale with width and the month is centred; it fits a 375px screen. Guest count fields have a label above a white field.
 - Checked locally (Lanna Teak desktop and 375px, plain page). pnpm test 1202 passed; pnpm check passed; vite build passed.
 
+
+## 2026-11-03 - 2FA paused behind VITE_FEATURE_MFA
+
+- Owner asked to take 2FA out for now and redo it later. Forced enrol for platform roles (Login.tsx, PrivateRoute.tsx) and the 2FA section on SecuritySettings now run only when VITE_FEATURE_MFA is `true` (unset in staging and production, so off). The /mfa/enroll page, Login's code step for accounts that already have 2FA, and server step-up checks are unchanged; production has no account with 2FA on.
+- Tests: the three enforcement suites (adversarial_m2_auth, App.privateRoute.mfa, Login.mfa) now stub VITE_FEATURE_MFA=true so they still test enforcement with the flag on; no assertion changed. New featureFlags.mfa.test.ts covers the flag off. pnpm test 174 files / 1204 passed; pnpm check passed; vite build passed.
+- Investigation notes: local enrol, sign-out and re-login with a fresh code passes. Production had no 2FA rows; two social sign-ins at 10:38 on 2026-11-03 left unconsumed auth-state rows. Cause of the reported failure not confirmed.
+

@@ -5,6 +5,9 @@ import { act, cleanup, render, renderHook, screen, waitFor } from "@testing-libr
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// These tests cover 2FA enforcement, which runs only while the MFA feature flag is on.
+vi.stubEnv("VITE_FEATURE_MFA", "true");
+
 // ==========================================
 // Hoisted Mocks
 // ==========================================
