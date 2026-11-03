@@ -171,7 +171,8 @@ const th: TranslationDictionary = {
   ownerSignup: {
     checkingLink: "กำลังตรวจสอบลิงก์สมัคร…", invalidTitle: "ลิงก์สมัครนี้ใช้ไม่ได้แล้ว", invalidDesc: "ลิงก์อาจหมดอายุหรือถูกใช้แล้ว กรุณาขอลิงก์ใหม่จากผู้ดูแลระบบ", eyebrowAside: "ระบบจัดการโรงแรม / คอนโซลกลาง", headlineAside: "ตั้งค่า", descAside: "สร้างบัญชีเพื่อเริ่มจัดการที่พักนี้", privateOperations: "ระบบจัดการโรงแรมส่วนตัว", secureWorkspace: "พื้นที่ทำงานปลอดภัย", eyebrowCard: "สมัครผู้ดูแลโรงแรม", titleCard: "สร้างบัญชี", descCard: "คุณกำลังสร้างบัญชี Hotel Admin สำหรับ {{hotel}}", finishTitle: "ตั้งค่าโรงแรมให้เสร็จ", finishDesc: "เข้าสู่ระบบแล้ว ยืนยันเพื่อเป็น Hotel Admin ของ {{hotel}}", finish: "เชื่อมโรงแรมนี้", finishing: "กำลังเชื่อม…", emailLabel: "อีเมล", passwordLabel: "รหัสผ่าน", confirmPasswordLabel: "ยืนยันรหัสผ่าน", passwordTooShort: "ตั้งรหัสผ่านอย่างน้อย 8 ตัวอักษร", passwordMismatch: "รหัสผ่านไม่ตรงกัน", accountFailed: "สร้างบัญชีไม่สำเร็จ", finishFailed: "ตั้งค่าบัญชีโรงแรมไม่สำเร็จ", creating: "กำลังสร้างบัญชี…", create: "สร้างบัญชี", securityNote: "ข้อมูลโรงแรมจะแสดงเฉพาะกับผู้ที่คุณอนุญาต", privateWorkspace: "พื้นที่ทำงานส่วนตัว", needHelp: "ต้องการความช่วยเหลือ ติดต่อฝ่ายสนับสนุน", alreadyAssigned: "ผู้ใช้นี้ได้รับสิทธิ์ในโรงแรมนี้แล้ว", invitationInvalid: "ลิงก์คำเชิญไม่ถูกต้องหรือหมดอายุแล้ว",
   },
-  platformOverview: { title: "ภาพรวมแพลตฟอร์ม", loading: "กำลังโหลดข้อมูลแพลตฟอร์ม…" },
+  platformOverview: { eyebrow: "แพลตฟอร์ม", title: "ภาพรวมแพลตฟอร์ม", lede: "สรุปข้อมูลโรงแรมที่ใช้ hayhost", loading: "กำลังโหลดข้อมูลแพลตฟอร์ม…", hotel: "โรงแรม", plan: "แพ็กเกจ", paymentStatus: "สถานะการชำระเงิน", rooms: "ห้องพัก", syncStatus: "สถานะการซิงก์", unavailable: "ไม่มีข้อมูล", retry: "ลองอีกครั้ง", emptyTitle: "ยังไม่มีโรงแรม", emptyDescription: "ข้อมูลโรงแรมจะแสดงที่นี่เมื่อตั้งค่าโรงแรมแล้ว" },
+  privateRoute: { checkingSession: "กำลังตรวจสอบการเข้าสู่ระบบ…", verifyAccess: "ตรวจสอบสิทธิ์เข้าถึงที่พักไม่ได้ โปรดลองอีกครั้ง" },
   accessRestricted: { title: "ไม่มีสิทธิ์เข้าถึง", hotelNotVisible: "ที่พักนี้อยู่นอกพื้นที่โรงแรมที่คุณได้รับมอบหมาย", permissionRequired: "บทบาทของคุณไม่มีสิทธิ์เปิดพื้นที่นี้", hotelRequired: "ตั้งค่าโรงแรมก่อน หรือให้ผู้ดูแลโรงแรมเชิญคุณเข้าร่วม", platformOnly: "ส่วนนี้เปิดให้ผู้ดูแลแพลตฟอร์มเท่านั้น", returnToDashboard: "กลับไปหน้าภาพรวม" },
   serverErrors: {
     roomTypeUnavailable: "ประเภทห้องที่เลือกไม่ว่างแล้วในวันที่นี้ กรุณาเลือกวันหรือประเภทห้องอื่น", roomUnavailable: "ห้องที่เลือกไม่ว่างแล้วในวันที่นี้", roomOverlap: "ห้องที่เลือกมีการจองซ้อนช่วงวันที่นี้แล้ว", checkOutAfterCheckIn: "วันเช็คเอาท์ต้องอยู่หลังวันเช็คอิน", checkOutLaterThanCheckIn: "วันเช็คเอาท์ต้องอยู่หลังวันเช็คอิน", holdExpired: "เวลาจองห้องชั่วคราวหมดแล้ว กรุณาเริ่มจองใหม่", hotelNotPublished: "ไม่พบที่พักนี้ หรือที่พักยังไม่เปิดหน้าเว็บ", promptPayMissing: "ที่พักนี้ยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาติดต่อที่พักโดยตรง", paymentExpired: "หมดเวลาชำระเงินแล้ว", bookingNotReadyForPayment: "การจองนี้ยังไม่พร้อมชำระเงิน", notAwaitingPayment: "การจองนี้ไม่ได้รอตรวจสอบการชำระเงิน", alreadyVerifying: "กำลังตรวจสอบการชำระเงินของการจองนี้อยู่ กรุณารอผล", slipReused: "สลิปนี้ถูกใช้ยืนยันการชำระเงินรายการอื่นไปแล้ว กรุณาติดต่อที่พัก", notAwaitingManualVerification: "การจองนี้ไม่ได้รอให้เจ้าหน้าที่ตรวจสอบ", bookingStatusChanged: "สถานะการจองเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง", hotelAccessDenied: "คุณไม่มีสิทธิ์ทำรายการนี้ในที่พักนี้", noHotelAccess: "คุณไม่มีสิทธิ์เข้าถึงที่พักนี้", hotelNotAvailable: "บัญชีของคุณเข้าถึงที่พักนี้ไม่ได้", signInAgain: "กรุณาเข้าสู่ระบบอีกครั้ง", icalFetchFailed: "ดึงหรือตรวจสอบปฏิทิน iCal ไม่สำเร็จ กรุณาตรวจลิงก์ปฏิทินจาก OTA อีกครั้ง", staffChangeNotAllowed: "ไม่สามารถเปลี่ยนสิทธิ์พนักงานแบบนี้ได้", lastAdminRemove: "ลบผู้ดูแลโรงแรมคนสุดท้ายไม่ได้", alreadyAssigned: "ผู้ใช้นี้เป็นสมาชิกของที่พักนี้อยู่แล้ว", invitationInvalid: "ลิงก์คำเชิญนี้ใช้ไม่ได้หรือหมดอายุแล้ว", incorrectPassword: "รหัสผ่านไม่ถูกต้อง", rateOverlap: "ประเภทห้องนี้มีราคาพิเศษที่ทับช่วงวันที่เลือกอยู่แล้ว", duplicateDetails: "มีที่พักหรือประเภทห้องที่ใช้ข้อมูลนี้อยู่แล้ว", invalidValues: "ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง", maxOccupancyBase: "จำนวนผู้เข้าพักสูงสุดต้องไม่น้อยกว่าจำนวนผู้เข้าพักที่รวมในราคา", imageTooLarge: "รูปภาพต้องมีขนาดไม่เกิน 5 MB", invalidImage: "อัปโหลดรูปภาพไม่สำเร็จ ไฟล์ไม่ถูกต้อง",
@@ -1390,6 +1391,8 @@ const th: TranslationDictionary = {
     ownerOnly: "เฉพาะเจ้าของที่พักเท่านั้นที่อนุมัติสิทธิ์ทีมช่วยเหลือได้",
     title: "สิทธิ์ทีมช่วยเหลือ",
     lede: "อนุมัติให้บัญชีทีมช่วยเหลือเข้าดูหรือแก้ไขข้อมูลที่พักชั่วคราว ยกเลิกกุญแจได้ทุกเมื่อ และทีมช่วยเหลือจะจัดการพนักงานไม่ได้เสมอ",
+    formTitle: "ให้กุญแจใหม่กับทีมช่วยเหลือ",
+    eyebrow: "สิทธิ์ทีมช่วยเหลือ",
     emailLabel: "อีเมลทีมช่วยเหลือ",
     durationLabel: "ระยะเวลา",
     hours: "{{count}} ชั่วโมง",
@@ -1408,6 +1411,8 @@ const th: TranslationDictionary = {
     historyTitle: "ประวัติการเข้าถึงของทีมช่วยเหลือ",
     historyDesc: "ใครเข้าถึงอะไรบ้าง รวมถึงครั้งที่ถูกปฏิเสธ",
     noHistory: "ยังไม่มีประวัติการเข้าถึง",
+    historyDate: "วันที่", historyUser: "บัญชีทีมช่วยเหลือ", historyAction: "รายการ", historyKey: "คีย์",
+    actionGranted: "อนุมัติสิทธิ์แล้ว", actionRevoked: "ยกเลิกสิทธิ์แล้ว", actionExpired: "สิทธิ์หมดอายุ", actionAccessed: "เข้าถึงที่พัก",
     keyRef: "กุญแจ {{key}}",
     noKeyRef: "ไม่มี",
     bannerActive: "สิทธิ์ทีมช่วยเหลือ · {{mode}} · หมดอายุ {{date}}",
@@ -1746,9 +1751,9 @@ const th: TranslationDictionary = {
     footerManagedSecurely: "ข้อมูลโรงแรมได้รับการจัดการอย่างปลอดภัย",
   },
   hotelThemes: {
-    lannaTeak: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เลือกภาษา", kicker: "พักสบายในบรรยากาศสงบ", exploreRooms: "ดูห้องพัก", restWell: "พักผ่อนให้เต็มที่", roomsTitle: "ห้องพัก|สำหรับคุณ", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", galleryKicker: "บรรยากาศรอบที่พัก", galleryTitle: "ช่วงเวลาเล็ก ๆ|ที่น่าจดจำ", findWay: "เดินทางมาได้ที่", locationTitle: "ยินดีต้อนรับ", footerBooking: "จองผ่าน hayhost" },
-    cafeHomestay: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เปลี่ยนภาษา", heroKicker: "พักสบาย ใจสบาย", exploreRooms: "ดูห้องพัก", homeKicker: "พักได้ตามสบาย", roomsTitle: "ห้องพักสำหรับวันพักผ่อน", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", galleryKicker: "ภาพบรรยากาศ", galleryTitle: "มุมเล็ก ๆ ของที่พัก", comeFindUs: "แวะมาหาเราได้", locationTitle: "เดินทางมาที่นี่", footerBooking: "จองผ่าน hayhost" },
-    minimalWhite: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เปลี่ยนภาษา", stay: "01 · ห้องพัก", room: "ห้อง {{number}}", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", details: "02 · รูปที่พัก", findUs: "03 · ที่ตั้ง", footerBooking: "จองผ่าน hayhost" }
+    lannaTeak: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เลือกภาษา", kicker: "พักสบายในบรรยากาศสงบ", exploreRooms: "ดูห้องพัก", restWell: "พักผ่อนให้เต็มที่", roomsTitle: "ห้องพัก|สำหรับคุณ", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", galleryKicker: "บรรยากาศรอบที่พัก", galleryTitle: "ช่วงเวลาเล็ก ๆ|ที่น่าจดจำ", findWay: "เดินทางมาได้ที่", locationTitle: "ยินดีต้อนรับ", footerBooking: "ให้บริการโดย hayhost" },
+    cafeHomestay: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เปลี่ยนภาษา", heroKicker: "พักสบาย ใจสบาย", exploreRooms: "ดูห้องพัก", homeKicker: "พักได้ตามสบาย", roomsTitle: "ห้องพักสำหรับวันพักผ่อน", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", galleryKicker: "ภาพบรรยากาศ", galleryTitle: "มุมเล็ก ๆ ของที่พัก", comeFindUs: "แวะมาหาเราได้", locationTitle: "เดินทางมาที่นี่", footerBooking: "ให้บริการโดย hayhost" },
+    minimalWhite: { sections: "เมนูในหน้า", rooms: "ห้องพัก", gallery: "รูปที่พัก", location: "ที่ตั้ง", language: "เปลี่ยนภาษา", stay: "01 · ห้องพัก", room: "ห้อง {{number}}", capacity: "พักได้ไม่เกิน {{capacity}} คน", perNight: "/ คืน", details: "02 · รูปที่พัก", findUs: "03 · ที่ตั้ง", footerBooking: "ให้บริการโดย hayhost" }
   },
 };
 

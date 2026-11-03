@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-03] Back-office house style pass (partial)
+- **Done**: Added `specs/ui-house-style.md`; rebuilt SupportAccess around the shared intro, panels, form grid, status pills, empty states, and responsive data table. PlatformOverview now has the shared page/panel/table structure, translated labels, and empty/error states. Moved PrivateRoute's two raw English status messages into en/th dictionaries. Updated the three Thai theme footer labels to `ให้บริการโดย hayhost`; PoweredByHayhost links remain unchanged.
+- **Audit**: Recorded findings and completion state for every back-office page and requested settings/platform component in `.agent/owner-ui-fixes-2026-11-03.md`. Remaining page groups are explicitly marked unfinished; the broad 375px audit is not complete.
+- **Verification**: `pnpm test`, `pnpm check`, `pnpm build` were denied by `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK`. Direct `tsc --noEmit` passed. Direct `vite build` passed (existing large-chunk warning). `git diff --check` passed with line-ending warnings. Direct Vitest (`--pool=forks --maxWorkers=1 --minWorkers=1`) completed with 173 files passed, 1 failed (1,203 passed / 1 failed). The sole failure was the SupportAccess accessible heading name caused by the visual title period; after adding an explicit accessible label, the focused `BookingWizard.i18n.test.tsx` rerun passed (3/3). The full suite was not rerun after that fix.
+- **Git**: No add or commit. Suggested concerns/commits are listed in the final report.
+
 ## [2026-11-03] Batch B4: photo focal point and themed booking text
 - **Photo focal point**: Added nullable `hotel_media.object_position`, scoped update procedure gated by `property.manage_profile`, strict percentage input validation, camelCase values in both public and builder media reads, and a touch-friendly image tap control with marker, hero/card previews and centre reset. Applied stored positions across the default and three themed public layouts plus the template preview.
 - **Theme contrast**: Removed the inline pine background from `PublicBookingSection`; the default pine surface is now in CSS. The three themes use their primary/on-primary/accent tokens for booking text, and `ThemeLanding` now keeps the owner accent separate from template primary. `accentColor` does not set body text colours.

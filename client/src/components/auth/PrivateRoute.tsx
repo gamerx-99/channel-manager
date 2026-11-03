@@ -41,10 +41,10 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     }
   }, [needsMfaEnroll, navigate]);
 
-  if (loading || roleLoading || hotelsLoading) return <main className="auth-loading">Checking your secure session…</main>;
+  if (loading || roleLoading || hotelsLoading) return <main className="auth-loading">{t("privateRoute.checkingSession")}</main>;
   if (!isAuthenticated || !user) return null;
   if (roleError || hotelsError) {
-    return <main className="auth-loading">Unable to verify your property access. Please try again.</main>;
+    return <main className="auth-loading">{t("privateRoute.verifyAccess")}</main>;
   }
   if (needsMfaEnroll) {
     return null;
