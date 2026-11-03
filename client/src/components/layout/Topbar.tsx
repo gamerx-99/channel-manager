@@ -10,7 +10,6 @@ import NotificationBell from "../NotificationBell";
 import LanguageSwitcher from "../LanguageSwitcher";
 import { useHotel } from "../../contexts/HotelContext";
 import { type AppRole, type Permission } from "@shared/authorization";
-import { BrandMark } from "./BrandMark";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
 const BREADCRUMB_EXACT_KEYS: Record<string, TranslationKey> = {
@@ -87,9 +86,8 @@ export function Topbar({
       <button className="icon-button menu-button" onClick={onOpenMenu} aria-label={t("topbar.openMenu")}>
         <Menu size={19} />
       </button>
-      <Link href="/dashboard" className="topbar-brand">
-        <BrandMark />
-        <span>hay<em>host</em></span>
+      <Link href="/dashboard" className="topbar-brand" aria-label="hayhost">
+        <img className="topbar-logo" src="/logo-wide.png" alt="hayhost" width={110} height={28} />
       </Link>
       <div className="topbar-rule" />
       <div className="breadcrumbs">
