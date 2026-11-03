@@ -31,5 +31,5 @@ export function ThemeLanding({ themeId, accentColor, children }: ThemeLandingPro
     document.head.appendChild(link);
   }, [themeId]);
 
-  return <div className={`public-page theme-${themeId}`} style={{ "--t-primary": accentColor } as React.CSSProperties}>{children}</div>;
+  return <div className={`public-page theme-${themeId}`} style={{ "--owner-accent": accentColor } as React.CSSProperties}>{children}</div>;
 }

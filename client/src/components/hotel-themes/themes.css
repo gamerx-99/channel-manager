@@ -1,4 +1,25 @@
 .theme-minimal-white,.theme-lanna-teak,.theme-cafe-homestay{--t-bg:#f9f9f7;--t-surface:#fff;--t-text:#1a1c1b;--t-muted:#666b64;--t-primary:#52604b;--t-on-primary:#fff;--t-radius:3px;background:var(--t-bg);color:var(--t-text);font-family:var(--t-font-body);}
+
+/* Booking copy sits on each theme's primary surface; keep all readable copy on theme tokens. */
+.public-booking{background:var(--pine);color:#fff}
+/* index.css colours this highlight var(--pine), the same as the section background. */
+.public-page .public-booking h2 i{color:var(--pine-soft)}
+.theme-minimal-white{--t-on-primary-accent:#e4efeb}
+.theme-lanna-teak{--t-on-primary-accent:#f0d9b0}
+.theme-cafe-homestay{--t-on-primary-accent:#d2eabe}
+.theme-minimal-white .public-booking,.theme-lanna-teak .public-booking,.theme-cafe-homestay .public-booking{background:var(--t-primary)!important;color:var(--t-on-primary)!important}
+.theme-minimal-white .public-booking .eyebrow,.theme-lanna-teak .public-booking .eyebrow,.theme-cafe-homestay .public-booking .eyebrow,
+.theme-minimal-white .public-booking h2,.theme-lanna-teak .public-booking h2,.theme-cafe-homestay .public-booking h2,
+.theme-minimal-white .public-booking>p,.theme-lanna-teak .public-booking>p,.theme-cafe-homestay .public-booking>p,
+.theme-minimal-white .public-booking label,.theme-lanna-teak .public-booking label,.theme-cafe-homestay .public-booking label{color:var(--t-on-primary)!important}
+.theme-minimal-white .public-booking h2 i,.theme-lanna-teak .public-booking h2 i,.theme-cafe-homestay .public-booking h2 i{color:var(--t-on-primary-accent)!important}
+.theme-minimal-white .public-booking h2{color:var(--t-on-primary)!important}.theme-minimal-white .public-booking h2 i{color:var(--t-on-primary-accent)!important}
+.theme-lanna-teak .public-booking h2{color:var(--t-on-primary)!important}.theme-lanna-teak .public-booking h2 i{color:var(--t-on-primary-accent)!important}
+.theme-cafe-homestay .public-booking h2{color:var(--t-on-primary)!important}.theme-cafe-homestay .public-booking h2 i{color:var(--t-on-primary-accent)!important}
+.theme-minimal-white .public-booking .booking-form>p,.theme-lanna-teak .public-booking .booking-form>p,.theme-cafe-homestay .public-booking .booking-form>p{color:var(--t-on-primary)!important}
+.theme-minimal-white .public-booking>div:first-child p,.theme-lanna-teak .public-booking>div:first-child p,.theme-cafe-homestay .public-booking>div:first-child p{color:var(--t-on-primary)!important}
+.theme-minimal-white .public-booking a:not(.public-button),.theme-lanna-teak .public-booking a:not(.public-button),.theme-cafe-homestay .public-booking a:not(.public-button){color:var(--t-on-primary-accent)}
+.theme-minimal-white .public-booking .public-button,.theme-lanna-teak .public-booking .public-button,.theme-cafe-homestay .public-booking .public-button{background:var(--t-on-primary-accent)!important;border-color:var(--t-on-primary-accent)!important;color:var(--t-primary)!important}
 .theme-minimal-white{--t-font-heading:'IBM Plex Sans','IBM Plex Sans Thai',sans-serif;--t-font-body:'IBM Plex Sans','IBM Plex Sans Thai',sans-serif;--t-bg:#f9f9f7;--t-surface:#fff;--t-text:#1a1c1b;--t-muted:#656962;--t-radius:2px;}
 .theme-lanna-teak{--t-font-heading:'Noto Serif','Noto Serif Thai',serif;--t-font-body:'Noto Serif','Noto Serif Thai',serif;--t-bg:#fff8f5;--t-surface:#fff1e9;--t-text:#221a14;--t-muted:#76675f;--t-primary:#41240d;--t-radius:0px;}
 .theme-lanna-teak{--t-font-heading:'Noto Serif','Noto Serif Thai',serif;--t-font-body:'Be Vietnam Pro','Noto Sans Thai',sans-serif;--t-bg:#fff8f5;--t-surface:#fff1e9;--t-text:#2a211b;--t-muted:#76675f;--t-primary:#41240d;--t-red:#aa342d;--t-gold:#cea860;--t-on-primary:#fff8f5;--t-radius:4px;}

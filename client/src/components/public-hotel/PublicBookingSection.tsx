@@ -410,7 +410,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
 
 
   return (
-    <section className="public-booking" id="book" style={{ background: "var(--pine)" }}>
+    <section className="public-booking" id="book">
       <div>
         <div className="eyebrow">{t("publicHotel.bookingEyebrow")}</div>
         <h2>{t("publicHotel.bookingTitle")}<br /><i>{t("publicHotel.bookingTitleHighlight")}</i></h2>
