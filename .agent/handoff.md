@@ -4277,3 +4277,17 @@ Not tested in a browser or with a real email.
 - **Migration renamed:** 20261101000000_hotel_closure.sql -> 20261103020000_hotel_closure.sql (it shared a timestamp with the applied 20261101000000_add_user_phone and was never applied anywhere); D1 journal entry and snapshot added. The owner must apply it on staging and production before deploying.
 - Checked locally: /settings/security (close-hotel panel), /hotel-closure, /privacy at 1280px and 375px. Full suite: 182/183 files passed; the one failure (routers.rethrowDomainError, 5s timeout under load) passes alone in 3.3s.
 
+
+## 2026-11-04 Refactor booking box inline styles (Phase 1, Step 1)
+- **Ticket**: Move fixed inline styles in `PublicBookingSection.tsx` into `client/src/components/public-hotel/public-booking.css`.
+- **Done**:
+  - Created `client/src/components/public-hotel/public-booking.css` with one property per line and low specificity (`.booking-*` and `.is-*`).
+  - Imported `public-booking.css` in `PublicBookingSection.tsx`.
+  - Replaced 66 fixed inline style blocks with `.booking-*` classes and `.is-disabled` toggles.
+  - Retained only 1 inline style block on `<section className="public-booking" id="book">` for the CSS variables `--booking-accent` and `--booking-accent-contrast`.
+  - Preserved JSX structure, texts, logic, hooks, and props.
+- **Evidence**:
+  - `pnpm check`: exit 0.
+  - `pnpm test`: 183 test files passed, 1261 tests passed.
+  - `pnpm build`: exit 0 (wrangler dry-run).
+  - Screenshots before and after at 1280px and 375px for both plain page (`/test-owner-hotel`) and themed page (`/demo-theme` with Lanna Teak), across steps 1 and 2.
