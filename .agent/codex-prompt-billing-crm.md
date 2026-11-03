@@ -10,7 +10,11 @@ Read `CLAUDE.md`, `.agent/BANNED_ZONE.md`, `.agent/DECISIONS.md` (the "Plans and
 - Do not edit `client/src/index.css`: another agent is splitting it. Put new styles in a new CSS file next to the new pages, using the existing tokens (`var(--pine)`, `var(--ink)` and so on).
 - You cannot commit (index.lock). Leave the work uncommitted. Claude reviews and commits each ticket.
 
-**This run: do ticket A only, then stop and report.** Tickets B–D follow in later runs.
+**This run: do ticket B only, then stop and report.**
+- Ticket A is done (`8131dab`): the schema, `shared/plans.ts` and its tests. Build on them; do not change them unless a bug forces it. If one does, say so in the report.
+- Apply the ticket A migration locally first: `pnpm exec wrangler d1 migrations apply hayhost-dev --local`.
+- Write the `.agent/handoff.md` entry and the report file **before** your final checks, so a crash does not lose them. The last run ended without a report.
+- Ticket C follows in a later run.
 
 ## Owner decisions (2026-11-04). Do not change them or add to them.
 
@@ -139,7 +143,8 @@ The Free limits (3 rooms, basic theme, manual slip check) are not enforced in co
 ## Report (this run)
 
 1. The files changed.
-2. The generated migration file name, and confirmation the journal is in `drizzle/d1/meta`.
-3. The list of unit tests.
+2. The procedures added, each with its permission.
+3. The tests added.
 4. Test, check and build output.
-5. Every ASSUMPTION you added and every question you logged.
+5. Pages checked in the browser at 1280px and 375px: `/platform`, `/platform/crm`, `/platform/coupons`. Use a local platform admin (see `.agent/codex-prompt-superadmin-pages.md`, "Local check"). Never claim a check you did not do.
+6. Every ASSUMPTION you added and every question you logged.
