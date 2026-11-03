@@ -144,7 +144,7 @@ body { background: var(--paper); color: var(--ink); }
 .topbar { height: 76px; padding: 0 44px; background: rgba(255,255,255,.92); border-bottom-color: var(--rule); }
 .topbar-brand { font-size: 12px; }
 .topbar-brand .brand-mark { background: url("/logo-mark.png") center / contain no-repeat; }
-.topbar-logo { display: block; height: 28px; width: auto; }
+.sidebar-logo { display: block; height: 32px; width: auto; }
 .topbar-rule { margin: 0 20px; background: var(--rule-strong); }
 .breadcrumbs { font-size: 12px; }
 .topbar-actions { gap: 13px; }

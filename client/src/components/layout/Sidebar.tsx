@@ -20,7 +20,6 @@ import { toast } from "sonner";
 import { WorkspaceMenu } from "../WorkspaceMenu";
 import { useHotel } from "../../contexts/HotelContext";
 import { type Permission } from "@shared/authorization";
-import { BrandMark } from "./BrandMark";
 import { useTranslation } from "@/lib/i18n";
 import { communicationsEnabled, otaSyncEnabled } from "@/lib/featureFlags";
 
@@ -120,12 +119,8 @@ export function Sidebar({
   return (
     <aside className={`sidebar ${open ? "is-open" : ""}`}>
       <div className="sidebar-head">
-        <Link href="/dashboard" className="brand-lockup" onClick={() => onClose()}>
-          <BrandMark />
-          <span>
-            <strong>hay</strong>
-            <em>host</em>
-          </span>
+        <Link href="/dashboard" className="brand-lockup" aria-label="hayhost" onClick={() => onClose()}>
+          <img className="sidebar-logo" src="/logo-wide.png" alt="hayhost" width={126} height={32} />
         </Link>
         <button className="icon-button sidebar-close" onClick={() => onClose()} aria-label={t("sidebar.closeMenu")}>
           <X size={17} />

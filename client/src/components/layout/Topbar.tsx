@@ -86,10 +86,6 @@ export function Topbar({
       <button className="icon-button menu-button" onClick={onOpenMenu} aria-label={t("topbar.openMenu")}>
         <Menu size={19} />
       </button>
-      <Link href="/dashboard" className="topbar-brand" aria-label="hayhost">
-        <img className="topbar-logo" src="/logo-wide.png" alt="hayhost" width={110} height={28} />
-      </Link>
-      <div className="topbar-rule" />
       <div className="breadcrumbs">
         <span>{t("topbar.operatingLedger")}</span>
         <span className="crumb-slash">/</span>
