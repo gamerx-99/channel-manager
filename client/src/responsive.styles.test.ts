@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -20,10 +20,12 @@ describe("Responsive operations layout contract", () => {
   });
 
   it("uses a dedicated responsive surface for the Overview summary widget", () => {
-    expect(home).toContain('className="panel dashboard-summary-panel"');
-    expect(home).toContain('className="panel-heading dashboard-summary-heading"');
-    expect(css).toContain(".dashboard-summary-panel");
-    expect(css).toContain(".dashboard-summary-heading");
+    // AGENTS.md Rule 6 rationale: Commit 35880ef redesigned the dashboard overview
+    // from dashboard-summary-panel to a responsive, permission-gated metric-row / metric-card grid.
+    expect(home).toContain('className="metric-row"');
+    expect(home).toContain('className="metric-card"');
+    expect(css).toContain(".metric-row");
+    expect(css).toContain(".metric-card");
   });
 
   it("makes the staff ledger horizontally discoverable and keeps modal actions touch-friendly", () => {

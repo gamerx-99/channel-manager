@@ -44,11 +44,18 @@ describe('Hotel Detail calendar navigation', () => {
   it('has no dead href="#" tabs: Photos opens the website builder for this hotel, Domains is gone', () => {
     const services = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelServices.tsx'), 'utf8');
     const builder = readFileSync(resolve(process.cwd(), 'client/src/components/website-builder/useWebsiteBuilder.ts'), 'utf8');
-    for (const page of [hotelDetail, services]) {
-      expect(page).not.toContain('href="#"');
-      expect(page).not.toContain('tabDomains');
-      expect(page).toContain("<Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>");
-    }
+
+    // AGENTS.md Rule 6 rationale: HotelDetail retains the full sub-navigation bar including the website builder link.
+    expect(hotelDetail).not.toContain('href="#"');
+    expect(hotelDetail).not.toContain('tabDomains');
+    expect(hotelDetail).toContain("<Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>");
+
+    // AGENTS.md Rule 6 rationale: Commit b3f8b3f removed duplicate nav tabs from HotelServices;
+    // assert no dead links, no tabDomains, and no detail-tabs.
+    expect(services).not.toContain('href="#"');
+    expect(services).not.toContain('tabDomains');
+    expect(services).not.toContain('detail-tabs');
+
     expect(builder).toContain('new URLSearchParams(window.location.search).get("hotel")');
   });
 });
