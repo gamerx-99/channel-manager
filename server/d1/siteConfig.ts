@@ -3,7 +3,8 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { hotelMedia, hotelSiteConfig } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { servedMediaUrl } from "./media";
-import { isHotelThemeId } from "../../shared/hotelThemes";
+import { isHotelThemeId, MAX_WEBSITE_GALLERY_PHOTOS } from "../../shared/hotelThemes";
+import { exceedsWebsitePhotoLimit, trimPhotoCaption } from "../../shared/websitePhotos";
 
 export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = "#954831";
@@ -38,6 +39,8 @@ export async function saveHotelSiteConfig(
     theme: input.theme !== undefined ? input.theme : previousDraft.theme ?? current?.theme ?? null,
     heroMediaId: input.hero_media_id !== undefined ? input.hero_media_id : previousDraft.heroMediaId ?? null,
     mediaPositions: input.media_positions ?? previousDraft.mediaPositions ?? {},
+    mediaCaptions: previousDraft.mediaCaptions ?? {},
+    galleryMediaIds: previousDraft.galleryMediaIds,
   };
   const [row] = await db.insert(hotelSiteConfig).values({ hotelId: input.hotel_id, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now })
     .onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } }).returning();
@@ -49,7 +52,12 @@ export async function publishHotelSiteConfig(db: D1ScopedDatabase, caller: D1Cal
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "site_config.publish", now);
   const [row] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
   if (!row?.draftJson) throw new TRPCError({ code: "BAD_REQUEST", message: "There is no saved draft to publish." });
-  const draft = JSON.parse(row.draftJson) as { heroCopy: string; accentColor: string; visibleSections: Record<string, boolean>; theme: string | null; heroMediaId: string | null; mediaPositions: Record<string, string | null> };
+  const draft = JSON.parse(row.draftJson) as { heroCopy: string; accentColor: string; visibleSections: Record<string, boolean>; theme: string | null; heroMediaId: string | null; mediaPositions: Record<string, string | null>; mediaCaptions?: Record<string, string>; galleryMediaIds?: string[] };
+  const liveHeroMediaId = draft.heroMediaId ?? (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isHero, true))).limit(1))[0]?.id ?? null;
+  const galleryCandidate: string[] = draft.galleryMediaIds ?? (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isPublished, true), eq(hotelMedia.isHero, false))).orderBy(asc(hotelMedia.displayOrder))).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(row => row.id);
+  const existingMediaIds = new Set((await db.select({ id: hotelMedia.id }).from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId))).map(item => item.id));
+  const galleryIds = galleryCandidate.filter(id => existingMediaIds.has(id) && id !== liveHeroMediaId);
+  if (galleryIds.length > MAX_WEBSITE_GALLERY_PHOTOS) throw new TRPCError({ code: "BAD_REQUEST", message: "A maximum of six gallery photos can be shown." });
   if (draft.heroMediaId) {
     const [hero] = await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.id, draft.heroMediaId))).limit(1);
     if (!hero) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected hero image is no longer available." });
@@ -58,11 +66,12 @@ export async function publishHotelSiteConfig(db: D1ScopedDatabase, caller: D1Cal
     db.$client.prepare(`UPDATE hotel_site_config SET hero_copy = ?, accent_color = ?, visible_sections = ?, theme = ?, draft_json = NULL, draft_updated_at = NULL, published_at = ?, updated_at = ? WHERE hotel_id = ?`)
       .bind(draft.heroCopy, draft.accentColor, JSON.stringify(draft.visibleSections), draft.theme, now.getTime(), now.getTime(), hotelId),
   ];
-  if (draft.heroMediaId !== null) statements.push(db.$client.prepare("UPDATE hotel_media SET is_hero = (id = ?) WHERE hotel_id = ?").bind(draft.heroMediaId, hotelId));
-  // Publishing makes the owner's whole current website live, gallery images included;
-  // uploads stay private only until this step.
-  statements.push(db.$client.prepare("UPDATE hotel_media SET is_published = 1 WHERE hotel_id = ? AND is_published = 0").bind(hotelId));
+  if (liveHeroMediaId !== null) statements.push(db.$client.prepare("UPDATE hotel_media SET is_hero = (id = ?) WHERE hotel_id = ?").bind(liveHeroMediaId, hotelId));
+  statements.push(db.$client.prepare("UPDATE hotel_media SET is_hero = 0 WHERE hotel_id = ? AND is_hero = 1 AND id != ?").bind(hotelId, liveHeroMediaId ?? ""));
+  // is_published remains the public visibility flag: only the cover and staged gallery go live.
+  statements.push(db.$client.prepare(`UPDATE hotel_media SET is_published = CASE WHEN id = ? OR id IN (${galleryIds.length ? galleryIds.map(() => "?").join(",") : "NULL"}) THEN 1 ELSE 0 END WHERE hotel_id = ?`).bind(liveHeroMediaId ?? "", ...galleryIds, hotelId));
   for (const [id, position] of Object.entries(draft.mediaPositions)) statements.push(db.$client.prepare("UPDATE hotel_media SET object_position = ? WHERE hotel_id = ? AND id = ?").bind(position, hotelId, id));
+  for (const [id, caption] of Object.entries(draft.mediaCaptions ?? {})) statements.push(db.$client.prepare("UPDATE hotel_media SET caption = ? WHERE hotel_id = ? AND id = ?").bind(caption, hotelId, id));
   await db.$client.batch(statements);
   return { publishedAt: now };
 }
@@ -113,6 +122,14 @@ export async function deleteHotelMedia(db: D1ScopedDatabase, caller: D1CallerCon
   // ASSUMPTION: deletion of the currently published hero is blocked; owners can select another image first.
   const [current] = await db.select({ isHero: hotelMedia.isHero }).from(hotelMedia).where(and(eq(hotelMedia.id, mediaId), eq(hotelMedia.hotelId, hotelId))).limit(1);
   if (current?.isHero) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose another hero image before deleting this image." });
+  const [config] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
+  if (config?.draftJson) {
+    const draft = JSON.parse(config.draftJson);
+    if (Array.isArray(draft.galleryMediaIds)) draft.galleryMediaIds = draft.galleryMediaIds.filter((id: string) => id !== mediaId);
+    if (draft.mediaCaptions) delete draft.mediaCaptions[mediaId];
+    if (draft.mediaPositions) delete draft.mediaPositions[mediaId];
+    await db.update(hotelSiteConfig).set({ draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now }).where(eq(hotelSiteConfig.hotelId, hotelId));
+  }
   const [row] = await db.delete(hotelMedia).where(and(
     eq(hotelMedia.id, mediaId), eq(hotelMedia.hotelId, hotelId),
   )).returning({ id: hotelMedia.id, url: hotelMedia.url });
@@ -125,8 +142,10 @@ export async function setHotelMediaHero(db: D1ScopedDatabase, caller: D1CallerCo
   if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel media not found." });
   // ASSUMPTION: selection is recorded in draft_json and changes public media only on publish.
   const [config] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
-  const draft = config?.draftJson ? JSON.parse(config.draftJson) : { heroCopy: config?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY, accentColor: config?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR, visibleSections: config?.visibleSections ?? {}, theme: config?.theme ?? null, mediaPositions: {} };
+  const draft = config?.draftJson ? JSON.parse(config.draftJson) : { heroCopy: config?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY, accentColor: config?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR, visibleSections: config?.visibleSections ?? {}, theme: config?.theme ?? null, mediaPositions: {}, galleryMediaIds: (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isPublished, true), eq(hotelMedia.isHero, false))).orderBy(asc(hotelMedia.displayOrder))).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(item => item.id) };
+  if (!Array.isArray(draft.galleryMediaIds)) draft.galleryMediaIds = (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isPublished, true), eq(hotelMedia.isHero, false))).orderBy(asc(hotelMedia.displayOrder))).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(item => item.id);
   draft.heroMediaId = mediaId;
+  draft.galleryMediaIds = (draft.galleryMediaIds ?? []).filter((id: string) => id !== mediaId);
   await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now }).onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
 }
 
@@ -140,6 +159,33 @@ export async function setHotelMediaObjectPosition(db: D1ScopedDatabase, caller: 
   draft.mediaPositions = { ...draft.mediaPositions, [mediaId]: objectPosition };
   await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now }).onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
   return { id: mediaId, objectPosition };
+}
+
+export async function setHotelMediaCaption(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, mediaId: string, caption: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel_media.set_caption", now);
+  const [media] = await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.id, mediaId))).limit(1);
+  if (!media) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel media not found." });
+  const value = trimPhotoCaption(caption);
+  if (value.length > 120) throw new TRPCError({ code: "BAD_REQUEST", message: "Photo captions must be 120 characters or fewer." });
+  const [config] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
+  const draft = config?.draftJson ? JSON.parse(config.draftJson) : { heroCopy: config?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY, accentColor: config?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR, visibleSections: config?.visibleSections ?? {}, theme: config?.theme ?? null, heroMediaId: null, mediaPositions: {} };
+  draft.mediaCaptions = { ...draft.mediaCaptions, [mediaId]: value };
+  await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now }).onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
+  return { id: mediaId, caption: value };
+}
+
+export async function setHotelMediaGallerySelection(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, mediaId: string, shown: boolean, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel_media.gallery_selection", now);
+  const [media] = await db.select({ id: hotelMedia.id, isHero: hotelMedia.isHero }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.id, mediaId))).limit(1);
+  if (!media) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel media not found." });
+  const [config] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
+  const draft = config?.draftJson ? JSON.parse(config.draftJson) : { heroCopy: config?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY, accentColor: config?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR, visibleSections: config?.visibleSections ?? {}, theme: config?.theme ?? null, heroMediaId: null, mediaPositions: {}, mediaCaptions: {} };
+  const selected = (draft.galleryMediaIds ?? (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isPublished, true), eq(hotelMedia.isHero, false))).orderBy(asc(hotelMedia.displayOrder))).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(row => row.id)).filter((id: string) => id !== mediaId);
+  if (shown && draft.heroMediaId !== mediaId) selected.push(mediaId);
+  if (exceedsWebsitePhotoLimit(selected)) throw new TRPCError({ code: "BAD_REQUEST", message: "A maximum of six gallery photos can be shown." });
+  draft.galleryMediaIds = selected;
+  await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now }).onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
+  return { selected };
 }
 
 async function setHeroWithinHotel(db: D1ScopedDatabase, hotelId: string, mediaId: string | null) {

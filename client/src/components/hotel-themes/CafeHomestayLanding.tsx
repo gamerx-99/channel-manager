@@ -2,6 +2,7 @@ import React from "react";
 import { MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
 import { PoweredByHayhost } from "./PoweredByHayhost";
+import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
@@ -14,7 +15,7 @@ function LeafDecoration() {
 }
 
 export default function CafeHomestayLanding({ hotelName, accentColor, hotel, roomTypes, media, heroImage, heroCopy, language, setLanguage, isVisible, booking, t }: Props) {
-  const gallery = media.filter(item => !item.is_hero && item.url).slice(0, 8);
+  const gallery = media.filter(item => !item.is_hero && item.url).slice(0, MAX_WEBSITE_GALLERY_PHOTOS);
   const address = hotel?.address?.trim() ?? "";
   const hasLocation = Boolean(address);
   return <ThemeLanding themeId="cafe-homestay" hotelName={hotelName} accentColor={accentColor}>
@@ -27,7 +28,7 @@ export default function CafeHomestayLanding({ hotelName, accentColor, hotel, roo
       <main>
         {isVisible("hero") && (heroImage || heroCopy || hotelName) && <section className="cafe-hero">
           <div className="cafe-hero-copy"><span className="cafe-kicker">{t("hotelThemes.cafeHomestay.heroKicker")}</span><h1>{hotelName}</h1>{heroCopy && <p>{heroCopy}</p>}<a className="cafe-pill" href="#rooms">{t("hotelThemes.cafeHomestay.exploreRooms")} <span aria-hidden="true">↗</span></a><CupDecoration /></div>
-          {heroImage && <div className="cafe-hero-photo"><img src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} /><span className="cafe-tape" aria-hidden="true" /></div>}
+          {heroImage && <div className="cafe-hero-photo"><img src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} />{media.find(item => item.is_hero)?.caption && <span className="theme-cover-caption">{media.find(item => item.is_hero)?.caption}</span>}<span className="cafe-tape" aria-hidden="true" /></div>}
           <LeafDecoration />
         </section>}
         {isVisible("rooms") && roomTypes.length > 0 && <section className="cafe-rooms" id="rooms"><div className="cafe-section-title"><span className="cafe-kicker">{t("hotelThemes.cafeHomestay.homeKicker")}</span><h2>{t("hotelThemes.cafeHomestay.roomsTitle")}</h2></div><div className="cafe-room-grid">{roomTypes.map((room, index) => {

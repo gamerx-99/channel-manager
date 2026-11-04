@@ -9,7 +9,7 @@ import { d1Schema, hotelMedia, hotelUsers, hotels } from "../../drizzle/d1-schem
 import type { D1ScopedDatabase } from "../db/scope";
 import { createWorkerApp, type WorkerEnv } from "../../worker/app";
 import { deleteHotelMediaFromR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload, servedMediaUrl } from "./media";
-import { publishHotelSiteConfig, setHotelMediaHero } from "./siteConfig";
+import { publishHotelSiteConfig, setHotelMediaGallerySelection, setHotelMediaHero } from "./siteConfig";
 import { getPublicHotel } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
@@ -131,6 +131,7 @@ describe("D1 hotel media on R2", () => {
     const bucket = new MemoryR2() as unknown as R2Bucket;
     const hero = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket, { hotel_id: "hotel-a", filename: "front.png", content_type: "image/png", data: bytes });
     const gallery = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket, { hotel_id: "hotel-a", filename: "room.png", content_type: "image/png", data: bytes });
+    await setHotelMediaGallerySelection(db, { userId: "owner-a" }, "hotel-a", gallery.id, true);
     const publicCaller = { userId: "", access: "public" as const };
     await setHotelMediaHero(db, { userId: "owner-a" }, "hotel-a", hero.id);
     await expect(getPublicHotel(db, publicCaller, "hotel-a-slug")).resolves.toMatchObject({ media: [] });

@@ -8,3 +8,4 @@ export type HotelThemeId = typeof HOTEL_THEMES[number]["id"];
 export function isHotelThemeId(value: unknown): value is HotelThemeId {
   return typeof value === "string" && HOTEL_THEMES.some(theme => theme.id === value);
 }
+export const MAX_WEBSITE_GALLERY_PHOTOS = 6;

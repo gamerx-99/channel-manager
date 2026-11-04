@@ -45,8 +45,8 @@ export default function WebsiteBuilder() {
     deleteMediaMut, setHeroMut, setObjectPositionMut, saveConfigMut, saveThemeMut,
     publishConfigMut, discardDraftMut, storedDraft, draft, setDraft, publishedConfig,
     config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media,
-    draftMedia, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
-    formError, saveNote, handleUploadFile, handleDeleteMedia, handleSetHero,
+    draftMedia, selectedGalleryIds, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
+    formError, saveNote, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero,
     handleFocalPoint, handleSave, handleSaveTheme,
   } = useWebsiteBuilder();
 
@@ -216,11 +216,11 @@ export default function WebsiteBuilder() {
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                   className="hidden"
                   onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) handleUploadFile(file);
+                    handleUploadFiles(e.target.files);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
                   aria-label={t("websiteBuilder.uploadMediaAria")}
@@ -230,6 +230,7 @@ export default function WebsiteBuilder() {
                 </Button>
                 <span className="text-xs text-[#778a80]">{t("websiteBuilder.uploadHint")}</span>
               </div>
+              <p className="field-help">{t("websiteBuilder.galleryCounter", { count: selectedGalleryIds.length })}</p>
 
               {media.length ? (
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -250,7 +251,7 @@ export default function WebsiteBuilder() {
                       </div>}
                       <div className="flex items-center justify-between gap-2 p-3">
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-medium text-[#2a4035]">{item.caption ?? item.id.slice(0, 8)}</p>
+                          <p className="truncate text-xs font-medium text-[#2a4035]">{item.isHero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")}</p>
                           <p className="text-[11px] text-[#778a80]">{item.isHero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel")} · {t("websiteBuilder.displayOrderLabel", { order: item.displayOrder })}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
@@ -277,6 +278,15 @@ export default function WebsiteBuilder() {
                             <Trash2 size={14} />
                           </Button>
                         </div>
+                      </div>
+                      <div className="space-y-2 px-3 pb-3">
+                        <label className="block text-xs font-medium text-[#52655b]">{t("websiteBuilder.photoCaptionLabel")}
+                          <input className="website-builder-photo-caption mt-1 w-full rounded-md border border-[#dce4df] px-2 py-1.5 text-sm" maxLength={120} defaultValue={item.caption ?? ""} disabled={!canManage} onBlur={event => handleSetCaption(item.id, event.currentTarget.value)} />
+                        </label>
+                        {!item.isHero && <label className="flex items-center gap-2 text-xs text-[#52655b]">
+                          <input type="checkbox" checked={item.isGallerySelected} disabled={!canManage} onChange={event => handleToggleGallery(item.id, event.currentTarget.checked)} />
+                          {t("websiteBuilder.showOnWebsite")}
+                        </label>}
                       </div>
                     </div>
                   ))}

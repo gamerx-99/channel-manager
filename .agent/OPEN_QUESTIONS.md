@@ -205,3 +205,6 @@ answer noted.
 - [ ] Signup with a registered email (2026-11-01): with verification on, signing up again with an existing address shows the same "check your email" page and sends nothing, so nobody can test which emails exist. A real owner whose address was squatted must use forgot-password, then sign in and confirm. Decide whether to send them a notice email.
 
 - [x] ASSUMPTION (2026-11-04 guided tour): progress is measured against the selected hotel and existing required fields (name, address, contact); room-type quantity creates room records used to detect setup. Screenshot placeholders remain until local images can be captured.
+
+- [ ] Website photos (2026-11-04): ASSUMPTION: photo captions are trimmed and limited to 120 characters. Confirm the preferred length and whether overlong captions should be rejected or shortened. Raised 2026-11-04.
+- [ ] Website photos (2026-11-04): the owner did not specify the total stored-photo limit. ASSUMPTION: keep the existing upload size/type rules and impose no new total-photo count limit. Raised 2026-11-04.

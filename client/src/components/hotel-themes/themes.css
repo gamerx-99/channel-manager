@@ -96,3 +96,4 @@
 .public-booking .booking-next:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,0,0,.22)}
 .theme-minimal-white .public-booking .booking-next,.theme-lanna-teak .public-booking .booking-next,.theme-cafe-homestay .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
 @media (max-width:640px){.public-booking .booking-next-row{display:block}.public-booking .booking-next{width:100%}}
+.theme-cover-caption{position:absolute;z-index:2;right:18px;bottom:16px;padding:6px 10px;background:rgba(20,24,21,.68);color:#fff;font-size:12px;line-height:1.4}

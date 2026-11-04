@@ -4448,3 +4448,13 @@ Not tested in a browser or with a real email.
 - Phase 4: file-role rule added to `specs/ui-house-style.md` and one line in `CLAUDE.md`.
 - Phase 2 is still partial: the builder JSX is not split into section components yet (Codex report).
 - Tests: tsc exit 0; affected suites 13 files / 71 tests passed. Codex's full run before these UI fixes: 196 files / 1321 tests passed.
+
+## 2026-11-04 — Hotel photo captions and gallery selection (Codex)
+- Owner request: multiple photo uploads, editable captions, six public gallery photos plus one cover, with draft/publish behavior.
+- Reused `hotel_media.is_published` as the public-visibility flag and kept `display_order` as ordering. Gallery IDs and caption edits are held in `draft_json`; publish updates row captions and public visibility together. No schema change or migration.
+- Uploads remain one object per file and use the existing per-file type/size checks. New upload captions start empty; filenames are no longer used as guest captions. Legacy filename-like captions are suppressed in public data.
+- Server-side gallery selection rejects a seventh photo; caption and selection procedures require `property.manage_profile`.
+- Tests: D1 behavior, router permission boundary, shared photo rules, builder mutation mocks, and all three theme caption/file-name contracts.
+- Validation: targeted photo/theme/builder suites pass; full suite has one repeated unrelated `PaymentQR` real-time timer failure. `tsc --noEmit` passes. Vite build and staging Wrangler dry-run pass. Details: `.agent/codex-hotel-photos-report.md`.
+- Outstanding: browser verification; owner to confirm 120-character caption assumption and any total stored-photo limit.
+- Independent review: APPROVE after fixing draft gallery preservation, stale deletion selections, and adding stored filename caption coverage. Final full run: 197 files passed, 1 unrelated PaymentQR timer failure; 1327 tests passed, 1 failed.

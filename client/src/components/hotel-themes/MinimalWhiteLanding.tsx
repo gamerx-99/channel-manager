@@ -2,12 +2,13 @@ import React from "react";
 import { MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
 import { PoweredByHayhost } from "./PoweredByHayhost";
+import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
 export default function MinimalWhiteLanding({ hotelName, accentColor, hotel, roomTypes, media, heroImage, heroCopy, language, setLanguage, isVisible, booking, t }: Props) {
-  const gallery = media.filter(item => !item.is_hero && item.url).slice(0, 8);
-  const roomPhotos = media.filter(item => !item.is_hero && item.url);
+  const gallery = media.filter(item => !item.is_hero && item.url).slice(0, MAX_WEBSITE_GALLERY_PHOTOS);
+  const roomPhotos = gallery;
   const address = hotel?.address?.trim() ?? "";
 
   return <ThemeLanding themeId="minimal-white" hotelName={hotelName} accentColor={accentColor}>
@@ -23,7 +24,7 @@ export default function MinimalWhiteLanding({ hotelName, accentColor, hotel, roo
       </header>
       <main>
         {isVisible("hero") && (heroImage || heroCopy || hotelName) && <section className="minimal-hero">
-          {heroImage && <img className="minimal-hero-image" src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} />}
+          {heroImage && <><img className="minimal-hero-image" src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} />{media.find(item => item.is_hero)?.caption && <span className="theme-cover-caption">{media.find(item => item.is_hero)?.caption}</span>}</>}
           <div className="minimal-hero-copy"><h1>{hotelName}</h1>{heroCopy && <p>{heroCopy}</p>}</div>
         </section>}
         {isVisible("rooms") && roomTypes.length > 0 && <section className="minimal-rooms" id="rooms"><div className="minimal-section-heading"><span className="minimal-label">{t("hotelThemes.minimalWhite.stay")}</span><h2>{t("hotelThemes.minimalWhite.rooms")}</h2></div><div className="minimal-room-grid">{roomTypes.map((room, index) => {

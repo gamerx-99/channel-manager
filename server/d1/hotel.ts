@@ -10,6 +10,8 @@ import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type
 import { moneyToSatang, satangToMoney } from "../db/money";
 import type { CreateHotelInput, CreateHotelServiceInput, CreateRoomTypeInput, DeleteRoomTypeInput, DeleteHotelServiceInput, HotelRecord, RoomTypeRecord, UpdateHotelServiceInput, UpdateRoomTypeInput } from "../db/types";
 import { servedMediaUrl } from "./media";
+import { MAX_WEBSITE_GALLERY_PHOTOS } from "../../shared/hotelThemes";
+import { displayPhotoCaption } from "../../shared/websitePhotos";
 
 function canonicalMoney(value: string | number): string {
   const satang = moneyToSatang(String(value));
@@ -279,7 +281,11 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
     db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id)),
     db.select({ id: hotelMedia.id, url: hotelMedia.url, caption: hotelMedia.caption, objectPosition: hotelMedia.objectPosition, is_hero: hotelMedia.isHero, display_order: hotelMedia.displayOrder })
       .from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotel.id), eq(hotelMedia.isPublished, true))).orderBy(asc(hotelMedia.displayOrder))
-      .then(rows => rows.map(row => ({ ...row, url: servedMediaUrl(row.url) }))),
+      .then(rows => {
+        const cover = rows.find(row => row.is_hero);
+        const gallery = rows.filter(row => !row.is_hero).slice(0, MAX_WEBSITE_GALLERY_PHOTOS);
+        return [...(cover ? [cover] : []), ...gallery].map(row => ({ ...row, caption: displayPhotoCaption(row.caption), url: servedMediaUrl(row.url) }));
+      }),
     db.select({ theme: hotelSiteConfig.theme }).from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotel.id)).limit(1),
   ]);
   hotelRoomTypes.sort((left, right) => {

@@ -33,6 +33,8 @@ import {
   deleteHotelMedia as d1DeleteHotelMedia,
   setHotelMediaHero as d1SetHotelMediaHero,
   setHotelMediaObjectPosition as d1SetHotelMediaObjectPosition,
+  setHotelMediaCaption as d1SetHotelMediaCaption,
+  setHotelMediaGallerySelection as d1SetHotelMediaGallerySelection,
 } from '../d1/siteConfig';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
@@ -199,6 +201,8 @@ export const setHotelMediaObjectPositionSchema = z.object({
   media_id: z.string().uuid(),
   object_position: z.string().regex(/^(?:0|[1-9]\d?|100)% (?:0|[1-9]\d?|100)%$/).nullable(),
 });
+export const setHotelMediaCaptionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), caption: z.string().max(120) });
+export const setHotelMediaGallerySelectionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), shown: z.boolean() });
 
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
@@ -604,6 +608,20 @@ export const setHotelMediaObjectPosition = protectedProcedure.input(setHotelMedi
     if (error instanceof TRPCError) throw error;
     return rethrowDomainError(error);
   }
+});
+
+export const setHotelMediaCaption = protectedProcedure.input(setHotelMediaCaptionSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await d1SetHotelMediaCaption(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.media_id, input.caption); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
+export const setHotelMediaGallerySelection = protectedProcedure.input(setHotelMediaGallerySelectionSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await d1SetHotelMediaGallerySelection(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.media_id, input.shown); }
+  catch (error) { return rethrowDomainError(error); }
 });
 
 export const hotelRouter = router({

@@ -12,6 +12,7 @@ import { isHotelThemeId } from "@shared/hotelThemes";
 import { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
 import { PoweredByHayhost } from "@/components/hotel-themes/PoweredByHayhost";
 import { getContrastText } from "@/lib/contrastText";
+import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 
 export default function PublicHotel({ slug }: { slug: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,8 +54,15 @@ export default function PublicHotel({ slug }: { slug: string }) {
             <p>{heroCopy}</p>
             <a className="button public-button" href="#stay" style={{ backgroundColor: accentColor, borderColor: accentColor, color: accentTextColor } as React.CSSProperties}>{t("publicHotel.heroViewRooms")} <ArrowRight size={15} /></a>
           </div>
-          <div className="public-hero-caption"><span>{t("publicHotel.heroCountry")}</span><span>{hotel.address}</span></div>
+          <div className="public-hero-caption"><span>{heroMedia?.caption || ""}</span><span>{hotel.address}</span></div>
         </section>
+
+        {media.filter(item => !item.is_hero && item.url).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).length > 0 && <section className="public-photo-gallery" aria-label={t("websiteBuilder.mediaSectionTitle")}>
+          {media.filter(item => !item.is_hero && item.url).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map((photo, index) => <figure key={photo.id ?? `${photo.url}-${index}`}>
+            <img src={photo.url} alt={photo.caption || ""} />
+            {photo.caption && <figcaption>{photo.caption}</figcaption>}
+          </figure>)}
+        </section>}
 
         {isVisible("story") ? (
           <section className="public-intro" id="story">

@@ -98,7 +98,7 @@ export async function uploadHotelMediaToR2(
       id: mediaId,
       hotelId: scope.hotelId,
       url,
-      caption: input.caption ?? input.filename,
+      caption: input.caption ?? null,
       isHero: false,
       displayOrder: existing.length,
       isPublished: false,

@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowDown, MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
 import { PoweredByHayhost } from "./PoweredByHayhost";
+import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
@@ -10,7 +11,7 @@ function KanokDivider() {
 }
 
 export default function LannaTeakLanding({ hotelName, accentColor, hotel, roomTypes, media, heroImage, heroCopy, language, setLanguage, isVisible, booking, t }: Props) {
-  const gallery = media.filter(item => !item.is_hero && item.url).slice(0, 8);
+  const gallery = media.filter(item => !item.is_hero && item.url).slice(0, MAX_WEBSITE_GALLERY_PHOTOS);
   const address = hotel?.address?.trim() ?? "";
   const hasLocation = Boolean(address);
 
@@ -29,7 +30,7 @@ export default function LannaTeakLanding({ hotelName, accentColor, hotel, roomTy
       <main>
         {isVisible("hero") && (heroImage || heroCopy || hotelName) && <section className="lanna-hero">
           <div className="lanna-hero-frame">
-            {heroImage && <img src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} />}
+            {heroImage && <><img src={heroImage} alt={hotelName} style={media.find(item => item.is_hero)?.objectPosition ? { objectPosition: media.find(item => item.is_hero)?.objectPosition! } : undefined} />{media.find(item => item.is_hero)?.caption && <span className="theme-cover-caption">{media.find(item => item.is_hero)?.caption}</span>}</>}
             <div className="lanna-hero-wash" />
             <div className="lanna-hero-copy"><span className="lanna-kicker">{t("hotelThemes.lannaTeak.kicker")}</span><h1>{hotelName}</h1>{heroCopy && <p>{heroCopy}</p>}<a href="#stay" className="lanna-action">{t("hotelThemes.lannaTeak.exploreRooms")} <ArrowDown size={15} /></a></div>
           </div>

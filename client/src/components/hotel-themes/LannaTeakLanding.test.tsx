@@ -12,7 +12,7 @@ describe("Lanna Teak landing", () => {
       accentColor="#aa342d"
       hotel={{ id: "hotel-1", name: "Baan Mai Sak", slug: "baan-mai-sak", address: "12 River Road" } as any}
       roomTypes={[{ id: "room-1", name: "Teak Suite", capacity: 2, basePrice: 3200 }, { id: "room-2", name: "Garden Room", capacity: 3, basePrice: 2800 }] as any}
-      media={[{ url: "/hero.jpg", is_hero: true }, { url: "/room.jpg", caption: "Teak room" }] as any}
+      media={[{ url: "/hero.jpg", is_hero: true }, { url: "/room.jpg", caption: "Teak room" }, { url: "/legacy-file.jpg", caption: null }] as any}
       heroImage="/hero.jpg"
       heroCopy="A quiet stay surrounded by northern Thai craft and gardens."
       language="en"
@@ -28,6 +28,9 @@ describe("Lanna Teak landing", () => {
     expect(html).toContain("Garden Room");
     expect(html).toContain("฿2,800");
     expect(html).toContain("Booking slot");
+    expect(html).toContain("Teak room");
+    expect(html).not.toContain("room.jpg</figcaption>");
+    expect(html).not.toContain("<figcaption>legacy-file.jpg</figcaption>");
     for (const banned of ["since", "Est.", "concierge", "Amenities", "grayscale", "Instant confirmation", "wire", "reviews", "stars"]) expect(html.toLowerCase()).not.toContain(banned.toLowerCase());
   });
 });

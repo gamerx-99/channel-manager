@@ -6,7 +6,8 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { d1Schema, hotelMedia, hotelSiteConfig, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelMedia, deleteHotelMedia, discardHotelSiteConfigDraft, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, publishHotelSiteConfig, saveHotelSiteConfig, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
+import { createHotelMedia, deleteHotelMedia, discardHotelSiteConfigDraft, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, publishHotelSiteConfig, saveHotelSiteConfig, setHotelMediaCaption, setHotelMediaGallerySelection, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
+import { getPublicHotel } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -55,6 +56,48 @@ async function seedHotel(id: string, owner: string, publicEnabled = true) {
 }
 
 describe("D1 site config and media repository", () => {
+  it("stages captions and gallery selection, trims captions and enforces six selected photos", async () => {
+    await seedHotel("a", "owner-a");
+    const caller = { userId: "owner-a" };
+    const photos = await Promise.all(Array.from({ length: 7 }, (_, i) => createHotelMedia(db, caller, { hotel_id: "a", url: `/media/a/${i}.jpg` })));
+    await setHotelMediaCaption(db, caller, "a", photos[0]!.id, "  Garden view  ");
+    expect(JSON.parse((await getHotelSiteConfig(db, caller, "a"))!.draftJson!).mediaCaptions[photos[0]!.id]).toBe("Garden view");
+    for (const photo of photos.slice(0, 6)) await setHotelMediaGallerySelection(db, caller, "a", photo!.id, true);
+    await expect(setHotelMediaGallerySelection(db, caller, "a", photos[6]!.id, true)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(setHotelMediaCaption(db, { userId: "owner-b" }, "a", photos[0]!.id, "blocked")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(setHotelMediaGallerySelection(db, { userId: "owner-b" }, "a", photos[0]!.id, false)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await deleteHotelMedia(db, caller, "a", photos[0]!.id);
+    expect(JSON.parse((await getHotelSiteConfig(db, caller, "a"))!.draftJson!).galleryMediaIds).not.toContain(photos[0]!.id);
+  });
+
+  it("keeps the published gallery on caption-only and cover-only draft changes", async () => {
+    await seedHotel("a", "owner-a");
+    const caller = { userId: "owner-a" };
+    const cover = await createHotelMedia(db, caller, { hotel_id: "a", url: "/cover.jpg", is_hero: true });
+    const nextCover = await createHotelMedia(db, caller, { hotel_id: "a", url: "/next-cover.jpg" });
+    const gallery = await createHotelMedia(db, caller, { hotel_id: "a", url: "/gallery.jpg" });
+    await saveHotelSiteConfig(db, caller, { hotel_id: "a", hero_media_id: cover.id });
+    await setHotelMediaGallerySelection(db, caller, "a", gallery.id, true);
+    await publishHotelSiteConfig(db, caller, "a");
+
+    await setHotelMediaCaption(db, caller, "a", gallery.id, "Garden view");
+    await publishHotelSiteConfig(db, caller, "a");
+    expect((await getPublicHotel(db, { userId: "", access: "public" }, "a-slug")).media.map(item => item.id)).toContain(gallery.id);
+
+    await setHotelMediaHero(db, caller, "a", nextCover.id);
+    await publishHotelSiteConfig(db, caller, "a");
+    const liveMedia = (await getPublicHotel(db, { userId: "", access: "public" }, "a-slug")).media;
+    expect(liveMedia.map(item => item.id).sort()).toEqual([nextCover.id, gallery.id].sort());
+    expect(liveMedia.find(item => item.id === gallery.id)?.caption).toBe("Garden view");
+  });
+
+  it("never returns a stored file-name caption to guests", async () => {
+    await seedHotel("a", "owner-a");
+    await createHotelMedia(db, { userId: "owner-a" }, { hotel_id: "a", url: "/media/a/old-photo.jpg", caption: "old-photo.jpg" });
+    const result = await getPublicHotel(db, { userId: "", access: "public" }, "a-slug");
+    expect(result.media[0]?.caption).toBeNull();
+  });
+
   it("scopes config and media writes and keeps a single hero in the hotel", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");

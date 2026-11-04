@@ -12,7 +12,7 @@ describe("Minimal White landing", () => {
       accentColor="#4f5d48"
       hotel={{ id: "hotel-1", name: "Haus Nimman", slug: "haus-nimman", address: "Nimman Road, Chiang Mai" } as any}
       roomTypes={[{ id: "room-1", name: "Garden Room", capacity: 2, basePrice: 1800 }, { id: "room-2", name: "Loft Room", capacity: 3, basePrice: 2400 }] as any}
-      media={[{ url: "/hero.jpg", is_hero: true }, { url: "/room.jpg", caption: "Courtyard" }, { url: "/gallery.jpg", caption: "Morning light" }] as any}
+      media={[{ url: "/hero.jpg", is_hero: true }, { url: "/room.jpg", caption: "Courtyard" }, { url: "/gallery.jpg", caption: "Morning light" }, { url: "/legacy-file.jpg", caption: null }] as any}
       heroImage="/hero.jpg"
       heroCopy="A quiet place to rest in the heart of Chiang Mai."
       language="en"
@@ -29,6 +29,9 @@ describe("Minimal White landing", () => {
     expect(html).toContain("฿2,400");
     expect(html).toContain("Room 01");
     expect(html).toContain("Booking slot");
+    expect(html).toContain("Morning light");
+    expect(html).not.toContain("gallery.jpg</figcaption>");
+    expect(html).not.toContain("<figcaption>legacy-file.jpg</figcaption>");
     for (const banned of ["since", "Est.", "concierge", "Amenities", "grayscale", "Instant confirmation", "wire", "reviews", "stars", "WhatsApp", "aria-label=\"line\"", "phone number"]) expect(html.toLowerCase()).not.toContain(banned.toLowerCase());
   });
 });
