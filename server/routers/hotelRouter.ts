@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { HOTEL_THEMES, isHotelThemeId } from '@shared/hotelThemes';
+import { isValidCoordinates, validateHotelContacts } from '@shared/hotelLocationRules';
 import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
@@ -301,7 +302,11 @@ export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx,
 
 export const updateHotelProfile = protectedProcedure
   // ASSUMPTION: the hotel slug stays fixed because changing it would break shared guest links.
-  .input(z.object({ hotel_id: hotelIdSchema, name: z.string().trim().min(1).max(160), address: z.string().trim().min(1).max(500), owner_contact: z.string().trim().min(1).max(180) }))
+  .input(z.object({ hotel_id: hotelIdSchema, name: z.string().trim().min(1).max(160), address: z.string().trim().min(1).max(500), owner_contact: z.string().trim().min(1).max(180), latitude: z.number().min(-90).max(90).nullable().optional(), longitude: z.number().min(-180).max(180).nullable().optional(), public_phone: z.string().max(80).nullable().optional(), show_public_phone: z.boolean().optional(), facebook_url: z.string().max(500).nullable().optional(), show_facebook: z.boolean().optional(), instagram_url: z.string().max(500).nullable().optional(), show_instagram: z.boolean().optional(), x_url: z.string().max(500).nullable().optional(), show_x: z.boolean().optional() }).superRefine((input, ctx) => {
+    if (!isValidCoordinates(input.latitude, input.longitude)) ctx.addIssue({ code: 'custom', message: 'ระบุตำแหน่งให้ครบทั้งละติจูดและลองจิจูด' });
+    const contactError = validateHotelContacts({ phone: input.public_phone, facebook: input.facebook_url, instagram: input.instagram_url, x: input.x_url, showPhone: input.show_public_phone ?? false, showFacebook: input.show_facebook ?? false, showInstagram: input.show_instagram ?? false, showX: input.show_x ?? false });
+    if (contactError) ctx.addIssue({ code: 'custom', message: contactError });
+  }))
   .mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
     if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });

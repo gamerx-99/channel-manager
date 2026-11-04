@@ -149,6 +149,48 @@ describe("D1 hotel repository", () => {
     await seedHotel("b", "owner-b");
     await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "a", name: "  New Name  ", address: "  New address  ", owner_contact: "  12345  " })).resolves.toMatchObject({ name: "New Name", address: "New address", owner_contact: "12345" });
     await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "b", name: "X", address: "Y", owner_contact: "Z" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    // Set location and contacts
+    await updateManagedHotelProfile(db, { userId: "owner-a" }, {
+      hotel_id: "a", name: "Hotel A", address: "Address A", owner_contact: "contact",
+      latitude: 18.7883, longitude: 98.9853,
+      public_phone: "0812345678", show_public_phone: true,
+      facebook_url: "https://facebook.com/hotel", show_facebook: true,
+    });
+    let hotelA = await getManagedHotel(db, { userId: "owner-a" }, "a");
+    expect(hotelA).toMatchObject({
+      latitude: 18.7883,
+      longitude: 98.9853,
+      public_phone: "0812345678",
+      show_public_phone: true,
+      facebook_url: "https://facebook.com/hotel",
+      show_facebook: true,
+    });
+
+    // Partial update without location/contacts preserves existing values
+    await updateManagedHotelProfile(db, { userId: "owner-a" }, {
+      hotel_id: "a", name: "Hotel A Renamed", address: "New Address", owner_contact: "contact",
+    });
+    hotelA = await getManagedHotel(db, { userId: "owner-a" }, "a");
+    expect(hotelA).toMatchObject({
+      name: "Hotel A Renamed",
+      latitude: 18.7883,
+      longitude: 98.9853,
+      public_phone: "0812345678",
+      show_public_phone: true,
+      facebook_url: "https://facebook.com/hotel",
+      show_facebook: true,
+    });
+
+    // Explicitly clear location with null
+    await updateManagedHotelProfile(db, { userId: "owner-a" }, {
+      hotel_id: "a", name: "Hotel A Renamed", address: "New Address", owner_contact: "contact",
+      latitude: null, longitude: null,
+    });
+    hotelA = await getManagedHotel(db, { userId: "owner-a" }, "a");
+    expect(hotelA?.latitude).toBeNull();
+    expect(hotelA?.longitude).toBeNull();
+    expect(hotelA?.public_phone).toBe("0812345678");
   });
 
   it("orders public room types by numeric money value and stable id", async () => {

@@ -4,6 +4,8 @@ import { getContrastText } from "@/lib/contrastText";
 
 export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & {
   booking: React.ReactNode;
+  contacts?: React.ReactNode;
+  locationMap?: React.ReactNode;
   setLanguage: (language: "en" | "th") => void;
   isVisible: (key: string) => boolean;
 };
