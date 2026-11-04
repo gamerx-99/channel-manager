@@ -359,7 +359,7 @@ function bangkokMonthStart(now: Date): Date {
  * creation date. ASSUMPTION: a hotel with no owner account (seed or demo data) uses the
  * hotel's own creation date; logged in .agent/OPEN_QUESTIONS.md.
  */
-async function listHotelsWithTrialClock(db: D1ScopedDatabase) {
+export async function listHotelsWithTrialClock(db: D1ScopedDatabase) {
   const rows = await db.select({ id: hotels.id, name: hotels.name, slug: hotels.slug, ownerContact: hotels.ownerContact,
     province: hotels.province, hotelCreatedAt: hotels.createdAt, ownerEmail: authUser.email, ownerCreatedAt: authUser.createdAt,
   }).from(hotels)
@@ -373,6 +373,15 @@ async function listHotelsWithTrialClock(db: D1ScopedDatabase) {
     if (!known || trialStartedAt < known.trialStartedAt) byHotel.set(row.id, { ...row, trialStartedAt });
   }
   return Array.from(byHotel.values());
+}
+
+export async function getHotelBillingState(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.view", "subscription.read", now);
+  const hotel = (await listHotelsWithTrialClock(db)).find(row => row.id === hotelId);
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
+  const [subscription] = await db.select({ paidUntil: hotelSubscriptions.paidUntil }).from(hotelSubscriptions).where(eq(hotelSubscriptions.hotelId, hotelId)).limit(1);
+  const state = resolvePlan({ ownerCreatedAt: hotel.trialStartedAt, paidUntil: subscription?.paidUntil ?? null, now });
+  return { hotelId, ...state, trialEndsAt: new Date(hotel.trialStartedAt.getTime() + TRIAL_DAYS * 86_400_000) };
 }
 
 export async function getPlatformBillingSummary(db: D1ScopedDatabase, caller: D1CallerContext, now = new Date()) {

@@ -13,7 +13,7 @@ export const HOTEL_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
 );
 
 /** Every hotel member can open the property; it is not a switch. */
-export const OWNER_RESERVED_PERMISSIONS: readonly Permission[] = ["property.manage_support_access", "property.transfer_ownership", "property.close_hotel"];
+export const OWNER_RESERVED_PERMISSIONS: readonly Permission[] = ["property.manage_support_access", "property.transfer_ownership", "property.close_hotel", "property.manage_billing"];
 
 export const BASE_MEMBER_PERMISSION: Permission = "property.view";
 

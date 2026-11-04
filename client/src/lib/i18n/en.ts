@@ -467,6 +467,9 @@ const en = {
     saveFailed: "Could not save availability.",
     stopSaleFailed: "Could not update the sales status.",
   },
+  subscription: {
+    eyebrow: "Plans and billing", title: "Your plan", lede: "Manage your Pro subscription.", back: "Overview", currentPlan: "Current plan", trial: "Free trial", pro: "Pro", free: "Free", activePlan: "Plan", daysLeft: "{{days}} days left", endsAt: "Ends {{date}}", freeNoExpiry: "No paid plan is active.", bahtPerMonth: "baht / month", priceNote: "Pro is 299 baht per month.", checkout: "Choose Pro", chooseDuration: "Select a duration", months: "Paid months", monthOption: "{{count}} months", coupon: "Coupon code", couponPlaceholder: "Enter a coupon code", listPrice: "Price", discount: "Discount", amountDue: "Amount due", notReady: "The payment system is not ready. Please contact hayhost.", couponInvalid: "We could not find this coupon code. Check the spelling.", couponInactive: "This coupon is no longer active.", couponExpired: "This coupon has expired.", couponUsedUp: "This coupon has been fully used.", couponAlreadyRedeemed: "This property has already used this coupon.", slipNotVerified: "The slip could not be verified. Check it is the slip for this payment and try again.", slipAmountMismatch: "The slip amount does not match the amount due.", qrExpired: "This QR has expired. Please start the payment again.", paymentNotPending: "This payment is already complete or has expired.", scanQr: "Scan this PromptPay QR to pay.", uploadSlip: "Select the payment slip", verifySlip: "Check slip", paymentVerified: "Payment verified. Your Pro period is active.", confirmPayment: "Continue to payment", changePlan: "Change plan"
+  },
   home: {
     loadingTitle: "Loading hotel overview…",
     loadingDesc: "Reading live operating status…",

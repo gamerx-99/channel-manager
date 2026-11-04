@@ -10,11 +10,13 @@ import { isPlatformRole, ROLE_LABELS } from '@shared/authorization';
 import PageState from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import { otaSyncEnabled } from '@/lib/featureFlags';
+import { useHotel } from '@/contexts/HotelContext';
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { selectedHotel } = useHotel();
   const { data, isLoading, error, refetch: refetchDashboard } = trpc.channelManager.dashboard.useQuery();
   const { data: otaSummary, isLoading: otaLoading, error: otaError, refetch: refetchOta } = trpc.channelManager.ota.summary.useQuery(undefined, { enabled: otaSyncEnabled });
   const { data: authMe } = trpc.auth.me.useQuery();
@@ -33,6 +35,8 @@ export default function Home() {
   // because `admin` is a read-only platform role.
   const isPlatformAdmin = isPlatformRole(authMe?.role);
   const canEditCalendar = authMe?.role === 'super_admin' || authMe?.role === 'hotel_owner' || authMe?.role === 'revenue_manager';
+  const ownerBilling = authMe?.memberships?.find(item => item.hotelId === selectedHotel?.id && item.role === 'hotel_owner' && item.permissions.includes('property.manage_billing'));
+  const planState = trpc.subscriptionBilling.state.useQuery({ hotelId: selectedHotel?.id ?? '' }, { enabled: Boolean(ownerBilling && selectedHotel?.id) });
   const primaryHotel = data?.hotels[0];
   const primaryHotelHref = primaryHotel ? `/hotels/${primaryHotel.id}` : '/hotels';
   const summary = data?.summary;
@@ -118,6 +122,8 @@ export default function Home() {
     </section>
 
     <DashboardCalendarView canEditAvailability={canEditCalendar} />
+
+    {ownerBilling && selectedHotel && <section className="panel home-plan-card"><div className="panel-heading"><div><div className="eyebrow">{t('subscription.currentPlan')}</div><h2>{planState.data ? t(`subscription.${planState.data.plan}`) : t('common.loading')}</h2></div><span className="status-pill live">{planState.data?.daysLeft ? t('subscription.daysLeft', { days: planState.data.daysLeft }) : ''}</span></div><p>{planState.data?.endsAt ? t('subscription.endsAt', { date: new Intl.DateTimeFormat(language === 'th' ? 'th-TH' : 'en-GB', { dateStyle: 'medium' }).format(new Date(planState.data.endsAt)) }) : t('subscription.freeNoExpiry')}</p><Link href={`/hotels/${selectedHotel.id}/billing`} className="button button-primary">{t('subscription.changePlan')}</Link></section>}
 
     <section className="content-grid overview-grid"><div className="panel portfolio-panel"><div className="panel-heading"><div><div className="eyebrow">{t('home.managedProperties', { count: summary?.hotelCount ?? 0 })}</div><h2>{t('home.propertyOverview')}</h2></div><Link href={isPlatformAdmin ? "/hotels" : primaryHotelHref} className="text-link">{isPlatformAdmin ? t('home.viewAllHotels') : t('home.openProperty')} <ArrowUpRight size={14} /></Link></div><div className="hotel-list">{data?.hotels.length ? data.hotels.map(hotel => { const occupied = hotel.rooms.filter(room => room.status !== 'available').length; const occupancy = hotel.rooms.length ? Math.round((occupied / hotel.rooms.length) * 100) : 0; return <Link href={`/hotels/${hotel.id}`} key={hotel.id} className="hotel-row"><div className="hotel-thumb hotel-thumb-initial" aria-hidden="true">{hotel.name.slice(0, 1)}</div><div className="hotel-row-main"><div className="hotel-row-title"><strong>{hotel.name}</strong><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('home.livePill') : t('home.privatePill')}</span></div><span className="hotel-location">{hotel.address} · {t('home.roomsCount', { count: hotel.rooms.length })}</span></div><div className="hotel-occupancy"><span>{occupancy}%</span><small>{t('home.occupied')}</small></div><div className="mini-progress"><span style={{ width: `${occupancy}%` }} /></div><ChevronRight size={16} className="row-arrow" /></Link>; }) : <div className="empty-inline">{t('home.noHotelsVisible')}</div>}</div></div>
       <aside className="panel task-panel"><div className="panel-heading"><div><div className="eyebrow">{t('home.quickAccess')}</div><h2>{t('home.keepThingsMoving')}</h2></div>          <button className="icon-button" aria-label={t('home.moreQuickActions')} onClick={() => toast.info(t('home.moreQuickActionsToast'))}><MoreHorizontal size={17} /></button></div><div className="task-list">

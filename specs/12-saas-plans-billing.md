@@ -1,5 +1,5 @@
 # 12 SaaS plans, entitlements & subscription billing
-Status: IN PROGRESS — Tickets A and B implemented; Ticket C and remote migration application pending. Owner decisions
+Status: IN PROGRESS — Tickets A, B and C implemented; remote migration application pending. Owner decisions
 dated 2026-11-04 supersede the earlier blocking questions below.
 Depends on: 09-authenticator-mfa (DONE, step-up for billing settings), 01-payments-slipok (DONE, reused for
 platform slip verification)

@@ -6,6 +6,7 @@ import { authRouter } from './routers/authRouter';
 import { hotelClosureRouter } from './routers/hotelClosureRouter';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
+import { subscriptionBillingRouter } from './subscriptionBillingRouter';
 import { otaRouter } from './routers/otaRouter';
 import {
   dashboard,
@@ -158,6 +159,7 @@ export const appRouter = router({
 
   // ── Phase 01: SlipOK per-hotel payment settings ───────────────────────────
   slipok: slipokRouter,
+  subscriptionBilling: subscriptionBillingRouter,
 
   // ── Phase 12B: Public booking payment flow ─────────────────────────────
   payment: paymentRouter,

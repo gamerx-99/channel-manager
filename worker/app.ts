@@ -30,6 +30,9 @@ export type WorkerEnv = {
   MEDIA: R2Bucket;
   /** Optional so environments without the binding keep the older limits only. */
   PUBLIC_BOOKING_LIMITER?: RateLimit;
+  PLATFORM_PROMPTPAY_ID?: string;
+  SLIPOK_API_KEY?: string;
+  SLIPOK_BRANCH_ID?: string;
 };
 
 type WorkerAppDependencies = {
@@ -167,6 +170,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
           c.env?.DB,
         )),
         publicBookingLimiter: c.env?.PUBLIC_BOOKING_LIMITER,
+        billingEnv: { PLATFORM_PROMPTPAY_ID: c.env?.PLATFORM_PROMPTPAY_ID, SLIPOK_API_KEY: c.env?.SLIPOK_API_KEY, SLIPOK_BRANCH_ID: c.env?.SLIPOK_BRANCH_ID },
         cfConnectingIp: c.req.header("cf-connecting-ip"),
       }),
     });

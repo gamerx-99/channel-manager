@@ -4347,3 +4347,34 @@ Not tested in a browser or with a real email.
   - At 375px, no page scrolls sideways.
   - Not checked: the "extend Pro" and "end Pro" buttons use `window.prompt`, which the hidden pane could not drive. Their router tests pass.
 - **Evidence**: `pnpm test` 187 files, 1283 tests passed; `pnpm check` exit 0.
+
+## 2026-11-04 Billing ticket C (Codex)
+- Added the owner plan card and hotel billing page, server quote/payment/verification procedures, owner-only property.manage_billing, PromptPay QR generation and platform SlipOK binding use. Full test/check/build/browser evidence is in .agent/ticket-c-report.md.
+- ASSUMPTION: hotel subscription billing is only available to that hotel's owner; platform administrators use CRM actions and cannot pay on behalf of an owner (logged in OPEN_QUESTIONS).
+- pnpm failed with ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK; direct binaries are used for verification.
+
+
+## 2026-11-04 Billing ticket C (Codex)
+- Implemented owner plan overview card, billing screen, server quote/payment/SlipOK verification flow, subscription state machine and owner-only property.manage_billing. Details/evidence: .agent/ticket-c-report.md.
+- ASSUMPTION: only the property's owner may pay its subscription; platform roles use CRM tools. Logged in OPEN_QUESTIONS.
+- pnpm failed with ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK; direct binaries are used for all checks.
+
+
+## 2026-11-04 Billing ticket C (Codex)
+- Added owner plan overview card, hotel billing route/UI, server quote/payment verification endpoints, shared property.manage_billing, and payment state machine. Details and check evidence: .agent/ticket-c-report.md.
+- ASSUMPTIONS: hotel_owner-only payments and fail-closed paid payment creation pending local QR rendering; both in OPEN_QUESTIONS/code comment.
+- pnpm lock error; direct binaries used. Browser host unavailable; no real payment tested.
+
+- **Claude review fixes (same commit)**:
+  - Paid payments were blocked on purpose. Codex believed no QR renderer existed, but `server/promptpay.ts` builds the EMVCo payload and `client/src/lib/qr.ts` draws it locally, as the guest `PaymentQR` does. Removed the block, and the page now draws a real QR image instead of an icon plus the raw payload text.
+  - Missing secrets block only paid payments. A 100% coupon still works.
+  - `verifySlip` race: in one D1 batch a 0-row "still pending" UPDATE does not stop the next statements, so two concurrent verifies of the same payment could extend Pro twice. The subscription upsert and the coupon redemption now run only `where exists` this request's own verified row (same `verified_at` and `slip_trans_ref`). The SQL was checked on local D1.
+  - Coupon and slip errors were English or raw codes (`coupon_expired`). Added `billingErrorKey` with Thai and English texts, plus `useSubscriptionPlan.test.ts`.
+- **Browser** (Claude, local owner `local-owner-c-*`, hotel `owner-c-*`):
+  - Dashboard plan card: "ทดลองใช้ · เหลือ 15 วัน · สิ้นสุด 19 พ.ย. 2569".
+  - `/hotels/:id/billing`: 1 month = 299.00. 3 months with coupon MHSLOCAL (50%, 1 month) = 897.00 − 149.50 = 747.50.
+  - A wrong coupon shows the Thai message.
+  - Confirm without local secrets shows "ระบบชำระเงินยังไม่พร้อม กรุณาติดต่อ hayhost".
+  - 375px: no sideways scroll.
+  - **Not tested:** a real PromptPay payment and SlipOK verification (no secrets locally). Test on staging after `PLATFORM_PROMPTPAY_ID` is set.
+- **Evidence**: `pnpm test` 191 files, 1306 tests passed; `pnpm check` exit 0; `pnpm build` passed (3789 KiB).

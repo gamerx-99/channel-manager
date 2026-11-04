@@ -61,6 +61,7 @@ export const PERMISSIONS = [
   "platform.manage_signup_links",
   "property.view",
   "property.manage_profile",
+  "property.manage_billing",
   "property.manage_room_structure",
   "property.manage_staff",
   "property.manage_support_access",
@@ -115,6 +116,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   // grant the owner approved (`resolveSupportGrantPermissions` in shared/permissions.ts).
   support: ["platform.view_all_hotels"],
   hotel_owner: [
+    "property.manage_billing",
     "property.manage_support_access",
   "property.transfer_ownership",
     "property.close_hotel",

@@ -455,6 +455,9 @@ const th: TranslationDictionary = {
     saveFailed: "บันทึกจำนวนห้องว่างไม่สำเร็จ",
     stopSaleFailed: "อัปเดตสถานะการขายไม่สำเร็จ",
   },
+  subscription: {
+    eyebrow: "แพ็กเกจและการชำระเงิน", title: "แพ็กเกจของคุณ", lede: "จัดการแพ็กเกจ Pro ของที่พัก", back: "กลับหน้าภาพรวม", currentPlan: "แพ็กเกจปัจจุบัน", trial: "ทดลองใช้", pro: "Pro", free: "Free", activePlan: "แพ็กเกจ", daysLeft: "เหลือ {{days}} วัน", endsAt: "สิ้นสุด {{date}}", freeNoExpiry: "ยังไม่มีแพ็กเกจแบบชำระเงิน", bahtPerMonth: "บาท / เดือน", priceNote: "แพ็กเกจ Pro ราคา 299 บาทต่อเดือน", checkout: "เลือก Pro", chooseDuration: "เลือกระยะเวลา", months: "จำนวนเดือน", monthOption: "{{count}} เดือน", coupon: "รหัสส่วนลด", couponPlaceholder: "กรอกรหัสส่วนลด", listPrice: "ราคาเต็ม", discount: "ส่วนลด", amountDue: "ยอดที่ต้องชำระ", notReady: "ระบบชำระเงินยังไม่พร้อม กรุณาติดต่อ hayhost", couponInvalid: "ไม่พบรหัสส่วนลดนี้ ลองตรวจตัวสะกดอีกครั้ง", couponInactive: "รหัสส่วนลดนี้ปิดใช้งานแล้ว", couponExpired: "รหัสส่วนลดนี้หมดอายุแล้ว", couponUsedUp: "รหัสส่วนลดนี้ถูกใช้ครบจำนวนแล้ว", couponAlreadyRedeemed: "ที่พักนี้ใช้รหัสส่วนลดนี้ไปแล้ว", slipNotVerified: "ตรวจสอบสลิปไม่ผ่าน กรุณาตรวจว่าเป็นสลิปของรายการนี้ แล้วลองอีกครั้ง", slipAmountMismatch: "ยอดเงินในสลิปไม่ตรงกับยอดที่ต้องชำระ", qrExpired: "QR นี้หมดเวลาแล้ว กรุณาเริ่มชำระเงินใหม่", paymentNotPending: "รายการนี้ชำระเสร็จแล้วหรือหมดเวลาแล้ว", scanQr: "สแกน QR PromptPay เพื่อชำระเงิน", uploadSlip: "เลือกรูปสลิป", verifySlip: "ตรวจสอบสลิป", paymentVerified: "ตรวจสอบการชำระเงินแล้ว เปิดใช้ Pro เรียบร้อย", confirmPayment: "ไปชำระเงิน", changePlan: "เปลี่ยนแพ็กเกจ"
+  },
   home: {
     loadingTitle: "กำลังโหลดภาพรวมโรงแรม",
     loadingDesc: "กำลังอ่านสถานะการดำเนินงานล่าสุด…",

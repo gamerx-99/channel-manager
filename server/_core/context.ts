@@ -60,6 +60,7 @@ export type TrpcContext = {
   auth?: AuthInstance;
   /** Request headers that carried the session. */
   headers?: Headers;
+  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string };
 };
 
 export type CreateContextOptions = {
@@ -69,6 +70,7 @@ export type CreateContextOptions = {
   clientIp?: string | null;
   db?: D1ScopedDatabase;
   auth?: AuthInstance;
+  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string };
 };
 
 function normalizeHeaders(
@@ -103,6 +105,7 @@ export async function createContextFromRequest(
   let clientIp = clientIpArg ?? "unknown";
   let db = dbArg ?? undefined;
   let authOverride: AuthInstance | undefined;
+  let billingEnv: CreateContextOptions["billingEnv"];
   const isObjectCall = !!(
     requestOrAuth &&
     typeof requestOrAuth === "object" &&
@@ -116,6 +119,7 @@ export async function createContextFromRequest(
     clientIp = opts.clientIp ?? clientIp;
     db = opts.db ?? db;
     authOverride = opts.auth;
+    billingEnv = opts.billingEnv;
   } else if (typeof Request !== "undefined" && requestOrAuth instanceof Request) {
     req = requestOrAuth;
     headers = requestOrAuth.headers;
@@ -131,6 +135,7 @@ export async function createContextFromRequest(
       return {
         user: null,
         clientIp: clientIp || "unknown",
+        billingEnv,
       };
     }
     return {
@@ -140,6 +145,7 @@ export async function createContextFromRequest(
       req,
       db,
       session: null,
+      billingEnv,
     };
   }
 
@@ -237,6 +243,7 @@ export async function createContextFromRequest(
           session,
           auth,
           headers,
+          billingEnv,
         };
       }
     } catch (error) {
@@ -250,6 +257,7 @@ export async function createContextFromRequest(
       req,
       db,
       session: null,
+      billingEnv,
     };
   }
 

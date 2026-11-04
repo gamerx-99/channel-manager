@@ -10,6 +10,7 @@ Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] ASSUMPTION (2026-11-04): only the hotel's `hotel_owner` may manage or pay its subscription; super admins use CRM billing tools and cannot purchase on behalf of a hotel. Confirm if platform staff should be able to make a payment for a customer.
 - [ ] A hotel with no hotel_owner account (seed or demo data): when does its 15-day trial start? `ASSUMPTION:` the hotel's own creation date, so it still appears in the CRM and dashboard counts. Raised 2026-11-04.
 - [ ] When a hotel's 15-day Pro trial ends, what should happen if it has more than 3 rooms under the Free plan? `ASSUMPTION:` do not enforce a room limit or alter/delete existing hotel data until the owner decides. Raised 2026-11-04.
 - [ ] Platform user with no hotel memberships on `/hotels` (2026-11-03): `listManagedHotels` intentionally excludes platform memberships. `ASSUMPTION:` show an empty-state explaining owner permission is required and link to `/platform`; do not expose hotel data or present a misleading zero count.
@@ -47,10 +48,7 @@ answer noted.
 - [ ] Spec 12 (SaaS billing) Q1: plan line-up, feature/limit mix, THB prices, trial length.
       ASSUMPTION: placeholder plan codes `starter`/`pro`/`business` with no prices; prices
       live only in `billing_plans` rows. Raised 2026-10-26.
-- [ ] Spec 12 Q2: how the platform collects subscription money — PromptPay/bank slip
-      verified with the platform's own SlipOK key (manual renewals), or card auto-renew via
-      Stripe/Opn. ASSUMPTION: v1 = PromptPay + slip behind a `BillingProvider` interface.
-      Raised 2026-10-26.
+- [x] Spec 12 Q2: answered 2026-11-04 — PromptPay QR and automatic verification through the platform's SlipOK keys; see `.agent/DECISIONS.md` and ticket C.
 - [ ] Spec 12 Q3: is the operating company VAT-registered, and should invoices handle 3%
       withholding tax (50 ทวิ)? ASSUMPTION: model both VAT and WHT as per-invoice rates
       defaulting to 0 until answered. Raised 2026-10-26.

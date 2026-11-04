@@ -34,6 +34,7 @@ import SupportAccess from "./pages/SupportAccess";
 import PlatformOverview from "./pages/PlatformOverview";
 import PlatformCrm from "./pages/PlatformCrm";
 import PlatformCoupons from "./pages/PlatformCoupons";
+import SubscriptionPlan from "./pages/SubscriptionPlan";
 import HotelStaff from "./pages/HotelStaff";
 import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
+      <Route path="/hotels/:id/billing"><PrivateRoute><SubscriptionPlan /></PrivateRoute></Route>
       <Route path="/dashboard/pricing">
         <PrivateRoute><AdvancedPricing /></PrivateRoute>
       </Route>
@@ -76,6 +78,7 @@ function Router() {
       <Route path="/platform"><PrivateRoute><PlatformOverview /></PrivateRoute></Route>
       <Route path="/platform/crm"><PrivateRoute><PlatformCrm /></PrivateRoute></Route>
       <Route path="/platform/coupons"><PrivateRoute><PlatformCoupons /></PrivateRoute></Route>
+      <Route path="/hotels/:id/billing"><PrivateRoute><SubscriptionPlan /></PrivateRoute></Route>
       <Route path="/hotels/:id/support-access">
         {(params) => <PrivateRoute><SupportAccess hotelId={params.id} /></PrivateRoute>}
       </Route>
