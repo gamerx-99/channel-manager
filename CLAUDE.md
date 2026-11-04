@@ -69,6 +69,8 @@ bindings, D1 ids and crons per environment — changes need extra care).
   `server/financials.access.test.ts`); new pages get a string-contract test (see
   `client/src/pages/Financials.contract.test.ts`) asserting the route is registered,
   the permission gate is present, and key UI markers exist.
+- File roles: `.tsx` = UI only, `.ts` = logic (hooks + tested pure functions), `.css` = look
+  (no `style={{ }}` except runtime CSS variables). Details in `specs/ui-house-style.md`.
 - Thai UI copy: read `docs/thai-glossary.md` before writing or changing any Thai string. It lists the
   approved wording for each term in context and the literal translations that are banned.
   `client/src/lib/i18n/thaiGlossary.test.ts` fails on a banned term or a missing th/en key.

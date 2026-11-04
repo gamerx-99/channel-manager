@@ -4432,3 +4432,19 @@ Not tested in a browser or with a real email.
 - `client/src/index.css`: Google Fonts import adds `Mali` (400–700). All 18 `'Noto Sans Thai Looped'` stacks there now use `'Mali'`. Noto stays imported for the plain public hotel page (`public-hotel.css`), and the themes set their own `--t-font-body`.
 - Browser (Claude): `/` h1 font is "Fraunces, Mali"; `document.fonts.check('16px Mali')` returns true. At 375px, `/`, `/dashboard` and `/hotels/:id/billing` have no page overflow.
 - Client tests: 424 passed.
+
+
+## 2026-11-04 Website builder restructure (phase 2)
+- Moved the builder data, permissions, queries, mutations, draft handling and event handlers into `client/src/components/website-builder/useWebsiteBuilder.ts`; extracted current defaults and hex validation into `websiteBuilderRules.ts` with unit coverage.
+- Moved inline styling to the builder stylesheet; runtime color, focal point and object-position values use CSS variables.
+- Updated `WebsiteBuilder.contract.test.ts` to aggregate the relocated builder source while retaining every assertion. Updated `HotelDetail.contract.test.ts` to read the relocated hotel query initialization, retaining its exact assertion.
+- Evidence and caveats: see `.agent/codex-report-restructure-phase2-website-builder.md`.
+
+## 2026-11-04 Owner UI fixes + restructure phases 3a and 4 (Claude)
+- Thai font on hayhost pages is now **Mitr** (owner), replacing Mali: `client/src/index.css` import and all 18 stacks. Browser: `document.fonts` has 3 Mitr faces loaded; hotel detail h1 font is "Fraunces, Mitr, serif".
+- Hotel detail and services pages: removed the "โรงแรม / <id>" eyebrow, the "..." menu that only repeated "แก้ไขข้อมูลโรงแรม" (on services it was a disabled coming-soon item), and the stray first-letter monogram ("L") in the hero box.
+- Sidebar: new "บริการเสริม" link to `/hotels/:id/services`, gated on `property.manage_room_structure` (the same permission the services procedures check). New i18n key `sidebar.services` (th/en).
+- Restructure phase 3a: the `.public-*` rules of the 760px `@media` block moved from `index.css` to the end of `public-hotel.css`, so the public page no longer depends on `index.css` loading last. Browser at 375px on a local public page: nav 65px, menu button shown, hero 650px, h1 49px (the moved values apply); no page overflow.
+- Phase 4: file-role rule added to `specs/ui-house-style.md` and one line in `CLAUDE.md`.
+- Phase 2 is still partial: the builder JSX is not split into section components yet (Codex report).
+- Tests: tsc exit 0; affected suites 13 files / 71 tests passed. Codex's full run before these UI fixes: 196 files / 1321 tests passed.

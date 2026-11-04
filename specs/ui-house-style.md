@@ -21,3 +21,13 @@ Use the shared rules from `client/src/index.css` for every back-office page.
 - Status words use `status-pill` and an existing status variant.
 - All user-facing copy goes through i18n; do not add raw English UI strings.
 - At 375px, the page must not scroll horizontally, forms stack, tables scroll within `table-wrap`, and buttons retain a usable full-size target.
+
+## File roles (UI, logic and style apart)
+
+Decided in the restructure plan (`.agent/plan-restructure-2026-11-04.md`). New and changed code follows it:
+
+- `.tsx` components are UI only: they render props and call handlers. No tRPC queries or mutations, no business rules. A page component may call one hook and lay out its sections.
+- `.ts` files hold logic: a `useXxx.ts` hook for state, queries and mutations, and pure functions (`xxxRules.ts`) with their own Vitest unit test.
+- `.css` files hold the look. No `style={{ }}`, except a value that truly varies at runtime, passed as a CSS variable (for example a hotel's accent colour).
+- A feature's styles live next to it (for example `components/public-hotel/public-hotel.css`) and must not rely on `index.css` loading after them: put a feature's `@media` overrides in its own file, not in `index.css`.
+- Examples to copy: `client/src/components/public-hotel/` (booking steps, `useBookingWizard.ts`, `bookingRules.ts`) and `client/src/components/website-builder/`.
