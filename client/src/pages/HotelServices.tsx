@@ -185,26 +185,12 @@ export default function HotelServices({ id }: { id: string }) {
   return (
     <div className="page-content hotel-detail-page">
       {pageIntro}
-      <div className="detail-back"><Link href="/hotels">{t('hotelDetail.backToHotels')}</Link><ChevronRight size={14} /><span>{hotel.name}</span></div>
-      <section className="property-hero panel">
-        <div className="panel-heading"><div><h2>{hotel.name}</h2></div><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
-        <div className="property-hero-image property-hero-monogram"><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
+      <section className="property-hero property-hero-centered panel">
         <div className="property-hero-copy">
           <h1>{hotel.name}<span className="title-mark">.</span></h1>
           <p>{hotel.address}</p>
-          <div className="property-meta"><span><Users size={15} /> {t('hotelDetail.accessControlled')}</span><span><ExternalLink size={15} /> /{hotel.slug}</span></div>
-        </div>
-        <div className="property-actions">
-          <button className="button button-quiet" disabled title={t('hotelDetail.editPropertyTooltip')}><Pencil size={15} /> {t('hotelDetail.editProperty')}</button>
         </div>
       </section>
-      <nav className="detail-tabs">
-        <Link href={`/hotels/${hotel.id}`}>{t('hotelDetail.tabRoomTypes')}</Link>
-        <Link href={`/hotels/${hotel.id}/bookings`}>{t('hotelDetail.tabBookings')}</Link>
-        <Link href={`/hotels/${hotel.id}/calendar`}>{t('hotelDetail.tabAvailability')}</Link>
-        <Link href={`/hotels/${hotel.id}/services`} className="active">{t('hotelDetail.tabServices')}</Link>
-        <Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>
-      </nav>
       <section className="panel room-types-panel">
         <div className="panel-heading">
           <div><div className="eyebrow">{t('hotelServices.eyebrow')}</div><h2>{t('hotelServices.title')}</h2></div>
