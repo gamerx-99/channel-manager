@@ -4378,3 +4378,27 @@ Not tested in a browser or with a real email.
   - 375px: no sideways scroll.
   - **Not tested:** a real PromptPay payment and SlipOK verification (no secrets locally). Test on staging after `PLATFORM_PROMPTPAY_ID` is set.
 - **Evidence**: `pnpm test` 191 files, 1306 tests passed; `pnpm check` exit 0; `pnpm build` passed (3789 KiB).
+
+## 2026-11-04 Guided tour (Codex)
+- Implemented the hotel setup spotlight tour, progress helper, bilingual guide, and per-user D1 status procedures. Full report: `.agent/guided-tour-report.md`.
+- Full evidence: Vitest 194 files / 1,311 tests passed; `tsc --noEmit` passed; Vite build passed (1,263.64 kB advisory); Wrangler dry run passed (3,790.62 KiB). Local D1 migration `20261104000000_user_onboarding.sql` applied with `--local` only.
+- Browser walkthrough unavailable: CUA browser inventory empty and browser host unavailable. Sign-up, tour interaction, screenshots, and 1280px/375px checks were not done; guide uses marked screenshot placeholders.
+- ASSUMPTIONS and current product questions are documented in `.agent/guided-tour-report.md` and `.agent/OPEN_QUESTIONS.md`.
+- Final focused run: 4 files / 7 tests passed; `tsc --noEmit` passed; Vite and Wrangler dry run passed.
+- **Claude review fixes (same commit)**:
+  - **Migration chain repaired.** Ticket A's snapshot had been saved as `0014_snapshot.json`. drizzle-kit takes the last snapshot by file name, and this repo uses dated names, so it diffed against the older hotel_closure snapshot and re-emitted every ticket A table. Renamed it to `20261103233539_subscription_billing_ticket_a_snapshot.json`. `drizzle-kit generate` then reported "No schema changes".
+  - Regenerated Codex's hand-written onboarding migration as `drizzle/d1/20261104010000_user_onboarding.sql` with a real snapshot. The local `d1_migrations` record was renamed to match. Nothing was applied remotely.
+  - The tour auto-starts only for a member who holds `property.manage_profile` and `property.manage_room_structure` on the selected hotel, and never for platform roles. Codex's version started it for every user.
+  - Step 1 opens the hotel editor (a modal). A click on the tour card used to close the modal instead of advancing, so the user needed two clicks. The editor now ignores clicks on `.guided-tour-card`, and the tour closes the editor (`guided-tour:close-hotel-editor`) when it moves to step 2.
+  - Tour effects keyed on the step object re-ran on every render: they reopened the editor and restarted scrolling. They now key on `stepIndex` and `step.target`.
+  - The last card said setup was done even when no room existed. It now lists what is still missing. Skip is hidden on the last card, and the step counter is hidden there.
+  - Step 2 scrolls its target into view once the editor's scroll lock (`body[data-scroll-locked]`) is released.
+- **Browser** (Claude, local owner `local-owner-c-*`):
+  - Opening `/dashboard` redirects to `/hotels/:id` and the tour auto-starts.
+  - Step 1 highlights the required fields in the editor; one click on "ถัดไป" goes to step 2 and closes the editor.
+  - Step 2 highlights the room types panel.
+  - The last card lists the missing room. "เริ่มใช้งาน" stores `tourCompletedAt`, and the tour does not auto-start again.
+  - "ดูคู่มืออีกครั้ง" restarts it.
+  - 1280px and 375px: the card stays on screen, with no sideways scroll.
+- **Not confirmed:** the step-2 scroll on a 375px phone. The background browser pane would not scroll the document at all, even with `scrollTop` set directly. The help page screenshots are still placeholders.
+- **Evidence**: `pnpm test` 194 files, 1311 tests passed; `pnpm check` exit 0; `pnpm build` passed.

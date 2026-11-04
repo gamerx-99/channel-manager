@@ -57,6 +57,7 @@ type TopbarProps = {
   userMenuOpen: boolean;
   onToggleUserMenu: () => void;
   onCloseUserMenu: () => void;
+  onRestartTour: () => void;
 };
 
 export function Topbar({
@@ -75,6 +76,7 @@ export function Topbar({
   userMenuOpen,
   onToggleUserMenu,
   onCloseUserMenu,
+  onRestartTour,
 }: TopbarProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
@@ -138,6 +140,7 @@ export function Topbar({
               propertyId={selectedHotelId}
               initials={initials}
               onClose={onCloseUserMenu}
+              onRestartTour={onRestartTour}
               onLogout={onLogout}
             />
           )}

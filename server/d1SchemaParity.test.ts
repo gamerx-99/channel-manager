@@ -45,6 +45,7 @@ const d1OnlyTables = [
   "subscription_admin_log",
   "subscription_payments",
   "support_accounts",
+  "user_onboarding",
 ];
 
 describe("D1 schema parity", () => {

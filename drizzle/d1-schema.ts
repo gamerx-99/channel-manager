@@ -593,6 +593,13 @@ export const hotelPurgeLog = sqliteTable("hotel_purge_log", {
   purgedAt: integer("purged_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const userOnboarding = sqliteTable("user_onboarding", {
+  userId: text("user_id").primaryKey(),
+  tourCompletedAt: integer("tour_completed_at", { mode: "timestamp_ms" }),
+  tourSkippedAt: integer("tour_skipped_at", { mode: "timestamp_ms" }),
+  updatedAt: updatedAt(),
+});
+
 export const d1Schema = {
   agents,
   hotels,
@@ -631,5 +638,6 @@ export const d1Schema = {
   supportAccessLog,
   supportAccounts,
   platformAdmins,
+  userOnboarding,
   hotelPurgeLog,
 };

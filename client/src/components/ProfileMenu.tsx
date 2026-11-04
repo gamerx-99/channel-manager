@@ -16,6 +16,7 @@ export type ProfileMenuProps = {
   initials: string;
   onLogout: () => void;
   onClose: () => void;
+  onRestartTour?: () => void;
 };
 
 export function ProfileMenu({
@@ -29,6 +30,7 @@ export function ProfileMenu({
   initials,
   onLogout,
   onClose,
+  onRestartTour = () => {},
 }: ProfileMenuProps) {
   const { t } = useTranslation();
   const propertyLabel = isPlatformAdmin
@@ -76,6 +78,8 @@ export function ProfileMenu({
       >
         {propertyLabel}
       </Link>
+      <button type="button" className="menu-surface-item" role="menuitem" onClick={() => { onClose(); onRestartTour(); }}>{t("guidedTour.restart")}</button>
+      <Link href="/help/getting-started" className="menu-surface-item" role="menuitem" onClick={onClose}>{t("guidedTour.helpTitle")}</Link>
       <div className="menu-surface-divider" />
       <button
         onClick={() => {

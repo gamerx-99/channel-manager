@@ -6,6 +6,8 @@ import { checkMfaStepUpStatus, requireRecentMfaVerification } from '../mfa';
 import { verifyMfaStepUp } from '../mfaStepUp';
 import { rethrowDomainError } from '../routerUtils';
 import { enabledSocialProviders } from '../socialAuth';
+import { userOnboarding } from '../../drizzle/d1-schema';
+import { eq } from 'drizzle-orm';
 
 export const authRouter = router({
   me: publicProcedure.query(({ ctx }) => {
@@ -14,6 +16,18 @@ export const authRouter = router({
     return rest;
   }),
   logout: publicProcedure.mutation(() => ({ success: true as const })),
+
+  onboardingStatus: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    const [row] = await ctx.db.select().from(userOnboarding).where(eq(userOnboarding.userId, ctx.user.id)).limit(1);
+    return { tourCompletedAt: row?.tourCompletedAt ?? null, tourSkippedAt: row?.tourSkippedAt ?? null };
+  }),
+  setOnboardingTourState: protectedProcedure.input(z.object({ state: z.enum(['completed', 'skipped', 'reset']) })).mutation(async ({ ctx, input }) => {
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    const now = new Date();
+    const [row] = await ctx.db.insert(userOnboarding).values({ userId: ctx.user.id, tourCompletedAt: input.state === 'completed' ? now : null, tourSkippedAt: input.state === 'skipped' ? now : null, updatedAt: now }).onConflictDoUpdate({ target: userOnboarding.userId, set: { tourCompletedAt: input.state === 'completed' ? now : null, tourSkippedAt: input.state === 'skipped' ? now : null, updatedAt: now } }).returning();
+    return { tourCompletedAt: row.tourCompletedAt, tourSkippedAt: row.tourSkippedAt };
+  }),
 
   /** Names only, so the sign-in pages can hide a provider that has no credentials yet. */
   socialProviders: publicProcedure.query(() => enabledSocialProviders(process.env)),

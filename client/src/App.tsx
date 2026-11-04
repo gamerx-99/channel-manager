@@ -45,6 +45,7 @@ import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContex
 import { communicationsEnabled, otaSyncEnabled } from "./lib/featureFlags";
 import { useTranslation } from "./lib/i18n";
 import LegalPage from "./pages/LegalPage";
+import GettingStarted from "./pages/GettingStarted";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -62,6 +63,7 @@ function Router() {
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
       <Route path="/accept-invite" component={AcceptInvite} />
+      <Route path="/help/getting-started"><PrivateRoute><GettingStarted /></PrivateRoute></Route>
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
