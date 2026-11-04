@@ -118,3 +118,5 @@ client/public/__manus__/version.json
 .dev.vars*
 !.dev.vars.example
 dist-worker/
+
+.claude/settings.local.json
