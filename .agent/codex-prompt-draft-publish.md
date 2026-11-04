@@ -10,6 +10,7 @@ Read `CLAUDE.md`, `.agent/BANNED_ZONE.md`, `.agent/DECISIONS.md` (the 2026-11-04
 - Do not push, deploy or apply migrations remotely. Do not touch `client/public/_headers`, `.github/` or `client/src/index.css`.
 - If `pnpm` fails with `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK`, call the binaries in `.\node_modules\.bin\` directly. Do not stop.
 - Write the `.agent/handoff.md` entry and your report **before** the final checks.
+- **Migrations.** Generate with drizzle-kit. Then rename the SQL file and its `meta/` snapshot to this repo's dated pattern (`YYYYMMDDHHMMSS_name.sql` and `YYYYMMDDHHMMSS_name_snapshot.json`), use a timestamp later than `20261104010000`, and update the journal `tag` to match. drizzle-kit picks the latest snapshot by file name, so a `0016_snapshot.json` would break the next migration. Never hand-write the SQL. If drizzle-kit fails on the pnpm lock, run `.\node_modules\.bin\drizzle-kit.cmd generate --config drizzle.d1.config.ts`. After renaming, run generate once more; it must say `No schema changes`.
 
 ## Owner decision (2026-11-04). Do not change it or add to it.
 
