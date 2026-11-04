@@ -10,8 +10,26 @@ Read `CLAUDE.md`, `.agent/BANNED_ZONE.md`, `.agent/DECISIONS.md` (the "Plans and
 - Do not edit `client/src/index.css`: another agent is splitting it. Put new styles in a new CSS file next to the new pages, using the existing tokens (`var(--pine)`, `var(--ink)` and so on).
 - You cannot commit (index.lock). Leave the work uncommitted. Claude reviews and commits each ticket.
 
-**This run: do ticket B only, then stop and report.**
-- Ticket A is done (`8131dab`): the schema, `shared/plans.ts` and its tests. Build on them; do not change them unless a bug forces it. If one does, say so in the report.
+**This run: do ticket C only, then stop and report.**
+- Tickets A (`8131dab`) and B (`735caaf`) are done. Reuse `shared/plans.ts` (`resolvePlan`, `quotePro`, `extendPaidUntil`, `TRIAL_DAYS`) and the `listHotelsWithTrialClock` helper in `server/db/scope.ts`. Never copy their maths.
+- **Lessons from ticket B. Claude had to fix these, so do not repeat them:**
+  1. **Never widen an existing permission gate.** Codex moved `/platform` from `platform.view_system_logs` to a permission the `support` and `admin` roles also hold, and edited an existing test to match. Changing an existing test's expected permission counts as editing a test to pass. If a gate seems wrong, log it in `OPEN_QUESTIONS.md` and leave it.
+  2. i18n placeholders are `{{name}}` (double braces). `{name}` prints literally.
+  3. Every key used in a page needs a Thai and an English entry (`platformCrm.plan` was missing).
+  4. Dates use `dateLocale(language)` from `client/src/lib/dateLocale.ts`.
+  5. Money sums go through `sumMoneyInSatang` (`server/db/money.ts`), never `Number()` additions.
+- **Ticket C security notes:**
+  - `property.manage_billing` is new and is for `hotel_owner` only. Check whether `super_admin` gets it through its blanket filter in `shared/authorization.ts`. If so, decide deliberately: the owner pays, and super admin has CRM tools. Write the decision as an ASSUMPTION.
+  - Use `requirePermission`-style checks where `requireHotelPermission` would let `super_admin` bypass (see `CLAUDE.md` Conventions).
+- **Payment safety:**
+  - Write the full payment state machine as a plain function first (`pending` → `verified` | `failed` | `expired`), with unit tests.
+  - Then wire the SlipOK call. Mock SlipOK in the tests; never call the real API.
+- **Browser check:** the PromptPay QR and SlipOK need secrets that do not exist locally. Check at 1280px and 375px:
+  - the plan card;
+  - the quote with and without a coupon, using a local test coupon;
+  - the "payment system not ready" message.
+
+  Say plainly that the real payment was not tested.
 - Claude has already applied the ticket A migration to local D1 (`hayhost-dev`).
 - **If `pnpm` fails with `ERR_PNPM_STORE_DIR_OPEN_OPERATION_LOCK`**, call the binaries directly. Do not stop.
   - `.\node_modules\.bin\vitest.cmd run`
@@ -161,5 +179,5 @@ The Free limits (3 rooms, basic theme, manual slip check) are not enforced in co
 2. The procedures added, each with its permission.
 3. The tests added.
 4. Test, check and build output.
-5. Pages checked in the browser at 1280px and 375px: `/platform`, `/platform/crm`, `/platform/coupons`. Use the local platform admin described above. Never claim a check you did not do.
+5. Pages checked in the browser at 1280px and 375px: the owner overview plan card and the plan/payment page. Use a local hotel owner (sign up on `wrangler dev`, then create a hotel through onboarding). Never claim a check you did not do.
 6. Every ASSUMPTION you added and every question you logged.
