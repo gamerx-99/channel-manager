@@ -6,7 +6,6 @@ import {
   Bell,
   CalendarDays,
   ChevronDown,
-  FileSpreadsheet,
   Globe,
   Hotel,
   LayoutDashboard,
@@ -17,7 +16,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
 import { WorkspaceMenu } from "../WorkspaceMenu";
 import { useHotel } from "../../contexts/HotelContext";
 import { type Permission } from "@shared/authorization";
@@ -176,10 +174,6 @@ export function Sidebar({
             <span>{t("sidebar.financials")}</span>
           </Link>
         )}
-        {isSuperAdmin && <button type="button" className="nav-link w-full text-left bg-transparent border-0 cursor-pointer" onClick={() => toast.info(t("sidebar.paymentsComingSoon"))}>
-          <FileSpreadsheet size={17} strokeWidth={1.8} />
-          <span>{t("sidebar.payments")}</span>
-        </button>}
         {communicationsEnabled && can("operations.view_bookings") && (
           <Link
             href="/communications"
@@ -200,14 +194,17 @@ export function Sidebar({
             <span>{t("sidebar.housekeeping")}</span>
           </Link>
         )}
-        <Link
-          href={selectedHotelId ? "/website-builder" : "/dashboard"}
-          className={`nav-link ${location === "/website-builder" ? "active" : ""}`}
-          onClick={() => onClose()}
-        >
-          <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
-          <span>{t("sidebar.websiteBuilder")}</span>
-        </Link>
+        {/* Only people who can edit the hotel's site see the builder: not super admin or support (owner, 2026-11-04). */}
+        {can("property.manage_profile") && (
+          <Link
+            href={selectedHotelId ? "/website-builder" : "/dashboard"}
+            className={`nav-link ${location === "/website-builder" ? "active" : ""}`}
+            onClick={() => onClose()}
+          >
+            <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
+            <span>{t("sidebar.websiteBuilder")}</span>
+          </Link>
+        )}
         {can("revenue.manage_pricing_rules") && (
           <Link
             href="/dashboard/pricing"
