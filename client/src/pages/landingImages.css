@@ -1,0 +1,25 @@
+/* Real images on the landing page (owner, 2026-11-04): cropped from the theme designs in design/themes/. */
+.landing-site-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 30% 60%;
+}
+
+.landing-template-shot {
+  display: block;
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+}
+
+@media (max-width: 860px) {
+  .landing-template-shot {
+    height: 160px;
+  }
+}
