@@ -1,4 +1,4 @@
-import { ChevronRight, ExternalLink, MoreHorizontal, Pencil, Plus, Sparkles, Users } from 'lucide-react';
+import { ChevronRight, ExternalLink, Pencil, Plus, Sparkles, Users } from 'lucide-react';
 import { Link } from 'wouter';
 import { FormEvent, useState } from 'react';
 import {
@@ -44,7 +44,6 @@ export default function HotelServices({ id }: { id: string }) {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [propertyActionsOpen, setPropertyActionsOpen] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState(emptyServiceForm);
   const [serviceError, setServiceError] = useState<string | null>(null);
@@ -188,20 +187,15 @@ export default function HotelServices({ id }: { id: string }) {
       {pageIntro}
       <div className="detail-back"><Link href="/hotels">{t('hotelDetail.backToHotels')}</Link><ChevronRight size={14} /><span>{hotel.name}</span></div>
       <section className="property-hero panel">
-        <div className="panel-heading"><div><div className="eyebrow">{t('hotelDetail.propertyId', { id: hotel.id.slice(0, 8) })}</div><h2>{hotel.name}</h2></div><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
-        <div className="property-hero-image property-hero-monogram"><span aria-hidden="true">{hotel.name.slice(0, 1)}</span><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
+        <div className="panel-heading"><div><h2>{hotel.name}</h2></div><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
+        <div className="property-hero-image property-hero-monogram"><span className={`status-pill ${hotel.public_enabled ? 'live' : 'setup'}`}><i />{hotel.public_enabled ? t('hotelDetail.livePill') : t('hotelDetail.privatePill')}</span></div>
         <div className="property-hero-copy">
-          <div className="eyebrow">{t('hotelDetail.propertyId', { id: hotel.id.slice(0, 8) })}</div>
           <h1>{hotel.name}<span className="title-mark">.</span></h1>
           <p>{hotel.address}</p>
           <div className="property-meta"><span><Users size={15} /> {t('hotelDetail.accessControlled')}</span><span><ExternalLink size={15} /> /{hotel.slug}</span></div>
         </div>
         <div className="property-actions">
           <button className="button button-quiet" disabled title={t('hotelDetail.editPropertyTooltip')}><Pencil size={15} /> {t('hotelDetail.editProperty')}</button>
-          <div className="dropdown-anchor property-action-menu">
-            <button className="icon-button bordered" type="button" aria-label={t('hotelDetail.morePropertyActionsAria')} aria-haspopup="menu" aria-expanded={propertyActionsOpen} onClick={() => setPropertyActionsOpen(open => !open)}><MoreHorizontal size={17} /></button>
-            {propertyActionsOpen && <div className="menu-surface menu-surface--property-actions" role="menu" aria-label={t('hotelDetail.propertyActionsRoleAria')}><button className="menu-surface-item" type="button" disabled title={t('hotelDetail.editPropertyTooltip')}><Pencil size={14} /> {t('hotelDetail.editProperty')} <span className="menu-surface-note">{t('hotelDetail.comingSoon')}</span></button></div>}
-          </div>
         </div>
       </section>
       <nav className="detail-tabs">
