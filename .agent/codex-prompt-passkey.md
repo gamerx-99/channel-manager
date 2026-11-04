@@ -4,9 +4,9 @@ Read `CLAUDE.md` and `.agent/BANNED_ZONE.md` first.
 
 ## Where to work
 
-- Worktree: `C:\WORK\channel-manager\.claude\worktrees\account-deletion`. Read `.agent/DECISIONS.md` first: 2FA (TOTP) is paused behind `VITE_FEATURE_MFA` (off). Passkey is wanted now (owner, 2026-11-04). The passkey section on the security page must show even while the 2FA section is hidden.
+- Worktree: `C:\WORK\channel-manager (the main folder; do not use any worktree)`. Read `.agent/DECISIONS.md` first: 2FA (TOTP) is paused behind `VITE_FEATURE_MFA` (off). Passkey is wanted now (owner, 2026-11-04). The passkey section on the security page must show even while the 2FA section is hidden.
 - Write your `.agent/handoff.md` entry and report **before** the final checks.
-- Branch: `feat/signup-integration`
+- Branch: `main`
 - Read and edit only inside this worktree.
 - Do not touch any of these:
   - `client/public/_headers`
@@ -21,7 +21,7 @@ Read `CLAUDE.md` and `.agent/BANNED_ZONE.md` first.
 
 - Auth is Better Auth 1.7.14 on a Cloudflare Worker with D1. See `server/auth.ts`, `client/src/lib/auth-client.ts`, `drizzle/auth-schema.ts`.
 - Plugins in use today: `twoFactor` (TOTP) and `bearer`. Social login (LINE, Google) is also enabled.
-- `@better-auth/passkey@1.7.14` is already installed in `package.json` and `pnpm-lock.yaml`. Do not change either file.
+- `@better-auth/passkey@1.7.14` was installed by Claude on 2026-11-04 (package.json, pnpm-lock.yaml and node_modules). Do not change either file. The package includes `@simplewebauthn/server` and `@simplewebauthn/browser`.
 
 ## Task
 
