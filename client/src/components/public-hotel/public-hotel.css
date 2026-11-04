@@ -38,3 +38,35 @@
 .public-intro h2,.public-section-heading h2,.public-booking h2,.public-details h2{line-height:1.22}
 .public-state-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
 @media (max-width:1100px){.public-booking{padding-left:8%;padding-right:8%}.public-details{gap:30px}}
+
+/* Mobile overrides for the public page. Moved from the 760px block in index.css so this file
+   no longer depends on index.css loading after it (restructure plan, phase 3). */
+@media (max-width:760px){
+  .public-nav{height:65px;padding:0 6%}
+  .public-nav nav{display:none}
+  .public-nav nav.is-open{position:absolute;top:60px;left:5%;right:5%;padding:18px;background:#f5f1e8;color:var(--ink);display:flex;flex-direction:column;align-items:flex-start;gap:15px;box-shadow:0 12px 20px rgba(20,30,28,.12)}
+  .public-nav nav.is-open>a:not(.public-nav-cta){color:var(--ink)}
+  .public-nav-cta{color:var(--pine);border-color:var(--pine)}
+  .public-menu{display:block}
+  .public-hero{height:650px;min-height:0}
+  .public-hero-content{left:7%;right:7%;top:46%}
+  .public-hero-content h1{font-size:49px}
+  .public-hero-content p{font-size:13px}
+  .public-hero-caption{left:7%;right:7%;font-size:9px}
+  .public-intro{display:block;padding:75px 8%}
+  .public-intro>div:last-child{margin-top:27px}
+  .public-intro h2,.public-section-heading h2,.public-booking h2{font-size:38px}
+  .public-rooms{padding:72px 8% 78px}
+  .public-section-heading{display:block}
+  .public-section-heading>p{margin-top:20px}
+  .public-room-grid{grid-template-columns:1fr}
+  .public-room-image{height:230px}
+  .public-booking{display:block;padding:75px 8%}
+  .booking-form{display:grid;grid-template-columns:1fr 1fr;margin-top:32px}
+  .booking-form .button{grid-column:1 / -1}
+  .public-details{display:block;padding:75px 8%}
+  .public-details h2{font-size:38px;margin-bottom:35px}
+  .amenity-list{margin-bottom:45px}
+  .public-footer{padding:22px 7%;display:grid;gap:13px}
+  .public-footer>span:last-child{justify-self:start}
+}
