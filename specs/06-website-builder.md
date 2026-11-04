@@ -1,5 +1,5 @@
 # 06 Website Builder
-Status: DONE
+Status: IN PROGRESS (implementation and automated checks complete; browser verification pending, 2026-11-04)
 Depends on: —
 Owner-tier: worker-code
 
@@ -39,6 +39,12 @@ what already exists in the schema but has no UI: `hotel_media` (uploads) and
 - `PublicHotel.tsx` should read `hotel_site_config` (falling back to today's fixed
   copy/colors when a hotel hasn't configured anything) rather than every hotel
   needing to set every field.
+- Owner edits are stored in `draft_json`; public procedures return only published
+  config. Publish copies the draft into live columns atomically and clears it.
+- Hero selection and image focal points are staged in the draft. Uploads remain
+  immediate, and deleting the published hero is blocked.
+- Public hotel and site-config queries do not refetch on focus/reconnect while a
+  guest is on the page, so the booking wizard keeps the page version already loaded.
 
 ## Error handling
 - Upload failures (size/type limits) → clear client-facing error before the request
@@ -50,6 +56,12 @@ what already exists in the schema but has no UI: `hotel_media` (uploads) and
       `PublicHotel.tsx` reflects it
 - [x] The "Website Builder" sidebar placeholder links to this settings page (`/website-builder` route wired in `App.tsx`)
 - [x] Custom domains (`hotel_domains`) **deferred** — recorded in `.agent/DECISIONS.md` 2026-08-30 entry; `WebsiteBuilder.tsx` shows deferral notice card
+
+## Draft/publish acceptance (2026-11-04)
+- [x] Save draft validates and never changes public output; publish promotes it atomically.
+- [x] Owner/editor can discard a draft after confirmation; guests never receive draft JSON.
+- [x] Theme, hero selection and focal point are draft changes; an active published hero cannot be deleted.
+- [x] Public hotel/config query options preserve the loaded page during an open booking flow.
 
 ## Test plan
 - [x] `server/hotelMedia.test.ts` — CRUD + permission boundary tests (hotel_owner, front_desk, revenue_manager, super_admin; hero auto-promotion on delete)

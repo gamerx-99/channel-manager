@@ -9,6 +9,8 @@ import { d1Schema, hotelMedia, hotelUsers, hotels } from "../../drizzle/d1-schem
 import type { D1ScopedDatabase } from "../db/scope";
 import { createWorkerApp, type WorkerEnv } from "../../worker/app";
 import { deleteHotelMediaFromR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload, servedMediaUrl } from "./media";
+import { publishHotelSiteConfig, setHotelMediaHero } from "./siteConfig";
+import { getPublicHotel } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -83,7 +85,7 @@ class MemoryR2 {
 }
 
 async function seedHotel(id: string, owner: string) {
-  await db.insert(hotels).values({ id, name: `Hotel ${id}`, slug: `${id}-slug`, address: "Address", ownerContact: `${owner}@example.test` });
+  await db.insert(hotels).values({ id, name: `Hotel ${id}`, slug: `${id}-slug`, address: "Address", ownerContact: `${owner}@example.test`, publicEnabled: true });
   await db.insert(hotelUsers).values({ id: `membership-${id}`, hotelId: id, userId: owner, role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
 }
 
@@ -99,16 +101,43 @@ describe("D1 hotel media on R2", () => {
     expect(() => validateHotelMediaUpload(new Uint8Array([0x3c, 0x68, 0x74, 0x6d, 0x6c]), "text/plain", "photo.txt")).toThrow("Only image files can be uploaded.");
   });
 
-  it("creates a server-generated hotel-prefixed key and makes the first upload the hero", async () => {
+  it("creates a private server-generated hotel-prefixed image until it is selected and published", async () => {
     await seedHotel("hotel-a", "owner-a");
     const bucket = new MemoryR2();
     const media = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, {
       hotel_id: "hotel-a", filename: "front.png", content_type: "image/png", data: bytes,
     });
-    expect(media).toMatchObject({ hotelId: "hotel-a", url: expect.stringMatching(/^\/media\/hotel-a\/[a-f0-9-]{36}\.png$/), isHero: true });
+    expect(media).toMatchObject({ hotelId: "hotel-a", url: expect.stringMatching(/^\/media\/hotel-a\/[a-f0-9-]{36}\.png$/), isHero: false, isPublished: false });
     expect([...bucket.objects.keys()]).toEqual([media.url.slice("/media/".length)]);
     expect([...bucket.objects.values()][0]?.customMetadata).toMatchObject({ hotelId: "hotel-a", mediaId: media.id });
-    expect(await db.select().from(hotelMedia)).toMatchObject([{ id: media.id, isHero: true, displayOrder: 0 }]);
+    expect(await db.select().from(hotelMedia)).toMatchObject([{ id: media.id, isHero: false, isPublished: false, displayOrder: 0 }]);
+  });
+
+  it("keeps an uploaded image out of public hotel data until its draft is published", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const uploaded = await uploadHotelMediaToR2(db, { userId: "owner-a" }, new MemoryR2() as unknown as R2Bucket, {
+      hotel_id: "hotel-a", filename: "front.png", content_type: "image/png", data: bytes,
+    });
+    const publicCaller = { userId: "", access: "public" as const };
+    await expect(getPublicHotel(db, publicCaller, "hotel-a-slug")).resolves.toMatchObject({ media: [] });
+    await setHotelMediaHero(db, { userId: "owner-a" }, "hotel-a", uploaded.id);
+    await expect(getPublicHotel(db, publicCaller, "hotel-a-slug")).resolves.toMatchObject({ media: [] });
+    await publishHotelSiteConfig(db, { userId: "owner-a" }, "hotel-a");
+    await expect(getPublicHotel(db, publicCaller, "hotel-a-slug")).resolves.toMatchObject({ media: [{ id: uploaded.id, is_hero: true }] });
+  });
+
+  it("publishes gallery uploads too, not only the hero image", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2() as unknown as R2Bucket;
+    const hero = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket, { hotel_id: "hotel-a", filename: "front.png", content_type: "image/png", data: bytes });
+    const gallery = await uploadHotelMediaToR2(db, { userId: "owner-a" }, bucket, { hotel_id: "hotel-a", filename: "room.png", content_type: "image/png", data: bytes });
+    const publicCaller = { userId: "", access: "public" as const };
+    await setHotelMediaHero(db, { userId: "owner-a" }, "hotel-a", hero.id);
+    await expect(getPublicHotel(db, publicCaller, "hotel-a-slug")).resolves.toMatchObject({ media: [] });
+    await publishHotelSiteConfig(db, { userId: "owner-a" }, "hotel-a");
+    const published = (await getPublicHotel(db, publicCaller, "hotel-a-slug")).media;
+    expect(published.map(item => item.id).sort()).toEqual([hero.id, gallery.id].sort());
+    expect(published.find(item => item.id === gallery.id)).toMatchObject({ is_hero: false });
   });
 
   it("refuses cross-hotel uploads and deletes before touching R2", async () => {
@@ -142,7 +171,7 @@ describe("D1 hotel media on R2", () => {
     expect(await db.select().from(hotelMedia)).toHaveLength(1);
   });
 
-  it("deletes the R2 object with the row and promotes the next media item to hero", async () => {
+  it("deletes an unused private upload without exposing or promoting another upload", async () => {
     await seedHotel("hotel-a", "owner-a");
     const bucket = new MemoryR2();
     const caller = { userId: "owner-a" };
@@ -156,7 +185,7 @@ describe("D1 hotel media on R2", () => {
     expect(bucket.objects.has(first.url.slice("/media/".length))).toBe(false);
     const remaining = await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, "hotel-a"));
     expect(remaining).toHaveLength(2);
-    expect(remaining.find(item => item.id === second.id)).toMatchObject({ isHero: true });
+    expect(remaining.find(item => item.id === second.id)).toMatchObject({ isHero: false, isPublished: false });
     expect(remaining.find(item => item.id === third.id)).toMatchObject({ isHero: false });
   });
 
@@ -195,7 +224,7 @@ describe("D1 hotel media on R2", () => {
     expect(response.status).toBe(201);
     const media = await response.json() as { id: string; url: string; is_hero: boolean };
     // Handed out under /api/: in a deployed Worker only /api/* runs before static assets.
-    expect(media).toMatchObject({ url: expect.stringMatching(/^\/api\/media\/hotel-a\//), is_hero: true });
+    expect(media).toMatchObject({ url: expect.stringMatching(/^\/api\/media\/hotel-a\//), is_hero: false });
     const deleted = await app.request(`/api/media/hotel-a/${media.id}`, { method: "DELETE", headers: { authorization: "Bearer test" } }, env);
     expect(deleted.status).toBe(200);
     expect(await deleted.json()).toEqual({ id: media.id });

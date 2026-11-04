@@ -6,7 +6,7 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { d1Schema, hotelMedia, hotelSiteConfig, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelMedia, deleteHotelMedia, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, saveHotelSiteConfig, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
+import { createHotelMedia, deleteHotelMedia, discardHotelSiteConfigDraft, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, publishHotelSiteConfig, saveHotelSiteConfig, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -60,7 +60,8 @@ describe("D1 site config and media repository", () => {
     await seedHotel("b", "owner-b");
     const caller = { userId: "owner-a" };
     await expect(saveHotelSiteConfig(db, caller, { hotel_id: "a", hero_copy: "Welcome", visible_sections: { rooms: true } }))
-      .resolves.toMatchObject({ hotelId: "a", heroCopy: "Welcome" });
+      .resolves.toMatchObject({ hotelId: "a", draftJson: expect.stringContaining("Welcome") });
+    await publishHotelSiteConfig(db, caller, "a");
     expect(await getHotelSiteConfig(db, caller, "a")).toMatchObject({ heroCopy: "Welcome" });
     await expect(getHotelSiteConfig(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(saveHotelSiteConfig(db, caller, { hotel_id: "b", hero_copy: "No" })).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -68,14 +69,16 @@ describe("D1 site config and media repository", () => {
     const first = await createHotelMedia(db, caller, { hotel_id: "a", url: "r2/a/1", is_hero: true });
     const second = await createHotelMedia(db, caller, { hotel_id: "a", url: "r2/a/2" });
     await expect(setHotelMediaObjectPosition(db, caller, "a", second.id, "23% 81%")).resolves.toMatchObject({ objectPosition: "23% 81%" });
-    expect(await listHotelMedia(db, caller, "a")).toMatchObject([{ id: first.id, objectPosition: null }, { id: second.id, objectPosition: "23% 81%" }]);
+    expect(await listHotelMedia(db, caller, "a")).toMatchObject([{ id: first.id, objectPosition: null }, { id: second.id, objectPosition: null }]);
+    expect((await getHotelSiteConfig(db, caller, "a"))?.draftJson).toContain("23% 81%");
     await expect(setHotelMediaObjectPosition(db, { userId: "owner-b" }, "a", second.id, null)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await setHotelMediaHero(db, caller, "a", second.id);
     await expect(createHotelMedia(db, caller, { hotel_id: "b", url: "r2/b/1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect((await listHotelMedia(db, caller, "a")).filter(media => media.isHero).map(media => media.id)).toEqual([second.id]);
+    expect((await listHotelMedia(db, caller, "a")).filter(media => media.isHero).map(media => media.id)).toEqual([first.id]);
     await expect(listHotelMedia(db, caller, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(deleteHotelMedia(db, caller, "b", first.id)).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(deleteHotelMedia(db, caller, "a", first.id)).resolves.toMatchObject({ id: first.id });
+    await expect(deleteHotelMedia(db, caller, "a", second.id)).resolves.toMatchObject({ id: second.id });
+    await expect(deleteHotelMedia(db, caller, "a", first.id)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(setHotelMediaHero(db, caller, "a", "missing")).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
@@ -83,10 +86,12 @@ describe("D1 site config and media repository", () => {
     await seedHotel("a", "owner-a", true);
     await seedHotel("b", "owner-b", false);
   await saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", hero_copy: "Public", theme: "cafe-homestay" });
+  await expect(getHotelSiteConfigBySlug(db, { userId: "", access: "public" }, "a-slug")).resolves.toMatchObject({ heroCopy: null, theme: null });
+  await publishHotelSiteConfig(db, { userId: "owner-a" }, "a");
   await expect(getHotelSiteConfigBySlug(db, { userId: "", access: "public" }, "a-slug")).resolves.toMatchObject({ heroCopy: "Public", theme: "cafe-homestay" });
     await expect(getHotelSiteConfigBySlug(db, { userId: "", access: "public" }, "b-slug")).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(getHotelSiteConfigBySlug(db, { userId: "owner-a" }, "a-slug")).rejects.toMatchObject({ code: "FORBIDDEN" });
-  });
+  }, 15000);
 
   it("rejects cross-hotel site config and media access", async () => {
     await seedHotel("a", "owner-a");
@@ -100,7 +105,7 @@ describe("D1 site config and media repository", () => {
     await expect(createHotelMedia(db, caller, { hotel_id: "b", url: "r2/b/1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(deleteHotelMedia(db, caller, "b", "media-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(setHotelMediaHero(db, caller, "b", "media-b")).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(getHotelSiteConfig(db, { userId: "owner-b" }, "b")).resolves.toMatchObject({ heroCopy: "Hotel B" });
+    await expect(getHotelSiteConfig(db, { userId: "owner-b" }, "b")).resolves.toMatchObject({ draftJson: expect.stringContaining("Hotel B") });
     expect(await db.select().from(hotelMedia)).toMatchObject([{ id: 'media-b', isHero: true }]);
   });
 
@@ -119,7 +124,7 @@ describe("D1 site config and media repository", () => {
   it("stores only known theme ids and rejects unknown ids", async () => {
     await seedHotel("a", "owner-a");
     await expect(saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", theme: "lanna-teak" }))
-      .resolves.toMatchObject({ theme: "lanna-teak" });
+      .resolves.toMatchObject({ draftJson: expect.stringContaining("lanna-teak") });
     await expect(saveHotelSiteConfig(db, { userId: "owner-a" }, { hotel_id: "a", theme: "invented-theme" }))
       .rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
@@ -139,7 +144,7 @@ describe("D1 site config and media repository", () => {
       .rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller.channelManager.setHotelMediaObjectPosition({ hotel_id: hotelId, media_id: "88ed76e4-cc93-4aa7-9c4d-30999d35ada4", object_position: "50% 50%" }))
       .rejects.toMatchObject({ code: "FORBIDDEN" });
-  });
+  }, 15000);
 
   it("serializes concurrent hero creates so exactly one remains hero", async () => {
     await seedHotel("a", "owner-a");
@@ -155,6 +160,7 @@ describe("public hotel theme", () => {
   it("returns the saved theme id with public hotel data", async () => {
     await seedHotel("pub", "owner-pub", true);
     await saveHotelSiteConfig(db, { userId: "owner-pub" }, { hotel_id: "pub", theme: "lanna-teak" });
+    await publishHotelSiteConfig(db, { userId: "owner-pub" }, "pub");
     const { getPublicHotel } = await import("./hotel");
     await expect(getPublicHotel(db, { userId: "", access: "public" }, "pub-slug"))
       .resolves.toMatchObject({ hotel: { theme: "lanna-teak" } });
@@ -188,8 +194,39 @@ describe('site config reads', () => {
     await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toBeNull();
     await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toBeNull();
     await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Welcome', accent_color: '#123456', visible_sections: { rooms: false }, theme: 'minimal-white' });
+    await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toMatchObject({ heroCopy: null, theme: null });
+    await publishHotelSiteConfig(db, owner, 'a');
     const expected = { heroCopy: 'Welcome', accentColor: '#123456', visibleSections: { rooms: false }, theme: 'minimal-white' };
     await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toMatchObject(expected);
     await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toMatchObject(expected);
+    expect(await getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).not.toHaveProperty('draftJson');
+  });
+
+  it('keeps a saved draft out of public config until it is published and scopes publishing', async () => {
+    await seedHotel('a', 'owner-a');
+    await seedHotel('b', 'owner-b');
+    const publicCaller = { userId: '', access: 'public' as const };
+    const owner = { userId: 'owner-a' };
+    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Published text' });
+    await publishHotelSiteConfig(db, owner, 'a');
+    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Draft text' });
+    const publicBeforePublish = await getHotelSiteConfigBySlug(db, publicCaller, 'a-slug');
+    expect(publicBeforePublish).toMatchObject({ heroCopy: 'Published text' });
+    expect(publicBeforePublish).not.toHaveProperty('draftJson');
+    await expect(publishHotelSiteConfig(db, owner, 'b')).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await publishHotelSiteConfig(db, owner, 'a');
+    await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toMatchObject({ heroCopy: 'Draft text' });
+  });
+
+  it('discards the draft while preserving the published version', async () => {
+    await seedHotel('a', 'owner-a');
+    const owner = { userId: 'owner-a' };
+    const publicCaller = { userId: '', access: 'public' as const };
+    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Published text' });
+    await publishHotelSiteConfig(db, owner, 'a');
+    await saveHotelSiteConfig(db, owner, { hotel_id: 'a', hero_copy: 'Draft text' });
+    await expect(discardHotelSiteConfigDraft(db, owner, 'a')).resolves.toEqual({ discarded: true });
+    await expect(getHotelSiteConfig(db, owner, 'a')).resolves.toMatchObject({ draftJson: null });
+    await expect(getHotelSiteConfigBySlug(db, publicCaller, 'a-slug')).resolves.toMatchObject({ heroCopy: 'Published text' });
   });
 });

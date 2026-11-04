@@ -156,6 +156,7 @@ export const hotelMedia = sqliteTable("hotel_media", {
   url: text("url").notNull(),
   caption: text("caption"),
   objectPosition: text("object_position"),
+  isPublished: integer("is_published", { mode: "boolean" }).notNull().default(true),
   isHero: integer("is_hero", { mode: "boolean" }).notNull().default(false),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: createdAt(),
@@ -429,6 +430,9 @@ export const hotelSiteConfig = sqliteTable("hotel_site_config", {
   visibleSections: json<unknown>("visible_sections"),
   theme: text("theme"),
   updatedAt: updatedAt(),
+  draftJson: text("draft_json"),
+  draftUpdatedAt: integer("draft_updated_at", { mode: "timestamp_ms" }),
+  publishedAt: integer("published_at", { mode: "timestamp_ms" }),
 }, table => [
   check("hotel_site_config_accent_color_check", sql`${table.accentColor} is null or (substr(${table.accentColor}, 1, 1) = '#' and length(${table.accentColor}) in (4, 7) and substr(${table.accentColor}, 2) not glob '*[^A-Fa-f0-9]*')`),
   uniqueIndex("uq_hotel_site_config_hotel_id").on(table.hotelId),

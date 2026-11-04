@@ -17,6 +17,13 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
     expect(publicHotelSource).toMatch(/getHotelSiteConfig\.useQuery\(slug/);
   });
 
+  it('keeps hotel and site config queries stable while a guest is on the page', () => {
+    expect(publicHotelSource).toContain('refetchOnWindowFocus: false');
+    expect(publicHotelSource).toContain('refetchOnReconnect: false');
+    expect(publicHotelSource).toContain('refetchOnMount: "always"');
+    expect(publicHotelSource).toContain('staleTime: 30 * 60 * 1000');
+  });
+
   it('PublicHotel falls back to fixed copy/colors when no config (42P01 or missing row)', () => {
     expect(publicHotelSource).toContain('DEFAULT_HERO_COPY');
     expect(publicHotelSource).toContain('DEFAULT_ACCENT_COLOR');

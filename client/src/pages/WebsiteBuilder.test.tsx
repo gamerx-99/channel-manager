@@ -25,6 +25,8 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     setHotelMediaHero: mutation(),
     setHotelMediaObjectPosition: mutation(setObjectPosition),
     saveHotelSiteConfig: mutation(saveConfig),
+    publishHotelSiteConfig: mutation(),
+    discardHotelSiteConfigDraft: mutation(),
     setHotelPublished: mutation(),
   },
   auth: { me: query({ roles: ["hotel_owner"], role: "hotel_owner" }) },
@@ -41,7 +43,7 @@ describe("WebsiteBuilder editing", () => {
     fireEvent.change(hero, { target: { value: "New headline" } });
     expect(hero.value).toBe("New headline");
     fireEvent.change(screen.getByLabelText("accent_color"), { target: { value: "#aa3300" } });
-    fireEvent.click(screen.getAllByRole("button").find(button => /save site config/i.test(button.textContent ?? ""))!);
+    fireEvent.click(screen.getAllByRole("button").find(button => /save draft/i.test(button.textContent ?? ""))!);
     expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline", accent_color: "#aa3300" }));
   });
 
@@ -51,7 +53,7 @@ describe("WebsiteBuilder editing", () => {
     expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Baan", "Baan", "Baan"]);
     expect(document.querySelectorAll(".template-card-preview")).toHaveLength(3);
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
-    expect(saveConfig).toHaveBeenCalledWith({ hotel_id: "hotel-1", theme: "lanna-teak" });
+    expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", theme: "lanna-teak", hero_copy: "Old headline" }));
   });
 
   it("shows the localized fallback when the selected hotel has no name", () => {
@@ -80,7 +82,7 @@ describe("WebsiteBuilder editing", () => {
     const photo = screen.getByAltText("Hotel media preview");
     vi.spyOn(photo, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, toJSON: () => ({}) });
     fireEvent.pointerDown(photo, { clientX: 50, clientY: 75 });
-    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" });
+    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" }, expect.objectContaining({ onSuccess: expect.any(Function) }));
     expect(screen.getByText("Choose the part of the photo to keep in view")).toBeTruthy();
   });
 });

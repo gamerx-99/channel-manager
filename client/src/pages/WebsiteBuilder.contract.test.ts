@@ -20,6 +20,15 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(wbSource).toContain('trpc.channelManager.setHotelMediaHero.useMutation');
     expect(wbSource).toContain('trpc.channelManager.getHotelSiteConfigByHotelId.useQuery');
     expect(wbSource).toContain('trpc.channelManager.saveHotelSiteConfig.useMutation');
+    expect(wbSource).toContain('trpc.channelManager.publishHotelSiteConfig.useMutation');
+    expect(wbSource).toContain('trpc.channelManager.discardHotelSiteConfigDraft.useMutation');
+  });
+
+  it('shows save draft, publish, discard and the visitor-facing publish note', () => {
+    expect(wbSource).toContain('websiteBuilder.saveDraft');
+    expect(wbSource).toContain('websiteBuilder.publishChanges');
+    expect(wbSource).toContain('websiteBuilder.discardDraft');
+    expect(wbSource).toContain('websiteBuilder.publishNote');
   });
 
   it('links to the public hotel page and offers publishing while private', () => {
@@ -91,19 +100,15 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     expect(siteConfigSource).toContain('export async function saveHotelSiteConfig');
   });
 
-  it('server/d1/media.ts uploadHotelMediaToR2 auto-promotes first image as hero', () => {
+  it('server/d1/media.ts keeps uploads private until publish', () => {
     const mediaSource = readFileSync(resolve(process.cwd(), 'server/d1/media.ts'), 'utf8');
-    expect(mediaSource).toContain('existing.length === 0');
-    expect(mediaSource).toContain('is_hero = 0');
-    expect(mediaSource).toContain('is_hero, display_order');
-    expect(mediaSource).toContain('VALUES (?, ?, ?, ?, 1, ?)');
+    expect(mediaSource).toContain('isHero: false');
+    expect(mediaSource).toContain('isPublished: false');
   });
 
-  it('server/d1/media.ts deleteHotelMediaFromR2 promotes remaining first item as hero when needed', () => {
+  it('server/d1/media.ts blocks deletion of the live hero', () => {
     const mediaSource = readFileSync(resolve(process.cwd(), 'server/d1/media.ts'), 'utf8');
-    expect(mediaSource).toContain('UPDATE hotel_media');
-    expect(mediaSource).toContain('ORDER BY display_order LIMIT 1');
-    expect(mediaSource).toContain('NOT EXISTS (SELECT 1 FROM hotel_media WHERE hotel_id = ? AND is_hero = 1)');
+    expect(mediaSource).toContain('if (current.isHero) throw new TRPCError');
   });
 
   // ── router procedures ────────────────────────────────────────────────────

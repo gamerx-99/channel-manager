@@ -26,9 +26,17 @@ export function usePublicHotelPage(slug: string) {
   // guests looking at a loading screen.
   const publicHotel = trpc.channelManager.publicHotel.useQuery(slug, {
     retry: (failureCount, error) => error.data?.code !== "NOT_FOUND" && failureCount < 2,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: "always",
+    staleTime: 30 * 60 * 1000,
   });
   const siteConfigQuery = trpc.channelManager.getHotelSiteConfig.useQuery(slug, {
     enabled: !publicHotel.isLoading && !publicHotel.error,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: "always",
+    staleTime: 30 * 60 * 1000,
   });
 
   const booking = useBookingWizard({

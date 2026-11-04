@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import { HOTEL_THEMES, type HotelThemeId } from "@shared/hotelThemes";
 import { getContrastText } from "@/lib/contrastText";
+import { dateLocale } from "@/lib/dateLocale";
 import TemplateCardPreview from "@/components/hotel-themes/TemplateCardPreview";
 
 // Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path
@@ -84,7 +85,7 @@ function LoadingWebsiteBuilder() {
 }
 
 export default function WebsiteBuilder() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const utils = trpc.useUtils();
   const setPublished = trpc.channelManager.setHotelPublished.useMutation({ onSuccess: async () => { await utils.channelManager.hotels.invalidate(); } });
   const { data: hotels, isLoading, isError, refetch, isFetching } = trpc.channelManager.hotels.useQuery();
@@ -109,6 +110,7 @@ export default function WebsiteBuilder() {
   );
 
   // Uploads go to the Worker's /api/media route; the tRPC procedure refuses them.
+  // ASSUMPTION: uploads remain immediate; an unused image is not referenced by the public page.
   const uploadMediaMut = useMutation({
     mutationFn: ({ hotel_id, ...file }: { hotel_id: string; base64: string; filename: string }) => uploadHotelMediaFile(hotel_id, file),
     onSuccess: () => { toast.success(t("websiteBuilder.toastImageUploaded")); refetchMedia(); },
@@ -135,6 +137,8 @@ export default function WebsiteBuilder() {
     onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); },
     onError: (e) => setFormError(e.message),
   });
+  const publishConfigMut = trpc.channelManager.publishHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.publishSuccess")); await refetchConfig(); }, onError: e => setFormError(e.message) });
+  const discardDraftMut = trpc.channelManager.discardHotelSiteConfigDraft.useMutation({ onSuccess: async () => { await refetchConfig(); setDraft(publishedConfig); toast.success(t("websiteBuilder.draftDiscarded")); }, onError: e => setFormError(e.message) });
 
   const [formError, setFormError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
@@ -142,10 +146,21 @@ export default function WebsiteBuilder() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const media = serverMedia;
-  const config = useMemo(() => (serverConfig ?? defaultConfig(effectiveHotelId)) as unknown as SiteConfig, [
-    serverConfig,
-    effectiveHotelId,
-  ]);
+  const publishedConfig = useMemo(() => {
+    const base = defaultConfig(effectiveHotelId);
+    return {
+      ...base,
+      ...(serverConfig ?? {}),
+      heroCopy: serverConfig?.heroCopy ?? base.heroCopy,
+      accentColor: serverConfig?.accentColor ?? base.accentColor,
+      visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) },
+    } as SiteConfig;
+  }, [serverConfig, effectiveHotelId]);
+  const storedDraft = useMemo(() => {
+    if (!serverConfig?.draftJson) return null;
+    try { return JSON.parse(serverConfig.draftJson) as SiteConfig & { heroMediaId?: string | null; mediaPositions?: Record<string, string | null> }; } catch { return null; }
+  }, [serverConfig]);
+  const config = storedDraft ?? publishedConfig;
 
   // Initialize draft form from config when hotel or config changes
   const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
@@ -153,17 +168,18 @@ export default function WebsiteBuilder() {
   const [initializedFor, setInitializedFor] = useState<string>("");
 
   useEffect(() => {
-    if (!effectiveHotelId) return;
-    if (initializedFor !== effectiveHotelId) {
+    if (!effectiveHotelId || isFetchingConfig) return;
+    if (initializedFor !== effectiveHotelId || serverConfig !== undefined) {
       setInitializedFor(effectiveHotelId);
-      setDraft((serverConfig ?? defaultConfig(effectiveHotelId)) as unknown as SiteConfig);
+      setDraft(storedDraft ?? publishedConfig);
       setFormError(null);
       setSaveNote(null);
     }
-  }, [effectiveHotelId, serverConfig, initializedFor]);
+  }, [effectiveHotelId, serverConfig, isFetchingConfig, initializedFor, storedDraft, publishedConfig]);
 
-  const heroImage = useMemo(() => media.find(m => m.isHero)?.url ?? media[0]?.url ?? null, [media]);
-  const selectedHotelHeroImage = useMemo(() => media.find(m => m.isHero)?.url ?? null, [media]);
+  const draftMedia = media.map(item => ({ ...item, isHero: storedDraft?.heroMediaId ? item.id === storedDraft.heroMediaId : item.isHero, objectPosition: Object.prototype.hasOwnProperty.call(storedDraft?.mediaPositions ?? {}, item.id) ? storedDraft?.mediaPositions?.[item.id] ?? null : item.objectPosition }));
+  const heroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? draftMedia[0]?.url ?? null, [draftMedia]);
+  const selectedHotelHeroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? null, [draftMedia]);
   const previewHotelName = selectedHotel?.name?.trim() || t("websiteBuilder.yourHotelName");
 
   const sectionLabels: Record<keyof SiteConfig["visibleSections"], { label: string; hint: string }> = useMemo(() => ({
@@ -217,7 +233,7 @@ export default function WebsiteBuilder() {
 
   function handleSetHero(id: string) {
     if (!canManage) return;
-    setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
+    setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id }, { onSuccess: () => { void refetchConfig(); } });
   }
 
   function handleFocalPoint(event: React.PointerEvent<HTMLImageElement>, item: HotelMediaItem) {
@@ -227,7 +243,7 @@ export default function WebsiteBuilder() {
     if (!rect.width || !rect.height) return;
     const x = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
     const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
-    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` });
+    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` }, { onSuccess: () => { void refetchConfig(); } });
   }
 
   function handleSave() {
@@ -265,7 +281,7 @@ export default function WebsiteBuilder() {
     setFormError(null);
     if (!canManage) { setFormError(t("websiteBuilder.errorNoPermissionSave")); return; }
     if (!effectiveHotelId) { setFormError(t("websiteBuilder.errorSelectHotelFirst")); return; }
-    saveThemeMut.mutate({ hotel_id: effectiveHotelId, theme });
+    saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
   }
 
   if (isLoading) return <LoadingWebsiteBuilder />;
@@ -315,12 +331,13 @@ export default function WebsiteBuilder() {
         <div className="flex items-center gap-2 text-xs text-[#70837a]">
           <Clock3 size={14} aria-hidden="true" />
           <span>{t("websiteBuilder.perHotelConfig")}</span>
-          {isFetching || isFetchingMedia || isFetchingConfig || uploadMediaMut.isPending || saveConfigMut.isPending || deleteMediaMut.isPending || setHeroMut.isPending ? <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("websiteBuilder.updatingDataAriaLabel")} /> : null}
+          {isFetching || isFetchingMedia || isFetchingConfig || uploadMediaMut.isPending || saveConfigMut.isPending || publishConfigMut.isPending || deleteMediaMut.isPending || setHeroMut.isPending ? <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("websiteBuilder.updatingDataAriaLabel")} /> : null}
         </div>
       </section>
 
       <section className="panel">
-      <div className="panel-heading"><div><div className="eyebrow">{t("websiteBuilder.eyebrow")}</div><h2>{t("websiteBuilder.viewHotelPage")}</h2></div></div>
+      <div className="panel-heading"><div><div className="eyebrow">{t("websiteBuilder.eyebrow")}</div><h2>{t("websiteBuilder.viewHotelPage")}</h2></div><span className={`status-pill ${storedDraft ? "pending" : "live"}`}>{storedDraft ? t("websiteBuilder.unpublishedStatus") : serverConfig?.publishedAt ? t("websiteBuilder.publishedDate", { date: new Date(serverConfig.publishedAt).toLocaleDateString(dateLocale(language)) }) : serverConfig && (serverConfig.heroCopy || serverConfig.theme || serverConfig.accentColor || serverConfig.visibleSections) ? t("websiteBuilder.published") : t("websiteBuilder.notPublishedYet")}</span></div>
+      {storedDraft && <p className="field-help">{t("websiteBuilder.publishNote")}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" variant="outline" disabled={!selectedHotel?.slug} onClick={() => selectedHotel?.slug && window.open(`/${selectedHotel.slug}`, "_blank", "noopener,noreferrer")}>
           <Eye size={15} /> {t("websiteBuilder.viewHotelPage")}
@@ -403,7 +420,7 @@ export default function WebsiteBuilder() {
                   return <button key={theme.id} type="button" onClick={() => handleSaveTheme(theme.id)} disabled={!canManage || saveThemeMut.isPending}
                     aria-pressed={selected} data-theme-id={theme.id}
                     className={`min-w-0 overflow-hidden rounded-xl border text-left transition ${selected ? "border-[#1d6b56] ring-2 ring-[#1d6b56]/20" : "border-[#e6eee9] hover:border-[#91b3a5]"}`}>
-                    <TemplateCardPreview theme={theme.id} hotelName={previewHotelName} photo={selectedHotelHeroImage} objectPosition={media.find(item => item.isHero)?.objectPosition} />
+                  <TemplateCardPreview theme={theme.id} hotelName={previewHotelName} photo={selectedHotelHeroImage} objectPosition={draftMedia.find(item => item.isHero)?.objectPosition} />
                     <div className="space-y-1 p-3">
                       <div className="flex items-center justify-between gap-2"><span className="font-semibold text-[#263b31]">{theme.name}</span>
                         {theme.tier === "premium" ? <span className="shrink-0 rounded-full bg-[#f5eadf] px-2 py-0.5 text-[10px] font-semibold text-[#795548]">Pro</span> : null}</div>
@@ -450,7 +467,7 @@ export default function WebsiteBuilder() {
 
               {media.length ? (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {media.map(item => (
+                  {draftMedia.map(item => (
                     <div key={item.id} className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -488,7 +505,7 @@ export default function WebsiteBuilder() {
                             size="icon"
                             className="h-7 w-7 text-[#8a9a93] hover:text-red-600"
                             onClick={() => handleDeleteMedia(item.id)}
-                            disabled={!canManage}
+                            disabled={!canManage || item.isHero}
                             aria-label={t("websiteBuilder.deleteMediaAria", { id: item.id })}
                           >
                             <Trash2 size={14} />
@@ -507,7 +524,8 @@ export default function WebsiteBuilder() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+          {/* ASSUMPTION: the draft preview stays inside the protected builder and is never a public route. */}
+          {canManage && <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
             <CardHeader className="border-b border-[#edf2ee] pb-4">
               <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
                 <Eye size={18} aria-hidden="true" /> {t("websiteBuilder.publicPreviewTitle")}
@@ -577,7 +595,7 @@ export default function WebsiteBuilder() {
                 {t("websiteBuilder.publicHotelFallbackNote")}
               </p>
             </CardContent>
-          </Card>
+          </Card>}
         </div>
 
         <div className="space-y-5">
@@ -667,11 +685,14 @@ export default function WebsiteBuilder() {
                 <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.visibleSectionsHint")}</p>
               </div>
 
-              <Button type="button" onClick={handleSave} disabled={!canManage} className="form-submit button button-primary w-full">
-                <Save size={15} /> {t("websiteBuilder.saveSiteConfig")}
+              <Button type="button" onClick={handleSave} disabled={!canManage || saveConfigMut.isPending} className="form-submit button button-primary w-full">
+                <Save size={15} /> {t("websiteBuilder.saveDraft")}
               </Button>
+              <Button type="button" onClick={() => publishConfigMut.mutate({ hotel_id: effectiveHotelId })} disabled={!canManage || !storedDraft || publishConfigMut.isPending} className="button button-primary w-full">{t("websiteBuilder.publishChanges")}</Button>
+              {/* ASSUMPTION: explicit confirmation is sufficient protection for discarding the saved draft. */}
+              {storedDraft && <Button type="button" variant="outline" disabled={!canManage || discardDraftMut.isPending} onClick={() => { if (window.confirm(t("websiteBuilder.confirmDiscardDraft"))) discardDraftMut.mutate({ hotel_id: effectiveHotelId }); }} className="w-full">{t("websiteBuilder.discardDraft")}</Button>}
               <p className="text-xs leading-5 text-[#778a80]">
-                {t("websiteBuilder.saveConfigFooter")}
+                {t("websiteBuilder.publishNote")}
               </p>
             </CardContent>
           </Card>

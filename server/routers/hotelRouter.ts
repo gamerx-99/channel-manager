@@ -26,6 +26,8 @@ import {
   getHotelSiteConfig as d1GetHotelSiteConfig,
   getHotelSiteConfigBySlug as d1GetHotelSiteConfigBySlug,
   saveHotelSiteConfig as d1SaveHotelSiteConfig,
+  publishHotelSiteConfig as d1PublishHotelSiteConfig,
+  discardHotelSiteConfigDraft as d1DiscardHotelSiteConfigDraft,
   listHotelMedia as d1ListHotelMedia,
   createHotelMedia as d1CreateHotelMedia,
   deleteHotelMedia as d1DeleteHotelMedia,
@@ -172,6 +174,8 @@ export const hotelSiteConfigSaveSchema = z.object({
   accent_color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Use a hex color like #954831.').nullable().optional(),
   visible_sections: z.record(z.string(), z.boolean()).nullable().optional(),
   theme: z.string().nullable().optional().refine(value => value == null || isHotelThemeId(value), 'Unknown hotel theme.'),
+  hero_media_id: z.string().uuid().nullable().optional(),
+  media_positions: z.record(z.string().uuid(), z.string().regex(/^(?:0|[1-9]\\d?|100)% (?:0|[1-9]\\d?|100)%$/).nullable()).optional(),
 });
 
 export const uploadHotelMediaSchema = z.object({
@@ -514,7 +518,9 @@ export const saveHotelSiteConfig = protectedProcedure.input(hotelSiteConfigSaveS
       accent_color: input.accent_color,
       visible_sections: input.visible_sections,
       theme: input.theme,
-    } as any);
+      hero_media_id: input.hero_media_id,
+      media_positions: input.media_positions,
+    });
   } catch (error) {
     if (error instanceof TRPCError) throw error;
     const code = (error as { code?: string })?.code;
@@ -530,6 +536,20 @@ export const saveHotelSiteConfig = protectedProcedure.input(hotelSiteConfigSaveS
     }
     return rethrowDomainError(error);
   }
+});
+
+export const publishHotelSiteConfig = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await d1PublishHotelSiteConfig(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
+export const discardHotelSiteConfigDraft = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await d1DiscardHotelSiteConfigDraft(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id); }
+  catch (error) { return rethrowDomainError(error); }
 });
 
 export const listHotelMedia = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
@@ -603,6 +623,8 @@ export const hotelRouter = router({
   getHotelSiteConfig,
   getHotelSiteConfigByHotelId,
   saveHotelSiteConfig,
+  publishHotelSiteConfig,
+  discardHotelSiteConfigDraft,
   listHotelMedia,
   uploadHotelMedia,
   deleteHotelMedia,

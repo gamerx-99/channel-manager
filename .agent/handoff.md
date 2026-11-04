@@ -4402,3 +4402,27 @@ Not tested in a browser or with a real email.
   - 1280px and 375px: the card stays on screen, with no sideways scroll.
 - **Not confirmed:** the step-2 scroll on a 375px phone. The background browser pane would not scroll the document at all, even with `scrollTop` set directly. The help page screenshots are still placeholders.
 - **Evidence**: `pnpm test` 194 files, 1311 tests passed; `pnpm check` exit 0; `pnpm build` passed.
+
+## 2026-11-04 — Website builder draft / publish (Codex, reviewed by Claude)
+- **Ticket**: `.agent/codex-prompt-draft-publish.md` (owner decision 2026-11-04 in `DECISIONS.md`).
+- **Done**:
+  - `hotel_site_config` gets `draft_json`, `draft_updated_at` and `published_at` (migration `20261104020000_website_draft_publish.sql`).
+  - `hotel_media` gets `is_published` (default 1, so existing images stay live; migration `20261104030000_website_media_publication.sql`).
+  - New procedures `publishHotelSiteConfig` and `discardHotelSiteConfigDraft`, both behind `property.manage_profile`. `saveHotelSiteConfig`, the hero choice and image focal points write only the draft. Public reads use only the live columns and published images.
+  - The builder has "บันทึกร่าง", "เผยแพร่" and "ยกเลิกร่าง", plus the note that changes show after publishing.
+  - The public hotel and site-config queries no longer refetch on window focus or reconnect, so a guest's open page stays as loaded.
+  - Deleting the current hero image is blocked until another hero is chosen.
+- **Claude review fixes**:
+  - Publishing now sets `is_published = 1` for all the hotel's images. Before, only the hero was ever published, so gallery uploads would never have appeared. New test in `server/d1/media.test.ts`.
+  - `draft_updated_at` and `published_at` were `mode: "timestamp"` (seconds), while publish wrote milliseconds, so the builder showed the year 59355. Switched both to `timestamp_ms`, like the rest of the schema. The SQL type is unchanged, and drizzle-kit reports "No schema changes".
+  - Added Thai and English `serverErrors` texts for the three new server messages (hero delete blocked, no draft to publish, draft hero missing).
+  - Codex's handoff entry was one line with literal `\n` text; this entry replaces it. Its report file `.agent/draft-publish-report.md` had garbled Thai and is not committed.
+- **Tests changed** (all reflect the new required publish step; no assertion was loosened):
+  - `server/d1/siteConfig.test.ts` and `server/d1/media.test.ts`: saves now land in the draft, and public output changes only after publish.
+  - The first upload no longer becomes the hero by itself.
+- **Browser** (Claude, local owner `local-owner-c-*`):
+  - `saveHotelSiteConfig` → the public `getHotelSiteConfig` still returned the old copy.
+  - `publishHotelSiteConfig` → the public read returned the new copy.
+  - The builder shows "บันทึกร่าง" and "เผยแพร่"; no sideways scroll.
+  - Not checked by hand: two open tabs, and the image delete flow in the UI. The query options are covered by a contract test.
+- **Owner**: apply both migrations on staging and production before deploying.

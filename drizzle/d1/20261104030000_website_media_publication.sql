@@ -1,0 +1,1 @@
+ALTER TABLE `hotel_media` ADD `is_published` integer DEFAULT true NOT NULL;

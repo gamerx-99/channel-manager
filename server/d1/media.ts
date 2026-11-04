@@ -92,28 +92,18 @@ export async function uploadHotelMediaToR2(
       httpMetadata: { contentType, cacheControl: HOTEL_MEDIA_CACHE_CONTROL },
       customMetadata: { hotelId: scope.hotelId, mediaId },
     });
+    // ASSUMPTION: uploads are private until selected as hero and published.
     const existing = await db.select({ id: hotelMedia.id }).from(hotelMedia).where(eq(hotelMedia.hotelId, scope.hotelId));
-    if (existing.length === 0) {
-      const outcomes = await db.$client.batch([
-        db.$client.prepare("UPDATE hotel_media SET is_hero = 0 WHERE hotel_id = ?").bind(scope.hotelId),
-        db.$client.prepare(`INSERT INTO hotel_media (id, hotel_id, url, caption, is_hero, display_order)
-          VALUES (?, ?, ?, ?, 1, ?)`)
-          .bind(mediaId, scope.hotelId, url, input.caption ?? input.filename, existing.length),
-      ]);
-      if (outcomes[1]?.meta.changes !== 1) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel media row could not be created." });
-      }
-    } else {
-      const [inserted] = await db.insert(hotelMedia).values({
-        id: mediaId,
-        hotelId: scope.hotelId,
-        url,
-        caption: input.caption ?? input.filename,
-        isHero: false,
-        displayOrder: existing.length,
-      }).returning({ id: hotelMedia.id });
-      if (!inserted) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel media row could not be created." });
-    }
+    const [inserted] = await db.insert(hotelMedia).values({
+      id: mediaId,
+      hotelId: scope.hotelId,
+      url,
+      caption: input.caption ?? input.filename,
+      isHero: false,
+      displayOrder: existing.length,
+      isPublished: false,
+    }).returning({ id: hotelMedia.id });
+    if (!inserted) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel media row could not be created." });
     const [media] = await db.select().from(hotelMedia).where(and(eq(hotelMedia.id, mediaId), eq(hotelMedia.hotelId, scope.hotelId))).limit(1);
     if (!media) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel media row could not be read." });
     return media;
@@ -136,17 +126,13 @@ export async function deleteHotelMediaFromR2(
     eq(hotelMedia.id, mediaId), eq(hotelMedia.hotelId, scope.hotelId),
   )).limit(1);
   if (!current) return null;
+  if (current.isHero) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose another hero image before deleting this image." });
   const key = storedR2Key(scope.hotelId, current.url);
   // ASSUMPTION: an orphaned R2 object is harmless, while a row pointing at a missing object is a broken image.
   const [deleted] = await db.delete(hotelMedia).where(and(
     eq(hotelMedia.id, mediaId), eq(hotelMedia.hotelId, scope.hotelId),
   )).returning({ id: hotelMedia.id });
   if (!deleted) return null;
-  await db.$client.batch([db.$client.prepare(`UPDATE hotel_media
-    SET is_hero = (id = (SELECT id FROM hotel_media WHERE hotel_id = ? ORDER BY display_order LIMIT 1))
-    WHERE hotel_id = ? AND NOT EXISTS (SELECT 1 FROM hotel_media WHERE hotel_id = ? AND is_hero = 1)`)
-    .bind(scope.hotelId, scope.hotelId, scope.hotelId)]);
-
   if (key) {
     try {
       await bucket.delete(key);

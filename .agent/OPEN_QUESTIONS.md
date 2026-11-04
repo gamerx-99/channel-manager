@@ -10,6 +10,7 @@ Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+- [ ] Website builder (2026-11-04): confirm the safeguards chosen for draft/publish. `ASSUMPTION:` users with `property.manage_profile` may discard a saved draft after confirmation; uploads are stored immediately but hidden from public output until selected as hero and published; hero selection and image focal points are staged until publish; deleting the currently published hero is blocked; the protected builder's local preview is visible only to users with `property.manage_profile` and is never public. Draft preview uses the existing in-page renderer and does not emulate every theme exactly. Raised 2026-11-04.
 - [ ] ASSUMPTION (2026-11-04): only the hotel's `hotel_owner` may manage or pay its subscription; super admins use CRM billing tools and cannot purchase on behalf of a hotel. Confirm if platform staff should be able to make a payment for a customer.
 - [ ] A hotel with no hotel_owner account (seed or demo data): when does its 15-day trial start? `ASSUMPTION:` the hotel's own creation date, so it still appears in the CRM and dashboard counts. Raised 2026-11-04.
 - [ ] When a hotel's 15-day Pro trial ends, what should happen if it has more than 3 rooms under the Free plan? `ASSUMPTION:` do not enforce a room limit or alter/delete existing hotel data until the owner decides. Raised 2026-11-04.
