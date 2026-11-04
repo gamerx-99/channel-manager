@@ -31,7 +31,19 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     discardHotelSiteConfigDraft: mutation(),
     setHotelPublished: mutation(),
   },
-  auth: { me: query({ roles: ["hotel_owner"], role: "hotel_owner" }) },
+  auth: {
+    me: query({
+      roles: ["hotel_owner"],
+      role: "hotel_owner",
+      memberships: [
+        {
+          hotelId: "hotel-1",
+          role: "hotel_owner",
+          permissions: ["property.view", "property.manage_profile"],
+        },
+      ],
+    }),
+  },
 } }));
 
 import WebsiteBuilder from "./WebsiteBuilder";

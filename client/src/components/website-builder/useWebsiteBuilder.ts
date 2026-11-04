@@ -25,12 +25,12 @@ export function useWebsiteBuilder() {
   const { data: authMe } = trpc.auth.me.useQuery();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
   const memberships = authMe?.memberships ?? [];
-  // Hotel-level permissions come from memberships, not only platform roles.
-  const canManage = (hotels ?? []).some((h: any) => hasHotelPermission(authRoles, memberships, h.id, "property.manage_profile"));
-  const canView = (hotels ?? []).some((h: any) => hasHotelPermission(authRoles, memberships, h.id, "property.view"));
   const [selectedHotelId, setSelectedHotelId] = useState<string>(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("hotel") ?? "");
   const effectiveHotelId = selectedHotelId || (hotels?.[0] as any)?.id || "";
   const selectedHotel = useMemo(() => (hotels ?? []).find((h: any) => h.id === effectiveHotelId) as any | undefined, [hotels, effectiveHotelId]);
+  // Hotel-level permissions come from memberships, not only platform roles.
+  const canManage = Boolean(effectiveHotelId && hasHotelPermission(authRoles, memberships, effectiveHotelId, "property.manage_profile"));
+  const canView = (hotels ?? []).some((h: any) => hasHotelPermission(authRoles, memberships, h.id, "property.view"));
   const { data: serverMedia = [], refetch: refetchMedia, isFetching: isFetchingMedia } = trpc.channelManager.listHotelMedia.useQuery({ hotel_id: effectiveHotelId }, { enabled: !!effectiveHotelId });
   const { data: serverConfig, refetch: refetchConfig, isFetching: isFetchingConfig } = trpc.channelManager.getHotelSiteConfigByHotelId.useQuery({ hotel_id: effectiveHotelId }, { enabled: !!effectiveHotelId });
   const [formError, setFormError] = useState<string | null>(null);
