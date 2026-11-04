@@ -12,6 +12,7 @@ import {
   LogOut,
   Settings2,
   ShieldCheck,
+  Sparkles,
   TicketPercent,
   Users,
   X,
@@ -56,7 +57,7 @@ export function getHotelSettingsItems(
 
 function getActivePath(location: string, selectedHotelId?: string | null) {
   if (!selectedHotelId) return location;
-  const hotelSubPaths = ["bookings", "calendar", "ota", "staff", "support-access"];
+  const hotelSubPaths = ["bookings", "calendar", "services", "ota", "staff", "support-access"];
   for (const subPath of hotelSubPaths) {
     const prefix = `/hotels/${selectedHotelId}/${subPath}`;
     if (location.startsWith(prefix)) return prefix;
@@ -87,6 +88,7 @@ export function Sidebar({
   const hotelNavItems = selectedHotelId
     ? [
       ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomOperations"), icon: BedDouble }] : []),
+      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}/services`, label: t("sidebar.services"), icon: Sparkles }] : []),
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
       ...(otaSyncEnabled && otaConnectivityEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),

@@ -19,6 +19,7 @@ const th: TranslationDictionary = {
     hotelsManagement: "จัดการโรงแรม",
     adminUsers: "ผู้ดูแลระบบ",
     roomOperations: "จัดการห้องพัก",
+    services: "บริการเสริม",
     bookings: "การจอง",
     availability: "สถานะห้องว่าง",
     otaSync: "ซิงค์ OTA",

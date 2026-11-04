@@ -17,6 +17,7 @@ const en = {
     hotelsManagement: "Hotels Management",
     adminUsers: "Admin Users",
     roomOperations: "Room operations",
+    services: "Services",
     bookings: "Bookings",
     availability: "Availability",
     otaSync: "OTA Sync",
