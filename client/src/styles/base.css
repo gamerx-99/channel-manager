@@ -1,0 +1,132 @@
+/* Quiet Ledger & System Design Tokens */
+:root {
+  --paper: #f6f4ef;
+  --paper-deep: #ebe8df;
+  --ink: #1f2933;
+  --ink-soft: #607078;
+  --ink-muted: #899398;
+  --rule: #dedbd2;
+  --rule-strong: #c8c4b9;
+  --pine: #1f6b5c;
+  --pine-dark: #165346;
+  --pine-soft: #e4efeb;
+  --amber: #c88936;
+  --amber-soft: #f6eddc;
+  --clay: #9b6653;
+  --slate: #72818a;
+  --white: #fffefa;
+  --shadow: 0 18px 42px rgba(29,43,44,.08);
+  --radius: 12px;
+  --ease-out: cubic-bezier(.23,1,.32,1);
+  font-family: 'DM Sans', 'Mitr', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-synthesis: none;
+}
+
+/* Stitch reference alignment: warm HotelSync surface, terracotta actions, soft cards */
+:root {
+  --surface: #ffffff;
+  --surface-sunken: #f5f1eb;
+  --border: #e8e2d8;
+  --border-strong: #cfc5b6;
+  --primary: #954831;
+  --primary-hover: #7b3824;
+  --primary-subtle: #fbf0eb;
+  --primary-contrast: #ffffff;
+  --signal-green: #2f694e;
+  --signal-green-subtle: #edf7f1;
+  --signal-amber: #b25e1a;
+  --signal-amber-subtle: #fbf1e8;
+  --signal-red: #a83626;
+  --signal-red-subtle: #fcf0ee;
+  --surface-elevated: #ffffff;
+  --surface-raised: #faf7f2;
+  --text-primary: #242220;
+  --text-secondary: #6e6761;
+  --text-muted: #9c938a;
+}
+
+/* shadcn/ui token bridge */
+:root {
+  --background: 44 26% 95%;
+  --foreground: 210 24% 16%;
+  --card: 45 100% 99%;
+  --card-foreground: 210 24% 16%;
+  --popover: 45 100% 99%;
+  --popover-foreground: 210 24% 16%;
+  --secondary: 44 20% 90%;
+  --secondary-foreground: 210 24% 16%;
+  --muted: 44 20% 90%;
+  --muted-foreground: 200 11% 42%;
+  --accent: 168 55% 27%;
+  --accent-foreground: 45 100% 99%;
+  --destructive: 15 30% 47%;
+  --destructive-foreground: 45 100% 99%;
+  --input: 43 14% 85%;
+  --ring: 168 55% 27%;
+}
+
+.dark {
+  --background: 210 24% 16%;
+  --foreground: 45 100% 99%;
+  --card: 210 22% 20%;
+  --card-foreground: 45 100% 99%;
+  --popover: 210 22% 20%;
+  --popover-foreground: 45 100% 99%;
+  --primary: 168 55% 35%;
+  --primary-foreground: 45 100% 99%;
+  --secondary: 210 20% 25%;
+  --secondary-foreground: 45 100% 99%;
+  --muted: 210 20% 25%;
+  --muted-foreground: 200 11% 65%;
+  --accent: 168 55% 35%;
+  --accent-foreground: 45 100% 99%;
+  --destructive: 15 45% 55%;
+  --destructive-foreground: 45 100% 99%;
+  --border: 210 20% 28%;
+  --input: 210 20% 28%;
+  --ring: 168 55% 35%;
+}
+
+@layer base {
+  * { border-color: var(--border); }
+}
+
+body { background: var(--paper); color: var(--ink); }
+
+/* Thai glyphs need more vertical room than the Latin display face. */
+.page-intro h1, .landing-hero h1, .landing-section h2, .landing-cta h2 { line-height: 1.24; }
+.login-aside-copy h1 { line-height: 1.32; }
+html[lang="th"] .page-intro h1, html[lang="th"] .panel-heading h2, html[lang="th"] .landing-hero h1 { letter-spacing: 0; }
+
+.mobile-scroll-hint { display: none; }
+@media (max-width: 820px) {
+  .mobile-scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 9px 16px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-muted);
+    background: #faf8f3;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .mobile-scroll-hint::before {
+    content: '↔';
+    color: var(--pine);
+    font-size: 13px;
+    font-weight: 700;
+  }
+}
+
+.language-switcher { display: none; } /* legacy — replaced by lang-toggle */
+/* Language Toggle Pill — EN | TH */
+.lang-toggle { display: inline-flex; align-items: center; height: 30px; padding: 2px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); gap: 0; cursor: pointer; transition: border-color .15s ease; }
+.lang-toggle:hover { border-color: #c4d5cc; }
+.lang-toggle:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+.lang-option { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 22px; padding: 0 6px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--ink-soft); transition: background .15s ease, color .15s ease; user-select: none; }
+.lang-option--active { background: var(--pine); color: #fff; }
+.lang-divider { width: 1px; height: 12px; background: var(--rule); margin: 0 1px; flex-shrink: 0; }

@@ -1,0 +1,87 @@
+/* Authentication (Login, Signup, Social Sign-in, Linked Accounts) */
+.login-page{min-height:100vh;display:grid;grid-template-columns:45% 55%;background:var(--white)}
+.login-aside{background:var(--pine);color:white;padding:38px 48px;display:flex;flex-direction:column;min-height:100vh}
+.login-brand strong{color:white}
+.login-brand em{color:#c8e6d8}
+.login-brand strong em{color:#954831;font-style:normal}
+.login-aside .login-brand strong em{color:#f2cfc2}
+.login-aside-copy{margin:auto 0 17vh;max-width:500px}
+.login-aside-copy .eyebrow{color:#b8d8cb}
+.login-aside-copy h1{font-family:'Fraunces','Mitr',serif;font-size:60px;line-height:.98;letter-spacing:-.07em;font-weight:500;margin:0}
+.login-aside-copy h1 i{color:#d4e7db;font-weight:500}
+.login-aside-copy p{font-size:15px;color:#c8dfd4;line-height:1.6;max-width:340px;margin-top:24px}
+.login-aside-foot{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#bcd8cd}
+.login-aside-foot .signal-text{color:#d9ece3}
+.login-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.login-header .lang-toggle{height:44px;background:var(--white);color:var(--ink)}
+
+.login-main{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;background:var(--paper)}
+.login-card{width:min(380px,100%);margin:0 auto;border-radius:18px;box-shadow:var(--shadow);background:var(--white);padding:32px}
+.login-card h2{font-family:'Fraunces','Mitr',serif;font-size:36px;font-weight:500;letter-spacing:-.06em;margin:0}
+.login-card>p{color:var(--ink-soft);font-size:13px;margin:7px 0 29px}
+.login-card label{display:block;color:var(--ink-soft);font-size:11px;margin-bottom:15px}
+.login-card input{background:var(--white);padding:12px}
+.login-button{width:100%;margin-top:5px;padding:12px;border-radius:11px}
+.login-divider{display:flex;align-items:center;gap:11px;margin:22px 0;color:var(--ink-muted);font-size:10px}
+.login-divider:before,.login-divider:after{content:'';height:1px;background:var(--rule);flex:1}
+
+.sso-button{width:100%;border:1px solid var(--rule);background:var(--white);border-radius:7px;padding:11px;color:var(--ink);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.sso-icon{width:18px;height:18px;display:grid;place-items:center;background:var(--pine);color:white;border-radius:4px;font-size:10px}
+.login-security{display:flex;align-items:flex-start;gap:7px;color:var(--ink-muted);font-size:10px;line-height:1.5;margin-top:22px}
+.login-security svg{color:var(--pine);flex:0 0 auto}
+
+.login-footer,.login-signup-prompt{width:min(380px,100%);margin:18px auto 0}
+.login-footer{position:static;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-muted);font-size:10px}
+.login-footer span{min-width:0;display:flex;align-items:center;gap:5px}
+.login-signup-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--ink-muted);font-size:12px}
+.login-form-action{display:flex;justify-content:flex-end;margin:-5px 0 16px}
+.login-or-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--ink-muted);font-size:11px}
+.login-or-divider:before,.login-or-divider:after{content:"";height:1px;flex:1;background:var(--rule)}
+
+.signup-page{min-height:100vh}
+.signup-card small{display:block;margin:-6px 0 12px;font-size:12px;color:var(--ink-soft)}
+.signup-slug{display:flex;align-items:stretch;min-height:36px;margin-top:6px;border:1px solid var(--rule-strong);border-radius:7px;background:var(--white);overflow:hidden}
+.signup-slug>span{display:flex;align-items:center;padding:0 10px;color:var(--ink-muted);font-size:12px;white-space:nowrap;background:var(--paper)}
+.signup-slug input{flex:1;min-width:0;border:0;border-radius:0;box-shadow:none;padding:8px 11px;height:auto;margin:0}
+.signup-slug input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--pine)}
+.signup-footer{margin-top:18px}
+.signup-legal-notice{margin:2px 0 0;color:var(--ink-muted);font-size:12px;line-height:1.6;text-align:center}
+.signup-legal-notice a{color:var(--pine);text-decoration:underline;text-underline-offset:2px}
+
+.line-login-button{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;width:100%;height:48px;padding:2px 16px;border:1px solid #06c755;border-radius:8px;background:#06c755;color:#fff;font-size:14px;font-weight:700;transition:background-color .16s ease,transform .16s ease}
+.line-login-button img{display:block;width:44px;height:44px;object-fit:contain}
+.line-login-button span{text-align:center}
+.line-login-button:hover{background-color:#05b34c}
+.line-login-button:active{background-color:#048b3c}
+.line-login-button:disabled{border-color:#e5e5e5;background:#fff;color:rgba(30,30,30,.45);cursor:wait}
+.line-login-button:disabled img{filter:brightness(0) opacity(.2)}
+
+.social-sign-in{display:grid;gap:10px;margin:4px 0 16px}
+.social-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;border:1px solid var(--pine);border-radius:10px;background:var(--white);color:var(--pine);font:inherit;font-weight:600;cursor:pointer;transition:background .15s ease}
+.social-button:hover:not(:disabled){background:var(--pine-soft)}
+.social-button:disabled{opacity:.6;cursor:wait}
+.social-button svg{width:20px;height:20px;flex:none}
+.social-divider{display:flex;align-items:center;gap:12px;margin-top:6px;color:var(--ink-soft);font-size:13px}
+.social-divider::before,.social-divider::after{content:"";flex:1;border-top:1px solid var(--rule)}
+
+.linked-accounts-list{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
+.linked-accounts-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--rule);border-radius:10px}
+.linked-accounts-name{display:inline-flex;align-items:center;gap:10px;font-weight:600}
+.linked-accounts-name svg{width:20px;height:20px;flex:none}
+
+@media (max-width:760px){
+  .login-main{display:block}
+  .login-footer,.login-signup-prompt{width:min(380px,100%);margin-right:auto;margin-left:auto}
+  .login-footer{flex-wrap:wrap}
+  .login-signup-prompt{margin-top:14px}
+  .auth-login-page .login-aside{min-height:0;padding:16px 20px}
+  .auth-login-page .login-aside-copy,.auth-login-page .login-aside-foot{display:none}
+  .auth-login-page .login-main{min-height:0;padding:24px 20px}
+  .auth-login-page .login-card{margin-top:0}
+  .signup-page{display:block}
+  .signup-page .login-aside{min-height:0;height:auto;padding:16px}
+  .signup-page .login-aside-copy{display:none}
+  .signup-slug{flex-direction:column}
+  .signup-slug>span{max-width:none;min-height:34px;border-right:1px solid var(--rule-strong);border-bottom:0;border-radius:8px 8px 0 0}
+  .signup-slug input{border-radius:0 0 8px 8px}
+}

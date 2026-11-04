@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+﻿import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -9,7 +9,7 @@ describe('Dashboard Calendar View contract', () => {
   const router = routerText + dashboardRouterText + availabilityRouterText;
   const component = readFileSync(resolve(process.cwd(), 'client/src/components/DashboardCalendarView.tsx'), 'utf8');
   const home = readFileSync(resolve(process.cwd(), 'client/src/pages/Home.tsx'), 'utf8');
-  const css = readFileSync(resolve(process.cwd(), 'client/src/index.css'), 'utf8');
+  const css = readFileSync(resolve(process.cwd(), 'client/src/styles/calendar.css'), 'utf8');
 
   it('exposes a protected calendar procedure with an ISO date window and D1-scoped sources', () => {
     expect(router).toContain('export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchema)');

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 describe("Workspace dropdown layering contract", () => {
   it("keeps the dropdown opaque, positioned above navigation, and bounded on small screens", () => {
-    const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+    const css = readFileSync(resolve(process.cwd(), "client/src/styles/layout.css"), "utf8");
     const anchor = css.match(/\.workspace-menu-anchor\{([^}]*)\}/)?.[1] ?? "";
     const dropdown = css.match(/\.workspace-dropdown\{([^}]*)\}/)?.[1] ?? "";
     const item = css.match(/\.workspace-dropdown-item\{([^}]*)\}/)?.[1] ?? "";

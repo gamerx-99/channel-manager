@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Shared menu surface contract", () => {
-  const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+  const css = readFileSync(resolve(process.cwd(), "client/src/styles/layout.css"), "utf8");
   const dropdownPrimitive = readFileSync(
     resolve(process.cwd(), "client/src/components/ui/dropdown-menu.tsx"),
     "utf8",
