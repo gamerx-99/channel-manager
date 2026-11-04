@@ -1,13 +1,23 @@
+/* Small metric tiles with room inside: the label and number sit away from the edges. */
 .platform-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  max-width: 900px;
+}
+.platform-metrics .panel {
+  padding: 18px 20px;
+  min-height: 0;
+}
+.platform-metrics .panel .eyebrow {
+  margin: 0;
 }
 .platform-metrics .panel strong {
   display: block;
-  margin-top: 12px;
+  margin-top: 10px;
   color: var(--pine);
-  font-size: 1.8rem;
+  font-size: 1.6rem;
+  line-height: 1.2;
 }
 .platform-links,
 .crm-actions {
@@ -31,13 +41,14 @@
 .crm-actions {
   margin: 0;
 }
-@media (max-width: 700px) {
+@media (max-width: 460px) {
   .platform-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-@media (max-width: 420px) {
-  .platform-metrics {
-    grid-template-columns: 1fr;
+  .platform-metrics .panel {
+    padding: 14px 16px;
+  }
+  .platform-metrics .panel strong {
+    font-size: 1.35rem;
   }
 }
