@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { uploadHotelMediaFile } from "@/lib/hotelMedia";
+import { useTranslation } from "@/lib/i18n";
 import { Clock3, Eye, Globe, Image as ImageIcon, Palette, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,61 +8,15 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageState } from "@/components/PageState";
-import { trpc } from "@/lib/trpc";
-import type { inferRouterOutputs } from "@trpc/server";
-import type { AppRouter } from "../../../server/routers";
-import { hasAnyPermission, type AppRole } from "@shared/authorization";
-import { toast } from "sonner";
-import { useTranslation } from "@/lib/i18n";
-import { HOTEL_THEMES, type HotelThemeId } from "@shared/hotelThemes";
-import { getContrastText } from "@/lib/contrastText";
 import { dateLocale } from "@/lib/dateLocale";
+import { HOTEL_THEMES } from "@shared/hotelThemes";
+import { getContrastText } from "@/lib/contrastText";
 import TemplateCardPreview from "@/components/hotel-themes/TemplateCardPreview";
+import { defaultConfig, isValidHexColor, type SiteConfig } from "@/components/website-builder/websiteBuilderRules";
+import { useWebsiteBuilder } from "@/components/website-builder/useWebsiteBuilder";
+import "@/components/website-builder/website-builder.css";
 
-// Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path
-// (uploadHotelMedia / deleteHotelMedia / listHotelMedia / setHotelMediaHero).
-// hotel_domains custom-domain flow is intentionally deferred (see DECISIONS.md) and not wired here.
-//
-// D1 returns camelCase (hotelId, heroCopy, accentColor, visibleSections, isHero, displayOrder...).
-// Client form state mirrors that; only the tRPC *mutation inputs* stay snake_case (see handleSave).
-
-type HotelMediaItem = inferRouterOutputs<AppRouter>["channelManager"]["listHotelMedia"][number];
-
-type SiteConfig = {
-  hotelId: string;
-  theme: HotelThemeId | null;
-  heroCopy: string;
-  accentColor: string;
-  visibleSections: {
-    hero: boolean;
-    story: boolean;
-    rooms: boolean;
-    booking: boolean;
-    location: boolean;
-  };
-};
-
-const DEFAULT_VISIBLE_SECTIONS: SiteConfig["visibleSections"] = {
-  hero: true,
-  story: true,
-  rooms: true,
-  booking: true,
-  location: true,
-};
-
-function defaultConfig(hotelId: string): SiteConfig {
-  return {
-    hotelId,
-    theme: null,
-    heroCopy: "Explore room types, rates, and availability directly from this hotel.",
-    accentColor: "#1d6b56",
-    visibleSections: { ...DEFAULT_VISIBLE_SECTIONS },
-  };
-}
-
-function isValidHexColor(value: string) {
-  return /^#[0-9a-fA-F]{6}$/.test(value.trim());
-}
+import type { CSSProperties } from "react";
 
 function LoadingWebsiteBuilder() {
   const { t } = useTranslation();
@@ -85,204 +37,18 @@ function LoadingWebsiteBuilder() {
 }
 
 export default function WebsiteBuilder() {
-  const { t, language } = useTranslation();
-  const utils = trpc.useUtils();
-  const setPublished = trpc.channelManager.setHotelPublished.useMutation({ onSuccess: async () => { await utils.channelManager.hotels.invalidate(); } });
-  const { data: hotels, isLoading, isError, refetch, isFetching } = trpc.channelManager.hotels.useQuery();
-  const { data: authMe } = trpc.auth.me.useQuery();
-  const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
-  const canManage = hasAnyPermission(authRoles, "property.manage_profile");
-  const canView = hasAnyPermission(authRoles, "property.view");
-
-  // The hotel page Photos tab links here with ?hotel=<id>.
-  const [selectedHotelId, setSelectedHotelId] = useState<string>(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("hotel") ?? "");
-  const effectiveHotelId = selectedHotelId || (hotels?.[0] as any)?.id || "";
-  const selectedHotel = useMemo(() => (hotels ?? []).find((h: any) => h.id === effectiveHotelId) as any | undefined, [hotels, effectiveHotelId]);
-
-  const { data: serverMedia = [], refetch: refetchMedia, isFetching: isFetchingMedia } = trpc.channelManager.listHotelMedia.useQuery(
-    { hotel_id: effectiveHotelId },
-    { enabled: !!effectiveHotelId }
-  );
-
-  const { data: serverConfig, refetch: refetchConfig, isFetching: isFetchingConfig } = trpc.channelManager.getHotelSiteConfigByHotelId.useQuery(
-    { hotel_id: effectiveHotelId },
-    { enabled: !!effectiveHotelId }
-  );
-
-  // Uploads go to the Worker's /api/media route; the tRPC procedure refuses them.
-  // ASSUMPTION: uploads remain immediate; an unused image is not referenced by the public page.
-  const uploadMediaMut = useMutation({
-    mutationFn: ({ hotel_id, ...file }: { hotel_id: string; base64: string; filename: string }) => uploadHotelMediaFile(hotel_id, file),
-    onSuccess: () => { toast.success(t("websiteBuilder.toastImageUploaded")); refetchMedia(); },
-    onError: (e: Error) => setFormError(e.message)
-  });
-
-  const deleteMediaMut = trpc.channelManager.deleteHotelMedia.useMutation({
-    onSuccess: () => { toast.success(t("websiteBuilder.toastImageDeleted")); refetchMedia(); },
-    onError: (e) => setFormError(e.message)
-  });
-
-  const setHeroMut = trpc.channelManager.setHotelMediaHero.useMutation({
-    onSuccess: () => { toast.success(t("websiteBuilder.toastHeroUpdated")); refetchMedia(); },
-    onError: (e) => setFormError(e.message)
-  });
-  const setObjectPositionMut = trpc.channelManager.setHotelMediaObjectPosition.useMutation({ onSuccess: () => refetchMedia(), onError: e => setFormError(e.message) });
-
-  const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({
-    onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); },
-    onError: (e) => setFormError(e.message)
-  });
-
-  const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({
-    onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); },
-    onError: (e) => setFormError(e.message),
-  });
-  const publishConfigMut = trpc.channelManager.publishHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.publishSuccess")); await refetchConfig(); }, onError: e => setFormError(e.message) });
-  const discardDraftMut = trpc.channelManager.discardHotelSiteConfigDraft.useMutation({ onSuccess: async () => { await refetchConfig(); setDraft(publishedConfig); toast.success(t("websiteBuilder.draftDiscarded")); }, onError: e => setFormError(e.message) });
-
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saveNote, setSaveNote] = useState<string | null>(null);
-  const [focalMediaId, setFocalMediaId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const media = serverMedia;
-  const publishedConfig = useMemo(() => {
-    const base = defaultConfig(effectiveHotelId);
-    return {
-      ...base,
-      ...(serverConfig ?? {}),
-      heroCopy: serverConfig?.heroCopy ?? base.heroCopy,
-      accentColor: serverConfig?.accentColor ?? base.accentColor,
-      visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) },
-    } as SiteConfig;
-  }, [serverConfig, effectiveHotelId]);
-  const storedDraft = useMemo(() => {
-    if (!serverConfig?.draftJson) return null;
-    try { return JSON.parse(serverConfig.draftJson) as SiteConfig & { heroMediaId?: string | null; mediaPositions?: Record<string, string | null> }; } catch { return null; }
-  }, [serverConfig]);
-  const config = storedDraft ?? publishedConfig;
-
-  // Initialize draft form from config when hotel or config changes
-  const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
-  const previewAccentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56";
-  const [initializedFor, setInitializedFor] = useState<string>("");
-
-  useEffect(() => {
-    if (!effectiveHotelId || isFetchingConfig) return;
-    if (initializedFor !== effectiveHotelId || serverConfig !== undefined) {
-      setInitializedFor(effectiveHotelId);
-      setDraft(storedDraft ?? publishedConfig);
-      setFormError(null);
-      setSaveNote(null);
-    }
-  }, [effectiveHotelId, serverConfig, isFetchingConfig, initializedFor, storedDraft, publishedConfig]);
-
-  const draftMedia = media.map(item => ({ ...item, isHero: storedDraft?.heroMediaId ? item.id === storedDraft.heroMediaId : item.isHero, objectPosition: Object.prototype.hasOwnProperty.call(storedDraft?.mediaPositions ?? {}, item.id) ? storedDraft?.mediaPositions?.[item.id] ?? null : item.objectPosition }));
-  const heroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? draftMedia[0]?.url ?? null, [draftMedia]);
-  const selectedHotelHeroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? null, [draftMedia]);
-  const previewHotelName = selectedHotel?.name?.trim() || t("websiteBuilder.yourHotelName");
-
-  const sectionLabels: Record<keyof SiteConfig["visibleSections"], { label: string; hint: string }> = useMemo(() => ({
-    hero: { label: t("websiteBuilder.sectionHeroLabel"), hint: t("websiteBuilder.sectionHeroHint") },
-    'story': { label: t("websiteBuilder.sectionStoryLabel"), hint: t("websiteBuilder.sectionStoryHint") },
-    'rooms': { label: t("websiteBuilder.sectionRoomsLabel"), hint: t("websiteBuilder.sectionRoomsHint") },
-    'booking': { label: t("websiteBuilder.sectionBookingLabel"), hint: t("websiteBuilder.sectionBookingHint") },
-    'location': { label: t("websiteBuilder.sectionLocationLabel"), hint: t("websiteBuilder.sectionLocationHint") },
-  }), [t]);
-
-  function handleUploadFile(file: File) {
-    setFormError(null);
-    const maxBytes = 5 * 1024 * 1024;
-    if (file.size > maxBytes) {
-      setFormError(t("websiteBuilder.errorFileTooLarge"));
-      return;
-    }
-        const rawType = (file.type || "").split(";")[0].trim().toLowerCase();
-    const normalizedType = rawType === "image/jpg" ? "image/jpeg" : rawType;
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
-    if (!allowedTypes.includes(normalizedType)) {
-      setFormError(t("websiteBuilder.errorOnlyImages"));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = String(reader.result ?? "");
-      if (!url) {
-        setFormError(t("websiteBuilder.errorReadImage"));
-        return;
-      }
-      const next = {
-        hotel_id: effectiveHotelId,
-        base64: url,
-        filename: file.name,
-      };
-      uploadMediaMut.mutate(next);
-      toast.success(t("websiteBuilder.toastUploadStarted"));
-    };
-    reader.onerror = () => setFormError(t("websiteBuilder.errorReadImage"));
-    reader.readAsDataURL(file);
-  }
-
-  function handleDeleteMedia(id: string) {
-    if (!canManage) {
-      setFormError(t("websiteBuilder.errorNoPermissionDelete"));
-      return;
-    }
-    deleteMediaMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
-  }
-
-  function handleSetHero(id: string) {
-    if (!canManage) return;
-    setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id }, { onSuccess: () => { void refetchConfig(); } });
-  }
-
-  function handleFocalPoint(event: React.PointerEvent<HTMLImageElement>, item: HotelMediaItem) {
-    if (!canManage) return;
-    setFocalMediaId(item.id);
-    const rect = event.currentTarget.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const x = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
-    const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
-    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` }, { onSuccess: () => { void refetchConfig(); } });
-  }
-
-  function handleSave() {
-    setFormError(null);
-    setSaveNote(null);
-    if (!canManage) {
-      setFormError(t("websiteBuilder.errorNoPermissionSave"));
-      return;
-    }
-    if (!effectiveHotelId) {
-      setFormError(t("websiteBuilder.errorSelectHotelFirst"));
-      return;
-    }
-    if (!isValidHexColor(draft.accentColor)) {
-      setFormError(t("websiteBuilder.errorInvalidHex"));
-      return;
-    }
-    if (draft.heroCopy.trim().length === 0) {
-      setFormError(t("websiteBuilder.errorHeroCopyEmpty"));
-      return;
-    }
-    if (draft.heroCopy.length > 500) {
-      setFormError(t("websiteBuilder.errorHeroCopyTooLong"));
-      return;
-    }
-    saveConfigMut.mutate({
-      hotel_id: effectiveHotelId,
-      hero_copy: draft.heroCopy,
-      accent_color: draft.accentColor,
-      visible_sections: draft.visibleSections,
-    });
-  }
-
-  function handleSaveTheme(theme: HotelThemeId) {
-    setFormError(null);
-    if (!canManage) { setFormError(t("websiteBuilder.errorNoPermissionSave")); return; }
-    if (!effectiveHotelId) { setFormError(t("websiteBuilder.errorSelectHotelFirst")); return; }
-    saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
-  }
+  const { language } = useTranslation();
+  const {
+    t, hotels, isLoading, isError, refetch, isFetching, canManage, canView,
+    selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia,
+    serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut,
+    deleteMediaMut, setHeroMut, setObjectPositionMut, saveConfigMut, saveThemeMut,
+    publishConfigMut, discardDraftMut, storedDraft, draft, setDraft, publishedConfig,
+    config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media,
+    draftMedia, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
+    formError, saveNote, handleUploadFile, handleDeleteMedia, handleSetHero,
+    handleFocalPoint, handleSave, handleSaveTheme,
+  } = useWebsiteBuilder();
 
   if (isLoading) return <LoadingWebsiteBuilder />;
 
@@ -388,7 +154,7 @@ export default function WebsiteBuilder() {
           <CardContent className="p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryAccentColor")}</p>
             <div className="mt-3 flex items-center gap-2">
-              <span className="h-6 w-6 rounded-full border border-[#dce4df]" style={{ background: draft.accentColor }} aria-hidden="true" />
+              <span className="h-6 w-6 rounded-full border border-[#dce4df] wb-accent-swatch" style={{ "--wb-accent": draft.accentColor } as CSSProperties} aria-hidden="true" />
               <span className="text-sm font-mono font-semibold text-[#263b31]">{draft.accentColor}</span>
             </div>
             <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryAccentHint")}</p>
@@ -471,15 +237,15 @@ export default function WebsiteBuilder() {
                     <div key={item.id} className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.url} alt={item.caption ?? "Hotel media preview"} className={`h-full w-full object-cover ${canManage ? "cursor-crosshair touch-manipulation" : ""}`} style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} onClick={() => setFocalMediaId(item.id)} onPointerDown={event => handleFocalPoint(event, item)} />
-                        {focalMediaId === item.id && <span className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow" style={{ left: item.objectPosition?.split(" ")[0] ?? "50%", top: item.objectPosition?.split(" ")[1] ?? "50%" }} />}
+                        <img src={item.url} alt={item.caption ?? "Hotel media preview"} className={`h-full w-full object-cover wb-object-position ${canManage ? "cursor-crosshair touch-manipulation" : ""}`} style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined} onClick={() => setFocalMediaId(item.id)} onPointerDown={event => handleFocalPoint(event, item)} />
+                        {focalMediaId === item.id && <span className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow wb-focal-marker" style={{ "--wb-focal-x": item.objectPosition?.split(" ")[0] ?? "50%", "--wb-focal-y": item.objectPosition?.split(" ")[1] ?? "50%" } as CSSProperties} />}
                         {item.isHero && (
                           <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">{t("websiteBuilder.heroBadge")}</span>
                         )}
                       </div>
                       {focalMediaId === item.id && <div className="space-y-2 border-t border-[#e6eee9] p-3">
                         <p className="text-xs font-medium">{t("websiteBuilder.chooseFocalPoint")}</p>
-                        <div className="grid grid-cols-2 gap-2"><div className="aspect-[16/7] overflow-hidden rounded bg-slate-100"><img src={item.url} alt="" className="h-full w-full object-cover" style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} /></div><div className="aspect-[4/3] overflow-hidden rounded bg-slate-100"><img src={item.url} alt="" className="h-full w-full object-cover" style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined} /></div></div>
+                        <div className="grid grid-cols-2 gap-2"><div className="aspect-[16/7] overflow-hidden rounded bg-slate-100"><img src={item.url} alt="" className="h-full w-full object-cover wb-object-position" style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined} /></div><div className="aspect-[4/3] overflow-hidden rounded bg-slate-100"><img src={item.url} alt="" className="h-full w-full object-cover wb-object-position" style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined} /></div></div>
                         <Button type="button" variant="outline" size="sm" disabled={!canManage || !item.objectPosition} onClick={() => setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: null })}>{t("websiteBuilder.resetFocalPoint")}</Button>
                       </div>}
                       <div className="flex items-center justify-between gap-2 p-3">
@@ -547,8 +313,8 @@ export default function WebsiteBuilder() {
                       <h3 className="text-lg font-semibold text-white">{selectedHotel?.name ?? "Your hotel preview"}</h3>
                       <p className="mt-1 max-w-xl text-sm leading-6 text-white/90">{draft.heroCopy || config.heroCopy}</p>
                       <span
-                        className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                        style={{ background: previewAccentColor, color: getContrastText(previewAccentColor) }}
+                        className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold wb-preview-accent"
+                        style={{ "--wb-accent": previewAccentColor, "--wb-accent-contrast": getContrastText(previewAccentColor) } as CSSProperties}
                       >
                         {t("websiteBuilder.viewRooms")}
                       </span>
@@ -575,7 +341,7 @@ export default function WebsiteBuilder() {
                     <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                       <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
                       <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
-                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold" style={{ background: previewAccentColor, color: getContrastText(previewAccentColor) }}>
+                      <span className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold wb-preview-accent" style={{ "--wb-accent": previewAccentColor, "--wb-accent-contrast": getContrastText(previewAccentColor) } as CSSProperties}>
                         {t("websiteBuilder.planVisit")}
                       </span>
                     </div>

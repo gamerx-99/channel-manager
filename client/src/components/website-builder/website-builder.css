@@ -1,0 +1,4 @@
+.wb-accent-swatch { background: var(--wb-accent); }
+.wb-focal-marker { left: var(--wb-focal-x, 50%); top: var(--wb-focal-y, 50%); }
+.wb-preview-accent { background: var(--wb-accent); color: var(--wb-accent-contrast); }
+.wb-object-position { object-position: var(--wb-object-position, 50% 50%); }

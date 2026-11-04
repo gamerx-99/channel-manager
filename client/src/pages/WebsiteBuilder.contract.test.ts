@@ -1,9 +1,11 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
 describe('WebsiteBuilder contract — Phase 06', () => {
-  const wbSource = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8');
+  const builderDir = resolve(process.cwd(), 'client/src/components/website-builder');
+  const wbSource = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8')
+    + readdirSync(builderDir).filter(file => /\.(ts|tsx|css)$/.test(file)).map(file => readFileSync(resolve(builderDir, file), 'utf8')).join('\n');
   const dbSource = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const routerText = readFileSync(resolve(process.cwd(), 'server/routers.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');

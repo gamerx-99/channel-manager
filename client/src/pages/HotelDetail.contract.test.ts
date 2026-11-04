@@ -43,7 +43,7 @@ describe('Hotel Detail calendar navigation', () => {
 
   it('has no dead href="#" tabs: Photos opens the website builder for this hotel, Domains is gone', () => {
     const services = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelServices.tsx'), 'utf8');
-    const builder = readFileSync(resolve(process.cwd(), 'client/src/pages/WebsiteBuilder.tsx'), 'utf8');
+    const builder = readFileSync(resolve(process.cwd(), 'client/src/components/website-builder/useWebsiteBuilder.ts'), 'utf8');
     for (const page of [hotelDetail, services]) {
       expect(page).not.toContain('href="#"');
       expect(page).not.toContain('tabDomains');
