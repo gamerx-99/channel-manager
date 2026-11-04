@@ -14,6 +14,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Several router tests import the whole appRouter inside the test, so its cold import
+    // (about 5 s on Windows now that billing, onboarding and draft routers exist) counts
+    // toward the timeout. 15 s keeps them from failing on load alone; assertions are unchanged.
+    testTimeout: 15_000,
     setupFiles: ["./vitest.setup.ts"],
     include: [
       "server/**/*.test.ts",
