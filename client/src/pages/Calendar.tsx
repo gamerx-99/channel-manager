@@ -58,7 +58,14 @@ function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: bo
   return days;
 }
 
-const MONTH_WEEKDAY_KEYS = ["weekdaySun", "weekdayMon", "weekdayTue", "weekdayWed", "weekdayThu", "weekdayFri", "weekdaySat"];
+// The per-day edits made here (price, allotment, stop sell) are stored in the
+// `availability` table, but the guest booking flow reads only `rate_overrides`
+// and room counts minus bookings (server/d1/bookingService.ts). Until the two
+// are connected, editing here would look saved but change nothing for guests,
+// so the controls stay hidden. Rates are managed at /dashboard/pricing.
+const CALENDAR_EDITING_ENABLED = false;
+
+const MONTH_WEEKDAY_KEYS =["weekdaySun", "weekdayMon", "weekdayTue", "weekdayWed", "weekdayThu", "weekdayFri", "weekdaySat"];
 
 export default function Calendar({ id }: { id: string }) {
   const { t, language } = useTranslation();
@@ -269,8 +276,11 @@ export default function Calendar({ id }: { id: string }) {
       <section className="page-intro intro-split">
         <div><div className="eyebrow">{t("availability.eyebrow")}</div><h1>{t("availability.title")}<span className="title-mark">.</span></h1><p className="lede">{t("availability.lede")}</p></div>
         <div className="intro-actions">
-          <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>
-          {editing ? (
+          {!CALENDAR_EDITING_ENABLED && (
+            <Link href="/dashboard/pricing" className="button button-primary"><SlidersHorizontal size={15} /> {t("availability.managePricing")}</Link>
+          )}
+          {CALENDAR_EDITING_ENABLED && <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>}
+          {!CALENDAR_EDITING_ENABLED ? null : editing ? (
             <button className="button button-primary" type="button" disabled={updateAvailability.isPending || !selectedDates.length} onClick={() => void saveCalendar()}>
               <Save size={15} /> {updateAvailability.isPending ? t("availability.saving") : t("availability.saveChanges")}
             </button>
@@ -388,10 +398,10 @@ export default function Calendar({ id }: { id: string }) {
               <h2>{inDate ? formatDateDDMMYYYY(inDate) : t("availability.selectStartDate")}{outDate ? ` – ${formatDateDDMMYYYY(outDate)}` : ""}</h2>
               <p>{outDate ? t("availability.rangeSelected", { count: String(selectedDates.length) }) : t("availability.clickForOut")}</p>
             </div>
-            <div className="calendar-range-actions">
+            {CALENDAR_EDITING_ENABLED && <div className="calendar-range-actions">
               <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, true)}>{t("availability.setAllIn")}</button>
               <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, false)}>{t("availability.setAllOut")}</button>
-            </div>
+            </div>}
           </div>
           {hotel.room_types.length ? hotel.room_types.map((roomType: any, index: number) => {
             const totalRooms = roomCountByType[roomType.id] ?? 0;
@@ -414,7 +424,7 @@ export default function Calendar({ id }: { id: string }) {
                   {bookings.length ? `${t("availability.bookedFrom")}: ${platforms.join(", ")}` : `${t("availability.availableRoomsLabel")}: ${fallbackAvailable}/${totalRooms}`}
                 </span>
                 <div className="calendar-room-actions">
-                  <button className={`calendar-inout-button ${allotment > 0 ? "is-active" : ""}`} type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(roomType.id, allotment === 0)}>{allotment > 0 ? "IN" : "OUT"}</button>
+                  {CALENDAR_EDITING_ENABLED && <button className={`calendar-inout-button ${allotment > 0 ? "is-active" : ""}`} type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(roomType.id, allotment === 0)}>{allotment > 0 ? "IN" : "OUT"}</button>}
                   <AvailabilityCell
                     available={fallbackAvailable}
                     price={cell.price}

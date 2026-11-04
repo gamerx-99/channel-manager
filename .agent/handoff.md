@@ -1,5 +1,13 @@
 # Handoff log
 
+## [2026-11-05] Hide Calendar edit controls (they did not affect guests)
+- **Finding**: the hotel Calendar writes `availability` (day price, allotment, stop sell). The guest booking flow never reads that table: `bookingService.ts` prices from `base_price` + `rate_overrides` (`resolveRateSatang`) and counts availability as rooms minus bookings (`roomAvailabilityCounts`). So a "stop sell" or price edit in the Calendar looked saved but changed nothing for guests (overbooking risk). `/dashboard/pricing` writes `rate_overrides` and does take effect. `availability` is read only by the Calendar, the dashboard router and `hotelClosure.ts`. Not checked: iCal export (OTA hidden).
+- **Done**: `Calendar.tsx` has `CALENDAR_EDITING_ENABLED = false`: Edit prices / Save, Set all IN/OUT and per-room IN/OUT are hidden; a "Manage rates" link goes to `/dashboard/pricing`. Code kept behind the flag. Updated Thai/English lede, cell hint and how-it-works text, which promised day-by-day editing.
+- **Test changed on purpose**: `Calendar.test.tsx` "lets a selected date change group IN/OUT and edit price only" asserted the edit flow that is now hidden; replaced by "hides the edit controls and links to the pricing page".
+- **Evidence**: `pnpm check` exit 0. Full `pnpm test`: 199 files passed, 2 failed on timeouts (`worker/rateLimit.test.ts` hook, `server/hotelServicesRouter.d1.test.ts`), both passed when rerun alone with the Calendar test (12 tests). `pnpm build` exit 0 (wrangler --dry-run).
+- **Next (not started)**: connect stop sell / allotment to the guest booking flow, batch write procedure, side-panel bulk editor, then merge the two pages and redirect `/dashboard/pricing`. Needs a spec and a decision on where stop sell is stored.
+- **Not done**: not pushed or deployed (needs owner approval). Not checked in a browser.
+
 ## [2026-11-04] Move public hotel page CSS out of index.css
 - **Done**: Created `client/src/components/public-hotel/public-hotel.css` and moved all `.public-*`, `.payment-*` and `.booking-calendar` rules out of `client/src/index.css` (public page block, PaymentQR block, media-query public parts, and a few standalone public rules). Imported the new file in `PublicHotel.tsx`. `index.css` 799 -> 761 lines; `public-hotel.css` 40 lines.
 - **Rules left in index.css on purpose**: mixed-selector rules where not every selector is public (e.g. `.hotel-thumb img,.property-hero-image img,.public-room-image img`), and `.brand-mark` shared rules; `.public-brand .brand-mark` moved.
