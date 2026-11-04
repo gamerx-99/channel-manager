@@ -3,8 +3,10 @@ import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { checkPermissionEdit, resolveMembershipPermissions, resolveSupportGrantPermissions, toOverrides } from "@shared/permissions";
 import { PERMISSIONS, type AppRole, type Permission, isAppRole } from "@shared/authorization";
-import { bookings, d1Schema, guests, hotelUsers, hotels, otaConnections, rooms, supportAccessGrants, supportAccessLog } from "../../drizzle/d1-schema";
+import { bookings, couponRedemptions, coupons, d1Schema, guests, hotelSubscriptions, hotelUsers, hotels, otaConnections, rooms, subscriptionPayments, subscriptionAdminLog, supportAccessGrants, supportAccessLog } from "../../drizzle/d1-schema";
+import { user as authUser } from "../../drizzle/auth-schema";
 import { sumMoneyInSatang } from "./money";
+import { TRIAL_DAYS, extendPaidUntil, resolvePlan } from "@shared/plans";
 import { assertValidTransition, type BookingStatus } from "@shared/bookingLifecycle";
 import { getStayDates } from "@shared/stayDates";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "../d1/bookingNights";
@@ -343,4 +345,124 @@ export async function listPlatformHotelSummaries(
 
   // SaaS billing tables do not exist in D1 yet (spec 12 remains blocked).
   return rows.map(row => ({ ...row, plan: null, paymentStatus: null }));
+}
+
+/** First instant of the current calendar month in Asia/Bangkok (UTC+7, no DST). */
+function bangkokMonthStart(now: Date): Date {
+  const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const local = new Date(now.getTime() + BANGKOK_OFFSET_MS);
+  return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1) - BANGKOK_OFFSET_MS);
+}
+
+/**
+ * Every hotel once, with the date its trial clock starts: the earliest hotel_owner account's
+ * creation date. ASSUMPTION: a hotel with no owner account (seed or demo data) uses the
+ * hotel's own creation date; logged in .agent/OPEN_QUESTIONS.md.
+ */
+async function listHotelsWithTrialClock(db: D1ScopedDatabase) {
+  const rows = await db.select({ id: hotels.id, name: hotels.name, slug: hotels.slug, ownerContact: hotels.ownerContact,
+    province: hotels.province, hotelCreatedAt: hotels.createdAt, ownerEmail: authUser.email, ownerCreatedAt: authUser.createdAt,
+  }).from(hotels)
+    .leftJoin(hotelUsers, and(eq(hotelUsers.hotelId, hotels.id), eq(hotelUsers.role, "hotel_owner")))
+    .leftJoin(authUser, eq(authUser.id, hotelUsers.userId))
+    .orderBy(desc(hotels.createdAt), authUser.createdAt);
+  const byHotel = new Map<string, (typeof rows)[number] & { trialStartedAt: Date }>();
+  for (const row of rows) {
+    const trialStartedAt = row.ownerCreatedAt ?? row.hotelCreatedAt;
+    const known = byHotel.get(row.id);
+    if (!known || trialStartedAt < known.trialStartedAt) byHotel.set(row.id, { ...row, trialStartedAt });
+  }
+  return Array.from(byHotel.values());
+}
+
+export async function getPlatformBillingSummary(db: D1ScopedDatabase, caller: D1CallerContext, now = new Date()) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  const [hotelRows, userRows, paidRows, paymentRows] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(hotels),
+    db.select({ count: sql<number>`count(*)` }).from(authUser),
+    db.select({ hotelId: hotelSubscriptions.hotelId })
+      .from(hotelSubscriptions).where(gt(hotelSubscriptions.paidUntil, now)),
+    db.select({ amount: subscriptionPayments.amount, verifiedAt: subscriptionPayments.verifiedAt })
+      .from(subscriptionPayments).where(eq(subscriptionPayments.status, "verified")),
+  ]);
+  const subscriptions = await db.select({ hotelId: hotelSubscriptions.hotelId, paidUntil: hotelSubscriptions.paidUntil }).from(hotelSubscriptions);
+  const paidUntilByHotel = new Map(subscriptions.map(row => [row.hotelId, row.paidUntil]));
+  let trialCount = 0;
+  for (const hotel of await listHotelsWithTrialClock(db)) {
+    if (resolvePlan({ ownerCreatedAt: hotel.trialStartedAt, paidUntil: paidUntilByHotel.get(hotel.id) ?? null, now }).plan === "trial") trialCount++;
+  }
+  // Revenue is counted when the payment was verified, by Bangkok calendar month.
+  const monthStart = bangkokMonthStart(now).getTime();
+  const total = (rows: typeof paymentRows) => Number(sumMoneyInSatang(rows.map(row => row.amount))) / 100;
+  return {
+    hotelCount: hotelRows[0]?.count ?? 0,
+    userCount: userRows[0]?.count ?? 0,
+    paidProCount: paidRows.length,
+    trialCount,
+    revenueMonth: total(paymentRows.filter(payment => (payment.verifiedAt?.getTime() ?? 0) >= monthStart)),
+    revenueTotal: total(paymentRows),
+  };
+}
+
+export async function listPlatformCrm(db: D1ScopedDatabase, caller: D1CallerContext, now = new Date()) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  return Promise.all((await listHotelsWithTrialClock(db)).map(async hotel => {
+    const [subscription] = await db.select({ paidUntil: hotelSubscriptions.paidUntil }).from(hotelSubscriptions)
+      .where(eq(hotelSubscriptions.hotelId, hotel.id)).limit(1);
+    const [payment] = await db.select({ createdAt: subscriptionPayments.createdAt, couponCode: coupons.code })
+      .from(subscriptionPayments).leftJoin(coupons, eq(coupons.id, subscriptionPayments.couponId))
+      .where(and(eq(subscriptionPayments.hotelId, hotel.id), eq(subscriptionPayments.status, "verified")))
+      .orderBy(desc(subscriptionPayments.createdAt)).limit(1);
+    const { plan, endsAt, daysLeft } = resolvePlan({ ownerCreatedAt: hotel.trialStartedAt, paidUntil: subscription?.paidUntil ?? null, now });
+    return { id: hotel.id, name: hotel.name, slug: hotel.slug, ownerEmail: hotel.ownerEmail, ownerContact: hotel.ownerContact,
+      province: hotel.province, plan, daysLeft, endsAt, accountCreatedAt: hotel.trialStartedAt, lastPaymentAt: payment?.createdAt ?? null, couponUsed: payment?.couponCode ?? null };
+  }));
+}
+
+export async function updatePlatformHotelProvince(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, province: string | null) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  await db.update(hotels).set({ province: province?.trim() || null }).where(eq(hotels.id, hotelId));
+}
+
+export async function setPlatformHotelPlan(db: D1ScopedDatabase, caller: D1CallerContext, adminUserId: string,
+  input: { hotelId: string; months?: number; reason: string; action: "extend" | "end" }, now = new Date()) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  const hotel = (await listHotelsWithTrialClock(db)).find(row => row.id === input.hotelId);
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
+  const [subscription] = await db.select().from(hotelSubscriptions).where(eq(hotelSubscriptions.hotelId, input.hotelId)).limit(1);
+  const updatedPaidUntil = input.action === "end" ? now : extendPaidUntil({
+    paidUntil: subscription?.paidUntil ?? null,
+    trialEndsAt: new Date(hotel.trialStartedAt.getTime() + TRIAL_DAYS * 86_400_000),
+    now,
+    months: input.months ?? 1,
+  });
+  await db.batch([
+    db.insert(hotelSubscriptions).values({ hotelId: input.hotelId, paidUntil: updatedPaidUntil, updatedAt: now })
+      .onConflictDoUpdate({ target: hotelSubscriptions.hotelId, set: { paidUntil: updatedPaidUntil, updatedAt: now } }),
+    db.insert(subscriptionAdminLog).values({ hotelId: input.hotelId, adminUserId,
+      action: input.action, detail: JSON.stringify({ reason: input.reason, months: input.months ?? null, paidUntil: updatedPaidUntil.toISOString() }), createdAt: now }),
+  ]);
+  return { paidUntil: updatedPaidUntil };
+}
+
+export async function listPlatformCoupons(db: D1ScopedDatabase, caller: D1CallerContext) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  const rows = await db.select({ id: coupons.id, code: coupons.code, percentOff: coupons.percentOff, discountMonths: coupons.discountMonths,
+    maxRedemptions: coupons.maxRedemptions, expiresAt: coupons.expiresAt, active: coupons.active, note: coupons.note,
+    createdAt: coupons.createdAt, redemptionCount: sql<number>`count(${couponRedemptions.id})`,
+  }).from(coupons).leftJoin(couponRedemptions, eq(couponRedemptions.couponId, coupons.id))
+    .groupBy(coupons.id).orderBy(desc(coupons.createdAt));
+  return rows;
+}
+
+export async function createPlatformCoupon(db: D1ScopedDatabase, caller: D1CallerContext, createdByUserId: string,
+  input: { code: string; percentOff: number; discountMonths: number; maxRedemptions: number | null; expiresAt: Date | null; note: string | null }) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  const [row] = await db.insert(coupons).values({ ...input, code: input.code.toUpperCase(), active: true, createdByUserId }).returning({ id: coupons.id });
+  return row;
+}
+
+export async function deactivatePlatformCoupon(db: D1ScopedDatabase, caller: D1CallerContext, id: string) {
+  await authorizePlatformAction(db, caller, "platform.manage_billing");
+  await db.update(coupons).set({ active: false }).where(eq(coupons.id, id));
 }

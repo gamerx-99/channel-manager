@@ -1,0 +1,43 @@
+.platform-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.platform-metrics .panel strong {
+  display: block;
+  margin-top: 12px;
+  color: var(--pine);
+  font-size: 1.8rem;
+}
+.platform-links,
+.crm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.platform-links a {
+  color: var(--pine);
+  font-weight: 700;
+}
+.platform-billing-page .data-table small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-muted);
+}
+.crm-filters {
+  margin-bottom: 20px;
+}
+.crm-actions {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .platform-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 420px) {
+  .platform-metrics {
+    grid-template-columns: 1fr;
+  }
+}

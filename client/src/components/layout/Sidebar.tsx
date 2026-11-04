@@ -13,6 +13,7 @@ import {
   LogOut,
   Settings2,
   ShieldCheck,
+  TicketPercent,
   Users,
   X,
 } from "lucide-react";
@@ -110,6 +111,7 @@ export function Sidebar({
   }, [settingsOpen]);
   const navItems = [
     ...(can("platform.view_system_logs") ? [{ href: "/platform", label: t("sidebar.platformOverview"), icon: LayoutDashboard }] : []),
+    ...(can("platform.manage_billing") ? [{ href: "/platform/crm", label: t("platformCrm.nav"), icon: Hotel }, { href: "/platform/coupons", label: t("platformCoupons.nav"), icon: TicketPercent }] : []),
     { href: "/dashboard", label: isPlatformAdmin ? t("sidebar.overview") : t("sidebar.overview"), icon: LayoutDashboard },
     ...(can("platform.view_all_hotels") ? [{ href: "/hotels", label: t("sidebar.hotelsManagement"), icon: Hotel }] : []),
     ...(can("platform.manage_users") ? [{ href: "/settings/admin-users", label: t("sidebar.adminUsers"), icon: ShieldCheck }] : []),

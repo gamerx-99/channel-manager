@@ -17,12 +17,12 @@ describe("support and staff page contracts", () => {
     const page = read("client/src/pages/SupportAccess.tsx");
     for (const marker of ["hasHotelPermission", "SUPPORT_GRANT_DURATION_HOURS.map", "grantSupport.useMutation", "revokeSupport.useMutation", 't("supportAccess.historyTitle")', "entry.supportUserId", "entry.action", 'role="alert"', 'role="status"']) expect(page).toContain(marker);
   });
-  it("platform dashboard uses the summary-only endpoint and permission gate", () => {
+  it("platform dashboard uses the billing summary and stays behind the super-admin gate", () => {
     expect(app).toContain('path="/platform"');
-    expect(scope).toContain('return "platform.view_system_logs"');
+    expect(scope).toContain('if (pathname === "/platform") return "platform.view_system_logs"');
     const page = read("client/src/pages/PlatformOverview.tsx");
-    for (const marker of ["platformSummary.useQuery", "hotel.hotelName", "hotel.plan", "hotel.paymentStatus", "hotel.roomCount", "hotel.syncStatus", 'role="alert"']) expect(page).toContain(marker);
-    expect(page).not.toContain("hotel.id");
+    expect(page).toContain("billingSummary.useQuery");
+    expect(page).toContain("query.data.revenueTotal");
   });
   it("the shell uses selected-hotel permissions and displays support mode/expiry", () => {
     const shell = read("client/src/components/layout/AppShell.tsx");
