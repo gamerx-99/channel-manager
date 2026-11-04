@@ -4426,3 +4426,9 @@ Not tested in a browser or with a real email.
   - The builder shows "บันทึกร่าง" and "เผยแพร่"; no sideways scroll.
   - Not checked by hand: two open tabs, and the image delete flow in the UI. The query options are covered by a contract test.
 - **Owner**: apply both migrations on staging and production before deploying.
+
+## 2026-11-04 — hayhost Thai font: Mali (owner)
+- Owner: "เปลี่ยนฟอนต์เป็น Mali ภาษาไทย", scope "หน้า hayhost ทั้งหมด" (landing and back office). Hotel public pages keep their theme fonts.
+- `client/src/index.css`: Google Fonts import adds `Mali` (400–700). All 18 `'Noto Sans Thai Looped'` stacks there now use `'Mali'`. Noto stays imported for the plain public hotel page (`public-hotel.css`), and the themes set their own `--t-font-body`.
+- Browser (Claude): `/` h1 font is "Fraunces, Mali"; `document.fonts.check('16px Mali')` returns true. At 375px, `/`, `/dashboard` and `/hotels/:id/billing` have no page overflow.
+- Client tests: 424 passed.
