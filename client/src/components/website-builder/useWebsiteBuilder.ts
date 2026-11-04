@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
-import { hasAnyPermission, type AppRole } from "@shared/authorization";
+import { hasAnyPermission, hasHotelPermission, type AppRole } from "@shared/authorization";
 import { HOTEL_THEMES, MAX_WEBSITE_GALLERY_PHOTOS, type HotelThemeId } from "@shared/hotelThemes";
 import { uploadHotelMediaFile } from "@/lib/hotelMedia";
 import { trpc } from "@/lib/trpc";
@@ -24,8 +24,10 @@ export function useWebsiteBuilder() {
   const { data: hotels, isLoading, isError, refetch, isFetching } = trpc.channelManager.hotels.useQuery();
   const { data: authMe } = trpc.auth.me.useQuery();
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
-  const canManage = hasAnyPermission(authRoles, "property.manage_profile");
-  const canView = hasAnyPermission(authRoles, "property.view");
+  const memberships = authMe?.memberships ?? [];
+  // Hotel-level permissions come from memberships, not only platform roles.
+  const canManage = (hotels ?? []).some((h: any) => hasHotelPermission(authRoles, memberships, h.id, "property.manage_profile"));
+  const canView = (hotels ?? []).some((h: any) => hasHotelPermission(authRoles, memberships, h.id, "property.view"));
   const [selectedHotelId, setSelectedHotelId] = useState<string>(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("hotel") ?? "");
   const effectiveHotelId = selectedHotelId || (hotels?.[0] as any)?.id || "";
   const selectedHotel = useMemo(() => (hotels ?? []).find((h: any) => h.id === effectiveHotelId) as any | undefined, [hotels, effectiveHotelId]);
