@@ -85,8 +85,7 @@ export default function WebsiteBuilder() {
     <div className="page-content space-y-7 pb-8">
       <section className="page-intro intro-split">
         <div>
-          <div className="eyebrow">{t("websiteBuilder.eyebrow")}</div>
-          <h1>{t("websiteBuilder.title")}<span className="title-mark">.</span></h1>
+          <h1>{t("websiteBuilder.title")}</h1>
           <p className="lede">
             {t("websiteBuilder.lede")}
           </p>
@@ -103,29 +102,30 @@ export default function WebsiteBuilder() {
       <section className="panel">
         <div className="panel-heading">
           <div>
-            <div className="eyebrow">{t("websiteBuilder.eyebrow")}</div>
             <h2>{t("websiteBuilder.viewHotelPage")}</h2>
           </div>
-          <span className={`status-pill ${storedDraft ? "pending" : "live"}`}>
-            {storedDraft
-              ? t("websiteBuilder.unpublishedStatus")
-              : serverConfig?.publishedAt
-              ? t("websiteBuilder.publishedDate", { date: new Date(serverConfig.publishedAt).toLocaleDateString(dateLocale(language)) })
-              : serverConfig && (serverConfig.heroCopy || serverConfig.theme || serverConfig.accentColor || serverConfig.visibleSections)
-              ? t("websiteBuilder.published")
-              : t("websiteBuilder.notPublishedYet")}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`status-pill ${storedDraft ? "pending" : "live"}`}>
+              {storedDraft
+                ? t("websiteBuilder.unpublishedStatus")
+                : serverConfig?.publishedAt
+                ? t("websiteBuilder.publishedDate", { date: new Date(serverConfig.publishedAt).toLocaleDateString(dateLocale(language)) })
+                : serverConfig && (serverConfig.heroCopy || serverConfig.theme || serverConfig.accentColor || serverConfig.visibleSections)
+                ? t("websiteBuilder.published")
+                : t("websiteBuilder.notPublishedYet")}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!selectedHotel?.slug}
+              onClick={() => selectedHotel?.slug && window.open(`/${selectedHotel.slug}`, "_blank", "noopener,noreferrer")}
+            >
+              <Eye size={15} /> {t("websiteBuilder.viewHotelPage")}
+            </Button>
+          </div>
         </div>
         {storedDraft && <p className="field-help">{t("websiteBuilder.publishNote")}</p>}
         <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!selectedHotel?.slug}
-            onClick={() => selectedHotel?.slug && window.open(`/${selectedHotel.slug}`, "_blank", "noopener,noreferrer")}
-          >
-            <Eye size={15} /> {t("websiteBuilder.viewHotelPage")}
-          </Button>
           {!selectedHotel?.public_enabled && (
             <>
               <p className="m-0 text-sm text-[#6c7e75]">{t("websiteBuilder.privatePageNote")}</p>
@@ -146,7 +146,6 @@ export default function WebsiteBuilder() {
       <section className="panel" aria-label={t("websiteBuilder.hotelSelectorAria")}>
         <div className="panel-heading">
           <div>
-            <div className="eyebrow">{t("websiteBuilder.eyebrow")}</div>
             <h2>{t("websiteBuilder.hotelLabel")}</h2>
           </div>
         </div>
@@ -174,7 +173,6 @@ export default function WebsiteBuilder() {
       <section className="panel" aria-label={t("websiteBuilder.summaryAria")}>
         <div className="panel-heading">
           <div>
-            <div className="eyebrow">{t("websiteBuilder.eyebrow")}</div>
             <h2>{t("websiteBuilder.summaryVisibleSections")}</h2>
           </div>
         </div>
@@ -209,7 +207,6 @@ export default function WebsiteBuilder() {
       <section className="panel" aria-label={t("websiteBuilder.summaryAria")}>
         <div className="panel-heading">
           <div>
-            <div className="eyebrow">{t("websiteBuilder.eyebrow")}</div>
             <h2>{t("websiteBuilder.themePickerTitle")}</h2>
           </div>
         </div>
@@ -279,6 +276,29 @@ export default function WebsiteBuilder() {
           </div>
         </div>
       </section>
+
+      {canManage && (
+        <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-end gap-3 border-t border-[#dce4df] bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={discardDraftMut.isPending || !storedDraft}
+            onClick={() => {
+              if (window.confirm(t("websiteBuilder.confirmDiscardDraft"))) {
+                discardDraftMut.mutate({ hotel_id: effectiveHotelId });
+              }
+            }}
+          >
+            {t("websiteBuilder.discardDraft")}
+          </Button>
+          <Button type="button" variant="outline" disabled={saveConfigMut.isPending} onClick={handleSave}>
+            {saveConfigMut.isPending ? t("websiteBuilder.saveDraft") : t("websiteBuilder.saveDraft")}
+          </Button>
+          <Button type="button" disabled={publishConfigMut.isPending} onClick={() => publishConfigMut.mutate({ hotel_id: effectiveHotelId })}>
+            {publishConfigMut.isPending ? t("websiteBuilder.publishChanges") : t("websiteBuilder.publishChanges")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
