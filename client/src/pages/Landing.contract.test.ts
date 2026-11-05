@@ -32,7 +32,6 @@ describe("landing and public signup contract", () => {
 
   it("serves draft terms and privacy pages without a login and links them from the footer", () => {
     const slugRoute = app.indexOf('path="/:slug"');
-    const legal = readFileSync(resolve(process.cwd(), "client/src/pages/LegalPage.tsx"), "utf8");
     const hotelRepo = readFileSync(resolve(process.cwd(), "server/d1/hotel.ts"), "utf8");
     for (const path of ["terms", "privacy", "dpa"] as const) {
       expect(app).toContain(`<Route path="/${path}"><LegalPage kind="${path}" /></Route>`);
@@ -40,7 +39,7 @@ describe("landing and public signup contract", () => {
       expect(landing).toContain(`<Link href="/${path}">`);
       expect(hotelRepo).toContain(`"${path}"`);
     }
-    expect(legal).toContain('data-testid="legal-draft-notice"');
+    // The legal review draft banner was intentionally removed from the visitor-facing pages.
     expect(Object.keys(th.legal).sort()).toEqual(Object.keys(en.legal).sort());
   });
 

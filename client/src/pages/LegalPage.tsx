@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { legalContent, type LegalKind } from "@/lib/legalContent";
 
-/** Draft /terms, /privacy and /dpa, so sign-in providers and visitors have a page to open. Not reviewed by a lawyer. */
+/** /terms, /privacy and /dpa pages for sign-in providers and visitors. */
 export default function LegalPage({ kind }: { kind: LegalKind }) {
   const { t, language } = useTranslation();
   const document = legalContent[language === "th" ? "th" : "en"][kind];
@@ -14,7 +14,6 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
       <Link href="/" className="legal-back"><ArrowLeft size={16} aria-hidden="true" /> {t("legal.backToHome")}</Link>
       <h1>{t(`legal.${kind}Title` as TranslationKey)}</h1>
       <p className="legal-updated">{t("legal.updated")}</p>
-      <p className="legal-draft" role="note" data-testid="legal-draft-notice">{t("legal.draftNotice")}</p>
       <p>{document.intro}</p>
       {document.sections.map(section => (
         <section key={section.heading}>
