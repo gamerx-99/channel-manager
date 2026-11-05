@@ -221,7 +221,7 @@ answer noted.
 - [ ] Website photos (2026-11-04): the owner did not specify the total stored-photo limit. ASSUMPTION: keep the existing upload size/type rules and impose no new total-photo count limit. Raised 2026-11-04.
 
 ## Stop sell and allotment (2026-11-05, spec 20)
-- [ ] Where should stop sell be stored? ASSUMPTION used in the draft: the existing `availability` table (no migration); the alternative is a closed flag on `rate_overrides` (needs a migration).
-- [ ] Partial caps (sell at most N rooms of a type) as well as open/closed? ASSUMPTION: both.
-- [ ] Do staff bookings respect stop sell? ASSUMPTION: warn and allow; guests cannot book a stopped night.
+- [x] (answered 2026-11-05: the `availability` table) Where should stop sell be stored? ASSUMPTION used in the draft: the existing `availability` table (no migration); the alternative is a closed flag on `rate_overrides` (needs a migration).
+- [x] (answered 2026-11-05: yes, a cap per night, counted including rooms already booked) Partial caps (sell at most N rooms of a type) as well as open/closed? ASSUMPTION: both.
+- [x] (answered 2026-11-05: staff may book after a warning and a confirmation, logged) Do staff bookings respect stop sell? ASSUMPTION: warn and allow; guests cannot book a stopped night.
 - [ ] Old `availability` rows on production: confirm each with its hotel or delete them before enforcement. Needs the two read-only audit queries in `specs/20-stop-sell-and-allotment.md` run by someone with production access (agents were blocked from reading production on 2026-11-05).

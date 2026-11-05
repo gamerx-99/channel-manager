@@ -1,6 +1,6 @@
 # 20 — Stop sell and allotment that guests respect
 
-Status: draft, not approved (2026-11-05). Needs the owner's decisions listed at the end before step 3 of the rollout.
+Status: decisions made by the owner on 2026-11-05 (see the last section); implementation waits for the data audit. Not yet built for guests.
 
 ## Problem (verified in the code on 2026-11-05)
 
@@ -73,9 +73,29 @@ Every row the second query returns must be confirmed by the hotel ("yes, that ni
 - Past rows are ignored; a missing row means the full room count.
 - Public hold, confirmation and expiry still release the right nights.
 
-## Decisions for the owner
+## Consistency check of the owner's choices (2026-11-05)
 
-1. **Where is stop sell stored?** Recommended: the existing `availability` table (no migration, the controls already write it). Alternative: a closed flag on `rate_overrides` (needs a migration the human applies, and overlap rules get harder).
-2. **Partial caps?** Only open/closed per night, or also "sell at most N rooms of this type" (the table already supports N)? Recommended: both.
-3. **Do staff bookings respect stop sell?** Recommended: warn and allow (staff can override), guests cannot.
-4. **Hotels with old rows**: confirm the list from the audit with each hotel, or delete all rows older than the launch.
+Checked against the code. Findings that change how the work is written:
+
+1. **"Open for sale: 2 of 5 rooms" means a cap that includes rooms already booked.** This is what the Calendar, the dashboard and the batch write already assume (`min(total rooms, allotment) - booked`, `calendarAvailability.ts`, `dashboardRouter.ts`). With 5 rooms and 1 booked, a cap of 2 leaves 1 more room. The panel must say so ("sell at most N rooms, including those already booked") and show the rooms still left, otherwise "2 rooms" reads as "2 more". A cap below the rooms already booked leaves 0 and cancels nothing.
+2. **The dashboard quick edit wrote the wrong number.** `DashboardCalendarView.saveAvailability` sent `roomType.available`, which the server computes as allotment minus bookings, as the new `rooms_available`. Saving on a night that already had a booking therefore wrote a cap that was too low (for example 1 of 2 rooms with 1 booked wrote 1, which leaves 0 once enforced). Any row written that way is suspect. The edit is hidden today; when it returns it must send the cap, not the remainder. This also makes the data audit (decision 4) necessary, not optional.
+3. **Staff override (decision 3) needs a typed rejection, not read access.** `front_desk` can create bookings (`operations.manage_bookings`) but has none of `revenue.manage_rates`, `manage_allotment`, `manage_stop_sell`, and reading `availability` needs `revenue.manage_rates` (so the front desk cannot even load the Calendar data). The booking write must therefore return a clear `STOP_SELL` rejection that names the nights, the staff screen shows the warning, and a second call with an explicit `override_stop_sell: true` goes through for callers with `operations.manage_bookings`. The override is written to `booking_status_log` (reason `stop_sell_override`, who, when) so the owner can see it. Guests and OTA iCal imports are different: guests are always refused; iCal blocks (`source = ota_ical`) reflect another channel's real booking and are never refused, they just count as booked.
+4. **The check can use `booking_nights`.** Active bookings already own one row per room and night (`uq_booking_nights_room_night`), expired holds are released at the start of the same batch (`releaseExpiredHoldNightsStatement`), and a new booking adds its nights after the insert. So inside the insert's `WHERE`, the number booked that night for a room type is `count(booking_nights joined to rooms of that type)` without re-implementing the status and hold-expiry rules. D1 serialises writes, so the new clause is race-safe the same way the overlap clause is.
+5. **Total rooms differs by screen.** Guests exclude rooms in maintenance; the Calendar and dashboard count every room. For the cap use the guest rule (`min(non-maintenance rooms, cap)`); the staff screens keep their counts. A hotel with a room under maintenance can therefore see 5 on the Calendar and offer 4 to guests; the batch write validates against all rooms. Not a blocker, but the panel should show the same total guests get.
+6. **A stay is blocked by any one closed night.** The listing must use the smallest remaining count over the nights, not the count of the first night (today it is the number of rooms free for the whole stay).
+7. **Price in `availability` stays unused.** The batch write never changes it; the staff Calendar and dashboard must not offer a day-price field. Guest prices and minimum stay remain on `rate_overrides`.
+8. **Audit scope is small.** Rows whose `rooms_available` is at least the room count change nothing, so only rows below it need review; the second audit query already selects those. With a handful of hotels the audit can be done once before deploy, instead of a per-hotel switch (which would need a new column and a migration).
+
+## Decisions (owner, 2026-11-05)
+
+1. **Storage**: the existing `availability` table, no migration. Price stays on `rate_overrides`.
+2. **Cap**: set how many rooms may be sold on a night (for example 5 rooms, 2 offered). Stop sell is a cap of 0. Meaning as in finding 1.
+3. **Staff bookings**: allowed with a warning and a staff confirmation (finding 3).
+4. **Old rows**: check them with each hotel before enforcement is switched on (finding 8).
+
+## Next steps in order
+
+1. Someone with production access runs the two audit queries; review the rows with each hotel (delete or confirm).
+2. Write enforcement for guests: listing minimum over nights, and the cap clause in `atomicInsert` using `booking_nights`; tests listed above plus the staff override and iCal cases.
+3. Staff booking screen: the `STOP_SELL` warning and the confirm step.
+4. Re-enable the Calendar and dashboard controls for stop sell and cap only, sending the cap (finding 2), then the side-panel bulk editor on `updateAvailabilityBatch`.
