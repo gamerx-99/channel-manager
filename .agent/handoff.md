@@ -1,5 +1,13 @@
 # Handoff log
 
+## [2026-11-05] Deployed main 23765ab to production
+- **Done with the owner's explicit approval ("deploy เลย")**: `wrangler deploy --env production` from `main` at `23765ab`; Worker `hayhost`, version `bb0388bd-6856-46c0-83be-0b5013309ecb`, route `www.hayhostth.com`, cron `*/15 * * * *`.
+- **Before**: `wrangler d1 migrations list hayhost-production --env production --remote` said "No migrations to apply", so no migration was needed for this release.
+- **Included**: Calendar edit controls hidden, "Rooms & rates" menu group, website builder crash and data-loss fixes plus bugs 3-20, Track 2 page polish, finance layout classes, draft invoicing and tax spec.
+- **Checked live (HTTP only)**: `/`, `/login`, `/signup` and a hotel slug return 200; the served `index-*.js` contains this release's markers (`metric-groups`, `sidebar-rooms-pricing`, `toggle-switch`, `confirmDeleteMedia`, "Rooms & rates"). Not signed in and not opened in a browser, so the back-office screens are unchecked.
+- **Rollback**: `wrangler rollback --env production` to the previous version, or redeploy an earlier commit. No migration to undo.
+- **Still open**: stop sell and allotment do not reach the guest booking flow (spec and decision needed); Thai copy tables from this day await the owner's confirmation; permission names still show on the Housekeeping and Communications pages and the dashboard footer says "supabaseData" (Codex copy sweep).
+
 ## [2026-11-05] Merge of track-b/backoffice-finance into main (machine A)
 - **Merged**: Track 2 (`a9be2b2`): dashboard card groups, HotelDetail price/count/switch, Bookings TM.30 actions and pills, Housekeeping empty-state button.
 - **Found while merging**: that commit also holds work I did not write. Another agent edited the same Linux clone (`~/hayhost-track-b`) and my `git add -A` committed it: `Financials.tsx` layout classes, `specs/15-invoicing-and-tax.md` (draft, not approved), nine questions in `.agent/OPEN_QUESTIONS.md`, extra mobile and finance CSS in `house-style.css`, unused i18n key `hotelDetail.availableCount`. These were reviewed here and kept.
