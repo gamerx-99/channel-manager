@@ -153,6 +153,7 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
               roomTypeId: roomType.id,
               available,
               totalRooms,
+              cap: allotment,
               price: availability === null ? null : Number(saved?.price ?? roomType.base_price ?? roomType.basePrice),
               status: inventoryStatus(available, totalRooms),
             };

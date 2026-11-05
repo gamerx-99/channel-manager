@@ -148,19 +148,15 @@ describe("Availability month calendar", () => {
     expect(screen.getByText("Click a date to set OUT; click again to start a new range.")).toBeTruthy();
   });
 
-  // The calendar's per-day edits live in the `availability` table, which the guest
-  // booking flow does not read, so the controls are hidden (CALENDAR_EDITING_ENABLED)
-  // and rates are managed on the pricing page instead.
-  it("hides the edit controls and links to the pricing page", async () => {
+  // Stop sell / allotment now write the `availability` table, which the guest booking
+  // flow respects (Part 5 / spec 20), so the edit controls are available. Rates are
+  // still managed on the pricing page.
+  it("shows the edit controls and links to the pricing page", async () => {
     const user = userEvent.setup();
     render(<Calendar id="hotel-1" />);
     const cell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && !button.className.includes("is-outside"));
     await user.click(cell!);
-    expect(screen.queryByRole("button", { name: "Set all OUT" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Set all IN" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Edit prices" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^(IN|OUT)$/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Edit prices" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /Manage rates/ }).getAttribute("href")).toBe("/dashboard/pricing");
     expect(mocks.updateAvailability.mutateAsync).not.toHaveBeenCalled();
   });

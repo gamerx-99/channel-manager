@@ -19,6 +19,7 @@ type CalendarDay = {
     roomTypeId: string;
     available: number;
     totalRooms: number;
+    cap: number;
   price: number | null;
     status: 'healthy' | 'low' | 'closed';
   }>;
@@ -65,11 +66,8 @@ function statusColorName(status: CalendarDay['roomTypes'][number]['status']) {
   return 'green';
 }
 
-// The daily controls below (rooms available, stop sell) write the `availability` table, which the
-// guest booking flow does not read (server/d1/bookingService.ts counts rooms minus bookings and
-// prices from rate_overrides). A hotel could press "stop sale" and still receive bookings, so the
-// controls stay hidden until the two are connected. The calendar itself remains read-only.
-const DASHBOARD_CALENDAR_EDITING_ENABLED = false;
+// Stop sell / allotment here write the `availability` table, which the guest booking flow now
+// respects (Part 5 / spec 20). Prices are managed on the pricing page.
 
 export default function DashboardCalendarView({ defaultDays = 14, canEditAvailability = false }: CalendarViewProps) {
   const { t, language } = useTranslation();
@@ -125,7 +123,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
         room_type_id: roomType.roomTypeId,
         date: activeDay.date,
         price: roomType.price ?? 0,
-        rooms_available: draftValue(roomType.roomTypeId, roomType.available),
+        rooms_available: draftValue(roomType.roomTypeId, roomType.cap),
         action: 'allotment',
       });
       setDraftAvailability(current => {
@@ -143,7 +141,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
     if (!activeHotel || !activeDay || !canEditAvailability) return;
     setActionError(null);
     setSavedRoomTypeId(null);
-    const nextAvailable = roomType.available === 0 ? roomType.totalRooms : 0;
+    const nextAvailable = roomType.cap === 0 ? roomType.totalRooms : 0;
     try {
       await updateAvailability.mutateAsync({
         hotel_id: activeHotel.hotel.id,
@@ -249,7 +247,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           <div className="eyebrow">{t('dashboardCalendar.syncActivity')}</div>
           {activeDay?.syncEvents.length ? <div className="dashboard-calendar-sync-list">{activeDay.syncEvents.map((event, index) => <div className={`dashboard-calendar-sync-item ${event.status === 'failed' ? 'is-error' : ''}`} key={`${event.provider}:${event.createdAt}:${index}`}><span className="dashboard-calendar-sync-icon">{event.status === 'failed' ? <CircleAlert size={14} /> : <CloudDownload size={14} />}</span><div><strong>{event.provider} · {event.status === 'success' ? t('dashboardCalendar.synced') : t('dashboardCalendar.failed')}</strong><small>{formatSyncTime(event.createdAt, language)} · {t('dashboardCalendar.updatedItems', { count: event.updatedItemCount })}</small></div><span className="dashboard-calendar-sync-message">{event.message}</span></div>)}</div> : <p className="dashboard-calendar-empty-sync">{t('dashboardCalendar.noSyncActivity')}</p>}
         </div>}
-        {DASHBOARD_CALENDAR_EDITING_ENABLED && <div className="dashboard-calendar-quick-actions" aria-labelledby="dashboard-calendar-quick-actions-title">
+        <div className="dashboard-calendar-quick-actions" aria-labelledby="dashboard-calendar-quick-actions-title">
           <div className="dashboard-calendar-quick-actions-heading">
             <div><div className="eyebrow">{t('dashboardCalendar.dailyControls')}</div><h4 id="dashboard-calendar-quick-actions-title">{t('dashboardCalendar.editSelectedDay')}</h4></div>
             {!canEditAvailability && <span className="calendar-view-only-note">{t('dashboardCalendar.viewOnly')}</span>}
@@ -257,7 +255,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           {actionError && <p className="dashboard-calendar-action-error" role="alert">{actionError}</p>}
           {activeDay?.roomTypes.length ? <div className="dashboard-calendar-quick-action-list">{activeDay.roomTypes.map(roomType => {
             const value = draftValue(roomType.roomTypeId, roomType.available);
-            const isClosed = roomType.available === 0;
+            const isClosed = roomType.cap === 0;
             const isSaved = savedRoomTypeId === roomType.roomTypeId;
             const roomTypeName = activeHotel.roomTypes.find(item => item.id === roomType.roomTypeId)?.name ?? t('dashboardCalendar.roomTypeFallback');
             const roomStatus = roomType.status === 'closed' ? t('dashboardCalendar.fullOrClosed') : roomType.status === 'low' ? t('dashboardCalendar.lowAvailability') : t('dashboardCalendar.healthyAvailability');
@@ -265,13 +263,13 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
               <div className="dashboard-calendar-quick-action-label"><strong>{roomTypeName}</strong><small>{t('dashboardCalendar.totalRooms', { count: roomType.totalRooms, status: roomStatus })}</small></div>
               <div className="dashboard-calendar-quick-action-controls">
                 <label><span className="sr-only">{t('dashboardCalendar.availableRooms')}</span><input type="number" min="0" max={roomType.totalRooms} value={value} disabled={!canEditAvailability || updateAvailability.isPending} onChange={event => setDraftAvailability(current => ({ ...current, [roomType.roomTypeId]: Math.min(roomType.totalRooms, Math.max(0, Number(event.target.value) || 0)) }))} aria-label={t('dashboardCalendar.availableRoomsFor', { roomType: roomTypeName })} /><small>/ {roomType.totalRooms}</small></label>
-                <button className="button button-quiet small-button" type="button" disabled={!canEditAvailability || updateAvailability.isPending || value === roomType.available} onClick={() => void saveAvailability(roomType)}>{t('dashboardCalendar.save')}</button>
+                <button className="button button-quiet small-button" type="button" disabled={!canEditAvailability || updateAvailability.isPending || value === roomType.cap} onClick={() => void saveAvailability(roomType)}>{t('dashboardCalendar.save')}</button>
                 <button className={`button small-button ${isClosed ? 'button-primary' : 'button-quiet'}`} type="button" disabled={!canEditAvailability || updateAvailability.isPending} onClick={() => void toggleStopSell(roomType)} title={isClosed ? t('dashboardCalendar.resumeSellingTitle') : t('dashboardCalendar.stopSellingTitle')}>{isClosed ? t('dashboardCalendar.resumeSale') : t('dashboardCalendar.stopSale')}</button>
                 {isSaved && <span className="dashboard-calendar-saved-state" role="status">{t('dashboardCalendar.saved')}</span>}
               </div>
             </div>;
           })}</div> : <p className="dashboard-calendar-empty-sync">{t('dashboardCalendar.noRoomsToEdit')}</p>}
-        </div>}
+        </div>
       </div>
       <div className="calendar-footer"><span>{t('dashboardCalendar.accessFooter')}</span><span className="signal-text"><i /> {calendarQuery.data.generatedAt ? t('dashboardCalendar.updatedAt', { time: formatSyncTime(calendarQuery.data.generatedAt, language) }) : t('dashboardCalendar.latestData')}</span></div>
     </section>

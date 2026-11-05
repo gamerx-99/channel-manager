@@ -59,12 +59,9 @@ function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: bo
   return days;
 }
 
-// The per-day edits made here (price, allotment, stop sell) are stored in the
-// `availability` table, but the guest booking flow reads only `rate_overrides`
-// and room counts minus bookings (server/d1/bookingService.ts). Until the two
-// are connected, editing here would look saved but change nothing for guests,
-// so the controls stay hidden. Rates are managed at /dashboard/pricing.
-const CALENDAR_EDITING_ENABLED = false;
+// Stop sell / allotment here write the `availability` table, which the guest
+// booking flow now respects (Part 5 / spec 20). Prices are managed at
+// /dashboard/pricing, so no price editing happens on this page.
 
 const MONTH_WEEKDAY_KEYS =["weekdaySun", "weekdayMon", "weekdayTue", "weekdayWed", "weekdayThu", "weekdayFri", "weekdaySat"];
 
@@ -187,7 +184,7 @@ export default function Calendar({ id }: { id: string }) {
       await Promise.all(changes.map(([key, value]) => {
         const [room_type_id, date] = key.split(":");
         const savedAllotment = getAllotment(room_type_id, date, roomCountByType[room_type_id] ?? 0);
-        const action = value.available === savedAllotment ? "rate" : value.available === 0 ? "stop_sell" : "allotment";
+        const action = value.available === 0 ? "stop_sell" : "allotment";
         return updateAvailability.mutateAsync({ hotel_id: id, room_type_id, date, price: value.price, rooms_available: value.available, action });
       }));
       setDraft({});
@@ -277,11 +274,10 @@ export default function Calendar({ id }: { id: string }) {
       <section className="page-intro intro-split">
         <div><div className="eyebrow">{t("availability.eyebrow")}</div><h1>{t("availability.title")}<span className="title-mark">.</span></h1><p className="lede">{t("availability.lede")}</p></div>
         <div className="intro-actions">
-          {!CALENDAR_EDITING_ENABLED && canViewDailyPrices && (
+          {canViewDailyPrices && (
             <Link href="/dashboard/pricing" className="button button-primary"><SlidersHorizontal size={15} /> {t("availability.managePricing")}</Link>
           )}
-          {CALENDAR_EDITING_ENABLED && <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>}
-          {!CALENDAR_EDITING_ENABLED ? null : editing ? (
+          {editing ? (
             <button className="button button-primary" type="button" disabled={updateAvailability.isPending || !selectedDates.length} onClick={() => void saveCalendar()}>
               <Save size={15} /> {updateAvailability.isPending ? t("availability.saving") : t("availability.saveChanges")}
             </button>
@@ -396,10 +392,10 @@ export default function Calendar({ id }: { id: string }) {
               <h2>{inDate ? formatDateDDMMYYYY(inDate) : t("availability.selectStartDate")}{outDate ? ` – ${formatDateDDMMYYYY(outDate)}` : ""}</h2>
               <p>{outDate ? t("availability.rangeSelected", { count: String(selectedDates.length) }) : t("availability.clickForOut")}</p>
             </div>
-            {CALENDAR_EDITING_ENABLED && <div className="calendar-range-actions">
+            <div className="calendar-range-actions">
               <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, true)}>{t("availability.setAllIn")}</button>
               <button className="button button-quiet small-button" type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(null, false)}>{t("availability.setAllOut")}</button>
-            </div>}
+            </div>
           </div>
           {hotel.room_types.length ? hotel.room_types.map((roomType: any, index: number) => {
             const totalRooms = roomCountByType[roomType.id] ?? 0;
@@ -422,7 +418,7 @@ export default function Calendar({ id }: { id: string }) {
                   {bookings.length ? `${t("availability.bookedFrom")}: ${platforms.join(", ")}` : `${t("availability.availableRoomsLabel")}: ${fallbackAvailable}/${totalRooms}`}
                 </span>
                 <div className="calendar-room-actions">
-                  {CALENDAR_EDITING_ENABLED && <button className={`calendar-inout-button ${allotment > 0 ? "is-active" : ""}`} type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(roomType.id, allotment === 0)}>{allotment > 0 ? "IN" : "OUT"}</button>}
+                  <button className={`calendar-inout-button ${allotment > 0 ? "is-active" : ""}`} type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(roomType.id, allotment === 0)}>{allotment > 0 ? "IN" : "OUT"}</button>
                   <AvailabilityCell
                     available={fallbackAvailable}
                     price={canViewDailyPrices && savedCell?.price !== null ? cell.price : null}
@@ -455,7 +451,7 @@ function AvailabilityCell({ available, price, editing, onChange }: { available: 
   const { t } = useTranslation();
   const isLow = available <= 2;
   if (editing) {
-    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span>{price !== null && <label className="calendar-price-edit"><span>{t("availability.priceInputAria")}</span><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></label>}</div>;
+    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span>{price !== null && <strong>�{price.toLocaleString()}</strong>}</div>;
   }
   return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "ok"}`} />{t("availability.roomsCount", { count: available })}</span>{price !== null && <strong>฿{price.toLocaleString()}</strong>}</div>;
 }
