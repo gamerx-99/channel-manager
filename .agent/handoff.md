@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-05] Main CI fix and support-mode note (machine A)
+- **CI on main was red since `cee0456`**: `client/src/dashboardCalendar.contract.test.ts` still asserted the old inline status formula that `cee0456` moved to `shared/inventoryStatus.ts`. I had only run part of the client suite after that change, so I missed it; Codex found it while merging. The assertion now checks the call and the import (the rule itself is tested in `shared/inventoryStatus.test.ts`). Full `pnpm test`: 203 files, 1355 passed.
+- **Support-mode note**: the sidebar footer box "โหมดสนับสนุน / ดูข้อมูล แนะนำ และแก้ไขปัญหา" showed for every account, including hotel owners. It now renders only when `isPlatformAdmin` (super admin, admin, support). New contract assertion in `Sidebar.contract.test.ts`. Possible later step: show owners a notice only while a support access grant is active (needs the grant data).
+- **Seen, not changed**: the sidebar user chip falls back to the text from `sidebar.supabaseUser` when the email is missing (developer wording).
+- **Not done**: not pushed or deployed (the UI change needs a deploy to appear).
+
 ## [2026-11-05] Deployed main cee0456 to production (dashboard calendar status fix)
 - **Done with the owner's approval ("Push และ deploy")**: pushed `main` (`23765ab..cee0456`) and ran `wrangler deploy --env production`; Worker `hayhost`, version `01c5a991-19a8-45fb-b24e-5e04ce2238a8`. `wrangler d1 migrations list ... --remote`: "No migrations to apply".
 - **Not included**: Codex's `track-c/finance` copy commit `5581e15` (not merged; owner has not approved it).

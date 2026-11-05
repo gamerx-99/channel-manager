@@ -302,13 +302,16 @@ export function Sidebar({
       </nav>
 
       <div className="sidebar-footer">
-        <div className="support-note">
-          <ShieldCheck size={16} />
-          <div>
-            <strong>{t("sidebar.supportMode")}</strong>
-            <span>{t("sidebar.supportModeDesc")}</span>
+        {/* Only hayhost staff (platform roles) are in support mode. A hotel owner is not, so they must not see this. */}
+        {isPlatformAdmin && (
+          <div className="support-note">
+            <ShieldCheck size={16} />
+            <div>
+              <strong>{t("sidebar.supportMode")}</strong>
+              <span>{t("sidebar.supportModeDesc")}</span>
+            </div>
           </div>
-        </div>
+        )}
         <div className="user-chip">
           <div className="user-avatar">{initials}</div>
           <div>
