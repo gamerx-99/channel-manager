@@ -27,7 +27,7 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
   it('PublicHotel falls back to fixed copy/colors when no config (42P01 or missing row)', () => {
     expect(publicHotelSource).toContain('DEFAULT_HERO_COPY');
     expect(publicHotelSource).toContain('DEFAULT_ACCENT_COLOR');
-    expect(publicHotelSource).toContain('Explore room types, rates, and availability directly from this hotel.');
+    expect(publicHotelSource).toContain('เลือกห้องพัก ดูราคา และตรวจสอบวันว่างได้ที่นี่');
     expect(publicHotelSource).toContain('#954831');
     // Fallback via nullish coalescing
     expect(publicHotelSource).toMatch(/const heroCopy\s*=\s*siteConfig\?\.heroCopy\s*\?\?\s*DEFAULT_HERO_COPY/s);
@@ -83,6 +83,14 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
   const bookingRouterText = readFileSync(resolve(process.cwd(), 'server/routers/bookingRouter.ts'), 'utf8');
   const hotelRouterText = readFileSync(resolve(process.cwd(), 'server/routers/hotelRouter.ts'), 'utf8');
   const routerSource = routerText + bookingRouterText + hotelRouterText;
+
+  it('uses Buddhist calendar dates and Thai month navigation labels for Thai guests', () => {
+    const picker = readFileSync(resolve(process.cwd(), 'client/src/components/BookingDateRangePicker.tsx'), 'utf8');
+    expect(picker).toContain("month.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })");
+    expect(picker).toContain('labelDayButton: date => date.toLocaleDateString(\'th-TH\', { dateStyle: \'full\' })');
+    expect(picker).toContain('labelPrevious:');
+    expect(picker).toContain('labelNext:');
+  });
 
   it('PublicHotel hooks into hold-based booking procedures, not the retired createPublicBooking flow', () => {
     expect(publicHotelSource).toContain('trpc.channelManager.holdRoomType.useMutation');
