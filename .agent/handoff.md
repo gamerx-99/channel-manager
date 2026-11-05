@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-05] Deployed main cee0456 to production (dashboard calendar status fix)
+- **Done with the owner's approval ("Push และ deploy")**: pushed `main` (`23765ab..cee0456`) and ran `wrangler deploy --env production`; Worker `hayhost`, version `01c5a991-19a8-45fb-b24e-5e04ce2238a8`. `wrangler d1 migrations list ... --remote`: "No migrations to apply".
+- **Not included**: Codex's `track-c/finance` copy commit `5581e15` (not merged; owner has not approved it).
+- **Checked**: `/` returns 200 and the API route answers. The dashboard calendar fix is server-side and needs a signed-in view to confirm: a one-room hotel should show the green dot at 1/1.
+- **Rollback**: `wrangler rollback --env production` (previous version `bb0388bd`).
+
 ## [2026-11-05] Dashboard calendar: a free one-room day showed as "low" (found on production)
 - **Seen**: the owner's screenshot of production (`/dashboard`, hotel with one room): every day showed the amber "low availability" dot at 1/1. The same rule had already been fixed in `Calendar.tsx` but the dashboard calendar takes its status from `server/routers/dashboardRouter.ts`, which still had the old formula.
 - **Fix**: one shared function `inventoryStatus(available, totalRooms)` in `shared/inventoryStatus.ts` (closed at 0; low only when some rooms are taken and a quarter or less is left; otherwise healthy). Both the dashboard router and `Calendar.tsx` use it, so they cannot drift again. New `shared/inventoryStatus.test.ts` (4 tests, includes the 1/1 case).
