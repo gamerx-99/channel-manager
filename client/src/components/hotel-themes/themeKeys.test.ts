@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import th from '../../lib/i18n/th';
+import en from '../../lib/i18n/en';
+
+const dir = dirname(fileURLToPath(import.meta.url));
+const themeFiles = ['MinimalWhiteLanding.tsx', 'LannaTeakLanding.tsx', 'CafeHomestayLanding.tsx'];
+
+function collectKeys(): Set<string> {
+  const keys = new Set<string>();
+  const re = /t\("hotelThemes\.([a-zA-Z0-9_.]+)"/g;
+  for (const file of themeFiles) {
+    const src = readFileSync(resolve(dir, file), 'utf8');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) !== null) keys.add(m[1]);
+  }
+  return keys;
+}
+
+function resolvePath(obj: any, path: string): unknown {
+  return path.split('.').reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), obj);
+}
+
+describe('hotel theme i18n keys', () => {
+  const keys = collectKeys();
+  it('every t("hotelThemes.…") key exists in th', () => {
+    for (const key of keys) {
+      expect(resolvePath(th, `hotelThemes.${key}`), `th missing ${key}`).toBeDefined();
+    }
+  });
+  it('every t("hotelThemes.…") key exists in en', () => {
+    for (const key of keys) {
+      expect(resolvePath(en, `hotelThemes.${key}`), `en missing ${key}`).toBeDefined();
+    }
+  });
+});
