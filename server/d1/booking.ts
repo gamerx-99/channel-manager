@@ -8,6 +8,7 @@ import { moneyToSatang, satangToMoney } from "../db/money";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { calculateServiceTotalSatang, getPublicHotelBySlug, getPublicRoomTypeAvailabilityForGuests, priceBaseStaySatang, priceStayForRoomType, roundAverageNightlySatang, transitionBookingStatus } from "./bookingService";
 import { getRequiredMinStayNights } from "../pricing";
+import { CLOSED_NIGHT_ERROR_PREFIX, closedNightsForRoomType, NO_CLOSED_NIGHT_SQL, noClosedNightParams } from "./closedNights";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const noAvailability = () => new TRPCError({ code: "BAD_REQUEST", message: "The selected room type is no longer available for the requested dates. Please choose another date or room type." });
@@ -74,12 +75,13 @@ export async function getPublicHotelAvailability(
   checkIn: string,
   checkOut: string,
   guestCounts: { adults: number; children: ChildMeasurement[] } = { adults: 2, children: [] },
+  now = new Date(),
 ) {
   publicContext(caller);
   const stayDates = getStayDates(checkIn, checkOut);
   if (!stayDates.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Check-out date must be after check-in date." });
   const hotel = await getPublicHotelBySlug(db, caller, slug);
-  const available = await getPublicRoomTypeAvailabilityForGuests(db, caller, hotel.id, checkIn, checkOut, guestCounts.adults, guestCounts.children);
+  const available = await getPublicRoomTypeAvailabilityForGuests(db, caller, hotel.id, checkIn, checkOut, guestCounts.adults, guestCounts.children, now);
   const counts = new Map(available.map(row => [row.room_type_id, row.rooms_available]));
   const types = await db.select().from(roomTypes).where(eq(roomTypes.hotelId, hotel.id));
   types.sort((left, right) => {
@@ -300,11 +302,13 @@ export async function createBookingWithGuests(
   guestInputs: Omit<GuestRecord, "id" | "booking_id">[],
   services: Omit<BookingServiceRecord, "id" | "booking_id" | "created_at">[] = [],
   now = new Date(),
+  options: { overrideStopSell?: boolean } = {},
 ) {
   await authorizeHotelAction(db, caller, booking.hotel_id, "operations.manage_bookings", "bookings.create", now);
   if (guestInputs.length) await authorizeHotelAction(db, caller, booking.hotel_id, "operations.manage_guests", "guests.create", now);
   if (!getStayDates(booking.check_in, booking.check_out).length) throw new TRPCError({ code: "BAD_REQUEST", message: "Check-out date must be after check-in date." });
   if (booking.source === "ota_ical") throw new TRPCError({ code: "BAD_REQUEST", message: "OTA calendar blocks must be created by the calendar sync repository." });
+  let closedNights: string[] = [];
   if (booking.room_id) {
     const [room] = await db.select({ roomTypeId: rooms.roomTypeId }).from(rooms).where(and(eq(rooms.id, booking.room_id), eq(rooms.hotelId, booking.hotel_id))).limit(1);
     if (!room) throw new TRPCError({ code: "NOT_FOUND", message: "Room not found." });
@@ -312,11 +316,16 @@ export async function createBookingWithGuests(
     const required = getRequiredMinStayNights(booking.check_in, booking.check_out, overrides.map(row => ({ id: row.id, room_type_id: row.roomTypeId, start_date: row.startDate, end_date: row.endDate, override_price: row.overridePrice, min_stay_nights: row.minStayNights, created_at: row.createdAt.toISOString() })));
     const nights = getStayDates(booking.check_in, booking.check_out).length;
     if (required != null && nights < required) throw new TRPCError({ code: "BAD_REQUEST", message: `Booking must be at least ${required} night${required === 1 ? "" : "s"}.` });
+    // Staff are not restricted by hayhost: a closed night only needs a confirmation (override_stop_sell).
+    closedNights = await closedNightsForRoomType(db, room.roomTypeId, booking.check_in, booking.check_out, now);
+    if (closedNights.length && !options.overrideStopSell) {
+      throw new TRPCError({ code: "CONFLICT", message: `${CLOSED_NIGHT_ERROR_PREFIX}: closed to online guests on ${closedNights.join(", ")}.` });
+    }
   }
   const status = booking.status;
   if (!(BOOKING_STATUSES as readonly string[]).includes(status)) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking status is invalid." });
   const id = crypto.randomUUID();
-  const result = await atomicInsert(db, { id, hotelId: booking.hotel_id, roomId: booking.room_id, roomTypeId: null, guestName: booking.guest_name, checkIn: booking.check_in, checkOut: booking.check_out, price: canonicalBookingPrice(booking.price), source: booking.source, status, expiresAt: null, adults: booking.adults_count ?? null, children: booking.children_count ?? null, public: false, guests: guestInputs, services, changedBy: caller.userId || null, reason: "booking_created",
+  const result = await atomicInsert(db, { id, hotelId: booking.hotel_id, roomId: booking.room_id, roomTypeId: null, guestName: booking.guest_name, checkIn: booking.check_in, checkOut: booking.check_out, price: canonicalBookingPrice(booking.price), source: booking.source, status, expiresAt: null, adults: booking.adults_count ?? null, children: booking.children_count ?? null, public: false, guests: guestInputs, services, changedBy: caller.userId || null, reason: closedNights.length ? "stop_sell_override" : "booking_created",
     // A walk-in is paid at the counter (the form requires the method), so the hotel has the money; phone and manual bookings stay unpaid.
     paymentMethod: booking.payment_method ?? null, paymentStatus: booking.source === "walk-in" && booking.payment_method ? "verified" : "unpaid" }, now);
   if (result[1]!.meta.changes !== 1) throw noAvailability();
@@ -347,8 +356,9 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
             where r.hotel_id = ? and r.room_type_id = ? and r.status <> 'maintenance' and h.public_enabled = 1
               and not exists (select 1 from bookings b where b.room_id = r.id and b.check_in < ? and b.check_out > ?
                 and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?))))
+              and ${NO_CLOSED_NIGHT_SQL}
             order by r.room_number limit 1`)
-          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime())
+          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime(), ...noClosedNightParams(input.checkIn, input.checkOut, now))
     : db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by, payment_method, payment_status)
         select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from hotels h
         where h.id = ? and (? is null or exists (select 1 from rooms r where r.id = ? and r.hotel_id = ? and r.status <> 'maintenance'))

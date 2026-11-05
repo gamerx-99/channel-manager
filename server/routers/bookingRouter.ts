@@ -144,6 +144,7 @@ export const createBookingSchema = z.object({
   price: z.number().nonnegative(),
   source: bookingSourceSchema,
   payment_method: z.enum(['cash', 'transfer', 'promptpay']).optional(),
+  override_stop_sell: z.boolean().optional(),
   status: bookingStatusSchema.default('confirmed'),
   guests: z.array(z.object({
     first_name: z.string().trim().min(1),
@@ -187,7 +188,7 @@ export const createBooking = protectedProcedure
       return rethrowDomainError(error);
     }
     try {
-      const { guests, services, ...booking } = input;
+      const { guests, services, override_stop_sell, ...booking } = input;
       const nights = calcNights(input.check_in, input.check_out);
 
       let roomBasePrice = 0;
@@ -219,6 +220,8 @@ export const createBooking = protectedProcedure
           ...service,
           total_price: calculateServiceTotal(service, nights),
         })),
+        undefined,
+        { overrideStopSell: override_stop_sell === true },
       );
     } catch (error) {
       return rethrowDomainError(error);

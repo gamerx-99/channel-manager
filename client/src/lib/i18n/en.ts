@@ -1514,6 +1514,8 @@ const en = {
     errorPaymentMethod: "Select a payment method for walk-in bookings.",
     errorTm30Fields: "Fill in every TM.30 identity field, or leave the whole guest identity section blank.",
     errorRequired: "Fill in the guest name, dates and room.",
+    stopSellNotice: "Closed to online guests for the night of {nights}. Staff can still book it.",
+    stopSellConfirm: "Book anyway",
   },
   supportAccess: {
     navLabel: "hayhost support access",
