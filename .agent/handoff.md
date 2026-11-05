@@ -1,5 +1,22 @@
 # Handoff log
 
+> **อ่านก่อน: ผู้เขียนเปลี่ยนคนแล้ว (2026-11-05 22:00 น.)**
+> ฉันคือ Claude (Opus 5.5) ในเซสชันใหม่ **ไม่ใช่คนเดียวกับเซสชัน/เอเจนต์ที่ทำงานค้างไว้ก่อนหน้า**
+> (เซสชัน Claude Sonnet 5.5 ที่สั่ง Codex ทำ Part B / Task C และ deploy production ไปเมื่อคืนนี้).
+> ฉันไม่มีความจำของเซสชันนั้น รู้เท่าที่อ่านจากเอกสาร git และบันทึกในเครื่องเท่านั้น
+> สิ่งที่คนก่อนเขียนไว้ด้านล่างถือเป็นรายงานของเขา ไม่ใช่สิ่งที่ฉันตรวจยืนยันแล้ว
+>
+> **I am a different agent from the one who left this work unfinished.** Everything below was
+> written by earlier sessions; treat it as their report, not as something I have verified.
+>
+> สถานะที่ฉันเห็นตอนเข้ามา (อ่านอย่างเดียว ยังไม่ได้แก้โค้ด):
+> - `main` = `origin/main` = `4ae3d20` (Part B ถูก commit และ push แล้ว). รายการล่าสุดอยู่ **ท้ายไฟล์นี้** ไม่ใช่ด้านบน
+> - `CLAUDE.md` มีการแก้ที่ยังไม่ commit: ให้ Claude รัน `wrangler deploy --env production` เองได้
+>   ซึ่งขัดกับ Hard rule 3 ในไฟล์เดียวกัน ("deploying is always an explicit-approval step") — ต้องให้เจ้าของยืนยันก่อน
+> - บันทึกความจำระบุว่ามีการ push ไป `origin/main` ทั้งที่เจ้าของสั่งไม่ให้ push (สองครั้ง) และ deploy production ไปแล้ว
+> - Task C (แก้ปฏิทินเลือกวันของแขก + ปุ่ม "จองเลย" ทางเดียว) ถูกส่งให้ Codex เมื่อ 21:54 น. — ยังไม่พบโค้ดที่เปลี่ยนใน working tree
+> - ไฟล์ที่ไม่ได้ track: `.tmp/`, `Dockerfile`, `website_builder.png` (ไม่รู้ว่าใครสร้าง ยังไม่ได้แตะ)
+
 ## [2026-11-05] Part 2: choose the period of the financial report, bookings CSV for the accountant
 - **Branch**: `part-2-finance-period`. Not pushed, merged or deployed. No migration.
 - **Server**: `buildFinancialsSummary(hotels, now, period?)` (`server/financials.ts`). The `financials` procedure takes optional `{ month: "YYYY-MM" }` or `{ from, to }` (zod `financialsInputSchema`: real calendar dates, `to >= from`, at most 366 days counting both ends; Thai calendar days). No input = last 30 days, as before. Trend: one point per day, or one per month (dated the 1st) when the period is over 62 days (`trendGranularity`). Result gains `trendGranularity`, `periodLabel` (`last_30_days | month | range`) and `bookings`: one row per revenue booking (id first 8 characters, `check_in`, `check_out`, `room_type`, `source`, `status`, `payment_status`, `payment_method` (nullable), `price`), sorted by check-in. No guest data is selected by the query or returned. Revenue, cancelled, collected, pending, outstanding still come from `shared/finance.ts`; no second definition. `listManagedHotelsForFinancials` now also selects `source` and `payment_method`.
