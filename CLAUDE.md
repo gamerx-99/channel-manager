@@ -19,8 +19,9 @@ file stays short enough to read every time.
   one mid-ticket — if a phase needs it, that's its own ticket first.
 - `pnpm dev` — `vite build` + `wrangler dev` (http://localhost:8787, local D1/R2 state
   in `.wrangler/state`). The client is built once; rerun after client changes.
-- `wrangler` is only ever run with `--dry-run` by agents; real deploys are a human step
-  (Hard rule 3).
+- Real `wrangler deploy` and remote migrations run when the owner orders it in chat
+  (Hard rule 3), after `pnpm check`, `pnpm test` and `pnpm build` pass. Without that
+  order, `wrangler` runs with `--dry-run` only. Report the deployed version ID.
 
 ## Folder structure
 ```
@@ -81,10 +82,11 @@ bindings, D1 ids and crons per environment — changes need extra care).
 ## Migrations
 The database is D1. Schema lives in `drizzle/d1-schema.ts` + `drizzle/auth-schema.ts`;
 migrations are generated into `drizzle/d1/` with
-`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. Agents never apply them
-to a remote database: the human runs `wrangler d1 migrations apply <database> --env
-staging|production --remote`. Never mark a migration-touching ticket DONE until the
-human confirms it was applied. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the
+`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. A remote database gets
+`wrangler d1 migrations apply <database> --env staging|production --remote` only when
+the owner orders it in chat: first run `wrangler d1 migrations list ... --remote` and
+check that only the intended files are pending, then apply, then deploy the code that
+needs them. A migration-touching ticket is DONE only once the migration is applied. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the
 historical Supabase record — keep them, never edit them.
 
 ## Hard rules (non-negotiable, copied from `.agent/MASTER_PROMPT.md` so no sub-agent
