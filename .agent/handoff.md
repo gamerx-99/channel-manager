@@ -1,5 +1,34 @@
 # Handoff log
 
+## [2026-11-05] Track C — owner-facing copy (main 23765ab)
+- Replaced visible internal permission codes and database terms in Housekeeping, Communications, pricing, room deletion and admin copy; changed the home booking-data caption. Only translation values changed. The websiteBuilder section and housekeeping.groupedByRoom / awaitingCompletion / needAssignee are unchanged.
+- Financials layout and spec 15 were already on main; no duplicate files or commits were added for them.
+- Local verification on the earlier main snapshot: pnpm test exit 0 (202 files, 1,348 tests); pnpm check exit 0; pnpm build exit 0 (Wrangler dry run). GitHub CI on the new base is checked separately.
+- Thai wording for owner review:
+
+| Key | ก่อน | หลัง |
+|---|---|---|
+| `home.supabaseData` | ข้อมูลล่าสุด | ข้อมูลการจองที่ยืนยันแล้ว |
+| `hotelDetail.deleteConfirmDesc` | การดำเนินการนี้จะนำประเภทห้องออกจากคลังห้องพักของโรงแรม ข้อมูลห้องพักและห้องว่างที่เกี่ยวข้องจะเป็นไปตามกฎการเชื่อมโยงฐานข้อมูล | การลบประเภทห้องนี้อาจลบข้อมูลห้องพักและวันว่างที่เกี่ยวข้องด้วย โปรดตรวจสอบห้องพักก่อนดำเนินการ |
+| `housekeeping.accessRestrictedDesc` | บทบาทปัจจุบันของคุณไม่มีสิทธิ์ดูสถานะแม่บ้าน (ต้องมีสิทธิ์ housekeeping.view_room_status) | บัญชีนี้ยังดูงานแม่บ้านไม่ได้ |
+| `housekeeping.viewOnlyNotice` | ดูได้อย่างเดียว — การควบคุมการอัปเดตสถานะต้องใช้ housekeeping.update_room_status | คุณดูงานได้ แต่ยังเปลี่ยนสถานะงานไม่ได้ |
+| `housekeeping.requiresUpdatePermission` | ต้องใช้สิทธิ์ housekeeping.update_room_status ในการสร้างหรือมอบหมายงาน | คุณยังสร้างหรือมอบหมายงานไม่ได้ |
+| `housekeeping.permissionsFootnote` | สิทธิ์การใช้งาน: housekeeping.view_room_status สำหรับดู, housekeeping.update_room_status สำหรับสร้าง/มอบหมายและอัปเดตสถานะ | สิทธิ์ดูงานแยกจากสิทธิ์สร้าง มอบหมาย และเปลี่ยนสถานะงาน |
+| `housekeeping.errorNoPermission` | คุณไม่มีสิทธิ์ในการสร้างหรือมอบหมายงาน (ต้องมี housekeeping.update_room_status) | บัญชีนี้ไม่มีสิทธิ์สร้างหรือมอบหมายงาน |
+| `communications.accessRestrictedDesc` | บทบาทปัจจุบันของคุณไม่มีสิทธิ์ดูการสื่อสารกับผู้เข้าพัก (ต้องมีสิทธิ์ operations.view_bookings) | บัญชีนี้ยังดูข้อความผู้เข้าพักไม่ได้ |
+| `communications.lede` | รายการหัวข้อข้อความที่ผูกกับการจอง — ดูและส่งข้อความต่อรายการจอง การดูต้องใช้สิทธิ์ operations.view_bookings การส่งต้องใช้สิทธิ์ operations.manage_bookings | ดูและส่งข้อความผู้เข้าพักแยกตามการจอง ตามสิทธิ์ของบัญชีคุณ |
+| `communications.viewRequiresPermission` | การดูต้องใช้สิทธิ์ operations.view_bookings | บัญชีนี้ยังดูข้อความของการจองไม่ได้ |
+| `communications.viewOnlyPostingNotice` | ดูได้อย่างเดียว — การส่งข้อความต้องใช้ operations.manage_bookings | คุณอ่านข้อความได้ แต่ยังส่งข้อความไม่ได้ |
+| `communications.messagePlaceholderDisabled` | ดูได้อย่างเดียว — การส่งข้อความต้องใช้ operations.manage_bookings | บัญชีนี้ยังส่งข้อความไม่ได้ |
+| `communications.permissionsFootnote` | สิทธิ์การใช้งาน: operations.view_bookings สำหรับดูหัวข้อ/ข้อความ, operations.manage_bookings สำหรับส่งข้อความ | สิทธิ์อ่านข้อความแยกจากสิทธิ์ส่งข้อความถึงผู้เข้าพัก |
+| `communications.errorNoPostPermission` | คุณไม่มีสิทธิ์ส่งข้อความ (ต้องมี operations.manage_bookings) | บัญชีนี้ไม่มีสิทธิ์ส่งข้อความ |
+| `communications.errorNoCreatePermission` | คุณไม่มีสิทธิ์สร้างหัวข้อ (ต้องมี operations.manage_bookings) | บัญชีนี้ไม่มีสิทธิ์เริ่มหัวข้อสนทนา |
+| `advancedPricing.minStayServerSide` | min_stay_nights บังคับใช้ที่ฝั่งเซิร์ฟเวอร์ | ระบบตรวจจำนวนคืนขั้นต่ำเมื่อรับการจอง |
+| `advancedPricing.pricingCalendarDesc` | ราคาที่มีผลต่อคืน — ราคาเริ่มต้นหรือราคาพิเศษที่ตรงกัน | ราคาต่อคืนใช้ราคาเริ่มต้นหรือราคาพิเศษของวันที่เลือก |
+| `advancedPricing.minStayDetail` | min_stay_nights: {{count}} คืน | พักอย่างน้อย {{count}} คืน |
+| `adminUsers.databasePolicyAudited` | การเปลี่ยนแปลงได้รับการตรวจสอบโดยนโยบายฐานข้อมูล | ระบบบันทึกประวัติการเปลี่ยนสิทธิ์เข้าถึงที่พัก |
+
+
 ## [2026-11-05] Merge of track-b/backoffice-finance into main (machine A)
 - **Merged**: Track 2 (`a9be2b2`): dashboard card groups, HotelDetail price/count/switch, Bookings TM.30 actions and pills, Housekeeping empty-state button.
 - **Found while merging**: that commit also holds work I did not write. Another agent edited the same Linux clone (`~/hayhost-track-b`) and my `git add -A` committed it: `Financials.tsx` layout classes, `specs/15-invoicing-and-tax.md` (draft, not approved), nine questions in `.agent/OPEN_QUESTIONS.md`, extra mobile and finance CSS in `house-style.css`, unused i18n key `hotelDetail.availableCount`. These were reviewed here and kept.
