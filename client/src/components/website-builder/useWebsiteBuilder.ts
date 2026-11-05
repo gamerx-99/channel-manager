@@ -65,10 +65,12 @@ export function useWebsiteBuilder() {
   const previewAccentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56";
   useEffect(() => {
     if (!effectiveHotelId || isFetchingConfig) return;
-    if (initializedFor !== effectiveHotelId || serverConfig !== undefined) {
+    // Load the draft once per hotel. Re-running on every refetch (caption, gallery and focal
+    // point edits all refetch the config) overwrote text and colour the owner had typed but not saved.
+    if (initializedFor !== effectiveHotelId) {
       setInitializedFor(effectiveHotelId); setDraft(storedDraft ?? publishedConfig); setFormError(null); setSaveNote(null);
     }
-  }, [effectiveHotelId, serverConfig, isFetchingConfig, initializedFor, storedDraft, publishedConfig]);
+  }, [effectiveHotelId, isFetchingConfig, initializedFor, storedDraft, publishedConfig]);
   const media = serverMedia;
   const selectedGalleryIds: string[] = storedDraft?.galleryMediaIds ?? media.filter(item => item.isPublished && !item.isHero).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(item => item.id);
   const draftMedia = media.map(item => ({ ...item, caption: storedDraft?.mediaCaptions?.[item.id] ?? displayPhotoCaption(item.caption), isHero: storedDraft?.heroMediaId ? item.id === storedDraft.heroMediaId : item.isHero, isGallerySelected: selectedGalleryIds.includes(item.id), objectPosition: Object.prototype.hasOwnProperty.call(storedDraft?.mediaPositions ?? {}, item.id) ? storedDraft?.mediaPositions?.[item.id] ?? null : item.objectPosition }));

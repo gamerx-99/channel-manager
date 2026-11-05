@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { saveConfig, setObjectPosition, query, mutation, language, hotelsData, mediaData } = vi.hoisted(() => ({
+const { saveConfig, setObjectPosition, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
+  configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
   saveConfig: vi.fn(),
   setObjectPosition: vi.fn(),
   language: { current: "en" as "en" | "th" },
@@ -20,7 +21,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
   channelManager: {
     hotels: { useQuery: () => ({ data: hotelsData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
     listHotelMedia: { useQuery: () => ({ data: mediaData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
-    getHotelSiteConfigByHotelId: query({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } }),
+    getHotelSiteConfigByHotelId: { useQuery: () => ({ data: configData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
     deleteHotelMedia: mutation(),
     setHotelMediaHero: mutation(),
     setHotelMediaObjectPosition: mutation(setObjectPosition),
@@ -48,7 +49,8 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
-afterEach(() => { cleanup(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
+const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
+afterEach(() => { cleanup(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
   it("saves the headline and accent colour the owner typed (regression: edits were dropped)", () => {
@@ -59,6 +61,23 @@ describe("WebsiteBuilder editing", () => {
     fireEvent.change(screen.getByLabelText("accent_color"), { target: { value: "#aa3300" } });
     fireEvent.click(screen.getAllByRole("button").find(button => /save draft/i.test(button.textContent ?? ""))!);
     expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline", accent_color: "#aa3300" }));
+  });
+
+  it("keeps the page up while the owner types a half-finished colour code (regression: white screen)", () => {
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    const accent = screen.getByLabelText("accent_color") as HTMLInputElement;
+    for (const partial of ["#", "#1", "#1d6", "#1d6b5", "red"]) fireEvent.change(accent, { target: { value: partial } });
+    expect(accent.value).toBe("red");
+    expect(document.getElementById("wb-hero-copy")).toBeTruthy();
+  });
+
+  it("does not overwrite unsaved text when the saved config reloads (regression: edits were wiped by a refetch)", () => {
+    const view = render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    const hero = document.getElementById("wb-hero-copy") as HTMLTextAreaElement;
+    fireEvent.change(hero, { target: { value: "Typed but not saved" } });
+    configData.current = { ...defaultConfigData(), draftJson: JSON.stringify({ galleryMediaIds: [] }) };
+    view.rerender(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    expect((document.getElementById("wb-hero-copy") as HTMLTextAreaElement).value).toBe("Typed but not saved");
   });
 
   it("renders all three theme cards and saves a selected theme through the site config mutation", () => {

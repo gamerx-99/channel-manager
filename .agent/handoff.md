@@ -1,6 +1,13 @@
 # Handoff log
 
-## [2026-11-05] Hide Calendar edit controls (they did not affect guests)
+## [## [2026-11-05] Website builder: two crash/data-loss bugs
+- **Found** (from the owner's pasted review, confirmed by reading the code): `PreviewSection.tsx` passed the raw accent text to `getContrastText`, which throws on a half-typed colour (white screen); `useWebsiteBuilder.ts` reset the draft on every config refetch (`|| serverConfig !== undefined`), so caption, gallery and focal-point edits wiped unsaved headline, colour and switches.
+- **Fixed**: the preview uses the already-validated `previewAccentColor`; the draft loads once per hotel.
+- **Tests**: two regression tests in `WebsiteBuilder.test.tsx` (both fail without the fix, checked by stashing the fix). The config mock became a mutable `configData` so a refetch can be simulated; no assertion loosened.
+- **Evidence**: `pnpm check` exit 0; client tests 94 files, 437 tests passed.
+- **Open**: the other 18 items of the review are in Track 3's prompt (`.agent/prompts-2026-11-05.md`, item 5). Not pushed or deployed.
+
+2026-11-05] Hide Calendar edit controls (they did not affect guests)
 - **Finding**: the hotel Calendar writes `availability` (day price, allotment, stop sell). The guest booking flow never reads that table: `bookingService.ts` prices from `base_price` + `rate_overrides` (`resolveRateSatang`) and counts availability as rooms minus bookings (`roomAvailabilityCounts`). So a "stop sell" or price edit in the Calendar looked saved but changed nothing for guests (overbooking risk). `/dashboard/pricing` writes `rate_overrides` and does take effect. `availability` is read only by the Calendar, the dashboard router and `hotelClosure.ts`. Not checked: iCal export (OTA hidden).
 - **Done**: `Calendar.tsx` has `CALENDAR_EDITING_ENABLED = false`: Edit prices / Save, Set all IN/OUT and per-room IN/OUT are hidden; a "Manage rates" link goes to `/dashboard/pricing`. Code kept behind the flag. Updated Thai/English lede, cell hint and how-it-works text, which promised day-by-day editing.
 - **Test changed on purpose**: `Calendar.test.tsx` "lets a selected date change group IN/OUT and edit price only" asserted the edit flow that is now hidden; replaced by "hides the edit controls and links to the pricing page".

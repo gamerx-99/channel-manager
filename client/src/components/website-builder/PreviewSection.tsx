@@ -30,7 +30,9 @@ export function PreviewSection({
 
   if (!canManage) return null;
 
-  const currentAccent = draft.accentColor || previewAccentColor;
+  // previewAccentColor is already checked as a full hex colour; the raw draft value can be
+  // half-typed (for example "#1"), and getContrastText throws on that, blanking the page.
+  const currentAccent = previewAccentColor;
   const currentHeroCopy = draft.heroCopy || config.heroCopy;
 
   return (
