@@ -16,7 +16,7 @@ How to read an item: **Test** = which of the four it serves. **Owner** = who can
 | A2 | Push and deploy the pending work: Part 5 (closed nights for guests), the re-enabled stop-sale buttons, the Account page already live. No migration. Production `availability` has 0 rows (audit 2026-11-05), so enforcement changes nothing until a hotel closes a night. | 1 | H approves, M runs | S | Version number recorded in `.agent/handoff.md`; `/` and the API answer 200. |
 | A3 | **Live pass, signed in, at 1280px and 375px**, one account per role (owner, front desk, housekeeping, revenue manager): Dashboard, Bookings, Calendar, Financials (month picker and CSV opened in Excel), Account page, menu group "ห้องพักและราคา", Website Builder, Housekeeping, Hotel page. Write what is wrong as a list with screenshots. | all | H | M | A one-page list of defects with a severity each; nothing marked "not looked at". |
 | A4 | Try the closed-night path end to end on a test hotel: close one night in the Calendar, open the public page for a stay containing it (not offered), try to book it directly (refused), book it as staff (notice and confirm, booking created, status log shows the override), reopen the night. | 1, 4 | H | S | All five steps behave as written; if not, an item is added here. |
-| A5 | Thai wording: the owner confirms every before/after table accumulated in `.agent/handoff.md` today (menu group, account page, builder, housekeeping, copy sweep). | all | H | S | A reply per table: ok or the wording to use. |
+| A5 | ~~Thai wording confirmation~~ | all | - | - | Not needed (owner, 2026-11-05): Thai wording is used right away and the owner corrects it afterwards. The tables stay in `.agent/handoff.md` for review. |
 | A6 | Tidy the record: update the stale "Pause until Tuesday" entry (Part 2 is finished), add entries for deploys `a2aa6497` and the next one, delete the duplicate Part 3 branch of the Claude session. | - | M | S | `handoff.md` matches reality. |
 | A7 | Rollback readiness: write the exact rollback line and the previous version number beside every deploy entry (already the habit); confirm the D1 time-travel / backup setting on the Cloudflare account and note the restore steps. | 3 | H | S | A short "how to go back" paragraph exists and the backup setting is confirmed. |
 
@@ -132,6 +132,5 @@ Made on 2026-11-05 (in `DECISIONS.md`):
 4. Plan limits are enforced after the starting package ends (B18).
 
 Still open:
-1. **Thai wording tables** (A5): each entry in `.agent/handoff.md` has a table "before, after" listing every Thai text I changed or added today (menu names, the account page, builder messages, housekeeping captions). The owner only needs to read the "after" column and say "ok" or give the wording they prefer.
-2. **Starting package length**: 14 days (owner's words) or 15 days (what the code and the 2026-11-04 row say).
-3. **Dating old payments** for the new revenue definition (B13).
+1. **Starting package length**: 14 days (owner's words) or 15 days (what the code and the 2026-11-04 row say).
+2. **Dating old payments** for the new revenue definition (B13).

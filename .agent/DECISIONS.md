@@ -73,6 +73,7 @@ prompt or ticket that will fix it. **open** = not decided; never present it to c
 | 2026-11-02 | Batch fixes. Do not send the owner one bug fix at a time. |
 | 2026-11-02 | Code work goes to Codex; Claude writes prompts, reviews, verifies and deploys after approval. |
 | 2026-11-01 | Thai copy must read naturally, never a word-for-word translation. |
+| 2026-11-05 | **Thai wording does not wait for the owner.** New or changed Thai text is used right away, and a "before, after" table goes in the handoff entry so the owner can review it later. The owner says so when a wording is wrong and it is fixed then (owner: "ถ้าผิดจะบอกแก้เอง"). The glossary and the tests still apply. |
 
 ---
 

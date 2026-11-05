@@ -9,7 +9,7 @@ The reasoning behind it is in `docs/research/thai-language-study-2026-11-03.md`.
 2. Never translate a technical term word by word. First decide what it means on this screen.
 3. Brand and product names stay as they are: hayhost, LINE, Google, SlipOK, OTA, iCal, TM.30, PromptPay / พร้อมเพย์.
 4. Show dates to Thai readers with the Buddhist year (พ.ศ.).
-5. When a new Thai string is added, show the owner a "before → after" table before committing.
+5. When a Thai string is added or changed, write a "before → after" table in the handoff entry. Do not wait for the owner to confirm it (owner, 2026-11-05); the owner corrects wording afterwards.
 6. `client/src/lib/i18n/thaiGlossary.test.ts` fails the build on any banned term below. Add a new banned term there when you add it here.
 
 ## Terms by context
