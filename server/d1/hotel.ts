@@ -9,6 +9,7 @@ import { bookings, hotelMedia, hotelServices, hotelSiteConfig, hotelUsers, hotel
 import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang, satangToMoney } from "../db/money";
 import type { CreateHotelInput, CreateHotelServiceInput, CreateRoomTypeInput, DeleteRoomTypeInput, DeleteHotelServiceInput, HotelRecord, RoomTypeRecord, UpdateHotelServiceInput, UpdateRoomTypeInput } from "../db/types";
+import type { RoomTypeDetails } from "../../shared/roomTypeDetails";
 import { servedMediaUrl } from "./media";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "../../shared/hotelThemes";
 import { displayPhotoCaption } from "../../shared/websitePhotos";
@@ -117,6 +118,7 @@ export async function getManagedHotel(db: D1ScopedDatabase, caller: D1CallerCont
     public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
     room_types: hotelRoomTypes.map(row => ({
       id: row.id, hotel_id: row.hotelId, name: row.name, capacity: row.capacity, base_price: row.basePrice,
+      description: row.description, bed_type: row.bedType, size_sqm: row.sizeSqm, amenities: row.amenities,
       base_occupancy: row.baseOccupancy, max_occupancy: row.maxOccupancy, occupancy_pricing: row.occupancyPricing,
       child_rule: row.childRule, child_rule_limit: row.childRuleLimit, child_rates: row.childRates,
       children_count_toward_max: row.childrenCountTowardMax,
@@ -201,7 +203,7 @@ export async function registerOwnHotel(db: D1ScopedDatabase, caller: D1CallerCon
   return { id: hotel.id, name: hotel.name, slug: hotel.slug };
 }
 
-export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: CreateRoomTypeInput, now = new Date()) {
+export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: CreateRoomTypeInput & Partial<RoomTypeDetails>, now = new Date()) {
   await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_room_structure", "room_types.create", now);
   if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) throw new TRPCError({ code: "BAD_REQUEST", message: "Room quantity must be a positive integer." });
   const baseOccupancy = input.base_occupancy ?? Math.min(2, input.capacity);
@@ -216,10 +218,11 @@ export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1Call
   const existingRooms = await db.select({ roomNumber: rooms.roomNumber }).from(rooms).where(eq(rooms.hotelId, input.hotel_id));
   const startNumber = existingRooms.reduce((max, row) => Math.max(max, Number(row.roomNumber) || 0), 0) + 1;
   const batch = [db.$client.prepare(`insert into room_types
-    (id, hotel_id, name, capacity, base_price, base_occupancy, max_occupancy, occupancy_pricing, child_rule, child_rule_limit, child_rates, children_count_toward_max)
-    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    (id, hotel_id, name, capacity, base_price, base_occupancy, max_occupancy, occupancy_pricing, child_rule, child_rule_limit, child_rates, children_count_toward_max, description, bed_type, size_sqm, amenities)
+    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(roomTypeId, input.hotel_id, input.name, maxOccupancy, basePrice, baseOccupancy, maxOccupancy,
-      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), (input.children_count_toward_max ?? true) ? 1 : 0)];
+      JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), (input.children_count_toward_max ?? true) ? 1 : 0,
+      input.description ?? null, input.bed_type ?? null, input.size_sqm ?? null, JSON.stringify(input.amenities ?? []))];
   for (let index = 0; index < input.quantity; index++) {
     batch.push(db.$client.prepare("insert into rooms (id, hotel_id, room_type_id, room_number) values (?, ?, ?, ?)")
       .bind(crypto.randomUUID(), input.hotel_id, roomTypeId, String(startNumber + index).padStart(3, "0")));
@@ -230,10 +233,14 @@ export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1Call
   return row;
 }
 
-export async function updateManagedRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: UpdateRoomTypeInput, now = new Date()) {
+export async function updateManagedRoomType(db: D1ScopedDatabase, caller: D1CallerContext, input: UpdateRoomTypeInput & Partial<RoomTypeDetails>, now = new Date()) {
   await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_room_structure", "room_types.update", now);
   const patch: Partial<typeof roomTypes.$inferInsert> = {};
   if (input.name !== undefined) patch.name = input.name;
+  if (input.description !== undefined) patch.description = input.description;
+  if (input.bed_type !== undefined) patch.bedType = input.bed_type;
+  if (input.size_sqm !== undefined) patch.sizeSqm = input.size_sqm;
+  if (input.amenities !== undefined) patch.amenities = input.amenities;
   if (input.base_price !== undefined) patch.basePrice = canonicalMoney(input.base_price);
   if (input.max_occupancy !== undefined || input.capacity !== undefined) {
     patch.capacity = input.max_occupancy ?? input.capacity;
@@ -314,7 +321,7 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
   });
   return {
     hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, latitude: hotel.latitude, longitude: hotel.longitude, public_phone: hotel.showPublicPhone ? hotel.publicPhone : null, facebook_url: hotel.showFacebook ? hotel.facebookUrl : null, instagram_url: hotel.showInstagram ? hotel.instagramUrl : null, x_url: hotel.showX ? hotel.xUrl : null, created_at: hotel.createdAt, theme: siteConfig[0]?.theme ?? null },
-    roomTypes: hotelRoomTypes,
+    roomTypes: hotelRoomTypes.map(row => ({ ...row, bed_type: row.bedType, size_sqm: row.sizeSqm })),
     media,
   };
 }

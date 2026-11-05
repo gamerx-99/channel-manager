@@ -59,6 +59,12 @@ const roomTypePricingFields = {
     height: childRateSchema,
   }).optional(),
 };
+const roomTypeDetailFields = {
+  description: z.string().trim().max(600).nullable().optional(),
+  bed_type: z.string().trim().max(80).nullable().optional(),
+  size_sqm: z.number().int().min(1).max(1000).nullable().optional(),
+  amenities: z.array(z.string().trim().min(1).max(40)).max(12).optional(),
+};
 
 function validateRoomTypePricing(data: any, ctx: z.RefinementCtx, requirePricingWhenOccupancyChanges = false) {
   const effectiveChildRule = data.child_rule ?? 'age';
@@ -102,6 +108,7 @@ export const createRoomTypeSchema = z.object({
   base_occupancy: z.number().int().positive().optional(),
   max_occupancy: z.number().int().positive().optional(),
   ...roomTypePricingFields,
+  ...roomTypeDetailFields,
   child_rule: z.enum(['age', 'height']).optional(),
   child_rule_limit: z.number().nonnegative().nullable().optional(),
   children_count_toward_max: z.boolean().optional(),
@@ -124,6 +131,7 @@ export const updateRoomTypeSchema = z.object({
   base_occupancy: z.number().int().positive().optional(),
   max_occupancy: z.number().int().positive().optional(),
   ...roomTypePricingFields,
+  ...roomTypeDetailFields,
   child_rule: z.enum(['age', 'height']).optional(),
   child_rule_limit: z.number().nonnegative().nullable().optional(),
   children_count_toward_max: z.boolean().optional(),
@@ -338,6 +346,10 @@ export const createRoomType = protectedProcedure.input(createRoomTypeSchema).mut
     return await d1CreateManagedRoomType(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
       hotel_id: input.hotel_id,
       name: input.name,
+      description: input.description === undefined ? undefined : input.description || null,
+      bed_type: input.bed_type === undefined ? undefined : input.bed_type || null,
+      size_sqm: input.size_sqm ?? null,
+      amenities: input.amenities ?? [],
       capacity: input.capacity,
       base_price: input.base_price,
       quantity: input.quantity,
@@ -369,6 +381,10 @@ export const updateRoomType = protectedProcedure.input(updateRoomTypeSchema).mut
       hotel_id: input.hotel_id,
       room_type_id: input.room_type_id,
       name: input.name,
+      description: input.description === undefined ? undefined : input.description || null,
+      bed_type: input.bed_type === undefined ? undefined : input.bed_type || null,
+      size_sqm: input.size_sqm,
+      amenities: input.amenities,
       capacity: input.capacity,
       base_price: input.base_price,
       base_occupancy: input.base_occupancy,

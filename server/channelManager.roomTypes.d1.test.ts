@@ -114,6 +114,10 @@ describe('channelManager.updateRoomType (D1 router)', () => {
         hotel_id: HOTEL_ID,
         room_type_id: ROOM_TYPE_ID,
         name: 'Suite',
+        description: undefined,
+        bed_type: undefined,
+        size_sqm: undefined,
+        amenities: undefined,
         capacity: 2,
         base_price: 3200,
         base_occupancy: 2,
@@ -253,5 +257,38 @@ describe('missing room type boundary', () => {
     await expect(app.channelManager.updateRoomType({ hotel_id: HOTEL_ID, room_type_id: ROOM_TYPE_ID, name: 'Deluxe', capacity: 2, base_price: 2500, ...validPricing() }))
       .rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(hotelMocks.updateManagedRoomType).not.toHaveBeenCalled();
+  });
+});
+
+describe('hotel supplied room details', () => {
+  const base = { hotel_id: HOTEL_ID, room_type_id: ROOM_TYPE_ID, name: 'Suite', capacity: 2, base_price: 2500, ...validPricing() };
+
+  it('rejects overlong text and too many or overlong amenities', async () => {
+    const app = caller('hotel_owner');
+    for (const details of [
+      { description: 'x'.repeat(601) },
+      { bed_type: 'x'.repeat(81) },
+      { amenities: Array(13).fill('Wi-Fi') },
+      { amenities: ['x'.repeat(41)] },
+      { size_sqm: 1001 },
+    ]) {
+      await expect(app.channelManager.updateRoomType({ ...base, ...details })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    }
+    expect(hotelMocks.updateManagedRoomType).not.toHaveBeenCalled();
+  });
+
+  it('saves only details provided by the hotel', async () => {
+    const app = caller('hotel_owner');
+    await app.channelManager.updateRoomType({ ...base, description: 'Quiet room', bed_type: 'King', size_sqm: 32, amenities: ['Wi-Fi'] });
+    expect(hotelMocks.updateManagedRoomType).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({
+      description: 'Quiet room', bed_type: 'King', size_sqm: 32, amenities: ['Wi-Fi'],
+    }));
+  });
+
+  it('rejects details for another hotel before data access', async () => {
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.updateRoomType({ ...base, hotel_id: 'e1d6de3a-8e35-40a2-bcc5-0de1b548ad3a', description: 'Other hotel' }))
+      .rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(hotelMocks.getManagedHotel).not.toHaveBeenCalled();
   });
 });

@@ -60,6 +60,17 @@ async function seedHotel(id: string, owner: string, role = "hotel_owner", public
 }
 
 describe("D1 hotel repository", () => {
+  it("stores optional room details and keeps old rooms empty", async () => {
+    await seedHotel("a", "owner");
+    const caller = { userId: "owner" };
+    const created = await createManagedRoomType(db, caller, { hotel_id: "a", name: "Suite", capacity: 2, base_price: 200, quantity: 1,
+      description: "Quiet room", bed_type: "King", size_sqm: 32, amenities: ["Wi-Fi"] });
+    expect(created).toMatchObject({ description: "Quiet room", bedType: "King", sizeSqm: 32, amenities: ["Wi-Fi"] });
+    const publicHotel = await getPublicHotel(db, { access: "public" } as any, "a-slug");
+    expect(publicHotel.roomTypes.find(room => room.id === created.id)).toMatchObject({ description: "Quiet room", bed_type: "King", size_sqm: 32, amenities: ["Wi-Fi"] });
+    expect(publicHotel.roomTypes.find(room => room.id === "rt-a")).toMatchObject({ description: null, bedType: null, sizeSqm: null, amenities: [] });
+    await expect(updateManagedRoomType(db, caller, { hotel_id: "a", room_type_id: created.id, amenities: ["x".repeat(41)] })).rejects.toThrow();
+  });
   it("lists only the platform hotel directory summary fields", async () => {
     await seedHotel("a", "root", "super_admin");
     const rows = await listPlatformHotelDirectory(db, { userId: "root" });

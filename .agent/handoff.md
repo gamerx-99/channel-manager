@@ -1,5 +1,26 @@
 # Handoff log
 
+## [2026-11-05] Part 4a: hotel supplied room type details
+- **Branch**: `part-4a/room-type-details`, based on GitHub `main` at `bc62f5898473544cd7e6d0e779f0649eb613104d`. Direct HTTPS clone could not resolve github.com; a fresh local clone was made from that exact Git object and its `origin` points to GitHub.
+- **Scope**: four optional room type fields: description (600), free text bed type (80), size in m² (1–1000), and up to 12 free text amenities (40 each). New and old rooms have no preset description, bed type or amenities. The owner form saves these; the booking room card shows only populated fields. Existing `property.manage_room_structure` checks remain in the router and scoped D1 repository.
+- **Migration**: `drizzle/d1/20261105000000_room_type_details.sql`. Generated with `drizzle-kit generate` using the requested config via the local executable after `pnpm exec` hit a read-only store lock. Renamed the generated file to the repo's date-based migration order and added SQLite validation triggers, because the generated table rebuild conflicted with existing room type triggers. **Migration has not been applied to staging or production.**
+- **Tests**: validation rejects overlong description/bed type/amenity, too many amenities and out-of-range size; router rejects another hotel; D1 test verifies persistence, public read, empty legacy fields and DB trigger; render test verifies populated and empty cards. Exact router mock expectations in `server/channelManager.creation.d1.test.ts` and `server/channelManager.roomTypes.d1.test.ts` were updated only because the helper now receives optional detail fields; permission and pricing assertions were kept.
+- **Evidence**: `corepack pnpm check` exit 0 (`tsc --noEmit`); `corepack pnpm test` exit 0 (212 files, 1,442 tests); `corepack pnpm build` exit 0 (Vite build and Wrangler `--dry-run: exiting now`). `thaiGlossary.test.ts` and `developerText.test.ts` passed in the full suite. No deploy or remote migration run.
+- **New copy, before → after** (empty means no label or text existed):
+
+| Key | Before | After (th) | After (en) |
+|---|---|---|---|
+| `hotelDetail.roomDescriptionLabel` | — | รายละเอียดห้อง | Description |
+| `hotelDetail.bedTypeLabel` | — | ประเภทเตียง | Bed type |
+| `hotelDetail.roomSizeLabel` | — | ขนาดห้อง (ตร.ม.) | Room size (m²) |
+| `hotelDetail.amenitiesLabel` | — | สิ่งอำนวยความสะดวก | Amenities |
+| `hotelDetail.amenitiesHelp` | — | กรอกหนึ่งรายการต่อบรรทัด (ไม่เกิน 12 รายการ) | Enter one amenity per line (up to 12). |
+| `hotelDetail.errorRoomDetailsInvalid` | — | ตรวจสอบรายละเอียดห้องและจำนวนตัวอักษร | Check the room details and limits. |
+| `publicHotel.roomBedDetail` | — | เตียง: {{value}} | Bed: {{value}} |
+| `publicHotel.roomSizeDetail` | — | {{value}} ตร.ม. | {{value}} m² |
+
+
+
 ## [2026-11-05] Overnight branch: batch availability write, stop-sell spec, long plan (machine A)
 - **Branch**: `work/overnight-2026-11-05` (local only; nothing pushed, merged or deployed).
 - **`updateAvailabilityBatch`** (`server/d1/availability.ts`, router `channelManager.updateAvailabilityBatch`): sets rooms offered (0 = stop sell) for up to 20 room types over up to 62 days in one atomic D1 batch (18 rows per statement because D1 allows 100 bound parameters). Changes only `rooms_available`; an existing row keeps its price, a new row starts at the room type's base price. Permissions: 0 rooms needs `revenue.manage_stop_sell`, otherwise `revenue.manage_allotment`; the repository call also checks hotel scope. Not used by any page yet.

@@ -1,5 +1,7 @@
 import React from "react";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
+import { trpc } from "@/lib/trpc";
+import type { RoomTypeDetails } from "@shared/roomTypeDetails";
 
 type Page = ReturnType<typeof usePublicHotelPage>;
 type Booking = NonNullable<Page["booking"]>;
@@ -24,6 +26,9 @@ export default function BookingStepRooms(props: BookingStepRoomsProps) {
     holdRoomTypeMutation,
     setWizardStep,
   } = props;
+  const slug = availabilityQuery.data?.hotel.slug ?? "";
+  const publicHotel = trpc.channelManager.publicHotel.useQuery(slug, { enabled: Boolean(slug) });
+  const detailsById = new Map(publicHotel.data?.roomTypes.map(roomType => [roomType.id, roomType]) ?? []);
 
   return (
     <div>
@@ -37,6 +42,7 @@ export default function BookingStepRooms(props: BookingStepRoomsProps) {
             {availableRoomTypes.map((rt: any) => {
               const isPreferred = preferredRoomTypeId === rt.id;
               const isAvailable = rt.is_available;
+              const details = detailsById.get(rt.id) as Partial<RoomTypeDetails> | undefined;
               return (
                 <div
                   key={rt.id}
@@ -51,6 +57,10 @@ export default function BookingStepRooms(props: BookingStepRoomsProps) {
                         : t("publicHotel.roomsLeft", { capacity: rt.capacity, count: rt.rooms_available })}
                       {rt.min_stay_violated ? t("publicHotel.minStayNote", { count: rt.min_stay_nights ?? 1 }) : ""}
                     </small>
+                    {details?.description && <p>{details.description}</p>}
+                    {details?.bed_type && <small>{t("publicHotel.roomBedDetail", { value: details.bed_type })}</small>}
+                    {details?.size_sqm && <small>{t("publicHotel.roomSizeDetail", { value: details.size_sqm })}</small>}
+                    {Boolean(details?.amenities?.length) && <ul>{details?.amenities?.map((amenity, index) => <li key={`${index}-${amenity}`}>{amenity}</li>)}</ul>}
                   </div>
                   <div className="booking-room-price-col">
                     <strong className="booking-room-price">
