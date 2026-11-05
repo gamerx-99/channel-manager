@@ -30,9 +30,9 @@ How to read an item: **Test** = which of the four it serves. **Owner** = who can
 |---|---|---|---|---|
 | B1 | **Room type details** (description, bed type, size, amenities typed by the hotel; empty by default). Part 4a, branch `part-4a/room-type-details`, migration `20261105000000_room_type_details.sql` not applied. | C done, H applies | M | Order matters: a human applies the migration to production first, then the code is merged and deployed. Done when a hotel fills the fields and the guest step shows them; a room with no data looks unchanged. |
 | B2 | **Photos per room type** (Part 4b). Photos are per hotel today, so a guest cannot see the room they choose. Needs a link between a photo and a room type (a nullable column and a migration) and the website builder picker. | C | L | After B1. Touches the media tables and the builder, so it owns those files alone while it runs. Done when each room type can show up to a few photos on the booking step. |
-| B3 | **Cancellation policy as the hotel's own text.** hayhost provides the place to write it and shows it to guests; no default text. If a hotel has none, the public page tells guests to ask the property and shows its contact; the owner sees a warning popup until a policy is set; "รับทราบ" records who acknowledged it and when. Decided 2026-11-03, not built. | C | M | Needs a table or columns (migration). Done when the three states (set, not set, acknowledged) behave as written. |
+| B3 | ~~Cancellation policy~~ | - | - | Removed 2026-11-05 (owner: "we are not an OTA"). The hotel cancels with the existing action. Nothing to build. |
 | B4 | Server refuses a check-in before today in Thai time on the public booking write (the Part 10 session proposed it; today only the page prevents it). | C | S | Test with a clock at 00:30 Thai time. |
-| B5 | **What the guest gets after booking**: confirmation on screen with a reference, and a way to find the booking again. To verify: whether an email or LINE message is sent today. | M reads first | S to find, M to build | Decide the channel with the owner before building. |
+| B5 | **Booking confirmation email to the guest** (decided 2026-11-05: email only). To verify first: whether the booking flow already sends one (an email module and an `EMAIL_FROM` setting exist) and whether the guest email is collected and kept. | M reads first, then C | S to find, M to build | Done when a guest who books receives an email with the hotel name, dates, room type, price, payment state and a reference. |
 | B6 | Public page basics for sharing: page title, description and a share image per hotel; opens fast on a phone. | C | S | Check the hotel page at 375px on a slow connection setting. |
 | B7 | Custom domain for a customer (open since 2026-10-30; done by hand for the first customers). | H | - | Write the manual steps once so each customer takes minutes. |
 
@@ -50,12 +50,12 @@ How to read an item: **Test** = which of the four it serves. **Owner** = who can
 
 | # | Item | Owner | Size | Notes and done-when |
 |---|---|---|---|---|
-| B13 | **Decide what "revenue" means**: by check-in date (what the page shows now) or cash by payment date. The second needs a `paid_at` on every booking and a migration. | H decides | S | Record the answer in `DECISIONS.md`; the labels on the cards must say which one it is. |
-| B14 | **Payments ledger**: every payment with date, method (cash, transfer, PromptPay, slip), amount, booking and who recorded it; daily cash summary for the front desk. | C | L | Depends on B13. Done when the daily total matches what the cashier counts. |
+| B13 | **Revenue is money received** (decided 2026-11-05: "เงินเข้าบัญชี = มีรายได้"). Part 1 shipped revenue by check-in date, so the Dashboard cards and the report must change to the day the payment was received, net of refunds. Needs a date on every payment (a payments ledger, B14) and a migration. Open: how to date payments recorded before the change (use the verified time of a slip payment and the booking creation time for a counter payment). | M or C | M | Done when "revenue today" equals what reached the account today and a booking paid in advance is counted on the day it was paid, not on arrival. |
+| B14 | **Payments ledger** (now the base of revenue): every payment with date, method (cash, transfer, PromptPay, slip), amount, booking and who recorded it; daily cash summary for the front desk. Slip payments already have a verified time; counter payments need one. | C | L | Do first of Phase B for test 3. Done when the day total matches what the cashier and the bank statement show. |
 | B15 | **Refunds**: the statuses exist (refund pending, refunded) but money going back is not recorded anywhere. Record amount, date and method; show in the ledger; exclude from revenue (already excluded). | C | M | After B14. |
 | B16 | **Receipts and tax documents** (`specs/15-invoicing-and-tax.md`, draft). Waits for the owner and an accountant to answer the nine questions in `.agent/OPEN_QUESTIONS.md`. No code before that. | H then C | L | A first receipt for one booking as a PDF is the smallest useful step. |
 | B17 | Check the reports against a real month: pick one hotel's month, add the figures by hand, compare with the Financials page and the CSV. | H | S | Any difference is a bug and goes on this list. |
-| B18 | **Plans and billing**: free for up to 3 rooms, Pro for more (decided 2026-11-02/04), the 15-day trial, coupons, platform CRM. Per the register, plan limits are not enforced in code. | C | L | Do after the four tests; first customers are billed by hand. Enforcement must follow the hotel, not the account (the Account page already shows the plan per hotel). |
+| B18 | **Plans and billing**: free for up to 3 rooms, Pro for more (decided 2026-11-02/04), coupons, platform CRM. **Enforce after the starting package ends** (decided 2026-11-05: 14 days per the owner; the code says 15, to confirm). Enforcement follows the hotel, not the account (the Account page already shows the plan per hotel). | C | L | After the four tests; first customers are billed by hand until then. |
 
 ### Test 4: staff work is controlled and smooth
 
@@ -123,10 +123,15 @@ Five walkthroughs, each done by a person on the live site (or a staging copy) wi
 
 File ownership while Parts run in parallel (so two agents never edit the same file): the booking write (`server/d1/booking.ts`, `bookingService.ts`) belongs to one Part at a time (B9, then B10); the hotel page and router (`HotelDetail.tsx`, `hotelRouter.ts`) to one Part at a time (B1, then B19, then B20); the media tables and the builder to B2 alone; finance files (`financials.ts`, `Financials.tsx`, `dashboardRouter.ts`) to B14 and B15 in turn; `en.ts`, `th.ts` and `handoff.md` are append-only per Part. Migrations are written by agents and applied only by a human, before the code that needs them is deployed.
 
-## Decisions waiting for the owner
+## Decisions
 
-1. Revenue by check-in date or cash by payment date (B13).
-2. The Thai wording tables (A5).
-3. Which guest confirmation channel: email, LINE, or on-screen only (B5).
-4. Cancellation policy fields the hotel can fill (B3): free text only, or text plus a few optional numbers (for example the last day for a free change). hayhost writes no default either way.
-5. When to start billing enforcement (B18).
+Made on 2026-11-05 (in `DECISIONS.md`):
+1. Revenue is money received, not the check-in date (B13, B14).
+2. The booking confirmation goes to the guest by email (B5).
+3. No cancellation policy feature (B3 removed).
+4. Plan limits are enforced after the starting package ends (B18).
+
+Still open:
+1. **Thai wording tables** (A5): each entry in `.agent/handoff.md` has a table "before, after" listing every Thai text I changed or added today (menu names, the account page, builder messages, housekeeping captions). The owner only needs to read the "after" column and say "ok" or give the wording they prefer.
+2. **Starting package length**: 14 days (owner's words) or 15 days (what the code and the 2026-11-04 row say).
+3. **Dating old payments** for the new revenue definition (B13).
