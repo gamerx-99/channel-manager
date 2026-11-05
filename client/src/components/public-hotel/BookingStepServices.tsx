@@ -52,6 +52,11 @@ export default function BookingStepServices(props: BookingStepServicesProps) {
           {(servicesQuery.data ?? []).map((s) => {
             const qty = selectedServiceQty[s.id] ?? 0;
             const checked = qty > 0;
+            const pricingModelLabel = s.pricingModel === "ONE_TIME"
+              ? t("hotelServices.pricingModelOneTime")
+              : s.pricingModel === "PER_NIGHT"
+                ? t("hotelServices.pricingModelPerNight")
+                : t("hotelServices.pricingModelPerPersonPerNight");
             return (
               <div
                 key={s.id}
@@ -71,7 +76,7 @@ export default function BookingStepServices(props: BookingStepServicesProps) {
                   />
                   <div>
                     <strong className="booking-item-title">{s.name}</strong>
-                    <small className="booking-item-subtitle">{s.pricingModel}</small>
+                    <small className="booking-item-subtitle">{pricingModelLabel}</small>
                   </div>
                 </div>
                 <div className="booking-service-actions">
@@ -92,7 +97,7 @@ export default function BookingStepServices(props: BookingStepServicesProps) {
                     </label>
                   )}
                   <strong className="booking-service-total">
-                    ฿{serviceLineTotal(s, qty).toLocaleString()}
+                    ฿{(checked ? serviceLineTotal(s, qty) : Number(s.unitPrice)).toLocaleString()}
                   </strong>
                 </div>
               </div>
