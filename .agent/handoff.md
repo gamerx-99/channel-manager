@@ -1,5 +1,14 @@
 # Handoff log
 
+## [2026-11-05] Overnight branch: batch availability write, stop-sell spec, long plan (machine A)
+- **Branch**: `work/overnight-2026-11-05` (local only; nothing pushed, merged or deployed).
+- **`updateAvailabilityBatch`** (`server/d1/availability.ts`, router `channelManager.updateAvailabilityBatch`): sets rooms offered (0 = stop sell) for up to 20 room types over up to 62 days in one atomic D1 batch (18 rows per statement because D1 allows 100 bound parameters). Changes only `rooms_available`; an existing row keeps its price, a new row starts at the room type's base price. Permissions: 0 rooms needs `revenue.manage_stop_sell`, otherwise `revenue.manage_allotment`; the repository call also checks hotel scope. Not used by any page yet.
+- **Tests**: `server/d1/availability.batch.test.ts` (6: one batch for 90 rows, price kept on existing rows, reopen, cross-hotel and unknown types, limits, atomic rollback) and 3 router tests in `server/channelManager.availability.d1.test.ts` (owner allowed; housekeeping and front desk rejected; out-of-scope hotel, backwards and over-long ranges rejected). The router mock gained the new export and two constants.
+- **Spec and plan**: `specs/20-stop-sell-and-allotment.md` (draft, 4 owner decisions, audit queries, rollout, tests) and `.agent/long-plan-2026-11-05.md` (queue, guardrails, backlog, what the owner must do). Four questions added to `OPEN_QUESTIONS.md`.
+- **Blocked**: a read-only count of production `availability` rows was denied by the permission classifier; not retried another way. The audit queries are in spec 20 for a human to run.
+- **Evidence**: `pnpm check` exit 0; full `pnpm test` 204 files, exit 0; `pnpm build` exit 0. The first full run failed in `server/rateOverrides.access.test.ts` because the router read two constants from the mocked `d1/availability` module; the constants now live in `shared/availabilityBatch.ts`.
+- **Not done**: not merged to `main`; enforcement for guests (spec 20 step 3) is not written because it changes what guests can buy and needs the audit and the owner's decisions.
+
 ## [2026-11-05] Track D — developer-text guard and remaining owner copy
 - Started from main `9c4687b`, which includes the corrected Dashboard Calendar contract test (`ec7f134`). Track C was still separate, so merged its updated branch (`38d6984`) into this branch without repeating its copy edits. Track C local full test passed: 203 files, 1,357 tests; its CI for `38d6984` passed.
 - Expanded `developerText.test.ts` to check dictionary values for internal permission names, snake_case identifiers, infrastructure terms and older known identifiers. Added positive cases for every requested category and allowed glossary brands plus the OTA example URL. The test changed to prevent future developer text reaching users; no existing assertion was loosened.

@@ -6,6 +6,7 @@ const availabilityMocks = vi.hoisted(() => ({
   listAvailabilityForHotel: vi.fn(),
   listBookingOccupancyForHotel: vi.fn(),
   updateAvailability: vi.fn(),
+  updateAvailabilityBatch: vi.fn(),
   createRateOverride: vi.fn(),
   listRateOverrides: vi.fn(),
   deleteRateOverride: vi.fn(),
@@ -212,6 +213,37 @@ describe('channelManager.bookingOccupancy (D1 router)', () => {
 
 });
 
+
+describe('channelManager.updateAvailabilityBatch (D1 router)', () => {
+  const batch = { hotel_id: HOME_HOTEL, room_type_ids: [ROOM_TYPE_ID], start_date: '2026-12-20', end_date: '2026-12-31', rooms_available: 0 };
+
+  it('lets a Hotel Owner stop sell several days in one call', async () => {
+    availabilityMocks.updateAvailabilityBatch.mockResolvedValueOnce({ rows: 12, roomTypes: 1, days: 12, roomsAvailable: 0 });
+    await expect(caller('hotel_owner').channelManager.updateAvailabilityBatch(batch)).resolves.toMatchObject({ rows: 12 });
+    expect(availabilityMocks.updateAvailabilityBatch).toHaveBeenCalledTimes(1);
+    expect(availabilityMocks.updateAvailabilityBatch).toHaveBeenCalledWith(
+      {},
+      expect.anything(),
+      { hotelId: HOME_HOTEL, roomTypeIds: [ROOM_TYPE_ID], startDate: '2026-12-20', endDate: '2026-12-31', roomsAvailable: 0 },
+    );
+  });
+
+  it('rejects Housekeeping and Front Desk before any write', async () => {
+    for (const role of ['housekeeping', 'front_desk'] as const) {
+      await expect(caller(role).channelManager.updateAvailabilityBatch(batch)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      await expect(caller(role).channelManager.updateAvailabilityBatch({ ...batch, rooms_available: 1 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+    expect(availabilityMocks.updateAvailabilityBatch).not.toHaveBeenCalled();
+  });
+
+  it('rejects an out-of-scope hotel, a backwards range and a range over 62 days before writing', async () => {
+    const app = caller('hotel_owner');
+    await expect(app.channelManager.updateAvailabilityBatch({ ...batch, hotel_id: 'e1d6de3a-8e35-40a2-bcc5-0de1b548ad3a' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.channelManager.updateAvailabilityBatch({ ...batch, start_date: '2026-12-31', end_date: '2026-12-20' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    await expect(app.channelManager.updateAvailabilityBatch({ ...batch, start_date: '2026-12-01', end_date: '2027-03-01' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(availabilityMocks.updateAvailabilityBatch).not.toHaveBeenCalled();
+  });
+});
 
 describe('physical allotment limits', () => {
   it('rejects over-capacity availability before writing', async () => {

@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../_core/trpc';
 import type { Permission } from '@shared/authorization';
+import { AVAILABILITY_BATCH_MAX_DAYS, AVAILABILITY_BATCH_MAX_ROOM_TYPES } from '@shared/availabilityBatch';
 import { getManagedHotel } from '../d1/hotel';
 import {
   listAvailabilityForHotel,
   listBookingOccupancyForHotel,
   updateAvailability as dbUpdateAvailability,
+  updateAvailabilityBatch as dbUpdateAvailabilityBatch,
   createRateOverride as dbCreateRateOverride,
   listRateOverrides as dbListRateOverrides,
   deleteRateOverride as dbDeleteRateOverride,
@@ -26,6 +28,20 @@ export const availabilityUpdateSchema = z.object({
   price: z.number().nonnegative(),
   rooms_available: z.number().int().nonnegative(),
   action: z.enum(['rate', 'allotment', 'stop_sell']).default('rate'),
+});
+
+export const availabilityBatchSchema = z.object({
+  hotel_id: hotelIdSchema,
+  room_type_ids: z.array(z.string().uuid()).min(1).max(AVAILABILITY_BATCH_MAX_ROOM_TYPES),
+  start_date: z.string().date(),
+  end_date: z.string().date(),
+  rooms_available: z.number().int().nonnegative(),
+}).refine(data => data.end_date >= data.start_date, {
+  message: 'End date must be on or after start date.',
+  path: ['end_date'],
+}).refine(data => (Date.parse(data.end_date) - Date.parse(data.start_date)) / 86_400_000 < AVAILABILITY_BATCH_MAX_DAYS, {
+  message: `Choose a date range of up to ${AVAILABILITY_BATCH_MAX_DAYS} days.`,
+  path: ['end_date'],
 });
 
 export const createRateOverrideSchema = z.object({
@@ -114,6 +130,29 @@ export const updateAvailabilityProcedure = protectedProcedure
     }
   });
 
+/**
+ * Several room types over a date range in one call (bulk stop sell / allotment). Stop sell (0 rooms)
+ * needs `revenue.manage_stop_sell`; any other count needs `revenue.manage_allotment`.
+ */
+export const updateAvailabilityBatchProcedure = protectedProcedure
+  .input(availabilityBatchSchema)
+  .mutation(async ({ ctx, input }) => {
+    const permission: Permission = input.rooms_available === 0 ? 'revenue.manage_stop_sell' : 'revenue.manage_allotment';
+    requireHotelPermission(ctx.user, input.hotel_id, permission);
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    try {
+      return await dbUpdateAvailabilityBatch(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+        hotelId: input.hotel_id,
+        roomTypeIds: input.room_type_ids,
+        startDate: input.start_date,
+        endDate: input.end_date,
+        roomsAvailable: input.rooms_available,
+      });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
+
 export const createRateOverrideProcedure = protectedProcedure.input(createRateOverrideSchema).mutation(async ({ ctx, input }) => {
   requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_pricing_rules');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
@@ -160,6 +199,7 @@ export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOv
 export const availabilityRouter = router({
   availability,
   updateAvailability: updateAvailabilityProcedure,
+  updateAvailabilityBatch: updateAvailabilityBatchProcedure,
   createRateOverride: createRateOverrideProcedure,
   listRateOverrides: listRateOverridesProcedure,
   deleteRateOverride: deleteRateOverrideProcedure,
