@@ -4786,3 +4786,12 @@ Not tested in a browser or with a real email.
   - Verified no hardcoded strings or test cheat mechanisms were introduced.
   - All 4 failing suites (8 failing tests) are confirmed green via genuine functional and contract alignment.
   - Repository is in a fully green, production-ready state with all verification checks passing cleanly.
+
+## 2026-11-05 - Part 5 + stop-sell UI deployed (A2)
+
+- Pushed main (ce097a5..e603439); deployed to www.hayhostth.com.
+- Version ID: 73b3b216-d0e5-4a1b-8528-6b76b9114c19 (previous deploy a2aa6497-e524-43a2-8e9c-6a11c6d96709).
+- Includes: Part 5 closed nights (spec 20 phase 1), re-enabled stop-sell/allotment buttons, hidden allotment input on dashboard overview, Account page.
+- No migration. Production availability has 0 rows (audit 2026-11-05).
+- Rollback: pnpm exec wrangler rollback --env production (or redeploy a2aa6497).
+- Checks: pnpm check pass, pnpm test 216 files/1487 tests pass, pnpm build pass.
