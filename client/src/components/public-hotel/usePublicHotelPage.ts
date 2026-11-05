@@ -7,18 +7,6 @@ import { useBookingWizard } from "./useBookingWizard";
 export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_ACCENT_COLOR = "#954831";
 
-function getTomorrowDateString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
-
-function getDayAfterTomorrowDateString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 2);
-  return d.toISOString().slice(0, 10);
-}
-
 export function usePublicHotelPage(slug: string) {
   const { t, language, setLanguage, toggleLanguage } = useTranslation();
 
