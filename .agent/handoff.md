@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Handoff log
 
 ## [2026-11-05] Part 2: choose the period of the financial report, bookings CSV for the accountant
@@ -36,9 +35,6 @@
 - **Final verification on `bc62f58`**: `pnpm check` exit 0 (`tsc --noEmit`); `pnpm test` exit 0 (211 files, 1,442 tests); `pnpm build` exit 0 (Vite plus Wrangler `--dry-run: exiting now`).
 - **Thai copy**: none added or changed. Only this handoff and the five permitted implementation/test files changed.
 
-=======
-# Handoff log
-
 ## [2026-11-05] Part 10: guest booking pages use today in Thailand
 - **Branch**: `part-10-thai-today` (committed locally; not pushed, not deployed).
 - **Bug**: `BookingStepDates.tsx` (`minDateIso`) and the default dates in `useBookingWizard.ts` built "today" from the UTC day, so from 00:00 to 07:00 Thai time a guest could pick yesterday as check-in. `usePublicHotelPage.ts` had unused copies of the same helpers.
@@ -49,7 +45,6 @@
 - **Evidence**: `pnpm check` exit 0 (no output). `pnpm build` exit 0 (`--dry-run: exiting now.`). Full `pnpm test`: 211 files passed, 1 failed, 1439 of 1440 tests passed. The one failure is `client/src/components/PaymentQR.test.tsx` ("QR Code หมดอายุแล้ว" assertion, 10s timeout) while other worktrees were running; run alone it passes (2 of 2, 4.4s). It does not touch the files changed here. I did not get a fully green single run of the whole suite.
 - **Not done**: server refusal (proposal above); not opened in a browser.
 
->>>>>>> claude/part-10-thai-today-bb9cd1
 ## [2026-11-05] Overnight branch: batch availability write, stop-sell spec, long plan (machine A)
 - **Branch**: `work/overnight-2026-11-05` (local only; nothing pushed, merged or deployed).
 - **`updateAvailabilityBatch`** (`server/d1/availability.ts`, router `channelManager.updateAvailabilityBatch`): sets rooms offered (0 = stop sell) for up to 20 room types over up to 62 days in one atomic D1 batch (18 rows per statement because D1 allows 100 bound parameters). Changes only `rooms_available`; an existing row keeps its price, a new row starts at the room type's base price. Permissions: 0 rooms needs `revenue.manage_stop_sell`, otherwise `revenue.manage_allotment`; the repository call also checks hotel scope. Not used by any page yet.
