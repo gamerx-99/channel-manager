@@ -316,7 +316,9 @@ export async function createBookingWithGuests(
   const status = booking.status;
   if (!(BOOKING_STATUSES as readonly string[]).includes(status)) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking status is invalid." });
   const id = crypto.randomUUID();
-  const result = await atomicInsert(db, { id, hotelId: booking.hotel_id, roomId: booking.room_id, roomTypeId: null, guestName: booking.guest_name, checkIn: booking.check_in, checkOut: booking.check_out, price: canonicalBookingPrice(booking.price), source: booking.source, status, expiresAt: null, adults: booking.adults_count ?? null, children: booking.children_count ?? null, public: false, guests: guestInputs, services, changedBy: caller.userId || null, reason: "booking_created" }, now);
+  const result = await atomicInsert(db, { id, hotelId: booking.hotel_id, roomId: booking.room_id, roomTypeId: null, guestName: booking.guest_name, checkIn: booking.check_in, checkOut: booking.check_out, price: canonicalBookingPrice(booking.price), source: booking.source, status, expiresAt: null, adults: booking.adults_count ?? null, children: booking.children_count ?? null, public: false, guests: guestInputs, services, changedBy: caller.userId || null, reason: "booking_created",
+    // A walk-in is paid at the counter (the form requires the method), so the hotel has the money; phone and manual bookings stay unpaid.
+    paymentMethod: booking.payment_method ?? null, paymentStatus: booking.source === "walk-in" && booking.payment_method ? "verified" : "unpaid" }, now);
   if (result[1]!.meta.changes !== 1) throw noAvailability();
   const [row] = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
   if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking insert did not return a record." });
@@ -333,6 +335,8 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
   id: string; hotelId: string; roomId: string | null; roomTypeId: string | null; guestName: string;
   checkIn: string; checkOut: string; price: string; source: string; status: BookingStatus; expiresAt: Date | null;
   adults: number | null; children: number | null; public: boolean; createdIpHash?: string | null;
+  /** Staff bookings only: how the guest paid at the counter, and whether the hotel has the money. */
+  paymentMethod?: "cash" | "transfer" | "promptpay" | null; paymentStatus?: "unpaid" | "pending" | "verified" | "failed";
   guests: Array<Omit<GuestRecord, "id" | "booking_id">>;
   services: Array<Omit<BookingServiceRecord, "id" | "booking_id" | "created_at">>;
   changedBy: string | null; reason: string | null;
@@ -345,12 +349,12 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
                 and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?))))
             order by r.room_number limit 1`)
           .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime())
-    : db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by)
-        select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from hotels h
+    : db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by, payment_method, payment_status)
+        select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from hotels h
         where h.id = ? and (? is null or exists (select 1 from rooms r where r.id = ? and r.hotel_id = ? and r.status <> 'maintenance'))
           and (? is null or not exists (select 1 from bookings b where b.room_id = ? and b.check_in < ? and b.check_out > ?
             and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?)))))`)
-      .bind(input.id, input.hotelId, input.roomId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.hotelId, input.roomId, input.roomId, input.hotelId, input.roomId, input.roomId, input.checkOut, input.checkIn, now.getTime());
+      .bind(input.id, input.hotelId, input.roomId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.paymentMethod ?? null, input.paymentStatus ?? "unpaid", input.hotelId, input.roomId, input.roomId, input.hotelId, input.roomId, input.roomId, input.checkOut, input.checkIn, now.getTime());
   const statements = [releaseExpiredHoldNightsStatement(db, input.public ? { hotelId: input.hotelId } : { roomId: input.roomId ?? "" }, now), bookingInsert];
   for (const guest of input.guests) statements.push(db.$client.prepare(`insert into guests (id, booking_id, first_name, middle_name, last_name, gender, passport_no, nationality_code, birth_date, phone_no)
       select ?, ?, ?, ?, ?, ?, ?, ?, ?, ? where changes() = 1`)

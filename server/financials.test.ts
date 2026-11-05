@@ -88,6 +88,52 @@ describe('financials summary', () => {
     expect(result.totals.outstandingRevenue).toBe(500); // 300 unpaid + 200 undefined
   });
 
+  it('does not count held, unpaid, expired, rejected or refunded bookings as revenue (regression: everything except cancelled was revenue)', () => {
+    const booking = (id: string, status: string, price: number) => ({ id, status, payment_status: 'unpaid', check_in: '2026-08-20', check_out: '2026-08-21', price, rooms: null });
+    const result = buildFinancialsSummary([{
+      id: 'hotel-1',
+      bookings: [
+        booking('ok-confirmed', 'confirmed', 1000),
+        booking('ok-in', 'checked_in', 2000),
+        booking('ok-out', 'checked_out', 3000),
+        booking('held', 'held', 400),
+        booking('pay', 'pending_payment', 400),
+        booking('verify', 'pending_verification', 400),
+        booking('expired', 'expired', 400),
+        booking('rejected', 'payment_rejected', 400),
+        booking('cancelled', 'cancelled', 400),
+        booking('refund-pending', 'refund_pending', 400),
+        booking('refunded', 'refunded', 400),
+      ],
+    }], now);
+    expect(result.totals.revenue).toBe(6000);
+    expect(result.totals.bookings).toBe(3);
+    expect(result.totals.cancelledBookings).toBe(3); // cancelled + refund pending + refunded
+    expect(result.totals.outstandingRevenue).toBe(6000);
+    expect(result.trend.find(point => point.date === '2026-08-20')).toEqual({ date: '2026-08-20', bookings: 3, revenue: 6000 });
+  });
+
+  it('cuts the 30-day period at Thai midnight, not UTC midnight (regression: figures moved a day between 00:00 and 07:00 in Thailand)', () => {
+    const justAfterThaiMidnight = new Date('2026-08-20T17:30:00.000Z'); // 00:30 on 2026-08-21 in Thailand
+    const result = buildFinancialsSummary([{
+      id: 'hotel-1',
+      bookings: [{ id: 'today', status: 'confirmed', check_in: '2026-08-21', check_out: '2026-08-22', price: 700, rooms: null }],
+    }], justAfterThaiMidnight);
+    expect(result.periodEnd).toBe('2026-08-21');
+    expect(result.totals.revenue).toBe(700);
+  });
+
+  it('adds money exactly, to the satang', () => {
+    const result = buildFinancialsSummary([{
+      id: 'hotel-1',
+      bookings: [
+        { id: 'a', status: 'confirmed', check_in: '2026-08-20', check_out: '2026-08-21', price: '0.10', rooms: null },
+        { id: 'b', status: 'confirmed', check_in: '2026-08-20', check_out: '2026-08-21', price: '0.20', rooms: null },
+      ],
+    }], now);
+    expect(result.totals.revenue).toBe(0.3);
+  });
+
   it('creates one daily trend point for every day in the period', () => {
     const result = buildFinancialsSummary([{
       id: 'hotel-1',

@@ -451,3 +451,29 @@ describe("claimBookingNights", () => {
     await expect(bookingRepository.claimBookingNights(db, createD1GuestPaymentCallerContext("b"), "a", "resubmitted", now)).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
+
+describe("staff booking payment", () => {
+  it("stores how a walk-in paid and marks it collected (regression: the payment method was dropped and the booking showed as outstanding)", async () => {
+    await seedHotel("a", "owner-a");
+    const created = await createBookingWithGuests(db, ownerA, { ...bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-02"), source: "walk-in" as const, payment_method: "cash" as const }, []);
+    const [row] = await db.select({ paymentMethod: bookings.paymentMethod, paymentStatus: bookings.paymentStatus }).from(bookings).where(eq(bookings.id, created.id));
+    expect(row).toEqual({ paymentMethod: "cash", paymentStatus: "verified" });
+  });
+
+  it("keeps a manual or phone booking unpaid, and records a method only if one was given", async () => {
+    await seedHotel("a", "owner-a", { quantity: 2 });
+    const manual = await createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-01", "2026-11-02"), []);
+    const phone = await createBookingWithGuests(db, ownerA, { ...bookingInput("a", "room-a-2", "confirmed", "2026-11-01", "2026-11-02"), source: "phone" as const, payment_method: "transfer" as const }, []);
+    const rows = await db.select({ id: bookings.id, paymentMethod: bookings.paymentMethod, paymentStatus: bookings.paymentStatus }).from(bookings);
+    expect(rows.find(row => row.id === manual.id)).toMatchObject({ paymentMethod: null, paymentStatus: "unpaid" });
+    expect(rows.find(row => row.id === phone.id)).toMatchObject({ paymentMethod: "transfer", paymentStatus: "unpaid" });
+  });
+
+  it("leaves a guest's own online booking unpaid until the slip is checked", async () => {
+    await seedHotel("a", "owner-a");
+    const held = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-10", check_out: "2026-11-11", adults: 2, children: [] } as any);
+    const [row] = await db.select({ paymentMethod: bookings.paymentMethod, paymentStatus: bookings.paymentStatus }).from(bookings);
+    expect(held).toBeTruthy();
+    expect(row).toEqual({ paymentMethod: null, paymentStatus: "unpaid" });
+  });
+});

@@ -11,6 +11,7 @@ import PageState from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import { otaSyncEnabled } from '@/lib/featureFlags';
 import { useHotel } from '@/contexts/HotelContext';
+import { dashboardFigures, isRevenueStatus } from '@shared/finance';
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
 
@@ -70,15 +71,16 @@ export default function Home() {
   const selectedHotelData = data?.hotels?.find(h => h.id === selectedHotelId) ?? data?.hotels?.[0];
   const hotelRooms = selectedHotelData?.rooms ?? [];
   const hotelBookings = (selectedHotelData?.bookings ?? []).map((b: any) => ({ ...b, source: b.source as any, status: b.status as any }));
-  const confirmedBookings = hotelBookings.filter((b: any) => b.status === 'confirmed');
-  const today = new Date().toISOString().slice(0, 10);
-  const thisMonth = today.slice(0, 7);
-  const roomsAvailableToday = hotelRooms.filter((r: any) => r.status === 'available').length;
+  // One shared definition of revenue, arrivals and "today" (Thailand time); see shared/finance.ts.
+  const confirmedBookings = hotelBookings.filter((b: any) => isRevenueStatus(b.status));
+  const figures = dashboardFigures(hotelBookings);
+  // Rooms free tonight are computed on the server from the bookings (rooms.status is not kept current).
+  const roomsAvailableToday = (selectedHotelData as any)?.roomsAvailableToday ?? 0;
   const totalRooms = hotelRooms.length;
-  const checkInsToday = confirmedBookings.filter((b: any) => b.check_in === today).length;
-  const checkOutsToday = confirmedBookings.filter((b: any) => b.check_out === today).length;
-  const revenueToday = confirmedBookings.filter((b: any) => b.check_in === today).reduce((s: number, b: any) => s + Number(b.price ?? 0), 0);
-  const revenueThisMonth = confirmedBookings.filter((b: any) => (b.check_in ?? '').startsWith(thisMonth)).reduce((s: number, b: any) => s + Number(b.price ?? 0), 0);
+  const checkInsToday = figures.arrivalsToday;
+  const checkOutsToday = figures.departuresToday;
+  const revenueToday = figures.revenueToday;
+  const revenueThisMonth = figures.revenueThisMonth;
 
   const roles = authMe?.roles ?? [];
   const memberships = authMe?.memberships ?? [];

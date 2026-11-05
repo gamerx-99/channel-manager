@@ -15,6 +15,8 @@ import { getOtaSummary } from '../d1/ota';
 import { buildFinancialsSummary } from '../financials';
 import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
 import { inventoryStatus } from '@shared/inventoryStatus';
+import { bangkokDate, dashboardFigures, isRevenueStatus } from '@shared/finance';
+import { freeRoomsTonight, occupiedRoomIdsOnNight } from '../d1/dashboardStats';
 
 export const dashboardCalendarSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
@@ -35,19 +37,23 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
         price: b.price,
       })),
     }));
-    const today = new Date().toISOString().slice(0, 10);
-    const confirmedBookings = hotels.flatMap(hotel => hotel.bookings).filter(booking => booking.status === 'confirmed');
+    const now = new Date();
+    const today = bangkokDate(now);
+    const tomorrow = addIsoDays(today, 1);
+    // Rooms free tonight come from the bookings, not from the rooms.status field (nothing keeps that field current).
+    const hotelsWithFreeRooms = await Promise.all(hotels.map(async hotel => ({
+      ...hotel,
+      roomsAvailableToday: freeRoomsTonight(hotel.rooms, await occupiedRoomIdsOnNight(ctx.db!, hotel.id, today, tomorrow, now)),
+    })));
+    const revenueBookings = hotelsWithFreeRooms.flatMap(hotel => hotel.bookings).filter(booking => isRevenueStatus(booking.status));
     return {
-      hotels,
+      hotels: hotelsWithFreeRooms,
       summary: {
         hotelCount: hotels.length,
         roomCount: hotels.reduce((total, hotel) => total + hotel.rooms.length, 0),
-        availableRoomCount: hotels.reduce(
-          (total, hotel) => total + hotel.rooms.filter(room => room.status === 'available').length,
-          0,
-        ),
-        arrivalsToday: confirmedBookings.filter(booking => booking.check_in === today).length,
-        recentBookings: confirmedBookings.sort((a, b) => b.check_in.localeCompare(a.check_in)).slice(0, 6),
+        availableRoomCount: hotelsWithFreeRooms.reduce((total, hotel) => total + hotel.roomsAvailableToday, 0),
+        arrivalsToday: dashboardFigures(revenueBookings, now).arrivalsToday,
+        recentBookings: revenueBookings.sort((a, b) => b.check_in.localeCompare(a.check_in)).slice(0, 6),
       },
     };
   } catch (error) {

@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { hasAnyPermission, hasHotelPermission, type AppRole, type Permission, type PermissionMembership } from '@shared/authorization';
+import { bangkokDate } from '@shared/finance';
 
 export function addIsoDays(isoDate: string, amount: number) {
   const date = new Date(`${isoDate}T00:00:00.000Z`);
@@ -7,8 +8,9 @@ export function addIsoDays(isoDate: string, amount: number) {
   return date.toISOString().slice(0, 10);
 }
 
+/** Today in Thailand, the hotel's day (not the server's UTC day). */
 export function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return bangkokDate();
 }
 
 export function getIdentityRoles(user: { role?: AppRole | null; roles?: readonly AppRole[] | null }) {

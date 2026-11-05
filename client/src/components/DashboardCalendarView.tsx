@@ -5,6 +5,7 @@ import PageState from '@/components/PageState';
 import { formatDateDDMMYYYY } from '@/lib/formatDate';
 import { useTranslation } from '@/lib/i18n';
 import { otaSyncEnabled } from '@/lib/featureFlags';
+import { bangkokDate } from '@shared/finance';
 
 type CalendarViewProps = {
   defaultDays?: number;
@@ -31,7 +32,7 @@ type CalendarDay = {
 };
 
 function isoToday() {
-  return new Date().toISOString().slice(0, 10);
+  return bangkokDate();
 }
 
 function shiftIsoDate(isoDate: string, amount: number) {
