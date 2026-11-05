@@ -1,6 +1,33 @@
 <<<<<<< HEAD
 # Handoff log
 
+## [2026-11-05] Part 2: choose the period of the financial report, bookings CSV for the accountant
+- **Branch**: `part-2-finance-period`. Not pushed, merged or deployed. No migration.
+- **Server**: `buildFinancialsSummary(hotels, now, period?)` (`server/financials.ts`). The `financials` procedure takes optional `{ month: "YYYY-MM" }` or `{ from, to }` (zod `financialsInputSchema`: real calendar dates, `to >= from`, at most 366 days counting both ends; Thai calendar days). No input = last 30 days, as before. Trend: one point per day, or one per month (dated the 1st) when the period is over 62 days (`trendGranularity`). Result gains `trendGranularity`, `periodLabel` (`last_30_days | month | range`) and `bookings`: one row per revenue booking (id first 8 characters, `check_in`, `check_out`, `room_type`, `source`, `status`, `payment_status`, `payment_method` (nullable), `price`), sorted by check-in. No guest data is selected by the query or returned. Revenue, cancelled, collected, pending, outstanding still come from `shared/finance.ts`; no second definition. `listManagedHotelsForFinancials` now also selects `source` and `payment_method`.
+- **Client** (`Financials.tsx`, `financialsPeriod.ts`): picker with last 30 days, previous / next / this month (next is disabled past the current Thai month); cards, trend and room-type table follow the period; previous figures stay on screen while a new period loads. New "bookings CSV" (UTF-8 BOM, header row, price as a plain number with 2 decimals, cells that start with `= + - @` are prefixed with `'` so a spreadsheet does not run them). The room-type CSV is kept; both file names now carry the period dates. New helper file `client/src/pages/financialsPeriod.ts` (pure logic, per house style) was not on the list of editable files; it is new and only used by this page.
+- **Existing tests edited (Rule 6, said openly)**: `Financials.contract.test.ts` asserted the exact text `export const financials = protectedProcedure.query` and `buildFinancialsSummary(hotels as any)`. The procedure now has an input and the call passes the period, so those two strings changed to `export const financials = protectedProcedure` plus `...input(financialsInputSchema).query` and `buildFinancialsSummary(hotels as any, new Date(), input)`. The access gate assertions are untouched. No assertion was loosened elsewhere.
+- **Tests added**: `server/financials.test.ts` (+10: default unchanged, month and leap February, 23:59 / 00:00 Thai on the 1st, inclusive range, month grouping and its sum, 62/63-day boundary, cancelled and held excluded, rows have short id / null payment method / no guest data, input limits), `server/financials.access.test.ts` (+5: month passes through, over 366 days refused before any data is read, support / super_admin / admin / revenue_manager still FORBIDDEN with an input), `server/d1/financials.scope.test.ts` (+1: source and payment method present, no guest keys), `client/src/pages/Financials.period.test.tsx` (8: picker render and clicks, no future month, CSV text, formula guard, BOM).
+- **Thai wording (owner to confirm), before → after**:
+
+| Key | Before | After |
+|---|---|---|
+| `financials.last30Days` (page header) | 30 วันล่าสุด · {{start}} – {{end}} | (key kept, no longer used) → `periodRange`: ช่วงวันที่ {{start}} – {{end}} |
+| `financials.last30DaysDetail` (occupied nights card) | 30 วันล่าสุด | (key kept, no longer used) → the period range above |
+| `financials.noRoomTypeRevenueDesc` | รายการจองจะปรากฏที่นี่เมื่อมีการเช็คอินภายใน 30 วันล่าสุด | รายการจองจะแสดงที่นี่เมื่อมีการเช็คอินในช่วงเวลาที่เลือก |
+| `periodTitle` | new | ช่วงเวลา |
+| `periodPickerAria` | new | เลือกช่วงเวลาของรายงาน |
+| `periodLast30` | new | 30 วันล่าสุด |
+| `periodPreviousMonth` / `periodNextMonth` | new | เดือนก่อนหน้า / เดือนถัดไป |
+| `periodThisMonth` / `periodPickMonth` | new | เดือนนี้ / เลือกเดือน |
+| `bookingsExportTitle` | new | รายการจองสำหรับบัญชี |
+| `downloadBookingsCsv` | new | ดาวน์โหลดรายการจอง (CSV) |
+| `bookingsExportDesc` | new | {{count}} รายการจองที่นับเป็นรายได้ในช่วงนี้ ไม่มีชื่อหรือข้อมูลติดต่อของแขก |
+| `bookingsExportEmpty` | new | ไม่มีรายการจองที่นับเป็นรายได้ในช่วงนี้ |
+
+- **Not done (deferred on purpose)**: per-booking total / paid / balance in the table (needs `booking.ts`, Part 5); cash by payment date (owner has not decided). The CSV column headers are English only (like the existing room-type CSV). Not opened in a browser.
+- **Notes**: the trend chart axis labels show day and month for monthly points too (date is the 1st); acceptable, could show the month name later. `shared/finance.ts` needs no change. The worktree had no `node_modules`; I ran `pnpm install --frozen-lockfile` (lockfile unchanged).
+- **Evidence**: pnpm check exit 0 (tsc, no output); full pnpm test: Test Files 212 passed (212), Tests 1461 passed (1461); pnpm build exit 0 (wrangler dry-run: exiting now). An earlier full run had one timing failure in PaymentQR.test.tsx under load (unrelated; passes alone and in the final full run).
+
 ## [2026-11-05] Part 3 — front desk calendar availability without daily prices
 - **Base**: fresh GitHub clone from `main` at `3f1c69b`, fast-forwarded to latest `bc62f58` before final verification. Read the 2026-11-05 Product principle added in `ddb4bcc`: staff work should be controlled and run smoothly. No deployment.
 - **Red test before the fix**: `server/d1/availability.test.ts` simulated a real `front_desk` hotel membership and expected its own availability with `price: null`. It failed with `TRPCError: Hotel access denied` at `availability.ts:39` (1 failed, 9 skipped).

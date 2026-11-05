@@ -13,10 +13,12 @@ describe("Financials dashboard contract", () => {
   const authorization = readFileSync(resolve(process.cwd(), "shared/authorization.ts"), "utf8");
 
   it("exposes a protected financials procedure gated by requireFinancialsAccess, not requireHotelPermission", () => {
-    expect(router).toContain("export const financials = protectedProcedure.query");
+    expect(router).toContain("export const financials = protectedProcedure");
     expect(router).toContain("requireFinancialsAccess(ctx.user)");
     expect(router).toContain("d1ListManagedHotelsForFinancials(ctx.db");
-    expect(router).toContain("buildFinancialsSummary(hotels as any)");
+    // The call now also passes the chosen period (Part 2); the access gate and the single entry point are unchanged.
+    expect(router).toContain("buildFinancialsSummary(hotels as any, new Date(), input)");
+    expect(router).toContain("protectedProcedure.input(financialsInputSchema).query");
   });
 
   it("registers the page and gates it with the financials-only permission", () => {
