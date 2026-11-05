@@ -25,10 +25,7 @@ const mocks = vi.hoisted(() => {
   };
 
   const availabilityQuery = {
-    data: [
-      { room_type_id: "rt-1", date: "2026-09-15", rooms_available: 2, price: 2500 },
-      { room_type_id: "rt-2", date: "2026-09-15", rooms_available: 0, price: 1500 },
-    ],
+    data: [] as any[],
     isLoading: false,
     error: null,
     refetch: vi.fn(),
@@ -48,6 +45,7 @@ const mocks = vi.hoisted(() => {
   };
 
   return {
+    authMe: { memberships: [{ hotelId: "hotel-1", permissions: ["revenue.manage_rates"] }] },
     hotelQuery,
     availabilityQuery,
     bookingOccupancyQuery,
@@ -58,6 +56,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    auth: { me: { useQuery: () => ({ data: mocks.authMe }) } },
     useUtils: () => ({
       channelManager: {
         availability: { invalidate: mocks.invalidate },
@@ -84,6 +83,8 @@ describe("Availability month calendar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.bookingOccupancyQuery.data = [];
+    mocks.availabilityQuery.data = [];
+    mocks.authMe.memberships = [{ hotelId: "hotel-1", permissions: ["revenue.manage_rates"] }];
   });
 
   it("renders one month calendar and has no week/month switcher", () => {
@@ -100,6 +101,34 @@ describe("Availability month calendar", () => {
     expect(screen.getAllByText("2 rooms").length).toBeGreaterThan(0);
     expect(screen.getAllByText("1 rooms").length).toBeGreaterThan(0);
     expect(screen.queryByText("0 rooms")).toBeNull();
+  });
+
+  it("shows room counts but no daily prices when the server redacts price", async () => {
+    const user = userEvent.setup();
+    const today = new Date();
+    const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    mocks.authMe.memberships = [{ hotelId: "hotel-1", permissions: ["operations.view_bookings"] }];
+    mocks.availabilityQuery.data = [{ roomTypeId: "rt-1", date, roomsAvailable: 1, price: null }];
+    render(<Calendar id="hotel-1" />);
+    const todayCell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && button.getAttribute("aria-label")?.includes(date));
+    expect(todayCell?.textContent).toContain("2/3");
+    expect(todayCell?.getAttribute("aria-label")).not.toContain("฿");
+    await user.click(todayCell!);
+    expect(screen.getAllByText("1 rooms").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/฿/)).toBeNull();
+    expect(screen.queryByRole("link", { name: /Manage rates/ })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/฿(?:NaN|0)/);
+  });
+
+  it("does not fall back to room base prices when front desk has no saved availability rows", () => {
+    mocks.authMe.memberships = [{ hotelId: "hotel-1", permissions: ["operations.view_bookings"] }];
+    render(<Calendar id="hotel-1" />);
+    expect(screen.queryByText(/฿/)).toBeNull();
+  });
+
+  it("keeps daily prices visible for a rate manager", () => {
+    render(<Calendar id="hotel-1" />);
+    expect(screen.getAllByText("฿2,500").length).toBeGreaterThan(0);
   });
 
   it("uses the three-click IN, OUT, IN range selection", async () => {

@@ -81,6 +81,7 @@ export default function Calendar({ id }: { id: string }) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [draft, setDraft] = useState<CalendarDraft>({});
   const utils = trpc.useUtils();
+  const { data: authMe } = trpc.auth.me.useQuery();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id);
   const availabilityQuery = trpc.channelManager.availability.useQuery(id);
   const monthDays = useMemo(() => getMonthDays(monthAnchor), [monthAnchor]);
@@ -128,6 +129,8 @@ export default function Calendar({ id }: { id: string }) {
   }
 
   const hotel = hotelQuery.data as any;
+  const canViewDailyPrices = authMe?.memberships?.some(membership =>
+    membership.hotelId === id && membership.permissions.includes("revenue.manage_rates")) ?? false;
   const roomCountByType = countRoomsByType(hotel.rooms);
   const occupancy = bookingOccupancyQuery.data ?? [];
 
@@ -249,8 +252,9 @@ export default function Calendar({ id }: { id: string }) {
 
       dayTotalRooms += total;
       dayTotalAvailable += cell.available;
-      if (cell.price > 0 && (dayMinPrice === null || cell.price < dayMinPrice)) {
-        dayMinPrice = cell.price;
+      const visiblePrice = canViewDailyPrices && savedCell?.price !== null ? cell.price : null;
+      if (visiblePrice !== null && visiblePrice > 0 && (dayMinPrice === null || visiblePrice < dayMinPrice)) {
+        dayMinPrice = visiblePrice;
       }
     }
 
@@ -273,7 +277,7 @@ export default function Calendar({ id }: { id: string }) {
       <section className="page-intro intro-split">
         <div><div className="eyebrow">{t("availability.eyebrow")}</div><h1>{t("availability.title")}<span className="title-mark">.</span></h1><p className="lede">{t("availability.lede")}</p></div>
         <div className="intro-actions">
-          {!CALENDAR_EDITING_ENABLED && (
+          {!CALENDAR_EDITING_ENABLED && canViewDailyPrices && (
             <Link href="/dashboard/pricing" className="button button-primary"><SlidersHorizontal size={15} /> {t("availability.managePricing")}</Link>
           )}
           {CALENDAR_EDITING_ENABLED && <button className="button button-quiet" type="button" disabled title={t("availability.viewSettingsTooltip")}><SlidersHorizontal size={15} /> {t("availability.viewSettings")}</button>}
@@ -340,7 +344,7 @@ export default function Calendar({ id }: { id: string }) {
           <span><i className="dot amber" /> {t("availability.lowInventory")}</span>
           <span><i className="dot slate" /> {t("availability.closedInventory")}</span>
           <span><i className="calendar-booking-legend" /> {t("availability.bookedLegend")}</span>
-          <span className="calendar-info"><Info size={14} /> {t("availability.pricesInThb")}</span>
+          {canViewDailyPrices && <span className="calendar-info"><Info size={14} /> {t("availability.pricesInThb")}</span>}
         </div>
 
         <div className="calendar-month-hint"><span>{t("availability.mobileScrollHint")}</span><ChevronRight size={18} aria-hidden="true" /></div>
@@ -377,9 +381,7 @@ export default function Calendar({ id }: { id: string }) {
                     </span>
                     {agg.minPrice !== null ? (
                       <strong className="month-cell-price">฿{agg.minPrice.toLocaleString()}</strong>
-                    ) : (
-                      <span className="month-cell-empty">—</span>
-                    )}
+                    ) : null}
                     {agg.bookingPlatforms.length > 0 && <span className="month-cell-platforms" title={agg.bookingPlatforms.join(", ")}>{agg.bookingPlatforms.join(", ")}</span>}
                   </button>
                 );
@@ -423,7 +425,7 @@ export default function Calendar({ id }: { id: string }) {
                   {CALENDAR_EDITING_ENABLED && <button className={`calendar-inout-button ${allotment > 0 ? "is-active" : ""}`} type="button" disabled={!selectedDates.length} onClick={() => setInventoryForScope(roomType.id, allotment === 0)}>{allotment > 0 ? "IN" : "OUT"}</button>}
                   <AvailabilityCell
                     available={fallbackAvailable}
-                    price={cell.price}
+                    price={canViewDailyPrices && savedCell?.price !== null ? cell.price : null}
                     editing={editing}
                     onChange={update => {
                       for (const date of selectedDates) updateDraft(roomType.id, date, update, getAllotment(roomType.id, date, totalRooms), Number(availabilityByKey.get(`${roomType.id}:${date}`)?.price ?? roomType.base_price));
@@ -449,11 +451,11 @@ export default function Calendar({ id }: { id: string }) {
   );
 }
 
-function AvailabilityCell({ available, price, editing, onChange }: { available: number; price: number; editing: boolean; onChange: (update: Partial<{ available: number; price: number }>) => void }) {
+function AvailabilityCell({ available, price, editing, onChange }: { available: number; price: number | null; editing: boolean; onChange: (update: Partial<{ available: number; price: number }>) => void }) {
   const { t } = useTranslation();
   const isLow = available <= 2;
   if (editing) {
-    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span><label className="calendar-price-edit"><span>{t("availability.priceInputAria")}</span><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></label></div>;
+    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span>{price !== null && <label className="calendar-price-edit"><span>{t("availability.priceInputAria")}</span><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></label>}</div>;
   }
-  return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "ok"}`} />{t("availability.roomsCount", { count: available })}</span><strong>฿{price.toLocaleString()}</strong></div>;
+  return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "ok"}`} />{t("availability.roomsCount", { count: available })}</span>{price !== null && <strong>฿{price.toLocaleString()}</strong>}</div>;
 }

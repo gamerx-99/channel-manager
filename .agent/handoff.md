@@ -1,5 +1,13 @@
 # Handoff log
 
+## [2026-11-05] Part 3 — front desk calendar availability without daily prices
+- **Base**: fresh GitHub clone from `main` at `3f1c69b`, fast-forwarded to latest `bc62f58` before final verification. Read the 2026-11-05 Product principle added in `ddb4bcc`: staff work should be controlled and run smoothly. No deployment.
+- **Red test before the fix**: `server/d1/availability.test.ts` simulated a real `front_desk` hotel membership and expected its own availability with `price: null`. It failed with `TRPCError: Hotel access denied` at `availability.ts:39` (1 failed, 9 skipped).
+- **Change**: the D1 read authorizes `operations.view_bookings` or `revenue.manage_rates` using `authorizeHotelAction` and returns `price: null` without the rate permission. Calendar hides redacted prices in tiles, accessibility labels and selected-room rows, including dates without saved availability rows; it also hides the rate-management link and price legend for that viewer. The existing editing controls remain disabled. No role-name authorization was added.
+- **Security tests**: front desk can read only its own hotel without prices; revenue manager still receives prices; housekeeping and cross-hotel reads remain forbidden. Router and UI tests cover the route, redacted values and absent-row fallback. In the new UI test, the first expected total was corrected from `1/2` to `2/3` because the date tile sums both room types; this was a correction to the new assertion, not a relaxation of an existing test.
+- **Final verification on `bc62f58`**: `pnpm check` exit 0 (`tsc --noEmit`); `pnpm test` exit 0 (211 files, 1,442 tests); `pnpm build` exit 0 (Vite plus Wrangler `--dry-run: exiting now`).
+- **Thai copy**: none added or changed. Only this handoff and the five permitted implementation/test files changed.
+
 ## [2026-11-05] Overnight branch: batch availability write, stop-sell spec, long plan (machine A)
 - **Branch**: `work/overnight-2026-11-05` (local only; nothing pushed, merged or deployed).
 - **`updateAvailabilityBatch`** (`server/d1/availability.ts`, router `channelManager.updateAvailabilityBatch`): sets rooms offered (0 = stop sell) for up to 20 room types over up to 62 days in one atomic D1 batch (18 rows per statement because D1 allows 100 bound parameters). Changes only `rooms_available`; an existing row keeps its price, a new row starts at the room type's base price. Permissions: 0 rooms needs `revenue.manage_stop_sell`, otherwise `revenue.manage_allotment`; the repository call also checks hotel scope. Not used by any page yet.

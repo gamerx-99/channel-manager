@@ -36,8 +36,14 @@ export async function listBookingOccupancyForHotel(
 }
 
 export async function listAvailabilityForHotel(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "availability.read", now);
-  return db.select({
+  let scope;
+  try {
+    scope = await authorizeHotelAction(db, caller, hotelId, "operations.view_bookings", "availability.read", now);
+  } catch (error) {
+    if (!(error instanceof TRPCError) || error.code !== "FORBIDDEN") throw error;
+    scope = await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "availability.read", now);
+  }
+  const rows = await db.select({
     id: availability.id,
     roomTypeId: availability.roomTypeId,
     date: availability.date,
@@ -46,6 +52,7 @@ export async function listAvailabilityForHotel(db: D1ScopedDatabase, caller: D1C
     roomTypes: { id: roomTypes.id, hotelId: roomTypes.hotelId, name: roomTypes.name },
   }).from(availability).innerJoin(roomTypes, eq(availability.roomTypeId, roomTypes.id))
     .where(eq(roomTypes.hotelId, hotelId)).orderBy(asc(availability.date));
+  return rows.map(row => ({ ...row, price: scope.permissions.includes("revenue.manage_rates") ? row.price : null }));
 }
 
 export async function updateAvailability(
