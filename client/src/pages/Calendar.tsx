@@ -253,10 +253,12 @@ export default function Calendar({ id }: { id: string }) {
       }
     }
 
+    // Fully available (nothing booked or closed) is always healthy, even for a
+    // one-room property; "low" only applies once some rooms are taken.
     const status: "healthy" | "low" | "closed" =
       dayTotalAvailable <= 0
         ? "closed"
-        : dayTotalAvailable <= Math.max(1, Math.ceil(dayTotalRooms * 0.25))
+        : dayTotalAvailable < dayTotalRooms && dayTotalAvailable <= Math.max(1, Math.ceil(dayTotalRooms * 0.25))
         ? "low"
         : "healthy";
 
@@ -318,7 +320,6 @@ export default function Calendar({ id }: { id: string }) {
           </button>
           <div>
             <strong>{monthLabel(monthAnchor, language)}</strong>
-            <span>{t("availability.monthOverviewNote")}</span>
           </div>
           <button
             className="icon-button bordered"
@@ -340,7 +341,7 @@ export default function Calendar({ id }: { id: string }) {
       <section className="panel calendar-panel">
       <div className="panel-heading"><div><div className="eyebrow">{t("availability.eyebrow")}</div><h2>{t("availability.title")}</h2></div><span className="status-pill live"><i />{t("availability.monthView")}</span></div>
       <div className="calendar-legend">
-          <span><i className="dot pine" /> {t("availability.healthyInventory")}</span>
+          <span><i className="dot ok" /> {t("availability.healthyInventory")}</span>
           <span><i className="dot amber" /> {t("availability.lowInventory")}</span>
           <span><i className="dot slate" /> {t("availability.closedInventory")}</span>
           <span><i className="calendar-booking-legend" /> {t("availability.bookedLegend")}</span>
@@ -358,7 +359,7 @@ export default function Calendar({ id }: { id: string }) {
               {monthDays.map(cell => {
                 const agg = getDayAggregate(cell.date);
                 const isToday = agg.dateStr === todayIso;
-                const statusDotClass = agg.bookingPlatforms.length > 0 || agg.status === "closed" ? "slate" : agg.status === "low" ? "amber" : "pine";
+                const statusDotClass = agg.bookingPlatforms.length > 0 || agg.status === "closed" ? "slate" : agg.status === "low" ? "amber" : "ok";
                 const statusLabelText = agg.status === "closed" ? t("availability.statusClosed") : agg.status === "low" ? t("availability.statusLow") : t("availability.statusHealthy");
                 const priceSuffix = agg.minPrice !== null ? t("availability.startingFromPrice", { price: "฿" + agg.minPrice.toLocaleString() }) : "";
 
@@ -459,5 +460,5 @@ function AvailabilityCell({ available, price, editing, onChange }: { available: 
   if (editing) {
     return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span><label className="calendar-price-edit"><span>{t("availability.priceInputAria")}</span><input className="cell-price-input" value={price} min="0" type="number" aria-label={t("availability.priceInputAria")} onChange={event => onChange({ price: Math.max(0, Number(event.target.value)) })} /></label></div>;
   }
-  return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "pine"}`} />{t("availability.roomsCount", { count: available })}</span><strong>฿{price.toLocaleString()}</strong></div>;
+  return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "ok"}`} />{t("availability.roomsCount", { count: available })}</span><strong>฿{price.toLocaleString()}</strong></div>;
 }
