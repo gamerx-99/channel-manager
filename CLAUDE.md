@@ -19,8 +19,9 @@ file stays short enough to read every time.
   one mid-ticket — if a phase needs it, that's its own ticket first.
 - `pnpm dev` — `vite build` + `wrangler dev` (http://localhost:8787, local D1/R2 state
   in `.wrangler/state`). The client is built once; rerun after client changes.
-- `wrangler` is only ever run with `--dry-run` by agents; real deploys are a human step
-  (Hard rule 3).
+- Owner cancelled the "deploys are a human step" rule on 2026-11-05: Claude may run
+  `pnpm exec wrangler deploy --env production` itself once check, test and build pass.
+  Record the version ID and the rollback line in the reply.
 
 ## Folder structure
 ```
