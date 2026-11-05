@@ -4795,3 +4795,9 @@ Not tested in a browser or with a real email.
 - No migration. Production availability has 0 rows (audit 2026-11-05).
 - Rollback: pnpm exec wrangler rollback --env production (or redeploy a2aa6497).
 - Checks: pnpm check pass, pnpm test 216 files/1487 tests pass, pnpm build pass.
+
+## 2026-11-05 — Work B: Thai guest page updates
+- Public hotel fallback copy changed from English to Thai (Explore room types, rates, and availability directly from this hotel. → เลือกห้องพัก ดูราคา และตรวจสอบวันว่างได้ที่นี่). Non-empty hotel-provided copy still takes priority. The contract was updated because it locked the old English default.
+- Booking calendar Thai date labels use full Thai dates (Buddhist year); month navigation changed from Previous month/Next month to เดือนก่อน/เดือนถัดไป. Added a contract assertion.
+- Removed the visitor-facing legal draft notice, its Thai/English keys, and the assertion that required the removed notice. legalContent.ts was not changed.
+- Intended commits pending: fix(public-hotel): use Thai fallback tagline; fix(booking): localize Thai calendar dates and controls; fix(legal): remove draft review banner. Sandbox denied .git/index writes.
