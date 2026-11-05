@@ -295,14 +295,14 @@ export default function Housekeeping() {
         <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.tasksForDay")}</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.summaryTotal")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{dayTasks.length}</p>
             <p className="mt-1 text-xs text-[#778a80]">{t("housekeeping.groupedByRoom")}</p>
           </CardContent>
         </Card>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.pendingInProgress")}</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.summaryOpen")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">
               {dayTasks.filter(t => t.status !== "done").length}
             </p>
@@ -311,7 +311,7 @@ export default function Housekeeping() {
         </Card>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
           <CardContent className="p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.unassigned")}</p>
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("housekeeping.summaryUnassigned")}</p>
             <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{dayTasks.filter(t => !t.assignee).length}</p>
             <p className="mt-1 text-xs text-[#778a80]">{t("housekeeping.needAssignee")}</p>
           </CardContent>
@@ -394,7 +394,7 @@ export default function Housekeeping() {
                 </div>
               ))
             ) : (
-              <div className="panel empty-state"><strong>{t("housekeeping.noTasksForDayTitle")}</strong><span>{t("housekeeping.noTasksForDayDesc")}</span></div>
+              <div className="panel empty-state"><strong>{t("housekeeping.noTasksForDayTitle")}</strong><span>{t("housekeeping.noTasksForDayDesc")}</span>{canUpdate && <button type="button" className="button button-primary" onClick={() => { const field = document.getElementById("hk-room"); field?.scrollIntoView({ block: "center", behavior: "smooth" }); field?.focus(); }}><Plus size={15} /> {t("housekeeping.createTask")}</button>}</div>
             )}
           </CardContent>
         </Card>

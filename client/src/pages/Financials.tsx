@@ -105,7 +105,7 @@ export default function Financials() {
   }
 
   return (
-    <div className="page-content">
+    <div className="page-content financials-page">
       <section className="page-intro intro-split">
         <div>
           <div className="eyebrow">{t("financials.eyebrow")}</div>
@@ -119,7 +119,7 @@ export default function Financials() {
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel financials-summary-panel">
         <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.summaryAria")}</h2></div></div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("financials.summaryAria")}>
         <MetricCard label={t("financials.totalRevenue")} value={formatCurrency(data.totals.revenue)} detail={t("financials.cancelledCount", { count: data.totals.cancelledBookings })} icon={CircleDollarSign} tone="amber" />
@@ -129,7 +129,7 @@ export default function Financials() {
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel financials-summary-panel">
         <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.paymentCollectionAria")}</h2></div></div>
         <div className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
         <MetricCard label={t("financials.collectedRevenue")} value={formatCurrency(data.totals.collectedRevenue ?? 0)} detail={t("financials.collectedRevenueDetail")} icon={CircleDollarSign} tone="pine" />
@@ -138,7 +138,7 @@ export default function Financials() {
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel financials-charts-panel">
         <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.revenueTrendTitle")}</h2></div></div>
         <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">

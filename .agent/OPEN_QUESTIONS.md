@@ -10,6 +10,17 @@ Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+## Spec 15 — invoicing and tax (2026-11-05)
+- [ ] Which legal entity issues each document: the hotel, hayhost, or both for different charges? Who is responsible for numbering and record retention?
+- [ ] Is each hotel VAT-registered, and what evidence or admin approval is required before enabling tax invoices? Which tax invoice format and issue timing apply?
+- [ ] What hotel and buyer fields, branch information, language, signature and logo must appear on each document? Can staff override prefilled buyer data before issue?
+- [ ] Does the owner want invoice and quotation numbering per hotel and per year? What correction, cancellation, credit/debit note and partial-payment flow is required?
+- [ ] For VAT-inclusive and VAT-exclusive prices, which rate, rounding method, effective-date behaviour, discounts and service-charge treatment does the accountant approve?
+- [ ] For company guests, when does withholding tax apply, which rate/category and certificate details are needed, and how are deposits or partial payments handled?
+- [ ] Should a generated A4 PDF be a printable document only, or should the hotel enrol in a Revenue Department electronic tax invoice service? If electronic, which approved method and provider?
+- [ ] What monthly CSV/Excel columns and date basis (issue date, stay date or payment date) does the accountant need? How should voids, refunds and adjustments appear?
+- [ ] Which hotel roles may draft, issue, void, view and export documents containing guest/company tax details? What retention and deletion periods apply?
+
 - [ ] Website builder (2026-11-04): confirm the safeguards chosen for draft/publish. `ASSUMPTION:` users with `property.manage_profile` may discard a saved draft after confirmation; uploads are stored immediately but hidden from public output until selected as hero and published; hero selection and image focal points are staged until publish; deleting the currently published hero is blocked; the protected builder's local preview is visible only to users with `property.manage_profile` and is never public. Draft preview uses the existing in-page renderer and does not emulate every theme exactly. Raised 2026-11-04.
 - [ ] ASSUMPTION (2026-11-04): only the hotel's `hotel_owner` may manage or pay its subscription; super admins use CRM billing tools and cannot purchase on behalf of a hotel. Confirm if platform staff should be able to make a payment for a customer.
 - [ ] A hotel with no hotel_owner account (seed or demo data): when does its 15-day trial start? `ASSUMPTION:` the hotel's own creation date, so it still appears in the CRM and dashboard counts. Raised 2026-11-04.
