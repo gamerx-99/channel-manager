@@ -223,5 +223,5 @@ answer noted.
 ## Stop sell and allotment (2026-11-05, spec 20)
 - [x] (answered 2026-11-05: the `availability` table) Where should stop sell be stored? ASSUMPTION used in the draft: the existing `availability` table (no migration); the alternative is a closed flag on `rate_overrides` (needs a migration).
 - [x] (answered 2026-11-05: yes, a cap per night, counted including rooms already booked) Partial caps (sell at most N rooms of a type) as well as open/closed? ASSUMPTION: both.
-- [x] (answered 2026-11-05: staff may book after a warning and a confirmation, logged) Do staff bookings respect stop sell? ASSUMPTION: warn and allow; guests cannot book a stopped night.
+- [x] (answered 2026-11-05: hayhost sets no staff rule; notice and confirm only, the hotel controls staff permissions) Do staff bookings respect stop sell? ASSUMPTION: warn and allow; guests cannot book a stopped night.
 - [ ] Old `availability` rows on production: confirm each with its hotel or delete them before enforcement. Needs the two read-only audit queries in `specs/20-stop-sell-and-allotment.md` run by someone with production access (agents were blocked from reading production on 2026-11-05).
