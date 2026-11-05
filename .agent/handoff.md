@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-05] Dashboard calendar: daily edit and stop-sale controls hidden (machine A)
+- **Why**: the "จัดการห้องว่างรายวัน / แก้ไขห้องว่างของวันที่เลือก" block (rooms-available field, save, stop sale) on `/dashboard` writes the `availability` table, which the guest booking flow does not read. Seen on the owner's production screenshot; same cause as the Calendar page fix.
+- **Done**: `DashboardCalendarView.tsx` has `DASHBOARD_CALENDAR_EDITING_ENABLED = false`; the whole quick-actions block is gated by it (code kept). The calendar grid and the selected-day summary stay. New assertion in `dashboardCalendar.contract.test.ts`; the existing assertions about the save and stop-sell code still hold because the code is still in the file.
+- **Evidence**: `pnpm check` exit 0; full `pnpm test` 203 files, 1357 passed; `pnpm build` exit 0. Not deployed.
+- **Re-enable when**: stop sell and allotment are read by `roomAvailabilityCounts` / the booking path (spec and owner decision on where stop sell is stored are still open).
+
 ## [2026-11-05] Deployed main bf1b760 to production
 - **Done with the owner's approval ("Push และ deploy")**: pushed `cee0456..bf1b760` and ran `wrangler deploy --env production`; Worker `hayhost`, version `b9fdfd5f-58d0-47be-856d-cb7ecffaf179`; no pending migrations. Includes the dashboard test fix and the support-mode note shown only to hayhost staff.
 - **Checked**: `/` and the API route return 200. Signed-in views not checked by me: a hotel owner should no longer see "โหมดสนับสนุน" in the sidebar footer, and the one-room hotel should show the green dot at 1/1 on the dashboard calendar (the earlier server fix, version `01c5a991`).

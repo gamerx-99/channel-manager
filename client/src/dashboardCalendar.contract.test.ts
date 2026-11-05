@@ -52,6 +52,12 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain("t('dashboardCalendar.stopSellingTitle')");
   });
 
+  it('keeps the daily edit and stop-sell controls hidden until they reach the guest booking flow', () => {
+    // Those controls write the availability table, which guests never read (regression: "stop sale" did nothing for guests).
+    expect(component).toContain('const DASHBOARD_CALENDAR_EDITING_ENABLED = false;');
+    expect(component).toContain('{DASHBOARD_CALENDAR_EDITING_ENABLED && <div className="dashboard-calendar-quick-actions"');
+  });
+
   it('protects the availability mutation with property scope and distinct revenue permissions', () => {
     expect(router).toContain('const availabilityUpdateSchema = z.object');
     expect(router).toContain('hotel_id: hotelIdSchema.optional()');
