@@ -73,6 +73,15 @@ Every row the second query returns must be confirmed by the hotel ("yes, that ni
 - Past rows are ignored; a missing row means the full room count.
 - Public hold, confirmation and expiry still release the right nights.
 
+## Scope in phases (owner principle, 2026-11-05)
+
+hayhost is a website and direct-booking service with a simple back office, not a channel manager (`DECISIONS.md`). So this work is cut to what the four tests need, and the rest waits until a real hotel asks.
+
+- **Phase 1 (do first): close nights.** A night with `rooms_available = 0` cannot be booked by a guest, in the offered rooms and in the booking write. Staff bookings are not restricted; the screen shows a notice and a confirm step. No per-hotel setting, no walk-in-only rule, no reason field.
+- **Phase 2 (only when a hotel asks): a cap per night** ("sell at most N rooms"), counted including rooms already booked. The table already supports it; the enforcement check just uses the number instead of 0.
+- **Dropped for now:** a per-hotel choice of how staff may book a closed night (options A, B, C discussed on 2026-11-05). The hotel already controls who may enter bookings through staff permissions.
+
+Everything above about data audit, race safety and `booking_nights` applies to phase 1 as written.
 ## Consistency check of the owner's choices (2026-11-05)
 
 Checked against the code. Findings that change how the work is written:
