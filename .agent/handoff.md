@@ -1,6 +1,14 @@
 # Handoff log
 
-## [## [2026-11-05] Website builder: two crash/data-loss bugs
+## [## [## [2026-11-05] Sidebar: "Rooms & rates" group
+- **Done**: new collapsible sidebar group (`getRoomsAndPricingItems` in `Sidebar.tsx`) with three links, each to a different page: manage room types (`/hotels/:id`, where room types live; no separate route yet), manage room rates (`/dashboard/pricing`), availability calendar (`/hotels/:id/calendar`). The group button opens no page, so nothing loops. It replaces the old "Room operations" and "Availability" links and the "Advanced pricing" link. Each link keeps its own permission; the group hides when none apply. Old dictionary keys `sidebar.roomOperations` and `sidebar.advancedPricing` are now unused (left in place).
+- **Thai strings added (owner to confirm)**: ห้องพักและราคา / จัดการประเภทห้องพัก / จัดการราคาห้องพัก. Group name is Claude's suggestion; the two link names are the owner's wording.
+- **Test changed on purpose**: `AdvancedPricing.contract.test.ts` looked for `href="/dashboard/pricing"` in the sidebar; the marker is now `href: "/dashboard/pricing"` in the group function. Same permission and route assertions kept. New `Sidebar.roomsAndPricing.test.ts`.
+- **Evidence**: `pnpm check` exit 0; `pnpm build` exit 0; client tests 95 files, 441 passed. Not opened in a browser (check 375px and the group opening on the active page).
+- **Also**: `.agent/prompts-2026-11-05.md` now starts with the two-machine split.
+- **Not done**: not pushed or deployed.
+
+2026-11-05] Website builder: two crash/data-loss bugs
 - **Found** (from the owner's pasted review, confirmed by reading the code): `PreviewSection.tsx` passed the raw accent text to `getContrastText`, which throws on a half-typed colour (white screen); `useWebsiteBuilder.ts` reset the draft on every config refetch (`|| serverConfig !== undefined`), so caption, gallery and focal-point edits wiped unsaved headline, colour and switches.
 - **Fixed**: the preview uses the already-validated `previewAccentColor`; the draft loads once per hotel.
 - **Tests**: two regression tests in `WebsiteBuilder.test.tsx` (both fail without the fix, checked by stashing the fix). The config mock became a mutable `configData` so a refetch can be simulated; no assertion loosened.

@@ -55,6 +55,24 @@ export function getHotelSettingsItems(
   ];
 }
 
+/**
+ * Links under the sidebar's "Rooms & rates" group. Each link has its own destination, and the
+ * group button itself opens nothing, so no entry points at the same page as another.
+ * Room types live on the hotel page (no separate route yet); rates are the pricing page;
+ * the calendar is read-only for now.
+ */
+export function getRoomsAndPricingItems(
+  selectedHotelId: string | null | undefined,
+  can: (permission: Permission) => boolean,
+  t: (key: string) => string,
+) {
+  return [
+    ...(selectedHotelId && can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomTypesManage"), icon: BedDouble }] : []),
+    ...(can("revenue.manage_pricing_rules") ? [{ href: "/dashboard/pricing", label: t("sidebar.roomPricingManage"), icon: BarChart3 }] : []),
+    ...(selectedHotelId && can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
+  ];
+}
+
 function getActivePath(location: string, selectedHotelId?: string | null) {
   if (!selectedHotelId) return location;
   const hotelSubPaths = ["bookings", "calendar", "services", "ota", "staff", "support-access"];
@@ -87,10 +105,8 @@ export function Sidebar({
   const selectedHotelName = selectedHotel?.name;
   const hotelNavItems = selectedHotelId
     ? [
-      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomOperations"), icon: BedDouble }] : []),
       ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}/services`, label: t("sidebar.services"), icon: Sparkles }] : []),
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
-      ...(can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
       ...(otaSyncEnabled && otaConnectivityEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
     ]
     : [];
@@ -102,6 +118,12 @@ export function Sidebar({
   }, [onSettingsPage]);
   // On a phone the group sits at the bottom of the scrolling menu, so its links open
   // below the fold. Bring them into view when the owner opens the group themselves.
+  const roomsItems = getRoomsAndPricingItems(selectedHotelId, can, t);
+  const onRoomsPage = roomsItems.some(item => item.href === getActivePath(location, selectedHotelId));
+  const [roomsOpen, setRoomsOpen] = useState(onRoomsPage);
+  useEffect(() => {
+    if (onRoomsPage) setRoomsOpen(true);
+  }, [onRoomsPage]);
   const settingsListRef = useRef<HTMLDivElement>(null);
   const revealSettings = useRef(false);
   useEffect(() => {
@@ -165,6 +187,35 @@ export function Sidebar({
             </Link>
           );
         })}
+        {roomsItems.length > 0 && (
+          <>
+            <button
+              type="button"
+              className={`nav-link nav-group-toggle w-full text-left bg-transparent border-0 cursor-pointer ${onRoomsPage ? "is-current" : ""}`}
+              aria-expanded={roomsOpen}
+              aria-controls="sidebar-rooms-pricing"
+              onClick={() => setRoomsOpen(open => !open)}
+            >
+              <BedDouble size={17} strokeWidth={onRoomsPage ? 2.3 : 1.8} />
+              <span>{t("sidebar.roomsAndPricing")}</span>
+              <ChevronDown size={15} className={`nav-group-chevron ${roomsOpen ? "is-open" : ""}`} aria-hidden="true" />
+            </button>
+            {roomsOpen && (
+              <div id="sidebar-rooms-pricing" className="nav-sublist">
+                {roomsItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = item.href === activePath;
+                  return (
+                    <Link key={item.href} href={item.href} className={`nav-link nav-sublink ${isActive ? "active" : ""}`} onClick={() => onClose()}>
+                      <Icon size={16} strokeWidth={isActive ? 2.3 : 1.8} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
         <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>
         {can("property.view_financials") && (
           <Link
@@ -205,16 +256,6 @@ export function Sidebar({
           >
             <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
             <span>{t("sidebar.websiteBuilder")}</span>
-          </Link>
-        )}
-        {can("revenue.manage_pricing_rules") && (
-          <Link
-            href="/dashboard/pricing"
-            className={`nav-link ${location === "/dashboard/pricing" ? "active" : ""}`}
-            onClick={() => onClose()}
-          >
-            <BarChart3 size={17} strokeWidth={location === "/dashboard/pricing" ? 2.3 : 1.8} />
-            <span>{t("sidebar.advancedPricing")}</span>
           </Link>
         )}
         {(settingsItems.length > 0 || can("platform.manage_users")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}

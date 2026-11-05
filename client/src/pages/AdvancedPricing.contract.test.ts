@@ -13,7 +13,8 @@ describe("AdvancedPricing dashboard contract", () => {
     expect(app).toContain('path="/dashboard/pricing"');
     expect(app).toContain("AdvancedPricing");
     expect(appShell).toContain('can("revenue.manage_pricing_rules")');
-    expect(appShell).toContain('href="/dashboard/pricing"');
+    // The link now lives in getRoomsAndPricingItems (the "Rooms & rates" group), as an object entry.
+    expect(appShell).toContain('href: "/dashboard/pricing"');
     expect(routeScope).toContain('pathname.startsWith("/dashboard/pricing")');
     expect(routeScope).toContain('return "revenue.manage_pricing_rules"');
   });
