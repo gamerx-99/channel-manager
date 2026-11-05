@@ -110,7 +110,7 @@ describe("Availability month calendar", () => {
     mocks.authMe.memberships = [{ hotelId: "hotel-1", permissions: ["operations.view_bookings"] }];
     mocks.availabilityQuery.data = [{ roomTypeId: "rt-1", date, roomsAvailable: 1, price: null }];
     render(<Calendar id="hotel-1" />);
-    const todayCell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && button.getAttribute("aria-label")?.includes(date));
+    const todayCell = screen.getAllByRole("button").find(button => button.className.includes("calendar-month-cell") && button.className.includes("is-today"));
     expect(todayCell?.textContent).toContain("2/3");
     expect(todayCell?.getAttribute("aria-label")).not.toContain("฿");
     await user.click(todayCell!);

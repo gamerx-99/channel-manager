@@ -41,7 +41,8 @@ describe("Account page", () => {
     mocks.profile.data = profile;
     render(<Account />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Personal information");
-    for (const text of ["Anan", "Rakthai", "Anan Rakthai", "0812345678", "anan@example.test", "Email verified"]) expect(screen.getAllByText(new RegExp(text)).length).toBeGreaterThan(0);
+    for (const text of ["Anan", "Rakthai", "Anan Rakthai", "anan@example.test", "Email verified"]) expect(screen.getAllByText(new RegExp(text)).length).toBeGreaterThan(0);
+    expect((screen.getByLabelText("Phone") as HTMLInputElement).value).toBe("0812345678");
     expect(screen.getByText("Email and password")).toBeTruthy();
     expect(screen.getByText("Google")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Baan Ruam" }).getAttribute("href")).toBe("/hotels/h-a");
@@ -65,7 +66,7 @@ describe("Account page", () => {
   it("marks details the account has not filled in, and shows an empty hotel list", () => {
     mocks.profile.data = { ...profile, firstName: null, lastName: "", phone: null, emailVerified: false, linkedAccounts: [], ownedHotels: [] };
     render(<Account />);
-    expect(screen.getAllByText("Not provided")).toHaveLength(3);
+    expect(screen.getAllByPlaceholderText("Not provided")).toHaveLength(3);
     expect(screen.getByText("Email not verified")).toBeTruthy();
     expect(screen.getByText("No sign-in methods are linked yet.")).toBeTruthy();
     expect(screen.getByText("This account does not own a property yet.")).toBeTruthy();

@@ -16,6 +16,7 @@ describe("MFA feature flag", () => {
   it("gates the forced enrol redirects and the settings section", () => {
     expect(read("components/auth/PrivateRoute.tsx")).toMatch(/isMfaEnabled\(\) &&\s*isAuthenticated/);
     expect(read("pages/Login.tsx")).toContain("isMfaEnabled() && !twoFactorEnabled && shouldEnforceMfaForRoles(roles)");
-    expect(read("pages/SecuritySettings.tsx")).toContain("{isMfaEnabled() && <MfaSettings />}");
+    expect(read("pages/Account.tsx")).toContain("{isMfaEnabled() && <MfaSettings />}");
+    expect(read("pages/SecuritySettings.tsx")).not.toContain("<MfaSettings />");
   });
 });

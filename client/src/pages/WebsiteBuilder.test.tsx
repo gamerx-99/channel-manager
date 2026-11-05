@@ -95,11 +95,11 @@ describe("WebsiteBuilder editing", () => {
     ];
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    fireEvent.click(screen.getByLabelText("Delete media photo-2"));
+    fireEvent.click(screen.getByLabelText("Delete photo 2"));
     expect(confirm).toHaveBeenCalledTimes(1);
     expect(deleteMedia).not.toHaveBeenCalled();
     confirm.mockReturnValue(true);
-    fireEvent.click(screen.getByLabelText("Delete media photo-2"));
+    fireEvent.click(screen.getByLabelText("Delete photo 2"));
     expect(deleteMedia).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-2" });
   });
 
