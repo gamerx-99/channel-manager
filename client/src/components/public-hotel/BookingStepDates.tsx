@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
+import { getTodayDateString } from "./useBookingWizard";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
 
 type Page = ReturnType<typeof usePublicHotelPage>;
@@ -51,7 +52,7 @@ export default function BookingStepDates(props: BookingStepDatesProps) {
           setCheckIn(nextCheckIn);
           setCheckOut(nextCheckOut);
         }}
-        minDateIso={new Date().toISOString().slice(0, 10)}
+        minDateIso={getTodayDateString()}
         accentColor={props.accentColor}
       />
       <div className="booking-guests">

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Handoff log
 
 ## [2026-11-05] Part 3 — front desk calendar availability without daily prices
@@ -8,6 +9,20 @@
 - **Final verification on `bc62f58`**: `pnpm check` exit 0 (`tsc --noEmit`); `pnpm test` exit 0 (211 files, 1,442 tests); `pnpm build` exit 0 (Vite plus Wrangler `--dry-run: exiting now`).
 - **Thai copy**: none added or changed. Only this handoff and the five permitted implementation/test files changed.
 
+=======
+# Handoff log
+
+## [2026-11-05] Part 10: guest booking pages use today in Thailand
+- **Branch**: `part-10-thai-today` (committed locally; not pushed, not deployed).
+- **Bug**: `BookingStepDates.tsx` (`minDateIso`) and the default dates in `useBookingWizard.ts` built "today" from the UTC day, so from 00:00 to 07:00 Thai time a guest could pick yesterday as check-in. `usePublicHotelPage.ts` had unused copies of the same helpers.
+- **Fix**: `useBookingWizard.ts` now has one helper on `bangkokDate()` from `@shared/finance` and exports `getTodayDateString`, `getTomorrowDateString`, `getDayAfterTomorrowDateString`. `BookingStepDates` uses `getTodayDateString()` for `minDateIso`. The dead copies in `usePublicHotelPage.ts` are removed.
+- **Test**: `client/src/components/public-hotel/thaiToday.test.tsx` (fake timer at 2026-11-04T17:30:00Z). With the old `BookingStepDates` it failed (`minDateIso` was `2026-11-04`); now passes. Also covers Thai-midnight rollover. No existing test edited.
+- **Judgement call**: the Part 10 text says the default check-in should be 2026-11-05 at that moment. The code's default was already "tomorrow", so I kept that meaning: default check-in 2026-11-06, check-out 2026-11-07 (Thai tomorrow). Only the minimum selectable date is 2026-11-05. If the owner wants the default to be tonight, change `useBookingWizard.ts` to `getTodayDateString()`.
+- **Server check (not edited)**: `getPublicHotelAvailability`, `createPublicBooking` and `holdRoomType` in `server/d1/booking.ts` only check that check-out is after check-in. **None refuses a check-in before today in Thai time**, and a grep of `server/` found no other such guard. Proposal: add one shared check (`check_in >= bangkokDate(now)`, `BAD_REQUEST`) at the top of all three, using the `now` they already receive, with tests for 00:30 Thai time. Needs a separate ticket because `server/**` was out of scope here.
+- **Evidence**: `pnpm check` exit 0 (no output). `pnpm build` exit 0 (`--dry-run: exiting now.`). Full `pnpm test`: 211 files passed, 1 failed, 1439 of 1440 tests passed. The one failure is `client/src/components/PaymentQR.test.tsx` ("QR Code หมดอายุแล้ว" assertion, 10s timeout) while other worktrees were running; run alone it passes (2 of 2, 4.4s). It does not touch the files changed here. I did not get a fully green single run of the whole suite.
+- **Not done**: server refusal (proposal above); not opened in a browser.
+
+>>>>>>> claude/part-10-thai-today-bb9cd1
 ## [2026-11-05] Overnight branch: batch availability write, stop-sell spec, long plan (machine A)
 - **Branch**: `work/overnight-2026-11-05` (local only; nothing pushed, merged or deployed).
 - **`updateAvailabilityBatch`** (`server/d1/availability.ts`, router `channelManager.updateAvailabilityBatch`): sets rooms offered (0 = stop sell) for up to 20 room types over up to 62 days in one atomic D1 batch (18 rows per statement because D1 allows 100 bound parameters). Changes only `rooms_available`; an existing row keeps its price, a new row starts at the room type's base price. Permissions: 0 rooms needs `revenue.manage_stop_sell`, otherwise `revenue.manage_allotment`; the repository call also checks hotel scope. Not used by any page yet.

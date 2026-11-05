@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { bangkokDate } from "@shared/finance";
 import {
   isDatesValid as checkDatesValid,
   areGuestsValid,
@@ -8,16 +9,24 @@ import {
   selectedServicesTotal as computeSelectedServicesTotal,
 } from "./bookingRules";
 
-function getTomorrowDateString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The date `daysAhead` days from now, as the calendar day in Thailand (not the UTC day). */
+function thaiDateAhead(daysAhead: number): string {
+  return bangkokDate(new Date(Date.now() + daysAhead * DAY_MS));
 }
 
-function getDayAfterTomorrowDateString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 2);
-  return d.toISOString().slice(0, 10);
+/** Today in Thailand. The earliest check-in a guest may pick. */
+export function getTodayDateString(): string {
+  return thaiDateAhead(0);
+}
+
+export function getTomorrowDateString(): string {
+  return thaiDateAhead(1);
+}
+
+export function getDayAfterTomorrowDateString(): string {
+  return thaiDateAhead(2);
 }
 
 type TFunction = (key: string, params?: any) => string;
