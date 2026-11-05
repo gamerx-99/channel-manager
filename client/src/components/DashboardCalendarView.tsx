@@ -68,6 +68,9 @@ function statusColorName(status: CalendarDay['roomTypes'][number]['status']) {
 
 // Stop sell / allotment here write the `availability` table, which the guest booking flow now
 // respects (Part 5 / spec 20). Prices are managed on the pricing page.
+// Phase 1 of spec 20 only enforces closed nights (rooms_available = 0); a per-night cap
+// (N of M) is not enforced for guests yet, so the allotment input stays hidden until then.
+const DASHBOARD_ALLOTMENT_INPUT_ENABLED = false;
 
 export default function DashboardCalendarView({ defaultDays = 14, canEditAvailability = false }: CalendarViewProps) {
   const { t, language } = useTranslation();
@@ -262,8 +265,10 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
             return <div className="dashboard-calendar-quick-action-row" key={roomType.roomTypeId}>
               <div className="dashboard-calendar-quick-action-label"><strong>{roomTypeName}</strong><small>{t('dashboardCalendar.totalRooms', { count: roomType.totalRooms, status: roomStatus })}</small></div>
               <div className="dashboard-calendar-quick-action-controls">
-                <label><span className="sr-only">{t('dashboardCalendar.availableRooms')}</span><input type="number" min="0" max={roomType.totalRooms} value={value} disabled={!canEditAvailability || updateAvailability.isPending} onChange={event => setDraftAvailability(current => ({ ...current, [roomType.roomTypeId]: Math.min(roomType.totalRooms, Math.max(0, Number(event.target.value) || 0)) }))} aria-label={t('dashboardCalendar.availableRoomsFor', { roomType: roomTypeName })} /><small>/ {roomType.totalRooms}</small></label>
-                <button className="button button-quiet small-button" type="button" disabled={!canEditAvailability || updateAvailability.isPending || value === roomType.cap} onClick={() => void saveAvailability(roomType)}>{t('dashboardCalendar.save')}</button>
+                {DASHBOARD_ALLOTMENT_INPUT_ENABLED && (<>
+                  <label><span className="sr-only">{t('dashboardCalendar.availableRooms')}</span><input type="number" min="0" max={roomType.totalRooms} value={value} disabled={!canEditAvailability || updateAvailability.isPending} onChange={event => setDraftAvailability(current => ({ ...current, [roomType.roomTypeId]: Math.min(roomType.totalRooms, Math.max(0, Number(event.target.value) || 0)) }))} aria-label={t('dashboardCalendar.availableRoomsFor', { roomType: roomTypeName })} /><small>/ {roomType.totalRooms}</small></label>
+                  <button className="button button-quiet small-button" type="button" disabled={!canEditAvailability || updateAvailability.isPending || value === roomType.cap} onClick={() => void saveAvailability(roomType)}>{t('dashboardCalendar.save')}</button>
+                </>)}
                 <button className={`button small-button ${isClosed ? 'button-primary' : 'button-quiet'}`} type="button" disabled={!canEditAvailability || updateAvailability.isPending} onClick={() => void toggleStopSell(roomType)} title={isClosed ? t('dashboardCalendar.resumeSellingTitle') : t('dashboardCalendar.stopSellingTitle')}>{isClosed ? t('dashboardCalendar.resumeSale') : t('dashboardCalendar.stopSale')}</button>
                 {isSaved && <span className="dashboard-calendar-saved-state" role="status">{t('dashboardCalendar.saved')}</span>}
               </div>
