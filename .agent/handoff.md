@@ -1,5 +1,10 @@
 # Handoff log
 
+## [2026-11-05] Deployed main 9c4687b to production (dashboard controls hidden)
+- **Done with the owner's approval ("Push และ deploy")**: pushed `bf1b760..9c4687b`; `wrangler deploy --env production`; Worker `hayhost`, version `dd7886f5-d330-4441-a3df-a7fb81b3ada8`; no pending migrations. `/` and the API route return 200.
+- **Check by the owner**: `/dashboard` no longer shows "แก้ไขห้องว่างของวันที่เลือก" with the save and stop-sale buttons.
+- **Rollback**: `wrangler rollback --env production` (previous `b9fdfd5f`).
+
 ## [2026-11-05] Dashboard calendar: daily edit and stop-sale controls hidden (machine A)
 - **Why**: the "จัดการห้องว่างรายวัน / แก้ไขห้องว่างของวันที่เลือก" block (rooms-available field, save, stop sale) on `/dashboard` writes the `availability` table, which the guest booking flow does not read. Seen on the owner's production screenshot; same cause as the Calendar page fix.
 - **Done**: `DashboardCalendarView.tsx` has `DASHBOARD_CALENDAR_EDITING_ENABLED = false`; the whole quick-actions block is gated by it (code kept). The calendar grid and the selected-day summary stay. New assertion in `dashboardCalendar.contract.test.ts`; the existing assertions about the save and stop-sell code still hold because the code is still in the file.
