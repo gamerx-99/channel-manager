@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import { countRoomsByType, getAvailableRoomCount, getBookedRoomCountForDate, getBookingPlatform, getBookingsForRoomTypeAndDate } from "./calendarAvailability";
 import { formatDateDDMMYYYY } from "@/lib/formatDate";
 import { dateLocale } from "@/lib/dateLocale";
+import { inventoryStatus } from "@shared/inventoryStatus";
 
 type CalendarDraft = Record<string, { available: number; price: number }>;
 
@@ -253,14 +254,8 @@ export default function Calendar({ id }: { id: string }) {
       }
     }
 
-    // Fully available (nothing booked or closed) is always healthy, even for a
-    // one-room property; "low" only applies once some rooms are taken.
-    const status: "healthy" | "low" | "closed" =
-      dayTotalAvailable <= 0
-        ? "closed"
-        : dayTotalAvailable < dayTotalRooms && dayTotalAvailable <= Math.max(1, Math.ceil(dayTotalRooms * 0.25))
-        ? "low"
-        : "healthy";
+    // Same rule as the dashboard calendar (shared): fully available is healthy, even for one room.
+    const status = inventoryStatus(dayTotalAvailable, dayTotalRooms);
 
     return {
       dateStr,

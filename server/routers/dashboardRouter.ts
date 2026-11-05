@@ -14,6 +14,7 @@ import {
 import { getOtaSummary } from '../d1/ota';
 import { buildFinancialsSummary } from '../financials';
 import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
+import { inventoryStatus } from '@shared/inventoryStatus';
 
 export const dashboardCalendarSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
@@ -147,7 +148,7 @@ export const dashboardCalendar = protectedProcedure.input(dashboardCalendarSchem
               available,
               totalRooms,
               price: availability === null ? null : Number(saved?.price ?? roomType.base_price ?? roomType.basePrice),
-              status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy') as 'healthy' | 'low' | 'closed',
+              status: inventoryStatus(available, totalRooms),
             };
           }),
           syncEvents: hotelOtaEvents.filter((event: any) => event.createdAt.slice(0, 10) === date),

@@ -1,5 +1,11 @@
 # Handoff log
 
+## [2026-11-05] Dashboard calendar: a free one-room day showed as "low" (found on production)
+- **Seen**: the owner's screenshot of production (`/dashboard`, hotel with one room): every day showed the amber "low availability" dot at 1/1. The same rule had already been fixed in `Calendar.tsx` but the dashboard calendar takes its status from `server/routers/dashboardRouter.ts`, which still had the old formula.
+- **Fix**: one shared function `inventoryStatus(available, totalRooms)` in `shared/inventoryStatus.ts` (closed at 0; low only when some rooms are taken and a quarter or less is left; otherwise healthy). Both the dashboard router and `Calendar.tsx` use it, so they cannot drift again. New `shared/inventoryStatus.test.ts` (4 tests, includes the 1/1 case).
+- **Evidence**: `pnpm check` exit 0; server, shared and calendar tests 110 files, 911 passed; `pnpm build` exit 0. Server code changed, so this needs a Worker deploy to reach production; not deployed, not pushed.
+- **Also seen in the screenshot (not changed)**: five metric cards in one row at about 1100px wide with no orphan card; "ห้องพักและราคา" group present in the sidebar.
+
 ## [2026-11-05] Deployed main 23765ab to production
 - **Done with the owner's explicit approval ("deploy เลย")**: `wrangler deploy --env production` from `main` at `23765ab`; Worker `hayhost`, version `bb0388bd-6856-46c0-83be-0b5013309ecb`, route `www.hayhostth.com`, cron `*/15 * * * *`.
 - **Before**: `wrangler d1 migrations list hayhost-production --env production --remote` said "No migrations to apply", so no migration was needed for this release.
