@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, publicProcedure, router } from '../_core/trpc';
 import { assertNotBlocked, checkAccountPassword, deleteOwnAccount, getAccountDeletionBlockers } from '../d1/accountDeletion';
+import { getAccountProfile } from '../d1/accountProfile';
 import { checkMfaStepUpStatus, requireRecentMfaVerification } from '../mfa';
 import { verifyMfaStepUp } from '../mfaStepUp';
 import { rethrowDomainError } from '../routerUtils';
@@ -16,6 +17,16 @@ export const authRouter = router({
     return rest;
   }),
   logout: publicProcedure.mutation(() => ({ success: true as const })),
+
+  /** The signed-in account's own personal information, linked sign-in methods and owned hotels with their plans. */
+  profile: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    try {
+      return await getAccountProfile(ctx.db, ctx.caller ?? { userId: ctx.user.id }, ctx.user.id);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
 
   onboardingStatus: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
