@@ -1,4 +1,5 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { nightsForDisplay, parseStopSellNights } from './bookingWizardStopSell';
 import { X, UserRoundPlus, Calendar, Bed, ListPlus, ReceiptText } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { formatIsoToDisplayDate, parseDisplayDateToIso } from '@shared/dateUtils';
@@ -45,6 +46,8 @@ export default function BookingWizard({
   const sourceLabel = { manual: t('bookingWizard.sourceManual'), 'walk-in': t('bookingWizard.sourceWalkIn'), phone: t('bookingWizard.sourcePhone') };
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [formError, setFormError] = useState<string | null>(null);
+  // Nights the hotel closed to online guests; staff may still book them after confirming.
+  const [stopSellNights, setStopSellNights] = useState<string[] | null>(null);
 
   const [checkIn, setCheckIn] = useState(displayDay(1));
   const [checkOut, setCheckOut] = useState(displayDay(2));
@@ -73,7 +76,11 @@ export default function BookingWizard({
     onSuccess: () => {
       onSuccess();
     },
-    onError: error => setFormError(error.message),
+    onError: error => {
+      const nights = parseStopSellNights(error.message);
+      if (nights) { setStopSellNights(nights); return; }
+      setFormError(error.message);
+    },
   });
 
   const checkInIso = useMemo(() => {
@@ -119,8 +126,12 @@ export default function BookingWizard({
     setServices(services.filter((_, i) => i !== index));
   };
 
-  const submitBooking = () => {
+  // The confirmation belongs to the dates and room it was shown for.
+  useEffect(() => { setStopSellNights(null); }, [checkInIso, checkOutIso, roomId]);
+
+  const submitBooking = (overrideStopSell = false) => {
     setFormError(null);
+    setStopSellNights(null);
     if (!roomId) { setFormError(t('bookingWizard.errorSelectRoom')); return; }
     if (!guestName.trim()) { setFormError(t('bookingWizard.errorGuestName')); return; }
     if (source === 'walk-in' && !paymentMethod) { setFormError(t('bookingWizard.errorPaymentMethod')); return; }
@@ -143,6 +154,7 @@ export default function BookingWizard({
       price: grandTotal,
       source: source,
       payment_method: paymentMethod || undefined,
+      override_stop_sell: overrideStopSell || undefined,
       status: 'confirmed',
       guests: hasGuestDetails ? [{
         ...guest,
@@ -170,6 +182,12 @@ export default function BookingWizard({
         </div>
 
         {formError && <p className="form-error" role="alert">{formError}</p>}
+        {stopSellNights && (
+          <div className="form-error" role="alert">
+            <p>{t('bookingWizard.stopSellNotice', { nights: nightsForDisplay(stopSellNights) })}</p>
+            <button type="button" className="button button-quiet" disabled={createBooking.isPending} onClick={() => submitBooking(true)}>{t('bookingWizard.stopSellConfirm')}</button>
+          </div>
+        )}
 
         <div className="wizard-content" style={{ minHeight: '300px' }}>
           {step === 1 && (
@@ -308,7 +326,7 @@ export default function BookingWizard({
               setStep((s) => (s + 1) as any);
             }}>{t('bookingWizard.continue')}</button>
           ) : (
-            <button className="button button-primary" type="button" onClick={submitBooking} disabled={createBooking.isPending}>
+            <button className="button button-primary" type="button" onClick={() => submitBooking()} disabled={createBooking.isPending}>
               {createBooking.isPending ? t('bookingWizard.saving') : t('bookingWizard.confirm')}
             </button>
           )}

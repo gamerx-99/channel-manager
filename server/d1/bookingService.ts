@@ -7,6 +7,7 @@ import { authorizeHotelAction, requirePublicHotel, type D1CallerContext, type D1
 import { moneyToSatang, satangToMoney } from "../db/money";
 import { getRequiredMinStayNights } from "../pricing";
 import { getStayDates } from "@shared/stayDates";
+import { closedNightsByRoomType } from "./closedNights";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const HOLD_STATUSES = ["held", "pending_payment", "pending_verification"] as const;
@@ -158,9 +159,11 @@ async function roomAvailabilityCounts(db: D1ScopedDatabase, hotelId: string, che
       ))
     : [];
   const activeRoomIds = new Set(statusRows.filter(row => !HOLD_STATUSES.includes(row.status as typeof HOLD_STATUSES[number]) || row.expiresAt === null || row.expiresAt.getTime() >= now.getTime()).map(row => row.roomId));
+  // Phase 1 stop sell: one closed night in the stay closes the whole stay for guests.
+  const closed = await closedNightsByRoomType(db, hotelId, checkIn, checkOut, now);
   return roomTypesInHotel.map(roomType => {
     const roomIdsOfType = roomRows.filter(room => room.roomTypeId === roomType.id).map(room => room.id);
-    const available = Math.max(0, roomIdsOfType.length - roomIdsOfType.filter(id => activeRoomIds.has(id)).length);
+    const available = closed.has(roomType.id) ? 0 : Math.max(0, roomIdsOfType.length - roomIdsOfType.filter(id => activeRoomIds.has(id)).length);
     return { room_type_id: roomType.id, rooms_available: available };
   });
 }

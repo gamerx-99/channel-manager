@@ -1501,6 +1501,8 @@ const th: TranslationDictionary = {
     errorPaymentMethod: "กรุณาเลือกวิธีชำระเงินสำหรับการจองแบบวอล์กอิน",
     errorTm30Fields: "กรอกข้อมูล ตม.30 ให้ครบทุกช่อง หรือเว้นว่างทั้งส่วน",
     errorRequired: "กรุณากรอกชื่อผู้เข้าพัก วันที่ และห้องพัก",
+    stopSellNotice: "ปิดขายออนไลน์คืนวันที่ {nights} แต่พนักงานยังจองให้ได้",
+    stopSellConfirm: "จองต่อ",
   },
   supportAccess: {
     navLabel: "ให้ทีม hayhost ช่วยดูแล",
