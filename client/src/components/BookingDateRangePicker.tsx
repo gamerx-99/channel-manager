@@ -63,6 +63,11 @@ export function BookingDateRangePicker({
       <DayPicker
         mode="range"
         locale={language === 'th' ? th : enUS}
+        labels={language === 'th' ? {
+          labelPrevious: () => '\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e01\u0e48\u0e2d\u0e19',
+          labelNext: () => '\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e16\u0e31\u0e14\u0e44\u0e1b',
+          labelDayButton: date => date.toLocaleDateString('th-TH', { dateStyle: 'full' }),
+        } : undefined}
         formatters={language === 'th'
           // Thai readers expect the Buddhist year (2569, not 2026) in a month heading.
           ? { formatCaption: month => month.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) }
