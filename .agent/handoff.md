@@ -4,6 +4,7 @@
 - Replaced visible internal permission codes and database terms in Housekeeping, Communications, pricing, room deletion and admin copy; changed the home booking-data caption. Only translation values changed. The websiteBuilder section and housekeeping.groupedByRoom / awaitingCompletion / needAssignee are unchanged.
 - Financials layout and spec 15 were already on main; no duplicate files or commits were added for them.
 - Local verification on the earlier main snapshot: pnpm test exit 0 (202 files, 1,348 tests); pnpm check exit 0; pnpm build exit 0 (Wrangler dry run). GitHub CI on the new base is checked separately.
+- After merging main `cee0456`: `pnpm check` exit 0; `pnpm build` exit 0 (Wrangler dry run); `pnpm test` exit 1 (202 files passed, 1 failed; 1,354 tests passed, 1 failed). The failure is `client/src/dashboardCalendar.contract.test.ts:26`, which expects an availability status string removed by the Dashboard Calendar change already on main. The branch does not edit that test or the router. Production Financials was inspected at 1280px and 375px with no horizontal overflow; this is the deployed main page, not a branch preview.
 - Thai wording for owner review:
 
 | Key | ก่อน | หลัง |
