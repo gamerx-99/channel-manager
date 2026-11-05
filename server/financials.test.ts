@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFinancialsSummary } from './financials';
+import { buildFinancialsSummary, financialsInputSchema, resolveFinancialsPeriod } from './financials';
 
 describe('financials summary', () => {
   const now = new Date('2026-08-21T12:00:00.000Z');
@@ -149,5 +149,98 @@ describe('financials summary', () => {
 
     expect(result.trend).toHaveLength(30);
     expect(result.trend.find(point => point.date === '2026-08-01')).toEqual({ date: '2026-08-01', bookings: 1, revenue: 600 });
+  });
+
+  describe('chosen period', () => {
+    const booking = (id: string, check_in: string, price: number, extra: Record<string, unknown> = {}) => ({
+      id, status: 'confirmed', check_in, check_out: '2027-01-01', price, rooms: { room_types: { name: 'Deluxe' } }, ...extra,
+    });
+    const hotel = (...bookings: ReturnType<typeof booking>[]) => [{ id: 'hotel-1', bookings }];
+
+    it('no input is the last 30 days, as before', () => {
+      const result = buildFinancialsSummary(hotel(booking('a', '2026-08-21', 100)), now);
+      expect(result).toMatchObject({ periodStart: '2026-07-23', periodEnd: '2026-08-21', periodLabel: 'last_30_days', trendGranularity: 'day' });
+      expect(result.trend).toHaveLength(30);
+    });
+
+    it('a month runs from its first to its last Thai day, one trend point per day', () => {
+      const result = buildFinancialsSummary(hotel(booking('a', '2026-02-28', 100), booking('b', '2026-03-01', 50)), now, { month: '2026-02' });
+      expect(result).toMatchObject({ periodStart: '2026-02-01', periodEnd: '2026-02-28', periodLabel: 'month' });
+      expect(result.trend).toHaveLength(28);
+      expect(result.totals.revenue).toBe(100);
+    });
+
+    it('a booking at 23:59 on the last night belongs to that month, one at 00:00 Thai time on the 1st to the next (check-in is a Thai calendar day)', () => {
+      const lateUtc = new Date('2026-09-30T16:59:00.000Z'); // 23:59 on 30 September in Thailand
+      const earlyUtc = new Date('2026-09-30T17:00:00.000Z'); // 00:00 on 1 October in Thailand
+      const thaiDay = (instant: Date) => new Date(instant.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
+      const rows = hotel(booking('late', thaiDay(lateUtc), 100), booking('early', thaiDay(earlyUtc), 200));
+      expect(buildFinancialsSummary(rows, now, { month: '2026-09' }).totals.revenue).toBe(100);
+      expect(buildFinancialsSummary(rows, now, { month: '2026-10' }).totals.revenue).toBe(200);
+    });
+
+    it('a from/to range is inclusive of both days', () => {
+      const result = buildFinancialsSummary(hotel(booking('a', '2026-06-01', 10), booking('b', '2026-06-03', 20), booking('c', '2026-06-04', 40)), now, { from: '2026-06-01', to: '2026-06-03' });
+      expect(result.periodLabel).toBe('range');
+      expect(result.trend.map(point => point.date)).toEqual(['2026-06-01', '2026-06-02', '2026-06-03']);
+      expect(result.totals.revenue).toBe(30);
+    });
+
+    it('groups the trend by month above 62 days and keeps the sum equal to the total', () => {
+      const result = buildFinancialsSummary(hotel(booking('a', '2026-01-31', 100), booking('b', '2026-02-01', 200), booking('c', '2026-06-15', 300)), now, { from: '2026-01-01', to: '2026-06-30' });
+      expect(result.trendGranularity).toBe('month');
+      expect(result.trend.map(point => point.date)).toEqual(['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01']);
+      expect(result.trend.map(point => point.revenue)).toEqual([100, 200, 0, 0, 0, 300]);
+      expect(result.trend.reduce((sum, point) => sum + point.revenue, 0)).toBe(result.totals.revenue);
+    });
+
+    it('keeps a daily trend at exactly 62 days and groups at 63', () => {
+      expect(buildFinancialsSummary([], now, { from: '2026-01-01', to: '2026-03-03' }).trendGranularity).toBe('day');
+      expect(buildFinancialsSummary([], now, { from: '2026-01-01', to: '2026-03-04' }).trendGranularity).toBe('month');
+    });
+
+    it('uses the same revenue definition: cancelled bookings only add to the cancelled count', () => {
+      const result = buildFinancialsSummary(hotel(booking('a', '2026-05-10', 100), booking('x', '2026-05-11', 900, { status: 'cancelled' }), booking('h', '2026-05-12', 900, { status: 'held' })), now, { month: '2026-05' });
+      expect(result.totals).toMatchObject({ revenue: 100, bookings: 1, cancelledBookings: 1 });
+      expect(result.bookings.map(row => row.status)).toEqual(['confirmed']);
+    });
+
+    it('lists one row per revenue booking with a shortened id, nullable payment method, and no guest data', () => {
+      const guest = { guest_name: 'Somchai Jaidee', guest_email: 'somchai@example.test', guest_phone: '0812345678', guest_id_number: '1234567890123' };
+      const result = buildFinancialsSummary(hotel(
+        booking('0123456789abcdef', '2026-08-20', 1200.5, { source: 'direct', payment_status: 'verified', payment_method: 'promptpay', ...guest }),
+        booking('fedcba9876543210', '2026-08-19', 800, { source: 'manual', ...guest }),
+      ), now);
+      expect(result.bookings).toEqual([
+        { id: 'fedcba98', check_in: '2026-08-19', check_out: '2027-01-01', room_type: 'Deluxe', source: 'manual', status: 'confirmed', payment_status: null, payment_method: null, price: 800 },
+        { id: '01234567', check_in: '2026-08-20', check_out: '2027-01-01', room_type: 'Deluxe', source: 'direct', status: 'confirmed', payment_status: 'verified', payment_method: 'promptpay', price: 1200.5 },
+      ]);
+      const text = JSON.stringify(result);
+      for (const secret of ['Somchai', 'somchai@example.test', '0812345678', '1234567890123', '0123456789abcdef']) expect(text).not.toContain(secret);
+    });
+  });
+
+  describe('period input', () => {
+    const parse = (value: unknown) => financialsInputSchema.safeParse(value);
+    it('accepts no input, a month, and a range', () => {
+      expect(parse(undefined).success).toBe(true);
+      expect(parse({ month: '2026-02' }).success).toBe(true);
+      expect(parse({ from: '2026-01-01', to: '2027-01-01' }).success).toBe(true); // 366 days counting both ends
+      expect(parse({ from: '2024-01-01', to: '2024-12-31' }).success).toBe(true); // 366 days, leap year
+    });
+    it('rejects bad months, bad dates, a reversed range, more than 366 days, and mixed or extra fields', () => {
+      for (const bad of [
+        { month: '2026-13' }, { month: '2026-1' }, { month: '2026-00' }, { month: 'last' },
+        { from: '2026-02-30', to: '2026-03-01' }, { from: '2026-3-1', to: '2026-03-02' },
+        { from: '2026-06-02', to: '2026-06-01' },
+        { month: '2026-02', from: '2026-02-01', to: '2026-02-28' }, { from: '2026-02-01' }, {},
+      ]) {
+        expect(parse(bad).success, JSON.stringify(bad)).toBe(false);
+      }
+      expect(parse({ from: '2026-01-01', to: '2027-01-02' }).success).toBe(false); // 367 days
+    });
+    it('resolveFinancialsPeriod throws on an invalid input instead of guessing', () => {
+      expect(() => resolveFinancialsPeriod({ from: '2026-06-02', to: '2026-06-01' })).toThrow();
+    });
   });
 });

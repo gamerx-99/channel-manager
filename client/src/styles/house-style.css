@@ -352,3 +352,12 @@
   .account-page .account-details, .account-page .account-list { padding-right: 16px; padding-left: 16px; }
   .account-page .account-note { margin-right: 16px; margin-left: 16px; }
 }
+/* Financial report: period picker and bookings export (Part 2) */
+.financials-page .financials-period-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 24px 24px; }
+.financials-page .financials-period-picker .button.is-active { background: var(--pine); border-color: var(--pine); color: #fff; }
+.financials-page .financials-period-label { min-width: 140px; text-align: center; font-weight: 600; }
+.financials-page .financials-bookings-help { max-width: none; margin: 0; padding: 0 24px 24px; }
+.financials-page .financials-period-panel, .financials-page .financials-bookings-panel { margin-bottom: 22px; }
+@media (max-width: 640px) {
+  .financials-page .financials-period-picker, .financials-page .financials-bookings-help { padding-left: 16px; padding-right: 16px; }
+}

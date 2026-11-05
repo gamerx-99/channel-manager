@@ -1,4 +1,4 @@
-import { BarChart3, CircleDollarSign, Clock3, Download, Percent, QrCode, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, QrCode, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -13,12 +13,14 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import type { FinancialsRoomTypeBreakdown } from "@/../../server/financials";
+import type { FinancialsBookingRow, FinancialsRoomTypeBreakdown } from "@/../../server/financials";
 import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
 import { useMfaStepUp } from "@/lib/mfa";
 import { dateLocale } from "@/lib/dateLocale";
+import { bangkokMonth } from "@shared/finance";
+import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth, type FinancialsChoice } from "./financialsPeriod";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -45,21 +47,60 @@ function escapeCsv(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
-function downloadRoomTypeCsv(rows: FinancialsRoomTypeBreakdown[]) {
+function downloadCsvFile(fileName: string, csvContent: string) {
+  const blob = new Blob([CSV_BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function periodFileTag(periodStart: string, periodEnd: string) {
+  return `${periodStart}_${periodEnd}`;
+}
+
+function downloadRoomTypeCsv(rows: FinancialsRoomTypeBreakdown[], periodStart: string, periodEnd: string) {
   const headers = ["Room type", "Bookings", "Revenue", "Average booking value"];
   const csvContent = [
     headers.map(escapeCsv).join(","),
     ...rows.map(row => [row.name, String(row.bookings), row.revenue.toFixed(2), row.averageBookingValue.toFixed(2)].map(escapeCsv).join(",")),
   ].join("\n");
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `financials-revenue-by-room-type-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  downloadCsvFile(`financials-revenue-by-room-type-${periodFileTag(periodStart, periodEnd)}.csv`, csvContent);
+}
+
+function downloadBookingsCsv(rows: FinancialsBookingRow[], periodStart: string, periodEnd: string) {
+  downloadCsvFile(`financials-bookings-${periodFileTag(periodStart, periodEnd)}.csv`, bookingsCsv(rows));
+}
+
+function formatMonthLabel(month: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00.000Z`));
+}
+
+/** Chooses the period of the report: the last 30 days, or a Thai calendar month with previous / next / this month. */
+export function PeriodPicker({ choice, onChange, locale, currentMonth }: { choice: FinancialsChoice; onChange: (choice: FinancialsChoice) => void; locale: string; currentMonth: string }) {
+  const { t } = useTranslation();
+  const month = choice.kind === "month" ? choice.month : currentMonth;
+  return (
+    <div className="financials-period-picker" role="group" aria-label={t("financials.periodPickerAria")}>
+      <button type="button" className={cn("button button-quiet", choice.kind === "last30" && "is-active")} aria-pressed={choice.kind === "last30"} onClick={() => onChange({ kind: "last30" })}>
+        {t("financials.periodLast30")}
+      </button>
+      <button type="button" className="button button-quiet" aria-label={t("financials.periodPreviousMonth")} onClick={() => onChange({ kind: "month", month: shiftMonth(month, -1) })}>
+        <ChevronLeft size={14} aria-hidden="true" />
+      </button>
+      <span className="financials-period-label" aria-live="polite">{choice.kind === "month" ? formatMonthLabel(choice.month, locale) : t("financials.periodPickMonth")}</span>
+      <button type="button" className="button button-quiet" aria-label={t("financials.periodNextMonth")} disabled={choice.kind === "month" && choice.month >= currentMonth} onClick={() => onChange({ kind: "month", month: shiftMonth(month, 1) })}>
+        <ChevronRight size={14} aria-hidden="true" />
+      </button>
+      <button type="button" className={cn("button button-quiet", choice.kind === "month" && choice.month === currentMonth && "is-active")} aria-pressed={choice.kind === "month" && choice.month === currentMonth} onClick={() => onChange({ kind: "month", month: currentMonth })}>
+        {t("financials.periodThisMonth")}
+      </button>
+    </div>
+  );
 }
 
 function LoadingDashboard() {
@@ -88,7 +129,10 @@ export default function Financials() {
   const locale = dateLocale(language);
   const { hotels, selectedHotelId } = useHotel();
   const hotelId = selectedHotelId ?? hotels[0]?.id;
-  const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery();
+  const currentMonth = bangkokMonth();
+  const [choice, setChoice] = useState<FinancialsChoice>({ kind: "last30" });
+  // Keep the previous figures on screen while the next period loads, so the page does not flash.
+  const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery(financialsQueryInput(choice), { placeholderData: previous => previous });
 
   if (isLoading) return <LoadingDashboard />;
 
@@ -114,9 +158,14 @@ export default function Financials() {
         </div>
         <div className="field-help flex items-center gap-2">
           <Clock3 size={14} aria-hidden="true" />
-          <span>{t("financials.last30Days", { start: formatDateLabel(data.periodStart, locale), end: formatDateLabel(data.periodEnd, locale) })}</span>
+          <span>{t("financials.periodRange", { start: formatDateLabel(data.periodStart, locale), end: formatDateLabel(data.periodEnd, locale) })}</span>
           {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("financials.updatingDataAriaLabel")} />}
         </div>
+      </section>
+
+      <section className="panel financials-period-panel">
+        <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.periodTitle")}</h2></div></div>
+        <PeriodPicker choice={choice} onChange={setChoice} locale={locale} currentMonth={currentMonth} />
       </section>
 
       <section className="panel financials-summary-panel">
@@ -124,7 +173,7 @@ export default function Financials() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("financials.summaryAria")}>
         <MetricCard label={t("financials.totalRevenue")} value={formatCurrency(data.totals.revenue)} detail={t("financials.cancelledCount", { count: data.totals.cancelledBookings })} icon={CircleDollarSign} tone="amber" />
         <MetricCard label={t("financials.avgBookingValue")} value={formatCurrency(data.totals.averageBookingValue)} detail={t("financials.activeBookingsCount", { count: data.totals.bookings })} icon={TrendingUp} tone="pine" />
-        <MetricCard label={t("financials.occupiedNights")} value={formatCompactNumber(data.totals.occupancyNights)} detail={t("financials.last30DaysDetail")} icon={Percent} tone="slate" />
+        <MetricCard label={t("financials.occupiedNights")} value={formatCompactNumber(data.totals.occupancyNights)} detail={t("financials.periodRange", { start: formatDateLabel(data.periodStart, locale), end: formatDateLabel(data.periodEnd, locale) })} icon={Percent} tone="slate" />
         <MetricCard label={t("financials.properties")} value={formatCompactNumber(data.totals.hotelCount)} detail={t("financials.includedInReport")} icon={BarChart3} tone="pine" />
         </div>
       </section>
@@ -174,7 +223,7 @@ export default function Financials() {
             {data.roomTypeBreakdown.length > 0 && (
               <button
                 type="button"
-                onClick={() => downloadRoomTypeCsv(data.roomTypeBreakdown)}
+                onClick={() => downloadRoomTypeCsv(data.roomTypeBreakdown, data.periodStart, data.periodEnd)}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#cfe0d6] bg-[#f6faf7] px-2.5 py-1.5 text-xs font-medium text-[#39715c] hover:bg-[#edf7f1]"
               >
                 <Download size={13} aria-hidden="true" /> {t("financials.downloadCsv")}
@@ -198,6 +247,18 @@ export default function Financials() {
           </CardContent>
         </Card>
         </div>
+      </section>
+
+      <section className="panel financials-bookings-panel">
+        <div className="panel-heading">
+          <div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.bookingsExportTitle")}</h2></div>
+          {data.bookings.length > 0 && (
+            <button type="button" id="financials-bookings-csv" className="button button-quiet" onClick={() => downloadBookingsCsv(data.bookings, data.periodStart, data.periodEnd)}>
+              <Download size={13} aria-hidden="true" /> {t("financials.downloadBookingsCsv")}
+            </button>
+          )}
+        </div>
+        <p className="field-help financials-bookings-help">{data.bookings.length > 0 ? t("financials.bookingsExportDesc", { count: data.bookings.length }) : t("financials.bookingsExportEmpty")}</p>
       </section>
 
       {hotelId && <PromptPaySettings hotelId={hotelId} />}

@@ -94,7 +94,7 @@ export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, calle
     await authorizeHotelAction(db, caller, membership.hotelId, "property.view_financials", "financials.list_hotels", new Date());
     const rows = await db.select({
       id: bookings.id, status: bookings.status, payment_status: bookings.paymentStatus, check_in: bookings.checkIn, check_out: bookings.checkOut,
-      price: bookings.price, roomTypeName: roomTypes.name,
+      price: bookings.price, source: bookings.source, payment_method: bookings.paymentMethod, roomTypeName: roomTypes.name,
     }).from(bookings).leftJoin(rooms, eq(bookings.roomId, rooms.id)).leftJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
       .where(eq(bookings.hotelId, membership.hotelId)).orderBy(desc(bookings.checkIn));
     output.push({ id: membership.hotelId, bookings: rows.map(({ roomTypeName, ...booking }) => ({ ...booking, rooms: { room_types: roomTypeName ? { name: roomTypeName } : null } })) });

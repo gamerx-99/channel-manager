@@ -12,7 +12,7 @@ import {
   listBookingOccupancyForHotel as d1ListBookingOccupancyForHotel,
 } from '../d1/availability';
 import { getOtaSummary } from '../d1/ota';
-import { buildFinancialsSummary } from '../financials';
+import { buildFinancialsSummary, financialsInputSchema } from '../financials';
 import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
 import { inventoryStatus } from '@shared/inventoryStatus';
 import { bangkokDate, dashboardFigures, isRevenueStatus } from '@shared/finance';
@@ -61,7 +61,7 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
   }
 });
 
-export const financials = protectedProcedure.query(async ({ ctx }) => {
+export const financials = protectedProcedure.input(financialsInputSchema).query(async ({ ctx, input }) => {
   requireFinancialsAccess(ctx.user);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
@@ -73,7 +73,7 @@ export const financials = protectedProcedure.query(async ({ ctx }) => {
         rooms: b.rooms ? { room_types: b.rooms.room_types } : { room_types: null },
       })),
     }));
-    return buildFinancialsSummary(hotels as any);
+    return buildFinancialsSummary(hotels as any, new Date(), input);
   } catch (error) {
     return rethrowDomainError(error);
   }

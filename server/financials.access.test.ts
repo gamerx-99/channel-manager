@@ -44,6 +44,22 @@ describe('financials access follows the owner and the owner\'s per-person switch
     expect(hotelMocks.listManagedHotelsForFinancials).toHaveBeenCalled();
   });
 
+  it('passes the chosen month through, and refuses a period over 366 days before touching any data', async () => {
+    hotelMocks.listManagedHotelsForFinancials.mockResolvedValueOnce([]);
+    const app = await caller('hotel_owner');
+
+    await expect(app.channelManager.financials({ month: '2026-02' })).resolves.toMatchObject({ periodStart: '2026-02-01', periodEnd: '2026-02-28', periodLabel: 'month', bookings: [] });
+    await expect(app.channelManager.financials({ from: '2026-01-01', to: '2027-01-02' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(hotelMocks.listManagedHotelsForFinancials).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['support', 'super_admin', 'admin', 'revenue_manager'] as const)('still denies %s when a period is chosen', async (role) => {
+    const app = await caller(role);
+
+    await expect(app.channelManager.financials({ month: '2026-02' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(hotelMocks.listManagedHotelsForFinancials).not.toHaveBeenCalled();
+  });
+
   it('denies a support key even though it carries the permission', async () => {
     const app = await caller('support');
 

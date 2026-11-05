@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookings, d1Schema, hotelUsers, hotels, rooms, roomTypes, supportAccessGrants } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
@@ -68,6 +69,16 @@ describe("listManagedHotelsForFinancials", () => {
     const rows = await listManagedHotelsForFinancials(db, callerAs("hotel_owner"));
 
     expect(hotelIds(rows).sort()).toEqual(["hotel-a", "hotel-b"]);
+  });
+
+  it("carries source and payment method for the bookings list, and never a guest name or contact", async () => {
+    await db.update(bookings).set({ paymentMethod: "cash" }).where(eq(bookings.id, "booking-a"));
+    await member("hotel-a", "hotel_owner");
+
+    const [row] = (await listManagedHotelsForFinancials(db, callerAs("hotel_owner")))[0].bookings;
+
+    expect(row).toMatchObject({ source: "manual", payment_method: "cash" });
+    expect(Object.keys(row).join(" ")).not.toMatch(/guest|email|phone|contact/i);
   });
 
   it("refuses support even with an active key", async () => {
