@@ -4,7 +4,7 @@ import { useTranslation } from "@/lib/i18n";
 import { usePageMeta } from "@/lib/pageMeta";
 import { useBookingWizard } from "./useBookingWizard";
 
-export const DEFAULT_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
+export const DEFAULT_HERO_COPY = "เลือกห้องพัก ดูราคา และตรวจสอบวันว่างได้ที่นี่";
 export const DEFAULT_ACCENT_COLOR = "#954831";
 
 export function usePublicHotelPage(slug: string) {
