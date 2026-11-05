@@ -1,6 +1,14 @@
 # Handoff log
 
-## [## [## [## [2026-11-05] Website builder: owner review bugs 3-20 (machine A)
+## [2026-11-05] Merge of track-b/backoffice-finance into main (machine A)
+- **Merged**: Track 2 (`a9be2b2`): dashboard card groups, HotelDetail price/count/switch, Bookings TM.30 actions and pills, Housekeeping empty-state button.
+- **Found while merging**: that commit also holds work I did not write. Another agent edited the same Linux clone (`~/hayhost-track-b`) and my `git add -A` committed it: `Financials.tsx` layout classes, `specs/15-invoicing-and-tax.md` (draft, not approved), nine questions in `.agent/OPEN_QUESTIONS.md`, extra mobile and finance CSS in `house-style.css`, unused i18n key `hotelDetail.availableCount`. These were reviewed here and kept.
+- **Fixed in the merge**: that agent had put `summaryTotal`, `summaryOpen`, `summaryUnassigned` under the `financials` dictionary while `Housekeeping.tsx` read them as `housekeeping.*` (the page would have shown raw keys), and its headings repeated the captions. The three keys were removed and the page headings restored to `tasksForDay`, `pendingInProgress`, `unassigned`, with the new captions from the Track 2 table.
+- **Handoff file repaired**: entries on `main` and on the branch had broken headings (`## [## [## [`, or `## [` missing). Cause: my insert script used culture-sensitive `IndexOf` on text containing Thai; use ordinal matching. Headings are fixed and both Track 2 and the builder entries are kept.
+- **Evidence (merged tree, Windows)**: `pnpm check` exit 0; client tests 95 files, 444 passed; `pnpm build` exit 0. Server tests not re-run (no server files changed). Not opened in a browser.
+- **Lesson for shared clones**: never `git add -A` in a folder another agent may be using; add named files.
+
+## [2026-11-05] Website builder: owner review bugs 3-20 (machine A)
 - **Verified against the code and fixed**: preview read the saved config instead of the draft switches; preview ignored the photo focal point; preview vanished for view-only users; English fallbacks in the preview ("Your hotel preview", "this hotel", alt text); focal-point reset and photo delete did not refetch the site config; choosing a design skipped the headline and colour checks; save-draft and publish showed no pending text (both sides of the ternary were identical); photo delete had no confirmation; photo errors appeared only in the far card (new `photoError`, shown inside the photos card); focal-point panel had no close button; caption input kept stale text after discarding a draft (`key` on the input); top summary heading repeated "sections shown" (now the overview heading) and two landmarks shared one aria-label.
 - **Checked and not changed**: the sticky save bar already exists (`sticky bottom-0` in `WebsiteBuilder.tsx`); "ลองใหม่" is the wording used across the whole app, so changing only this page would make it inconsistent; the "view hotel page" card alignment could not be judged without a browser.
 - **Thai wording (owner to confirm)**:
@@ -25,7 +33,26 @@
 - **Evidence**: `pnpm check` exit 0; client tests 95 files, 444 passed; `pnpm build` exit 0. Not opened in a browser.
 - **Not done**: not pushed or deployed. Permission names still appear on the Housekeeping and Communications pages (machine B copy sweep).
 
-2026-11-05] Sidebar: "Rooms & rates" group
+## [2026-11-05] Track 2: back-office page polish (machine B, branch track-b/backoffice-finance)
+- **Dashboard (`Home.tsx`)**: the five summary cards are now two groups, operations (rooms available, arrivals, check-outs) and money (revenue today, this month), so no card sits alone. The "rooms available" dot uses the green `.dot.ok` instead of the brand brick.
+- **HotelDetail**: starting price appears once per room row (the "N rooms - starting price" line is now just the room count); the "occupied N%" bar is now "available free/total"; the public-booking control is a switch (`role="switch"`, same `#hotel-publish-toggle`, same mutation and unpublish confirm); the two lower cards stretch to equal height.
+- **Bookings**: Preview and Export TM.30 moved from the page header into the TM.30 panel beside its explanation and the portal link; the header keeps only "Add booking". Statuses: `pending` and `done` pills now have a background; checked-out and refunded use the neutral grey `done` pill.
+- **Housekeeping**: when a day has no tasks, a "Create task" button focuses the room field of the create form (shown only to users who can update). Summary captions reworded (table below).
+- **Thai wording (owner to confirm)**:
+
+| Where | Before | After |
+|---|---|---|
+| Left card caption | จัดกลุ่มตามห้อง | งานทั้งหมดวันนี้ |
+| Middle card caption | รอการทำให้เสร็จ | งานค้าง |
+| Right card caption | ต้องการผู้รับผิดชอบ | รอการมอบหมาย |
+
+  English: "Grouped by room" to "All tasks today"; "Awaiting completion" to "Still open"; "Need assignee" to "Waiting to be assigned". No other new strings (existing keys reused).
+- **Test changed on purpose**: `responsive.styles.test.ts` expected `className="metric-row"` on the dashboard; the row is now `metric-row metric-groups` with `metric-group-operations` and `metric-group-money`, asserted instead.
+- **Evidence (Linux, Node 22)**: `pnpm check` exit 0; client tests 95 files, 441 passed after the test update (first run 1 failed, the test above); `pnpm build` exit 0.
+- **Not done / not checked**: not opened in a browser (check 1280px and 375px, the switch, the grouped cards); not pushed to `main`, not deployed. Found but out of scope: Housekeeping and other Thai texts show internal permission names (for example `housekeeping.update_room_status`), and the dashboard footer says "supabaseData"; both should be reworded.
+
+
+## [2026-11-05] Sidebar: "Rooms & rates" group
 - **Done**: new collapsible sidebar group (`getRoomsAndPricingItems` in `Sidebar.tsx`) with three links, each to a different page: manage room types (`/hotels/:id`, where room types live; no separate route yet), manage room rates (`/dashboard/pricing`), availability calendar (`/hotels/:id/calendar`). The group button opens no page, so nothing loops. It replaces the old "Room operations" and "Availability" links and the "Advanced pricing" link. Each link keeps its own permission; the group hides when none apply. Old dictionary keys `sidebar.roomOperations` and `sidebar.advancedPricing` are now unused (left in place).
 - **Thai strings added (owner to confirm)**: ห้องพักและราคา / จัดการประเภทห้องพัก / จัดการราคาห้องพัก. Group name is Claude's suggestion; the two link names are the owner's wording.
 - **Test changed on purpose**: `AdvancedPricing.contract.test.ts` looked for `href="/dashboard/pricing"` in the sidebar; the marker is now `href: "/dashboard/pricing"` in the group function. Same permission and route assertions kept. New `Sidebar.roomsAndPricing.test.ts`.
@@ -33,14 +60,14 @@
 - **Also**: `.agent/prompts-2026-11-05.md` now starts with the two-machine split.
 - **Not done**: not pushed or deployed.
 
-2026-11-05] Website builder: two crash/data-loss bugs
+## [2026-11-05] Website builder: two crash/data-loss bugs
 - **Found** (from the owner's pasted review, confirmed by reading the code): `PreviewSection.tsx` passed the raw accent text to `getContrastText`, which throws on a half-typed colour (white screen); `useWebsiteBuilder.ts` reset the draft on every config refetch (`|| serverConfig !== undefined`), so caption, gallery and focal-point edits wiped unsaved headline, colour and switches.
 - **Fixed**: the preview uses the already-validated `previewAccentColor`; the draft loads once per hotel.
 - **Tests**: two regression tests in `WebsiteBuilder.test.tsx` (both fail without the fix, checked by stashing the fix). The config mock became a mutable `configData` so a refetch can be simulated; no assertion loosened.
 - **Evidence**: `pnpm check` exit 0; client tests 94 files, 437 tests passed.
 - **Open**: the other 18 items of the review are in Track 3's prompt (`.agent/prompts-2026-11-05.md`, item 5). Not pushed or deployed.
 
-2026-11-05] Hide Calendar edit controls (they did not affect guests)
+## [2026-11-05] Hide Calendar edit controls (they did not affect guests)
 - **Finding**: the hotel Calendar writes `availability` (day price, allotment, stop sell). The guest booking flow never reads that table: `bookingService.ts` prices from `base_price` + `rate_overrides` (`resolveRateSatang`) and counts availability as rooms minus bookings (`roomAvailabilityCounts`). So a "stop sell" or price edit in the Calendar looked saved but changed nothing for guests (overbooking risk). `/dashboard/pricing` writes `rate_overrides` and does take effect. `availability` is read only by the Calendar, the dashboard router and `hotelClosure.ts`. Not checked: iCal export (OTA hidden).
 - **Done**: `Calendar.tsx` has `CALENDAR_EDITING_ENABLED = false`: Edit prices / Save, Set all IN/OUT and per-room IN/OUT are hidden; a "Manage rates" link goes to `/dashboard/pricing`. Code kept behind the flag. Updated Thai/English lede, cell hint and how-it-works text, which promised day-by-day editing.
 - **Test changed on purpose**: `Calendar.test.tsx` "lets a selected date change group IN/OUT and edit price only" asserted the edit flow that is now hidden; replaced by "hides the edit controls and links to the pricing page".

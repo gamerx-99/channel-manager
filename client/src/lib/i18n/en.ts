@@ -694,6 +694,7 @@ const en = {
     addRoomType: "Add room type",
     roomsAndRate: "{{count}} rooms · Base rate {{rate}}",
     occupied: "Occupied",
+    availableCount: "{{available}} of {{total}} available",
     baseRateLabel: "Base rate",
     noRoomTypesTitle: "No room types configured",
     noRoomTypesDesc: "Create room types in the management workflow to track availability.",

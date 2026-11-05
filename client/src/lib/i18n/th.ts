@@ -681,6 +681,7 @@ const th: TranslationDictionary = {
     addRoomType: "เพิ่มประเภทห้อง",
     roomsAndRate: "{{count}} ห้อง · ราคาเริ่มต้น {{rate}}",
     occupied: "มีผู้เข้าพัก",
+    availableCount: "ว่าง {{available}} จาก {{total}} ห้อง",
     baseRateLabel: "ราคาเริ่มต้น",
     noRoomTypesTitle: "ยังไม่ได้ตั้งค่าประเภทห้องพัก",
     noRoomTypesDesc: "สร้างประเภทห้องพักในระบบจัดการเพื่อติดตามจำนวนห้องว่าง",

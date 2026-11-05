@@ -22,7 +22,10 @@ describe("Responsive operations layout contract", () => {
   it("uses a dedicated responsive surface for the Overview summary widget", () => {
     // AGENTS.md Rule 6 rationale: Commit 35880ef redesigned the dashboard overview
     // from dashboard-summary-panel to a responsive, permission-gated metric-row / metric-card grid.
-    expect(home).toContain('className="metric-row"');
+    // Track 2 (2026-11-05): the five cards are grouped, operations beside money, so no card sits alone in the last row.
+    expect(home).toContain('className="metric-row metric-groups"');
+    expect(home).toContain('metric-group-operations');
+    expect(home).toContain('metric-group-money');
     expect(home).toContain('className="metric-card"');
     expect(css).toContain(".metric-row");
     expect(css).toContain(".metric-card");

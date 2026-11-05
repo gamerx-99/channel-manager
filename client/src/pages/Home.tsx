@@ -91,12 +91,17 @@ export default function Home() {
   return <div className="page-content dashboard-page">
     <section className="page-intro intro-split"><div><div className="eyebrow">{t('home.eyebrowPerformance')} <span className="date-stamp">{t('home.propertyPrefix', { name: selectedHotelData?.name ?? primaryHotel?.name ?? t('home.yourProperty') })}</span></div><h1>{t('home.overview')}<span className="title-mark">.</span></h1><p className="lede">{t('home.ledeSingle')}</p></div></section>
 
-    <section className="metric-row" aria-label={t('home.metricAriaLabel')}>
-      {canViewRooms && <article className="metric-card"><div className="metric-icon muted"><BedDouble size={18} /></div><div className="metric-label">{t('home.roomsAvailableToday')}</div><div className="metric-value">{roomsAvailableToday} <small>/ {totalRooms}</small></div><div className="metric-meta"><span className="dot pine" /> {t('home.currentInventory')}</div></article>}
-      {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.arrivalsToday')}</div><div className="metric-value">{checkInsToday}</div><div className="metric-meta positive"><ArrowUpRight size={14} /> {t('home.confirmedStays')}</div></article>}
-      {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.checkOutsToday')}</div><div className="metric-value">{checkOutsToday}</div><div className="metric-meta">{t('home.confirmedStays')}</div></article>}
-      {canViewRevenue && <article className="metric-card metric-primary"><div className="metric-icon"><CreditCard size={18} /></div><div className="metric-label">{t('home.revenueToday')}</div><div className="metric-value">{formatCurrency(revenueToday)}</div></article>}
-      {canViewRevenue && <article className="metric-card"><div className="metric-icon muted"><CreditCard size={18} /></div><div className="metric-label">{t('home.revenueThisMonth')}</div><div className="metric-value">{formatCurrency(revenueThisMonth)}</div></article>}
+    {/* Operations cards sit together and money cards sit together, so the last row never has one card on its own. */}
+    <section className="metric-row metric-groups" aria-label={t('home.metricAriaLabel')}>
+      {(canViewRooms || canViewBookings) && <div className="metric-group metric-group-operations">
+        {canViewRooms && <article className="metric-card"><div className="metric-icon muted"><BedDouble size={18} /></div><div className="metric-label">{t('home.roomsAvailableToday')}</div><div className="metric-value">{roomsAvailableToday} <small>/ {totalRooms}</small></div><div className="metric-meta"><span className="dot ok" /> {t('home.currentInventory')}</div></article>}
+        {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.arrivalsToday')}</div><div className="metric-value">{checkInsToday}</div><div className="metric-meta positive"><ArrowUpRight size={14} /> {t('home.confirmedStays')}</div></article>}
+        {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.checkOutsToday')}</div><div className="metric-value">{checkOutsToday}</div><div className="metric-meta">{t('home.confirmedStays')}</div></article>}
+      </div>}
+      {canViewRevenue && <div className="metric-group metric-group-money">
+        <article className="metric-card metric-primary"><div className="metric-icon"><CreditCard size={18} /></div><div className="metric-label">{t('home.revenueToday')}</div><div className="metric-value">{formatCurrency(revenueToday)}</div></article>
+        <article className="metric-card"><div className="metric-icon muted"><CreditCard size={18} /></div><div className="metric-label">{t('home.revenueThisMonth')}</div><div className="metric-value">{formatCurrency(revenueThisMonth)}</div></article>
+      </div>}
     </section>
 
     <DashboardCalendarView canEditAvailability={canEditCalendar} />

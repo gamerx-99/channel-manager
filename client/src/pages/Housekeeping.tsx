@@ -394,7 +394,7 @@ export default function Housekeeping() {
                 </div>
               ))
             ) : (
-              <div className="panel empty-state"><strong>{t("housekeeping.noTasksForDayTitle")}</strong><span>{t("housekeeping.noTasksForDayDesc")}</span></div>
+              <div className="panel empty-state"><strong>{t("housekeeping.noTasksForDayTitle")}</strong><span>{t("housekeeping.noTasksForDayDesc")}</span>{canUpdate && <button type="button" className="button button-primary" onClick={() => { const field = document.getElementById("hk-room"); field?.scrollIntoView({ block: "center", behavior: "smooth" }); field?.focus(); }}><Plus size={15} /> {t("housekeeping.createTask")}</button>}</div>
             )}
           </CardContent>
         </Card>
