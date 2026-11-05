@@ -9,6 +9,18 @@
 - **Evidence**: `pnpm check` exit 0; full `pnpm test` 204 files, exit 0; `pnpm build` exit 0. The first full run failed in `server/rateOverrides.access.test.ts` because the router read two constants from the mocked `d1/availability` module; the constants now live in `shared/availabilityBatch.ts`.
 - **Not done**: not merged to `main`; enforcement for guests (spec 20 step 3) is not written because it changes what guests can buy and needs the audit and the owner's decisions.
 
+## [2026-11-05] Pause until Tuesday 2026-11-10: where everything stands (machine A)
+- **Why**: the Claude plan quota ran low after four parallel sessions; the owner paused Claude until the weekly reset (Tuesday 2026-11-10, about 06:00 Thai time). All four sessions are stopped or idle. Nothing was pushed or deployed after `8745cd3e`.
+- **Worktree branches (local only, not merged, not pushed), in `C:\WORK\hayhost\.claude\worktrees\`**:
+  - Part 10 `claude/part-10-thai-today-bb9cd1`, commit `37c69c3`: finished; the session reported one flaky failure in `PaymentQR.test.tsx` that passes alone. Server still accepts past check-ins (proposal in its handoff entry).
+  - Part 5 `claude/part-5-close-nights-051814`, commit `1fc30b4`: close nights for guests (spec 20 phase 1). Idle, not reviewed. **Do not deploy before the production data audit in spec 20.**
+  - Part 2 `claude/part-2-finance-period-ae8ad8`: **unfinished**, 14 uncommitted files (period picker and CSV for the financial report). The session was stopped mid-work; review before trusting anything in it.
+  - Part 3 `claude/part-3-frontdesk-availability-f06748`: duplicate of Codex's branch `part-3/frontdesk-availability` (`c7b637a`, CI green). Prefer Codex's; this one can be deleted.
+- **With Codex**: Part 3 pushed (`part-3/frontdesk-availability`), Part 4a (room type details, needs a migration a human applies) given as a full prompt in chat; not reported back yet.
+- **Rule from the owner**: split Parts and give full prompts in chat for the owner to send to Codex; do not run extra sessions or do Codex's Parts. Linux cannot read files from this machine; prompts must be self-contained text.
+- **Tuesday checklist**: (1) check Dashboard and Financials live (signed in) after deploy `8745cd3e`; (2) review and merge Codex Part 3, then Part 10, one at a time, full tests each; (3) decide what to do with Part 5 and Part 2; (4) the owner decides revenue by check-in date vs payment date; (5) someone runs the spec 20 audit queries; (6) confirm the Thai wording tables in this file; (7) `main` has one unpushed handoff commit.
+- **Usage seen**: Pro plan, 5-hour window 48% and weekly 51% used at the time; the main chat's context was 86% full, so start a fresh chat and read this file and `.agent/flow-todo-2026-11-05.md` first.
+
 ## [2026-11-05] Deployed main bc62f58 to production (finance correctness, account page)
 - **Done with the owner's approval ("Push และ deploy")**: pushed `3f1c69b..bc62f58` (8 commits: Part 1 finance fixes, the Account page "ข้อมูลส่วนตัว", the product principle, spec 20 phases, the flow todo and prompts); `wrangler deploy --env production`; Worker `hayhost`, version `8745cd3e-15a3-4ab1-80d7-236aaf2fb40a`; no pending migrations. `/` and the API route return 200.
 - **Not checked by me**: signed-in views. The owner should look at the Dashboard (departures today, rooms free today, revenue), the Financials page (revenue should drop if held or expired bookings were counted before), the profile menu link "ข้อมูลส่วนตัว" and `/settings/account`.
