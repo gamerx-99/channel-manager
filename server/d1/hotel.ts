@@ -52,7 +52,7 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
       db.select({ id: roomTypes.id, name: roomTypes.name, base_price: roomTypes.basePrice }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
       db.select({ id: rooms.id, status: rooms.status }).from(rooms).where(eq(rooms.hotelId, hotelId)),
-      scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
+      scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, guest_name: bookings.guestName, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
         .from(bookings).where(eq(bookings.hotelId, hotelId)) : Promise.resolve([]),
     ]);
     output.push({

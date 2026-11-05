@@ -18,7 +18,7 @@ export type HotelMediaItem = inferRouterOutputs<AppRouter>["channelManager"]["li
 // hotel_domains custom-domain flow is intentionally deferred (see DECISIONS.md) and not wired here.
 
 export function useWebsiteBuilder() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const utils = trpc.useUtils();
   const setPublished = trpc.channelManager.setHotelPublished.useMutation({ onSuccess: async () => { await utils.channelManager.hotels.invalidate(); } });
   const { data: hotels, isLoading, isError, refetch, isFetching } = trpc.channelManager.hotels.useQuery();
@@ -53,11 +53,11 @@ export function useWebsiteBuilder() {
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); }, onError: e => setFormError(e.message) });
   const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); }, onError: e => setFormError(e.message) });
   const publishConfigMut = trpc.channelManager.publishHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.publishSuccess")); await refetchConfig(); }, onError: e => setFormError(e.message) });
-  const [draft, setDraft] = useState<SiteConfig>(() => defaultConfig(effectiveHotelId));
+  const [draft, setDraft] = useState<SiteConfig>(() => ({ ...defaultConfig(effectiveHotelId), heroCopy: t("publicHotel.defaultHeroCopy") }));
   const publishedConfig = useMemo(() => {
     const base = defaultConfig(effectiveHotelId);
-    return { ...base, ...(serverConfig ?? {}), heroCopy: serverConfig?.heroCopy ?? base.heroCopy, accentColor: serverConfig?.accentColor ?? base.accentColor, visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) } } as SiteConfig;
-  }, [serverConfig, effectiveHotelId]);
+    return { ...base, ...(serverConfig ?? {}), heroCopy: serverConfig?.heroCopy ?? t("publicHotel.defaultHeroCopy"), accentColor: serverConfig?.accentColor ?? base.accentColor, visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) } } as SiteConfig;
+  }, [serverConfig, effectiveHotelId, language]);
   const storedDraft = useMemo(() => {
     if (!serverConfig?.draftJson) return null;
     try { return JSON.parse(serverConfig.draftJson) as SiteConfig & { heroMediaId?: string | null; mediaPositions?: Record<string, string | null>; mediaCaptions?: Record<string, string>; galleryMediaIds?: string[] }; } catch { return null; }

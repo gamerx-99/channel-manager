@@ -7,6 +7,16 @@
 .lede { color: #766f6b; font-size: 15px; }
 .eyebrow { color: var(--pine); }
 .title-mark { color: var(--pine); }
+.page-intro h1 .title-mark { display: none; }
+.account-edit-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; padding: 0 24px 24px; }
+.account-edit-form > label { display: grid; gap: 6px; font-size: 12px; color: var(--ink-muted); }
+.account-edit-input { width: 100%; min-height: 40px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--white); padding: 8px 10px; color: var(--ink); font: inherit; font-size: 14px; }
+.account-edit-input:focus { outline: 2px solid var(--pine); outline-offset: 1px; }
+.account-edit-static { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.account-edit-static > span:first-child { width: 100%; color: var(--ink-muted); font-size: 12px; }
+.account-edit-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.account-edit-actions p { margin: 0; }
+.account-edit-success { color: var(--pine); font-size: 13px; }
 .intro-note { padding: 10px 14px; border-radius: 999px; background: #fff; box-shadow: var(--shadow); color: #716b68; display: inline-flex; align-items: center; gap: 8px; font-size: 11px; }
 .intro-note svg { color: var(--pine); }
 

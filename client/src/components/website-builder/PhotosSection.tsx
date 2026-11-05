@@ -173,7 +173,7 @@ export function PhotosSection({
                       className={`h-7 border-[#dce4df] px-2 text-xs ${item.isHero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
                       onClick={() => handleSetHero(item.id)}
                       disabled={!canManage || item.isHero}
-                      aria-label={t("websiteBuilder.setHeroAria", { id: item.id })}
+                      aria-label={t("websiteBuilder.setHeroNamedAria", { name: item.caption?.trim() || t("websiteBuilder.photoFallback", { order: item.displayOrder + 1 }) })}
                     >
                       {t("websiteBuilder.setHeroButton")}
                     </Button>
@@ -184,7 +184,7 @@ export function PhotosSection({
                       className="h-7 w-7 text-[#8a9a93] hover:text-red-600"
                       onClick={() => handleDeleteMedia(item.id)}
                       disabled={!canManage || item.isHero}
-                      aria-label={t("websiteBuilder.deleteMediaAria", { id: item.id })}
+                      aria-label={t("websiteBuilder.deleteNamedMediaAria", { name: item.caption?.trim() || t("websiteBuilder.photoFallback", { order: item.displayOrder + 1 }) })}
                     >
                       <Trash2 size={14} />
                     </Button>

@@ -45,7 +45,7 @@ export default function Landing() {
       <nav className="landing-nav-links" aria-label={t("landing.navAriaLabel")}><a href="#features">{t("landing.navFeatures")}</a><a href="#pricing">{t("landing.navPricing")}</a><a href="#faq">{t("landing.navFaq")}</a></nav>
       <div className="landing-nav-actions">
         <button type="button" className="landing-language" aria-label={t("landing.switchLanguageAria")} onClick={toggleLanguage}>{t("landing.switchLanguage")}</button>
-        <Link href="/login" className="landing-sign-in">{t("landing.signIn")}</Link>
+        {!me.isLoading && !me.data && <Link href="/login" className="landing-sign-in">{t("landing.signIn")}</Link>}
         <Link href={primaryHref} className="landing-nav-cta">{primaryLabel}</Link>
       </div>
     </header>

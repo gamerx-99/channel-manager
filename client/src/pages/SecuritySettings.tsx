@@ -2,10 +2,8 @@ import { hasHotelPermission } from "@shared/authorization";
 import DeleteAccountSettings from "@/components/DeleteAccountSettings";
 import LinkedAccountsSettings from "@/components/LinkedAccountsSettings";
 import HotelClosureSettings from "@/components/HotelClosureSettings";
-import MfaSettings from "@/components/MfaSettings";
 import SlipOkSettings from "@/components/SlipOkSettings";
 import { useHotel } from "@/contexts/HotelContext";
-import { isMfaEnabled } from "@/lib/featureFlags";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
@@ -31,7 +29,6 @@ export default function SecuritySettings() {
           <p className="lede">{t("securitySettings.lede")}</p>
         </div>
       </section>
-      {isMfaEnabled() && <MfaSettings />}
       <LinkedAccountsSettings />
       {hotelId && canManageSlipOk && <SlipOkSettings hotelId={hotelId} />}
       {ownerBilling && selectedHotel && <section className="panel home-plan-card"><div className="panel-heading"><div><div className="eyebrow">{t('subscription.currentPlan')}</div><h2>{planState.data ? t(`subscription.${planState.data.plan}`) : t('common.loading')}</h2></div><span className="status-pill live">{planState.data?.daysLeft ? t('subscription.daysLeft', { days: planState.data.daysLeft }) : ''}</span></div><p>{planState.data?.endsAt ? t('subscription.endsAt', { date: new Intl.DateTimeFormat(language === 'th' ? 'th-TH' : 'en-GB', { dateStyle: 'medium' }).format(new Date(planState.data.endsAt)) }) : t('subscription.freeNoExpiry')}</p><Link href={`/hotels/${selectedHotel.id}/billing`} className="button button-primary">{t('subscription.changePlan')}</Link></section>}

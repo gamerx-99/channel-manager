@@ -1,8 +1,12 @@
+import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import PageState from "@/components/PageState";
+import MfaSettings from "@/components/MfaSettings";
+import { authClient } from "@/lib/auth-client";
+import { isMfaEnabled } from "@/lib/featureFlags";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
-import { planHasEnd, planNameKey, signInMethod, valueOrEmpty } from "./accountProfile";
+import { planHasEnd, planNameKey, signInMethod } from "./accountProfile";
 
 export default function Account() {
   const { t, language } = useTranslation();
@@ -17,13 +21,6 @@ export default function Account() {
   }
 
   const profile = profileQuery.data;
-  const details: Array<[string, string | null]> = [
-    [t("account.firstName"), valueOrEmpty(profile.firstName)],
-    [t("account.lastName"), valueOrEmpty(profile.lastName)],
-    [t("account.displayName"), valueOrEmpty(profile.name)],
-    [t("account.phone"), valueOrEmpty(profile.phone)],
-  ];
-
   return (
     <div className="page-content account-page">
       <section className="page-intro intro-split">
@@ -36,19 +33,10 @@ export default function Account() {
 
       <section className="panel" aria-labelledby="account-details-heading">
         <div className="panel-heading"><div><h2 id="account-details-heading">{t("account.detailsTitle")}</h2></div></div>
-        <dl className="account-details">
-          {details.map(([label, value]) => (
-            <div key={label}><dt>{label}</dt><dd>{value ?? <span className="account-empty">{t("account.notProvided")}</span>}</dd></div>
-          ))}
-          <div>
-            <dt>{t("account.email")}</dt>
-            <dd>
-              {profile.email}
-              <span className={`status-pill ${profile.emailVerified ? "live" : "pending"}`}><i />{profile.emailVerified ? t("account.emailVerified") : t("account.emailNotVerified")}</span>
-            </dd>
-          </div>
-        </dl>
+        <AccountProfileEditor profile={profile} onSaved={() => void profileQuery.refetch()} />
       </section>
+
+      {isMfaEnabled() && <MfaSettings />}
 
       <section className="panel" aria-labelledby="account-signin-heading">
         <div className="panel-heading">
@@ -92,5 +80,64 @@ export default function Account() {
         ) : <p className="account-note">{t("account.noHotels")}</p>}
       </section>
     </div>
+  );
+}
+
+function AccountProfileEditor({ profile, onSaved }: { profile: { firstName: string | null; lastName: string | null; phone: string | null; email: string; emailVerified: boolean }; onSaved: () => void }) {
+  const { t } = useTranslation();
+  const [firstName, setFirstName] = useState(profile.firstName ?? "");
+  const [lastName, setLastName] = useState(profile.lastName ?? "");
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const first = firstName.trim();
+    const last = lastName.trim();
+    const number = phone.trim();
+    if (!first || !last) {
+      setError(t("account.nameRequired"));
+      setSaved(false);
+      return;
+    }
+    if (number && !/^[0-9+()\-\s]{7,24}$/.test(number)) {
+      setError(t("account.phoneInvalid"));
+      setSaved(false);
+      return;
+    }
+
+    setPending(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const result = await authClient.updateUser({ name: `${first} ${last}`, firstName: first, lastName: last, phone: number });
+      if (result.error) throw new Error(result.error.message || t("account.saveFailed"));
+      setFirstName(first);
+      setLastName(last);
+      setPhone(number);
+      setSaved(true);
+      onSaved();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("account.saveFailed"));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form className="account-edit-form" onSubmit={event => void save(event)}>
+      <label>{t("account.firstName")}<input className="account-edit-input" autoComplete="given-name" maxLength={100} required placeholder={firstName ? undefined : t("account.notProvided")} value={firstName} onChange={event => setFirstName(event.target.value)} /></label>
+      <label>{t("account.lastName")}<input className="account-edit-input" autoComplete="family-name" maxLength={100} required placeholder={lastName ? undefined : t("account.notProvided")} value={lastName} onChange={event => setLastName(event.target.value)} /></label>
+      <label>{t("account.phone")}<input className="account-edit-input" autoComplete="tel" inputMode="tel" maxLength={24} placeholder={phone ? undefined : t("account.notProvided")} value={phone} onChange={event => setPhone(event.target.value)} /></label>
+      <div className="account-edit-static"><span>{t("account.displayName")}</span><strong>{[firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || t("account.notProvided")}</strong></div>
+      <div className="account-edit-static"><span>{t("account.email")}</span><strong>{profile.email}</strong><span className={`status-pill ${profile.emailVerified ? "live" : "pending"}`}><i />{profile.emailVerified ? t("account.emailVerified") : t("account.emailNotVerified")}</span></div>
+      <div className="account-edit-actions">
+        {error && <p className="form-error" role="alert">{error}</p>}
+        {saved && <p className="account-edit-success" role="status">{t("account.saveSuccess")}</p>}
+        <button className="button button-primary" type="submit" disabled={pending}>{pending ? t("account.saving") : t("account.save")}</button>
+      </div>
+    </form>
   );
 }

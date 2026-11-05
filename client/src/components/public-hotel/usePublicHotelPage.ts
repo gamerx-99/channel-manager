@@ -46,19 +46,20 @@ export function usePublicHotelPage(slug: string) {
       }
     : notFound ? { title: t("publicHotel.hotelUnavailableTitle"), description: t("publicHotel.hotelUnavailableDesc"), noindex: true } : null);
 
-  if (!publicHotel.data) return { hotel: null, roomTypes: [], media: [], heroImage: undefined, siteConfig: null, accentColor: DEFAULT_ACCENT_COLOR, visibleSections: null, heroCopy: DEFAULT_HERO_COPY, language: undefined, t, loading, error, notFound, refetch: publicHotel.refetch, booking: null };
+  if (!publicHotel.data) return { hotel: null, roomTypes: [], media: [], heroImage: undefined, siteConfig: null, accentColor: DEFAULT_ACCENT_COLOR, visibleSections: null, heroCopy: t("publicHotel.defaultHeroCopy"), language: undefined, t, loading, error, notFound, refetch: publicHotel.refetch, booking: null };
   const { hotel, roomTypes, media } = publicHotel.data;
   const heroImage = media.find(item => item.is_hero)?.url ?? media[0]?.url;
 
   // hotel_site_config fallback: when no config row or table missing, use fixed copy/colors
   const siteConfig = siteConfigQuery.data ?? null;
   const heroCopy = siteConfig?.heroCopy ?? DEFAULT_HERO_COPY;
+  const displayHeroCopy = siteConfig?.heroCopy?.trim() ? heroCopy : t("publicHotel.defaultHeroCopy");
   const accentColor = siteConfig?.accentColor ?? DEFAULT_ACCENT_COLOR;
   const visibleSections = (siteConfig?.visibleSections as Record<string, boolean> | null) ?? null;
   const isVisible = (key: string) => visibleSections?.[key] !== false;
 
   return {
-    hotel, roomTypes, media, heroImage, siteConfig, accentColor, visibleSections, heroCopy,
+    hotel, roomTypes, media, heroImage, siteConfig, accentColor, visibleSections, heroCopy: displayHeroCopy,
     language, setLanguage, toggleLanguage, t, loading, error, notFound, refetch: publicHotel.refetch,
     isVisible,
     booking,

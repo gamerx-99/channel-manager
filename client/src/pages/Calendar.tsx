@@ -29,6 +29,10 @@ function monthLabel(date: Date, language: "en" | "th") {
   return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date);
 }
 
+function calendarDateLabel(isoDate: string, language: "en" | "th") {
+  return new Intl.DateTimeFormat(dateLocale(language), { dateStyle: "long" }).format(new Date(`${isoDate}T12:00:00`));
+}
+
 function getMonthDays(monthAnchor: Date): Array<{ date: Date; isCurrentMonth: boolean }> {
   const year = monthAnchor.getFullYear();
   const month = monthAnchor.getMonth();
@@ -308,8 +312,8 @@ export default function Calendar({ id }: { id: string }) {
             className="icon-button bordered"
             type="button"
             onClick={handlePrev}
-            aria-label="Previous month"
-            title="Previous month"
+            aria-label={t("advancedPricing.prevMonthAria")}
+            title={t("advancedPricing.prevMonthAria")}
           >
             <ChevronLeft size={16} />
           </button>
@@ -320,8 +324,8 @@ export default function Calendar({ id }: { id: string }) {
             className="icon-button bordered"
             type="button"
             onClick={handleNext}
-            aria-label="Next month"
-            title="Next month"
+            aria-label={t("advancedPricing.nextMonthAria")}
+            title={t("advancedPricing.nextMonthAria")}
           >
             <ChevronRight size={16} />
           </button>
@@ -364,8 +368,8 @@ export default function Calendar({ id }: { id: string }) {
                     type="button"
                     className={`calendar-month-cell ${cell.isCurrentMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""} ${agg.dateStr === inDate || agg.dateStr === outDate || (inDate && outDate && agg.dateStr > inDate && agg.dateStr < outDate) ? "is-selected" : ""} ${agg.bookingPlatforms.length > 0 ? "has-booking" : ""}`}
                     onClick={() => handleMonthDayClick(cell.date)}
-                    aria-label={t("availability.monthCellAriaLabel", { date: agg.dateStr, available: String(agg.totalAvailable), total: String(agg.totalRooms), status: statusLabelText }) + priceSuffix}
-                    title={t("availability.monthCellTitle", { date: agg.dateStr, status: statusLabelText, available: String(agg.totalAvailable), total: String(agg.totalRooms) })}
+                    aria-label={t("availability.monthCellAriaLabel", { date: calendarDateLabel(agg.dateStr, language), available: String(agg.totalAvailable), total: String(agg.totalRooms), status: statusLabelText }) + priceSuffix}
+                    title={t("availability.monthCellTitle", { date: calendarDateLabel(agg.dateStr, language), status: statusLabelText, available: String(agg.totalAvailable), total: String(agg.totalRooms) })}
                   >
                     <div className="month-cell-top">
                       <span className="month-cell-day">{cell.date.getDate()}</span>
@@ -451,7 +455,7 @@ function AvailabilityCell({ available, price, editing, onChange }: { available: 
   const { t } = useTranslation();
   const isLow = available <= 2;
   if (editing) {
-    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span>{price !== null && <strong>�{price.toLocaleString()}</strong>}</div>;
+    return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available">{t("availability.roomsCount", { count: available })}</span>{price !== null && <strong>฿{price.toLocaleString()}</strong>}</div>;
   }
   return <div className={`availability-cell ${isLow ? "low" : ""}`}><span className="cell-available"><i className={`dot ${available === 0 ? "slate" : isLow ? "amber" : "ok"}`} />{t("availability.roomsCount", { count: available })}</span>{price !== null && <strong>฿{price.toLocaleString()}</strong>}</div>;
 }

@@ -267,7 +267,7 @@ export default function Housekeeping() {
           </Button>
           <label className="flex items-center gap-2">
             <CalendarDays size={16} className="text-[#6c7e75]" aria-hidden="true" />
-            <Input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="border-[#dce4df] w-[160px]" />
+            <Input type="date" aria-label={t("housekeeping.daySelectorAria")} value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="border-[#dce4df] w-[160px]" />
           </label>
           <Button variant="outline" size="icon" className="h-8 w-8 border-[#dce4df]" onClick={() => setSelectedDate(toIsoDate(addDays(parseIsoDate(selectedDate), 1)))} aria-label={t("housekeeping.nextDayAria")}>
             <ChevronRight size={16} />
