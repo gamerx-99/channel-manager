@@ -1,5 +1,28 @@
 # Handoff log
 
+## [2026-11-05] Dashboard calendar: daily edit and stop-sale controls hidden (machine A)
+- **Why**: the "จัดการห้องว่างรายวัน / แก้ไขห้องว่างของวันที่เลือก" block (rooms-available field, save, stop sale) on `/dashboard` writes the `availability` table, which the guest booking flow does not read. Seen on the owner's production screenshot; same cause as the Calendar page fix.
+- **Done**: `DashboardCalendarView.tsx` has `DASHBOARD_CALENDAR_EDITING_ENABLED = false`; the whole quick-actions block is gated by it (code kept). The calendar grid and the selected-day summary stay. New assertion in `dashboardCalendar.contract.test.ts`; the existing assertions about the save and stop-sell code still hold because the code is still in the file.
+- **Evidence**: `pnpm check` exit 0; full `pnpm test` 203 files, 1357 passed; `pnpm build` exit 0. Not deployed.
+- **Re-enable when**: stop sell and allotment are read by `roomAvailabilityCounts` / the booking path (spec and owner decision on where stop sell is stored are still open).
+
+## [2026-11-05] Deployed main bf1b760 to production
+- **Done with the owner's approval ("Push และ deploy")**: pushed `cee0456..bf1b760` and ran `wrangler deploy --env production`; Worker `hayhost`, version `b9fdfd5f-58d0-47be-856d-cb7ecffaf179`; no pending migrations. Includes the dashboard test fix and the support-mode note shown only to hayhost staff.
+- **Checked**: `/` and the API route return 200. Signed-in views not checked by me: a hotel owner should no longer see "โหมดสนับสนุน" in the sidebar footer, and the one-room hotel should show the green dot at 1/1 on the dashboard calendar (the earlier server fix, version `01c5a991`).
+- **Rollback**: `wrangler rollback --env production` (previous `01c5a991`).
+
+## [2026-11-05] Main CI fix and support-mode note (machine A)
+- **CI on main was red since `cee0456`**: `client/src/dashboardCalendar.contract.test.ts` still asserted the old inline status formula that `cee0456` moved to `shared/inventoryStatus.ts`. I had only run part of the client suite after that change, so I missed it; Codex found it while merging. The assertion now checks the call and the import (the rule itself is tested in `shared/inventoryStatus.test.ts`). Full `pnpm test`: 203 files, 1355 passed.
+- **Support-mode note**: the sidebar footer box "โหมดสนับสนุน / ดูข้อมูล แนะนำ และแก้ไขปัญหา" showed for every account, including hotel owners. It now renders only when `isPlatformAdmin` (super admin, admin, support). New contract assertion in `Sidebar.contract.test.ts`. Possible later step: show owners a notice only while a support access grant is active (needs the grant data).
+- **Seen, not changed**: the sidebar user chip falls back to the text from `sidebar.supabaseUser` when the email is missing (developer wording).
+- **Not done**: not pushed or deployed (the UI change needs a deploy to appear).
+
+## [2026-11-05] Deployed main cee0456 to production (dashboard calendar status fix)
+- **Done with the owner's approval ("Push และ deploy")**: pushed `main` (`23765ab..cee0456`) and ran `wrangler deploy --env production`; Worker `hayhost`, version `01c5a991-19a8-45fb-b24e-5e04ce2238a8`. `wrangler d1 migrations list ... --remote`: "No migrations to apply".
+- **Not included**: Codex's `track-c/finance` copy commit `5581e15` (not merged; owner has not approved it).
+- **Checked**: `/` returns 200 and the API route answers. The dashboard calendar fix is server-side and needs a signed-in view to confirm: a one-room hotel should show the green dot at 1/1.
+- **Rollback**: `wrangler rollback --env production` (previous version `bb0388bd`).
+
 ## [2026-11-05] Track C — owner-facing copy (main 23765ab)
 - Replaced visible internal permission codes and database terms in Housekeeping, Communications, pricing, room deletion and admin copy; changed the home booking-data caption. Only translation values changed. The websiteBuilder section and housekeeping.groupedByRoom / awaitingCompletion / needAssignee are unchanged.
 - Financials layout and spec 15 were already on main; no duplicate files or commits were added for them.

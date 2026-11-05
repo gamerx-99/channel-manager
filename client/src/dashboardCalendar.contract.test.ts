@@ -23,7 +23,9 @@ describe('Dashboard Calendar View contract', () => {
   it('projects bookings, availability states, and iCal log activity onto each day', () => {
     expect(router).toContain("d1ListBookingOccupancyForHotel(db,");
     expect(router).toContain("booking.checkIn) <= date && (booking.checkOut) > date && isBookingOccupyingInventory(booking as any)");
-    expect(router).toContain("status: (available <= 0 ? 'closed' : available <= Math.max(1, Math.ceil(totalRooms * 0.25)) ? 'low' : 'healthy')");
+    // The colour rule moved to shared/inventoryStatus.ts (a fully free day is healthy, even 1/1); its cases are in inventoryStatus.test.ts.
+    expect(router).toContain("status: inventoryStatus(available, totalRooms)");
+    expect(dashboardRouterText).toContain("import { inventoryStatus } from '@shared/inventoryStatus'");
     expect(router).toContain('syncEvents: hotelOtaEvents.filter');
     expect(dashboardRouterText).toContain('d1ListManagedHotels(db, caller)');
     expect(dashboardRouterText).toContain('d1GetManagedHotel(db, caller, hotel.id)');
@@ -48,6 +50,12 @@ describe('Dashboard Calendar View contract', () => {
     expect(component).toContain("t('dashboardCalendar.viewOnly')");
     expect(component).toContain('Save');
     expect(component).toContain("t('dashboardCalendar.stopSellingTitle')");
+  });
+
+  it('keeps the daily edit and stop-sell controls hidden until they reach the guest booking flow', () => {
+    // Those controls write the availability table, which guests never read (regression: "stop sale" did nothing for guests).
+    expect(component).toContain('const DASHBOARD_CALENDAR_EDITING_ENABLED = false;');
+    expect(component).toContain('{DASHBOARD_CALENDAR_EDITING_ENABLED && <div className="dashboard-calendar-quick-actions"');
   });
 
   it('protects the availability mutation with property scope and distinct revenue permissions', () => {

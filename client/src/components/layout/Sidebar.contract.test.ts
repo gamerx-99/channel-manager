@@ -10,6 +10,12 @@ describe("Sidebar booking engine button", () => {
     expect(sidebar).not.toContain("#book");
   });
 
+  it("shows the support-mode note only to hayhost staff, never to a hotel owner (regression: every account saw it)", () => {
+    const at = sidebar.indexOf('className="support-note"');
+    expect(at).toBeGreaterThan(0);
+    expect(sidebar.slice(Math.max(0, at - 80), at)).toContain("isPlatformAdmin && (");
+  });
+
   it("has no Channel analytics link", () => {
     expect(sidebar).not.toContain("/dashboard/channels");
   });

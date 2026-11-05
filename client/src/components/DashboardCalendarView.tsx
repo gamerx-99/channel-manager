@@ -64,6 +64,12 @@ function statusColorName(status: CalendarDay['roomTypes'][number]['status']) {
   return 'green';
 }
 
+// The daily controls below (rooms available, stop sell) write the `availability` table, which the
+// guest booking flow does not read (server/d1/bookingService.ts counts rooms minus bookings and
+// prices from rate_overrides). A hotel could press "stop sale" and still receive bookings, so the
+// controls stay hidden until the two are connected. The calendar itself remains read-only.
+const DASHBOARD_CALENDAR_EDITING_ENABLED = false;
+
 export default function DashboardCalendarView({ defaultDays = 14, canEditAvailability = false }: CalendarViewProps) {
   const { t, language } = useTranslation();
   const [startDate, setStartDate] = useState(isoToday);
@@ -242,7 +248,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
           <div className="eyebrow">{t('dashboardCalendar.syncActivity')}</div>
           {activeDay?.syncEvents.length ? <div className="dashboard-calendar-sync-list">{activeDay.syncEvents.map((event, index) => <div className={`dashboard-calendar-sync-item ${event.status === 'failed' ? 'is-error' : ''}`} key={`${event.provider}:${event.createdAt}:${index}`}><span className="dashboard-calendar-sync-icon">{event.status === 'failed' ? <CircleAlert size={14} /> : <CloudDownload size={14} />}</span><div><strong>{event.provider} · {event.status === 'success' ? t('dashboardCalendar.synced') : t('dashboardCalendar.failed')}</strong><small>{formatSyncTime(event.createdAt, language)} · {t('dashboardCalendar.updatedItems', { count: event.updatedItemCount })}</small></div><span className="dashboard-calendar-sync-message">{event.message}</span></div>)}</div> : <p className="dashboard-calendar-empty-sync">{t('dashboardCalendar.noSyncActivity')}</p>}
         </div>}
-        <div className="dashboard-calendar-quick-actions" aria-labelledby="dashboard-calendar-quick-actions-title">
+        {DASHBOARD_CALENDAR_EDITING_ENABLED && <div className="dashboard-calendar-quick-actions" aria-labelledby="dashboard-calendar-quick-actions-title">
           <div className="dashboard-calendar-quick-actions-heading">
             <div><div className="eyebrow">{t('dashboardCalendar.dailyControls')}</div><h4 id="dashboard-calendar-quick-actions-title">{t('dashboardCalendar.editSelectedDay')}</h4></div>
             {!canEditAvailability && <span className="calendar-view-only-note">{t('dashboardCalendar.viewOnly')}</span>}
@@ -264,7 +270,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
               </div>
             </div>;
           })}</div> : <p className="dashboard-calendar-empty-sync">{t('dashboardCalendar.noRoomsToEdit')}</p>}
-        </div>
+        </div>}
       </div>
       <div className="calendar-footer"><span>{t('dashboardCalendar.accessFooter')}</span><span className="signal-text"><i /> {calendarQuery.data.generatedAt ? t('dashboardCalendar.updatedAt', { time: formatSyncTime(calendarQuery.data.generatedAt, language) }) : t('dashboardCalendar.latestData')}</span></div>
     </section>
