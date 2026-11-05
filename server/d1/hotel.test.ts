@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookings, d1Schema, hotelMedia, hotelServices, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
+import { ROOM_AMENITY_KEYS } from "../../shared/roomAmenities";
 import { createHotelService, createManagedHotel, createManagedRoomType, deleteHotelService, deleteManagedRoomType, getManagedHotel, getPublicHotel, listActiveHotelServicesBySlug, listHotelServices, listManagedHotels, listManagedHotelsForFinancials, listPlatformHotelDirectory, updateHotelService, updateManagedRoomType, updateManagedHotelProfile } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
@@ -64,12 +65,92 @@ describe("D1 hotel repository", () => {
     await seedHotel("a", "owner");
     const caller = { userId: "owner" };
     const created = await createManagedRoomType(db, caller, { hotel_id: "a", name: "Suite", capacity: 2, base_price: 200, quantity: 1,
-      description: "Quiet room", bed_type: "King", size_sqm: 32, amenities: ["Wi-Fi"] });
-    expect(created).toMatchObject({ description: "Quiet room", bedType: "King", sizeSqm: 32, amenities: ["Wi-Fi"] });
+      description: "Quiet room", bed_type: "King", size_sqm: 32, amenities: ["free_wifi"] });
+    expect(created).toMatchObject({ description: "Quiet room", bedType: "King", sizeSqm: 32, amenities: ["free_wifi"] });
     const publicHotel = await getPublicHotel(db, { access: "public" } as any, "a-slug");
-    expect(publicHotel.roomTypes.find(room => room.id === created.id)).toMatchObject({ description: "Quiet room", bed_type: "King", size_sqm: 32, amenities: ["Wi-Fi"] });
+    expect(publicHotel.roomTypes.find(room => room.id === created.id)).toMatchObject({ description: "Quiet room", bed_type: "King", size_sqm: 32, amenities: ["free_wifi"] });
     expect(publicHotel.roomTypes.find(room => room.id === "rt-a")).toMatchObject({ description: null, bedType: null, sizeSqm: null, amenities: [] });
-    await expect(updateManagedRoomType(db, caller, { hotel_id: "a", room_type_id: created.id, amenities: ["x".repeat(41)] })).rejects.toThrow();
+    await expect(updateManagedRoomType(db, caller, { hotel_id: "a", room_type_id: created.id, size_sqm: 1001 })).rejects.toThrow();
+  });
+
+  it("saves amenities in canonical order defined by ROOM_AMENITY_KEYS, deduplicates, and filters unknown keys", async () => {
+    await seedHotel("a", "owner");
+    const caller = { userId: "owner" };
+
+    const scrambledWithDuplicatesAndUnknown = [
+      "non_smoking",
+      "free_wifi",
+      "unknown_custom_amenity",
+      "kettle",
+      "free_wifi",
+      "grab_rails",
+      "air_conditioning",
+      "bogus_amenity_123",
+      "towels",
+      "view",
+      "kettle",
+    ];
+
+    const created = await createManagedRoomType(db, caller, {
+      hotel_id: "a",
+      name: "Canonical Test",
+      capacity: 2,
+      base_price: 150,
+      quantity: 1,
+      amenities: scrambledWithDuplicatesAndUnknown,
+    });
+
+    const expectedCanonical = [
+      "air_conditioning",
+      "free_wifi",
+      "view",
+      "kettle",
+      "towels",
+      "non_smoking",
+      "grab_rails",
+    ];
+
+    expect(created.amenities).toEqual(expectedCanonical);
+
+    const managed = await getManagedHotel(db, caller, "a");
+    const managedRoom = managed?.room_types.find(r => r.id === created.id);
+    expect(managedRoom?.amenities).toEqual(expectedCanonical);
+
+    const publicHotel = await getPublicHotel(db, { access: "public" } as any, "a-slug");
+    const publicRoom = publicHotel.roomTypes.find(r => r.id === created.id);
+    expect(publicRoom?.amenities).toEqual(expectedCanonical);
+
+    const indices = (publicRoom?.amenities ?? []).map(k => ROOM_AMENITY_KEYS.indexOf(k as any));
+    for (let i = 1; i < indices.length; i++) {
+      expect(indices[i]).toBeGreaterThan(indices[i - 1]!);
+    }
+
+    const updated = await updateManagedRoomType(db, caller, {
+      hotel_id: "a",
+      room_type_id: created.id,
+      amenities: ["grab_rails", "view", "elevator", "grab_rails", "not_a_real_amenity", "fan"],
+    });
+
+    const expectedUpdatedCanonical = ["fan", "view", "elevator", "grab_rails"];
+    expect(updated?.amenities).toEqual(expectedUpdatedCanonical);
+
+    const managedUpdated = await getManagedHotel(db, caller, "a");
+    const managedUpdatedRoom = managedUpdated?.room_types.find(r => r.id === created.id);
+    expect(managedUpdatedRoom?.amenities).toEqual(expectedUpdatedCanonical);
+
+    expect(() =>
+      sqlite.prepare("update room_types set amenities = ? where id = ?").run(
+        JSON.stringify(Array(41).fill("free_wifi")),
+        created.id,
+      )
+    ).toThrow(/Invalid room type details/);
+
+    expect(() =>
+      sqlite.prepare("update room_types set amenities = ? where id = ?").run(
+        JSON.stringify(["x".repeat(41)]),
+        created.id,
+      )
+    ).toThrow(/Invalid room type details/);
   });
   it("lists only the platform hotel directory summary fields", async () => {
     await seedHotel("a", "root", "super_admin");

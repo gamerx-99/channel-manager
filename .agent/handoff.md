@@ -4839,3 +4839,91 @@ Not tested in a browser or with a real email.
 - Booking calendar Thai date labels use full Thai dates (Buddhist year); month navigation changed from Previous month/Next month to เดือนก่อน/เดือนถัดไป. Added a contract assertion.
 - Removed the visitor-facing legal draft notice, its Thai/English keys, and the assertion that required the removed notice. legalContent.ts was not changed.
 - Intended commits pending: fix(public-hotel): use Thai fallback tagline; fix(booking): localize Thai calendar dates and controls; fix(legal): remove draft review banner. Sandbox denied .git/index writes.
+
+
+## [2026-11-05] Part 4a: room amenities switch picker (สวิตช์เลือกสิ่งอำนวยความสะดวก)
+- **Branch**: `part-4a/room-type-details` (rebased onto latest `main` at `36125c9`).
+- **Scope**: Part 4a room amenities switch picker. Replaced free-form text textarea for room type amenities with a canonical switch-based picker component (`RoomAmenitiesPicker`) in admin hotel details dialog and guest-facing icons with expander in public booking step.
+- **Touched / Created / Renamed Files across Milestones M1 through M5**:
+  - `shared/roomAmenities.ts` (created) — Central domain taxonomy for 5 amenity groups, 30 canonical keys, runtime type guard `isRoomAmenityKey`, and normalization function `normalizeAmenities` (filter unknown, deduplicate, sort canonically).
+  - `shared/roomAmenities.test.ts` (created) — Comprehensive unit test suite covering key taxonomy, group structure, runtime guards, boundary values, canonical sorting, and i18n translation completeness.
+  - `drizzle/d1/20261105000000_room_type_details.sql` (modified) — D1 migration adding room type detail columns (`description`, `bed_type`, `size_sqm`, `amenities`) with SQLite validation triggers.
+  - `drizzle/d1/meta/20261105000000_room_type_details_snapshot.json` (renamed from `0019_snapshot.json`) — Aligned Drizzle Kit snapshot filename with date-based migration name to maintain lexical sort order.
+  - `server/routers/hotelRouter.ts` (modified) — Updated tRPC input schema for `roomTypeDetailFields.amenities` using `z.array(z.string().refine(isRoomAmenityKey)).max(40).optional()`.
+  - `server/d1/hotel.ts` (modified) — Ensured amenities are persisted via `normalizeAmenities` in both `createManagedRoomType` and `updateManagedRoomType`.
+  - `server/d1/hotel.test.ts` (modified) — Integration tests asserting amenities persistence, deduplication, canonical sorting via `ROOM_AMENITY_KEYS`, and SQLite trigger boundary enforcement.
+  - `server/channelManager.roomTypes.d1.test.ts` (modified) — Updated router tests to validate canonical snake_case amenity keys and boundary limits.
+  - `client/src/lib/i18n/th.ts` (modified) — Added Thai translations for `roomAmenities` (5 groups, 30 items, picker title, description, expander) and removed obsolete `hotelDetail.amenitiesHelp`.
+  - `client/src/lib/i18n/en.ts` (modified) — Added English translations for `roomAmenities` (5 groups, 30 items, picker title, description, expander) and removed obsolete `hotelDetail.amenitiesHelp`.
+  - `client/src/components/hotel/RoomAmenitiesPicker.tsx` (created) — Accessible switch-based room amenities picker component with full-row clickability, label associations, and keyboard accessibility.
+  - `client/src/components/hotel/RoomAmenitiesPicker.css` (created) — Responsive CSS grid styles: 1 column (<768px), 2 columns (>=768px), 3 columns (>=1200px).
+  - `client/src/components/hotel/RoomAmenitiesPicker.test.tsx` (created) — Component tests for group rendering, toggle behavior, disabled states, and accessibility.
+  - `client/src/pages/HotelDetail.tsx` (modified) — Replaced amenities `<textarea>` with `<RoomAmenitiesPicker>`, removed client-side 12-item limit, managed state as `string[]`.
+  - `client/src/pages/HotelDetail.contract.test.ts` (modified) — Updated contract test to verify `<RoomAmenitiesPicker>` integration and absence of old textarea and helper text.
+  - `client/src/components/public-hotel/BookingStepRooms.tsx` (modified) — Display up to 6 room amenities with Lucide icons and Thai labels in canonical order, with expandable "+N รายการ" toggle; rooms with 0 amenities render identical to baseline.
+  - `client/src/components/public-hotel/BookingStepRooms.test.tsx` (modified) — Unit tests for guest booking room card amenity rendering, icon mapping, expander behavior, and zero-amenity fallback.
+  - `client/src/components/public-hotel/public-booking.css` (modified) — Styling for amenities chip list, icons, expander button, and full amenities view in booking step.
+  - `.agent/handoff.md` (modified) — Appended documentation and verification report.
+
+- **Migration Note**:
+  - `drizzle/d1/20261105000000_room_type_details.sql` has NOT been applied to staging or production.
+  - SQLite trigger constraint update: Modified both `room_types_details_insert` and `room_types_details_update` triggers to change `json_array_length(NEW.amenities) > 12` to `> 40`, while strictly preserving `length(value) BETWEEN 1 AND 40` per key string.
+  - Drizzle snapshot alignment: Renamed `0019_snapshot.json` to `20261105000000_room_type_details_snapshot.json` to prevent Drizzle Kit lexical ordering conflicts with date-based migration files.
+
+- **Deployment Order & Prerequisites**:
+  - MUST follow order: "apply migration บน production ก่อน แล้วค่อย merge/deploy"
+  - Rationale: The migration introduces the `amenities` column and validation trigger supporting up to 40 items. Applying the migration first ensures the database schema and constraints are in place before server and client code deploy.
+
+- **Thai / English Copy Before → After**:
+
+| Key | Before | After (th) | After (en) |
+|---|---|---|---|
+| `roomAmenities.groups.popular` | — | ยอดนิยม | Popular |
+| `roomAmenities.groups.in_room` | — | ในห้องพัก | In-room |
+| `roomAmenities.groups.bathroom` | — | ห้องน้ำ | Bathroom |
+| `roomAmenities.groups.outdoor` | — | ภายนอกและอื่น ๆ | Outdoor & other |
+| `roomAmenities.groups.access` | — | การเข้าถึง | Accessibility |
+| `roomAmenities.items.air_conditioning` | — | เครื่องปรับอากาศ | Air conditioning |
+| `roomAmenities.items.fan` | — | พัดลม | Fan |
+| `roomAmenities.items.free_wifi` | — | Wi-Fi ฟรี | Free Wi-Fi |
+| `roomAmenities.items.tv` | — | ทีวี | TV |
+| `roomAmenities.items.refrigerator` | — | ตู้เย็น | Refrigerator |
+| `roomAmenities.items.hot_water` | — | น้ำอุ่น | Hot water |
+| `roomAmenities.items.private_bathroom` | — | ห้องน้ำในตัว | Private bathroom |
+| `roomAmenities.items.balcony` | — | ระเบียง | Balcony |
+| `roomAmenities.items.view` | — | วิว | View |
+| `roomAmenities.items.kettle` | — | กาต้มน้ำ | Kettle |
+| `roomAmenities.items.wardrobe` | — | ตู้เสื้อผ้า | Wardrobe |
+| `roomAmenities.items.desk` | — | โต๊ะทำงาน | Desk |
+| `roomAmenities.items.safe` | — | ตู้เซฟ | Safe |
+| `roomAmenities.items.kitchenette` | — | มุมครัว | Kitchenette |
+| `roomAmenities.items.microwave` | — | ไมโครเวฟ | Microwave |
+| `roomAmenities.items.mosquito_net` | — | มุ้ง | Mosquito net |
+| `roomAmenities.items.bathtub` | — | อ่างอาบน้ำ | Bathtub |
+| `roomAmenities.items.hair_dryer` | — | ไดร์เป่าผม | Hair dryer |
+| `roomAmenities.items.towels` | — | ผ้าเช็ดตัว | Towels |
+| `roomAmenities.items.toiletries` | — | เครื่องใช้ในห้องน้ำ | Toiletries |
+| `roomAmenities.items.private_pool` | — | สระว่ายน้ำส่วนตัว | Private pool |
+| `roomAmenities.items.terrace` | — | ลานระเบียง | Terrace |
+| `roomAmenities.items.washing_machine` | — | เครื่องซักผ้า | Washing machine |
+| `roomAmenities.items.bbq` | — | อุปกรณ์ทำบาร์บีคิว | BBQ facilities |
+| `roomAmenities.items.non_smoking` | — | ห้องปลอดบุหรี่ | Non-smoking |
+| `roomAmenities.items.extra_bed` | — | เสริมเตียงได้ | Extra bed available |
+| `roomAmenities.items.ground_floor` | — | อยู่ชั้นล่าง ไม่ต้องขึ้นบันได | Ground floor, no stairs |
+| `roomAmenities.items.elevator` | — | มีลิฟต์ | Elevator |
+| `roomAmenities.items.wheelchair_accessible` | — | รองรับรถเข็น | Wheelchair accessible |
+| `roomAmenities.items.grab_rails` | — | ห้องน้ำมีราวจับ | Grab rails in bathroom |
+| `roomAmenities.pickerTitle` | — | สิ่งอำนวยความสะดวกในห้องพัก | Room amenities |
+| `roomAmenities.pickerDescription` | — | เปิดสวิตช์รายการที่ห้องประเภทนี้มี ลูกค้าจะเห็นตอนเลือกห้อง | Turn on amenities available in this room type. Guests will see them when choosing a room. |
+| `roomAmenities.moreItems` | — | +{{count}} รายการ | +{{count}} more |
+| `hotelDetail.amenitiesHelp` | กรอกหนึ่งรายการต่อบรรทัด (ไม่เกิน 12 รายการ) | (removed / ลบออก) | (removed) |
+
+- **Test Change Rationale per Rule 6 / Acceptance Criteria 7**:
+  - `client/src/pages/HotelDetail.contract.test.ts`: Previously checked for `<textarea value={roomTypeForm.amenities}` and helper text `amenitiesHelp` ("กรอกหนึ่งรายการต่อบรรทัด (ไม่เกิน 12 รายการ)"). The test was updated to assert the presence of `<RoomAmenitiesPicker>` and verify that the textarea and obsolete helper text were removed as part of replacing freeform text with switch toggles.
+  - `server/channelManager.roomTypes.d1.test.ts`: Previously asserted freeform string inputs (`'Wi-Fi'`) and tested the old 12-item threshold (`Array(13)`). Updated to assert canonical snake_case amenity keys (`'free_wifi'`), rejection of unknown keys (`['unknown_amenity']`), and rejection of inputs exceeding the new 40-item threshold (`Array(41)`).
+  - `server/d1/hotel.test.ts`: Updated seed and test data from freeform text (`'Wi-Fi'`) to canonical snake_case keys (`'free_wifi'`). Added explicit test assertions verifying that amenities are filtered, deduplicated, and sorted in canonical order (`ROOM_AMENITY_KEYS`) upon insertion and update, and verifying that database triggers reject arrays >40 items or items >40 characters.
+
+- **Verification Evidence**:
+  - `pnpm check` (`tsc --noEmit`): exit 0.
+  - `pnpm test` (Vitest): exit 0 (220 files passed, 1557 tests passed).
+  - `pnpm build` (`vite build && wrangler deploy --dry-run`): exit 0 (Vite built in 10.14s, 26 assets, Wrangler dry-run completed successfully).

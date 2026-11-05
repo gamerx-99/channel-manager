@@ -130,6 +130,49 @@
   font-size: 10px;
 }
 
+.booking-room-amenities-wrap {
+  margin-top: 6px;
+}
+
+.booking-room-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.booking-room-amenity-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #4a5550;
+}
+
+.booking-room-amenity-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--pine, #1b382b);
+}
+
+.booking-amenities-expander {
+  background: none;
+  border: none;
+  padding: 3px 0 0 0;
+  font-size: 11px;
+  color: var(--pine, #1b382b);
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline-block;
+}
+
+.booking-amenities-expander:hover {
+  opacity: 0.8;
+}
+
 .booking-room-price-col {
   text-align: right;
 }

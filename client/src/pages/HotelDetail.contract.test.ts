@@ -58,5 +58,11 @@ describe('Hotel Detail calendar navigation', () => {
 
     expect(builder).toContain('new URLSearchParams(window.location.search).get("hotel")');
   });
+
+  it('manages room type amenities with RoomAmenitiesPicker instead of freeform textarea', () => {
+    expect(hotelDetail).toContain('RoomAmenitiesPicker');
+    expect(hotelDetail).not.toContain('<textarea value={roomTypeForm.amenities}');
+    expect(hotelDetail).not.toContain('amenitiesHelp');
+  });
 });
 

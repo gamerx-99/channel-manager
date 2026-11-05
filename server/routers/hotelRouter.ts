@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isRoomAmenityKey } from '../../shared/roomAmenities';
 import { HOTEL_THEMES, isHotelThemeId } from '@shared/hotelThemes';
 import { isValidCoordinates, validateHotelContacts } from '@shared/hotelLocationRules';
 import { createD1PublicCallerContext } from '../db/scope';
@@ -63,7 +64,7 @@ const roomTypeDetailFields = {
   description: z.string().trim().max(600).nullable().optional(),
   bed_type: z.string().trim().max(80).nullable().optional(),
   size_sqm: z.number().int().min(1).max(1000).nullable().optional(),
-  amenities: z.array(z.string().trim().min(1).max(40)).max(12).optional(),
+  amenities: z.array(z.string().refine(isRoomAmenityKey)).max(40).optional(),
 };
 
 function validateRoomTypePricing(data: any, ctx: z.RefinementCtx, requirePricingWhenOccupancyChanges = false) {

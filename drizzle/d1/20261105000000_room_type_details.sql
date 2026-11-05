@@ -10,7 +10,7 @@ CREATE TRIGGER room_types_details_insert BEFORE INSERT ON room_types BEGIN
   OR (NEW.size_sqm IS NOT NULL AND (typeof(NEW.size_sqm) <> 'integer' OR NEW.size_sqm NOT BETWEEN 1 AND 1000))
   OR json_valid(NEW.amenities) <> 1
   OR json_type(NEW.amenities) <> 'array'
-  OR json_array_length(NEW.amenities) > 12
+  OR json_array_length(NEW.amenities) > 40
   OR EXISTS (SELECT 1 FROM json_each(NEW.amenities) WHERE type <> 'text' OR length(value) NOT BETWEEN 1 AND 40)
 THEN RAISE(ABORT, 'Invalid room type details') END;
 END;
@@ -22,7 +22,7 @@ CREATE TRIGGER room_types_details_update BEFORE UPDATE ON room_types BEGIN
   OR (NEW.size_sqm IS NOT NULL AND (typeof(NEW.size_sqm) <> 'integer' OR NEW.size_sqm NOT BETWEEN 1 AND 1000))
   OR json_valid(NEW.amenities) <> 1
   OR json_type(NEW.amenities) <> 'array'
-  OR json_array_length(NEW.amenities) > 12
+  OR json_array_length(NEW.amenities) > 40
   OR EXISTS (SELECT 1 FROM json_each(NEW.amenities) WHERE type <> 'text' OR length(value) NOT BETWEEN 1 AND 40)
 THEN RAISE(ABORT, 'Invalid room type details') END;
 END;

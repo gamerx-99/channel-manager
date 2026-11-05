@@ -263,13 +263,13 @@ describe('missing room type boundary', () => {
 describe('hotel supplied room details', () => {
   const base = { hotel_id: HOTEL_ID, room_type_id: ROOM_TYPE_ID, name: 'Suite', capacity: 2, base_price: 2500, ...validPricing() };
 
-  it('rejects overlong text and too many or overlong amenities', async () => {
+  it('rejects overlong text, unknown amenity keys, and too many amenity keys', async () => {
     const app = caller('hotel_owner');
     for (const details of [
       { description: 'x'.repeat(601) },
       { bed_type: 'x'.repeat(81) },
-      { amenities: Array(13).fill('Wi-Fi') },
-      { amenities: ['x'.repeat(41)] },
+      { amenities: ['unknown_amenity'] },
+      { amenities: Array(41).fill('free_wifi') },
       { size_sqm: 1001 },
     ]) {
       await expect(app.channelManager.updateRoomType({ ...base, ...details })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
@@ -279,9 +279,9 @@ describe('hotel supplied room details', () => {
 
   it('saves only details provided by the hotel', async () => {
     const app = caller('hotel_owner');
-    await app.channelManager.updateRoomType({ ...base, description: 'Quiet room', bed_type: 'King', size_sqm: 32, amenities: ['Wi-Fi'] });
+    await app.channelManager.updateRoomType({ ...base, description: 'Quiet room', bed_type: 'King', size_sqm: 32, amenities: ['free_wifi'] });
     expect(hotelMocks.updateManagedRoomType).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({
-      description: 'Quiet room', bed_type: 'King', size_sqm: 32, amenities: ['Wi-Fi'],
+      description: 'Quiet room', bed_type: 'King', size_sqm: 32, amenities: ['free_wifi'],
     }));
   });
 

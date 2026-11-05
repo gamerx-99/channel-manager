@@ -10,6 +10,7 @@ import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type
 import { moneyToSatang, satangToMoney } from "../db/money";
 import type { CreateHotelInput, CreateHotelServiceInput, CreateRoomTypeInput, DeleteRoomTypeInput, DeleteHotelServiceInput, HotelRecord, RoomTypeRecord, UpdateHotelServiceInput, UpdateRoomTypeInput } from "../db/types";
 import type { RoomTypeDetails } from "../../shared/roomTypeDetails";
+import { normalizeAmenities } from "../../shared/roomAmenities";
 import { servedMediaUrl } from "./media";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "../../shared/hotelThemes";
 import { displayPhotoCaption } from "../../shared/websitePhotos";
@@ -222,7 +223,7 @@ export async function createManagedRoomType(db: D1ScopedDatabase, caller: D1Call
     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(roomTypeId, input.hotel_id, input.name, maxOccupancy, basePrice, baseOccupancy, maxOccupancy,
       JSON.stringify(occupancyPricing), childRule, childRuleLimit == null ? null : canonicalThreshold(childRuleLimit), JSON.stringify(childRates), (input.children_count_toward_max ?? true) ? 1 : 0,
-      input.description ?? null, input.bed_type ?? null, input.size_sqm ?? null, JSON.stringify(input.amenities ?? []))];
+      input.description ?? null, input.bed_type ?? null, input.size_sqm ?? null, JSON.stringify(normalizeAmenities(input.amenities ?? [])))];
   for (let index = 0; index < input.quantity; index++) {
     batch.push(db.$client.prepare("insert into rooms (id, hotel_id, room_type_id, room_number) values (?, ?, ?, ?)")
       .bind(crypto.randomUUID(), input.hotel_id, roomTypeId, String(startNumber + index).padStart(3, "0")));
@@ -240,7 +241,7 @@ export async function updateManagedRoomType(db: D1ScopedDatabase, caller: D1Call
   if (input.description !== undefined) patch.description = input.description;
   if (input.bed_type !== undefined) patch.bedType = input.bed_type;
   if (input.size_sqm !== undefined) patch.sizeSqm = input.size_sqm;
-  if (input.amenities !== undefined) patch.amenities = input.amenities;
+  if (input.amenities !== undefined) patch.amenities = normalizeAmenities(input.amenities);
   if (input.base_price !== undefined) patch.basePrice = canonicalMoney(input.base_price);
   if (input.max_occupancy !== undefined || input.capacity !== undefined) {
     patch.capacity = input.max_occupancy ?? input.capacity;
