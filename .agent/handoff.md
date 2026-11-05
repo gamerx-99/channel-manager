@@ -1,6 +1,31 @@
 # Handoff log
 
-## [## [## [2026-11-05] Sidebar: "Rooms & rates" group
+## [## [## [## [2026-11-05] Website builder: owner review bugs 3-20 (machine A)
+- **Verified against the code and fixed**: preview read the saved config instead of the draft switches; preview ignored the photo focal point; preview vanished for view-only users; English fallbacks in the preview ("Your hotel preview", "this hotel", alt text); focal-point reset and photo delete did not refetch the site config; choosing a design skipped the headline and colour checks; save-draft and publish showed no pending text (both sides of the ternary were identical); photo delete had no confirmation; photo errors appeared only in the far card (new `photoError`, shown inside the photos card); focal-point panel had no close button; caption input kept stale text after discarding a draft (`key` on the input); top summary heading repeated "sections shown" (now the overview heading) and two landmarks shared one aria-label.
+- **Checked and not changed**: the sticky save bar already exists (`sticky bottom-0` in `WebsiteBuilder.tsx`); "ลองใหม่" is the wording used across the whole app, so changing only this page would make it inconsistent; the "view hotel page" card alignment could not be judged without a browser.
+- **Thai wording (owner to confirm)**:
+
+| Where | Before | After |
+|---|---|---|
+| Domain card title | เกี่ยวกับ hotel_domains | โดเมนส่วนตัว |
+| Domain card description | โดเมนแบบกำหนดเองถูกเลื่อนออกไปในรอบนี้ — ส่งมอบรูปภาพและการตั้งค่าเว็บไซต์ก่อน | ตอนนี้ที่พักของคุณใช้ลิงก์ของ hayhost ไปก่อน |
+| No access | บทบาทปัจจุบันของคุณไม่มีสิทธิ์ดูโปรแกรมสร้างเว็บไซต์ (ต้องมี property.view หรือ property.manage_profile) | บทบาทของคุณยังเปิดเครื่องมือสร้างเว็บไซต์ไม่ได้ กรุณาติดต่อเจ้าของที่พัก |
+| Photos view-only | ดูได้อย่างเดียว — การอัปโหลดและลบต้องมีสิทธิ์ property.manage_profile | ดูได้อย่างเดียว — เฉพาะเจ้าของที่พักที่อัปโหลดและลบรูปได้ |
+| Settings view-only | ต้องใช้สิทธิ์ property.manage_profile ในการบันทึก | เฉพาะเจ้าของที่พักที่บันทึกการตั้งค่านี้ได้ |
+| Delete not allowed | คุณไม่มีสิทธิ์ลบสื่อ (ต้องมี property.manage_profile) | คุณลบรูปภาพไม่ได้ เฉพาะเจ้าของที่พักที่ลบได้ |
+| Save not allowed | คุณไม่มีสิทธิ์บันทึกการตั้งค่าเว็บไซต์ (ต้องมี property.manage_profile) | คุณบันทึกการตั้งค่าเว็บไซต์ไม่ได้ เฉพาะเจ้าของที่พักที่บันทึกได้ |
+| Gallery limit | เลือกแสดงได้สูงสุด 6 รูป เอารูปอื่นออกก่อน | เลือกแสดงได้สูงสุด 6 รูป กรุณายกเลิกการเลือกรูปอื่นก่อน |
+| New: delete confirm | - | ลบรูปนี้ใช่หรือไม่ ลบแล้วกู้คืนไม่ได้ |
+| New: focal panel button | - | เสร็จแล้ว |
+| New: save pending | - | กำลังบันทึก… |
+| New: publish pending | - | กำลังเผยแพร่… |
+
+  English: `display_order {{order}}` is now "Display order {{order}}"; the permission names are gone from every message above.
+- **Tests**: three new regression tests in `WebsiteBuilder.test.tsx` (preview follows an unsaved switch, delete asks first, a design is not saved while the headline is empty). The test mock gained a `deleteMedia` spy. They were not run against the old code (no stash check this time).
+- **Evidence**: `pnpm check` exit 0; client tests 95 files, 444 passed; `pnpm build` exit 0. Not opened in a browser.
+- **Not done**: not pushed or deployed. Permission names still appear on the Housekeeping and Communications pages (machine B copy sweep).
+
+2026-11-05] Sidebar: "Rooms & rates" group
 - **Done**: new collapsible sidebar group (`getRoomsAndPricingItems` in `Sidebar.tsx`) with three links, each to a different page: manage room types (`/hotels/:id`, where room types live; no separate route yet), manage room rates (`/dashboard/pricing`), availability calendar (`/hotels/:id/calendar`). The group button opens no page, so nothing loops. It replaces the old "Room operations" and "Availability" links and the "Advanced pricing" link. Each link keeps its own permission; the group hides when none apply. Old dictionary keys `sidebar.roomOperations` and `sidebar.advancedPricing` are now unused (left in place).
 - **Thai strings added (owner to confirm)**: ห้องพักและราคา / จัดการประเภทห้องพัก / จัดการราคาห้องพัก. Group name is Claude's suggestion; the two link names are the owner's wording.
 - **Test changed on purpose**: `AdvancedPricing.contract.test.ts` looked for `href="/dashboard/pricing"` in the sidebar; the marker is now `href: "/dashboard/pricing"` in the group function. Same permission and route assertions kept. New `Sidebar.roomsAndPricing.test.ts`.

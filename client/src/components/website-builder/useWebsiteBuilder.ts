@@ -34,19 +34,22 @@ export function useWebsiteBuilder() {
   const { data: serverMedia = [], refetch: refetchMedia, isFetching: isFetchingMedia } = trpc.channelManager.listHotelMedia.useQuery({ hotel_id: effectiveHotelId }, { enabled: !!effectiveHotelId });
   const { data: serverConfig, refetch: refetchConfig, isFetching: isFetchingConfig } = trpc.channelManager.getHotelSiteConfigByHotelId.useQuery({ hotel_id: effectiveHotelId }, { enabled: !!effectiveHotelId });
   const [formError, setFormError] = useState<string | null>(null);
+  // Photo errors (upload, delete, gallery limit) show inside the photos card, next to the control that caused them.
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [focalMediaId, setFocalMediaId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadMediaMut = useMutation({
     mutationFn: ({ hotel_id, ...file }: { hotel_id: string; base64: string; filename: string }) => uploadHotelMediaFile(hotel_id, file),
     onSuccess: () => { toast.success(t("websiteBuilder.toastImageUploaded")); refetchMedia(); },
-    onError: (e: Error) => setFormError(e.message),
+    onError: (e: Error) => setPhotoError(e.message),
   });
-  const deleteMediaMut = trpc.channelManager.deleteHotelMedia.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastImageDeleted")); refetchMedia(); }, onError: e => setFormError(e.message) });
-  const setHeroMut = trpc.channelManager.setHotelMediaHero.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastHeroUpdated")); refetchMedia(); }, onError: e => setFormError(e.message) });
-  const setObjectPositionMut = trpc.channelManager.setHotelMediaObjectPosition.useMutation({ onSuccess: () => refetchMedia(), onError: e => setFormError(e.message) });
-  const setCaptionMut = trpc.channelManager.setHotelMediaCaption.useMutation({ onSuccess: () => refetchConfig(), onError: e => setFormError(e.message) });
-  const setGalleryMut = trpc.channelManager.setHotelMediaGallerySelection.useMutation({ onSuccess: () => refetchConfig(), onError: e => setFormError(e.message.includes("six gallery") ? t("websiteBuilder.galleryLimitReached") : e.message) });
+  // The server also removes a deleted photo from the stored draft, so the config is refetched too.
+  const deleteMediaMut = trpc.channelManager.deleteHotelMedia.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastImageDeleted")); refetchMedia(); void refetchConfig(); }, onError: e => setPhotoError(e.message) });
+  const setHeroMut = trpc.channelManager.setHotelMediaHero.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastHeroUpdated")); refetchMedia(); }, onError: e => setPhotoError(e.message) });
+  const setObjectPositionMut = trpc.channelManager.setHotelMediaObjectPosition.useMutation({ onSuccess: () => refetchMedia(), onError: e => setPhotoError(e.message) });
+  const setCaptionMut = trpc.channelManager.setHotelMediaCaption.useMutation({ onSuccess: () => refetchConfig(), onError: e => setPhotoError(e.message) });
+  const setGalleryMut = trpc.channelManager.setHotelMediaGallerySelection.useMutation({ onSuccess: () => refetchConfig(), onError: e => setPhotoError(e.message.includes("six gallery") ? t("websiteBuilder.galleryLimitReached") : e.message) });
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); }, onError: e => setFormError(e.message) });
   const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); }, onError: e => setFormError(e.message) });
   const publishConfigMut = trpc.channelManager.publishHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.publishSuccess")); await refetchConfig(); }, onError: e => setFormError(e.message) });
@@ -85,20 +88,30 @@ export function useWebsiteBuilder() {
     'location': { label: t("websiteBuilder.sectionLocationLabel"), hint: t("websiteBuilder.sectionLocationHint") },
   }), [t]);
   function handleUploadFile(file: File) {
-    setFormError(null);
-    if (file.size > 5 * 1024 * 1024) { setFormError(t("websiteBuilder.errorFileTooLarge")); return; }
+    setPhotoError(null);
+    if (file.size > 5 * 1024 * 1024) { setPhotoError(t("websiteBuilder.errorFileTooLarge")); return; }
     const rawType = (file.type || "").split(";")[0].trim().toLowerCase();
     const normalizedType = rawType === "image/jpg" ? "image/jpeg" : rawType;
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
-    if (!allowedTypes.includes(normalizedType)) { setFormError(t("websiteBuilder.errorOnlyImages")); return; }
+    if (!allowedTypes.includes(normalizedType)) { setPhotoError(t("websiteBuilder.errorOnlyImages")); return; }
     const reader = new FileReader();
-    reader.onload = () => { const url = String(reader.result ?? ""); if (!url) { setFormError(t("websiteBuilder.errorReadImage")); return; } uploadMediaMut.mutate({ hotel_id: effectiveHotelId, base64: url, filename: file.name }); toast.success(t("websiteBuilder.toastUploadStarted")); };
-    reader.onerror = () => setFormError(t("websiteBuilder.errorReadImage")); reader.readAsDataURL(file);
+    reader.onload = () => { const url = String(reader.result ?? ""); if (!url) { setPhotoError(t("websiteBuilder.errorReadImage")); return; } uploadMediaMut.mutate({ hotel_id: effectiveHotelId, base64: url, filename: file.name }); toast.success(t("websiteBuilder.toastUploadStarted")); };
+    reader.onerror = () => setPhotoError(t("websiteBuilder.errorReadImage")); reader.readAsDataURL(file);
   }
   function handleUploadFiles(files: FileList | null) { if (!files) return; for (const file of Array.from(files)) handleUploadFile(file); }
   function handleSetCaption(id: string, caption: string) { if (!canManage) return; setCaptionMut.mutate({ hotel_id: effectiveHotelId, media_id: id, caption: caption.trim() }); }
-  function handleToggleGallery(id: string, shown: boolean) { if (!canManage) return; setFormError(null); setGalleryMut.mutate({ hotel_id: effectiveHotelId, media_id: id, shown }); }
-  function handleDeleteMedia(id: string) { if (!canManage) { setFormError(t("websiteBuilder.errorNoPermissionDelete")); return; } deleteMediaMut.mutate({ hotel_id: effectiveHotelId, media_id: id }); }
+  function handleToggleGallery(id: string, shown: boolean) { if (!canManage) return; setPhotoError(null); setGalleryMut.mutate({ hotel_id: effectiveHotelId, media_id: id, shown }); }
+  function handleDeleteMedia(id: string) {
+    if (!canManage) { setPhotoError(t("websiteBuilder.errorNoPermissionDelete")); return; }
+    // A photo is removed from storage immediately and cannot be recovered, so ask first.
+    if (typeof window !== "undefined" && !window.confirm(t("websiteBuilder.confirmDeleteMedia"))) return;
+    setPhotoError(null);
+    deleteMediaMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
+  }
+  function handleResetFocalPoint(mediaId: string) {
+    if (!canManage) return;
+    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: mediaId, object_position: null }, { onSuccess: () => { void refetchConfig(); } });
+  }
   function handleSetHero(id: string) { if (!canManage) return; setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id }, { onSuccess: () => { void refetchConfig(); } }); }
   function handleFocalPoint(event: React.PointerEvent<HTMLImageElement>, item: HotelMediaItem) {
     if (!canManage) return; setFocalMediaId(item.id); const rect = event.currentTarget.getBoundingClientRect(); if (!rect.width || !rect.height) return;
@@ -106,19 +119,26 @@ export function useWebsiteBuilder() {
     const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
     setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` }, { onSuccess: () => { void refetchConfig(); } });
   }
+  // Shared by "save draft" and "choose a design": both send the headline and colour to the server.
+  function draftProblem(): string | null {
+    if (!canManage) return t("websiteBuilder.errorNoPermissionSave");
+    if (!effectiveHotelId) return t("websiteBuilder.errorSelectHotelFirst");
+    if (!isValidHexColor(draft.accentColor)) return t("websiteBuilder.errorInvalidHex");
+    if (draft.heroCopy.trim().length === 0) return t("websiteBuilder.errorHeroCopyEmpty");
+    if (draft.heroCopy.length > 500) return t("websiteBuilder.errorHeroCopyTooLong");
+    return null;
+  }
   function handleSave() {
     setFormError(null); setSaveNote(null);
-    if (!canManage) { setFormError(t("websiteBuilder.errorNoPermissionSave")); return; }
-    if (!effectiveHotelId) { setFormError(t("websiteBuilder.errorSelectHotelFirst")); return; }
-    if (!isValidHexColor(draft.accentColor)) { setFormError(t("websiteBuilder.errorInvalidHex")); return; }
-    if (draft.heroCopy.trim().length === 0) { setFormError(t("websiteBuilder.errorHeroCopyEmpty")); return; }
-    if (draft.heroCopy.length > 500) { setFormError(t("websiteBuilder.errorHeroCopyTooLong")); return; }
+    const problem = draftProblem();
+    if (problem) { setFormError(problem); return; }
     saveConfigMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections });
   }
   function handleSaveTheme(theme: HotelThemeId) {
-    setFormError(null); if (!canManage) { setFormError(t("websiteBuilder.errorNoPermissionSave")); return; }
-    if (!effectiveHotelId) { setFormError(t("websiteBuilder.errorSelectHotelFirst")); return; }
+    setFormError(null);
+    const problem = draftProblem();
+    if (problem) { setFormError(problem); return; }
     saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
   }
-  return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, saveNote, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleFocalPoint, handleSave, handleSaveTheme };
+  return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, photoError, saveNote, handleResetFocalPoint, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleFocalPoint, handleSave, handleSaveTheme };
 }

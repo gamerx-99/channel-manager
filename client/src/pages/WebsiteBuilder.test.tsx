@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { saveConfig, setObjectPosition, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
+const { saveConfig, setObjectPosition, deleteMedia, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
+  deleteMedia: vi.fn(),
   configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
   saveConfig: vi.fn(),
   setObjectPosition: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     hotels: { useQuery: () => ({ data: hotelsData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
     listHotelMedia: { useQuery: () => ({ data: mediaData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
     getHotelSiteConfigByHotelId: { useQuery: () => ({ data: configData.current, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) },
-    deleteHotelMedia: mutation(),
+    deleteHotelMedia: mutation(deleteMedia),
     setHotelMediaHero: mutation(),
     setHotelMediaObjectPosition: mutation(setObjectPosition),
     setHotelMediaCaption: mutation(),
@@ -50,7 +51,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
 const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
-afterEach(() => { cleanup(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); deleteMedia.mockReset(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
   it("saves the headline and accent colour the owner typed (regression: edits were dropped)", () => {
@@ -78,6 +79,36 @@ describe("WebsiteBuilder editing", () => {
     configData.current = { ...defaultConfigData(), draftJson: JSON.stringify({ galleryMediaIds: [] }) };
     view.rerender(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     expect((document.getElementById("wb-hero-copy") as HTMLTextAreaElement).value).toBe("Typed but not saved");
+  });
+
+  it("makes the preview follow a section switch before it is saved (regression: the preview read the saved config)", () => {
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    expect(screen.getByText(/room type\(s\) from hotel data/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("visible_sections rooms"));
+    expect(screen.queryByText(/room type\(s\) from hotel data/)).toBeNull();
+  });
+
+  it("asks before deleting a photo (regression: it was deleted on the first tap)", () => {
+    mediaData.current = [
+      { id: "hero-1", url: "/hero.jpg", isHero: true, displayOrder: 0 },
+      { id: "photo-2", url: "/photo.jpg", isHero: false, displayOrder: 1 },
+    ];
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    fireEvent.click(screen.getByLabelText("Delete media photo-2"));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(deleteMedia).not.toHaveBeenCalled();
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByLabelText("Delete media photo-2"));
+    expect(deleteMedia).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-2" });
+  });
+
+  it("does not save a design while the headline is empty (regression: the theme picker skipped the checks)", () => {
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    fireEvent.change(document.getElementById("wb-hero-copy") as HTMLTextAreaElement, { target: { value: "" } });
+    fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
+    expect(saveConfig).not.toHaveBeenCalled();
+    expect(screen.getByText("Hero copy cannot be empty.")).toBeTruthy();
   });
 
   it("renders all three theme cards and saves a selected theme through the site config mutation", () => {

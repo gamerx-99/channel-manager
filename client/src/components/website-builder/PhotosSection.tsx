@@ -22,6 +22,7 @@ interface PhotosSectionProps {
   handleSetCaption: (id: string, caption: string) => void;
   handleToggleGallery: (id: string, checked: boolean) => void;
   onResetFocalPoint: (mediaId: string) => void;
+  photoError?: string | null;
 }
 
 export function PhotosSection({
@@ -39,6 +40,7 @@ export function PhotosSection({
   handleSetCaption,
   handleToggleGallery,
   onResetFocalPoint,
+  photoError,
 }: PhotosSectionProps) {
   const { t } = useTranslation();
 
@@ -54,6 +56,11 @@ export function PhotosSection({
         {!canManage && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="note">
             {t("websiteBuilder.viewOnlyManageProfile")}
+          </div>
+        )}
+        {photoError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
+            {photoError}
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">
@@ -133,15 +140,20 @@ export function PhotosSection({
                         />
                       </div>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!canManage || !item.objectPosition}
-                      onClick={() => onResetFocalPoint(item.id)}
-                    >
-                      {t("websiteBuilder.resetFocalPoint")}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!canManage || !item.objectPosition}
+                        onClick={() => onResetFocalPoint(item.id)}
+                      >
+                        {t("websiteBuilder.resetFocalPoint")}
+                      </Button>
+                      <Button type="button" size="sm" onClick={() => setFocalMediaId(null)}>
+                        {t("websiteBuilder.focalDone")}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-2 p-3">
@@ -182,6 +194,9 @@ export function PhotosSection({
                   <label className="block text-xs font-medium text-[#52655b]">
                     {t("websiteBuilder.photoCaptionLabel")}
                     <input
+                      // key: remount when the saved caption changes (for example after discarding the draft),
+                      // otherwise defaultValue keeps showing the old text.
+                      key={`${item.id}:${item.caption ?? ""}`}
                       className="website-builder-photo-caption mt-1 w-full rounded-md border border-[#dce4df] px-2 py-1.5 text-sm"
                       maxLength={120}
                       defaultValue={item.caption ?? ""}

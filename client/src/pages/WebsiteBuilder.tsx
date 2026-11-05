@@ -43,7 +43,7 @@ export default function WebsiteBuilder() {
     publishConfigMut, discardDraftMut, storedDraft, draft, setDraft, publishedConfig,
     config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media,
     draftMedia, selectedGalleryIds, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
-    formError, saveNote, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero,
+    formError, photoError, saveNote, handleResetFocalPoint, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero,
     handleFocalPoint, handleSave, handleSaveTheme,
   } = useWebsiteBuilder();
 
@@ -173,7 +173,7 @@ export default function WebsiteBuilder() {
       <section className="panel" aria-label={t("websiteBuilder.summaryAria")}>
         <div className="panel-heading">
           <div>
-            <h2>{t("websiteBuilder.summaryVisibleSections")}</h2>
+            <h2>{t("websiteBuilder.summaryAria")}</h2>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -204,7 +204,7 @@ export default function WebsiteBuilder() {
         </div>
       </section>
 
-      <section className="panel" aria-label={t("websiteBuilder.summaryAria")}>
+      <section className="panel" aria-label={t("websiteBuilder.themePickerTitle")}>
         <div className="panel-heading">
           <div>
             <h2>{t("websiteBuilder.themePickerTitle")}</h2>
@@ -236,7 +236,8 @@ export default function WebsiteBuilder() {
               handleDeleteMedia={handleDeleteMedia}
               handleSetCaption={handleSetCaption}
               handleToggleGallery={handleToggleGallery}
-              onResetFocalPoint={mediaId => setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: mediaId, object_position: null })}
+              onResetFocalPoint={handleResetFocalPoint}
+              photoError={photoError}
             />
 
             <PreviewSection
@@ -247,6 +248,7 @@ export default function WebsiteBuilder() {
               hotelAddress={selectedHotel?.address}
               roomTypesCount={selectedHotel?.room_types?.length ?? 0}
               heroImage={heroImage}
+              heroObjectPosition={(draftMedia.find(item => item.isHero) ?? draftMedia[0])?.objectPosition}
               previewAccentColor={previewAccentColor}
             />
           </div>
@@ -292,10 +294,10 @@ export default function WebsiteBuilder() {
             {t("websiteBuilder.discardDraft")}
           </Button>
           <Button type="button" variant="outline" disabled={saveConfigMut.isPending} onClick={handleSave}>
-            {saveConfigMut.isPending ? t("websiteBuilder.saveDraft") : t("websiteBuilder.saveDraft")}
+            {saveConfigMut.isPending ? t("websiteBuilder.savingDraft") : t("websiteBuilder.saveDraft")}
           </Button>
           <Button type="button" disabled={publishConfigMut.isPending} onClick={() => publishConfigMut.mutate({ hotel_id: effectiveHotelId })}>
-            {publishConfigMut.isPending ? t("websiteBuilder.publishChanges") : t("websiteBuilder.publishChanges")}
+            {publishConfigMut.isPending ? t("websiteBuilder.publishing") : t("websiteBuilder.publishChanges")}
           </Button>
         </div>
       )}

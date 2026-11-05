@@ -126,7 +126,7 @@ export function ContentSection({
           disabled={!canManage || isSavePending}
           className="form-submit button button-primary w-full"
         >
-          <Save size={15} /> {t("websiteBuilder.saveDraft")}
+          <Save size={15} /> {isSavePending ? t("websiteBuilder.savingDraft") : t("websiteBuilder.saveDraft")}
         </Button>
         <Button
           type="button"
@@ -134,7 +134,7 @@ export function ContentSection({
           disabled={!canManage || !hasStoredDraft || isPublishPending}
           className="button button-primary w-full"
         >
-          {t("websiteBuilder.publishChanges")}
+          {isPublishPending ? t("websiteBuilder.publishing") : t("websiteBuilder.publishChanges")}
         </Button>
         {/* ASSUMPTION: explicit confirmation is sufficient protection for discarding the saved draft. */}
         {hasStoredDraft && (

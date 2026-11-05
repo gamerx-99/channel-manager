@@ -13,6 +13,7 @@ interface PreviewSectionProps {
   hotelAddress?: string | null;
   roomTypesCount?: number;
   heroImage?: string | null;
+  heroObjectPosition?: string | null;
   previewAccentColor: string;
 }
 
@@ -24,11 +25,15 @@ export function PreviewSection({
   hotelAddress,
   roomTypesCount = 0,
   heroImage,
+  heroObjectPosition,
   previewAccentColor,
 }: PreviewSectionProps) {
   const { t } = useTranslation();
 
-  if (!canManage) return null;
+  // View-only users still see the preview; only editing is disabled elsewhere on the page.
+  const name = hotelName?.trim() || t("websiteBuilder.yourHotelName");
+  // The preview follows the switches the owner is changing now (the draft), not the saved config.
+  const sections = draft.visibleSections;
 
   // previewAccentColor is already checked as a full hex colour; the raw draft value can be
   // half-typed (for example "#1"), and getContrastText throws on that, blanking the page.
@@ -45,14 +50,15 @@ export function PreviewSection({
       </CardHeader>
       <CardContent className="pt-5">
         <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
-          {config?.visibleSections?.hero ? (
+          {sections.hero ? (
             <div className="relative h-[220px] overflow-hidden bg-[#f6faf7]">
               {heroImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={heroImage}
-                  alt={`Preview for ${hotelName ?? "hotel"}`}
-                  className="h-full w-full object-cover"
+                  alt={name}
+                  className="h-full w-full object-cover wb-object-position"
+                  style={heroObjectPosition ? ({ "--wb-object-position": heroObjectPosition } as CSSProperties) : undefined}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-xs text-[#7a8c83]">
@@ -61,7 +67,7 @@ export function PreviewSection({
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" aria-hidden="true" />
               <div className="absolute bottom-0 left-0 right-0 p-4">
-                <h3 className="text-lg font-semibold text-white">{hotelName ?? "Your hotel preview"}</h3>
+                <h3 className="text-lg font-semibold text-white">{name}</h3>
                 <p className="mt-1 max-w-xl text-sm leading-6 text-white/90">{currentHeroCopy}</p>
                 <span
                   className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold wb-preview-accent"
@@ -79,15 +85,15 @@ export function PreviewSection({
           )}
 
           <div className="grid gap-3 p-4 sm:grid-cols-2">
-            {config?.visibleSections?.story ? (
+            {sections.story ? (
               <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                 <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.theHotel")}</p>
                 <p className="mt-1 text-xs leading-5 text-[#6c7e75]">
-                  {t("websiteBuilder.stayAt", { hotelName: hotelName ?? "this hotel" })}
+                  {t("websiteBuilder.stayAt", { hotelName: name })}
                 </p>
               </div>
             ) : null}
-            {config?.visibleSections?.rooms ? (
+            {sections.rooms ? (
               <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                 <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.rooms")}</p>
                 <p className="mt-1 text-xs leading-5 text-[#6c7e75]">
@@ -95,7 +101,7 @@ export function PreviewSection({
                 </p>
               </div>
             ) : null}
-            {config?.visibleSections?.booking ? (
+            {sections.booking ? (
               <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                 <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
                 <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
@@ -110,13 +116,13 @@ export function PreviewSection({
                 </span>
               </div>
             ) : null}
-            {config?.visibleSections?.location ? (
+            {sections.location ? (
               <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
                 <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.location")}</p>
                 <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{hotelAddress ?? t("websiteBuilder.addressFallback")}</p>
               </div>
             ) : null}
-            {!Object.values(draft.visibleSections).some(Boolean) && (
+            {!Object.values(sections).some(Boolean) && (
               <div className="col-span-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 {t("websiteBuilder.allSectionsHidden")}
               </div>
