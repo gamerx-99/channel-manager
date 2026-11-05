@@ -162,6 +162,10 @@ describe('channelManager.createRoomType (D1 router)', () => {
       {
         hotel_id: HOTEL_ID,
         name: 'Deluxe King',
+        description: undefined,
+        bed_type: undefined,
+        size_sqm: null,
+        amenities: [],
         capacity: 2,
         base_price: 2500,
         quantity: 5,

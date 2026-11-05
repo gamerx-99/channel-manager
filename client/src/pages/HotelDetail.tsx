@@ -21,8 +21,8 @@ import { validateHotelContacts } from '@shared/hotelLocationRules';
 const HotelMapPicker = lazy(() => import('@/components/hotel/HotelMapPicker'));
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
-const emptyRoomTypeForm = { name: '', capacity: '2', base_price: '', quantity: '', base_occupancy: '2', occupancy_pricing: defaultOccupancyPricing(2, 2), child_rule: 'age' as 'age' | 'height', child_rule_limit: '', child_rates: defaultChildRateConfig(), children_count_toward_max: true };
-type RoomType = { id: string; hotel_id: string; name: string; capacity: number; base_price: number | string; base_occupancy: number; max_occupancy: number; occupancy_pricing: Record<string, OccupancyPriceLevel>; child_rule: 'age' | 'height'; child_rule_limit: number | string | null; child_rates: ChildRateConfig; children_count_toward_max: boolean };
+const emptyRoomTypeForm = { description: '', bed_type: '', size_sqm: '', amenities: '', name: '', capacity: '2', base_price: '', quantity: '', base_occupancy: '2', occupancy_pricing: defaultOccupancyPricing(2, 2), child_rule: 'age' as 'age' | 'height', child_rule_limit: '', child_rates: defaultChildRateConfig(), children_count_toward_max: true };
+type RoomType = { description?: string | null; bed_type?: string | null; size_sqm?: number | null; amenities?: string[]; id: string; hotel_id: string; name: string; capacity: number; base_price: number | string; base_occupancy: number; max_occupancy: number; occupancy_pricing: Record<string, OccupancyPriceLevel>; child_rule: 'age' | 'height'; child_rule_limit: number | string | null; child_rates: ChildRateConfig; children_count_toward_max: boolean };
 
 function completeOccupancyPricing(pricing: Record<string, OccupancyPriceLevel>, base: number, max: number) {
   return Object.fromEntries(Array.from({ length: Math.max(0, max) }, (_, index) => {
@@ -212,6 +212,10 @@ export default function HotelDetail({ id }: { id: string }) {
     setSelectedRoomTypeId(type.id);
     setRoomTypeForm({
       name: type.name,
+      description: type.description ?? '',
+      bed_type: type.bed_type ?? '',
+      size_sqm: type.size_sqm == null ? '' : String(type.size_sqm),
+      amenities: (type.amenities ?? []).join('\n'),
       capacity: String(type.max_occupancy),
       base_price: String(type.base_price),
       quantity: '',
@@ -234,6 +238,10 @@ export default function HotelDetail({ id }: { id: string }) {
 
   function validateRoomTypeForm(requireQuantity: boolean) {
     const name = roomTypeForm.name.trim();
+    const description = roomTypeForm.description.trim();
+    const bedType = roomTypeForm.bed_type.trim();
+    const sizeSqm = roomTypeForm.size_sqm.trim() === '' ? null : Number(roomTypeForm.size_sqm);
+    const amenities = roomTypeForm.amenities.split('\n').map(item => item.trim()).filter(Boolean);
     const capacity = Number(roomTypeForm.capacity);
     const basePrice = Number(roomTypeForm.base_price);
     const quantity = Number(roomTypeForm.quantity);
@@ -246,6 +254,10 @@ export default function HotelDetail({ id }: { id: string }) {
       age_groups: roomTypeForm.child_rates.age_groups.map(group => ({ ...group, min_age: Number(group.min_age), max_age: Number(group.max_age), value: Number(group.value) })),
       height: { ...roomTypeForm.child_rates.height, value: Number(roomTypeForm.child_rates.height.value) },
     };
+    if (description.length > 600 || bedType.length > 80 || (sizeSqm !== null && (!Number.isInteger(sizeSqm) || sizeSqm < 1 || sizeSqm > 1000)) || amenities.length > 12 || amenities.some(item => item.length > 40)) {
+      setRoomTypeError(t('hotelDetail.errorRoomDetailsInvalid'));
+      return null;
+    }
     if (!name) {
       setRoomTypeError(t('hotelDetail.errorNameRequired'));
       return null;
@@ -282,7 +294,7 @@ export default function HotelDetail({ id }: { id: string }) {
       setRoomTypeError(t('hotelDetail.errorPricingInvalid'));
       return null;
     }
-    return { name, capacity: maxOccupancy, max_occupancy: maxOccupancy, base_occupancy: baseOccupancy, base_price: basePrice, quantity, occupancy_pricing: occupancyPricing, child_rule: roomTypeForm.child_rule, child_rule_limit: childRuleLimit, child_rates: childRates, children_count_toward_max: roomTypeForm.children_count_toward_max };
+    return { name, description: description || null, bed_type: bedType || null, size_sqm: sizeSqm, amenities, capacity: maxOccupancy, max_occupancy: maxOccupancy, base_occupancy: baseOccupancy, base_price: basePrice, quantity, occupancy_pricing: occupancyPricing, child_rule: roomTypeForm.child_rule, child_rule_limit: childRuleLimit, child_rates: childRates, children_count_toward_max: roomTypeForm.children_count_toward_max };
   }
 
   function submitCreateRoomType(event: FormEvent<HTMLFormElement>) {
@@ -517,6 +529,10 @@ export default function HotelDetail({ id }: { id: string }) {
             <label className="form-span-two">{t('hotelDetail.roomTypeNameLabel')}<input autoFocus required value={roomTypeForm.name} onChange={event => setRoomTypeForm({ ...roomTypeForm, name: event.target.value })} placeholder={t('hotelDetail.roomTypeNamePlaceholder')} /></label>
             <label>{t('hotelDetail.basePriceLabel')}<input required min="0.01" step="0.01" type="number" value={roomTypeForm.base_price} onChange={event => setRoomTypeForm({ ...roomTypeForm, base_price: event.target.value })} placeholder={t('hotelDetail.basePricePlaceholder')} /></label>
             <label>{t('hotelDetail.quantityLabel')}<input required min="1" step="1" type="number" value={roomTypeForm.quantity} onChange={event => setRoomTypeForm({ ...roomTypeForm, quantity: event.target.value })} placeholder={t('hotelDetail.quantityPlaceholder')} /></label>
+            <label className="form-span-two">{t('hotelDetail.roomDescriptionLabel')}<textarea maxLength={600} value={roomTypeForm.description} onChange={event => setRoomTypeForm({ ...roomTypeForm, description: event.target.value })} /></label>
+            <label>{t('hotelDetail.bedTypeLabel')}<input maxLength={80} value={roomTypeForm.bed_type} onChange={event => setRoomTypeForm({ ...roomTypeForm, bed_type: event.target.value })} /></label>
+            <label>{t('hotelDetail.roomSizeLabel')}<input type="number" min="1" max="1000" step="1" value={roomTypeForm.size_sqm} onChange={event => setRoomTypeForm({ ...roomTypeForm, size_sqm: event.target.value })} /></label>
+            <label className="form-span-two">{t('hotelDetail.amenitiesLabel')}<textarea value={roomTypeForm.amenities} onChange={event => setRoomTypeForm({ ...roomTypeForm, amenities: event.target.value })} /><small className="field-help">{t('hotelDetail.amenitiesHelp')}</small></label>
             {occupancyPricingFields()}
           </div>
           <DialogFooter className="modal-actions form-submit"><button className="button button-quiet" type="button" onClick={() => closeRoomTypeDialog(false)} disabled={createRoomType.isPending}>{t('hotelDetail.cancel')}</button><button className="button button-primary" type="submit" disabled={createRoomType.isPending}>{createRoomType.isPending ? t('hotelDetail.creating') : t('hotelDetail.createRoomType')}</button></DialogFooter>
@@ -531,6 +547,10 @@ export default function HotelDetail({ id }: { id: string }) {
           <div className="form-grid">
             <label className="form-span-two">{t('hotelDetail.roomTypeNameLabel')}<input autoFocus required value={roomTypeForm.name} onChange={event => setRoomTypeForm({ ...roomTypeForm, name: event.target.value })} placeholder={t('hotelDetail.roomTypeNamePlaceholder')} /></label>
             <label>{t('hotelDetail.basePriceLabel')}<input required min="0.01" step="0.01" type="number" value={roomTypeForm.base_price} onChange={event => setRoomTypeForm({ ...roomTypeForm, base_price: event.target.value })} placeholder={t('hotelDetail.basePricePlaceholder')} /></label>
+            <label className="form-span-two">{t('hotelDetail.roomDescriptionLabel')}<textarea maxLength={600} value={roomTypeForm.description} onChange={event => setRoomTypeForm({ ...roomTypeForm, description: event.target.value })} /></label>
+            <label>{t('hotelDetail.bedTypeLabel')}<input maxLength={80} value={roomTypeForm.bed_type} onChange={event => setRoomTypeForm({ ...roomTypeForm, bed_type: event.target.value })} /></label>
+            <label>{t('hotelDetail.roomSizeLabel')}<input type="number" min="1" max="1000" step="1" value={roomTypeForm.size_sqm} onChange={event => setRoomTypeForm({ ...roomTypeForm, size_sqm: event.target.value })} /></label>
+            <label className="form-span-two">{t('hotelDetail.amenitiesLabel')}<textarea value={roomTypeForm.amenities} onChange={event => setRoomTypeForm({ ...roomTypeForm, amenities: event.target.value })} /><small className="field-help">{t('hotelDetail.amenitiesHelp')}</small></label>
             {occupancyPricingFields()}
           </div>
           <DialogFooter className="modal-actions form-submit"><button className="button button-quiet" type="button" onClick={() => closeEditRoomTypeDialog(false)} disabled={updateRoomType.isPending}>{t('hotelDetail.cancel')}</button><button className="button button-primary" type="submit" disabled={updateRoomType.isPending}>{updateRoomType.isPending ? t('hotelDetail.saving') : t('hotelDetail.saveChanges')}</button></DialogFooter>
