@@ -1,5 +1,17 @@
 # Handoff log
 
+## [2026-11-05] Track D — developer-text guard and remaining owner copy
+- Started from main `9c4687b`, which includes the corrected Dashboard Calendar contract test (`ec7f134`). Track C was still separate, so merged its updated branch (`38d6984`) into this branch without repeating its copy edits. Track C local full test passed: 203 files, 1,357 tests; its CI for `38d6984` passed.
+- Expanded `developerText.test.ts` to check dictionary values for internal permission names, snake_case identifiers, infrastructure terms and older known identifiers. Added positive cases for every requested category and allowed glossary brands plus the OTA example URL. The test changed to prevent future developer text reaching users; no existing assertion was loosened.
+- Updated only four dictionary values still awkward to hotel owners, including the missing-email sidebar fallback and calendar footer. No page, component, server or website-builder files changed.
+- Verification on this branch: `pnpm check` exit 0 (`tsc --noEmit`); `pnpm test` exit 0 (203 files, 1,381 tests); `pnpm build` exit 0 (Vite build, Wrangler dry run: `--dry-run: exiting now`).
+- Thai wording for owner review:
+
+| Key | ก่อน | หลัง |
+|---|---|---|
+| `sidebar.supabaseUser` | ผู้ใช้โรงแรม | บัญชีที่พัก |
+| `availability.rlsProtected` | ป้องกันการเข้าถึง | แสดงเฉพาะข้อมูลที่พักนี้ |
+
 ## [2026-11-05] Dashboard calendar: daily edit and stop-sale controls hidden (machine A)
 - **Why**: the "จัดการห้องว่างรายวัน / แก้ไขห้องว่างของวันที่เลือก" block (rooms-available field, save, stop sale) on `/dashboard` writes the `availability` table, which the guest booking flow does not read. Seen on the owner's production screenshot; same cause as the Calendar page fix.
 - **Done**: `DashboardCalendarView.tsx` has `DASHBOARD_CALENDAR_EDITING_ENABLED = false`; the whole quick-actions block is gated by it (code kept). The calendar grid and the selected-day summary stay. New assertion in `dashboardCalendar.contract.test.ts`; the existing assertions about the save and stop-sell code still hold because the code is still in the file.
