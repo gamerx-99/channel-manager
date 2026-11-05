@@ -337,3 +337,18 @@
   .financials-page .financials-summary-panel > .grid,
   .financials-page .financials-charts-panel > .grid { padding: 0 16px 16px; }
 }
+
+/* Personal information page (2026-11-05). */
+.account-page .account-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 28px; margin: 0; padding: 0 24px 24px; }
+.account-page .account-details dt { margin-bottom: 4px; font-size: 12px; color: var(--ink-muted); }
+.account-page .account-details dd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.account-page .account-empty { font-weight: 400; color: var(--ink-muted); }
+.account-page .account-note { margin: 0 24px 16px; font-size: 13px; color: var(--ink-soft); }
+.account-page .account-list { display: grid; gap: 12px; margin: 0; padding: 0 24px 24px; list-style: none; }
+.account-page .account-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--white); }
+.account-page .account-hotel-name { font-weight: 700; }
+.account-page .account-hotel-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 13px; color: var(--ink-soft); }
+@media (max-width: 640px) {
+  .account-page .account-details, .account-page .account-list { padding-right: 16px; padding-left: 16px; }
+  .account-page .account-note { margin-right: 16px; margin-left: 16px; }
+}

@@ -46,8 +46,8 @@ export function getRequiredRoutePermission(pathname: string): Permission | null 
 }
 
 export function getRouteScopeDecision({ role, roles, pathname, routeHotelId, visibleHotelIds, memberships, selectedHotelId, now = new Date() }: RouteScopeInput): RouteScopeDecision {
-  // Every account must be able to reach account deletion, including one with no hotel left.
-  if (pathname === "/settings/security" || pathname === "/hotel-closure") return { allowed: true };
+  // Every account must be able to reach its own personal information and account deletion, including one with no hotel left.
+  if (pathname === "/settings/account" || pathname === "/settings/security" || pathname === "/hotel-closure") return { allowed: true };
   const effectiveRoles = roles?.length ? roles : role ? [role] : [];
   if (!effectiveRoles.some(candidate => isHumanRole(candidate))) return { allowed: false, reason: "role_required" };
   const requiredPermission = getRequiredRoutePermission(pathname);

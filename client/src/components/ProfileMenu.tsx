@@ -62,6 +62,9 @@ export function ProfileMenu({
           {t("profileMenu.adminUsers")}
         </Link>
       )}
+      <Link href="/settings/account" className="menu-surface-item" role="menuitem" onClick={onClose}>
+        {t("profileMenu.account")}
+      </Link>
       <Link
         href="/settings/security"
         className="menu-surface-item"

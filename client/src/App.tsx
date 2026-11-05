@@ -29,6 +29,7 @@ import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
+import Account from "./pages/Account";
 import HotelClosure from "./pages/HotelClosure";
 import SupportAccess from "./pages/SupportAccess";
 import PlatformOverview from "./pages/PlatformOverview";
@@ -92,6 +93,9 @@ function Router() {
       </Route>
       <Route path="/settings/admin-users">
         <PrivateRoute><AdminUsers /></PrivateRoute>
+      </Route>
+      <Route path="/settings/account">
+        <PrivateRoute><Account /></PrivateRoute>
       </Route>
       <Route path="/settings/security">
         <PrivateRoute><SecuritySettings /></PrivateRoute>
