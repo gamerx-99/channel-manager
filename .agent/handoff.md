@@ -9,6 +9,13 @@
 - **Evidence**: `pnpm check` exit 0; full `pnpm test` 204 files, exit 0; `pnpm build` exit 0. The first full run failed in `server/rateOverrides.access.test.ts` because the router read two constants from the mocked `d1/availability` module; the constants now live in `shared/availabilityBatch.ts`.
 - **Not done**: not merged to `main`; enforcement for guests (spec 20 step 3) is not written because it changes what guests can buy and needs the audit and the owner's decisions.
 
+## [2026-11-05] Deployed main 3f1c69b to production (copy guard + batch availability write)
+- **Done with the owner's go-ahead ("ดำเนินการ")**: merged `track-d/copy-guard` (includes Codex's Track C copy fixes) and `work/overnight-2026-11-05` into `main`; handoff conflicts resolved by keeping every entry. Pushed `9c4687b..3f1c69b`; `wrangler deploy --env production`; Worker `hayhost`, version `dc7f82fe-5a23-40c5-ab0e-f629cbfed880`; no pending migrations.
+- **Verified before pushing (merged tree)**: `pnpm check` exit 0; full `pnpm test` 204 files, 1390 passed; `pnpm build` exit 0. After deploy `/` and the API route return 200.
+- **What changed for owners**: plain wording instead of permission names, table names and "Supabase/RLS" text; calendar footer and sidebar account fallback reworded. `channelManager.updateAvailabilityBatch` exists on the server but no page calls it yet.
+- **Rollback**: `wrangler rollback --env production` (previous `dd7886f5`).
+- **Next**: the todo list in `.agent/long-plan-2026-11-05.md`; spec 20 needs the owner's four decisions.
+
 ## [2026-11-05] Track D — developer-text guard and remaining owner copy
 - Started from main `9c4687b`, which includes the corrected Dashboard Calendar contract test (`ec7f134`). Track C was still separate, so merged its updated branch (`38d6984`) into this branch without repeating its copy edits. Track C local full test passed: 203 files, 1,357 tests; its CI for `38d6984` passed.
 - Expanded `developerText.test.ts` to check dictionary values for internal permission names, snake_case identifiers, infrastructure terms and older known identifiers. Added positive cases for every requested category and allowed glossary brands plus the OTA example URL. The test changed to prevent future developer text reaching users; no existing assertion was loosened.
