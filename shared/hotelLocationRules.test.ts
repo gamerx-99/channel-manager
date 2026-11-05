@@ -3,6 +3,7 @@ import {
   parseCoordinatePaste,
   isValidCoordinates,
   validateHotelContacts,
+  normalizeLineContact,
 } from './hotelLocationRules';
 
 describe('hotelLocationRules', () => {
@@ -153,6 +154,63 @@ describe('hotelLocationRules', () => {
         showInstagram: false,
         showX: false,
       })).toBe('ลิงก์ X ไม่ถูกต้อง');
+    });
+  });
+
+  describe('normalizeLineContact', () => {
+    it('keeps line.me and lin.ee links as is (trimmed)', () => {
+      expect(normalizeLineContact('  https://line.me/R/ti/p/@hotel  ')).toBe('https://line.me/R/ti/p/@hotel');
+      expect(normalizeLineContact('https://lin.ee/abc123')).toBe('https://lin.ee/abc123');
+    });
+    it('converts @ Official Account id', () => {
+      expect(normalizeLineContact('@hotelname')).toBe('https://line.me/R/ti/p/@hotelname');
+    });
+    it('converts ~ personal id', () => {
+      expect(normalizeLineContact('~myname')).toBe('https://line.me/ti/p/~myname');
+    });
+    it('converts plain id', () => {
+      expect(normalizeLineContact('myhotel01')).toBe('https://line.me/ti/p/~myhotel01');
+    });
+    it('returns null for empty', () => {
+      expect(normalizeLineContact('')).toBeNull();
+      expect(normalizeLineContact('   ')).toBeNull();
+    });
+    it('returns null for invalid', () => {
+      expect(normalizeLineContact('https://example.com/x')).toBeNull();
+      expect(normalizeLineContact('ab')).toBeNull();
+    });
+  });
+
+  describe('validateHotelContacts LINE', () => {
+    it('requires LINE when showLine is checked', () => {
+      expect(validateHotelContacts({
+        showPhone: false,
+        showFacebook: false,
+        showInstagram: false,
+        showX: false,
+        showLine: true,
+        line: '',
+      })).toBe('กรุณาใส่ LINE');
+    });
+    it('rejects invalid LINE value', () => {
+      expect(validateHotelContacts({
+        showPhone: false,
+        showFacebook: false,
+        showInstagram: false,
+        showX: false,
+        showLine: false,
+        line: 'ab',
+      })).toBe('LINE ไม่ถูกต้อง ใส่ลิงก์ line.me หรือ ID เช่น @hotelname');
+    });
+    it('accepts valid LINE values', () => {
+      expect(validateHotelContacts({
+        showPhone: false,
+        showFacebook: false,
+        showInstagram: false,
+        showX: false,
+        showLine: true,
+        line: '@hotelname',
+      })).toBeNull();
     });
   });
 });

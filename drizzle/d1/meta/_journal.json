@@ -141,6 +141,13 @@
       "when": 1793867948707,
       "tag": "20261105000000_room_type_details",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1793921811664,
+      "tag": "20261106000000_hotel_line_contact",
+      "breakpoints": true
     }
   ]
 }

@@ -61,6 +61,8 @@ export const hotels = sqliteTable("hotels", {
   showPublicPhone: integer("show_public_phone", { mode: "boolean" }).notNull().default(false),
   facebookUrl: text("facebook_url"),
   showFacebook: integer("show_facebook", { mode: "boolean" }).notNull().default(false),
+  lineUrl: text("line_url"),
+  showLine: integer("show_line", { mode: "boolean" }).notNull().default(false),
   instagramUrl: text("instagram_url"),
   showInstagram: integer("show_instagram", { mode: "boolean" }).notNull().default(false),
   xUrl: text("x_url"),

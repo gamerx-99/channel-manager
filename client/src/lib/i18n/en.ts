@@ -658,6 +658,7 @@ const en = {
     publicPhoneLabel: "Hotel phone (displayed on website)",
     showPhoneOnSite: "Show phone on website",
     showFacebookOnSite: "Show Facebook link on website",
+    showLineOnSite: "Show LINE link on website",
     showInstagramOnSite: "Show Instagram link on website",
     showXOnSite: "Show X link on website",
     locationHeading: "Location",

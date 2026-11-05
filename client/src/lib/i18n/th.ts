@@ -645,6 +645,7 @@ const th: TranslationDictionary = {
     publicPhoneLabel: "เบอร์โทรศัพท์โรงแรม (สำหรับแสดงบนหน้าเว็บ)",
     showPhoneOnSite: "แสดงเบอร์โทรบนหน้าเว็บ",
     showFacebookOnSite: "แสดงลิงก์ Facebook บนหน้าเว็บ",
+    showLineOnSite: "แสดงลิงก์ LINE บนหน้าเว็บ",
     showInstagramOnSite: "แสดงลิงก์ Instagram บนหน้าเว็บ",
     showXOnSite: "แสดงลิงก์ X บนหน้าเว็บ",
     locationHeading: "ตำแหน่งที่ตั้ง",

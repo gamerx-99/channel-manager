@@ -3,6 +3,7 @@ import { Phone, ExternalLink } from 'lucide-react';
 
 export interface HotelContactsListProps {
   phone?: string | null;
+  lineUrl?: string | null;
   facebookUrl?: string | null;
   instagramUrl?: string | null;
   xUrl?: string | null;
@@ -12,6 +13,7 @@ export interface HotelContactsListProps {
 
 export function HotelContactsList({
   phone,
+  lineUrl,
   facebookUrl,
   instagramUrl,
   xUrl,
@@ -19,11 +21,12 @@ export function HotelContactsList({
   style,
 }: HotelContactsListProps) {
   const hasPhone = Boolean(phone?.trim());
+  const hasLine = Boolean(lineUrl?.trim());
   const hasFb = Boolean(facebookUrl?.trim());
   const hasIg = Boolean(instagramUrl?.trim());
   const hasX = Boolean(xUrl?.trim());
 
-  if (!hasPhone && !hasFb && !hasIg && !hasX) return null;
+  if (!hasPhone && !hasLine && !hasFb && !hasIg && !hasX) return null;
 
   return (
     <div
@@ -45,6 +48,19 @@ export function HotelContactsList({
         >
           <Phone size={14} />
           <span>{phone!.trim()}</span>
+        </a>
+      )}
+
+      {hasLine && (
+        <a
+          href={lineUrl!.trim()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="contact-link contact-line"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          <span>LINE</span>
+          <ExternalLink size={12} />
         </a>
       )}
 

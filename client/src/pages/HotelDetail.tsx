@@ -62,6 +62,8 @@ export default function HotelDetail({ id }: { id: string }) {
     show_public_phone: false,
     facebook_url: '',
     show_facebook: false,
+    line_url: '',
+    show_line: false,
     instagram_url: '',
     show_instagram: false,
     x_url: '',
@@ -106,6 +108,8 @@ export default function HotelDetail({ id }: { id: string }) {
       show_public_phone: Boolean(hotel?.show_public_phone),
       facebook_url: hotel?.facebook_url ?? '',
       show_facebook: Boolean(hotel?.show_facebook),
+      line_url: hotel?.line_url ?? '',
+      show_line: Boolean(hotel?.show_line),
       instagram_url: hotel?.instagram_url ?? '',
       show_instagram: Boolean(hotel?.show_instagram),
       x_url: hotel?.x_url ?? '',
@@ -120,10 +124,12 @@ export default function HotelDetail({ id }: { id: string }) {
     const contactErr = validateHotelContacts({
       phone: hotelProfileForm.public_phone,
       facebook: hotelProfileForm.facebook_url,
+      line: hotelProfileForm.line_url,
       instagram: hotelProfileForm.instagram_url,
       x: hotelProfileForm.x_url,
       showPhone: hotelProfileForm.show_public_phone,
       showFacebook: hotelProfileForm.show_facebook,
+      showLine: hotelProfileForm.show_line,
       showInstagram: hotelProfileForm.show_instagram,
       showX: hotelProfileForm.show_x,
     });
@@ -142,6 +148,8 @@ export default function HotelDetail({ id }: { id: string }) {
       show_public_phone: hotelProfileForm.show_public_phone,
       facebook_url: hotelProfileForm.facebook_url || null,
       show_facebook: hotelProfileForm.show_facebook,
+      line_url: hotelProfileForm.line_url || null,
+      show_line: hotelProfileForm.show_line,
       instagram_url: hotelProfileForm.instagram_url || null,
       show_instagram: hotelProfileForm.show_instagram,
       x_url: hotelProfileForm.x_url || null,
@@ -468,6 +476,28 @@ export default function HotelDetail({ id }: { id: string }) {
                       onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_facebook: e.target.checked })}
                     />
                     {t('hotelDetail.showFacebookOnSite')}
+                  </label>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem' }}>
+                    LINE
+                    <input
+                      type="url"
+                      maxLength={500}
+                      placeholder="@hotelname หรือ ลิงก์ line.me"
+                      value={hotelProfileForm.line_url}
+                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, line_url: e.target.value })}
+                      style={{ width: '100%', marginTop: 4 }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', marginTop: 4 }}>
+                    <input
+                      type="checkbox"
+                      checked={hotelProfileForm.show_line}
+                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_line: e.target.checked })}
+                    />
+                    {t('hotelDetail.showLineOnSite')}
                   </label>
                 </div>
 

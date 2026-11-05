@@ -14,6 +14,7 @@ import { normalizeAmenities } from "../../shared/roomAmenities";
 import { servedMediaUrl } from "./media";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "../../shared/hotelThemes";
 import { displayPhotoCaption } from "../../shared/websitePhotos";
+import { normalizeLineContact } from "../../shared/hotelLocationRules";
 
 function canonicalMoney(value: string | number): string {
   const satang = moneyToSatang(String(value));
@@ -115,7 +116,7 @@ export async function getManagedHotel(db: D1ScopedDatabase, caller: D1CallerCont
   return {
     id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, owner_contact: scope.permissions.includes("property.manage_profile") ? hotel.ownerContact : null,
     latitude: hotel.latitude, longitude: hotel.longitude, public_phone: hotel.publicPhone, show_public_phone: hotel.showPublicPhone,
-    facebook_url: hotel.facebookUrl, show_facebook: hotel.showFacebook, instagram_url: hotel.instagramUrl, show_instagram: hotel.showInstagram, x_url: hotel.xUrl, show_x: hotel.showX,
+    facebook_url: hotel.facebookUrl, show_facebook: hotel.showFacebook, line_url: hotel.lineUrl, show_line: hotel.showLine, instagram_url: hotel.instagramUrl, show_instagram: hotel.showInstagram, x_url: hotel.xUrl, show_x: hotel.showX,
     public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
     room_types: hotelRoomTypes.map(row => ({
       id: row.id, hotel_id: row.hotelId, name: row.name, capacity: row.capacity, base_price: row.basePrice,
@@ -147,7 +148,7 @@ export async function setHotelPublicEnabled(db: D1ScopedDatabase, caller: D1Call
   return { id: hotel.id, public_enabled: hotel.publicEnabled };
 }
 
-export async function updateManagedHotelProfile(db: D1ScopedDatabase, caller: D1CallerContext, input: { hotel_id: string; name: string; address: string; owner_contact: string; latitude?: number | null; longitude?: number | null; public_phone?: string | null; show_public_phone?: boolean; facebook_url?: string | null; show_facebook?: boolean; instagram_url?: string | null; show_instagram?: boolean; x_url?: string | null; show_x?: boolean }, now = new Date()) {
+export async function updateManagedHotelProfile(db: D1ScopedDatabase, caller: D1CallerContext, input: { hotel_id: string; name: string; address: string; owner_contact: string; latitude?: number | null; longitude?: number | null; public_phone?: string | null; show_public_phone?: boolean; facebook_url?: string | null; show_facebook?: boolean; line_url?: string | null; show_line?: boolean; instagram_url?: string | null; show_instagram?: boolean; x_url?: string | null; show_x?: boolean }, now = new Date()) {
   await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_profile", "hotel.profile.update", now);
   const updateValues: Record<string, unknown> = {
     name: input.name.trim(),
@@ -160,6 +161,8 @@ export async function updateManagedHotelProfile(db: D1ScopedDatabase, caller: D1
   if (input.show_public_phone !== undefined) updateValues.showPublicPhone = input.show_public_phone;
   if (input.facebook_url !== undefined) updateValues.facebookUrl = input.facebook_url?.trim() || null;
   if (input.show_facebook !== undefined) updateValues.showFacebook = input.show_facebook;
+  if (input.line_url !== undefined) updateValues.lineUrl = normalizeLineContact(input.line_url ?? "");
+  if (input.show_line !== undefined) updateValues.showLine = input.show_line;
   if (input.instagram_url !== undefined) updateValues.instagramUrl = input.instagram_url?.trim() || null;
   if (input.show_instagram !== undefined) updateValues.showInstagram = input.show_instagram;
   if (input.x_url !== undefined) updateValues.xUrl = input.x_url?.trim() || null;
@@ -321,7 +324,7 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
     return priceOrder || left.id.localeCompare(right.id);
   });
   return {
-    hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, latitude: hotel.latitude, longitude: hotel.longitude, public_phone: hotel.showPublicPhone ? hotel.publicPhone : null, facebook_url: hotel.showFacebook ? hotel.facebookUrl : null, instagram_url: hotel.showInstagram ? hotel.instagramUrl : null, x_url: hotel.showX ? hotel.xUrl : null, created_at: hotel.createdAt, theme: siteConfig[0]?.theme ?? null },
+    hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, latitude: hotel.latitude, longitude: hotel.longitude, public_phone: hotel.showPublicPhone ? hotel.publicPhone : null, facebook_url: hotel.showFacebook ? hotel.facebookUrl : null, line_url: hotel.showLine ? hotel.lineUrl : null, instagram_url: hotel.showInstagram ? hotel.instagramUrl : null, x_url: hotel.showX ? hotel.xUrl : null, created_at: hotel.createdAt, theme: siteConfig[0]?.theme ?? null },
     roomTypes: hotelRoomTypes.map(row => ({ ...row, bed_type: row.bedType, size_sqm: row.sizeSqm })),
     media,
   };

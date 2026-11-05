@@ -30,4 +30,17 @@ describe('HotelContactsList', () => {
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('target="_blank"');
   });
+
+  it('renders LINE link after phone, before Facebook', () => {
+    const html = renderToStaticMarkup(
+      <HotelContactsList
+        phone="081 234 5678"
+        lineUrl="https://line.me/R/ti/p/@hotel"
+        facebookUrl="https://facebook.com/myhotel"
+      />
+    );
+    expect(html).toContain('href="https://line.me/R/ti/p/@hotel"');
+    expect(html).toContain('>LINE<');
+    expect(html.indexOf('LINE')).toBeLessThan(html.indexOf('Facebook'));
+  });
 });

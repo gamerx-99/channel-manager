@@ -11,7 +11,30 @@ export function isValidCoordinates(latitude: number | null | undefined, longitud
   return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude! >= -90 && latitude! <= 90 && longitude! >= -180 && longitude! <= 180;
 }
 
-export function validateHotelContacts(input: { phone?: string | null; facebook?: string | null; instagram?: string | null; x?: string | null; showPhone: boolean; showFacebook: boolean; showInstagram: boolean; showX: boolean }) {
+// ASSUMPTION: the owner may paste a LINE link, an @ Official Account ID or a personal ID.
+export function normalizeLineContact(value: string): string | null {
+  const v = value.trim();
+  if (!v) return null;
+  if (v.startsWith("https://line.me/") || v.startsWith("https://lin.ee/")) {
+    return v;
+  }
+  if (v.startsWith("@")) {
+    const name = v.slice(1).trim();
+    if (!name) return null;
+    return `https://line.me/R/ti/p/@${name}`;
+  }
+  if (v.startsWith("~")) {
+    const name = v.slice(1).trim();
+    if (!name) return null;
+    return `https://line.me/ti/p/~${name}`;
+  }
+  if (/^[a-z0-9._-]{4,20}$/i.test(v)) {
+    return `https://line.me/ti/p/~${v}`;
+  }
+  return null;
+}
+
+export function validateHotelContacts(input: { phone?: string | null; facebook?: string | null; instagram?: string | null; x?: string | null; line?: string | null; showPhone: boolean; showFacebook: boolean; showInstagram: boolean; showX: boolean; showLine?: boolean }) {
   const phone = input.phone?.trim() ?? "";
   if (phone && !/^[0-9 +\-]+$/.test(phone)) return "เบอร์โทรใช้ได้เฉพาะตัวเลข เว้นวรรค + และ -";
   const networks: Array<[string, string, RegExp, boolean]> = [
@@ -24,5 +47,8 @@ export function validateHotelContacts(input: { phone?: string | null; facebook?:
     if (value.trim() && !host.test(value.trim())) return `ลิงก์ ${label} ไม่ถูกต้อง`;
   }
   if (input.showPhone && !phone) return "กรุณาใส่เบอร์โทรโรงแรม";
+  const lineValue = input.line?.trim() ?? "";
+  if (input.showLine && !lineValue) return "กรุณาใส่ LINE";
+  if (lineValue && normalizeLineContact(lineValue) === null) return "LINE ไม่ถูกต้อง ใส่ลิงก์ line.me หรือ ID เช่น @hotelname";
   return null;
 }

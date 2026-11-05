@@ -248,6 +248,7 @@ describe("D1 hotel repository", () => {
       latitude: 18.7883, longitude: 98.9853,
       public_phone: "0812345678", show_public_phone: true,
       facebook_url: "https://facebook.com/hotel", show_facebook: true,
+      line_url: "@hotel", show_line: true,
     });
     let hotelA = await getManagedHotel(db, { userId: "owner-a" }, "a");
     expect(hotelA).toMatchObject({
@@ -257,6 +258,8 @@ describe("D1 hotel repository", () => {
       show_public_phone: true,
       facebook_url: "https://facebook.com/hotel",
       show_facebook: true,
+      line_url: "https://line.me/R/ti/p/@hotel",
+      show_line: true,
     });
 
     // Partial update without location/contacts preserves existing values
@@ -272,6 +275,8 @@ describe("D1 hotel repository", () => {
       show_public_phone: true,
       facebook_url: "https://facebook.com/hotel",
       show_facebook: true,
+      line_url: "https://line.me/R/ti/p/@hotel",
+      show_line: true,
     });
 
     // Explicitly clear location with null
