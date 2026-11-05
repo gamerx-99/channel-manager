@@ -81,6 +81,24 @@ describe("D1 availability repository", () => {
     await expect(updateAvailability(db, { userId: "owner-a" }, { ...input, hotelId: "b", roomTypeId: "rt-b" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("lets front desk read its hotel's availability without prices, but keeps other scopes closed", async () => {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    await db.insert(hotelUsers).values([
+      { id: "m-front-a", hotelId: "a", userId: "front-a", role: "front_desk", permissionGrants: [], permissionRevokes: [] },
+      { id: "m-house-a", hotelId: "a", userId: "house-a", role: "housekeeping", permissionGrants: [], permissionRevokes: [] },
+      { id: "m-rates-a", hotelId: "a", userId: "rates-a", role: "revenue_manager", permissionGrants: [], permissionRevokes: [] },
+    ]);
+    await db.insert(availability).values({ roomTypeId: "rt-a", date: "2026-11-01", price: "123.45", roomsAvailable: 1 });
+
+    await expect(listAvailabilityForHotel(db, { userId: "front-a" }, "a"))
+      .resolves.toMatchObject([{ roomTypeId: "rt-a", roomsAvailable: 1, price: null }]);
+    await expect(listAvailabilityForHotel(db, { userId: "rates-a" }, "a"))
+      .resolves.toMatchObject([{ roomTypeId: "rt-a", roomsAvailable: 1, price: "123.45" }]);
+    await expect(listAvailabilityForHotel(db, { userId: "front-a" }, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(listAvailabilityForHotel(db, { userId: "house-a" }, "a")).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it.each(["abc", "1.234", "-0.01", ".5", "1..2"])("rejects malformed or negative monetary text %s at the database boundary", async price => {
     await seedHotel("a", "owner-a");
     await expect(db.insert(availability).values({ roomTypeId: "rt-a", date: "2026-11-01", price, roomsAvailable: 1 })).rejects.toThrow();

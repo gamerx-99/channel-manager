@@ -55,6 +55,22 @@ beforeEach(() => {
 
 describe.sequential('channelManager availability (D1 router)', () => {
 
+describe('channelManager.availability (D1 router)', () => {
+  it('lets front desk request its own hotel and returns the redacted repository result', async () => {
+    const rows = [{ roomTypeId: ROOM_TYPE_ID, date: '2026-11-01', roomsAvailable: 1, price: null }];
+    availabilityMocks.listAvailabilityForHotel.mockResolvedValueOnce(rows);
+
+    await expect(caller('front_desk').channelManager.availability(HOME_HOTEL)).resolves.toEqual(rows);
+    expect(availabilityMocks.listAvailabilityForHotel).toHaveBeenCalledWith({}, expect.anything(), HOME_HOTEL);
+  });
+
+  it('rejects another hotel before the repository is called', async () => {
+    await expect(caller('front_desk').channelManager.availability('e1d6de3a-8e35-40a2-bcc5-0de1b548ad3a'))
+      .rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(availabilityMocks.listAvailabilityForHotel).not.toHaveBeenCalled();
+  });
+});
+
 describe('channelManager.updateAvailability (D1 router)', () => {
   it('allows Revenue Manager to update allotment for their hotel', async () => {
     const app = await caller('revenue_manager');
