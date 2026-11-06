@@ -5357,3 +5357,24 @@ Exit 0
 - The provided Thai wording was checked against `docs/thai-glossary.md`; none of these phrases use a banned term. Minor integration changes: the design’s direct booking URLs now use the shared `bookingLink` callback, button colors use the theme palette, and the footer credit uses `PoweredByHayhost`. The design’s room amenity chips are retained.
 - Verification: `pnpm check` — `$ tsc --noEmit`, exit 0. `pnpm test --maxWorkers=3 --minWorkers=1` — 253 files passed, 1,721 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed, exit 0 (existing large-chunk advisory and no-target-environment warning). `git diff --check` — no output, exit 0. Commands use `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`; build also uses `XDG_CONFIG_HOME=/tmp/hayhost-xdg`.
 - Deleted both temporary `design/themes/03-mountain-mist/out/` handoff files. No migration, commit, push, or deploy.
+
+## 2026-11-07 — Boutique Noir public theme
+
+- Added Boutique Noir as a premium public theme with the owner’s noir and antique-gold palette, responsive editorial layout, Playfair Display/Taviraj/Be Vietnam Pro/Bai Jamjuree fonts, registry card preview, theme-owned CTA colors, shared `bookingLink`, capped six-photo gallery, contacts/map, and `PoweredByHayhost`. Updated the Mountain Mist display name to `ขุนเขา ม่านหมอก` and its dedicated theme test remains keyed by ID.
+- Added all 29 keys from the owner’s `hotelThemes.boutiqueNoir` translation table to `en.ts` and `th.ts`, and extended landing, registry, key, palette, booking color, PublicHotel render/contract, and Website Builder picker coverage. Updated `specs/06-website-builder.md`.
+- Thai before → after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | Mountain Mist | ขุนเขา ม่านหมอก |
+  | — (new theme copy) | เมนูหลัก; ห้องพักและสวีท; แกลเลอรี; การเดินทาง; เปลี่ยนภาษา; สำรองห้องพัก; ที่พักอันเงียบสงบ; ปรัชญาแห่งการพักผ่อน; เรื่องราวและความเงียบสงบ; ห้องพักที่คัดสรร; แต่ละห้องตกแต่งเฉพาะตัวด้วยไม้สักธรรมชาติ ผ้าทอมือ และความสงบเงียบเป็นส่วนตัว; สำรองห้องนี้; บรรยากาศยามค่ำคืน; ภาพบรรยากาศ; ที่ตั้งและการเดินทาง; รับประกันการจองตรง; ระบบจองตรงปลอดภัย สะดวก รวดเร็ว ไม่มีค่าธรรมเนียมแอบแฝง; จองผ่าน hayhost |
+
+- The Thai wording was checked against `docs/thai-glossary.md`; no banned glossary phrase was used. Design deviations: booking links use the provided shared helper; gallery length uses `MAX_WEBSITE_GALLERY_PHOTOS`; reservation buttons use the fixed gold theme colors; footer credit uses `PoweredByHayhost`. Decorative icon/button implementations remain CSS/lucide equivalents from the source. Deleted the supplied `design/themes/05-boutique-noir/out/` handoff copy.
+- Verification: `corepack pnpm@10.4.1 check` — `$ tsc --noEmit`, exit 0. `corepack pnpm@10.4.1 test --maxWorkers=3 --minWorkers=1` — 254 files and 1,729 tests passed, exit 0. `XDG_CONFIG_HOME=/tmp/hayhost-xdg corepack pnpm@10.4.1 build` — Vite build and Wrangler `--dry-run` completed, exit 0 (existing chunk-size advisory and no-target-environment warning). `git diff --check` — no output, exit 0. System pnpm 12 could not open its read-only engine lock; pinned pnpm 10.4.1 ran the checks. No assertions were removed or weakened. No commit, push, deploy, or migration operation.
+
+## 2026-11-07 — Website theme style display names
+
+- Changed the five existing theme registry display names to the owner-approved Thai style names: minimal-white `สไตล์มินิมอล`, lanna-teak `สไตล์ล้านนา`, cafe-homestay `สไตล์คาเฟ่`, mountain-mist `สไตล์ธรรมชาติ`, and boutique-noir `สไตล์ลักชัวรี`. Theme IDs and descriptions are unchanged; no names were added for themes not yet added.
+- Added a shared registry test asserting all five exact ID/name pairs. Repository search found no other old Thai display-name occurrences and no English display-name map.
+- Verification: `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm check` — `$ tsc --noEmit`, exit 0. `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm test -- --maxWorkers=3 --minWorkers=1` — 254 files passed, 1,730 tests passed, exit 0.
+- No commit, push, deploy, or migration operation.

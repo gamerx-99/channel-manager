@@ -24,6 +24,7 @@ const fonts: Partial<Record<ThemeLandingProps["themeId"], string>> = {
   "lanna-teak": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
   "cafe-homestay": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Epilogue:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
   "mountain-mist": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
+  "boutique-noir": "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Taviraj:wght@400;500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bai+Jamjuree:wght@400;500;600;700&display=swap",
 };
 
 export function ThemeLanding({ themeId, children, colors }: ThemeLandingProps) {

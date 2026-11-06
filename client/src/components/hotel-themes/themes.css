@@ -118,3 +118,7 @@
 .theme-mountain-mist .public-booking h2{color:var(--owner-accent-text)!important}
 .theme-mountain-mist .public-booking h2 i{color:var(--owner-highlight)!important}
 .theme-mountain-mist .public-button,.theme-mountain-mist .public-nav-cta,.theme-mountain-mist .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-boutique-noir .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-boutique-noir .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-boutique-noir .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-boutique-noir .public-button,.theme-boutique-noir .public-nav-cta,.theme-boutique-noir .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}

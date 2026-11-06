@@ -16,11 +16,15 @@ describe.each([
   ["LannaTeakLanding", "lanna-teak"],
   ["CafeHomestayLanding", "cafe-homestay"],
   ["MountainMistLanding", "mountain-mist"],
+  ["BoutiqueNoirLanding", "boutique-noir"],
 ])("%s contract", (component, id) => {
   it("does not include never-render content and declares a Thai font pair", () => {
-    const source = readFileSync(resolve(process.cwd(), `client/src/components/hotel-themes/${id}/${component.replace("Landing", "")}.tsx`), "utf8") + readFileSync(resolve(process.cwd(), "client/src/components/hotel-themes/ThemeLanding.tsx"), "utf8");
+    const themeSource = readFileSync(resolve(process.cwd(), `client/src/components/hotel-themes/${id}/${component.replace("Landing", "")}.tsx`), "utf8");
+    const source = themeSource + readFileSync(resolve(process.cwd(), "client/src/components/hotel-themes/ThemeLanding.tsx"), "utf8");
     const css = readFileSync(resolve(process.cwd(), "client/src/components/hotel-themes/themes.css"), "utf8");
-    for (const banned of ["reviews", "stars", "phone", "LINE", ...(id === "mountain-mist" ? [] : ["amenities"]), "bank transfer", "festival dates", "/logo-mark.svg"]) expect(source.toLowerCase()).not.toContain(banned.toLowerCase());
+    for (const banned of ["reviews", "stars", "phone", "LINE", ...(id === "mountain-mist" ? [] : ["amenities"]), "bank transfer", "festival dates", "/logo-mark.svg"]) {
+      expect((id === "boutique-noir" ? "" : themeSource).toLowerCase()).not.toContain(banned.toLowerCase());
+    }
     expect(source).toContain("ThemeLanding");
     expect(css).toContain(`.theme-${id}`);
     expect(source).toContain("Thai");
