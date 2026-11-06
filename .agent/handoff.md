@@ -5295,7 +5295,7 @@ Exit 0
 
 ## 2026-11-06 — Staff shifts
 
-- Added the staff month schedule and scoped shift CRUD in `drizzle/d1/20261106060000_staff_shifts.sql`, `server/d1/staffShifts.ts`, and `server/routers/staffShiftsRouter.ts`. The roster excludes the hotel owner, falls back to Better Auth account names, and lets owners/managers set hotel-specific names and free-text positions. Weekend cells shade dark; month totals subtract breaks and count overnight shifts into the next day. Housekeeping now redirects to the staff shifts route; no time clock was added.
+- Added the staff month schedule and scoped shift CRUD in `drizzle/d1/20261106030000_staff_shifts.sql (regenerated on merge)`, `server/d1/staffShifts.ts`, and `server/routers/staffShiftsRouter.ts`. The roster excludes the hotel owner, falls back to Better Auth account names, and lets owners/managers set hotel-specific names and free-text positions. Weekend cells shade dark; month totals subtract breaks and count overnight shifts into the next day. Housekeeping now redirects to the staff shifts route; no time clock was added.
 - Thai before / after:
 
   | Before (th) | After (th) |
