@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mok Doi Resort (หมอกดอย รีสอร์ท) | Pang Mapha, Mae Hong Son</title>
+<!-- Google Fonts: Epilogue & Noto Sans (system fallback & typography hierarchy) + Prompt & Noto Sans Thai -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800&amp;family=Noto+Sans+Thai:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;600;700&amp;family=Prompt:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error": "#ffffff",
+            "surface-container-high": "#e4e9e6",
+            "background": "#f5fbf8",
+            "error-container": "#ffdad6",
+            "outline-variant": "#c2c8c2",
+            "primary-fixed-dim": "#aeceba",
+            "primary": "#082519",
+            "secondary-container": "#c6e6bd",
+            "surface-container-low": "#eff5f2",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#304d3e",
+            "on-tertiary": "#ffffff",
+            "primary-container": "#1f3b2d",
+            "on-tertiary-fixed-variant": "#653e00",
+            "secondary": "#4a6545",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#334d2f",
+            "surface-container-highest": "#dee4e1",
+            "tertiary": "#311c00",
+            "surface-tint": "#486555",
+            "surface-dim": "#d5dbd8",
+            "inverse-on-surface": "#ecf2ef",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2a1700",
+            "surface-bright": "#f5fbf8",
+            "on-tertiary-container": "#cd9349",
+            "on-secondary-container": "#4c6847",
+            "on-primary-fixed": "#032014",
+            "on-secondary-fixed": "#072107",
+            "on-surface": "#171d1b",
+            "surface-container": "#e9efec",
+            "surface-variant": "#dee4e1",
+            "primary-fixed": "#caead6",
+            "secondary-fixed": "#cbebc2",
+            "tertiary-fixed-dim": "#fabb6c",
+            "error": "#ba1a1a",
+            "tertiary-fixed": "#ffddb8",
+            "on-surface-variant": "#424844",
+            "surface": "#f5fbf8",
+            "on-background": "#171d1b",
+            "on-primary-container": "#87a593",
+            "tertiary-container": "#4e2f00",
+            "on-error-container": "#93000a",
+            "outline": "#727973",
+            "inverse-primary": "#aeceba",
+            "inverse-surface": "#2b3230",
+            "secondary-fixed-dim": "#b0cfa7",
+            "sunrise-amber": "#E0A458",
+            "forest-moss": "#4F6B4A"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px",
+            "card": "20px"
+          },
+          "spacing": {
+            "margin-sm": "1.25rem",
+            "gutter-sm": "1rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "gutter": "1.5rem",
+            "margin": "3rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "label-md": ["Noto Sans", "Noto Sans Thai"],
+            "headline-lg": ["Prompt", "Epilogue", "sans-serif"],
+            "headline-sm": ["Prompt", "Epilogue", "sans-serif"],
+            "body-lg": ["Noto Sans Thai", "Noto Sans"],
+            "label-lg": ["Noto Sans", "Noto Sans Thai"],
+            "body-md": ["Noto Sans Thai", "Noto Sans"],
+            "body-sm": ["Noto Sans Thai", "Noto Sans"],
+            "headline-lg-mobile": ["Prompt", "Epilogue", "sans-serif"],
+            "headline-xl": ["Prompt", "Epilogue", "sans-serif"],
+            "label-sm": ["Noto Sans", "Noto Sans Thai"],
+            "headline-md": ["Prompt", "Epilogue", "sans-serif"],
+            "headline-xl-mobile": ["Prompt", "Epilogue", "sans-serif"]
+          },
+          "fontSize": {
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "headline-xl-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .glass-mist {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(221, 227, 224, 0.6);
+      box-shadow: 0 4px 24px -2px rgba(31, 59, 45, 0.04);
+    }
+    .glass-mist-dark {
+      background: rgba(31, 59, 45, 0.60);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 12px 36px -4px rgba(8, 37, 25, 0.25);
+    }
+    .amber-btn {
+      background-color: #E0A458;
+      color: #1F3B2D;
+      transition: all 0.2s ease-out;
+    }
+    .amber-btn:hover {
+      box-shadow: 0 4px 18px rgba(224, 164, 88, 0.45);
+      filter: brightness(1.03);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased selection:bg-secondary-container selection:text-primary">
+<!-- 1. HEADER: TopNavBar from Shared Components JSON -->
+<header class="fixed top-0 inset-x-0 z-50 bg-surface/70 dark:bg-inverse-surface/80 backdrop-blur-md shadow-sm dark:shadow-none">
+<div class="w-full max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+<!-- Brand Logo / Product Name -->
+<a class="flex items-center gap-3 group" href="#">
+<span class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-secondary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="filter_drama">filter_drama</span>
+</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary tracking-tight">
+          Mok Doi Resort (หมอกดอย รีสอร์ท)
+        </span>
+</a>
+<!-- Desktop Navigation Links -->
+<nav class="hidden md:flex items-center space-x-8">
+<a class="text-on-surface-variant dark:text-surface-dim hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200 text-label-lg font-label-lg py-2" href="#rooms">
+          Rooms
+        </a>
+<a class="text-on-surface-variant dark:text-surface-dim hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200 text-label-lg font-label-lg py-2" href="#gallery">
+          Gallery
+        </a>
+<a class="text-on-surface-variant dark:text-surface-dim hover:text-primary dark:hover:text-inverse-primary transition-colors duration-200 text-label-lg font-label-lg py-2" href="#location">
+          Location
+        </a>
+</nav>
+<!-- Trailing Action Cluster -->
+<div class="flex items-center space-x-5">
+<button class="text-on-surface-variant hover:text-primary text-label-md font-label-md px-3 py-1.5 rounded-full border border-outline-variant/40 bg-surface-container-lowest/60 backdrop-blur-sm transition-colors duration-150" type="button">
+          TH | EN
+        </button>
+<a class="amber-btn rounded-full px-6 py-2.5 text-label-lg font-label-lg font-semibold inline-flex items-center gap-2 active:scale-95 transition-all shadow-sm" href="#booking">
+<span>Book now</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="north_east">north_east</span>
+</a>
+</div>
+</div>
+</header>
+<main>
+<!-- 2. HERO SECTION -->
+<section class="relative w-full h-screen min-h-[720px] flex items-center justify-center overflow-hidden">
+<!-- Full-screen Landscape Photo with Mist Gradient Overlay -->
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover object-center scale-105 transform motion-safe:animate-pulse duration-[10000ms]" data-alt="Cinematic wide-angle view of the northern Thai highlands at dawn in Pang Mapha Mae Hong Son. Lush emerald pine tree ridges and jagged limestone cliffs emerge through thick layers of drifting morning mist and a glowing sea of clouds. Soft golden amber sunrise light breaks through fog on the horizon, casting a serene peaceful eco-luxury atmosphere in deep forest green and cool mist tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYJtZRKO2XuvCGR3Y2qCXQ-yON9v0QfY7s-ed33xaeZA5MhKritx4yqbJAwgxKTzRWVVCumL268HZwVdxeOHCfgu8Kj6gvrpn7NhqbQ7USyuOkgwhl7ECtIyIENDyq8lOgiaeomxT0vcbaWk4ST95T6aepmSinq1P6zZRsweKfS9iAt42f2ruuiLlJmcxny6h3dx_YC4-RE-PIsx6IiI0_0q0prLHPuOwoYugQPf0"/>
+<div class="absolute inset-0 bg-gradient-to-b from-primary/60 via-primary/30 to-primary/80"></div>
+<div class="absolute inset-0 bg-radial from-transparent via-transparent to-primary/50"></div>
+</div>
+<!-- Ambient Mist Index Badge (Floating in Hero top-right) -->
+<div class="absolute top-28 right-8 md:right-16 z-10 hidden sm:flex items-center gap-3 px-4 py-2 rounded-full glass-mist-dark text-surface-container-lowest text-label-sm font-label-sm border border-white/20">
+<span class="w-2 h-2 rounded-full bg-sunrise-amber animate-ping"></span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-sunrise-amber" data-icon="foggy">foggy</span>
+          Morning Mist Index: 96%
+        </span>
+<span class="opacity-50">|</span>
+<span>1,120m Altitude</span>
+</div>
+<!-- Center Hero Content -->
+<div class="relative z-10 text-center max-w-4xl mx-auto px-6 pt-12 pb-32">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-lowest/20 backdrop-blur-md border border-white/20 text-surface-bright text-label-md font-label-md mb-6 shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-sunrise-amber" data-icon="cloud">cloud</span>
+<span>Pang Mapha, Mae Hong Son</span>
+</div>
+<h1 class="text-surface-container-lowest font-headline-xl text-headline-xl tracking-tight leading-tight mb-2 drop-shadow-md">
+          Mok Doi Resort
+        </h1>
+<p class="text-secondary-fixed text-headline-md font-headline-md tracking-normal mb-4 font-medium drop-shadow-sm">
+          หมอกดอย รีสอร์ท
+        </p>
+<p class="text-surface-variant font-body-lg text-body-lg max-w-xl mx-auto tracking-wide text-balance opacity-95">
+          Above the clouds in Pang Mapha
+        </p>
+</div>
+<!-- Floating Frosted-Glass Booking Bar Anchored at Bottom -->
+<div class="absolute bottom-8 md:bottom-10 inset-x-4 md:inset-x-auto md:w-[94%] max-w-6xl z-20 mx-auto" id="booking">
+<div class="glass-mist rounded-card p-4 md:p-6 shadow-xl border border-white/80">
+<form class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-center" onsubmit="event.preventDefault();">
+<!-- Check-in Date -->
+<div class="lg:col-span-3 bg-surface-container-low/70 rounded-2xl p-3 border border-outline-variant/40 hover:border-forest-moss transition-colors">
+<label class="block text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1.5 mb-1">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="calendar_today">calendar_today</span>
+                Check-in
+              </label>
+<div class="text-on-surface font-label-lg text-label-lg font-semibold">
+                18 Nov 2025
+              </div>
+</div>
+<!-- Check-out Date -->
+<div class="lg:col-span-3 bg-surface-container-low/70 rounded-2xl p-3 border border-outline-variant/40 hover:border-forest-moss transition-colors">
+<label class="block text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1.5 mb-1">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="event">event</span>
+                Check-out
+              </label>
+<div class="text-on-surface font-label-lg text-label-lg font-semibold">
+                20 Nov 2025
+              </div>
+</div>
+<!-- Guests -->
+<div class="lg:col-span-3 bg-surface-container-low/70 rounded-2xl p-3 border border-outline-variant/40 hover:border-forest-moss transition-colors">
+<label class="block text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1.5 mb-1">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="group">group</span>
+                Guests
+              </label>
+<div class="text-on-surface font-label-lg text-label-lg font-semibold">
+                2 Adults, 0 Children
+              </div>
+</div>
+<!-- PromptPay Badge & Availability CTA -->
+<div class="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col gap-2 justify-center">
+<div class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container/60 text-on-secondary-container text-label-sm font-label-sm font-medium self-center">
+<span class="material-symbols-outlined text-[15px]" data-icon="qr_code_2">qr_code_2</span>
+                PromptPay QR Accepted
+              </div>
+<button class="amber-btn w-full py-3.5 px-6 rounded-full text-label-lg font-label-lg font-bold text-center flex items-center justify-center gap-2 shadow-sm" type="submit">
+<span>Check availability</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+</section>
+<!-- 3. ABOUT SECTION -->
+<section class="py-24 md:py-32 px-6 md:px-12 max-w-7xl mx-auto relative">
+<div class="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+<!-- Large atmospheric misty forest photo (Background Anchor) -->
+<div class="lg:col-span-8 relative rounded-card overflow-hidden h-[420px] md:h-[540px] shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Serene panoramic photograph of secluded eco-luxury wooden cabins nestled along a high mountain ridge surrounded by tall pine trees in Pang Mapha. Layers of thick white morning fog drift gently below the verandas while dewy greenery glistens in the ambient dawn light. Organic natural materials and peaceful solitude captured in rich forest green and mist grey tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3zmRTANl8cr5Lc7ThULD5_UsfeqX7xKYrvq6FQKxO2scoeN-ODCIegvB3ijhmtnKhMtH2EPCS-IkpiUkdIEhNrISewDrmApcx2_Wh62xagHxYwrr-e0MSU_4njNk9ZdHlOAhQHks_Rbandk_kvLLdF-fjo4K0xnR1jDPZV50u8HPtIVPILjuH1H8vOx-x7Cx6nadgrhIJBnimtssjKF7VSWL-CTSajGryivsUcA8"/>
+<div class="absolute inset-0 bg-gradient-to-r from-primary/40 via-transparent to-transparent"></div>
+<!-- Cloud Forecast Chip Overlay -->
+<div class="absolute bottom-6 left-6 glass-mist rounded-full px-4 py-2 flex items-center gap-2 text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px] text-forest-moss" data-icon="routine">routine</span>
+<span>Sea of Clouds Sunrise: 05:48 AM</span>
+</div>
+</div>
+<!-- Text Card with Frosted-Glass Aesthetic overlapping the photo -->
+<div class="lg:col-span-6 lg:-ml-24 z-10 mt-[-40px] lg:mt-0">
+<div class="glass-mist rounded-card p-8 md:p-12 shadow-lg border border-white/80">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-moss/10 text-primary text-label-sm font-label-sm mb-6">
+<span class="material-symbols-outlined text-[16px] text-forest-moss" data-icon="pin_drop">pin_drop</span>
+<span>Pang Mapha, Mae Hong Son, Thailand</span>
+</div>
+<h2 class="text-primary font-headline-lg text-headline-lg font-bold tracking-tight mb-6">
+              Eight wooden cabins on a ridge above Pang Mapha.
+            </h2>
+<p class="text-on-surface-variant font-body-lg text-body-lg mb-6 leading-relaxed">
+              Wake up above the clouds, fall asleep to the forest.
+            </p>
+<div class="h-0.5 w-16 bg-sunrise-amber mb-6"></div>
+<div class="text-body-md font-body-md text-on-surface-variant/90 leading-relaxed space-y-4">
+<p>
+                ออกแบบขึ้นเพื่อการพักผ่อนท่ามกลางธรรมชาติอย่างแท้จริง บนยอดดอยอำเภอปางมะผ้า จังหวัดแม่ฮ่องสอน สัมผัสไอหมอกยามเช้าและทิวทัศน์หุบเขาเขียวขจีอันเงียบสงบ
+              </p>
+<div class="pt-2 flex flex-wrap gap-3">
+<span class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">8 Unique Cabins</span>
+<span class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Elevation 1,120m</span>
+<span class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">Eco-Conscious Retreat</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. ROOMS SECTION: Horizontal Carousel Card Layout with 4 Cabins -->
+<section class="py-24 bg-surface-container-low/60 border-y border-surface-container" id="rooms">
+<div class="max-w-7xl mx-auto px-6 md:px-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+<div>
+<div class="text-forest-moss font-label-md text-label-md tracking-wider uppercase mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="cabin">cabin</span>
+              Accommodations
+            </div>
+<h2 class="text-primary font-headline-lg text-headline-lg font-bold">
+              Rooms &amp; Cabins (บ้านพักริมผาหมอก)
+            </h2>
+</div>
+<!-- Carousel Navigation Controls -->
+<div class="flex items-center gap-3">
+<button aria-label="Previous room" class="w-11 h-11 rounded-full glass-mist flex items-center justify-center text-primary hover:bg-white transition-all active:scale-95 shadow-sm border border-outline-variant/50" id="scroll-left">
+<span class="material-symbols-outlined text-[20px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button aria-label="Next room" class="w-11 h-11 rounded-full glass-mist flex items-center justify-center text-primary hover:bg-white transition-all active:scale-95 shadow-sm border border-outline-variant/50" id="scroll-right">
+<span class="material-symbols-outlined text-[20px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Horizontal Swipeable Track -->
+<div class="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth pb-6 -mx-6 px-6 md:mx-0 md:px-0" id="rooms-track">
+<!-- Cabin 01 -->
+<div class="flex-none w-[320px] md:w-[380px] rounded-card overflow-hidden bg-white/80 backdrop-blur-md border border-outline-variant/40 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group">
+<div class="relative h-64 overflow-hidden rounded-t-card">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Interior and private balcony view of Cloud Ridge Villa at Mok Doi Resort overlooking rolling white sea of mist in Mae Hong Son. Warm natural teak wood finishes cozy clean bedding and panoramic glass doors opening to morning highland fog and deep pine canopy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvv2iypD4Tr9PE_3Oa-SKqyYumae5JFFTztxaA_TP4M-G6KOSLbhJ3n8Rpaj7wHELR7abdDG5_aw7I4g9BwSaG19UF4yDp8HeHCaCvZw0VlrV7jtZBSlxYEfwt1mroqjhuiESYjVMvlEORyFgZwkJ_3RS1nRQlL7HRm4egI7DNBuvlA3qseiZhfzUYfo8RugyDtiEHL9y0JtSr_fsTCDrla0wpJK2DqUPdtj6HB5A"/>
+<span class="absolute top-4 left-4 bg-primary/70 backdrop-blur-md text-surface-bright text-label-sm font-label-sm px-3 py-1 rounded-full">
+                Cabin 01
+              </span>
+</div>
+<div class="p-6 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-primary mb-1">
+                  Cloud Ridge Villa
+                </h3>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-4">
+                  วิลล่าริมผาหมอก
+                </p>
+<div class="flex items-center gap-2 text-label-md font-label-md text-on-surface-variant mb-6">
+<span class="material-symbols-outlined text-[18px] text-forest-moss" data-icon="person">person</span>
+<span>Up to 2 guests</span>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">From</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary">฿1,500</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant"> / night</span>
+</div>
+<a class="amber-btn rounded-full px-5 py-2 text-label-md font-label-md font-semibold inline-flex items-center gap-1 active:scale-95" href="#booking">
+                  Select
+                </a>
+</div>
+</div>
+</div>
+<!-- Cabin 02 -->
+<div class="flex-none w-[320px] md:w-[380px] rounded-card overflow-hidden bg-white/80 backdrop-blur-md border border-outline-variant/40 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group">
+<div class="relative h-64 overflow-hidden rounded-t-card">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Exterior wooden structure of Pine Valley Cabin nestled under tall highland pine trees with dense morning fog creeping between the trunks. Minimalist Nordic Thai eco-architecture featuring cedar shingles wide deck and soft morning light piercing through green foliage." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkrGEOS8CaCJHr7FpMaHWtVP1Uu2FCkRlwJm3brzyaw3Q_6E6-X5GqWoFarInpdc82jRGcTz4wMZBUaHF2AiQwIHtf1AbGYB9hYsrdbrvualOEqch28mDszHDOEWg51TwwngFtvjprPKDDVUxBdfUxCHiNsEqQiOw_xUFWBreUsORgPSZu_o8tj2k8EE5xXS6UymnFeSPDo-dthx6IGDaplaXV_0MkG6JtkREMmxw"/>
+<span class="absolute top-4 left-4 bg-primary/70 backdrop-blur-md text-surface-bright text-label-sm font-label-sm px-3 py-1 rounded-full">
+                Cabin 02
+              </span>
+</div>
+<div class="p-6 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-primary mb-1">
+                  Pine Valley Cabin
+                </h3>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-4">
+                  เคบินหุบเขาสน
+                </p>
+<div class="flex items-center gap-2 text-label-md font-label-md text-on-surface-variant mb-6">
+<span class="material-symbols-outlined text-[18px] text-forest-moss" data-icon="person">person</span>
+<span>Up to 2 guests</span>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">From</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary">฿1,800</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant"> / night</span>
+</div>
+<a class="amber-btn rounded-full px-5 py-2 text-label-md font-label-md font-semibold inline-flex items-center gap-1 active:scale-95" href="#booking">
+                  Select
+                </a>
+</div>
+</div>
+</div>
+<!-- Cabin 03 -->
+<div class="flex-none w-[320px] md:w-[380px] rounded-card overflow-hidden bg-white/80 backdrop-blur-md border border-outline-variant/40 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group">
+<div class="relative h-64 overflow-hidden rounded-t-card">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Spacious wooden Sea of Mist Suite with unobstructed panoramic glass window showcasing an ocean of early morning clouds spilling over forested Thai mountains. Natural linen bedding handcrafted wicker accents and warm golden dawn light entering the peaceful room." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlur2OV_tiWtnGsXJT9SJjWQ716b0lRui0nvIi6q7vJuHs7jBvgHqKC4MqdMVZAUAsE-JhYaabrDAmzU-lTRaDNIo9QSgiPBt1-BVCU-4o33C3z14mYuvN8xCMwRPgi8oQm_WsbEs3IPeo5Zae49IGjmcR1-78P9hR9jQzwhp5GtLz9rOwG326rN9awkjtPOsZKYcIxox3WCHsWwvOuqnnNhkukymVpkGMWdHgwMw"/>
+<span class="absolute top-4 left-4 bg-primary/70 backdrop-blur-md text-surface-bright text-label-sm font-label-sm px-3 py-1 rounded-full">
+                Cabin 03
+              </span>
+</div>
+<div class="p-6 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-primary mb-1">
+                  Sea of Mist Suite
+                </h3>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-4">
+                  สวีททะเลหมอก
+                </p>
+<div class="flex items-center gap-2 text-label-md font-label-md text-on-surface-variant mb-6">
+<span class="material-symbols-outlined text-[18px] text-forest-moss" data-icon="groups">groups</span>
+<span>Up to 3 guests</span>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">From</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary">฿2,400</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant"> / night</span>
+</div>
+<a class="amber-btn rounded-full px-5 py-2 text-label-md font-label-md font-semibold inline-flex items-center gap-1 active:scale-95" href="#booking">
+                  Select
+                </a>
+</div>
+</div>
+</div>
+<!-- Cabin 04 -->
+<div class="flex-none w-[320px] md:w-[380px] rounded-card overflow-hidden bg-white/80 backdrop-blur-md border border-outline-variant/40 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group">
+<div class="relative h-64 overflow-hidden rounded-t-card">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Wide angled shot of Forest Balcony Lodge featuring an expansive timber terrace cantilevered over the mountain slope. Four lounge chairs overlook thick mist rising from deep Pang Mapha valleys with evergreen tree canopies illuminated by ambient morning rays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZHOGsLwLN_fUWPWukXj5lT6IhZwfIW2AT1JnpWxH0yrv2_Ir8vz-JeqGyY39lv7MbumrTK9QucTBwwxRq4f9lHas4txuNY2hjNwouJ0Us_uXcKfFQAd9mepxE1M5pEcHEpq0YqoH2hmsvy1NZMbZIkS5ZO_1LItNrLJZcz2hciVCWMz50L0I6WkKXQjveYKHEbbqWvwTaSLqpVrGnHboKVj83X5oER9QRClrFSXs"/>
+<span class="absolute top-4 left-4 bg-primary/70 backdrop-blur-md text-surface-bright text-label-sm font-label-sm px-3 py-1 rounded-full">
+                Cabin 04
+              </span>
+</div>
+<div class="p-6 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-primary mb-1">
+                  Forest Balcony Lodge
+                </h3>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-4">
+                  ลอดจ์ระเบียงป่า
+                </p>
+<div class="flex items-center gap-2 text-label-md font-label-md text-on-surface-variant mb-6">
+<span class="material-symbols-outlined text-[18px] text-forest-moss" data-icon="family_restroom">family_restroom</span>
+<span>Up to 4 guests</span>
+</div>
+</div>
+<div class="pt-4 border-t border-surface-container flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">From</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary">฿3,200</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant"> / night</span>
+</div>
+<a class="amber-btn rounded-full px-5 py-2 text-label-md font-label-md font-semibold inline-flex items-center gap-1 active:scale-95" href="#booking">
+                  Select
+                </a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. GALLERY SECTION: Full-bleed alternating layout -->
+<section class="py-24 max-w-7xl mx-auto px-6 md:px-12" id="gallery">
+<div class="text-center max-w-2xl mx-auto mb-16">
+<div class="text-forest-moss font-label-md text-label-md tracking-wider uppercase mb-2 flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="photo_camera">photo_camera</span>
+          Visual Archive
+        </div>
+<h2 class="text-primary font-headline-lg text-headline-lg font-bold">
+          Resort Gallery
+        </h2>
+<p class="text-on-surface-variant font-body-md text-body-md mt-2">
+          Moments captured between dawn mist and pine-covered ridges.
+        </p>
+</div>
+<div class="space-y-6">
+<!-- Photo 1: Wide Panorama Photo (Exterior) -->
+<div class="relative rounded-card overflow-hidden h-[340px] md:h-[480px] group shadow-sm">
+<img class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700" data-alt="Breathtaking wide panorama of Mok Doi Resort ridge at dawn. An immense sea of white clouds blankets the entire Pang Mapha valley with isolated wooden resort huts perched serenely on the ridge crest beneath a quiet twilight sky." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFZc0mUL78cBmAIJKeM6eze49DL6e6vlD14YIF6BOG0k9h5-IrAzyW5BEtOf03napOOK6Fs5ua7ogEM8xtiT8w98U_iRL3cccMZn5OgFw1Gb09r98UaonxAF7AzGDd1avDkyRHTsacVx9NvlqNjcn1hQ41ur27KShBF1DlMKrGy9fDB_dZVvOIsoyOu1hc5TXL5UoqwSawBBc3MYNBuYAyd3VX--bGLnQPBWj8Oko"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 md:bottom-8 md:left-8 text-surface-container-lowest">
+<span class="px-3 py-1 rounded-full bg-forest-moss/80 backdrop-blur-md text-[11px] font-semibold tracking-wider uppercase inline-block mb-2">
+              EXTERIOR
+            </span>
+<p class="text-headline-sm font-headline-sm font-semibold">
+              Sea of clouds at dawn over resort ridge
+            </p>
+</div>
+</div>
+<!-- Photos 2 & 3: Side-by-side Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Photo 2: Room -->
+<div class="relative rounded-card overflow-hidden h-[360px] md:h-[420px] group shadow-sm">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Interior of a luxury wooden cabin at Mok Doi Resort featuring dark local teak walls, a low Japanese-Thai style platform bed, and an immense frameless glass window framing rolling clouds and damp forest mist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAK1ve7ZKDWc_nomdp-rdSbCPljlglAbMd5vh4M_QIRM-axXRDyQKzrMS_EXnzc3dTYoNlD1nFTOvBLAty3wQ0XX3vhsM8tRd5o5iNTDVyn2mtKNTXwwt7SoXHbUB1uFdsSNcGbVIo-Nr1ExUiJxI2zyrt26O4emYZPReU_LyJYa8IRKrWtRRj6mpiAUABqKnJIQsZHMPX5lZO1SZYezVrCYZD95KrGkf0uYfbPxRM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-surface-container-lowest">
+<span class="px-3 py-1 rounded-full bg-forest-moss/80 backdrop-blur-md text-[11px] font-semibold tracking-wider uppercase inline-block mb-2">
+                ROOM
+              </span>
+<p class="text-headline-sm font-headline-sm font-semibold">
+                Teak interior with panoramic misty window
+              </p>
+</div>
+</div>
+<!-- Photo 3: Common Area -->
+<div class="relative rounded-card overflow-hidden h-[360px] md:h-[420px] group shadow-sm">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Open-air wooden communal pavilion deck with a steaming pour-over drip coffee set on an aged timber table overlooking the endless misty horizon of Mae Hong Son mountains in soft morning light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-KsoPItrhM_QBTq7pgk6WkdLh6DDAZ5xcJofnmIKCDawm7ALYP1NMuyQ5b70JeM4sY0CMVfDYr5ZZ88OAiNIXjYFzu_ySowHK3m6j38RmYJdQV8ZGG8ZDwjqxVgilYqZ-CDpdPxOxLlRyBXcfttXcoe4Q5yrFgMrtTZ7utt8OAVd5dFl_zxTBxuS99F6np0dlWNRJtHi7P5WhGkHJ6avVOtRwfJ7PEo7O1ZsQcTE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 text-surface-container-lowest">
+<span class="px-3 py-1 rounded-full bg-forest-moss/80 backdrop-blur-md text-[11px] font-semibold tracking-wider uppercase inline-block mb-2">
+                COMMON AREA
+              </span>
+<p class="text-headline-sm font-headline-sm font-semibold">
+                Open-air wooden deck with morning drip coffee
+              </p>
+</div>
+</div>
+</div>
+<!-- Photo 4: Wide Panorama Photo (View) -->
+<div class="relative rounded-card overflow-hidden h-[340px] md:h-[460px] group shadow-sm">
+<img class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700" data-alt="Panoramic silhouette of majestic northern Thai pine trees standing tall against brilliant morning golden mist and soft atmospheric vapor on the ridges of Pang Mapha." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd11mCz8Q1UtnLAyqYhujtp0OXnlJdyWV5pXQviUTokBXdYGDq1cnd4qTcxewpZRqvalgC0dP6ETIMROGS88hGuYbCKC9T3zS0xr1qRu7ll45N73zCrtyOnO6CMoWOnIPQN-M1bt0TpIaOAZdLF_20kZZjNtivoyi9u7FA47kwO-mZiLPdx13ZdwrvhZEkwi2IBegmQ2CJuVzjX9P6xXW0a5u1ENvHqqkPWm8F3co"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 md:bottom-8 md:left-8 text-surface-container-lowest">
+<span class="px-3 py-1 rounded-full bg-sunrise-amber text-primary text-[11px] font-semibold tracking-wider uppercase inline-block mb-2">
+              VIEW
+            </span>
+<p class="text-headline-sm font-headline-sm font-semibold">
+              Pine trees silhouette against morning golden mist
+            </p>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. LOCATION SECTION: Address card floating over a muted green-toned map placeholder -->
+<section class="py-24 bg-surface-container-low/40" id="location">
+<div class="max-w-7xl mx-auto px-6 md:px-12">
+<div class="mb-8">
+<div class="text-forest-moss font-label-md text-label-md tracking-wider uppercase mb-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="explore">explore</span>
+            Map &amp; Directions
+          </div>
+<h2 class="text-primary font-headline-lg text-headline-lg font-bold">
+            Location (ทำเลที่ตั้ง)
+          </h2>
+</div>
+<!-- Map Container with Floating Address Card -->
+<div class="relative rounded-card overflow-hidden h-[480px] md:h-[560px] border border-outline-variant/50 shadow-sm">
+<!-- Stylized Muted Green Map Placeholder -->
+<div class="w-full h-full relative" data-location="Pang Mapha, Mae Hong Son" style="">
+<img class="w-full h-full object-cover filter contrast-[0.95] brightness-[0.98]" data-alt="Muted sage-green and forest-toned topographical cartographic relief map of Pang Mapha and Mae Hong Son mountain ranges in northern Thailand, featuring subtle elevation contours, pine forest trails, and rivers in minimalist clean style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi0gKb7uNZ8DgWhCC96zF0JWXikTA1noKuLVaIvGKtPcHxQppGqt3G5rF45mWAneyxq2GY8UzLOmi82plG1ThIYXerjktE-CJSP4Qbfg5GzTUIz0Nk0y2asOFdEHXwD7J5TmldbuUvEamJ9ZYs4alVnL_KGSkPTECeQopAUUwK0rxA5IqtsAgzhf96hvmbu5d2EmDPD7trzla4RSy0kJrU00Z2Czr_umhza0JV7JQ"/>
+<!-- Map Pulse Pin Indicator -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+<span class="w-10 h-10 rounded-full bg-sunrise-amber/30 animate-ping absolute"></span>
+<span class="w-6 h-6 rounded-full bg-forest-moss border-2 border-white flex items-center justify-center shadow-lg relative z-10 text-white">
+<span class="material-symbols-outlined text-[14px]" data-icon="villa">villa</span>
+</span>
+</div>
+</div>
+<!-- Floating Address Card Over Map -->
+<div class="absolute bottom-6 left-6 right-6 md:right-auto md:max-w-md z-10">
+<div class="glass-mist rounded-card p-6 md:p-8 shadow-xl border border-white/90">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary-container text-secondary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]" data-icon="location_on">location_on</span>
+</div>
+<div>
+<h3 class="text-headline-sm font-headline-sm font-bold text-primary mb-1">
+                    Mok Doi Resort
+                  </h3>
+<p class="text-body-md font-body-md text-on-surface-variant mb-4">
+                    Pang Mapha, Mae Hong Son, Thailand
+                  </p>
+<p class="text-body-sm font-body-sm text-on-surface-variant/80">
+                    อำเภอปางมะผ้า จังหวัดแม่ฮ่องสอน 58150
+                  </p>
+<div class="mt-4 pt-4 border-t border-surface-container flex items-center gap-2 text-label-sm font-label-sm text-forest-moss">
+<span class="material-symbols-outlined text-[16px]" data-icon="alt_route">alt_route</span>
+<span>Accessible via Route 1095</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- 7. FOOTER: Footer from Shared Components JSON -->
+<footer class="w-full bottom-0 bg-surface-container-low dark:bg-inverse-surface border-t border-surface-container-high dark:border-outline-variant/20">
+<div class="max-w-7xl mx-auto px-6 md:px-12 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+<!-- Copyright & Location Anchor -->
+<div class="text-body-sm font-body-sm text-on-surface-variant dark:text-surface-dim text-center md:text-left">
+        © Mok Doi Resort, Pang Mapha, Mae Hong Son, Thailand. Booking powered by hayhost
+      </div>
+<!-- Legal Links -->
+<div class="flex items-center space-x-6 text-label-sm font-label-sm">
+<a class="text-on-surface-variant dark:text-surface-dim hover:text-primary dark:hover:text-inverse-primary transition-colors duration-150" href="#">
+          Privacy Policy
+        </a>
+<a class="text-on-surface-variant dark:text-surface-dim hover:text-primary dark:hover:text-inverse-primary transition-colors duration-150" href="#">
+          Terms of Service
+        </a>
+</div>
+</div>
+</footer>
+<!-- Lightweight Script for Carousel Scroll -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const track = document.getElementById('rooms-track');
+      const btnLeft = document.getElementById('scroll-left');
+      const btnRight = document.getElementById('scroll-right');
+      
+      if (track && btnLeft && btnRight) {
+        btnLeft.addEventListener('click', () => {
+          track.scrollBy({ left: -360, behavior: 'smooth' });
+        });
+        btnRight.addEventListener('click', () => {
+          track.scrollBy({ left: 360, behavior: 'smooth' });
+        });
+      }
+    });
+  </script>
+</body></html>
