@@ -27,6 +27,7 @@ import HotelDetail from "./pages/HotelDetail";
 import Bookings from "./pages/Bookings";
 import Calendar from "./pages/Calendar";
 import PublicHotel from "./pages/PublicHotel";
+import PublicBooking from "./pages/PublicBooking";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
 import Account from "./pages/Account";
@@ -123,6 +124,9 @@ function Router() {
       </Route>
       <Route path="/website-builder">
         <PrivateRoute><WebsiteBuilder /></PrivateRoute>
+      </Route>
+      <Route path="/:slug/book">
+        {(params) => <PublicBooking slug={params.slug} />}
       </Route>
       <Route path="/:slug">
         {(params) => <PublicHotel slug={params.slug} />}

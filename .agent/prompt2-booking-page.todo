@@ -18,15 +18,15 @@ booking page" และ "Reassurance banner", docs/thai-glossary.md, specs/ui-ho
 ======================================================================
 PART 1: route และหน้าเปล่า
 ======================================================================
-[ ] เพิ่ม route /:slug/book ใน App.tsx ก่อน route "/:slug" เปิดได้โดยไม่ต้องล็อกอิน
-[ ] สร้าง client/src/pages/PublicBooking.tsx โหลดโรงแรมด้วย usePublicHotelPage(slug)
+[x] เพิ่ม route /:slug/book ใน App.tsx ก่อน route "/:slug" เปิดได้โดยไม่ต้องล็อกอิน
+[x] สร้าง client/src/pages/PublicBooking.tsx โหลดโรงแรมด้วย usePublicHotelPage(slug)
     มีหน้า loading / ไม่พบโรงแรม / error เหมือน PublicHotel.tsx
-[ ] หัวหน้า: ชื่อโรงแรม (ลิงก์กลับ /<slug>) แถบสีตาม accentColor ของโรงแรม
-[ ] ท้ายหน้า: PoweredByHayhost
-[ ] logic ทั้งหมดอยู่ใน .ts, หน้าตาใน .css (ห้าม style={{ }} ยกเว้นตัวแปร CSS ตอนรัน)
-[ ] PublicBooking.contract.test.ts: route /:slug/book อยู่ก่อน /:slug
-[ ] pnpm check และเทสต์ที่เกี่ยวข้องผ่าน
-[ ] commit: feat(booking): add the hayhost booking page route
+[x] หัวหน้า: ชื่อโรงแรม (ลิงก์กลับ /<slug>) แถบสีตาม accentColor ของโรงแรม
+[x] ท้ายหน้า: PoweredByHayhost
+[x] logic ทั้งหมดอยู่ใน .ts, หน้าตาใน .css (ห้าม style={{ }} ยกเว้นตัวแปร CSS ตอนรัน)
+[x] PublicBooking.contract.test.ts: route /:slug/book อยู่ก่อน /:slug
+[x] pnpm check และเทสต์ที่เกี่ยวข้องผ่าน
+[x] commit: feat(booking): add the hayhost booking page route
 
 ======================================================================
 PART 2: แถบให้แขกสบายใจ
