@@ -1,8 +1,9 @@
 export const HOTEL_THEMES = [
-  { id: "minimal-white", tier: "basic", name: "มินิมอล ขาวสะอาด", description: "เรียบง่าย สบายตา เน้นภาพและข้อมูลที่พัก", primaryColor: "#f5f5f4", buttonBackground: "#34423a", buttonText: "#ffffff", highlight: "#7b8b76" },
-  { id: "lanna-teak", tier: "premium", name: "ล้านนา ไม้สัก", description: "อบอุ่นแบบบ้านไม้ล้านนา โทนครีมและสีไม้", primaryColor: "#6b3f2a", buttonBackground: "#6b3f2a", buttonText: "#ffffff", highlight: "#bd9664" },
-  { id: "cafe-homestay", tier: "premium", name: "คาเฟ่ โฮมสเตย์", description: "นุ่มนวล เป็นกันเอง ในบรรยากาศคาเฟ่", primaryColor: "#a66b4f", buttonBackground: "#8d4e35", buttonText: "#ffffff", highlight: "#c28a65" },
-  { id: "mountain-mist", tier: "premium", name: "Mountain Mist", description: "สงบสดชื่นท่ามกลางธรรมชาติ", primaryColor: "#1f3b2d", buttonBackground: "#e0a458", buttonText: "#1f3b2d", highlight: "#4f6b4a" },
+  { id: "minimal-white", tier: "basic", name: "สไตล์มินิมอล", description: "เรียบง่าย สบายตา เน้นภาพและข้อมูลที่พัก", primaryColor: "#f5f5f4", buttonBackground: "#34423a", buttonText: "#ffffff", highlight: "#7b8b76" },
+  { id: "lanna-teak", tier: "premium", name: "สไตล์ล้านนา", description: "อบอุ่นแบบบ้านไม้ล้านนา โทนครีมและสีไม้", primaryColor: "#6b3f2a", buttonBackground: "#6b3f2a", buttonText: "#ffffff", highlight: "#bd9664" },
+  { id: "cafe-homestay", tier: "premium", name: "สไตล์คาเฟ่", description: "นุ่มนวล เป็นกันเอง ในบรรยากาศคาเฟ่", primaryColor: "#a66b4f", buttonBackground: "#8d4e35", buttonText: "#ffffff", highlight: "#c28a65" },
+  { id: "mountain-mist", tier: "premium", name: "สไตล์ธรรมชาติ", description: "สงบสดชื่นท่ามกลางธรรมชาติ", primaryColor: "#1f3b2d", buttonBackground: "#e0a458", buttonText: "#1f3b2d", highlight: "#4f6b4a" },
+  { id: "boutique-noir", tier: "premium", name: "สไตล์ลักชัวรี", description: "หรูสงบในโทนดำและสีทอง", primaryColor: "#131313", buttonBackground: "#b8955a", buttonText: "#141414", highlight: "#e7c182" },
 ] as const;
 
 export type HotelThemeId = typeof HOTEL_THEMES[number]["id"];

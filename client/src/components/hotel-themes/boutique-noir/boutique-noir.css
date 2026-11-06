@@ -1,0 +1,1129 @@
+/* ==========================================================================
+   THEME: BOUTIQUE NOIR (Minimalist Editorial Noir)
+   Palette: Raw Charcoal #131313, Deep Teak Espresso #201f1f, Antique Gold #b8955a
+   Geometry: 0px Sharp Rectilinear Architecture, 1px Gold Hairlines
+   All selectors strictly scoped under .theme-boutique-noir
+   ========================================================================== */
+
+.theme-boutique-noir {
+  /* Mandatory Hayhost Theme Variables */
+  --theme-button-bg: var(--owner-accent, #b8955a);
+  --theme-button-text: var(--owner-accent-text, #141414);
+  --theme-highlight: var(--owner-highlight, #e7c182);
+
+  /* Theme Palette Tokens */
+  --bn-bg: #131313;
+  --bn-surface: #201f1f;
+  --bn-surface-low: #1c1b1b;
+  --bn-surface-lowest: #0e0e0e;
+  --bn-surface-high: #2a2a2a;
+  --bn-ink: #e5e2e1;
+  --bn-ink-muted: #d1c5b5;
+  --bn-ink-stone: #9a8f81;
+  --bn-gold-accent: #b8955a;
+  --bn-gold-glow: #e7c182;
+  --bn-hairline: rgba(184, 149, 90, 0.35);
+  --bn-hairline-bright: #b8955a;
+  --bn-hairline-subtle: rgba(140, 130, 121, 0.2);
+
+  /* Typography */
+  --bn-font-head: "Playfair Display", "Taviraj", Georgia, serif;
+  --bn-font-body: "Be Vietnam Pro", "Bai Jamjuree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Geometry */
+  --bn-radius: 0px;
+
+  /* Layout defaults */
+  position: relative;
+  background-color: var(--bn-bg);
+  color: var(--bn-ink);
+  font-family: var(--bn-font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.theme-boutique-noir *,
+.theme-boutique-noir *::before,
+.theme-boutique-noir *::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+.theme-boutique-noir.has-sticky-bar {
+  padding-bottom: 74px;
+}
+
+/* --------------------------------------------------------------------------
+   Container & Section Spacing
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .container {
+  width: 100%;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 4rem;
+  padding-right: 4rem;
+}
+
+.theme-boutique-noir .section {
+  padding-top: 7rem;
+  padding-bottom: 7rem;
+  border-bottom: 1px solid var(--bn-hairline-subtle);
+}
+
+.theme-boutique-noir .section-tint {
+  background-color: var(--bn-surface-low);
+}
+
+.theme-boutique-noir .section-head {
+  margin-bottom: 4rem;
+  max-width: 760px;
+}
+
+.theme-boutique-noir .section-head.text-center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.theme-boutique-noir .section-title {
+  margin: 0.5rem 0 0.75rem;
+  font-family: var(--bn-font-head);
+  font-size: 40px;
+  line-height: 1.25;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--bn-ink);
+}
+
+.theme-boutique-noir .section-subtitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.75;
+  font-weight: 300;
+  color: var(--bn-ink-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Chapter Identifier & Eyebrows
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .chapter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.theme-boutique-noir .chapter-label.center {
+  justify-content: center;
+}
+
+.theme-boutique-noir .chapter-numeral {
+  font-family: var(--bn-font-head);
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--bn-gold-glow);
+  letter-spacing: 0.1em;
+}
+
+.theme-boutique-noir .eyebrow {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--bn-gold-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Buttons & Links
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.85rem;
+  font-family: var(--bn-font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  border-radius: 0;
+}
+
+.theme-boutique-noir .btn-primary {
+  background-color: var(--theme-button-bg);
+  color: var(--theme-button-text);
+  border: 1px solid var(--theme-button-bg);
+}
+
+.theme-boutique-noir .btn-primary:hover {
+  background-color: var(--theme-highlight);
+  border-color: var(--theme-highlight);
+  color: #141414;
+}
+
+.theme-boutique-noir .btn-outline {
+  background-color: transparent;
+  color: var(--bn-gold-glow);
+  border: 1px solid var(--bn-hairline-bright);
+}
+
+.theme-boutique-noir .btn-outline:hover {
+  background-color: rgba(184, 149, 90, 0.12);
+  border-color: var(--bn-gold-glow);
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .btn-lg {
+  padding: 1.1rem 2.4rem;
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Chips
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  list-style: none;
+}
+
+.theme-boutique-noir .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background-color: transparent;
+  border: 1px solid var(--bn-hairline);
+  color: var(--bn-ink-muted);
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  border-radius: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 80px;
+  background-color: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--bn-hairline);
+}
+
+.theme-boutique-noir .header-inner {
+  max-width: 1440px;
+  height: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 4rem;
+  padding-right: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.theme-boutique-noir .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .brand-name {
+  font-family: var(--bn-font-head);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .main-nav {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.theme-boutique-noir .main-nav a {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--bn-ink-muted);
+  transition: color 0.25s ease;
+}
+
+.theme-boutique-noir .main-nav a:hover {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.theme-boutique-noir .lang-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--bn-hairline);
+  background-color: rgba(20, 20, 20, 0.6);
+}
+
+.theme-boutique-noir .lang-switch button {
+  padding: 0.45rem 0.85rem;
+  background: transparent;
+  border: none;
+  color: var(--bn-ink-stone);
+  font-family: var(--bn-font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-boutique-noir .lang-switch button.is-active {
+  background-color: var(--bn-gold-accent);
+  color: var(--theme-button-text);
+  font-weight: 600;
+}
+
+.theme-boutique-noir .lang-switch button:hover:not(.is-active) {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .header-book {
+  padding: 0.65rem 1.4rem;
+  font-size: 11px;
+}
+
+/* --------------------------------------------------------------------------
+   Hero Section
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .hero {
+  position: relative;
+  min-height: 860px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-top: 100px;
+  padding-bottom: 5rem;
+  background-color: var(--bn-bg);
+  background-image: var(--hero-image, linear-gradient(135deg, #1c1b1b, #0e0e0e));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-bottom: 1px solid var(--bn-hairline);
+}
+
+.theme-boutique-noir .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    var(--bn-bg) 0%,
+    rgba(19, 19, 19, 0.75) 45%,
+    rgba(19, 19, 19, 0.35) 75%,
+    rgba(19, 19, 19, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+.theme-boutique-noir .hero-container {
+  position: relative;
+  z-index: 10;
+}
+
+.theme-boutique-noir .hero-content {
+  max-width: 820px;
+}
+
+.theme-boutique-noir .hero-title {
+  margin: 1rem 0 1.25rem;
+  font-family: var(--bn-font-head);
+  font-size: 56px;
+  line-height: 1.15;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--bn-ink);
+}
+
+.theme-boutique-noir .hero-copy {
+  margin: 0 0 1.75rem;
+  font-size: 18px;
+  line-height: 1.75;
+  font-weight: 300;
+  color: var(--bn-ink-muted);
+}
+
+.theme-boutique-noir .hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  background-color: rgba(20, 20, 20, 0.75);
+  border: 1px solid var(--bn-hairline);
+  color: var(--bn-ink-muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  margin-bottom: 2rem;
+}
+
+.theme-boutique-noir .hero-chip svg {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Story Section (Chapter I)
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .story-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 5rem;
+  align-items: center;
+}
+
+.theme-boutique-noir .story-editorial {
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-boutique-noir .gold-hairline-rule {
+  width: 64px;
+  height: 1px;
+  background-color: var(--bn-gold-accent);
+  margin: 1.5rem 0 2rem;
+}
+
+.theme-boutique-noir .drop-cap::first-letter {
+  float: left;
+  font-family: var(--bn-font-head);
+  font-size: 4.5rem;
+  line-height: 0.8;
+  padding-right: 1rem;
+  padding-top: 0.35rem;
+  color: var(--bn-gold-glow);
+  font-weight: 400;
+}
+
+.theme-boutique-noir .story-lead {
+  margin: 0 0 1.5rem;
+  font-size: 18px;
+  line-height: 1.85;
+  font-weight: 300;
+  color: var(--bn-ink);
+}
+
+.theme-boutique-noir .story-body {
+  margin: 0 0 2rem;
+  font-size: 15px;
+  line-height: 1.8;
+  font-weight: 300;
+  color: var(--bn-ink-stone);
+}
+
+.theme-boutique-noir .story-accent {
+  display: flex;
+  justify-content: center;
+}
+
+.theme-boutique-noir .story-frame {
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 4 / 5;
+  background-color: var(--bn-surface);
+  border: 1px solid var(--bn-hairline);
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+}
+
+.theme-boutique-noir .story-frame::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(184, 149, 90, 0.2);
+  pointer-events: none;
+}
+
+.theme-boutique-noir .story-frame-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+.theme-boutique-noir .story-frame-icon {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .story-frame-divider {
+  width: 40px;
+  height: 1px;
+  background-color: var(--bn-gold-accent);
+}
+
+.theme-boutique-noir .story-frame-caption {
+  font-family: var(--bn-font-head);
+  font-size: 16px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bn-ink-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Rooms Section (Chapter II)
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.theme-boutique-noir .room-card {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  background-color: var(--bn-surface);
+  border: 1px solid var(--bn-hairline);
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.3s ease;
+}
+
+.theme-boutique-noir .room-card:hover {
+  border-color: var(--bn-hairline-bright);
+}
+
+.theme-boutique-noir .room-aside {
+  position: relative;
+  background-color: var(--bn-surface-lowest);
+  border-right: 1px solid var(--bn-hairline);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  overflow: hidden;
+}
+
+.theme-boutique-noir .room-aside-glow {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(184, 149, 90, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.theme-boutique-noir .room-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+  z-index: 2;
+}
+
+.theme-boutique-noir .room-badge-suite {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--bn-ink-stone);
+}
+
+.theme-boutique-noir .room-badge-num {
+  font-family: var(--bn-font-head);
+  font-size: 32px;
+  line-height: 1;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .room-body {
+  padding: 2.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.theme-boutique-noir .room-name {
+  margin: 0 0 0.5rem;
+  font-family: var(--bn-font-head);
+  font-size: 28px;
+  line-height: 1.3;
+  font-weight: 400;
+  color: var(--bn-ink);
+}
+
+.theme-boutique-noir .room-capacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  color: var(--bn-ink-stone);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+.theme-boutique-noir .room-capacity svg {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .room-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  font-weight: 300;
+  color: var(--bn-ink-muted);
+  max-width: 780px;
+}
+
+.theme-boutique-noir .room-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--bn-hairline-subtle);
+}
+
+.theme-boutique-noir .room-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.theme-boutique-noir .room-price-label {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bn-ink-stone);
+}
+
+.theme-boutique-noir .room-price-value {
+  font-family: var(--bn-font-head);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--bn-gold-glow);
+  font-weight: 400;
+}
+
+.theme-boutique-noir .room-price-unit {
+  font-size: 13px;
+  color: var(--bn-ink-stone);
+  font-weight: 300;
+}
+
+/* --------------------------------------------------------------------------
+   Gallery Section (Chapter III)
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.theme-boutique-noir .gallery-item {
+  position: relative;
+  height: 380px;
+  overflow: hidden;
+  background-color: var(--bn-surface);
+  border: 1px solid var(--bn-hairline);
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.6);
+}
+
+.theme-boutique-noir .gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.85);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s ease;
+  display: block;
+}
+
+.theme-boutique-noir .gallery-item:hover img {
+  transform: scale(1.05);
+  filter: brightness(0.95);
+}
+
+.theme-boutique-noir .gallery-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(14, 14, 14, 0.9) 0%, rgba(14, 14, 14, 0.2) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.theme-boutique-noir .gallery-caption {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  right: 1.5rem;
+  z-index: 2;
+  font-family: var(--bn-font-head);
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--bn-ink);
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   Location Section (Chapter IV)
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .location-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+}
+
+.theme-boutique-noir .location-grid.has-map {
+  grid-template-columns: 7fr 5fr;
+  align-items: stretch;
+}
+
+.theme-boutique-noir .location-map {
+  background-color: var(--bn-surface-lowest);
+  border: 1px solid var(--bn-hairline);
+  min-height: 440px;
+  overflow: hidden;
+}
+
+.theme-boutique-noir .location-map > * {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.theme-boutique-noir .location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.theme-boutique-noir .location-card {
+  background-color: var(--bn-surface);
+  border: 1px solid var(--bn-hairline);
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+}
+
+.theme-boutique-noir .location-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.theme-boutique-noir .location-icon {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .location-name {
+  margin: 0;
+  font-family: var(--bn-font-head);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--bn-ink);
+}
+
+.theme-boutique-noir .location-address {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--bn-ink-muted);
+  font-weight: 300;
+}
+
+.theme-boutique-noir .location-contacts {
+  padding-top: 1rem;
+  border-top: 1px solid var(--bn-hairline-subtle);
+  font-size: 14px;
+  color: var(--bn-ink-stone);
+}
+
+.theme-boutique-noir .guarantee-card {
+  background-color: var(--bn-surface-lowest);
+  border: 1px solid var(--bn-hairline);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.theme-boutique-noir .guarantee-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.theme-boutique-noir .guarantee-icon {
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .guarantee-title {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .guarantee-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--bn-ink-stone);
+  font-weight: 300;
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .site-footer {
+  background-color: var(--bn-surface-lowest);
+  border-top: 1px solid var(--bn-hairline);
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.theme-boutique-noir .footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.theme-boutique-noir .footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.theme-boutique-noir .footer-name {
+  margin: 0;
+  font-family: var(--bn-font-head);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .footer-address {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bn-ink-stone);
+  font-weight: 300;
+}
+
+.theme-boutique-noir .footer-powered {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bn-ink-stone);
+}
+
+/* --------------------------------------------------------------------------
+   Mobile Sticky Bottom Conversion Bar
+   -------------------------------------------------------------------------- */
+
+.theme-boutique-noir .sticky-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  background-color: rgba(20, 20, 20, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--bn-hairline-bright);
+  padding: 0.85rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.8);
+}
+
+.theme-boutique-noir .sticky-price {
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-boutique-noir .sticky-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bn-ink-stone);
+}
+
+.theme-boutique-noir .sticky-value {
+  font-family: var(--bn-font-head);
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--bn-gold-glow);
+}
+
+.theme-boutique-noir .sticky-value small {
+  font-size: 11px;
+  color: var(--bn-ink-stone);
+  font-weight: 300;
+  font-family: var(--bn-font-body);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Styles (@media max-width: 768px)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .theme-boutique-noir .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .theme-boutique-noir .section {
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .theme-boutique-noir .section-head {
+    margin-bottom: 2.5rem;
+  }
+
+  .theme-boutique-noir .section-title {
+    font-size: 30px;
+    line-height: 1.3;
+  }
+
+  .theme-boutique-noir .site-header {
+    height: 70px;
+  }
+
+  .theme-boutique-noir .header-inner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    gap: 1rem;
+  }
+
+  .theme-boutique-noir .main-nav {
+    display: none;
+  }
+
+  .theme-boutique-noir .brand-name {
+    font-size: 16px;
+  }
+
+  .theme-boutique-noir .header-book {
+    display: none;
+  }
+
+  .theme-boutique-noir .hero {
+    min-height: 540px;
+    padding-top: 80px;
+    padding-bottom: 3.5rem;
+  }
+
+  .theme-boutique-noir .hero-title {
+    font-size: 38px;
+    line-height: 1.2;
+  }
+
+  .theme-boutique-noir .hero-copy {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .theme-boutique-noir .story-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .theme-boutique-noir .story-accent {
+    display: none;
+  }
+
+  .theme-boutique-noir .room-card {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-boutique-noir .room-aside {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-right: none;
+    border-bottom: 1px solid var(--bn-hairline);
+  }
+
+  .theme-boutique-noir .room-badge {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .theme-boutique-noir .room-badge-num {
+    font-size: 20px;
+  }
+
+  .theme-boutique-noir .room-body {
+    padding: 1.75rem 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .theme-boutique-noir .room-name {
+    font-size: 22px;
+  }
+
+  .theme-boutique-noir .room-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .theme-boutique-noir .room-book {
+    width: 100%;
+  }
+
+  .theme-boutique-noir .gallery-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .theme-boutique-noir .gallery-item {
+    height: 300px;
+  }
+
+  .theme-boutique-noir .location-grid.has-map {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .theme-boutique-noir .location-card {
+    padding: 1.75rem;
+  }
+
+  .theme-boutique-noir .location-map {
+    min-height: 300px;
+  }
+
+  .theme-boutique-noir .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .theme-boutique-noir .sticky-bar {
+    display: flex;
+  }
+}
+
+/* The design hand-off includes an editorial botanical mark; render it as CSS artwork. */
+.theme-boutique-noir .section-tint {
+  background-color: var(--bn-surface-low);
+}
+.theme-boutique-noir .chapter-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.theme-boutique-noir .chapter-label.center {
+  justify-content: center;
+}
+.theme-boutique-noir .chapter-numeral {
+  color: var(--bn-gold-glow);
+  font-family: var(--bn-font-head);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+.theme-boutique-noir .section-head.text-center {
+  text-align: center;
+}
+.theme-boutique-noir .section-title {
+  margin: 1rem 0;
+}
+.theme-boutique-noir .section-subtitle {
+  margin: 0 auto;
+  max-width: 720px;
+}
+.theme-boutique-noir .room-book {
+  flex: 0 0 auto;
+}
+.theme-boutique-noir .site-footer .powered-by-hayhost {
+  color: inherit;
+}
+@media (max-width: 768px) {
+  .theme-boutique-noir .header-inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .theme-boutique-noir .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .theme-boutique-noir .sticky-bar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
