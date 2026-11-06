@@ -5129,3 +5129,54 @@ Also: the line under each photo "ลำดับการแสดง N" now sho
 - **Change:** Show the existing translated validation error next to the theme cards. Added a picker regression test and updated the page test to assert the alert in the picker specifically.
 - **Verification:** `pnpm check` passed; `pnpm test` passed (229 files, 1,616 tests); `pnpm build` passed including Wrangler `--dry-run` (exit code 0).
 - **Commit:** pending.
+## 2026-11-06 feat(hotel-data-transfer)
+
+- Added versioned hotel setup export, validated preview, and atomic D1 import on hotel settings. Import matches room types and services by name, preserves existing rooms and prices without `revenue.manage_rates`, and splits rate ranges to avoid overlap. Export excludes operational records, media binaries, and payment credentials.
+- Added the hotel settings transfer panel, JSON download/file preview/confirmation, translations, and D1/router/UI tests. No migration, deploy, commit, or push.
+
+### Thai copy before / after
+
+| Key | Before | After (th) | After (en) |
+|---|---|---|---|
+| `hotelDataTransfer.title` | — | ข้อมูลโรงแรม: ส่งออกและนำเข้า | Hotel data: Export and import |
+| `hotelDataTransfer.export` | — | ส่งออกข้อมูล | Export data |
+| `hotelDataTransfer.import` | — | นำเข้าข้อมูล | Import data |
+| `hotelDataTransfer.previewTitle` | — | ตรวจสอบรายการที่เปลี่ยนแปลง | Review proposed changes |
+| `hotelDataTransfer.confirm` | — | ยืนยันนำเข้า | Confirm import |
+| `hotelDataTransfer.cancel` | — | ยกเลิก | Cancel |
+
+### Verification
+
+```text
+> channel-manager-mvp@1.0.0 check
+> tsc --noEmit
+Exit 0
+```
+
+```text
+Test Files  232 passed (232)
+     Tests  1628 passed (1628)
+   Duration  127.04s (transform 19.78s, setup 6.23s, collect 251.45s, tests 227.79s, environment 127.28s, prepare 95.81s)
+Exit 0
+```
+
+```text
+Your Worker has access to the following bindings:
+env.DB (hayhost-dev)                                D1 Database
+env.MEDIA (hayhost-media-dev)                       R2 Bucket
+env.PUBLIC_BOOKING_LIMITER (20 requests/60s)        Rate Limit
+env.ASSETS                                          Assets
+--dry-run: exiting now.
+Exit 0
+```
+
+- Wrangler reported `EPERM` writing its log under the user profile, then completed the dry run with exit 0. The Vite build emitted its existing large-chunk advisory.
+
+## 2026-11-06 — Keep imported website settings unpublished
+
+- Updated `applyHotelSetupImport` to build website changes with the shared `buildHotelSiteConfigDraft` helper and write only `draft_json` / `draft_updated_at` in the existing atomic D1 batch. Published columns are unchanged; null file values preserve draft values; existing media selections and metadata survive.
+- Added D1 coverage for unpublished imports and null-value preservation. The import preview now explains that website edits remain drafts until the owner presses `เผยแพร่`, with Thai and English translations.
+- Verification:
+  - `pnpm check` — `tsc --noEmit`, Exit 0.
+  - `pnpm test` — 232 files passed, 1,630 tests passed, Exit 0.
+  - `pnpm build` — Vite build and Wrangler dry-run completed; `--dry-run: exiting now.`, Exit 0.

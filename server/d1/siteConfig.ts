@@ -9,6 +9,23 @@ import { exceedsWebsitePhotoLimit, trimPhotoCaption } from "../../shared/website
 export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = "#954831";
 
+export function buildHotelSiteConfigDraft(
+  current: { draftJson?: string | null; heroCopy?: string | null; accentColor?: string | null; visibleSections?: unknown; theme?: string | null } | null | undefined,
+  input: { hero_copy?: string | null; accent_color?: string | null; visible_sections?: Record<string, boolean> | null; theme?: string | null },
+) {
+  const previousDraft = current?.draftJson ? JSON.parse(current.draftJson) : {};
+  return {
+    heroCopy: input.hero_copy !== undefined ? input.hero_copy : previousDraft.heroCopy ?? current?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY,
+    accentColor: input.accent_color !== undefined ? input.accent_color : previousDraft.accentColor ?? current?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR,
+    visibleSections: input.visible_sections !== undefined ? input.visible_sections : previousDraft.visibleSections ?? current?.visibleSections ?? { hero: true, story: true, rooms: true, booking: true, location: true },
+    theme: input.theme !== undefined ? input.theme : previousDraft.theme ?? current?.theme ?? null,
+    heroMediaId: previousDraft.heroMediaId ?? null,
+    mediaPositions: previousDraft.mediaPositions ?? {},
+    mediaCaptions: previousDraft.mediaCaptions ?? {},
+    galleryMediaIds: previousDraft.galleryMediaIds,
+  };
+}
+
 export async function getHotelSiteConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "site_config.read", now);
   const [row] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
@@ -31,17 +48,9 @@ export async function saveHotelSiteConfig(
   if (input.theme != null && !isHotelThemeId(input.theme)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown hotel theme." });
   if (input.accent_color != null && !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(input.accent_color)) throw new TRPCError({ code: "BAD_REQUEST", message: "Use a valid hex color." });
   const [current] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, input.hotel_id)).limit(1);
-  const previousDraft = current?.draftJson ? JSON.parse(current.draftJson) : {};
-  const draft = {
-    heroCopy: input.hero_copy !== undefined ? input.hero_copy : previousDraft.heroCopy ?? current?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY,
-    accentColor: input.accent_color !== undefined ? input.accent_color : previousDraft.accentColor ?? current?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR,
-    visibleSections: input.visible_sections !== undefined ? input.visible_sections : previousDraft.visibleSections ?? current?.visibleSections ?? { hero: true, story: true, rooms: true, booking: true, location: true },
-    theme: input.theme !== undefined ? input.theme : previousDraft.theme ?? current?.theme ?? null,
-    heroMediaId: input.hero_media_id !== undefined ? input.hero_media_id : previousDraft.heroMediaId ?? null,
-    mediaPositions: input.media_positions ?? previousDraft.mediaPositions ?? {},
-    mediaCaptions: previousDraft.mediaCaptions ?? {},
-    galleryMediaIds: previousDraft.galleryMediaIds,
-  };
+  const draft = buildHotelSiteConfigDraft(current, input);
+  draft.heroMediaId = input.hero_media_id !== undefined ? input.hero_media_id : draft.heroMediaId;
+  draft.mediaPositions = input.media_positions ?? draft.mediaPositions;
   const [row] = await db.insert(hotelSiteConfig).values({ hotelId: input.hotel_id, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now })
     .onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } }).returning();
   if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Site config save returned no record." });

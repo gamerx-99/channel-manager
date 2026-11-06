@@ -779,6 +779,12 @@ const th: TranslationDictionary = {
     childPricePercent: "เปอร์เซ็นต์ของราคาห้องปกติต่อเด็ก / คืน",
     childrenCountTowardMaxLabel: "นับเด็กที่เข้าเกณฑ์รวมในจำนวนผู้เข้าพักสูงสุด",
   },
+  hotelDataTransfer: {
+    eyebrow: "ข้อมูลโรงแรม", title: "ข้อมูลโรงแรม: ส่งออกและนำเข้า", description: "บันทึกหรือนำเข้าข้อมูลการตั้งค่าโรงแรม โดยไม่รวมข้อมูลการจองและข้อมูลส่วนบุคคลของผู้เข้าพัก",
+    export: "ส่งออกข้อมูล", import: "นำเข้าข้อมูล", chooseFile: "เลือกไฟล์ข้อมูลโรงแรม", previewTitle: "ตรวจสอบรายการที่จะเปลี่ยนแปลง",
+    confirm: "ยืนยันนำเข้า", cancel: "ยกเลิก", noChanges: "ไม่มีรายการเปลี่ยนแปลง", profile: "ข้อมูลโรงแรม", room_types: "ประเภทห้องพัก", extra_services: "บริการเสริม", rate_overrides: "ราคาเฉพาะช่วง", website: "เว็บไซต์", exportError: "ส่งออกข้อมูลไม่สำเร็จ", invalidJson: "ไฟล์ JSON ไม่ถูกต้อง",
+    added: "เพิ่ม", updated: "ปรับปรุง", skipped: "ข้าม", websiteDraftNotice: "การเปลี่ยนแปลงเว็บไซต์จะบันทึกเป็นฉบับร่าง และจะแสดงให้ผู้เข้าพักเห็นหลังจากกด เผยแพร่",
+  },
   hotelServices: {
     pageLede: "จัดการบริการเสริมที่ผู้เข้าพักเลือกเพิ่มได้",
     loadingTitle: "กำลังโหลดบริการเสริม",

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { isRoomAmenityKey } from '../../shared/roomAmenities';
 import { HOTEL_THEMES, isHotelThemeId, MAX_WEBSITE_GALLERY_PHOTOS } from '@shared/hotelThemes';
 import { isValidCoordinates, validateHotelContacts } from '@shared/hotelLocationRules';
+import { hasHotelPermission } from '@shared/authorization';
 import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
@@ -39,6 +40,7 @@ import {
   setHotelMediaGallerySelection as d1SetHotelMediaGallerySelection,
   reorderHotelMedia as d1ReorderHotelMedia,
 } from '../d1/siteConfig';
+import { exportHotelSetup, previewHotelSetupImport, applyHotelSetupImport } from '../d1/hotelDataTransfer';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
   requirePermission,
@@ -47,6 +49,32 @@ import {
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
+const hotelDataInputSchema = z.object({ hotel_id: hotelIdSchema, file: z.unknown() });
+
+export const exportHotelData = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await exportHotelSetup(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
+export const previewHotelImport = protectedProcedure.input(hotelDataInputSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+  const canManageRates = hasHotelPermission(roles, ctx.user.memberships ?? [], input.hotel_id, 'revenue.manage_rates');
+  try { return await previewHotelSetupImport(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.file, canManageRates); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
+export const applyHotelImport = protectedProcedure.input(hotelDataInputSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+  const canManageRates = hasHotelPermission(roles, ctx.user.memberships ?? [], input.hotel_id, 'revenue.manage_rates');
+  try { return await applyHotelSetupImport(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.file, canManageRates); }
+  catch (error) { return rethrowDomainError(error); }
+});
 const priceAdjustmentSchema = z.object({
   enabled: z.boolean(),
   mode: z.enum(['percent', 'fixed']),
@@ -656,6 +684,9 @@ export const reorderHotelMedia = protectedProcedure.input(reorderHotelMediaSchem
 });
 
 export const hotelRouter = router({
+  exportHotelData,
+  previewHotelImport,
+  applyHotelImport,
   hotels,
   canCreateHotel,
   adminHotels,

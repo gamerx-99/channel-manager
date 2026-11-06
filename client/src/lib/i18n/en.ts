@@ -792,6 +792,12 @@ const en = {
     childPricePercent: "Percent of normal room rate per child / night",
     childrenCountTowardMaxLabel: "Count eligible children toward maximum occupancy",
   },
+  hotelDataTransfer: {
+    eyebrow: "Hotel data", title: "Hotel data: Export and import", description: "Save or import hotel setup without bookings or guests' personal information.",
+    export: "Export data", import: "Import data", chooseFile: "Choose hotel data file", previewTitle: "Review proposed changes",
+    confirm: "Confirm import", cancel: "Cancel", noChanges: "No changes", profile: "Hotel profile", room_types: "Room types", extra_services: "Extra services", rate_overrides: "Date-specific rates", website: "Website", exportError: "Could not export hotel data.", invalidJson: "This JSON file is invalid.",
+    added: "Added", updated: "Updated", skipped: "Skipped", websiteDraftNotice: "Website changes are saved as a draft and appear to guests after you press Publish.",
+  },
   hotelServices: {
     pageLede: "Manage the optional services guests can add to their stay.",
     loadingTitle: "Loading hotel services…",

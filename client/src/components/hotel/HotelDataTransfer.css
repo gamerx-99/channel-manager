@@ -1,0 +1,5 @@
+.hotel-data-transfer__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+.hotel-data-transfer__file { display: none; }
+.hotel-data-transfer__preview { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line, #e6dfd8); }
+.hotel-data-transfer__preview ul { display: grid; gap: 0.5rem; padding-left: 1.25rem; }
+@media (max-width: 375px) { .hotel-data-transfer__actions > button { flex: 1 1 100%; } }
