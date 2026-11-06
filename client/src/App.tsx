@@ -10,7 +10,6 @@ import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Home";
 import Financials from "./pages/Financials";
-import AdvancedPricing from "./pages/AdvancedPricing";
 import Housekeeping from "./pages/Housekeeping";
 import Communications from "./pages/Communications";
 import Login from "./pages/Login";
@@ -26,6 +25,7 @@ import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
 import Bookings from "./pages/Bookings";
 import OneCalendar from "./pages/OneCalendar";
+import { useHotel } from "./contexts/HotelContext";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
@@ -47,6 +47,11 @@ import { communicationsEnabled, otaSyncEnabled } from "./lib/featureFlags";
 import { useTranslation } from "./lib/i18n";
 import LegalPage from "./pages/LegalPage";
 import GettingStarted from "./pages/GettingStarted";
+
+function PricingRedirect() {
+  const { selectedHotelId } = useHotel();
+  return <Redirect to={selectedHotelId ? `/hotels/${selectedHotelId}/calendar` : "/hotels"} />;
+}
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -70,7 +75,7 @@ function Router() {
       </Route>
       <Route path="/hotels/:id/billing"><PrivateRoute><SubscriptionPlan /></PrivateRoute></Route>
       <Route path="/dashboard/pricing">
-        <PrivateRoute><AdvancedPricing /></PrivateRoute>
+        <PrivateRoute><PricingRedirect /></PrivateRoute>
       </Route>
       <Route path="/housekeeping">
         <PrivateRoute><Housekeeping /></PrivateRoute>

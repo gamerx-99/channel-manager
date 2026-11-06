@@ -56,10 +56,7 @@ export function getHotelSettingsItems(
 }
 
 /**
- * Links under the sidebar's "Rooms & rates" group. Each link has its own destination, and the
- * group button itself opens nothing, so no entry points at the same page as another.
- * Room types live on the hotel page (no separate route yet); rates are the pricing page;
- * the calendar is read-only for now.
+ * Links under the sidebar's "Rooms & rates" group.
  */
 export function getRoomsAndPricingItems(
   selectedHotelId: string | null | undefined,
@@ -68,8 +65,7 @@ export function getRoomsAndPricingItems(
 ) {
   return [
     ...(selectedHotelId && can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}`, label: t("sidebar.roomTypesManage"), icon: BedDouble }] : []),
-    ...(can("revenue.manage_pricing_rules") ? [{ href: "/dashboard/pricing", label: t("sidebar.roomPricingManage"), icon: BarChart3 }] : []),
-    ...(selectedHotelId && can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.availability"), icon: CalendarDays }] : []),
+    ...(selectedHotelId && can("property.view") ? [{ href: `/hotels/${selectedHotelId}/calendar`, label: t("sidebar.oneCalendar"), icon: CalendarDays }] : []),
   ];
 }
 

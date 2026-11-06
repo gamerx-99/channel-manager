@@ -13,10 +13,13 @@ describe("one calendar page contract", () => {
   const panel = read("client/src/pages/OneCalendarSidePanel.tsx");
   const css = read("client/src/pages/oneCalendar.css");
 
-  it("registers the hotel calendar under the hotel-view permission", () => {
+  it("registers the hotel calendar and redirects the legacy pricing route", () => {
     expect(app).toContain("<OneCalendar id={params.id} />");
+    expect(app).toContain("function PricingRedirect()");
+    expect(app).toContain("/hotels/${selectedHotelId}/calendar");
+    expect(app).toContain("<PrivateRoute><PricingRedirect /></PrivateRoute>");
     expect(getRequiredRoutePermission("/hotels/hotel-1/calendar")).toBe("property.view");
-    expect(getRequiredRoutePermission("/dashboard/pricing")).toBe("revenue.manage_pricing_rules");
+    expect(getRequiredRoutePermission("/dashboard/pricing")).toBeNull();
   });
 
   it("offers month and timeline modes with range selection and a shared save panel", () => {

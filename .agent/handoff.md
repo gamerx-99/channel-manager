@@ -4969,6 +4969,15 @@ Not tested in a browser or with a real email.
 - Thai copy before → after: error message uses `oneCalendar.saveError` = “บันทึกข้อมูลไม่สำเร็จ”; panel labels use “จำนวนห้องที่ขาย”, “ราคาต่อคืน”, “จำนวนคืนขั้นต่ำ”, and “กลับไปใช้ราคาฐาน”.
 - PARTS 6–7 remain in progress.
 
+## 2026-11-06 feat/one-calendar — PART 6 navigation
+
+- Replaced the separate pricing and availability menu links with one hotel-scoped “ปฏิทินราคาและห้องว่าง” link; `/dashboard/pricing` now redirects to the selected hotel's calendar with `property.view` scope.
+- Updated Topbar breadcrumb and route contract. Removed the retired `AdvancedPricing.tsx` and `AdvancedPricing.contract.test.ts`. Removed the old `Calendar.tsx`, `Calendar.test.tsx`, `calendarAvailability.ts`, and `calendarAvailability.test.ts`, whose day booking/calendar editing contract was replaced by `OneCalendar` and its rule/contract tests.
+- Files: `client/src/App.tsx`, `client/src/components/layout/Sidebar.tsx`, `client/src/components/layout/Sidebar.roomsAndPricing.test.ts`, `client/src/components/layout/Topbar.tsx`, `client/src/lib/routeScope.ts`, `client/src/lib/routeScope.permissions.test.ts`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `client/src/pages/OneCalendar.contract.test.ts`, deleted files listed above, `.agent/prompt3-one-calendar.todo`, `.agent/handoff.md`.
+- Thai copy before → after: Sidebar “จัดการราคาห้องพัก” + “สถานะห้องว่าง” → “ปฏิทินราคาและห้องว่าง”; breadcrumb “สถานะห้องว่าง” → “ปฏิทินราคาและห้องว่าง”.
+- Verification: pending PART 7 full checks.
+- PART 7 remains in progress.
+
 ## 2026-11-06 feat/one-calendar — PART 4 timeline
 
 - Extracted the timeline into `OneCalendarTimeline.tsx`, with room types as rows and days as columns. It renders only “ว่าง” / “ไม่ว่าง”, remains clickable for the shared date-range selection, and stays inside a horizontally scrollable frame at narrow widths.

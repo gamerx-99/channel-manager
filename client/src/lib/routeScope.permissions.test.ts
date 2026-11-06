@@ -12,8 +12,8 @@ describe("hotel-scoped permission routing", () => {
     expect(getRouteScopeDecision({ ...common, memberships })).toEqual({ allowed: false, reason: "permission_required" });
     expect(getRouteScopeDecision({ ...common, pathname: "/hotels/b/bookings", memberships })).toEqual({ allowed: true });
   });
-  it("allows granted capabilities for the selected hotel on global pages", () => {
-    const memberships = [{ hotelId: "a", role: "front_desk" as const, permissions: resolveMembershipPermissions("front_desk", { grants: ["revenue.manage_pricing_rules"] }) }];
+  it("allows the old pricing URL to reach its property-scoped redirect", () => {
+    const memberships = [{ hotelId: "a", role: "front_desk" as const, permissions: resolveMembershipPermissions("front_desk") }];
     expect(getRouteScopeDecision({ ...common, pathname: "/dashboard/pricing", selectedHotelId: "a", memberships })).toEqual({ allowed: true });
     expect(getRouteScopeDecision({ ...common, pathname: "/dashboard/pricing", selectedHotelId: "b", memberships })).toEqual({ allowed: false, reason: "permission_required" });
   });

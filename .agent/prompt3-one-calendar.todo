@@ -80,12 +80,12 @@ PART 5: แผงด้านข้าง
 ======================================================================
 PART 6: เมนูและ redirect
 ======================================================================
-[ ] Sidebar เหลือรายการเดียว "ปฏิทินราคาและห้องว่าง" (คำตาม glossary)
-[ ] /dashboard/pricing redirect ไป /hotels/<โรงแรมที่เลือก>/calendar
-[ ] routeScope.ts และ Topbar breadcrumb ตรงกับหน้าใหม่
-[ ] เลิกใช้ AdvancedPricing.tsx (ลบไฟล์และเทสต์ที่ล็อกหน้าเก่า เขียนเหตุผลใน handoff ทีละไฟล์)
-[ ] contract test หน้าใหม่: route, permission gate, สวิตช์ 2 มุมมอง, ไทม์ไลน์ไม่มีราคา, redirect
-[ ] commit: refactor(nav): one calendar entry for prices and rooms
+[x] Sidebar เหลือรายการเดียว "ปฏิทินราคาและห้องว่าง" (คำตาม glossary)
+[x] /dashboard/pricing redirect ไป /hotels/<โรงแรมที่เลือก>/calendar
+[x] routeScope.ts และ Topbar breadcrumb ตรงกับหน้าใหม่
+[x] เลิกใช้ AdvancedPricing.tsx (ลบไฟล์และเทสต์ที่ล็อกหน้าเก่า เขียนเหตุผลใน handoff ทีละไฟล์)
+[x] contract test หน้าใหม่: route, permission gate, สวิตช์ 2 มุมมอง, ไทม์ไลน์ไม่มีราคา, redirect
+[x] commit: refactor(nav): one calendar entry for prices and rooms
 
 ======================================================================
 PART 7: ส่งงาน
