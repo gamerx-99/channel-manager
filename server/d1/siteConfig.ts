@@ -188,6 +188,48 @@ export async function setHotelMediaGallerySelection(db: D1ScopedDatabase, caller
   return { selected };
 }
 
+export async function reorderHotelMedia(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  input: { hotel_id: string; ids: string[] },
+  now = new Date(),
+) {
+  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_profile", "site_config.reorder_media", now);
+  const hotelId = input.hotel_id;
+  const ids = input.ids ?? [];
+  if (!Array.isArray(ids)) throw new TRPCError({ code: "BAD_REQUEST", message: "Photo order is required." });
+  if (new Set(ids).size !== ids.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Photo ids must be unique." });
+  const mediaRows = await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId));
+  const byId = new Map(mediaRows.map(row => [row.id, row]));
+  for (const id of ids) {
+    const row = byId.get(id);
+    if (!row) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown hotel photo." });
+    if (!row.isPublished) throw new TRPCError({ code: "BAD_REQUEST", message: "Only published photos can be ordered." });
+  }
+  const heroId = ids.length ? ids[0]! : null;
+  const galleryIds = ids.slice(1);
+  if (galleryIds.length > MAX_WEBSITE_GALLERY_PHOTOS) throw new TRPCError({ code: "BAD_REQUEST", message: "A maximum of six gallery photos can be shown." });
+  const [config] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
+  const previousDraft = config?.draftJson ? JSON.parse(config.draftJson) : {};
+  const draft = {
+    heroCopy: previousDraft.heroCopy ?? config?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY,
+    accentColor: previousDraft.accentColor ?? config?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR,
+    visibleSections: previousDraft.visibleSections ?? config?.visibleSections ?? { hero: true, story: true, rooms: true, booking: true, location: true },
+    theme: previousDraft.theme ?? config?.theme ?? null,
+    heroMediaId: heroId,
+    mediaPositions: previousDraft.mediaPositions ?? {},
+    mediaCaptions: previousDraft.mediaCaptions ?? {},
+    galleryMediaIds: galleryIds,
+  };
+  await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
+  return { success: true as const, heroMediaId: heroId, galleryMediaIds: galleryIds };
+}
+
+export const reorderHotelSiteMedia = reorderHotelMedia;
+export const setHotelMediaOrder = reorderHotelMedia;
+export const reorderWebsitePhotos = reorderHotelMedia;
+
 async function setHeroWithinHotel(db: D1ScopedDatabase, hotelId: string, mediaId: string | null) {
   const [row] = await db.update(hotelMedia).set({
     isHero: mediaId === null ? false : sql`${hotelMedia.id} = ${mediaId}`,

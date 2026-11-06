@@ -43,7 +43,7 @@ export default function WebsiteBuilder() {
     publishConfigMut, discardDraftMut, storedDraft, draft, setDraft, publishedConfig,
     config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media,
     draftMedia, selectedGalleryIds, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
-    formError, photoError, saveNote, handleResetFocalPoint, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero,
+    formError, photoError, saveNote, handleResetFocalPoint, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleReorderPhotos,
     handleFocalPoint, handleSave, handleSaveTheme,
   } = useWebsiteBuilder();
 
@@ -236,6 +236,7 @@ export default function WebsiteBuilder() {
               handleDeleteMedia={handleDeleteMedia}
               handleSetCaption={handleSetCaption}
               handleToggleGallery={handleToggleGallery}
+              handleReorderPhotos={handleReorderPhotos}
               onResetFocalPoint={handleResetFocalPoint}
               photoError={photoError}
             />
