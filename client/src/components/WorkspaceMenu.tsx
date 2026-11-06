@@ -7,6 +7,7 @@ type VisibleHotel = {
   id: string;
   name: string;
   slug: string;
+  public_enabled?: boolean;
   [key: string]: any;
 };
 
@@ -17,6 +18,7 @@ type WorkspaceMenuProps = {
   onClose: () => void;
   isPlatformAdmin?: boolean;
   activeHotelName?: string;
+  activeHotel?: VisibleHotel | null;
   onSelectHotel?: (hotel: VisibleHotel) => void;
   onSelectHotelId?: (hotelId: string) => void;
 };
@@ -28,6 +30,7 @@ export function WorkspaceMenu({
   onClose,
   isPlatformAdmin = false,
   activeHotelName,
+  activeHotel,
   onSelectHotel,
   onSelectHotelId,
 }: WorkspaceMenuProps) {
@@ -58,6 +61,12 @@ export function WorkspaceMenu({
           <ChevronDown size={15} />
         </span>
       </button>
+      {activeHotel && (
+        <div className="workspace-hotel-meta">
+          <span className={`status-pill ${activeHotel.public_enabled ? "live" : "setup"}`}><i />{activeHotel.public_enabled ? t("hotels.livePill") : t("hotels.privatePill")}</span>
+          <a href={`/${activeHotel.slug}`} target="_blank" rel="noreferrer">{t("sidebar.viewPropertySite")}</a>
+        </div>
+      )}
       {open && (
         <div id="workspace-menu" className="workspace-dropdown menu-surface menu-surface--workspace" role="menu" aria-label={t("workspaceMenu.workspaceOptions")}>
           <div className="workspace-dropdown-header menu-surface-header">

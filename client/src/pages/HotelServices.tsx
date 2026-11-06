@@ -185,12 +185,6 @@ export default function HotelServices({ id }: { id: string }) {
   return (
     <div className="page-content hotel-detail-page">
       {pageIntro}
-      <section className="property-hero property-hero-centered panel">
-        <div className="property-hero-copy">
-          <h1>{hotel.name}<span className="title-mark">.</span></h1>
-          <p>{hotel.address}</p>
-        </div>
-      </section>
       <section className="panel room-types-panel">
         <div className="panel-heading">
           <div><div className="eyebrow">{t('hotelServices.eyebrow')}</div><h2>{t('hotelServices.title')}</h2></div>

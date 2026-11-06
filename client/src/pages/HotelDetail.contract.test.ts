@@ -40,7 +40,8 @@ describe('Hotel Detail calendar navigation', () => {
 
   it('opens the hotel profile form and saves name, address and owner contact', () => {
     expect(hotelDetail).toContain('trpc.channelManager.updateHotelProfile.useMutation');
-    expect(hotelDetail).toContain('onClick={openHotelEditor}');
+    expect(hotelDetail).toContain("get('edit') === 'profile'");
+    expect(hotelDetail).toContain('openHotelEditor();');
     expect(hotelDetail).toContain("t('hotelDetail.hotelNameLabel')");
     expect(hotelDetail).toContain("t('hotelDetail.addressLabel')");
     expect(hotelDetail).toContain("t('hotelDetail.contactLabel')");

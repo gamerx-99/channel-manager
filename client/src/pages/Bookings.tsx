@@ -167,7 +167,6 @@ export default function Bookings({ id }: { id: string }) {
 
   return (
     <div className="page-content bookings-page">
-      <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>{t('bookings.title')}</strong></div>
       <section className="page-intro intro-split">
         <div><div className="eyebrow">{t('bookings.eyebrow')}</div><h1>{t('bookings.title')}<span className="title-mark">.</span></h1><p className="lede">{t('bookings.lede')}</p></div>
         <div className="intro-actions">

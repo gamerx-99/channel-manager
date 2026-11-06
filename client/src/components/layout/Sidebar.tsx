@@ -47,9 +47,10 @@ export function getHotelSettingsItems(
   selectedHotelId: string | null | undefined,
   can: (permission: Permission) => boolean,
   t: (key: string) => string,
-) {
+): Array<{ href: string; label: string; icon: typeof Hotel; tourTarget?: string }> {
   if (!selectedHotelId) return [];
   return [
+    ...(can("property.manage_profile") ? [{ href: `/hotels/${selectedHotelId}?edit=profile`, label: t("sidebar.hotelProfile"), icon: Hotel, tourTarget: "hotel-settings" }] : []),
     ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: Users }] : []),
     ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
   ];
@@ -155,6 +156,7 @@ export function Sidebar({
         onClose={onCloseWorkspaceMenu}
         isPlatformAdmin={isPlatformAdmin}
         activeHotelName={selectedHotelName}
+        activeHotel={selectedHotel}
         onSelectHotelId={setSelectedHotelId}
       />
 
@@ -274,7 +276,7 @@ export function Sidebar({
                   const Icon = item.icon;
                   const isActive = location.startsWith(item.href);
                   return (
-                    <Link key={item.href} href={item.href} className={`nav-link nav-sublink ${isActive ? "active" : ""}`} onClick={() => onClose()}>
+                    <Link key={item.href} href={item.href} data-tour={item.tourTarget} className={`nav-link nav-sublink ${isActive ? "active" : ""}`} onClick={() => onClose()}>
                       <Icon size={16} strokeWidth={isActive ? 2.3 : 1.8} />
                       <span>{item.label}</span>
                     </Link>

@@ -9,8 +9,19 @@ export function GuidedTour({ steps, active, onFinish, onRestart }: { steps: Tour
   const panel = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!active || step?.target !== "hotel-settings") return;
-    const target = document.querySelector<HTMLElement>('[data-tour="hotel-settings"]');
-    if (target && !document.querySelector('[data-tour="hotel-settings-fields"]')) target.click();
+    const activateTarget = () => {
+      const target = document.querySelector<HTMLElement>('[data-tour="hotel-settings"]');
+      if (!target) return false;
+      if (!document.querySelector('[data-tour="hotel-settings-fields"]')) target.click();
+      return true;
+    };
+    if (!activateTarget()) {
+      document.querySelector<HTMLElement>('[aria-controls="sidebar-hotel-settings"]')?.click();
+      const timer = window.setInterval(() => {
+        if (activateTarget()) window.clearInterval(timer);
+      }, 50);
+      window.setTimeout(() => window.clearInterval(timer), 3000);
+    }
     // Once per entry into the step: the owner may close the editor and must not see it reopen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, stepIndex, step?.target]);
