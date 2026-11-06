@@ -10,6 +10,8 @@ Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+## Staff daily tasks (2026-11-06)
+- [ ] `ASSUMPTION:` undone tasks from earlier Thai dates remain visible to the assignee until completed. Raised 2026-11-06; implemented in `shared/staffTaskVisibility.ts`.
 ## Spec 15 — invoicing and tax (2026-11-05)
 - [ ] Which legal entity issues each document: the hotel, hayhost, or both for different charges? Who is responsible for numbering and record retention?
 - [ ] Is each hotel VAT-registered, and what evidence or admin approval is required before enabling tax invoices? Which tax invoice format and issue timing apply?

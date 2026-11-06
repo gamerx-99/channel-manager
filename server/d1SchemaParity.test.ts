@@ -45,6 +45,7 @@ const d1OnlyTables = [
   "hotel_subscriptions",
   "platform_admins",
   "staff_shifts",
+  "staff_tasks",
   "subscription_admin_log",
   "subscription_payments",
   "support_accounts",

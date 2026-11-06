@@ -241,6 +241,10 @@ export function Sidebar({
               <Users size={17} strokeWidth={location === "/staff-shifts" ? 2.3 : 1.8} />
               <span>{t("sidebar.staffShifts")}</span>
             </Link>
+            {can("staff.view_own_tasks") && <Link href="/staff-tasks" className={`nav-link ${location === "/staff-tasks" ? "active" : ""}`} onClick={() => onClose()}>
+              <Users size={17} strokeWidth={location === "/staff-tasks" ? 2.3 : 1.8} />
+              <span>{t("sidebar.staffTasks")}</span>
+            </Link>}
           </>
         )}
         {/* Only people who can edit the hotel's site see the builder: not super admin or support (owner, 2026-11-04). */}

@@ -39,6 +39,7 @@ const th: TranslationDictionary = {
     housekeeping: "แม่บ้านและทำความสะอาด",
     staff: "พนักงาน",
     staffShifts: "กะพนักงาน",
+    staffTasks: "งานประจำวัน",
     websiteBuilder: "สร้างเว็บไซต์",
     advancedPricing: "ตั้งราคาขั้นสูง",
     system: "ระบบ",
@@ -1027,6 +1028,9 @@ const th: TranslationDictionary = {
   staffShifts: {
     eyebrow: "พนักงาน", title: "กะพนักงาน", lede: "วางแผนกะพนักงานรายเดือน", section: "ตารางกะรายเดือน", addShift: "เพิ่มกะ", previousMonth: "เดือนก่อน", nextMonth: "เดือนถัดไป", name: "ชื่อ-นามสกุล", position: "ตำแหน่ง", monthTotal: "ชั่วโมงรวม", memberDetails: "ข้อมูลพนักงาน", date: "วันที่", startTime: "เวลาเริ่ม", endTime: "เวลาสิ้นสุด", breakMinutes: "เวลาพัก (นาที)", editShift: "แก้ไขกะ", deleteShift: "ลบกะ", editTitle: "แก้ไขกะ", empty: "ยังไม่มีพนักงานให้จัดกะ",
   },
+  staffTasks: {
+    eyebrow: "พนักงาน", title: "งานประจำวัน", lede: "วางแผนงานให้ทีม และดูงานของฉันเมื่อเริ่มกะ", section: "รายการงาน", date: "วันที่", from: "ตั้งแต่วันที่", to: "ถึงวันที่", staff: "พนักงาน", allStaff: "พนักงานทุกคน", titleLabel: "งาน", details: "รายละเอียด", room: "ห้องพัก (ไม่บังคับ)", noRoom: "ไม่ระบุห้อง", addTask: "มอบหมายงาน", editTask: "แก้ไขงาน", assignTask: "มอบหมายงาน", saveTask: "บันทึกงาน", pending: "รอดำเนินการ", done: "เสร็จแล้ว", complete: "ทำเสร็จแล้ว", undo: "เปลี่ยนเป็นรอดำเนินการ", deleteTask: "ลบงาน", empty: "ไม่มีงานในวันนี้", myTasks: "งานของฉันวันนี้", beforeShift: "งานจะแสดงเมื่อถึงเวลาเริ่มกะของคุณ", noOwnTasks: "วันนี้ไม่มีงานที่มอบหมายให้คุณ", managerHeading: "งานแยกตามพนักงาน", today: "วันนี้", selectStaff: "เลือกพนักงาน", error: "โหลดรายการงานไม่สำเร็จ", roomNumber: "ห้อง {{room}}", taskCount: "{{count}} งาน", confirmDelete: "ลบงานนี้หรือไม่",
+  },
   housekeeping: {
     loadingAriaLabel: "กำลังโหลดข้อมูลแม่บ้าน",
     loadingBoard: "กำลังโหลดกระดานงานแม่บ้าน…",
@@ -1330,6 +1334,8 @@ const th: TranslationDictionary = {
     permHousekeepingUpdate: "อัปเดตงานแม่บ้าน",
     permStaffShiftsView: "ดูตารางกะพนักงาน",
     permStaffShiftsManage: "จัดการกะพนักงาน",
+    permStaffTasksManage: "จัดการงานของพนักงาน",
+    permStaffTasksView: "ดูและทำเครื่องหมายงานของตัวเอง",
     permRates: "ราคาและห้องว่าง",
     permOtaView: "ดูสถานะ OTA",
     permOtaManage: "จัดการการเชื่อมต่อ OTA",

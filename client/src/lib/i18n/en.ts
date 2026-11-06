@@ -37,6 +37,7 @@ const en = {
     housekeeping: "Housekeeping",
     staff: "Staff",
     staffShifts: "Staff shifts",
+    staffTasks: "Daily tasks",
     websiteBuilder: "Website Builder",
     advancedPricing: "Advanced Pricing",
     system: "System",
@@ -1040,6 +1041,9 @@ const en = {
   staffShifts: {
     eyebrow: "Staff", title: "Staff shifts", lede: "Plan staff shifts by month. No time clock.", section: "Monthly schedule", addShift: "Add shift", previousMonth: "Previous month", nextMonth: "Next month", name: "Full name", position: "Position", monthTotal: "Total hours", memberDetails: "Staff details", date: "Date", startTime: "Start time", endTime: "End time", breakMinutes: "Break (minutes)", editShift: "Edit shift", deleteShift: "Delete shift", editTitle: "Edit shift", empty: "No staff members to schedule.",
   },
+  staffTasks: {
+    eyebrow: "Staff", title: "Daily tasks", lede: "Plan tasks for your team and see your own tasks when your shift starts.", section: "Tasks", date: "Date", from: "From", to: "To", staff: "Staff member", allStaff: "All staff", titleLabel: "Task", details: "Details", room: "Room (optional)", noRoom: "No room", addTask: "Assign task", editTask: "Edit task", assignTask: "Assign task", saveTask: "Save task", pending: "Pending", done: "Done", complete: "Mark done", undo: "Mark pending", deleteTask: "Delete task", empty: "No tasks for this day.", myTasks: "My tasks today", beforeShift: "Your tasks will appear when your shift starts.", noOwnTasks: "You have no tasks today.", managerHeading: "Tasks by staff member", today: "Today", selectStaff: "Choose a staff member", error: "Could not load tasks.", roomNumber: "Room {{room}}", taskCount: "{{count}} tasks", confirmDelete: "Delete this task?",
+  },
   housekeeping: {
     loadingAriaLabel: "Loading housekeeping data",
     loadingBoard: "Loading housekeeping board…",
@@ -1343,6 +1347,8 @@ const en = {
     permHousekeepingUpdate: "Update housekeeping",
     permStaffShiftsView: "View staff shifts",
     permStaffShiftsManage: "Manage staff shifts",
+    permStaffTasksManage: "Manage staff tasks",
+    permStaffTasksView: "View and complete own tasks",
     permRates: "Rates and availability",
     permOtaView: "View OTA status",
     permOtaManage: "Manage OTA connections",

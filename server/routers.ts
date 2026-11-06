@@ -1,5 +1,6 @@
 import { accessRouter } from "./routers/accessRouter";
 import { staffShiftsRouter } from "./routers/staffShiftsRouter";
+import { staffTasksRouter } from "./routers/staffTasksRouter";
 import { router } from './_core/trpc';
 import { systemRouter } from './_core/systemRouter';
 import { notificationsRouter } from './routers/notificationsRouter';
@@ -107,6 +108,7 @@ export const appRouter = router({
   bookingDocuments: bookingDocumentsRouter,
   staff: staffRouter,
   staffShifts: staffShiftsRouter,
+  staffTasks: staffTasksRouter,
   channelManager: router({
     dashboard,
       financials,

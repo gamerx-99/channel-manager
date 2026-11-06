@@ -1,0 +1,15 @@
+.staff-tasks-page { display: grid; gap: 1rem; min-width: 0; }
+.staff-task-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem; }
+.staff-task-controls label { display: grid; gap: .3rem; font-size: .8rem; }
+.staff-task-group { display: grid; gap: .6rem; padding: .8rem 0; border-top: 1px solid var(--line, #e0e7e2); }
+.staff-task-group:first-of-type { border-top: 0; }
+.staff-task-group h3 { margin: 0; font-size: .95rem; }
+.staff-task-list { display: grid; gap: .5rem; }
+.staff-task-item { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; padding: .7rem; border: 1px solid var(--line, #e0e7e2); border-radius: .65rem; min-width: 0; }
+.staff-task-copy { min-width: 0; display: grid; gap: .2rem; }
+.staff-task-copy strong { overflow-wrap: anywhere; }
+.staff-task-meta { color: var(--muted, #63756b); font-size: .8rem; }
+.staff-task-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+.staff-task-dialog-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgb(20 30 25 / .48); }
+.staff-task-dialog { width: min(100%, 38rem); max-height: calc(100vh - 2rem); overflow: auto; }
+@media (max-width: 600px) { .staff-task-item { flex-direction: column; } .staff-task-actions { width: 100%; } .staff-task-actions button { min-height: 2.6rem; } }

@@ -672,6 +672,27 @@ export const staffShifts = sqliteTable("staff_shifts", {
   index("staff_shifts_hotel_date_idx").on(table.hotelId, table.date),
 ]);
 
+export const staffTasks = sqliteTable("staff_tasks", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  assignedTo: text("assigned_to").notNull().references(() => hotelUsers.id, { onDelete: "cascade" }),
+  taskDate: text("task_date").notNull(),
+  title: text("title").notNull(),
+  details: text("details"),
+  roomId: text("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("pending"),
+  createdBy: text("created_by").notNull(),
+  createdAt: createdAt(),
+  completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+  completedBy: text("completed_by"),
+}, table => [
+  check("staff_tasks_date_check", sql`${table.taskDate} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'`),
+  check("staff_tasks_title_check", sql`length(trim(${table.title})) between 1 and 160`),
+  check("staff_tasks_status_check", sql`${table.status} in ('pending', 'done')`),
+  index("staff_tasks_hotel_date_idx").on(table.hotelId, table.taskDate),
+  index("staff_tasks_assigned_date_idx").on(table.assignedTo, table.taskDate),
+]);
+
 export const userOnboarding = sqliteTable("user_onboarding", {
   userId: text("user_id").primaryKey(),
   tourCompletedAt: integer("tour_completed_at", { mode: "timestamp_ms" }),
@@ -689,6 +710,7 @@ export const d1Schema = {
   subscriptionAdminLog,
   hotelUsers,
   staffShifts,
+  staffTasks,
   hotelMedia,
   roomTypes,
   rooms,

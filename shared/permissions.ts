@@ -38,6 +38,8 @@ export const PERMISSION_TOGGLES = [
   { key: "housekeeping_view", permissions: ["housekeeping.view_room_status"] },
   { key: "staff_shifts_view", permissions: ["staff.view_shifts"] },
   { key: "staff_shifts_manage", permissions: ["staff.manage_shifts"] },
+  { key: "staff_tasks_manage", permissions: ["staff.manage_tasks"] },
+  { key: "staff_tasks_view", permissions: ["staff.view_own_tasks"] },
   { key: "housekeeping_update", permissions: ["housekeeping.update_room_status"], requires: ["housekeeping_view"] },
   {
     key: "rates",

@@ -12,6 +12,7 @@ import Dashboard from "./pages/Home";
 import Financials from "./pages/Financials";
 import Housekeeping from "./pages/Housekeeping";
 import StaffShifts from "./pages/StaffShifts";
+import StaffTasks from "./pages/StaffTasks";
 import Communications from "./pages/Communications";
 import Login from "./pages/Login";
 import MfaEnroll from "./pages/MfaEnroll";
@@ -83,6 +84,7 @@ function Router() {
         <Redirect to="/staff-shifts" />
       </Route>
       <Route path="/staff-shifts"><PrivateRoute><StaffShifts /></PrivateRoute></Route>
+      <Route path="/staff-tasks"><PrivateRoute><StaffTasks /></PrivateRoute></Route>
       {communicationsEnabled && <Route path="/communications">
         <PrivateRoute><Communications /></PrivateRoute>
       </Route>}

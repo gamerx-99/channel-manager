@@ -5305,3 +5305,18 @@ Exit 0
 
 - Verification: `pnpm check` — `$ tsc --noEmit`, Exit 0. `pnpm test` — 241 files passed, 1,664 tests passed, Exit 0. `pnpm build` — Vite built; Wrangler `--dry-run: exiting now.`, Exit 0. Commands used `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false` because pnpm's automatic package-manager verification tried to write a lock in a read-only location.
 - Migration not applied. No commit, push, deploy, or non-dry-run Wrangler command.
+## 2026-11-06 — Staff daily tasks
+
+- Added `staff_tasks` with hotel, staff membership, optional room references, status checks, and the requested hotel/date and assignee/date indexes. Drizzle generation was attempted with `pnpm exec drizzle-kit generate --config drizzle.d1.config.ts` but pnpm failed before launch because it could not open its engine-store operation lock on the read-only filesystem; migration SQL, generator-style snapshot, and journal entry were written by hand. Migration is not applied.
+- Added `staff.manage_tasks` and `staff.view_own_tasks`; manager grants follow the shifts matrix (hotel owner and revenue manager), and all sign-in hotel staff roles receive own-task viewing, including housekeeping. Added per-person toggles, scoped D1 CRUD/listing, server-side Thai-time visibility, router, `/staff-tasks`, responsive styles, bilingual strings, and tests.
+- Visibility behavior: current-day tasks appear at earliest shift start (or 00:00 Thai with no shift); future tasks stay hidden; overnight shifts use their task-date start. `ASSUMPTION:` undone earlier-date tasks remain visible until done, logged in OPEN_QUESTIONS and in the pure rule comment.
+- Decision register duplicates were consolidated to one row and its status updated. Housekeeping pages, procedures, tables, and room cleaning status were left intact.
+- Thai before / after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | — (new page) | งานประจำวัน; งานของฉันวันนี้; มอบหมายงาน; รอดำเนินการ; ทำเสร็จแล้ว; งานจะแสดงเมื่อถึงเวลาเริ่มกะของคุณ |
+  | — (staff permission controls) | จัดการงานของพนักงาน; ดูและทำเครื่องหมายงานของตัวเอง |
+
+- Verification (after final changes): `pnpm check` — `$ tsc --noEmit`, exit 0. `pnpm test` — 251 files passed, 1,706 tests passed, exit 0. `pnpm build` — Vite built; Wrangler `--dry-run: exiting now.`, exit 0 (existing large-chunk and no-target-environment warnings). `git diff --check` — no output, exit 0. Commands used `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`; build also set `XDG_CONFIG_HOME=/tmp/hayhost-xdg`.
+- No migration application, commit, push, or deploy.
