@@ -172,6 +172,17 @@ describe("D1 site config and media repository", () => {
       .rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("saves a theme with an existing two-digit focal point", async () => {
+    await seedHotel("a", "owner-a");
+    const photo = await createHotelMedia(db, { userId: "owner-a" }, { hotel_id: "a", url: "/focal.jpg" });
+
+    const saved = await saveHotelSiteConfig(db, { userId: "owner-a" }, {
+      hotel_id: "a", theme: "lanna-teak", media_positions: { [photo.id]: "50% 40%" },
+    });
+    expect(JSON.parse(saved.draftJson!).theme).toBe("lanna-teak");
+    expect(JSON.parse(saved.draftJson!).mediaPositions).toEqual({ [photo.id]: "50% 40%" });
+  });
+
   it("validates theme ids at the router boundary and refuses users without website edit permission", async () => {
     const { appRouter } = await import("../routers");
     const hotelId = "88ed76e4-cc93-4aa7-9c4d-30999d35ada4";

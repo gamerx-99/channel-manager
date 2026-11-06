@@ -1753,7 +1753,7 @@ const en = {
     addressFallback: "Address from hotel profile",
     allSectionsHidden: "All sections hidden — toggle at least one visible section.",
     publicHotelFallbackNote: "A hotel without its own settings shows the default headline and colour. This preview shows the same.",
-    themePickerTitle: "Choose a website design", themePickerDesc: "Choose a look for your public hotel page.", currentTheme: "Current choice", themeSaved: "Website design saved as a draft.",
+    themePickerTitle: "Choose a website design", themePickerDesc: "Choose a look for your public hotel page.", currentTheme: "Current choice", themeSaved: "Website design saved as a draft.", themeMediaPositionError: "A photo position is invalid. Adjust the photo position and try again.",
     siteConfigTitle: "Site config",
     siteConfigDesc: "Headline, accent colour and the sections guests see. Only the hotel owner can change these.",
     requiresManageProfile: "Only the property owner can save these settings.",

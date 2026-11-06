@@ -8,7 +8,7 @@ import { uploadHotelMediaFile } from "@/lib/hotelMedia";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
-import { defaultConfig, isValidHexColor, type SiteConfig } from "./websiteBuilderRules";
+import { defaultConfig, isValidHexColor, themeSaveErrorMessage, type SiteConfig } from "./websiteBuilderRules";
 import { displayPhotoCaption } from "@shared/websitePhotos";
 import { splitWebsitePhotos } from "./photoReorder";
 
@@ -53,7 +53,7 @@ export function useWebsiteBuilder() {
   const setGalleryMut = trpc.channelManager.setHotelMediaGallerySelection.useMutation({ onSuccess: () => refetchConfig(), onError: e => setPhotoError(e.message.includes("six gallery") ? t("websiteBuilder.galleryLimitReached") : e.message) });
   const reorderMediaMut = trpc.channelManager.reorderHotelMedia.useMutation({ onSuccess: () => { void refetchConfig(); }, onError: e => setPhotoError(e.message) });
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); }, onError: e => setFormError(e.message) });
-  const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); }, onError: e => setFormError(e.message) });
+  const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); }, onError: e => setFormError(themeSaveErrorMessage(e.message, t("websiteBuilder.themeMediaPositionError"))) });
   const publishConfigMut = trpc.channelManager.publishHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.publishSuccess")); await refetchConfig(); }, onError: e => setFormError(e.message) });
   const [draft, setDraft] = useState<SiteConfig>(() => ({ ...defaultConfig(effectiveHotelId), heroCopy: t("publicHotel.defaultHeroCopy") }));
   const publishedConfig = useMemo(() => {
