@@ -8,6 +8,7 @@ import MountainMist from "./mountain-mist/MountainMist";
 import BoutiqueNoir from "./boutique-noir/BoutiqueNoir";
 import HostelPop from "./hostel-pop/HostelPop";
 import RiversideCalm from "./riverside-calm/RiversideCalm";
+import VintageOldTown from "./vintage-old-town/VintageOldTown";
 
 describe("hotel theme registry", () => {
   it.each([
@@ -18,6 +19,7 @@ describe("hotel theme registry", () => {
     ["boutique-noir", BoutiqueNoir],
     ["hostel-pop", HostelPop],
     ["riverside-calm", RiversideCalm],
+    ["vintage-old-town", VintageOldTown],
   ] as const)("returns the landing for %s", (id, component) => {
     expect(getHotelThemeRegistryEntry(id)?.landing).toBe(component);
   });

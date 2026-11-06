@@ -11,11 +11,12 @@ describe("hotel theme colours", () => {
       ["boutique-noir", "สไตล์ลักชัวรี"],
       ["hostel-pop", "สไตล์ป๊อปอาร์ต"],
       ["riverside-calm", "สไตล์รีสอร์ท"],
+      ["vintage-old-town", "สไตล์วินเทจ"],
     ]);
   });
 
   it("defines readable fixed button and highlight colours for every theme", () => {
-    expect(HOTEL_THEMES).toHaveLength(7);
+    expect(HOTEL_THEMES).toHaveLength(8);
     for (const theme of HOTEL_THEMES) {
       expect(theme.buttonBackground).toMatch(/^#[0-9a-f]{6}$/i);
       expect(theme.buttonText).toMatch(/^#[0-9a-f]{6}$/i);
@@ -30,6 +31,10 @@ describe("hotel theme colours", () => {
 
   it("registers Riverside Calm as a premium theme with the design palette", () => {
     expect(HOTEL_THEMES.find(theme => theme.id === "riverside-calm")).toMatchObject({ tier: "premium", buttonBackground: "#0d575a", buttonText: "#ffffff", highlight: "#2f6f73" });
+  });
+
+  it("registers Vintage Old Town as a premium theme with the design palette", () => {
+    expect(HOTEL_THEMES.find(theme => theme.id === "vintage-old-town")).toMatchObject({ tier: "premium", buttonBackground: "#c2562e", buttonText: "#ffffff", highlight: "#2e7c7a" });
   });
 
   it("uses hayhost colours when the hotel has no recognized theme", () => {

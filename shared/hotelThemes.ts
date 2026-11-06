@@ -7,6 +7,7 @@ export const HOTEL_THEMES = [
   // ASSUMPTION: new owner-designed themes use the existing premium tier.
   { id: "hostel-pop", tier: "premium", name: "สไตล์ป๊อปอาร์ต", description: "สีสันสดใส สนุก และเป็นกันเอง", primaryColor: "#ffd23f", buttonBackground: "#ffd23f", buttonText: "#000000", highlight: "#fd5c8e" },
   { id: "riverside-calm", tier: "premium", name: "สไตล์รีสอร์ท", description: "สงบริมแม่น้ำ ผ่อนคลายท่ามกลางธรรมชาติ", primaryColor: "#0d575a", buttonBackground: "#0d575a", buttonText: "#ffffff", highlight: "#2f6f73" },
+  { id: "vintage-old-town", tier: "premium", name: "สไตล์วินเทจ", description: "กลิ่นอายวันวานในบรรยากาศแบบโปสต์การ์ด", primaryColor: "#a23e18", buttonBackground: "#c2562e", buttonText: "#ffffff", highlight: "#2e7c7a" },
 ] as const;
 
 export type HotelThemeId = typeof HOTEL_THEMES[number]["id"];

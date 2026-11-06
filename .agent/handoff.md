@@ -5559,3 +5559,68 @@ Exit 0
 - Verification after the copy and test update: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 257 test files passed, 1,743 tests passed, exit 0 (TEMP/TMP pointed inside the worktree for sandbox access). `pnpm build` → Vite transformed 3,610 modules; Wrangler reported `--dry-run: exiting now.`, exit 0. `git diff --check` → exit 0. The build showed the existing large-chunk and no-target-environment advisories.
 - The PublicHotel render assertion changed from `Reserve Suite` to `Choose this room` because the fixed suite claim was removed; it still verifies the room-specific booking link. No commit, push, or deploy.
 - Independent reviewer verdict: APPROVE (2026-11-07). The reviewer confirmed neutral Thai/English copy, removal of fact-only UI, preservation of hotel-owned data, tests, build, and clean working-file scope.
+
+## 2026-11-07 — Vintage Old Town public theme
+
+- Integrated owner design 08 as the premium `vintage-old-town` theme with the style name `สไตล์วินเทจ`. Registered the landing, preview, fixed booking colours, four Google Fonts, and Thai/English copy. The owner-supplied `out/` handoff was deleted after integration.
+- The design layout remains a travel poster with postcards, tickets, angled photo frames and a mobile booking bar. The dated hero stamp, registration label, postage and dated postmark, and town-centre badge were removed because they would make unsupported claims about other hotels. Hotel name, address, hero copy, rooms, amenities, photos, map and contacts come from hotel data; all booking links use the shared booking page.
+- All entries in the designer translation table are present in both dictionaries. The unused keys for removed fact-only decorations retain neutral values for catalogue completeness. No banned glossary term was introduced.
+- Owner table strings changed (old → new):
+
+| Language | Key | Designer text | Shared theme text |
+|---|---|---|---|
+| th | navRooms | ตั๋วห้องพัก | ห้องพัก |
+| th | navGallery | ไปรษณียบัตร | รูปที่พัก |
+| th | bookNow | จองตั๋ว | จองเลย |
+| th | heroEyebrow | เรือนแถวไม้ดั้งเดิม | กลิ่นอายวันวาน |
+| th | heroSeries | หมวดที่ ๑๙๖๒ / สยาม | ชุดโปสต์การ์ด |
+| th | heroBadge | ตั้งแต่ปี 1962 | ชวนให้นึกถึงวันวาน |
+| th | heroBadgeSub | เรือนแถวเดิม | บรรยากาศแบบโปสต์การ์ด |
+| th | storyEyebrow | บันทึกกาลเวลา | ข้อความบนโปสต์การ์ด |
+| th | storyStamp | ทะเบียน ๒๕๐๕ | ข้อความถึงคุณ |
+| th | story | เรื่องเล่าจากเมืองสามหมอก | บันทึกสั้น ๆ |
+| th | postageCountry | สยาม | ส่งความคิดถึง |
+| th | postagePrice | ๑.๕๐ ฿ | ด้วยความใส่ใจ |
+| th | postmarkLocation | แม่ฮ่องสอน | จากที่นี่ |
+| th | postmarkDate | ๑๔ พ.ย. ๒๕๐๕ | ถึงวันนี้ |
+| th | postmarkPosted | ตราประทับส่ง | โปสต์การ์ด |
+| th | storyBody | ยินดีต้อนรับสู่ความเรียบง่ายและอบอุ่นใจ เรายังคงรักษาโครงสร้างไม้สักทอง ผนังไม้ฝาประกบ เพื่อให้คุณได้พักผ่อนในบรรยากาศย้อนยุคแท้จริง | ค่อย ๆ ใช้เวลากับช่วงเวลาพักผ่อนในแบบของคุณ |
+| th | roomsEyebrow | ตั๋วสำรองห้องพัก | ตั๋วห้องพัก |
+| th | rooms | ห้องพักไม้สัก | ห้องพัก |
+| th | roomsSubtitle | เลือกสำรองห้องพักไม้สักโบราณ ทุกห้องคงเสน่ห์วันวาน | เลือกห้องที่ถูกใจ แล้วพักผ่อนในแบบของคุณ |
+| th | berthPass | ตั๋วโดยสาร | ตั๋วห้องพัก |
+| th | persons | ท่าน | คน |
+| th | features | จุดเด่น | สิ่งอำนวยความสะดวก |
+| th | select | ออกตั๋วห้องนี้ | เลือกห้องนี้ |
+| th | galleryEyebrow | อัลบั้มภาพความทรงจำ | อัลบั้มภาพ |
+| th | gallery | ไปรษณียบัตรความทรงจำ | โปสต์การ์ดจากที่พัก |
+| th | gallerySubtitle | ภาพถ่ายความทรงจำบันทึกบนแผ่นฟิล์ม | ภาพบรรยากาศบางช่วงของการเข้าพัก |
+| th | locationBadge | ศูนย์กลางเมืองเก่า | มาหาเรา |
+| en | bookNow | Book ticket | Book now |
+| en | heroEyebrow | Original heritage shophouse | A vintage mood |
+| en | heroSeries | Series No. 1962 / Siam | Postcard collection |
+| en | heroBadge | Since 1962 | A touch of nostalgia |
+| en | heroBadgeSub | Original shophouse | Postcard mood |
+| en | storyEyebrow | Archival note | Postcard note |
+| en | storyStamp | Registered 1962 | A note for you |
+| en | story | A letter from Chong Kham | A little note |
+| en | postageCountry | SIAM | Greetings |
+| en | postagePrice | 1.50 ฿ | With care |
+| en | postmarkLocation | MAE HONG SON | From here |
+| en | postmarkDate | 14 NOV 1962 | For today |
+| en | postmarkPosted | POSTED | A postcard |
+| en | storyBody | Welcome to genuine warmth and nostalgia. Preserving original golden teak woodwork and shophouse character for an authentic vintage retreat. | Take your time and enjoy the little moments of your stay. |
+| en | roomsEyebrow | Fares & berth passes | Room tickets |
+| en | rooms | Heritage chambers | Rooms |
+| en | roomsSubtitle | Vintage chamber berths preserving original heritage and timeless character | Choose a room for a stay at your own pace. |
+| en | berthPass | Berth pass | Room ticket |
+| en | galleryEyebrow | Photo album 1962 | Photo album |
+| en | gallery | Postcards from Chong Kham | Postcards of the stay |
+| en | gallerySubtitle | Memorabilia frames captured on film | A few moments from the stay. |
+| en | locationEyebrow | District atlas & wayfinding | Map & directions |
+| en | location | Location & wayfinding | Location & directions |
+| en | locationBadge | Town centre | Find us |
+
+- Verification on the final code: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 258 test files passed, 1,749 tests passed, exit 0 (TEMP/TMP inside the worktree because the default temp directory is sandbox-blocked). `pnpm build` → Vite transformed 3,612 modules and Wrangler ended with `--dry-run: exiting now.`, exit 0. Wrangler could not write its optional log outside the worktree (EPERM), but the dry-run completed. `git diff --check` → exit 0.
+- Mobile document-width measurements: **not obtained** at either 320px or 375px. The connected browser host was unavailable; the browser-skill daemon could not discover its home directory, and computer-use approval rejected opening local Chrome. Responsive CSS has a 768px single-column layout, a 375px tightening rule and a clipped theme root, but those rules do not prove the measured document width. Reviewer verdict: REJECT solely for this open acceptance check, after the code findings (story paragraph and room price assertion) were fixed.
+- No commit, push, deploy or migration.

@@ -17,3 +17,8 @@
 .preview-hostel-pop .preview-hero:before{background:linear-gradient(90deg,#ffd23f 0%,rgba(255,210,63,.8) 52%,transparent 100%)}
 .preview-hostel-pop .preview-hero h3{font-weight:900;text-transform:uppercase;color:#000}
 .preview-hostel-pop .preview-mark{height:7px;border:2px solid #000;border-radius:2px;background:#fd5c8e}
+
+.preview-vintage-old-town{font-family:"Space Grotesk","Prompt",sans-serif}
+.preview-vintage-old-town .preview-hero{border:2px solid #1f1b17;border-radius:0;box-shadow:3px 3px 0 #1f1b17}
+.preview-vintage-old-town .preview-hero:before{background:linear-gradient(90deg,rgba(246,236,229,.96),rgba(246,236,229,.4) 62%,transparent)}
+.preview-vintage-old-town .preview-mark{border:1px solid #1f1b17;border-radius:0;background:#c2562e}

@@ -19,14 +19,15 @@ describe.each([
   ["BoutiqueNoirLanding", "boutique-noir"],
   ["HostelPopLanding", "hostel-pop"],
   ["RiversideCalmLanding", "riverside-calm"],
+  ["VintageOldTownLanding", "vintage-old-town"],
 ])("%s contract", (component, id) => {
   it("does not include never-render content and declares a Thai font pair", () => {
     const themeSource = readFileSync(resolve(process.cwd(), `client/src/components/hotel-themes/${id}/${component.replace("Landing", "")}.tsx`), "utf8");
     const source = themeSource + readFileSync(resolve(process.cwd(), "client/src/components/hotel-themes/ThemeLanding.tsx"), "utf8");
     const css = readFileSync(resolve(process.cwd(), "client/src/components/hotel-themes/themes.css"), "utf8");
-    for (const banned of ["reviews", "stars", "phone", "LINE", ...(id === "mountain-mist" || id === "hostel-pop" || id === "riverside-calm" ? [] : ["amenities"]), "bank transfer", "festival dates", "/logo-mark.svg"]) {
-      // Riverside's SVG linearGradient contains "line" but is not a contact channel.
-      if (banned === "LINE" && id === "riverside-calm") expect(themeSource.toLowerCase()).not.toMatch(/\bline\b/);
+    for (const banned of ["reviews", "stars", "phone", "LINE", ...(id === "mountain-mist" || id === "hostel-pop" || id === "riverside-calm" || id === "vintage-old-town" ? [] : ["amenities"]), "bank transfer", "festival dates", "/logo-mark.svg"]) {
+      // Identifiers such as bookingLink contain "line"; check for the contact-channel word.
+      if (banned === "LINE" && (id === "riverside-calm" || id === "vintage-old-town")) expect(themeSource.toLowerCase()).not.toMatch(/\bline\b/);
       else expect((id === "boutique-noir" ? "" : themeSource).toLowerCase()).not.toContain(banned.toLowerCase());
     }
     expect(source).toContain("ThemeLanding");

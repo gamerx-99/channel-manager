@@ -1,0 +1,1533 @@
+/* ==========================================================================
+   Theme 08: Vintage Old Town
+   Every single selector is strictly scoped under .theme-vintage-old-town
+   ========================================================================== */
+
+.theme-vintage-old-town {
+  /* Mandatory Theme Contract Variables */
+  --theme-button-bg: var(--owner-accent);
+  --theme-button-text: var(--owner-accent-text);
+  --theme-highlight: var(--owner-highlight);
+
+  /* Vintage Old Town design tokens */
+  --vot-bg: #fff8f5;
+  --vot-surface: #f6ece5;
+  --vot-surface-low: #fcf2eb;
+  --vot-surface-lowest: #ffffff;
+  --vot-surface-high: #f1e6e0;
+  --vot-surface-dim: #e2d8d2;
+  --vot-ink: #1f1b17;
+  --vot-ink-soft: #57423b;
+  --vot-primary: #a23e18;
+  --vot-primary-container: #c2562e;
+  --vot-primary-fixed: #ffdbcf;
+  --vot-secondary: #136967;
+  --vot-secondary-light: #2e7c7a;
+  --vot-secondary-container: #a5f0ed;
+  --vot-tertiary: #7d5700;
+  --vot-tertiary-light: #d9a441;
+  --vot-tertiary-fixed: #ffdeaa;
+  --vot-border: #8a726a;
+  --vot-border-light: #dec0b7;
+  --vot-shadow-hard: 3px 3px 0px 0px #1f1b17;
+  --vot-shadow-hover: 5px 5px 0px 0px #1f1b17;
+  --vot-shadow-active: 1px 1px 0px 0px #1f1b17;
+  --vot-shadow-soft: 0 4px 20px rgba(31, 27, 23, 0.08);
+
+  /* Typography Stacks */
+  --vot-font-head: "Space Grotesk", "Prompt", sans-serif;
+  --vot-font-body: "Be Vietnam Pro", "Noto Sans Thai", sans-serif;
+
+  /* Base Setup */
+  background-color: var(--vot-bg);
+  color: var(--vot-ink);
+  font-family: var(--vot-font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Scoped Reset and Normalization */
+.theme-vintage-old-town *,
+.theme-vintage-old-town *::before,
+.theme-vintage-old-town *::after {
+  box-sizing: border-box;
+}
+
+.theme-vintage-old-town ul,
+.theme-vintage-old-town ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-vintage-old-town h1,
+.theme-vintage-old-town h2,
+.theme-vintage-old-town h3,
+.theme-vintage-old-town h4,
+.theme-vintage-old-town p,
+.theme-vintage-old-town blockquote {
+  margin: 0;
+}
+
+.theme-vintage-old-town img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.theme-vintage-old-town a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.theme-vintage-old-town button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Layout Containers */
+.theme-vintage-old-town .container {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.theme-vintage-old-town .section {
+  padding: 80px 0;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons & Ticket Cuts
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-family: var(--vot-font-head);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1.5px solid var(--vot-ink);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.theme-vintage-old-town .btn-ticket {
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
+  box-shadow: var(--vot-shadow-hard);
+  clip-path: polygon(
+    6px 0%,
+    calc(100% - 6px) 0%,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0% calc(100% - 6px),
+    0% 6px
+  );
+}
+
+.theme-vintage-old-town .btn-ticket:hover {
+  box-shadow: var(--vot-shadow-hover);
+  transform: translate(-1px, -1px);
+}
+
+.theme-vintage-old-town .btn-ticket:active {
+  box-shadow: var(--vot-shadow-active);
+  transform: translate(2px, 2px);
+}
+
+.theme-vintage-old-town .btn-lg {
+  padding: 14px 32px;
+  font-size: 15px;
+}
+
+.theme-vintage-old-town .btn-sm {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Postcard Photo Frames & Organic Tilts
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .postcard-frame {
+  background: var(--vot-surface-lowest);
+  padding: 12px;
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: var(--vot-shadow-hard);
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease;
+  position: relative;
+}
+
+.theme-vintage-old-town .postcard-frame:hover {
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: var(--vot-shadow-hover);
+  z-index: 5;
+}
+
+.theme-vintage-old-town .tilt-neg-15 {
+  transform: rotate(-1.5deg);
+}
+
+.theme-vintage-old-town .tilt-pos-20 {
+  transform: rotate(2deg);
+}
+
+.theme-vintage-old-town .tilt-neg-20 {
+  transform: rotate(-2deg);
+}
+
+.theme-vintage-old-town .tilt-pos-15 {
+  transform: rotate(1.5deg);
+}
+
+.theme-vintage-old-town .tilt-neg-10 {
+  transform: rotate(-1deg);
+}
+
+/* --------------------------------------------------------------------------
+   1. Site Header
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .site-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  background: rgba(255, 248, 245, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1.5px solid var(--vot-ink);
+  box-shadow: 0 1px 8px rgba(31, 27, 23, 0.05);
+}
+
+.theme-vintage-old-town .header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.theme-vintage-old-town .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.theme-vintage-old-town .brand-mark {
+  width: 38px;
+  height: 38px;
+  background: var(--vot-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: 2px 2px 0px 0px #1f1b17;
+  clip-path: polygon(
+    4px 0%,
+    calc(100% - 4px) 0%,
+    100% 4px,
+    100% calc(100% - 4px),
+    calc(100% - 4px) 100%,
+    4px 100%,
+    0% calc(100% - 4px),
+    0% 4px
+  );
+  flex-shrink: 0;
+}
+
+.theme-vintage-old-town .brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.theme-vintage-old-town .brand-name {
+  font-family: var(--vot-font-head);
+  font-size: 17px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--vot-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-vintage-old-town .brand-subtitle {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .main-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.theme-vintage-old-town .main-nav a {
+  font-family: var(--vot-font-head);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vot-ink-soft);
+  position: relative;
+  transition: color 0.15s ease;
+  padding: 4px 0;
+}
+
+.theme-vintage-old-town .main-nav a:hover {
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.theme-vintage-old-town .lang-switch {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--vot-ink);
+  background: var(--vot-surface-lowest);
+  box-shadow: 2px 2px 0px 0px #1f1b17;
+  overflow: hidden;
+}
+
+.theme-vintage-old-town .lang-switch button {
+  padding: 6px 12px;
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--vot-ink-soft);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.theme-vintage-old-town .lang-switch button.is-active {
+  background: var(--vot-primary);
+  color: #ffffff;
+}
+
+.theme-vintage-old-town .header-book {
+  display: inline-flex;
+}
+
+/* --------------------------------------------------------------------------
+   2. Hero Section: Vintage Travel Poster
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .hero-section {
+  padding: 40px 0 60px 0;
+  position: relative;
+}
+
+.theme-vintage-old-town .hero-canvas {
+  background: var(--vot-surface-low);
+  border: 2px solid var(--vot-ink);
+  box-shadow: 5px 5px 0px 0px #1f1b17;
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ornate Corner Accents */
+.theme-vintage-old-town .corner-accent {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: var(--vot-primary);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.theme-vintage-old-town .corner-top-left {
+  top: 4px;
+  left: 4px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.theme-vintage-old-town .corner-top-right {
+  top: 4px;
+  right: 4px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.theme-vintage-old-town .corner-bottom-left {
+  bottom: 4px;
+  left: 4px;
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.theme-vintage-old-town .corner-bottom-right {
+  bottom: 4px;
+  right: 4px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.theme-vintage-old-town .hero-broadside-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1.5px dashed var(--vot-border-light);
+}
+
+.theme-vintage-old-town .hero-series-badge {
+  background: var(--vot-primary);
+  color: #ffffff;
+  padding: 4px 10px;
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.theme-vintage-old-town .hero-address-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vot-secondary-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.theme-vintage-old-town .hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.theme-vintage-old-town .hero-visual-col {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.theme-vintage-old-town .hero-postcard {
+  width: 100%;
+  max-width: 480px;
+}
+
+.theme-vintage-old-town .hero-image-wrap {
+  width: 100%;
+  height: 380px;
+  overflow: hidden;
+  background: var(--vot-surface-high);
+}
+
+.theme-vintage-old-town .hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.theme-vintage-old-town .hero-postcard:hover .hero-img {
+  transform: scale(1.04);
+}
+
+.theme-vintage-old-town .hero-placeholder {
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--vot-surface-high);
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .hero-placeholder-icon {
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .hero-placeholder-title {
+  font-family: var(--vot-font-head);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Circular Stamped Badge Floating over Postcard */
+.theme-vintage-old-town .hero-stamp-badge {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--vot-surface-high);
+  border: 2px dashed var(--vot-primary);
+  box-shadow: 2px 2px 0px 0px #1f1b17;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+  transform: rotate(8deg);
+  z-index: 3;
+}
+
+.theme-vintage-old-town .stamp-star {
+  color: var(--vot-tertiary-light);
+  line-height: 1;
+}
+
+.theme-vintage-old-town .stamp-text-primary {
+  font-family: var(--vot-font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--vot-primary);
+  line-height: 1.2;
+}
+
+.theme-vintage-old-town .stamp-text-secondary {
+  font-family: var(--vot-font-head);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vot-ink-soft);
+  line-height: 1.1;
+}
+
+.theme-vintage-old-town .hero-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.theme-vintage-old-town .hero-eyebrow-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vot-tertiary);
+}
+
+.theme-vintage-old-town .hero-eyebrow {
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.theme-vintage-old-town .hero-title {
+  font-family: var(--vot-font-head);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .hero-accent-rule {
+  width: 64px;
+  height: 3px;
+  background: var(--vot-primary);
+}
+
+.theme-vintage-old-town .hero-copy {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .hero-cta-wrap {
+  padding-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   3. Story Section: Postcard Note
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .story-section {
+  background: var(--vot-surface-low);
+  border-top: 1.5px solid var(--vot-ink);
+  border-bottom: 1.5px solid var(--vot-ink);
+}
+
+.theme-vintage-old-town .story-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.theme-vintage-old-town .story-stamp-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.theme-vintage-old-town .stamp-tag {
+  background: var(--vot-primary-fixed);
+  color: var(--vot-primary);
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 4px 12px;
+  border: 1px solid var(--vot-primary);
+}
+
+.theme-vintage-old-town .stamp-rule {
+  flex: 1;
+  height: 1.5px;
+  background: var(--vot-border-light);
+}
+
+.theme-vintage-old-town .stamp-registered {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .story-postcard-body {
+  background: var(--vot-surface-lowest);
+  border: 2px solid var(--vot-ink);
+  box-shadow: 5px 5px 0px 0px #1f1b17;
+  padding: 48px;
+  position: relative;
+}
+
+/* Postal Cancellation Stamps Overlay */
+.theme-vintage-old-town .postmark-overlay {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.theme-vintage-old-town .postage-stamp {
+  width: 64px;
+  height: 76px;
+  background: var(--vot-secondary-container);
+  border: 1.5px dashed var(--vot-secondary);
+  box-shadow: 2px 2px 0px 0px rgba(31, 27, 23, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px;
+  color: var(--vot-secondary);
+}
+
+.theme-vintage-old-town .stamp-country {
+  font-family: var(--vot-font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.theme-vintage-old-town .stamp-price {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.theme-vintage-old-town .postmark-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--vot-primary-container);
+  color: var(--vot-primary-container);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  text-align: center;
+  transform: rotate(-10deg);
+  opacity: 0.85;
+}
+
+.theme-vintage-old-town .postmark-location {
+  font-family: var(--vot-font-head);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+
+.theme-vintage-old-town .postmark-date {
+  font-family: var(--vot-font-head);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.theme-vintage-old-town .postmark-posted {
+  font-family: var(--vot-font-head);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.theme-vintage-old-town .story-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.theme-vintage-old-town .story-postcard {
+  width: 100%;
+}
+
+.theme-vintage-old-town .story-img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+}
+
+.theme-vintage-old-town .story-caption {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vot-ink-soft);
+  text-align: center;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.theme-vintage-old-town .story-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.theme-vintage-old-town .story-heading-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .story-title {
+  font-family: var(--vot-font-head);
+  font-size: 26px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .story-quote {
+  font-size: 18px;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--vot-ink);
+  background: var(--vot-surface);
+  border-left: 3px solid var(--vot-primary);
+  padding: 16px 20px;
+}
+
+.theme-vintage-old-town .story-body {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .story-address-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--vot-surface-low);
+  border: 1px solid var(--vot-border-light);
+  font-size: 13px;
+  color: var(--vot-ink-soft);
+  width: fit-content;
+}
+
+/* --------------------------------------------------------------------------
+   4. Rooms Section: Railway Fares & Berth Passes
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .section-head {
+  margin-bottom: 48px;
+}
+
+.theme-vintage-old-town .section-head.text-center {
+  text-align: center;
+}
+
+.theme-vintage-old-town .eyebrow-badge {
+  display: inline-block;
+  background: var(--vot-tertiary-fixed);
+  color: var(--vot-tertiary);
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 4px 12px;
+  border: 1px solid var(--vot-tertiary);
+  margin-bottom: 10px;
+}
+
+.theme-vintage-old-town .section-title {
+  font-family: var(--vot-font-head);
+  font-size: 36px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .section-subtitle {
+  font-size: 16px;
+  color: var(--vot-ink-soft);
+  max-width: 600px;
+  margin: 10px auto 0 auto;
+}
+
+.theme-vintage-old-town .rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+}
+
+.theme-vintage-old-town .ticket-card {
+  background: var(--vot-surface-lowest);
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: var(--vot-shadow-hard);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-vintage-old-town .ticket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--vot-shadow-hover);
+}
+
+.theme-vintage-old-town .ticket-top-ribbon {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  border-bottom: 1.5px solid var(--vot-ink);
+}
+
+.theme-vintage-old-town .ticket-card-primary .ticket-top-ribbon {
+  background: var(--vot-primary);
+}
+
+.theme-vintage-old-town .ticket-card-secondary .ticket-top-ribbon {
+  background: var(--vot-secondary);
+}
+
+.theme-vintage-old-town .ticket-card-tertiary .ticket-top-ribbon {
+  background: var(--vot-tertiary);
+}
+
+.theme-vintage-old-town .ticket-body {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-vintage-old-town .room-name {
+  font-family: var(--vot-font-head);
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--vot-ink);
+  margin-bottom: 12px;
+}
+
+.theme-vintage-old-town .room-meta-box {
+  background: var(--vot-surface-low);
+  padding: 12px 14px;
+  border: 1px solid var(--vot-border-light);
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.theme-vintage-old-town .room-capacity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--vot-font-head);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .room-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .room-amenities {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.theme-vintage-old-town .amenities-title {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .amenity-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.theme-vintage-old-town .amenity-item {
+  background: var(--vot-surface);
+  border: 1px solid var(--vot-border-light);
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--vot-ink-soft);
+}
+
+/* Perforation with Notch Punchouts */
+.theme-vintage-old-town .ticket-perforation {
+  position: relative;
+  height: 24px;
+  margin: 12px -24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-vintage-old-town .ticket-perforation::before,
+.theme-vintage-old-town .ticket-perforation::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  background: var(--vot-bg);
+  border: 1.5px solid var(--vot-ink);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.theme-vintage-old-town .ticket-perforation::before {
+  left: -9px;
+  clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+}
+
+.theme-vintage-old-town .ticket-perforation::after {
+  right: -9px;
+  clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
+}
+
+.theme-vintage-old-town .ticket-perforation-rule {
+  width: 100%;
+  border-bottom: 2px dashed var(--vot-border-light);
+}
+
+.theme-vintage-old-town .ticket-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.theme-vintage-old-town .room-price-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-vintage-old-town .price-label {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .price-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.theme-vintage-old-town .price-value .currency {
+  font-family: var(--vot-font-head);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .price-value .amount {
+  font-family: var(--vot-font-head);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .price-value .unit {
+  font-size: 13px;
+  color: var(--vot-ink-soft);
+}
+
+/* --------------------------------------------------------------------------
+   5. Gallery Section: Scattered Postcards on Parchment
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .gallery-section {
+  background: var(--vot-surface-high);
+  border-top: 1.5px solid var(--vot-ink);
+  border-bottom: 1.5px solid var(--vot-ink);
+}
+
+.theme-vintage-old-town .gallery-section .section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.theme-vintage-old-town .head-note {
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+}
+
+.theme-vintage-old-town .gallery-card-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.theme-vintage-old-town .gallery-postcard {
+  width: 100%;
+}
+
+.theme-vintage-old-town .gallery-image-box {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  background: var(--vot-surface);
+}
+
+.theme-vintage-old-town .gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.theme-vintage-old-town .gallery-postcard:hover .gallery-img {
+  transform: scale(1.04);
+}
+
+.theme-vintage-old-town .gallery-caption-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.theme-vintage-old-town .gallery-caption-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vot-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-vintage-old-town .gallery-index {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vot-ink-soft);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   6. Location Section: District Atlas & Wayfinding
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .location-card {
+  background: var(--vot-surface-low);
+  border: 2px solid var(--vot-ink);
+  box-shadow: 5px 5px 0px 0px #1f1b17;
+  padding: 40px;
+}
+
+.theme-vintage-old-town .location-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1.5px dashed var(--vot-border-light);
+}
+
+.theme-vintage-old-town .location-eyebrow-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vot-primary);
+  margin-bottom: 6px;
+}
+
+.theme-vintage-old-town .location-eyebrow {
+  font-family: var(--vot-font-head);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.theme-vintage-old-town .location-title {
+  font-family: var(--vot-font-head);
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .location-address {
+  font-size: 15px;
+  color: var(--vot-ink-soft);
+  margin-top: 4px;
+}
+
+.theme-vintage-old-town .location-badge {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--vot-secondary-container);
+  border: 2px solid var(--vot-secondary);
+  color: var(--vot-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+  font-family: var(--vot-font-head);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transform: rotate(6deg);
+  box-shadow: 2px 2px 0px 0px #1f1b17;
+  flex-shrink: 0;
+}
+
+.theme-vintage-old-town .location-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.theme-vintage-old-town .location-map-wrap {
+  width: 100%;
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: 3px 3px 0px 0px #1f1b17;
+  overflow: hidden;
+  background: var(--vot-surface);
+}
+
+.theme-vintage-old-town .location-map-fallback {
+  width: 100%;
+  min-height: 280px;
+  background: var(--vot-surface);
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: 3px 3px 0px 0px #1f1b17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.theme-vintage-old-town .fallback-marker {
+  background: var(--vot-surface-lowest);
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: 3px 3px 0px 0px #1f1b17;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  transform: rotate(-1.5deg);
+}
+
+.theme-vintage-old-town .marker-icon {
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .marker-title {
+  font-family: var(--vot-font-head);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .marker-address {
+  font-size: 14px;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .location-contacts-wrap {
+  background: var(--vot-surface-lowest);
+  border: 1.5px solid var(--vot-ink);
+  box-shadow: 3px 3px 0px 0px #1f1b17;
+  padding: 20px 24px;
+}
+
+/* --------------------------------------------------------------------------
+   7. Footer
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .site-footer {
+  background: var(--vot-surface-low);
+  border-top: 1.5px solid var(--vot-ink);
+  padding: 48px 0;
+}
+
+.theme-vintage-old-town .footer-perforation {
+  width: 100%;
+  border-bottom: 2px dashed var(--vot-border-light);
+  margin-bottom: 32px;
+}
+
+.theme-vintage-old-town .footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.theme-vintage-old-town .footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theme-vintage-old-town .footer-name {
+  font-family: var(--vot-font-head);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--vot-ink);
+}
+
+.theme-vintage-old-town .footer-address {
+  font-size: 14px;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .footer-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.theme-vintage-old-town .footer-mood-tag {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .footer-powered {
+  font-size: 13px;
+  color: var(--vot-ink-soft);
+}
+
+/* --------------------------------------------------------------------------
+   8. Mobile Sticky Bar
+   -------------------------------------------------------------------------- */
+.theme-vintage-old-town .sticky-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 248, 245, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1.5px solid var(--vot-ink);
+  box-shadow: 0 -4px 16px rgba(31, 27, 23, 0.1);
+  padding: 12px 24px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.theme-vintage-old-town .sticky-fare {
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-vintage-old-town .sticky-label {
+  font-family: var(--vot-font-head);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .sticky-amount {
+  font-family: var(--vot-font-head);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--vot-primary);
+}
+
+.theme-vintage-old-town .sticky-amount small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--vot-ink-soft);
+}
+
+.theme-vintage-old-town .sticky-btn {
+  padding: 10px 20px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Rules (@media max-width: 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .theme-vintage-old-town .container {
+    padding: 0 16px;
+  }
+
+  .theme-vintage-old-town .section {
+    padding: 48px 0;
+  }
+
+  .theme-vintage-old-town .header-inner {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .theme-vintage-old-town .main-nav {
+    display: none;
+  }
+
+  .theme-vintage-old-town .header-book {
+    display: none;
+  }
+
+  .theme-vintage-old-town .hero-canvas {
+    padding: 20px 16px;
+    box-shadow: 3px 3px 0px 0px #1f1b17;
+  }
+
+  .theme-vintage-old-town .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .theme-vintage-old-town .hero-image-wrap {
+    height: 260px;
+  }
+
+  .theme-vintage-old-town .hero-title {
+    font-size: 30px;
+  }
+
+  .theme-vintage-old-town .hero-copy {
+    font-size: 15px;
+  }
+
+  .theme-vintage-old-town .hero-stamp-badge {
+    width: 76px;
+    height: 76px;
+    top: -10px;
+    right: -10px;
+  }
+
+  .theme-vintage-old-town .stamp-text-primary {
+    font-size: 8px;
+  }
+
+  .theme-vintage-old-town .stamp-text-secondary {
+    font-size: 7px;
+  }
+
+  .theme-vintage-old-town .story-postcard-body {
+    padding: 24px 16px;
+  }
+
+  .theme-vintage-old-town .postmark-overlay {
+    top: 12px;
+    right: 12px;
+    gap: 8px;
+    transform: scale(0.8);
+    transform-origin: top right;
+  }
+
+  .theme-vintage-old-town .story-content-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 40px;
+  }
+
+  .theme-vintage-old-town .story-img {
+    height: 220px;
+  }
+
+  .theme-vintage-old-town .story-title {
+    font-size: 22px;
+  }
+
+  .theme-vintage-old-town .story-quote {
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+
+  .theme-vintage-old-town .section-title {
+    font-size: 26px;
+  }
+
+  .theme-vintage-old-town .rooms-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .theme-vintage-old-town .gallery-section .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .theme-vintage-old-town .gallery-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .theme-vintage-old-town .gallery-image-box {
+    height: 200px;
+  }
+
+  .theme-vintage-old-town .location-card {
+    padding: 24px 16px;
+  }
+
+  .theme-vintage-old-town .location-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .theme-vintage-old-town .location-title {
+    font-size: 22px;
+  }
+
+  .theme-vintage-old-town .location-badge {
+    width: 64px;
+    height: 64px;
+    font-size: 8px;
+  }
+
+  .theme-vintage-old-town .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .theme-vintage-old-town .footer-meta {
+    align-items: flex-start;
+  }
+
+  .theme-vintage-old-town.has-sticky-bar { padding-bottom: 84px; }
+
+  .theme-vintage-old-town .sticky-bar {
+    display: flex;
+    padding: 10px 16px;
+  }
+}
+
+.theme-vintage-old-town .hero-title,.theme-vintage-old-town .room-name,.theme-vintage-old-town .location-title,.theme-vintage-old-town .marker-title,.theme-vintage-old-town .footer-name { overflow-wrap: anywhere; }
+.theme-vintage-old-town .hero-img,.theme-vintage-old-town .gallery-img { object-position: var(--photo-position, center); }
+@media (max-width: 375px) { .theme-vintage-old-town .header-actions { gap: 8px; } .theme-vintage-old-town .brand-name { max-width: 170px; } .theme-vintage-old-town .sticky-bar { gap: 8px; } .theme-vintage-old-town .sticky-btn { padding: 10px 12px; } }
+.theme-vintage-old-town .story-img { object-position: var(--photo-position, center); }
+.theme-vintage-old-town .story-content-grid.no-photo { grid-template-columns: 1fr; }
+.theme-vintage-old-town .story-content-grid.no-photo .story-visual-col { display: none; }

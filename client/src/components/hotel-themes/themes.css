@@ -132,3 +132,8 @@
 .theme-riverside-calm .public-booking h2{color:var(--owner-accent-text)!important}
 .theme-riverside-calm .public-booking h2 i{color:var(--owner-highlight)!important}
 .theme-riverside-calm .public-button,.theme-riverside-calm .public-nav-cta,.theme-riverside-calm .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+
+.theme-vintage-old-town .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-vintage-old-town .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-vintage-old-town .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-vintage-old-town .public-button,.theme-vintage-old-town .public-nav-cta,.theme-vintage-old-town .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
