@@ -135,6 +135,23 @@
   border-color: var(--booking-page-accent);
 }
 
+/* The booking steps keep their own look (public-booking.css); on this page they sit in one
+   column under the reassurance banner instead of a full-width two-column band. */
+.booking-page .public-booking {
+  grid-template-columns: 1fr;
+  gap: 24px;
+  padding: 36px 40px;
+  border-radius: 12px;
+}
+
+.booking-page .public-booking h2 {
+  font-size: 36px;
+}
+
+.booking-page .public-booking p {
+  margin-bottom: 0;
+}
+
 .booking-page-footer {
   display: flex;
   flex-wrap: wrap;
@@ -152,5 +169,8 @@
   .booking-page-main { padding: 20px 16px 40px; }
   .booking-reassurance { padding: 14px; gap: 10px; margin-bottom: 20px; }
   .booking-reassurance-title { font-size: 16px; }
+  .booking-page .public-booking { display: block; padding: 24px 16px; }
+  .booking-page .public-booking h2 { font-size: 28px; }
+  .booking-page .booking-box { padding: 16px 12px; margin-top: 20px; }
   .booking-page-footer { padding: 18px 16px; }
 }

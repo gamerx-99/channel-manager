@@ -4,6 +4,7 @@ import "@/components/public-hotel/public-hotel.css";
 import "@/components/public-hotel/public-booking-page.css";
 import { PoweredByHayhost } from "@/components/hotel-themes/PoweredByHayhost";
 import BookingReassurance from "@/components/public-hotel/BookingReassurance";
+import PublicBookingSection from "@/components/public-hotel/PublicBookingSection";
 import { usePublicBookingPage } from "@/components/public-hotel/usePublicBookingPage";
 
 export default function PublicBooking({ slug }: { slug: string }) {
@@ -38,6 +39,7 @@ export default function PublicBooking({ slug }: { slug: string }) {
           instagramUrl={hotel.instagram_url}
           xUrl={hotel.x_url}
         />
+        <PublicBookingSection page={data} />
       </main>
       <footer className="booking-page-footer">
         <span>{hotel.name}</span>

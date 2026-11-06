@@ -43,14 +43,14 @@ PART 2: แถบให้แขกสบายใจ
 ======================================================================
 PART 3: ขั้นตอนจองในหน้าใหม่
 ======================================================================
-[ ] ใต้แถบ: ขั้นตอนจองเดิม (PublicBookingSection / useBookingWizard / BookingStep*)
+[x] ใต้แถบ: ขั้นตอนจองเดิม (PublicBookingSection / useBookingWizard / BookingStep*)
     ห้ามเขียน logic การจองใหม่ ใช้ของเดิมทั้งหมด: เลือกวัน, เลือกห้อง (การ์ดมีสิ่งอำนวยความสะดวกแล้ว),
     ข้อมูลผู้เข้าพัก, ชำระเงิน PromptPay, หน้ายืนยัน
-[ ] รองรับ query ?roomType=<id>&checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD ถ้ามีให้กรอกให้ก่อน
+[x] รองรับ query ?roomType=<id>&checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD ถ้ามีให้กรอกให้ก่อน
     (อ่าน query เป็นฟังก์ชันบริสุทธิ์ใน .ts พร้อมเทสต์: ค่าถูก, วันผิดรูปแบบ, checkOut ก่อน checkIn,
     วันในอดีตตามวันไทย, roomType ไม่มีอยู่จริง)
 [ ] มือถือ 375px ใช้ได้ ไม่มี scroll แนวนอน
-[ ] commit: feat(booking): run the booking steps on the booking page
+[x] commit: feat(booking): run the booking steps on the booking page
 
 ======================================================================
 PART 4: ปุ่มจองทุกจุดพาไปหน้าใหม่
