@@ -24,8 +24,21 @@ export function movePhotoToIndex(ids: readonly string[], activeId: string, toInd
   return movePhoto(ids, from, toIndex);
 }
 
-// Aliases for compatibility with possible test/import names.
-export const reorderPhotos = reorderPhotoIds;
-export const reorderMedia = reorderPhotoIds;
-export const reorderWebsitePhotos = reorderPhotoIds;
-export const movePhotoById = reorderPhotoIds;
+/**
+ * Splits the builder photos into the ones on the website (cover first, then the gallery in the
+ * draft order) and the rest. Only the first group can be dragged; the order comes from the draft
+ * (`heroMediaId` + `galleryMediaIds`), never from `display_order`.
+ */
+export function splitWebsitePhotos<T extends { id: string }>(photos: readonly T[], coverId: string | null, galleryIds: readonly string[]) {
+  const byId = new Map(photos.map(photo => [photo.id, photo]));
+  const cover = coverId ? byId.get(coverId) ?? null : null;
+  const gallery = galleryIds.filter(id => id !== coverId).map(id => byId.get(id)).filter((photo): photo is T => Boolean(photo));
+  const ordered = cover ? [cover, ...gallery] : gallery;
+  const shown = new Set(ordered.map(photo => photo.id));
+  return { hasCover: Boolean(cover), ordered, others: photos.filter(photo => !shown.has(photo.id)) };
+}
+
+/** 1-based position of a photo in the draggable list, or 0 when it is not there. */
+export function photoPosition(ids: readonly string[], id: string): number {
+  return ids.indexOf(id) + 1;
+}

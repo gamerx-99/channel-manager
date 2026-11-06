@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { reorderPhotoIds, movePhoto, movePhotoToIndex } from './photoReorder';
+import { reorderPhotoIds, movePhoto, movePhotoToIndex, photoPosition, splitWebsitePhotos } from './photoReorder';
+
+describe('splitWebsitePhotos', () => {
+  // Media arrive in display_order; the draft says the cover is c and the gallery is g2 then g1.
+  const photos = [{ id: 'g1' }, { id: 'hidden' }, { id: 'c' }, { id: 'g2' }];
+
+  it('orders the cover first and then the gallery from the draft, not display_order', () => {
+    const { hasCover, ordered, others } = splitWebsitePhotos(photos, 'c', ['g2', 'g1']);
+    expect(hasCover).toBe(true);
+    expect(ordered.map(p => p.id)).toEqual(['c', 'g2', 'g1']);
+    expect(others.map(p => p.id)).toEqual(['hidden']);
+  });
+
+  it('skips ids that no longer exist and works without a cover', () => {
+    const { hasCover, ordered } = splitWebsitePhotos(photos, null, ['gone', 'g1']);
+    expect(hasCover).toBe(false);
+    expect(ordered.map(p => p.id)).toEqual(['g1']);
+  });
+
+  it('dropping a gallery photo on the cover makes that photo first', () => {
+    const { ordered } = splitWebsitePhotos(photos, 'c', ['g2', 'g1']);
+    const ids = ordered.map(p => p.id);
+    expect(reorderPhotoIds(ids, 'g1', 'c')).toEqual(['g1', 'c', 'g2']);
+    expect(photoPosition(ids, 'g1')).toBe(3);
+  });
+});
 
 describe('photoReorder', () => {
   const ids = ['hero', 'g1', 'g2', 'g3'];

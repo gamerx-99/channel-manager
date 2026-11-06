@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isRoomAmenityKey } from '../../shared/roomAmenities';
-import { HOTEL_THEMES, isHotelThemeId } from '@shared/hotelThemes';
+import { HOTEL_THEMES, isHotelThemeId, MAX_WEBSITE_GALLERY_PHOTOS } from '@shared/hotelThemes';
 import { isValidCoordinates, validateHotelContacts } from '@shared/hotelLocationRules';
 import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
@@ -214,7 +214,7 @@ export const setHotelMediaObjectPositionSchema = z.object({
 });
 export const setHotelMediaCaptionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), caption: z.string().max(120) });
 export const setHotelMediaGallerySelectionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), shown: z.boolean() });
-export const reorderHotelMediaSchema = z.object({ hotel_id: hotelIdSchema, ids: z.array(z.string().uuid()) });
+export const reorderHotelMediaSchema = z.object({ hotel_id: hotelIdSchema, ids: z.array(z.string().uuid()).max(MAX_WEBSITE_GALLERY_PHOTOS + 1) });
 
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
@@ -652,12 +652,8 @@ export const reorderHotelMedia = protectedProcedure.input(reorderHotelMediaSchem
   requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try { return await d1ReorderHotelMedia(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input); }
-  catch (error) { if (error instanceof TRPCError) throw error; return rethrowDomainError(error); }
+  catch (error) { return rethrowDomainError(error); }
 });
-
-export const reorderHotelSiteMedia = reorderHotelMedia;
-export const setHotelMediaOrder = reorderHotelMedia;
-export const reorderWebsitePhotos = reorderHotelMedia;
 
 export const hotelRouter = router({
   hotels,
@@ -684,8 +680,5 @@ export const hotelRouter = router({
   setHotelMediaHero,
   setHotelMediaObjectPosition,
   reorderHotelMedia,
-  reorderHotelSiteMedia,
-  setHotelMediaOrder,
-  reorderWebsitePhotos,
   updateHotelProfile,
 });

@@ -42,7 +42,7 @@ export default function WebsiteBuilder() {
     deleteMediaMut, setHeroMut, setObjectPositionMut, saveConfigMut, saveThemeMut,
     publishConfigMut, discardDraftMut, storedDraft, draft, setDraft, publishedConfig,
     config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media,
-    draftMedia, selectedGalleryIds, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
+    draftMedia, hasCover, orderedPhotos, otherPhotos, selectedGalleryIds, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels,
     formError, photoError, saveNote, handleResetFocalPoint, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleReorderPhotos,
     handleFocalPoint, handleSave, handleSaveTheme,
   } = useWebsiteBuilder();
@@ -225,7 +225,9 @@ export default function WebsiteBuilder() {
             <PhotosSection
               canManage={canManage}
               media={media}
-              draftMedia={draftMedia}
+              orderedPhotos={orderedPhotos}
+              otherPhotos={otherPhotos}
+              hasCover={hasCover}
               selectedGalleryIds={selectedGalleryIds}
               fileInputRef={fileInputRef}
               focalMediaId={focalMediaId}
