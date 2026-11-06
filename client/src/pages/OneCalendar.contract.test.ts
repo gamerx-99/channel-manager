@@ -9,6 +9,8 @@ describe("one calendar page contract", () => {
   const app = read("client/src/App.tsx");
   const page = read("client/src/pages/OneCalendar.tsx");
   const hook = read("client/src/pages/useOneCalendar.ts");
+  const timeline = read("client/src/pages/OneCalendarTimeline.tsx");
+  const css = read("client/src/pages/oneCalendar.css");
 
   it("registers the hotel calendar under the hotel-view permission", () => {
     expect(app).toContain("<OneCalendar id={params.id} />");
@@ -25,8 +27,11 @@ describe("one calendar page contract", () => {
   });
 
   it("keeps prices in month cells only and gates price controls by permission", () => {
-    const timeline = page.slice(page.indexOf("<div className=\"one-calendar-timeline-scroll\">"), page.indexOf("<p className=\"field-help\">"));
-    expect(timeline).not.toContain("row?.price");
+    expect(timeline).not.toContain("price");
+    expect(timeline).toContain("one-calendar-timeline-scroll");
+    expect(css).toContain(".one-calendar-timeline-scroll { width: 100%; max-width: 100%; overflow-x: auto;");
+    expect(css).toContain(".one-calendar-page { min-width: 0;");
+    expect(css).toContain(".one-calendar-timeline { border-collapse: separate; border-spacing: 0; min-width: max-content;");
     expect(page).toContain("data.calendar.data?.canSeePrice &&");
     expect(page).toContain("data.canManageRates && <div className=\"one-calendar-control-grid\">");
     expect(hook).toContain('permissions.includes("revenue.manage_rates")');

@@ -5,6 +5,7 @@ import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
 import PageState from "@/components/PageState";
 import { useOneCalendar } from "./useOneCalendar";
+import OneCalendarTimeline from "./OneCalendarTimeline";
 import { formatBuddhistDate, isDateSelected, selectCalendarDate } from "./oneCalendarRules";
 import "./oneCalendar.css";
 
@@ -120,7 +121,7 @@ export default function OneCalendar({ id }: { id: string }) {
           <span className="one-calendar-day-number">{Number(date.slice(-2))}</span><span className="one-calendar-day-room-count">{selectedTypes.map((roomType: any) => { const row = rowMap.get(`${roomType.id}:${date}`) as any; const roomsForSale = row?.roomsAvailable ?? roomType.totalRooms; return <small key={roomType.id}>{roomsForSale === 0 ? t("oneCalendar.closed") : `${roomsForSale}/${roomType.totalRooms}`}</small>; })}</span>
           {data.calendar.data?.canSeePrice && <span className="one-calendar-day-price">{selectedTypes.map((roomType: any) => { const row = rowMap.get(`${roomType.id}:${date}`) as any; return row?.price == null ? null : <small key={roomType.id}>฿{Number(row.price).toLocaleString()}</small>; })}</span>}
         </button>)}
-      </div> : <div className="one-calendar-timeline-scroll"><table className="one-calendar-timeline"><thead><tr><th>{t("oneCalendar.selectRooms")}</th>{dates.map(date => <th key={date}>{Number(date.slice(-2))}</th>)}</tr></thead><tbody>{selectedTypes.map((roomType: any) => <tr key={roomType.id}><th>{roomType.name}</th>{dates.map(date => { const row = rowMap.get(`${roomType.id}:${date}`) as any; const open = !row?.closed && (row?.availableRooms ?? roomType.totalRooms) > 0; return <td key={date}><button type="button" className={`one-calendar-timeline-cell ${open ? "is-open" : "is-closed"}`} onClick={() => chooseDay(date)} aria-label={t("oneCalendar.timelineAria", { name: roomType.name, date: formatBuddhistDate(date), status: t(open ? "oneCalendar.available" : "oneCalendar.unavailable") })}>{t(open ? "oneCalendar.available" : "oneCalendar.unavailable")}</button></td>; })}</tr>)}</tbody></table></div>}
+      </div> : <OneCalendarTimeline dates={dates} roomTypes={selectedTypes} rowMap={rowMap} t={t} onChooseDay={chooseDay} />}
       <p className="field-help">{t("oneCalendar.chooseRange")}{range[0] && ` · ${formatBuddhistDate(range[0])}${range[1] ? ` – ${formatBuddhistDate(range[1])}` : ""}`}</p>
     </section>
     {panel}

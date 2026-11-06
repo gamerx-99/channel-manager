@@ -4960,3 +4960,12 @@ Not tested in a browser or with a real email.
 - Verification: `pnpm check` exit 0; focused UI, route, server, and rate-split tests passed (34 tests).
 - Thai copy before → after: new keys `oneCalendar.title` = “ปฏิทินราคาและห้องว่าง”, `oneCalendar.month` = “รายเดือน”, `oneCalendar.timeline` = “ไทม์ไลน์”, `oneCalendar.rooms` = “จำนวนห้องที่ขาย”, `oneCalendar.price` = “ราคาต่อคืน”, `oneCalendar.minStay` = “จำนวนคืนขั้นต่ำ”, `oneCalendar.basePrice` = “กลับไปใช้ราคาฐาน”.
 - PARTS 4–7 remain in progress.
+
+## 2026-11-06 feat/one-calendar — PART 4 timeline
+
+- Extracted the timeline into `OneCalendarTimeline.tsx`, with room types as rows and days as columns. It renders only “ว่าง” / “ไม่ว่าง”, remains clickable for the shared date-range selection, and stays inside a horizontally scrollable frame at narrow widths.
+- Updated the page contract to assert that the timeline contains no price data and that the mobile viewport remains constrained by the frame.
+- Files: `client/src/pages/OneCalendar.tsx`, `client/src/pages/OneCalendarTimeline.tsx`, `client/src/pages/OneCalendar.contract.test.ts`, `.agent/prompt3-one-calendar.todo`, `.agent/handoff.md`.
+- Verification: `pnpm check` exit 0; OneCalendar contract and date-rule tests passed (6 tests).
+- Thai copy before → after: no new strings; the timeline uses `oneCalendar.available` (“ว่าง”) and `oneCalendar.unavailable` (“ไม่ว่าง”).
+- PARTS 5–7 remain in progress.
