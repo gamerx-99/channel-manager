@@ -28,3 +28,4 @@ The reasoning behind it is in `docs/research/thai-language-study-2026-11-03.md`.
 | Support team | hayhost staff who help the owner | ทีม hayhost | ทีมช่วยเหลือ (sounds generic) |
 | Dashboard | Back-office home | ภาพรวม | แผงควบคุม |
 | API | Anything the owner sees | Describe the result, e.g. รับจองจาก OTA โดยตรง | API |
+| Revenue date | Financial report / dashboard | วันที่ชำระเงิน | วันที่เช็คอิน (when describing revenue) |

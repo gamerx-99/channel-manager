@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import { bangkokDate, fromSatang, isCancelledStatus, isRevenueStatus, toSatang } from '@shared/finance';
+import { bangkokDate, fromSatang, isCancelledStatus, isRevenueStatus, revenueByThaiDay, toSatang } from '@shared/finance';
 
-type BookingRecord = { id: string; status: string; check_in: string; check_out: string; price: string | null; [key: string]: any };
+type BookingRecord = { id: string; status: string; check_in: string; check_out: string; paid_at?: string | null; refunded_at?: string | null; price: string | null; [key: string]: any };
 
 type BookingRow = Pick<BookingRecord, 'id' | 'status' | 'check_in' | 'check_out' | 'price'> & {
   payment_status?: string | null;
   payment_method?: string | null;
+  paid_at?: string | null;
+  refunded_at?: string | null;
   source?: string | null;
   rooms: { room_types: { name: string } | null } | null;
 };
@@ -62,6 +64,7 @@ export type FinancialsBookingRow = {
   status: string;
   payment_status: string | null;
   payment_method: string | null;
+  paid_at?: string | null;
   price: number;
 };
 
@@ -136,9 +139,7 @@ function overlapNights(checkIn: string, checkOut: string, periodStart: string, p
 }
 
 /**
- * Revenue here is the value of confirmed, checked-in and checked-out bookings, booked by check-in date
- * in Thailand time (see `shared/finance.ts`). Held, awaiting-payment, expired, rejected, cancelled and
- * refunded bookings are not revenue. Collected / pending / outstanding split that revenue by payment status.
+ * Revenue is money received on each Thai payment day and refunded on the Thai refund day.
  */
 export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Date(), periodInput?: FinancialsPeriodInput): FinancialsResult {
   const generatedAt = now.toISOString();
@@ -146,10 +147,11 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
   const periodEndExclusive = addDays(periodEnd, 1);
 
   const allBookings = hotels.flatMap(hotel => hotel.bookings);
-  const periodBookings = allBookings.filter(booking => booking.check_in >= periodStart && booking.check_in <= periodEnd);
-  const revenueBookings = periodBookings.filter(booking => isRevenueStatus(booking.status));
-  const cancelledBookings = periodBookings.filter(booking => isCancelledStatus(booking.status));
-  const revenueSatang = revenueBookings.reduce((total, booking) => total + toSatang(booking.price), 0);
+  const revenueBookings = allBookings.filter(booking => isRevenueStatus(booking.status) && booking.payment_status === "verified" && booking.paid_at && bangkokDate(new Date(booking.paid_at)) >= periodStart && bangkokDate(new Date(booking.paid_at)) <= periodEnd);
+  const dayRevenue = revenueByThaiDay(allBookings.filter(booking => booking.payment_status === "verified" || booking.refunded_at).map(booking => ({ amount: booking.price, paidAt: booking.payment_status === "verified" ? booking.paid_at : null, refundedAt: booking.refunded_at })));
+  const cancelledBookings = allBookings.filter(booking => booking.check_in >= periodStart && booking.check_in <= periodEnd && isCancelledStatus(booking.status));
+  const refundRows = allBookings.filter(booking => booking.refunded_at && bangkokDate(new Date(booking.refunded_at)) >= periodStart && bangkokDate(new Date(booking.refunded_at)) <= periodEnd);
+  const revenueSatang = Array.from(dayRevenue.entries()).filter(([date]) => date >= periodStart && date <= periodEnd).reduce((total, [, amount]) => total + toSatang(amount), 0);
   let collectedSatang = 0;
   let outstandingSatang = 0;
   let pendingSatang = 0;
@@ -172,15 +174,16 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
   if (trendGranularity === 'day') {
     trend = Array.from({ length: dayCount }, (_, index) => {
       const date = addDays(periodStart, index);
-      const dayBookings = revenueBookings.filter(booking => booking.check_in === date);
-      return { date, bookings: dayBookings.length, revenue: sumRevenue(dayBookings) };
+      const dayBookings = revenueBookings.filter(booking => bangkokDate(new Date(booking.paid_at!)) === date);
+      return { date, bookings: dayBookings.length, revenue: dayRevenue.get(date) ?? 0 };
     });
   } else {
     // One point per Thai calendar month, dated the first of the month.
     trend = [];
     for (let month = periodStart.slice(0, 7); month <= periodEnd.slice(0, 7); month = addDays(lastDayOfMonth(month), 1).slice(0, 7)) {
-      const monthBookings = revenueBookings.filter(booking => booking.check_in.startsWith(month));
-      trend.push({ date: `${month}-01`, bookings: monthBookings.length, revenue: sumRevenue(monthBookings) });
+      const monthBookings = revenueBookings.filter(booking => bangkokDate(new Date(booking.paid_at!)).startsWith(month));
+      const monthRevenue = Array.from(dayRevenue.entries()).filter(([date]) => date.startsWith(month)).reduce((sum, [, amount]) => sum + amount, 0);
+      trend.push({ date: `${month}-01`, bookings: monthBookings.length, revenue: monthRevenue });
     }
   }
 
@@ -194,16 +197,23 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
       status: booking.status,
       payment_status: booking.payment_status ?? null,
       payment_method: booking.payment_method ?? null,
+      paid_at: booking.paid_at ? bangkokDate(new Date(booking.paid_at)) : null,
       price: fromSatang(toSatang(booking.price)),
     }))
     .sort((a, b) => a.check_in.localeCompare(b.check_in) || a.id.localeCompare(b.id));
 
   const roomTypeTotals = new Map<string, { bookings: number; satang: number }>();
-  for (const booking of revenueBookings) {
+  for (const booking of allBookings) {
+    const paidDay = booking.payment_status === 'verified' && booking.paid_at ? bangkokDate(new Date(booking.paid_at)) : null;
+    const refundDay = booking.refunded_at ? bangkokDate(new Date(booking.refunded_at)) : null;
+    const paidInPeriod = Boolean(paidDay && paidDay >= periodStart && paidDay <= periodEnd);
+    const refundInPeriod = Boolean(refundDay && refundDay >= periodStart && refundDay <= periodEnd);
+    if (!paidInPeriod && !refundInPeriod) continue;
     const name = booking.rooms?.room_types?.name ?? 'Unassigned';
     const entry = roomTypeTotals.get(name) ?? { bookings: 0, satang: 0 };
-    entry.bookings += 1;
-    entry.satang += toSatang(booking.price);
+    if (paidInPeriod && isRevenueStatus(booking.status)) entry.bookings += 1;
+    if (paidInPeriod) entry.satang += toSatang(booking.price);
+    if (refundInPeriod) entry.satang -= toSatang(booking.price);
     roomTypeTotals.set(name, entry);
   }
   const roomTypeBreakdown: FinancialsRoomTypeBreakdown[] = Array.from(roomTypeTotals.entries())
@@ -231,7 +241,7 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
         0,
       ),
       hotelCount: hotels.length,
-      collectedRevenue: fromSatang(collectedSatang),
+      collectedRevenue: revenue,
       outstandingRevenue: fromSatang(outstandingSatang),
       pendingRevenue: fromSatang(pendingSatang),
     },

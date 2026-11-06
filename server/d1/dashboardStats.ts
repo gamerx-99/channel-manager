@@ -1,5 +1,6 @@
 import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { bookings } from "../../drizzle/d1-schema";
+import { dashboardFigures, type FigureBooking } from "@shared/finance";
 import type { D1ScopedDatabase } from "../db/scope";
 
 /**
@@ -25,4 +26,9 @@ export async function occupiedRoomIdsOnNight(db: D1ScopedDatabase, hotelId: stri
 /** Rooms still free tonight: rooms in service (not in maintenance) minus the ones a booking occupies. */
 export function freeRoomsTonight(rooms: ReadonlyArray<{ id: string; status: string }>, occupiedRoomIds: ReadonlySet<string>): number {
   return rooms.filter(room => room.status !== "maintenance" && room.status !== "out_of_service" && !occupiedRoomIds.has(room.id)).length;
+}
+
+/** Server dashboard adapter; revenue uses the same pure Thai paid-day aggregation as the report and client. */
+export function dashboardRevenueFigures(bookings: readonly FigureBooking[], now = new Date()) {
+  return dashboardFigures(bookings, now);
 }

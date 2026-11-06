@@ -15,8 +15,8 @@ import { getOtaSummary } from '../d1/ota';
 import { buildFinancialsSummary, financialsInputSchema } from '../financials';
 import { isBookingOccupyingInventory } from '@shared/bookingLifecycle';
 import { inventoryStatus } from '@shared/inventoryStatus';
-import { bangkokDate, dashboardFigures, isRevenueStatus } from '@shared/finance';
-import { freeRoomsTonight, occupiedRoomIdsOnNight } from '../d1/dashboardStats';
+import { bangkokDate, isRevenueStatus } from '@shared/finance';
+import { dashboardRevenueFigures, freeRoomsTonight, occupiedRoomIdsOnNight } from '../d1/dashboardStats';
 
 export const dashboardCalendarSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use an ISO calendar date.'),
@@ -33,7 +33,6 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
         ...b,
         source: b.source as any,
         status: b.status as any,
-        payment_status: null as string | null,
         price: b.price,
       })),
     }));
@@ -52,7 +51,7 @@ export const dashboard = protectedProcedure.query(async ({ ctx }) => {
         hotelCount: hotels.length,
         roomCount: hotels.reduce((total, hotel) => total + hotel.rooms.length, 0),
         availableRoomCount: hotelsWithFreeRooms.reduce((total, hotel) => total + hotel.roomsAvailableToday, 0),
-        arrivalsToday: dashboardFigures(revenueBookings, now).arrivalsToday,
+        arrivalsToday: dashboardRevenueFigures(revenueBookings, now).arrivalsToday,
         recentBookings: revenueBookings.sort((a, b) => b.check_in.localeCompare(a.check_in)).slice(0, 6),
       },
     };

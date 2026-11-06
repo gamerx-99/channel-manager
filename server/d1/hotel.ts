@@ -5,7 +5,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { defaultChildRateConfig, defaultOccupancyPricing } from "@shared/occupancyPricing";
 import type { AppRole } from "@shared/authorization";
 import { resolveMembershipPermissions } from "@shared/permissions";
-import { bookings, hotelMedia, hotelServices, hotelSiteConfig, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookings, bookingStatusLog, hotelMedia, hotelServices, hotelSiteConfig, hotelUsers, hotels, paymentSessions, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, authorizePlatformAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang, satangToMoney } from "../db/money";
 import type { CreateHotelInput, CreateHotelServiceInput, CreateRoomTypeInput, DeleteRoomTypeInput, DeleteHotelServiceInput, HotelRecord, RoomTypeRecord, UpdateHotelServiceInput, UpdateRoomTypeInput } from "../db/types";
@@ -55,14 +55,26 @@ export async function listManagedHotels(db: D1ScopedDatabase, caller: D1CallerCo
     const [hotelRoomTypes, hotelRooms, hotelBookings] = await Promise.all([
       db.select({ id: roomTypes.id, name: roomTypes.name, base_price: roomTypes.basePrice }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId)),
       db.select({ id: rooms.id, status: rooms.status }).from(rooms).where(eq(rooms.hotelId, hotelId)),
-      scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, guest_name: bookings.guestName, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price })
+      scope.permissions.includes("operations.view_bookings") ? db.select({ id: bookings.id, guest_name: bookings.guestName, source: bookings.source, status: bookings.status, check_in: bookings.checkIn, check_out: bookings.checkOut, price: bookings.price, payment_status: bookings.paymentStatus, created_at: bookings.createdAt })
         .from(bookings).where(eq(bookings.hotelId, hotelId)) : Promise.resolve([]),
     ]);
+    const [sessions, statusLogs] = await Promise.all([
+      db.select({ bookingId: paymentSessions.bookingId, verifiedAt: paymentSessions.verifiedAt }).from(paymentSessions).where(eq(paymentSessions.hotelId, hotelId)),
+      db.select({ bookingId: bookingStatusLog.bookingId, toStatus: bookingStatusLog.toStatus, createdAt: bookingStatusLog.createdAt }).from(bookingStatusLog),
+    ]);
+    const paidAt = new Map<string, Date>();
+    const refundedAt = new Map<string, Date>();
+    for (const session of sessions) if (session.verifiedAt) paidAt.set(session.bookingId, session.verifiedAt);
+    for (const log of statusLogs) {
+      if (log.toStatus === "confirmed" && !paidAt.has(log.bookingId)) paidAt.set(log.bookingId, log.createdAt);
+      if (log.toStatus === "refunded") refundedAt.set(log.bookingId, log.createdAt);
+    }
+    for (const booking of hotelBookings) if (booking.source === "walk-in" && booking.payment_status === "verified" && !paidAt.has(booking.id)) paidAt.set(booking.id, booking.created_at);
     output.push({
       id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address,
       public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
       room_types: hotelRoomTypes.map(roomType => ({ ...roomType, base_price: canViewFinancials ? roomType.base_price : null })), rooms: hotelRooms,
-      bookings: hotelBookings.map(b => ({ ...b, price: canViewFinancials ? b.price : null })) as any,
+      bookings: hotelBookings.map(b => ({ ...b, paid_at: paidAt.get(b.id)?.toISOString() ?? null, refunded_at: refundedAt.get(b.id)?.toISOString() ?? null, price: canViewFinancials ? b.price : null })) as any,
     });
   }
   return output.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
@@ -97,10 +109,22 @@ export async function listManagedHotelsForFinancials(db: D1ScopedDatabase, calle
     await authorizeHotelAction(db, caller, membership.hotelId, "property.view_financials", "financials.list_hotels", new Date());
     const rows = await db.select({
       id: bookings.id, status: bookings.status, payment_status: bookings.paymentStatus, check_in: bookings.checkIn, check_out: bookings.checkOut,
-      price: bookings.price, source: bookings.source, payment_method: bookings.paymentMethod, roomTypeName: roomTypes.name,
+      price: bookings.price, source: bookings.source, payment_method: bookings.paymentMethod, roomTypeName: roomTypes.name, created_at: bookings.createdAt,
     }).from(bookings).leftJoin(rooms, eq(bookings.roomId, rooms.id)).leftJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
       .where(eq(bookings.hotelId, membership.hotelId)).orderBy(desc(bookings.checkIn));
-    output.push({ id: membership.hotelId, bookings: rows.map(({ roomTypeName, ...booking }) => ({ ...booking, rooms: { room_types: roomTypeName ? { name: roomTypeName } : null } })) });
+    const [sessions, logs] = await Promise.all([
+      db.select({ bookingId: paymentSessions.bookingId, verifiedAt: paymentSessions.verifiedAt }).from(paymentSessions).where(eq(paymentSessions.hotelId, membership.hotelId)),
+      db.select({ bookingId: bookingStatusLog.bookingId, toStatus: bookingStatusLog.toStatus, createdAt: bookingStatusLog.createdAt }).from(bookingStatusLog),
+    ]);
+    const paidAt = new Map<string, Date>();
+    const refundedAt = new Map<string, Date>();
+    for (const row of sessions) if (row.verifiedAt) paidAt.set(row.bookingId, row.verifiedAt);
+    for (const row of logs) {
+      if (row.toStatus === "confirmed" && !paidAt.has(row.bookingId)) paidAt.set(row.bookingId, row.createdAt);
+      if (row.toStatus === "refunded") refundedAt.set(row.bookingId, row.createdAt);
+    }
+    for (const row of rows) if (row.source === "walk-in" && row.payment_status === "verified" && !paidAt.has(row.id)) paidAt.set(row.id, row.created_at);
+    output.push({ id: membership.hotelId, bookings: rows.map(({ roomTypeName, ...booking }) => ({ ...booking, paid_at: paidAt.get(booking.id)?.toISOString() ?? null, refunded_at: refundedAt.get(booking.id)?.toISOString() ?? null, rooms: { room_types: roomTypeName ? { name: roomTypeName } : null } })) });
   }
   return output;
 }

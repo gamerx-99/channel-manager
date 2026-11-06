@@ -5217,3 +5217,19 @@ Exit 0
 
 - No server or migration changes. Decision register updated to done.
 - Verification: `pnpm check` — `tsc --noEmit`, Exit 0. `pnpm test` — 235 files passed, 1,645 tests passed, Exit 0. `pnpm build` — Vite build succeeded; Wrangler `--dry-run: exiting now.`, Exit 0. Vite emitted the existing large-chunk advisory; Wrangler reported that no environment target was specified for this dry run.
+# 2026-11-06 feat/revenue-by-paid-day
+
+- Payment date sources inspected: PromptPay uses `payment_sessions.verified_at`; staff confirmation is timestamped in `booking_status_log.created_at`; walk-in counter payments use `bookings.created_at` at the verified staff insert; refunds use the `refunded` status log timestamp. No migration was needed, and no migration was applied.
+- Added `revenueByThaiDay` in `shared/finance.ts`, a pure satang-based aggregator that buckets verified receipts by Thai paid day and subtracts refunds on their Thai refund day. Dashboard figures, the server dashboard adapter, report totals/trends/room-type breakdown and booking CSV now use paid-day values. Paid timestamps come from PromptPay `verified_at`, walk-in `created_at`, or the confirmation log; refunds use the refund status log. Unpaid bookings contribute nothing.
+- Added regression coverage for PromptPay paid on a different day, counter payment, unpaid bookings, refund day, and Bangkok midnight. Added dashboard/report wiring contract tests and updated the bookings CSV contract for its Paid date column.
+- Existing check-in-day assumptions updated: `shared/finance.test.ts` — “keeps a guest in today's figures after check-in and after check-out”, “leaves out bookings that are not revenue, however they got here”, “splits today from the rest of the month, and ignores other months”, and “uses the Thai day for 'today' just after Thai midnight” now provide verified paid timestamps or unpaid status. `server/financials.test.ts` — “aggregates revenue only for active bookings within the last 30 days”, “groups revenue by room type name, falling back to Unassigned when no room is linked”, “correctly categorizes collected, pending, and outstanding revenue based on payment_status”, “does not count held, unpaid, expired, rejected or refunded bookings as revenue”, “cuts the 30-day period at Thai midnight, not UTC midnight”, “adds money exactly, to the satang”, “creates one daily trend point for every day in the period”, “a month runs from its first to its last Thai day, one trend point per day”, “a booking at 23:59 on the last night belongs to that month, one at 00:00 Thai time on the 1st to the next”, “a from/to range is inclusive of both days”, “groups the trend by month above 62 days and keeps the sum equal to the total”, “uses the same revenue definition: cancelled bookings only add to the cancelled count”, and “lists one row per revenue booking with a shortened id, nullable payment method, and no guest data” now use payment timestamps and assert received-money semantics. The categorization assertions now exclude unpaid and pending amounts; the cancelled fixture remains unpaid for its cancelled-only assertion. `client/src/pages/Financials.period.test.tsx` — “has a header row, plain numbers with 2 decimals, and keeps Thai text” now expects Paid date and its CSV value.
+- Thai copy before / after:
+
+  | Before | After |
+  |---|---|
+  | รายได้ตามวันที่เช็คอิน | รายได้ตามวันที่ชำระเงิน |
+  | รายการจองจะแสดงที่นี่เมื่อมีการเช็คอินในช่วงเวลาที่เลือก | รายการจองจะแสดงที่นี่เมื่อมีการชำระเงินในช่วงเวลาที่เลือก |
+  | ปริมาณการจองที่ยืนยันแล้วและรายได้ตามวันที่เช็คอิน | ปริมาณการจองที่ยืนยันแล้วและรายได้ตามวันที่ชำระเงิน |
+
+- Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` — 236 files passed, 1,651 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed; `--dry-run: exiting now.`, exit 0. No migration applied, no commit, push, deploy, or non-dry-run Wrangler command.
+
