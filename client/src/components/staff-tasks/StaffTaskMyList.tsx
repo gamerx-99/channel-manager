@@ -17,6 +17,7 @@ export default function StaffTaskMyList({ t, language, loading, tasks, waitingFo
   return (
     <section className="panel">
       <div className="panel-heading"><div><div className="eyebrow">{t("staffTasks.eyebrow")}</div><h2>{t("staffTasks.myTasks")}</h2></div></div>
+      {waitingForShiftStart && shiftStart && <div className="staff-task-before-shift">{t("staffTasks.beforeShiftAt", { time: shiftStart })}</div>}
       {loading ? <div className="empty-state">{t("common.loading")}</div> : tasks.length ? (
         <div className="staff-task-list">
           {tasks.map(task => (
@@ -32,9 +33,7 @@ export default function StaffTaskMyList({ t, language, loading, tasks, waitingFo
             />
           ))}
         </div>
-      ) : waitingForShiftStart && shiftStart ? (
-        <div className="empty-state">{t("staffTasks.beforeShiftAt", { time: shiftStart })}</div>
-      ) : <div className="empty-state">{t("staffTasks.noOwnTasks")}</div>}
+      ) : waitingForShiftStart ? null : <div className="empty-state">{t("staffTasks.noOwnTasks")}</div>}
     </section>
   );
 }

@@ -18,14 +18,14 @@ type Props = {
 
 export default function StaffTaskItem({ task, t, roomLabel, dateLabel, doneLabel, pendingLabel, actionLabel, manager = false, onEdit, onDelete, onToggle }: Props) {
   const done = task.status === "done";
-  const meta = [dateLabel, roomLabel, manager ? (done ? doneLabel : pendingLabel) : undefined].filter(Boolean).join(" · ");
+  const meta = [dateLabel, roomLabel].filter(Boolean).join(" · ");
   return (
     <article className={`staff-task-item${done ? " is-done" : ""}`}>
       <div className="staff-task-copy">
         <strong>{task.title}</strong>
         {task.details && <span>{task.details}</span>}
         <span className="staff-task-meta">{meta}</span>
-        {manager && done && <span className="status-pill done">{doneLabel}</span>}
+        {manager && <span className={`status-pill ${done ? "done" : "pending"}`}>{done ? doneLabel : pendingLabel}</span>}
       </div>
       {manager ? (
         <div className="staff-task-actions">

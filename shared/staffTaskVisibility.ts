@@ -1,4 +1,4 @@
-export type VisibilityTask = { task_date: string; status: "pending" | "done" };
+export type VisibilityTask = { task_date: string; status: "pending" | "done"; completed_at?: string | Date | null };
 export type VisibilityShift = { start_time: string };
 export type StaffTaskWaitingState = { waiting_for_shift_start: boolean; shift_start: string | null };
 
@@ -16,10 +16,17 @@ export function isStaffTaskVisibleToAssignee(task: VisibilityTask, shifts: reado
   const todayDate = `${today.year}-${today.month}-${today.day}`;
   if (task.task_date > todayDate) return false;
   // ASSUMPTION: an undone task from an earlier Thai calendar date remains visible until done.
-  if (task.task_date < todayDate) return task.status === "pending";
+  if (task.task_date < todayDate) return task.status === "pending" || isStaffTaskUndoAllowedToday(task, now);
   if (!shifts.length) return true;
   const earliest = shifts.map(shift => shift.start_time).sort()[0];
   return `${today.hour}:${today.minute}` >= earliest;
+}
+
+export function isStaffTaskUndoAllowedToday(task: VisibilityTask, now: Date): boolean {
+  if (task.status !== "done" || !task.completed_at) return false;
+  const completedDate = thaiWallClock(new Date(task.completed_at));
+  const today = thaiWallClock(now);
+  return `${completedDate.year}-${completedDate.month}-${completedDate.day}` === `${today.year}-${today.month}-${today.day}`;
 }
 
 export function getStaffTaskWaitingState(shifts: readonly VisibilityShift[], now: Date): StaffTaskWaitingState {

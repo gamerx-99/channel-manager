@@ -87,6 +87,8 @@ const en = {
     communications: "Communications",
     adminUsers: "Admin users",
     hotelStaff: "Hotel staff",
+    staffShifts: "Staff shifts",
+    staffTasks: "Daily tasks",
     bookings: "Bookings",
     availability: "Calendar for rates and availability",
     otaSync: "OTA Sync",

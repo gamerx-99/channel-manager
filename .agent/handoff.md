@@ -5328,3 +5328,11 @@ Exit 0
 - Thai before → after: `งานจะแสดงเมื่อถึงเวลาเริ่มกะของคุณ` → `งานจะแสดงเมื่อถึงเวลาเริ่มกะ {{time}} น.` when waiting; empty list after shift start → `วันนี้ไม่มีงานที่มอบหมายให้คุณ`. Added fallback label `พนักงาน` when neither account name nor email is available.
 - Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test --maxWorkers=3 --minWorkers=1` — 252 files, 1,711 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed, exit 0. `git diff --check` — no output, exit 0. Wrangler emitted its existing chunk-size advisory and the no-target-environment dry-run warning.
 - No migration, commit, push, deploy, or remote database operation.
+
+## 2026-11-07 — Staff screen reviewer fixes
+
+- Wrapped both staff pages in the shared `page-content` container; added route-specific breadcrumbs, dialog body/footer padding, manager group inset, readable task metadata and pending/done badges. The staff view now shows the before-shift time note above any visible older tasks.
+- Assignee visibility now receives `completed_at`: an older task completed on the current Thai date remains visible for undo through that Thai day, then hides. The existing server-side completion procedure allows that undo only for the assignee and only on the completion day. Added visibility/undo unit cases and updated page contracts.
+- Thai before → after: breadcrumb `ทีมงานโรงแรม` → `กะพนักงาน` (`/staff-shifts`) and `งานประจำวัน` (`/staff-tasks`).
+- Verification: `pnpm check` — `$ tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` — 252 files, 1,713 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed, exit 0; existing large-chunk advisory and no-target-environment warning. `git diff --check` — no output, exit 0. Commands use `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`; build also uses `XDG_CONFIG_HOME=/tmp/hayhost-xdg`.
+- No migration application, commit, push, or deploy.

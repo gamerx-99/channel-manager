@@ -17,6 +17,7 @@ export default function StaffTaskDialog({ t, editing, members, rooms, date, onCl
           <h2>{editing.id ? t("staffTasks.editTask") : t("staffTasks.assignTask")}</h2>
           <button type="button" className="button button-quiet button-small" onClick={onClose}>{t("common.close")}</button>
         </div>
+        <div className="staff-task-dialog-body">
         <div className="form-grid">
           <label>{t("staffTasks.staff")}
             <select name="assigned_to" required defaultValue={editing.assigned_to ?? ""}>
@@ -34,9 +35,10 @@ export default function StaffTaskDialog({ t, editing, members, rooms, date, onCl
           </label>
           <label className="form-span-two">{t("staffTasks.details")}<textarea name="details" maxLength={2000} defaultValue={editing.details ?? ""} /></label>
         </div>
-        <div className="form-submit">
+        <div className="form-submit staff-task-dialog-footer">
           <button className="button button-primary">{t("staffTasks.saveTask")}</button>
           <button type="button" className="button button-quiet" onClick={onClose}>{t("common.cancel")}</button>
+        </div>
         </div>
       </form>
     </div>

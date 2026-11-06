@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStaffTaskWaitingState, isStaffTaskVisibleToAssignee } from "./staffTaskVisibility";
+import { getStaffTaskWaitingState, isStaffTaskUndoAllowedToday, isStaffTaskVisibleToAssignee } from "./staffTaskVisibility";
 
 const task = { task_date: "2026-11-06", status: "pending" as const };
 describe("staff task visibility", () => {
@@ -22,6 +22,18 @@ describe("staff task visibility", () => {
     expect(isStaffTaskVisibleToAssignee({ ...task, task_date: "2026-11-07" }, [], new Date("2026-11-06T10:00:00Z"))).toBe(false);
     expect(isStaffTaskVisibleToAssignee({ ...task, task_date: "2026-11-05" }, [], new Date("2026-11-06T10:00:00Z"))).toBe(true);
     expect(isStaffTaskVisibleToAssignee({ task_date: "2026-11-05", status: "done" }, [], new Date("2026-11-06T10:00:00Z"))).toBe(false);
+  });
+  it("keeps an older task completed today visible and allows undo until Thai midnight", () => {
+    const completedToday = { task_date: "2026-11-05", status: "done" as const, completed_at: "2026-11-06T02:00:00.000Z" };
+    const now = new Date("2026-11-06T14:00:00.000Z");
+    expect(isStaffTaskVisibleToAssignee(completedToday, [], now)).toBe(true);
+    expect(isStaffTaskUndoAllowedToday(completedToday, now)).toBe(true);
+  });
+  it("hides an older task completed on the previous Thai day", () => {
+    const completedYesterday = { task_date: "2026-11-05", status: "done" as const, completed_at: "2026-11-05T14:00:00.000Z" };
+    const now = new Date("2026-11-06T14:00:00.000Z");
+    expect(isStaffTaskVisibleToAssignee(completedYesterday, [], now)).toBe(false);
+    expect(isStaffTaskUndoAllowedToday(completedYesterday, now)).toBe(false);
   });
   it("lets managers bypass the schedule rule", () => {
     expect(isStaffTaskVisibleToAssignee({ ...task, task_date: "2026-11-07" }, [], new Date("2026-11-06T10:00:00Z"), true)).toBe(true);

@@ -1,5 +1,12 @@
 .staff-tasks-page { display: grid; gap: 1rem; min-width: 0; }
 .staff-task-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem; }
+.staff-task-group { padding-left: 22px; padding-right: 22px; }
+.staff-task-group h3 { color: var(--ink); }
+.staff-task-meta { color: var(--ink-muted); }
+.staff-task-item .status-pill.pending { width: fit-content; background: var(--amber-soft); color: #926526; }
+.staff-task-dialog-body { padding: 0 22px 22px; }
+.staff-task-dialog-footer { display: flex; gap: 9px; padding-top: 18px; }
+.staff-task-before-shift { padding: 0 22px 14px; color: var(--ink-soft); font-size: 12px; }
 .staff-task-controls label { display: grid; gap: .3rem; font-size: .8rem; }
 .staff-task-group { display: grid; gap: .6rem; padding: .8rem 0; border-top: 1px solid var(--line, #e0e7e2); }
 .staff-task-group:first-of-type { border-top: 0; }
@@ -19,6 +26,9 @@
 @media (max-width: 600px) {
   .staff-tasks-page .page-intro > .button { width: 100%; }
   .staff-task-item { flex-direction: column; }
+  .staff-task-group { padding-left: 16px; padding-right: 16px; }
+  .staff-task-dialog-body { padding: 0 16px 16px; }
+  .staff-task-before-shift { padding: 0 16px 12px; }
   .staff-task-item > button, .staff-task-actions, .staff-task-actions button, .staff-task-add button { width: 100%; }
   .staff-task-actions { display: grid; grid-template-columns: 1fr; }
   .staff-task-actions button, .staff-task-item > button, .staff-task-add button { min-height: 2.6rem; }

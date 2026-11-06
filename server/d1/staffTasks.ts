@@ -2,7 +2,7 @@ import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { hotelUsers, rooms, staffShifts, staffTasks } from "../../drizzle/d1-schema";
 import { user } from "../../drizzle/auth-schema";
-import { getStaffTaskWaitingState, isStaffTaskVisibleToAssignee } from "../../shared/staffTaskVisibility";
+import { getStaffTaskWaitingState, isStaffTaskUndoAllowedToday, isStaffTaskVisibleToAssignee } from "../../shared/staffTaskVisibility";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 
 export type StaffTaskInput = { assigned_to: string; task_date: string; title: string; details?: string | null; room_id?: string | null };
@@ -42,7 +42,7 @@ export async function listMyStaffTasks(db: D1ScopedDatabase, caller: D1CallerCon
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
   const todaysShifts = shifts.filter(shift => shift.date === today).map(shift => ({ start_time: shift.startTime }));
   const waiting = getStaffTaskWaitingState(todaysShifts, now);
-  const tasks = rows.filter(({ task }) => isStaffTaskVisibleToAssignee({ task_date: task.taskDate, status: task.status as "pending" | "done" }, shifts.filter(shift => shift.date === task.taskDate).map(shift => ({ start_time: shift.startTime })), now))
+  const tasks = rows.filter(({ task }) => isStaffTaskVisibleToAssignee({ task_date: task.taskDate, status: task.status as "pending" | "done", completed_at: task.completedAt }, shifts.filter(shift => shift.date === task.taskDate).map(shift => ({ start_time: shift.startTime })), now))
     .map(({ task, fullName, position, roomNumber }) => taskRecord(task, { full_name: fullName, position, room_number: roomNumber }));
   return { tasks, ...waiting };
 }
@@ -80,7 +80,8 @@ export async function setStaffTaskDone(db: D1ScopedDatabase, caller: D1CallerCon
   if (!manager && !own.length) throw new TRPCError({ code: "FORBIDDEN", message: "Hotel access denied." });
   if (!manager) {
     const shifts = await db.select({ startTime: staffShifts.startTime }).from(staffShifts).where(and(eq(staffShifts.hotelId, hotelId), eq(staffShifts.hotelUserId, row.assignedTo), eq(staffShifts.date, row.taskDate)));
-    if (!isStaffTaskVisibleToAssignee({ task_date: row.taskDate, status: row.status as "pending" | "done" }, shifts.map(s => ({ start_time: s.startTime })), now)) throw new TRPCError({ code: "FORBIDDEN", message: "Task is not visible yet." });
+    const visibleTask = { task_date: row.taskDate, status: row.status as "pending" | "done", completed_at: row.completedAt };
+    if (!isStaffTaskVisibleToAssignee(visibleTask, shifts.map(s => ({ start_time: s.startTime })), now) || (row.status === "done" && !done && !isStaffTaskUndoAllowedToday(visibleTask, now))) throw new TRPCError({ code: "FORBIDDEN", message: "Task is not visible yet." });
   }
   const [updated] = await db.update(staffTasks).set({ status: done ? "done" : "pending", completedAt: done ? now : null, completedBy: done ? caller.userId : null }).where(and(eq(staffTasks.id, id), eq(staffTasks.hotelId, hotelId))).returning();
   return updated ?? null;

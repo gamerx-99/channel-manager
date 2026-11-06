@@ -25,7 +25,7 @@ export default function StaffTasks() {
   }
 
   return (
-    <main className="staff-tasks-page">
+    <div className="page-content staff-tasks-page">
       <section className="page-intro intro-split">
         <div>
           <div className="eyebrow">{t("staffTasks.eyebrow")}</div>
@@ -72,6 +72,6 @@ export default function StaffTasks() {
           onSubmit={handleSubmit}
         />
       )}
-    </main>
+    </div>
   );
 }

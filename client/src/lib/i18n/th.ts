@@ -89,6 +89,8 @@ const th: TranslationDictionary = {
     communications: "การสื่อสาร",
     adminUsers: "ผู้ดูแลระบบ",
     hotelStaff: "ทีมงานโรงแรม",
+    staffShifts: "กะพนักงาน",
+    staffTasks: "งานประจำวัน",
     bookings: "การจอง",
     availability: "ปฏิทินราคาและห้องว่าง",
     otaSync: "ซิงค์ OTA",
