@@ -81,6 +81,9 @@ import {
   setHotelMediaCaption,
   setHotelMediaGallerySelection,
   reorderHotelMedia,
+  exportHotelData,
+  previewHotelImport,
+  applyHotelImport,
 } from './routers/hotelRouter';
 import {
   bookings,
@@ -170,6 +173,9 @@ export const appRouter = router({
     setHotelMediaCaption,
     setHotelMediaGallerySelection,
     reorderHotelMedia,
+    exportHotelData,
+    previewHotelImport,
+    applyHotelImport,
     ota: otaRouter,
   }),
 
