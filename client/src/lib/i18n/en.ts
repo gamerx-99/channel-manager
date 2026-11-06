@@ -28,7 +28,6 @@ const en = {
     hotelStaff: "Hotel Staff",
     hotelSettings: "Hotel settings",
     hotelProfile: "Hotel information",
-    viewPropertySite: "View property website",
     workspace: "Workspace",
     operationsModules: "Operations & Modules",
     financials: "Financials",

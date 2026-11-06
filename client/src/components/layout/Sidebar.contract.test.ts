@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 const sidebar = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
 
 describe("Sidebar booking engine button", () => {
+  it("renders only the workspace switcher above the workspace heading", () => {
+    expect(sidebar).not.toContain("activeHotel={selectedHotel}");
+    expect(sidebar).not.toContain("viewPropertySite");
+  });
+
   it("keeps the booking engine destination in Website Builder instead of the sidebar", () => {
     expect(sidebar).not.toContain('t("sidebar.bookingEngines")');
     expect(sidebar).not.toContain("#book");

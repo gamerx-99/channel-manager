@@ -5273,3 +5273,9 @@ Exit 0
 - Moved Minimal White, Lanna Teak, and Cafe Homestay into one folder each, with exactly a TSX and CSS file. Their shared props include hotel data, rooms, photos, booking link, contacts, map, translations, and colours. No new themes were added.
 - To add a theme: create `<theme-id>/<ThemeName>.tsx` and `<theme-id>.css`, add one entry to `shared/hotelThemes.ts`, one registry line, and its `hotelThemes` i18n block.
 - Verification: `pnpm check` — exit 0. `pnpm test` — 238 files passed, 1,663 tests passed, exit 0 (worktree-local `TEMP`/`TMP`). `pnpm build` — Vite built; Wrangler `--dry-run` exited successfully. Existing large-chunk and no-target-environment warnings. The final build used worktree-local `XDG_CONFIG_HOME` for Wrangler logs.
+
+## 2026-11-06 fix/switcher-clean
+
+- Removed the "เปิดขาย" pill and "ดูหน้าเว็บที่พัก" link beneath the sidebar hotel switcher, along with the `activeHotel` prop and now-unused `sidebar.viewPropertySite` translations. The "ข้อมูลโรงแรม" settings item and guided-tour target remain.
+- Updated `HotelNameOnce.contract.test.ts` to assert the pill and link metadata are absent. Updated `Sidebar.contract.test.ts` to assert Sidebar no longer passes the metadata prop or references the site link; existing settings and guided-tour assertions remain unchanged.
+- Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` — 242 files passed, 1,684 tests passed, exit 0. `pnpm build` — Vite build succeeded and Wrangler `--dry-run` exited successfully; existing large-chunk and no-target-environment warnings. No commit, push, deploy, or non-dry-run Wrangler command.

@@ -156,7 +156,6 @@ export function Sidebar({
         onClose={onCloseWorkspaceMenu}
         isPlatformAdmin={isPlatformAdmin}
         activeHotelName={selectedHotelName}
-        activeHotel={selectedHotel}
         onSelectHotelId={setSelectedHotelId}
       />
 

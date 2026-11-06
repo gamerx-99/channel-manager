@@ -15,13 +15,15 @@ describe("single hotel name surface", () => {
     expect(source).not.toContain("detail-back");
   });
 
-  it("shows hotel status and website in the workspace switcher", () => {
+  it("keeps the workspace switcher free of hotel status and website metadata", () => {
     const workspace = read("client/src/components/WorkspaceMenu.tsx");
-    expect(workspace).toContain("activeHotel.public_enabled");
-    expect(workspace).toContain("t(\"hotels.livePill\")");
-    expect(workspace).toContain("t(\"hotels.privatePill\")");
-    expect(workspace).toContain("target=\"_blank\"");
-    expect(workspace).toContain("t(\"sidebar.viewPropertySite\")");
+    expect(workspace).not.toContain("workspace-hotel-meta");
+    expect(workspace).not.toContain("activeHotel.public_enabled");
+    expect(workspace).not.toContain("activeHotel?:");
+    expect(workspace).not.toContain("target=\"_blank\"");
+    expect(workspace).not.toContain("viewPropertySite");
+    const sidebar = read("client/src/components/layout/Sidebar.tsx");
+    expect(sidebar).not.toContain("activeHotel={selectedHotel}");
   });
 
   it("gates the hotel profile link by property.manage_profile", () => {
