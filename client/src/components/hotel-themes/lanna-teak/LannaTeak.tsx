@@ -1,18 +1,21 @@
 import React from "react";
+import "./lanna-teak.css";
 import { ChevronRight, MapPin } from "lucide-react";
-import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
-import { PoweredByHayhost } from "./PoweredByHayhost";
+import { ThemeLanding } from "../ThemeLanding";
+import type { ThemeLandingProps } from "../ThemeProps";
+import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
-import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
 
 function KanokDivider() {
   return <div className="lanna-divider" aria-hidden="true"><span /><i /><span /></div>;
 }
 
-type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName">;
+type Props = ThemeLandingProps;
 
 export default function LannaTeakLanding({
   hotelName,
+  bookingLink,
+  colours,
   hotel,
   roomTypes,
   media,
@@ -32,7 +35,7 @@ export default function LannaTeakLanding({
   const canBook = isVisible("booking");
 
   return (
-    <ThemeLanding themeId="lanna-teak" hotelName={hotelName}>
+    <ThemeLanding themeId="lanna-teak" hotelName={hotelName} colors={colours}>
       <div className="lanna-page">
         <header className="lanna-header">
           <a className="lanna-mark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>
@@ -48,7 +51,7 @@ export default function LannaTeakLanding({
               <span aria-hidden="true">·</span>
               <button type="button" aria-pressed={language !== "th"} onClick={() => setLanguage("en")}>EN</button>
             </div>
-            {canBook && <a className="lanna-reserve theme-book-button" href={bookingPageHref(slug)}>{t("hotelThemes.lannaTeak.bookDirect")} <ChevronRight size={14} aria-hidden="true" /></a>}
+            {canBook && <a className="lanna-reserve theme-book-button" href={bookingLink()}>{t("hotelThemes.lannaTeak.bookDirect")} <ChevronRight size={14} aria-hidden="true" /></a>}
           </div>
         </header>
         <main>
@@ -68,7 +71,7 @@ export default function LannaTeakLanding({
                   <span className="lanna-kicker">{t("hotelThemes.lannaTeak.welcomeKicker")}</span>
                   <h1>{hotelName}</h1>
                   {heroCopy && <p>{heroCopy}</p>}
-                  {canBook && <a className="lanna-hero-cta theme-book-button" href={bookingPageHref(slug)}>{t("hotelThemes.lannaTeak.viewRooms")}</a>}
+                  {canBook && <a className="lanna-hero-cta theme-book-button" href={bookingLink()}>{t("hotelThemes.lannaTeak.viewRooms")}</a>}
                 </div>
                 {media.find(item => item.is_hero)?.caption && (
                   <span className="theme-cover-caption">{media.find(item => item.is_hero)?.caption}</span>
@@ -101,7 +104,7 @@ export default function LannaTeakLanding({
                       )}
                       <div className="lanna-room-info">
                         <div>
-                          <h3>{canBook ? <a className="theme-room-link" href={bookingPageHref(slug, room.id)}>{room.name}</a> : room.name}</h3>
+                          <h3>{canBook ? <a className="theme-room-link" href={bookingLink(room.id)}>{room.name}</a> : room.name}</h3>
                           <p>{t("hotelThemes.lannaTeak.capacity", { capacity: room.capacity })}</p>
                         </div>
                         <strong>฿{Number(room.basePrice).toLocaleString()} <small>{t("hotelThemes.lannaTeak.perNight")}</small></strong>

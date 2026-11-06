@@ -1,9 +1,10 @@
 import React from "react";
+import "./cafe-homestay.css";
 import { MapPin } from "lucide-react";
-import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
-import { PoweredByHayhost } from "./PoweredByHayhost";
+import { ThemeLanding } from "../ThemeLanding";
+import type { ThemeLandingProps } from "../ThemeProps";
+import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
-import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
 
 function CupDecoration() {
   return <div className="cafe-cup-stamp" aria-hidden="true"><div className="cup-rim"><div className="cup-steam" /></div><div className="cup-body"><div className="cup-handle" /></div></div>;
@@ -13,10 +14,12 @@ function LeafDecoration() {
   return <div className="cafe-leaf-stamp" aria-hidden="true"><svg viewBox="0 0 44 44" width="44" height="44" fill="none"><path d="M6 38 C 10 22, 22 10, 38 6 C 34 22, 22 34, 6 38 Z" fill="currentColor" opacity="0.12" /><path d="M6 38 Q 22 22 38 6" stroke="currentColor" strokeWidth="1.5" opacity="0.3" /></svg></div>;
 }
 
-type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName">;
+type Props = ThemeLandingProps;
 
 export default function CafeHomestayLanding({
   hotelName,
+  bookingLink,
+  colours,
   hotel,
   roomTypes,
   media,
@@ -36,7 +39,7 @@ export default function CafeHomestayLanding({
   const canBook = isVisible("booking");
 
   return (
-    <ThemeLanding themeId="cafe-homestay" hotelName={hotelName}>
+    <ThemeLanding themeId="cafe-homestay" hotelName={hotelName} colors={colours}>
       <div className="cafe-page">
         <header className="cafe-header">
           <a className="cafe-wordmark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>
@@ -50,7 +53,7 @@ export default function CafeHomestayLanding({
               <button type="button" aria-pressed={language === "th"} onClick={() => setLanguage("th")}>TH</button>
               <button type="button" aria-pressed={language !== "th"} onClick={() => setLanguage("en")}>EN</button>
             </div>
-            {canBook && <a className="theme-book-button" href={bookingPageHref(slug)}>{t("hotelThemes.cafeHomestay.bookDirect")}</a>}
+            {canBook && <a className="theme-book-button" href={bookingLink()}>{t("hotelThemes.cafeHomestay.bookDirect")}</a>}
           </div>
         </header>
         <main>
@@ -101,7 +104,7 @@ export default function CafeHomestayLanding({
                       )}
                       <div className="cafe-room-info">
                         <div>
-                          <h3>{canBook ? <a className="theme-room-link" href={bookingPageHref(slug, room.id)}>{room.name}</a> : room.name}</h3>
+                          <h3>{canBook ? <a className="theme-room-link" href={bookingLink(room.id)}>{room.name}</a> : room.name}</h3>
                           <p>{t("hotelThemes.cafeHomestay.capacity", { capacity: room.capacity })}</p>
                         </div>
                         <strong>฿{Number(room.basePrice).toLocaleString()} <small>{t("hotelThemes.cafeHomestay.perNight")}</small></strong>

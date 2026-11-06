@@ -1,13 +1,22 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import MinimalWhiteLanding from "./MinimalWhiteLanding";
+import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
+import MinimalWhiteLanding from "./minimal-white/MinimalWhite";
 
 vi.mock("./ThemeLanding", () => ({ ThemeLanding: ({ children }: any) => <div className="theme-minimal-white">{children}</div> }));
 
 describe("Minimal White landing", () => {
   it("renders provided hotel and room data with links to the booking page and without never-render content", () => {
     const html = renderToStaticMarkup(<MinimalWhiteLanding
+      bookingLink={(roomTypeId?: string) => bookingPageHref("haus-nimman", roomTypeId)}
+      themeId="minimal-white"
+      rooms={[] as any}
+      photos={[] as any}
+      contacts={null}
+      map={null}
+      locationMap={null}
+      colours={{ buttonBackground: "#123456", buttonText: "#ffffff", highlight: "#654321" }}
       hotelName="Haus Nimman"
       hotel={{ id: "hotel-1", name: "Haus Nimman", slug: "haus-nimman", address: "Nimman Road, Chiang Mai" } as any}
       roomTypes={[{ id: "room-1", name: "Garden Room", capacity: 2, basePrice: 1800 }, { id: "room-2", name: "Loft Room", capacity: 3, basePrice: 2400 }] as any}
