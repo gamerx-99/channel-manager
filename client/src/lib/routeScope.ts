@@ -33,7 +33,6 @@ export function getRequiredRoutePermission(pathname: string): Permission | null 
   if (pathname.startsWith("/platform/crm") || pathname.startsWith("/platform/coupons")) return "platform.manage_billing";
   if (pathname.includes("/support-access")) return "property.manage_support_access";
   if (pathname === "/hotels") return "platform.view_all_hotels";
-  if (pathname.startsWith("/dashboard/pricing")) return "revenue.manage_pricing_rules";
   if (pathname.startsWith("/dashboard/financials")) return "property.view_financials";
   if (pathname.startsWith("/communications")) return "operations.view_bookings";
   if (pathname.startsWith("/housekeeping") || pathname.startsWith("/dashboard/housekeeping")) return "housekeeping.view_room_status";

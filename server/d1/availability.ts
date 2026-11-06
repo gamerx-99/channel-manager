@@ -4,6 +4,9 @@ import { availability, bookings, rateOverrides, roomTypes, rooms } from "../../d
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang } from "../db/money";
 import { AVAILABILITY_BATCH_MAX_DAYS, AVAILABILITY_BATCH_MAX_ROOM_TYPES } from "@shared/availabilityBatch";
+import { splitRateRanges } from "../../shared/rateRangeSplit";
+import { resolveRateSatang } from "./bookingService";
+import { isBookingOccupyingInventory } from "../../shared/bookingLifecycle";
 
 function canonicalMoney(value: string): string {
   const satang = moneyToSatang(value);
@@ -74,6 +77,11 @@ export async function updateAvailability(
 // D1 allows 100 bound parameters per statement; a row uses 5, so 18 rows (90) per statement.
 const AVAILABILITY_ROWS_PER_STATEMENT = 18;
 
+function nextDay(iso: string): string {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 function datesBetween(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
   const end = Date.parse(`${endDate}T00:00:00.000Z`);
@@ -190,6 +198,161 @@ export async function deleteRateOverride(db: D1ScopedDatabase, caller: D1CallerC
     sql`${rateOverrides.roomTypeId} in (select id from room_types where hotel_id = ${hotelId})`,
   )).returning({ id: rateOverrides.id });
   return row ?? null;
+}
+
+export async function saveCalendarRange(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  input: {
+    hotelId: string;
+    roomTypeIds: string[];
+    startDate: string;
+    endDate: string;
+    roomsAvailable?: number | null;
+    price?: string | null;
+    minStayNights?: number | null;
+    base?: boolean;
+  },
+  now = new Date(),
+) {
+  const touchesRates = input.base === true || (input.price !== undefined && input.price !== null) || input.minStayNights !== undefined;
+  if (touchesRates) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_rates", "calendar.save", now);
+  if (input.roomsAvailable !== undefined && input.roomsAvailable !== null) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_allotment", "calendar.save", now);
+  if (!touchesRates && (input.roomsAvailable === undefined || input.roomsAvailable === null)) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_allotment", "calendar.save", now);
+  const roomTypeIds = Array.from(new Set(input.roomTypeIds));
+  if (!roomTypeIds.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose at least one room type." });
+  const types = await db.select({ id: roomTypes.id, basePrice: roomTypes.basePrice }).from(roomTypes)
+    .where(and(eq(roomTypes.hotelId, input.hotelId), inArray(roomTypes.id, roomTypeIds)));
+  if (types.length !== roomTypeIds.length) throw new TRPCError({ code: "NOT_FOUND", message: "Room type not found." });
+
+  const statements: any[] = [];
+  // rooms available
+  if (input.roomsAvailable !== undefined && input.roomsAvailable !== null) {
+    const dates = datesBetween(input.startDate, input.endDate);
+    if (!dates.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid date range." });
+    const rowsToWrite = types.flatMap(type => dates.map(date => ({ roomTypeId: type.id, date })));
+    for (let start = 0; start < rowsToWrite.length; start += AVAILABILITY_ROWS_PER_STATEMENT) {
+      const chunk = rowsToWrite.slice(start, start + AVAILABILITY_ROWS_PER_STATEMENT);
+      const params = chunk.flatMap(row => [crypto.randomUUID(), row.roomTypeId, row.date, canonicalMoney(String(types.find(t => t.id === row.roomTypeId)!.basePrice)), input.roomsAvailable]);
+      statements.push(db.$client.prepare(
+        `insert into availability (id, room_type_id, date, price, rooms_available) values ${chunk.map(() => "(?, ?, ?, ?, ?)").join(", ")}
+         on conflict (room_type_id, date) do update set rooms_available = excluded.rooms_available`,
+      ).bind(...params));
+    }
+  }
+
+  // rate overrides
+  const touchRates = input.base === true || (input.price !== undefined && input.price !== null) || input.minStayNights !== undefined;
+  if (touchRates) {
+    for (const type of types) {
+      const existing = await db.select().from(rateOverrides).where(eq(rateOverrides.roomTypeId, type.id));
+      const overlapping = existing.filter(r => !(r.endDate < input.startDate || r.startDate > input.endDate));
+      if (input.price === null && input.minStayNights === undefined && input.base !== true) continue;
+      let replacements: Array<{ start_date: string; end_date: string; override_price?: string; min_stay_nights?: number | null }>;
+      if (input.base === true) {
+        replacements = [];
+      } else if (input.price !== undefined && input.price !== null) {
+        replacements = [{ start_date: input.startDate, end_date: input.endDate, override_price: String(input.price), min_stay_nights: input.minStayNights ?? null }];
+      } else if (input.minStayNights !== undefined) {
+        // Preserve each night's resolved guest rate, including the base rate, while changing only minimum stay.
+        const dates = datesBetween(input.startDate, input.endDate);
+        const nightly = dates.map(date => {
+          const satang = resolveRateSatang(type.id, type.basePrice, date, existing);
+          return { date, price: `${satang / BigInt(100)}.${String(satang % BigInt(100)).padStart(2, "0")}` };
+        });
+        replacements = [];
+        for (const night of nightly) {
+          const previous = replacements[replacements.length - 1];
+          if (previous && previous.override_price === night.price && nextDay(previous.end_date) === night.date) previous.end_date = night.date;
+          else replacements.push({ start_date: night.date, end_date: night.date, override_price: night.price, min_stay_nights: input.minStayNights });
+        }
+      } else {
+        continue;
+      }
+      const split = splitRateRanges(
+        overlapping.map(r => ({ id: r.id, start_date: r.startDate, end_date: r.endDate, override_price: r.overridePrice, min_stay_nights: r.minStayNights })),
+        input.base === true ? { start_date: input.startDate, end_date: input.endDate, base: true } : replacements,
+      );
+      for (const id of split.deleteIds) statements.push(db.$client.prepare("delete from rate_overrides where id = ?").bind(id));
+      for (const c of split.create) {
+        if (c.override_price === undefined) continue;
+        statements.push(db.$client.prepare("insert into rate_overrides (id, room_type_id, start_date, end_date, override_price, min_stay_nights) values (?, ?, ?, ?, ?, ?)").bind(crypto.randomUUID(), type.id, c.start_date, c.end_date, canonicalMoney(c.override_price), c.min_stay_nights));
+      }
+    }
+  }
+
+  if (statements.length) await db.$client.batch(statements);
+  return { success: true as const };
+}
+
+export async function listCalendarForHotel(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  hotelId: string,
+  startDate: string,
+  endDate: string,
+  now = new Date(),
+) {
+  const scope = await (async () => {
+    try { return await authorizeHotelAction(db, caller, hotelId, "operations.view_bookings", "calendar.read", now); }
+    catch (e) { return await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "calendar.read", now); }
+  })();
+  const canSeePrice = scope.permissions.includes("revenue.manage_rates");
+  const types = await db.select({ id: roomTypes.id, name: roomTypes.name, basePrice: roomTypes.basePrice }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId));
+  const totalByType = new Map((await db.select({ roomTypeId: rooms.roomTypeId, total: sql<number>`count(*)` }).from(rooms).where(eq(rooms.hotelId, hotelId)).groupBy(rooms.roomTypeId)).map(r => [r.roomTypeId, Number(r.total)]));
+  const availRows = await db.select().from(availability).where(and(inArray(availability.roomTypeId, types.map(t => t.id)), sql`${availability.date} >= ${startDate} and ${availability.date} <= ${endDate}`));
+  const overrides = await db.select().from(rateOverrides).where(inArray(rateOverrides.roomTypeId, types.map(t => t.id)));
+  const availMap = new Map(availRows.map(r => [`${r.roomTypeId}:${r.date}`, r]));
+  // bookings in range
+  const bookingRows = await db.select({ roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(and(eq(bookings.hotelId, hotelId), sql`${bookings.checkIn} < ${nextDay(endDate)} and ${bookings.checkOut} > ${startDate}`));
+  const roomTypeByRoom = new Map((await db.select({ id: rooms.id, roomTypeId: rooms.roomTypeId }).from(rooms).where(eq(rooms.hotelId, hotelId))).map(r => [r.id, r.roomTypeId]));
+  const bookedMap = new Map<string, number>();
+  for (const b of bookingRows) {
+    if (!b.roomId) continue;
+    const rt = roomTypeByRoom.get(b.roomId);
+    if (!rt) continue;
+    if (!isBookingOccupyingInventory({ status: b.status as any, expiresAt: b.expiresAt ? new Date(b.expiresAt).toISOString() : null })) continue;
+    // increment each date in [checkIn, checkOut)
+    for (let d = b.checkIn; d < b.checkOut; d = nextDay(d)) {
+      if (d < startDate || d > endDate) continue;
+      const key = `${rt}:${d}`;
+      bookedMap.set(key, (bookedMap.get(key) ?? 0) + 1);
+    }
+  }
+  const result: any[] = [];
+  for (const type of types) {
+    const typeOverrides = overrides.filter(o => o.roomTypeId === type.id);
+    const dates = datesBetween(startDate, endDate);
+    const total = totalByType.get(type.id) ?? 0;
+    for (const date of dates) {
+      const a = availMap.get(`${type.id}:${date}`);
+      const booked = bookedMap.get(`${type.id}:${date}`) ?? 0;
+      const cap = a ? a.roomsAvailable : total;
+      const available = Math.max(0, Math.min(cap, total) - booked);
+      const closed = !!a && a.roomsAvailable === 0;
+      let price: string | null = null;
+      if (canSeePrice) {
+        const satang = resolveRateSatang(type.id, type.basePrice, date, typeOverrides);
+        price = `${satang / BigInt(100)}.${String(satang % BigInt(100)).padStart(2, '0')}`;
+      }
+      result.push({
+        roomTypeId: type.id,
+        roomTypeName: type.name,
+        date,
+        roomsAvailable: a?.roomsAvailable ?? total,
+        totalRooms: total,
+        bookedRooms: booked,
+        availableRooms: available,
+        closed,
+        price,
+      });
+    }
+  }
+  return { canSeePrice, rows: result };
+}
+
+function daysBetween(start: string, end: string): number {
+  return Math.round((Date.parse(`${end}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / 86_400_000);
 }
 
 async function authorizeRoomType(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, roomTypeId: string, action: string, now: Date) {

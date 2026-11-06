@@ -3,10 +3,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { availability, d1Schema, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { availability, bookings, d1Schema, hotelUsers, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { AVAILABILITY_BATCH_MAX_DAYS } from "@shared/availabilityBatch";
-import { listAvailabilityForHotel, updateAvailability, updateAvailabilityBatch } from "./availability";
+import { listAvailabilityForHotel, listCalendarForHotel, saveCalendarRange, updateAvailability, updateAvailabilityBatch } from "./availability";
+import { resolveRateSatang } from "./bookingService";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -130,5 +131,81 @@ describe("updateAvailabilityBatch", () => {
     db.$client.batch = async statements => original([...statements, { query: "insert into availability (id, room_type_id, date, price, rooms_available) values ('bad', 'no-such-type', '2026-12-01', '1.00', 0)", params: [] } as never]);
     await expect(updateAvailabilityBatch(db, owner, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-01", endDate: "2026-12-20", roomsAvailable: 0 })).rejects.toThrow();
     expect(await db.select().from(availability)).toHaveLength(0);
+  });
+});
+
+describe("saveCalendarRange pricing and allotment", () => {
+  it("writes nothing when one selected room type is invalid", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 1 }]);
+    await expect(saveCalendarRange(db, owner, { hotelId: "a", roomTypeIds: ["rt-a", "missing"], startDate: "2026-12-01", endDate: "2026-12-02", roomsAvailable: 1, price: "1200.00" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(await db.select().from(availability)).toHaveLength(0);
+    expect(await db.select().from(rateOverrides)).toHaveLength(0);
+  });
+
+  it("writes rooms for sale with allotment permission only and leaves rate overrides untouched", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 2 }]);
+    await db.insert(hotelUsers).values({ id: "m-allotment", hotelId: "a", userId: "allotment", role: "front_desk", permissionGrants: ["revenue.manage_allotment"], permissionRevokes: [] });
+    const before = await db.select().from(rateOverrides);
+    await saveCalendarRange(db, { userId: "allotment" }, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-01", endDate: "2026-12-02", roomsAvailable: 1 });
+    expect(await db.select().from(rateOverrides)).toEqual(before);
+    expect(await db.select().from(availability)).toHaveLength(2);
+  });
+
+  it("does not create overrides or delete existing ones when price is null", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 1 }]);
+    await saveCalendarRange(db, owner, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-01", endDate: "2026-12-03", price: null });
+    expect(await db.select().from(rateOverrides)).toHaveLength(0);
+    await db.insert(rateOverrides).values({ id: "ov-a", roomTypeId: "rt-a", startDate: "2026-12-01", endDate: "2026-12-03", overridePrice: "1200.00", minStayNights: null });
+    await saveCalendarRange(db, owner, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-02", endDate: "2026-12-02", price: null });
+    expect(await db.select().from(rateOverrides)).toMatchObject([{ id: "ov-a", startDate: "2026-12-01", endDate: "2026-12-03" }]);
+  });
+
+  it("preserves two different nightly override prices when changing minimum stay", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 1 }]);
+    await db.insert(rateOverrides).values([
+      { id: "ov-a", roomTypeId: "rt-a", startDate: "2026-12-01", endDate: "2026-12-02", overridePrice: "1200.00", minStayNights: 2 },
+      { id: "ov-b", roomTypeId: "rt-a", startDate: "2026-12-03", endDate: "2026-12-04", overridePrice: "1400.00", minStayNights: 3 },
+    ]);
+    await saveCalendarRange(db, owner, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-02", endDate: "2026-12-03", minStayNights: 1 });
+    const rows = await db.select().from(rateOverrides).orderBy(rateOverrides.startDate);
+    expect(rows.map(row => [row.startDate, row.endDate, row.overridePrice, row.minStayNights])).toEqual([
+      ["2026-12-01", "2026-12-01", "1200.00", 2],
+      ["2026-12-02", "2026-12-02", "1200.00", 1],
+      ["2026-12-03", "2026-12-03", "1400.00", 1],
+      ["2026-12-04", "2026-12-04", "1400.00", 3],
+    ]);
+  });
+
+  it("splits a base-priced middle range into two pieces with the original price", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 1 }]);
+    await db.insert(rateOverrides).values({ id: "ov-a", roomTypeId: "rt-a", startDate: "2026-12-01", endDate: "2026-12-05", overridePrice: "1200.00", minStayNights: null });
+    await saveCalendarRange(db, owner, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-03", endDate: "2026-12-03", base: true });
+    const rows = await db.select().from(rateOverrides).orderBy(rateOverrides.startDate);
+    expect(rows.map(row => [row.startDate, row.endDate, row.overridePrice])).toEqual([
+      ["2026-12-01", "2026-12-02", "1200.00"], ["2026-12-04", "2026-12-05", "1200.00"],
+    ]);
+  });
+
+  it("keeps days without availability open and subtracts booked inventory", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 3 }]);
+    await db.insert(bookings).values({ id: "bkg-a", hotelId: "a", roomId: "rt-a-room-0", guestName: "Guest", checkIn: "2026-12-02", checkOut: "2026-12-03", price: 1000, source: "manual", status: "confirmed" });
+    const result = await listCalendarForHotel(db, owner, "a", "2026-12-01", "2026-12-02");
+    expect(result.rows.map(row => [row.closed, row.availableRooms])).toEqual([[false, 3], [false, 2]]);
+  });
+
+  it("matches resolveRateSatang for equal-width overlapping overrides", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 1 }]);
+    await db.insert(rateOverrides).values([
+      { id: "ov-a", roomTypeId: "rt-a", startDate: "2026-12-01", endDate: "2026-12-03", overridePrice: "1200.00", minStayNights: null, createdAt: new Date("2026-11-01T00:00:00Z") },
+      { id: "ov-z", roomTypeId: "rt-a", startDate: "2026-12-01", endDate: "2026-12-03", overridePrice: "1300.00", minStayNights: null, createdAt: new Date("2026-11-02T00:00:00Z") },
+    ]);
+    const overrides = await db.select().from(rateOverrides);
+    const calendar = await listCalendarForHotel(db, owner, "a", "2026-12-01", "2026-12-04");
+    const expected = ["2026-12-01", "2026-12-02", "2026-12-03", "2026-12-04"].map(date => {
+      const satang = resolveRateSatang("rt-a", "1000.00", date, overrides);
+      return `${satang / BigInt(100)}.${String(satang % BigInt(100)).padStart(2, "0")}`;
+    });
+    expect(calendar.rows.map(row => row.price)).toEqual(expected);
+    expect(expected).toEqual(["1300.00", "1300.00", "1300.00", "1000.00"]);
   });
 });

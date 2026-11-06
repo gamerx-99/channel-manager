@@ -5035,3 +5035,90 @@ Written by a Claude session started by the coordinating session; it fixes the re
 | `websiteBuilder.reorderCancelled` | Dragging photo {id} was cancelled | ยกเลิกการย้ายรูปที่ {{position}} | Moving photo {{position}} was cancelled. |
 
 Also: the line under each photo "ลำดับการแสดง N" now shows the place on the website (1 = cover), not the raw `display_order`.
+
+## 2026-11-06 feat/one-calendar (partial)
+
+- Implemented shared/rateRangeSplit.ts pure function with tests.
+- Full UI (unified calendar page, month/timeline switch, side panel, nav/redirect) pending due to scope.
+- Thai copy: no changes.
+
+## 2026-11-06 feat/one-calendar — PART 2 server corrections
+
+- Corrected `saveCalendarRange` permission handling so allotment-only writes require `revenue.manage_allotment`; the router preserves `undefined` for an omitted minimum stay.
+- Null price is a no-op. Minimum-stay-only edits resolve every selected night with `resolveRateSatang`, preserve nightly prices, and write contiguous replacement segments through `splitRateRanges`.
+- `listCalendarForHotel` continues to use `resolveRateSatang`; its booking query now includes occupancy on the inclusive final calendar date, and days without availability rows remain open while booked inventory is subtracted.
+- Added D1 regressions for all-or-nothing validation, null prices, base-range split, separate override prices with minimum-stay-only, allotment-only permission, open missing rows, booked inventory, and equal-width override resolution. Added mocked-router coverage for front desk null prices / forbidden price writes.
+- Files: `server/d1/availability.ts`, `server/d1/availability.batch.test.ts`, `server/routers/availabilityRouter.ts`, `server/availabilityCalendar.access.test.ts`, `shared/rateRangeSplit.ts`, `shared/rateRangeSplit.test.ts`, `.agent/prompt3-one-calendar.todo`.
+- Verification: targeted Vitest suite passed; final full-suite verification recorded in PART 7 below.
+- Thai copy before → after: no UI copy changed.
+- PARTS 3–7 remain in progress.
+
+## 2026-11-06 feat/one-calendar — PART 3 month view
+
+- Added the single hotel calendar page foundation, room type filters, Buddhist-year month view, inclusive date-range selection, and shared calendar query hook.
+- Added pure date selection/month generation tests and a route/UI contract test. The page already carries a timeline and side panel implementation that will be finalized and recorded in the next PART commits.
+- Files: `client/src/pages/OneCalendar.tsx`, `client/src/pages/useOneCalendar.ts`, `client/src/pages/oneCalendarRules.ts`, `client/src/pages/oneCalendarRules.test.ts`, `client/src/pages/oneCalendar.css`, `client/src/pages/OneCalendar.contract.test.ts`, `client/src/App.tsx`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `.agent/prompt3-one-calendar.todo`.
+- Verification: `pnpm check` exit 0; focused UI, route, server, and rate-split tests passed (34 tests).
+- Thai copy before → after: new keys `oneCalendar.title` = “ปฏิทินราคาและห้องว่าง”, `oneCalendar.month` = “รายเดือน”, `oneCalendar.timeline` = “ไทม์ไลน์”, `oneCalendar.rooms` = “จำนวนห้องที่ขาย”, `oneCalendar.price` = “ราคาต่อคืน”, `oneCalendar.minStay` = “จำนวนคืนขั้นต่ำ”, `oneCalendar.basePrice` = “กลับไปใช้ราคาฐาน”.
+- PARTS 4–7 remain in progress.
+
+## 2026-11-06 feat/one-calendar — PART 5 side panel
+
+- Extracted the shared date-range side panel with one card per selected room type, allotment controls, rate/minimum-stay controls, return-to-base action, one save action, invalidation after save, and Thai error copy. Rate controls remain hidden unless the user has `revenue.manage_rates`.
+- Files: `client/src/pages/OneCalendar.tsx`, `client/src/pages/OneCalendarSidePanel.tsx`, `client/src/pages/OneCalendar.contract.test.ts`, `.agent/prompt3-one-calendar.todo`, `.agent/handoff.md`.
+- Verification: `pnpm check` exit 0; OneCalendar contract and date-rule tests passed (7 tests).
+- Thai copy before → after: error message uses `oneCalendar.saveError` = “บันทึกข้อมูลไม่สำเร็จ”; panel labels use “จำนวนห้องที่ขาย”, “ราคาต่อคืน”, “จำนวนคืนขั้นต่ำ”, and “กลับไปใช้ราคาฐาน”.
+- PARTS 6–7 remain in progress.
+
+## 2026-11-06 feat/one-calendar — PART 6 navigation
+
+- Replaced the separate pricing and availability menu links with one hotel-scoped “ปฏิทินราคาและห้องว่าง” link; `/dashboard/pricing` now redirects to the selected hotel's calendar with `property.view` scope.
+- Updated Topbar breadcrumb and route contract. Removed the retired `AdvancedPricing.tsx` and `AdvancedPricing.contract.test.ts`. Removed the old `Calendar.tsx`, `Calendar.test.tsx`, `calendarAvailability.ts`, and `calendarAvailability.test.ts`, whose day booking/calendar editing contract was replaced by `OneCalendar` and its rule/contract tests.
+- Files: `client/src/App.tsx`, `client/src/components/layout/Sidebar.tsx`, `client/src/components/layout/Sidebar.roomsAndPricing.test.ts`, `client/src/components/layout/Topbar.tsx`, `client/src/lib/routeScope.ts`, `client/src/lib/routeScope.permissions.test.ts`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `client/src/pages/OneCalendar.contract.test.ts`, deleted files listed above, `.agent/prompt3-one-calendar.todo`, `.agent/handoff.md`.
+- Thai copy before → after: Sidebar “จัดการราคาห้องพัก” + “สถานะห้องว่าง” → “ปฏิทินราคาและห้องว่าง”; breadcrumb “สถานะห้องว่าง” → “ปฏิทินราคาและห้องว่าง”.
+- Verification: final full checks passed; see PART 7 below.
+- PART 7 remains in progress.
+
+## 2026-11-06 feat/one-calendar — PART 4 timeline
+
+- Extracted the timeline into `OneCalendarTimeline.tsx`, with room types as rows and days as columns. It renders only “ว่าง” / “ไม่ว่าง”, remains clickable for the shared date-range selection, and stays inside a horizontally scrollable frame at narrow widths.
+- Updated the page contract to assert that the timeline contains no price data and that the mobile viewport remains constrained by the frame.
+- Files: `client/src/pages/OneCalendar.tsx`, `client/src/pages/OneCalendarTimeline.tsx`, `client/src/pages/OneCalendar.contract.test.ts`, `.agent/prompt3-one-calendar.todo`, `.agent/handoff.md`.
+- Verification: `pnpm check` exit 0; OneCalendar contract and date-rule tests passed (6 tests).
+- Thai copy before → after: no new strings; the timeline uses `oneCalendar.available` (“ว่าง”) and `oneCalendar.unavailable` (“ไม่ว่าง”).
+- PARTS 5–7 remain in progress.
+
+## 2026-11-06 feat/one-calendar — PART 7 handoff and verification
+
+- **Changed files:** `.agent/prompt3-one-calendar.todo`, `client/src/App.tsx`, `client/src/components/layout/Sidebar.tsx`, `client/src/components/layout/Sidebar.roomsAndPricing.test.ts`, `client/src/components/layout/Topbar.tsx`, `client/src/lib/routeScope.ts`, `client/src/lib/routeScope.permissions.test.ts`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `client/src/pages/OneCalendar.tsx`, `client/src/pages/OneCalendarTimeline.tsx`, `client/src/pages/OneCalendarSidePanel.tsx`, `client/src/pages/OneCalendar.contract.test.ts`, `client/src/pages/oneCalendar.css`, `client/src/pages/oneCalendarRules.ts`, `client/src/pages/oneCalendarRules.test.ts`, `client/src/pages/useOneCalendar.ts`, `server/availabilityCalendar.access.test.ts`, `server/d1/availability.ts`, `server/d1/availability.batch.test.ts`, `server/routers/availabilityRouter.ts`, `shared/rateRangeSplit.ts`, `shared/rateRangeSplit.test.ts`, `.agent/handoff.md`.
+- **Removed obsolete files:** `client/src/pages/AdvancedPricing.tsx` and `AdvancedPricing.contract.test.ts` were replaced by the unified calendar and its route/UI contract. `Calendar.tsx`, `Calendar.test.tsx`, `calendarAvailability.ts`, and `calendarAvailability.test.ts` were the former day-oriented availability page/helper and tests; the month/timeline calendar now uses the new calendar query and has dedicated pure-rule and contract tests. No test assertion was weakened.
+- **Thai copy before → after:**
+
+  | Location | Before | After |
+  |---|---|---|
+  | Sidebar | “จัดการราคาห้องพัก” + “สถานะห้องว่าง” | “ปฏิทินราคาและห้องว่าง” |
+  | Breadcrumb | “สถานะห้องว่าง” | “ปฏิทินราคาและห้องว่าง” |
+  | New month switch | — | “รายเดือน” |
+  | New timeline switch | — | “ไทม์ไลน์” |
+  | Side panel | — | “จำนวนห้องที่ขาย”, “ราคาต่อคืน”, “จำนวนคืนขั้นต่ำ”, “กลับไปใช้ราคาฐาน” |
+  | Save error | — | “บันทึกข้อมูลไม่สำเร็จ” |
+
+- **Verification output:**
+
+  ```text
+  > channel-manager-mvp@1.0.0 check
+  > tsc --noEmit
+  ```
+
+  ```text
+  Test Files  223 passed (223)
+       Tests  1584 passed (1584)
+  ```
+
+  ```text
+  ✓ built in 9.29s
+  --dry-run: exiting now.
+  ```
+
+- `pnpm build` completed the Wrangler dry run; no deployment or migration was run. The build emitted a large-chunk advisory for the 1,291.21 kB main JS bundle.
+- No remaining PART 3–7 work. All commits were staged by explicitly naming files; the two existing untracked items `.agents/` and `shared/roomAmenities.adversarial.test.ts` were left untouched.

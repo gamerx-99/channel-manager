@@ -12,6 +12,8 @@ import {
   createRateOverride as dbCreateRateOverride,
   listRateOverrides as dbListRateOverrides,
   deleteRateOverride as dbDeleteRateOverride,
+  saveCalendarRange as dbSaveCalendarRange,
+  listCalendarForHotel as dbListCalendarForHotel,
 } from '../d1/availability';
 import {
   requirePermission,
@@ -64,6 +66,23 @@ export const listRateOverridesSchema = z.object({
 export const deleteRateOverrideSchema = z.object({
   hotel_id: hotelIdSchema,
   rate_override_id: z.string().uuid(),
+});
+
+export const saveCalendarRangeSchema = z.object({
+  hotel_id: hotelIdSchema,
+  room_type_ids: z.array(z.string().uuid()).min(1),
+  start_date: z.string().date(),
+  end_date: z.string().date(),
+  rooms_available: z.number().int().nonnegative().optional(),
+  price: z.number().nonnegative().nullable().optional(),
+  min_stay_nights: z.number().int().positive().nullable().optional(),
+  base: z.boolean().optional(),
+}).refine(data => data.end_date >= data.start_date, { message: 'End date must be on or after start date.', path: ['end_date'] });
+
+export const listCalendarSchema = z.object({
+  hotel_id: hotelIdSchema,
+  start_date: z.string().date(),
+  end_date: z.string().date(),
 });
 
 export const availability = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
@@ -196,6 +215,39 @@ export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOv
   }
 });
 
+export const saveCalendarRangeProcedure = protectedProcedure.input(saveCalendarRangeSchema).mutation(async ({ ctx, input }) => {
+  const touchesPrice = (input.price !== undefined && input.price !== null) || input.base === true || input.min_stay_nights !== undefined;
+  if (touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_rates');
+  if (input.rooms_available !== undefined) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
+  if (input.rooms_available === undefined && !touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    return await dbSaveCalendarRange(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {
+      hotelId: input.hotel_id,
+      roomTypeIds: input.room_type_ids,
+      startDate: input.start_date,
+      endDate: input.end_date,
+      roomsAvailable: input.rooms_available ?? null,
+      price: input.price === undefined ? undefined : (input.price === null ? null : String(input.price)),
+      minStayNights: input.min_stay_nights,
+      base: input.base,
+    });
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const listCalendarProcedure = protectedProcedure.input(listCalendarSchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.view');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    return await dbListCalendarForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.start_date, input.end_date);
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
+
 export const availabilityRouter = router({
   availability,
   updateAvailability: updateAvailabilityProcedure,
@@ -203,4 +255,6 @@ export const availabilityRouter = router({
   createRateOverride: createRateOverrideProcedure,
   listRateOverrides: listRateOverridesProcedure,
   deleteRateOverride: deleteRateOverrideProcedure,
+  saveCalendarRange: saveCalendarRangeProcedure,
+  listCalendar: listCalendarProcedure,
 });

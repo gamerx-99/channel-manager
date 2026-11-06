@@ -10,7 +10,6 @@ import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Home";
 import Financials from "./pages/Financials";
-import AdvancedPricing from "./pages/AdvancedPricing";
 import Housekeeping from "./pages/Housekeeping";
 import Communications from "./pages/Communications";
 import Login from "./pages/Login";
@@ -25,7 +24,8 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
 import Bookings from "./pages/Bookings";
-import Calendar from "./pages/Calendar";
+import OneCalendar from "./pages/OneCalendar";
+import { useHotel } from "./contexts/HotelContext";
 import PublicHotel from "./pages/PublicHotel";
 import PublicBooking from "./pages/PublicBooking";
 import AdminUsers from "./pages/AdminUsers";
@@ -49,6 +49,11 @@ import { useTranslation } from "./lib/i18n";
 import LegalPage from "./pages/LegalPage";
 import GettingStarted from "./pages/GettingStarted";
 
+function PricingRedirect() {
+  const { selectedHotelId } = useHotel();
+  return <Redirect to={selectedHotelId ? `/hotels/${selectedHotelId}/calendar` : "/hotels"} />;
+}
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -71,7 +76,7 @@ function Router() {
       </Route>
       <Route path="/hotels/:id/billing"><PrivateRoute><SubscriptionPlan /></PrivateRoute></Route>
       <Route path="/dashboard/pricing">
-        <PrivateRoute><AdvancedPricing /></PrivateRoute>
+        <PrivateRoute><PricingRedirect /></PrivateRoute>
       </Route>
       <Route path="/housekeeping">
         <PrivateRoute><Housekeeping /></PrivateRoute>
@@ -108,7 +113,7 @@ function Router() {
         {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/calendar">
-        {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
+        {(params) => <PrivateRoute><OneCalendar id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/ota">
         {(params) => otaSyncEnabled && otaConnectivityEnabled ? <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute> : <Redirect to={`/hotels/${params.id}`} />}
