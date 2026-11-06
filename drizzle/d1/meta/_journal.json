@@ -148,6 +148,13 @@
       "when": 1793921811664,
       "tag": "20261106000000_hotel_line_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1793956711191,
+      "tag": "20261106060000_staff_shifts",
+      "breakpoints": true
     }
   ]
 }

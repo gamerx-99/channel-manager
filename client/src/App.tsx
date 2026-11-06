@@ -11,6 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Home";
 import Financials from "./pages/Financials";
 import Housekeeping from "./pages/Housekeeping";
+import StaffShifts from "./pages/StaffShifts";
 import Communications from "./pages/Communications";
 import Login from "./pages/Login";
 import MfaEnroll from "./pages/MfaEnroll";
@@ -79,8 +80,9 @@ function Router() {
         <PrivateRoute><PricingRedirect /></PrivateRoute>
       </Route>
       <Route path="/housekeeping">
-        <PrivateRoute><Housekeeping /></PrivateRoute>
+        <Redirect to="/staff-shifts" />
       </Route>
+      <Route path="/staff-shifts"><PrivateRoute><StaffShifts /></PrivateRoute></Route>
       {communicationsEnabled && <Route path="/communications">
         <PrivateRoute><Communications /></PrivateRoute>
       </Route>}

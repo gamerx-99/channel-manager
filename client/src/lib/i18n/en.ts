@@ -36,6 +36,8 @@ const en = {
     paymentsComingSoon: "Payments & Gateway module is coming soon in future releases.",
     communications: "Communications",
     housekeeping: "Housekeeping",
+    staff: "Staff",
+    staffShifts: "Staff shifts",
     websiteBuilder: "Website Builder",
     advancedPricing: "Advanced Pricing",
     system: "System",
@@ -966,6 +968,9 @@ const en = {
     title: "Payment settings",
     manageLink: "Manage payment settings",
   },
+  staffShifts: {
+    eyebrow: "Staff", title: "Staff shifts", lede: "Plan staff shifts by month. No time clock.", section: "Monthly schedule", addShift: "Add shift", previousMonth: "Previous month", nextMonth: "Next month", name: "Full name", position: "Position", monthTotal: "Total hours", memberDetails: "Staff details", date: "Date", startTime: "Start time", endTime: "End time", breakMinutes: "Break (minutes)", editShift: "Edit shift", deleteShift: "Delete shift", editTitle: "Edit shift", empty: "No staff members to schedule.",
+  },
   housekeeping: {
     loadingAriaLabel: "Loading housekeeping data",
     loadingBoard: "Loading housekeeping board…",
@@ -1267,6 +1272,8 @@ const en = {
     permTm30: "Export TM30",
     permHousekeepingView: "View housekeeping",
     permHousekeepingUpdate: "Update housekeeping",
+    permStaffShiftsView: "View staff shifts",
+    permStaffShiftsManage: "Manage staff shifts",
     permRates: "Rates and availability",
     permOtaView: "View OTA status",
     permOtaManage: "Manage OTA connections",

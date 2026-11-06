@@ -149,6 +149,8 @@ export const hotelUsers = sqliteTable("hotel_users", {
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
   // Supabase auth.users is internal and will be replaced by Better Auth in 13-05.
   userId: text("user_id").notNull(),
+  fullName: text("full_name"),
+  position: text("position"),
   role: text("role").notNull(),
   permissionGrants: json<string[]>("permission_grants").notNull().default(sql`'[]'`),
   permissionRevokes: json<string[]>("permission_revokes").notNull().default(sql`'[]'`),
@@ -614,6 +616,25 @@ export const hotelPurgeLog = sqliteTable("hotel_purge_log", {
   purgedAt: integer("purged_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const staffShifts = sqliteTable("staff_shifts", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  hotelUserId: text("hotel_user_id").notNull().references(() => hotelUsers.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  breakMinutes: integer("break_minutes").notNull().default(0),
+  createdBy: text("created_by").notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, table => [
+  check("staff_shifts_date_check", sql`${table.date} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'`),
+  check("staff_shifts_start_time_check", sql`${table.startTime} glob '[0-2][0-9]:[0-5][0-9]' and substr(${table.startTime}, 1, 2) < '24'`),
+  check("staff_shifts_end_time_check", sql`${table.endTime} glob '[0-2][0-9]:[0-5][0-9]' and substr(${table.endTime}, 1, 2) < '24'`),
+  check("staff_shifts_break_check", sql`${table.breakMinutes} >= 0`),
+  index("staff_shifts_hotel_date_idx").on(table.hotelId, table.date),
+]);
+
 export const userOnboarding = sqliteTable("user_onboarding", {
   userId: text("user_id").primaryKey(),
   tourCompletedAt: integer("tour_completed_at", { mode: "timestamp_ms" }),
@@ -630,6 +651,7 @@ export const d1Schema = {
   couponRedemptions,
   subscriptionAdminLog,
   hotelUsers,
+  staffShifts,
   hotelMedia,
   roomTypes,
   rooms,

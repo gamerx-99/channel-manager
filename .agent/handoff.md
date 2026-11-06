@@ -5255,3 +5255,17 @@ Exit 0
 - Updated the decision register to done and revised `shared/finance.ts` documentation.
 - Existing refund-day subtraction assertions updated (not deleted or weakened): `shared/finance.test.ts` — the former `subtracts the refund on its Thai refund day` assertion is now `removes a cancelled payment from its paid day and adds nothing on the refund day`; `server/financials.test.ts` — the former `uses shared paid-day net revenue for the report total and trend` assertion is now `removes a refunded payment from its paid day without subtracting on the refund day`. Added coverage for all excluded statuses while preserving standing paid revenue.
 - Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` (with worktree-local `TEMP`/`TMP`) — 237 files passed, 1,658 tests passed, exit 0. `pnpm build` (with Wrangler `--dry-run`) — Vite build succeeded and `--dry-run: exiting now.`, exit 0; existing large-chunk advisory and no-target-environment warning.
+
+
+## 2026-11-06 — Staff shifts
+
+- Added the staff month schedule and scoped shift CRUD in `drizzle/d1/20261106060000_staff_shifts.sql`, `server/d1/staffShifts.ts`, and `server/routers/staffShiftsRouter.ts`. The roster excludes the hotel owner, falls back to Better Auth account names, and lets owners/managers set hotel-specific names and free-text positions. Weekend cells shade dark; month totals subtract breaks and count overnight shifts into the next day. Housekeeping now redirects to the staff shifts route; no time clock was added.
+- Thai before / after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | แม่บ้านและทำความสะอาด (sidebar) | พนักงาน / กะพนักงาน |
+  | — (staff shifts page) | กะพนักงาน; เพิ่มกะ; ชั่วโมงรวม; ตำแหน่ง |
+
+- Verification: `pnpm check` — `$ tsc --noEmit`, Exit 0. `pnpm test` — 241 files passed, 1,664 tests passed, Exit 0. `pnpm build` — Vite built; Wrangler `--dry-run: exiting now.`, Exit 0. Commands used `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false` because pnpm's automatic package-manager verification tried to write a lock in a read-only location.
+- Migration not applied. No commit, push, deploy, or non-dry-run Wrangler command.

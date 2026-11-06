@@ -235,15 +235,14 @@ export function Sidebar({
             <span>{t("sidebar.communications")}</span>
           </Link>
         )}
-        {can("housekeeping.view_room_status") && (
-          <Link
-            href="/housekeeping"
-            className={`nav-link ${location === "/housekeeping" || location.startsWith("/housekeeping/") ? "active" : ""}`}
-            onClick={() => onClose()}
-          >
-            <Users size={17} strokeWidth={location === "/housekeeping" ? 2.3 : 1.8} />
-            <span>{t("sidebar.housekeeping")}</span>
-          </Link>
+        {can("staff.view_shifts") && (
+          <>
+            <p className="nav-label nav-label-spaced">{t("sidebar.staff")}</p>
+            <Link href="/staff-shifts" className={`nav-link ${location === "/staff-shifts" ? "active" : ""}`} onClick={() => onClose()}>
+              <Users size={17} strokeWidth={location === "/staff-shifts" ? 2.3 : 1.8} />
+              <span>{t("sidebar.staffShifts")}</span>
+            </Link>
+          </>
         )}
         {/* Only people who can edit the hotel's site see the builder: not super admin or support (owner, 2026-11-04). */}
         {can("property.manage_profile") && (
