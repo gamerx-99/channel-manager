@@ -114,3 +114,7 @@
 .theme-minimal-white .minimal-section-heading h2 i,.theme-minimal-white .minimal-location h2 i{color:var(--owner-highlight)}
 .theme-lanna-teak .lanna-intro h2 i,.theme-lanna-teak .lanna-section-title h2 i,.theme-lanna-teak .lanna-location h2 i{color:var(--owner-highlight)}
 .theme-cafe-homestay .cafe-section-heading h2 i,.theme-cafe-homestay .cafe-location h2 i{color:var(--owner-highlight)}
+.theme-mountain-mist .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-mountain-mist .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-mountain-mist .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-mountain-mist .public-button,.theme-mountain-mist .public-nav-cta,.theme-mountain-mist .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}

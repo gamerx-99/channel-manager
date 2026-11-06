@@ -3,12 +3,12 @@ import { DEFAULT_HOTEL_COLORS, HOTEL_THEMES, getHotelThemeColors } from "./hotel
 
 describe("hotel theme colours", () => {
   it("defines readable fixed button and highlight colours for every theme", () => {
-    expect(HOTEL_THEMES).toHaveLength(3);
+    expect(HOTEL_THEMES).toHaveLength(4);
     for (const theme of HOTEL_THEMES) {
       expect(theme.buttonBackground).toMatch(/^#[0-9a-f]{6}$/i);
       expect(theme.buttonText).toMatch(/^#[0-9a-f]{6}$/i);
       expect(theme.highlight).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(theme.buttonText).toBe("#ffffff");
+      expect(theme.buttonText).toBe(theme.id === "mountain-mist" ? "#1f3b2d" : "#ffffff");
     }
   });
 

@@ -5343,3 +5343,17 @@ Exit 0
 - Thai before → after: breadcrumb `ทีมงานโรงแรม` → `กะพนักงาน` (`/staff-shifts`) and `งานประจำวัน` (`/staff-tasks`).
 - Verification: `pnpm check` — `$ tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` — 252 files, 1,713 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed, exit 0; existing large-chunk advisory and no-target-environment warning. `git diff --check` — no output, exit 0. Commands use `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`; build also uses `XDG_CONFIG_HOME=/tmp/hayhost-xdg`.
 - No migration application, commit, push, or deploy.
+
+## 2026-11-07 — Mountain Mist public theme
+
+- Added the Mountain Mist landing and scoped stylesheet, registered it as a premium theme, added the Google Fonts listed in the design through `ThemeLanding`, and connected its fixed amber button colors to `getHotelThemeColors`. The landing uses the shared room/media/booking props, limits the gallery to `MAX_WEBSITE_GALLERY_PHOTOS`, renders contacts/map and `PoweredByHayhost`, and keeps the supplied desktop/mobile layout.
+- Updated the website theme picker preview and PublicHotel palette/render contracts. Added the landing test, i18n-key coverage, and extended theme palette, registry, booking color, and public rendering coverage. Updated the Website Builder spec status.
+- Thai before → after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | — (new theme copy) | เมนูหลัก; ห้องพัก; รูปที่พัก; ที่ตั้ง; เปลี่ยนภาษา; จองเลย; ที่นี่คือที่ไหน; เรื่องราวของเรา; มุมสงบให้คุณได้พักใจ ตื่นมารับอากาศดี ๆ แล้วค่อยเริ่มวัน; ที่พักของเรา; พักได้; คน; เริ่มต้น; ฿; / คืน; เลือกห้องนี้; ดูบรรยากาศ; มาหาเราได้ง่าย ๆ; จองผ่าน hayhost |
+
+- The provided Thai wording was checked against `docs/thai-glossary.md`; none of these phrases use a banned term. Minor integration changes: the design’s direct booking URLs now use the shared `bookingLink` callback, button colors use the theme palette, and the footer credit uses `PoweredByHayhost`. The design’s room amenity chips are retained.
+- Verification: `pnpm check` — `$ tsc --noEmit`, exit 0. `pnpm test --maxWorkers=3 --minWorkers=1` — 253 files passed, 1,721 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed, exit 0 (existing large-chunk advisory and no-target-environment warning). `git diff --check` — no output, exit 0. Commands use `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`; build also uses `XDG_CONFIG_HOME=/tmp/hayhost-xdg`.
+- Deleted both temporary `design/themes/03-mountain-mist/out/` handoff files. No migration, commit, push, or deploy.

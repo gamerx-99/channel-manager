@@ -4,12 +4,14 @@ import { getHotelThemeLanding, getHotelThemeRegistryEntry, HOTEL_THEME_REGISTRY 
 import MinimalWhite from "./minimal-white/MinimalWhite";
 import LannaTeak from "./lanna-teak/LannaTeak";
 import CafeHomestay from "./cafe-homestay/CafeHomestay";
+import MountainMist from "./mountain-mist/MountainMist";
 
 describe("hotel theme registry", () => {
   it.each([
     ["minimal-white", MinimalWhite],
     ["lanna-teak", LannaTeak],
     ["cafe-homestay", CafeHomestay],
+    ["mountain-mist", MountainMist],
   ] as const)("returns the landing for %s", (id, component) => {
     expect(getHotelThemeRegistryEntry(id)?.landing).toBe(component);
   });

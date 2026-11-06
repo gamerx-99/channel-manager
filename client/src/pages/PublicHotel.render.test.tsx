@@ -42,15 +42,16 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("PublicHotel loading to data with theme %s", (theme) => {
+describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay", "mountain-mist"] as const)("PublicHotel loading to data with theme %s", (theme) => {
   it("renders loading first, then hotel data without a hook-order crash", () => {
     const view = render(<PublicHotel slug="sample-stay" />);
     expect(screen.getByRole("status")).toBeTruthy();
     mocks.loaded = true;
     mocks.theme = theme;
     expect(() => view.rerender(<PublicHotel slug="sample-stay" />)).not.toThrow();
-    expect(screen.getByRole("heading", { name: "Sample Stay" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Sample Stay" }).getAttribute("style")).toContain("object-position: 27% 73%");
+    if (theme === "mountain-mist") expect(view.container.querySelector(".hero-title")?.textContent).toBe("Sample Stay");
+    else expect(screen.getByRole("heading", { name: "Sample Stay" })).toBeTruthy();
+    if (theme !== "mountain-mist") expect(screen.getByRole("img", { name: "Sample Stay" }).getAttribute("style")).toContain("object-position: 27% 73%");
     // The booking steps live on the hayhost booking page now, not inside the hotel website.
     expect(view.container.querySelector("#book")).toBeNull();
   });
@@ -60,7 +61,7 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("
     mocks.theme = theme;
     const view = render(<PublicHotel slug="sample-stay" />);
     expect(view.container.querySelector('a[href="/sample-stay/book"]')).toBeTruthy();
-    expect(view.container.querySelector('a[href="/sample-stay/book?roomType=room-1"]')?.textContent).toBe("Garden Room");
+    expect(view.container.querySelector('a[href="/sample-stay/book?roomType=room-1"]')?.textContent).toBe(theme === "mountain-mist" ? "Choose this room" : "Garden Room");
     expect(view.container.querySelector('a[href="#book"]')).toBeNull();
   });
 
@@ -78,9 +79,10 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("
     const view = render(<PublicHotel slug="sample-stay" />);
     if (theme) {
       const themedPage = view.container.querySelector<HTMLElement>(`.theme-${theme}`);
-      const expected: Record<string, string> = { "minimal-white": "#34423a", "lanna-teak": "#6b3f2a", "cafe-homestay": "#8d4e35" };
+      const expected: Record<string, string> = { "minimal-white": "#34423a", "lanna-teak": "#6b3f2a", "cafe-homestay": "#8d4e35", "mountain-mist": "#e0a458" };
+      const expectedText: Record<string, string> = { "minimal-white": "#ffffff", "lanna-teak": "#ffffff", "cafe-homestay": "#ffffff", "mountain-mist": "#1f3b2d" };
       expect(themedPage?.style.getPropertyValue("--owner-accent")).toBe(expected[theme]);
-      expect(themedPage?.style.getPropertyValue("--owner-accent-text")).toBe("#ffffff");
+      expect(themedPage?.style.getPropertyValue("--owner-accent-text")).toBe(expectedText[theme]);
     } else {
       for (const selector of [".public-nav-cta", ".public-hero-content .public-button"]) {
         const cta = view.container.querySelector<HTMLElement>(selector);
