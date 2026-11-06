@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { useHotel } from "@/contexts/HotelContext";
@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n";
 import PageState from "@/components/PageState";
 import { useOneCalendar } from "./useOneCalendar";
 import OneCalendarTimeline from "./OneCalendarTimeline";
+import OneCalendarSidePanel from "./OneCalendarSidePanel";
 import { formatBuddhistDate, isDateSelected, selectCalendarDate } from "./oneCalendarRules";
 import "./oneCalendar.css";
 
@@ -32,6 +33,9 @@ export default function OneCalendar({ id }: { id: string }) {
   const [useBase, setUseBase] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const data = useOneCalendar(id, month);
+  useEffect(() => {
+    if (selectedHotelId && selectedHotelId !== id) navigate(`/hotels/${selectedHotelId}/calendar`);
+  }, [id, navigate, selectedHotelId]);
   const { dates } = data;
   const roomTypes = data.roomTypes as CalendarRoomType[];
   const selectedTypes = selectedRoomTypes.length ? roomTypes.filter((type: CalendarRoomType) => selectedRoomTypes.includes(type.id)) : roomTypes;
@@ -84,28 +88,6 @@ export default function OneCalendar({ id }: { id: string }) {
   const toggleRoomType = (roomTypeId: string) => setSelectedRoomTypes(current =>
     current.includes(roomTypeId) ? current.filter(id => id !== roomTypeId) : [...current, roomTypeId]);
 
-  const panel = range[0] && range[1] ? <aside className="one-calendar-panel panel" aria-label={t("oneCalendar.selectedRange")}>
-    <div className="panel-heading"><div><div className="eyebrow">{t("oneCalendar.selectedRange")}</div><h2>{formatBuddhistDate(range[0])} – {formatBuddhistDate(range[1])}</h2></div></div>
-    {!data.canManageRates && <p className="field-help">{t("oneCalendar.frontDeskHint")}</p>}
-    {!selectedTypes.length ? <p>{t("oneCalendar.chooseRoomTypes")}</p> : selectedTypes.map((roomType: any) => {
-      const current = rowMap.get(`${roomType.id}:${range[0]}`) as any;
-      return <section className="one-calendar-room-card" key={roomType.id}>
-        <h3>{roomType.name}</h3>
-        {data.canManageAllotment && <div className="one-calendar-control-grid">
-          <label>{t("oneCalendar.rooms")}<input type="number" min="0" max={roomType.totalRooms} value={rooms} placeholder={String(current?.roomsAvailable ?? roomType.totalRooms)} onChange={event => setRooms(event.target.value)} /></label>
-          <div className="one-calendar-sale-actions"><button type="button" className="button button-quiet button-small" onClick={() => setRooms(String(roomType.totalRooms))}>{t("oneCalendar.openSales")}</button><button type="button" className="button button-quiet button-small" onClick={() => setRooms("0")}>{t("oneCalendar.closeSales")}</button></div>
-        </div>}
-        {data.canManageRates && <div className="one-calendar-control-grid">
-          <label>{t("oneCalendar.price")}<input type="number" min="0" step="0.01" value={price} placeholder={current?.price ?? ""} onChange={event => { setPrice(event.target.value); setUseBase(false); }} /></label>
-          <label>{t("oneCalendar.minStay")}<input type="number" min="1" step="1" value={minimum} onChange={event => setMinimum(event.target.value)} /></label>
-          <button type="button" className={`button button-quiet button-small ${useBase ? "is-active" : ""}`} onClick={() => { setUseBase(value => !value); setPrice(""); }}>{t("oneCalendar.basePrice")}</button>
-        </div>}
-      </section>;
-    })}
-    {error && <p className="form-error" role="alert">{error}</p>}
-    <div className="form-submit"><button className="button button-primary" type="button" onClick={() => void save()} disabled={data.save.isPending || !selectedTypes.length}>{data.save.isPending ? t("oneCalendar.saving") : t("oneCalendar.save")}</button></div>
-  </aside> : null;
-
   return <div className="page-content one-calendar-page">
     <section className="page-intro intro-split"><div><div className="eyebrow">{t("oneCalendar.eyebrow")}</div><h1>{t("oneCalendar.title")}<span className="title-mark">.</span></h1><p className="lede">{t("oneCalendar.description")}</p></div></section>
     <section className="panel one-calendar-room-filter"><div className="panel-heading"><div><h2>{t("oneCalendar.selectRooms")}</h2></div></div><div className="one-calendar-room-pills">{roomTypes.map((roomType: any) => <button key={roomType.id} type="button" aria-pressed={!selectedRoomTypes.length || selectedRoomTypes.includes(roomType.id)} aria-label={t("oneCalendar.roomTypeAria", { name: roomType.name })} className={`one-calendar-room-pill ${!selectedRoomTypes.length || selectedRoomTypes.includes(roomType.id) ? "is-selected" : ""}`} onClick={() => toggleRoomType(roomType.id)}>{roomType.name}</button>)}</div>
@@ -124,6 +106,6 @@ export default function OneCalendar({ id }: { id: string }) {
       </div> : <OneCalendarTimeline dates={dates} roomTypes={selectedTypes} rowMap={rowMap} t={t} onChooseDay={chooseDay} />}
       <p className="field-help">{t("oneCalendar.chooseRange")}{range[0] && ` · ${formatBuddhistDate(range[0])}${range[1] ? ` – ${formatBuddhistDate(range[1])}` : ""}`}</p>
     </section>
-    {panel}
+    {range[0] && range[1] && <OneCalendarSidePanel startDate={range[0]} endDate={range[1]} roomTypes={selectedTypes} rowMap={rowMap} canManageRates={data.canManageRates} canManageAllotment={data.canManageAllotment} rooms={rooms} price={price} minimum={minimum} useBase={useBase} saving={data.save.isPending} error={error} t={t} onRoomsChange={setRooms} onPriceChange={setPrice} onMinimumChange={setMinimum} onUseBaseChange={setUseBase} onSave={() => void save()} />}
   </div>;
 }

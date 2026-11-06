@@ -10,6 +10,7 @@ describe("one calendar page contract", () => {
   const page = read("client/src/pages/OneCalendar.tsx");
   const hook = read("client/src/pages/useOneCalendar.ts");
   const timeline = read("client/src/pages/OneCalendarTimeline.tsx");
+  const panel = read("client/src/pages/OneCalendarSidePanel.tsx");
   const css = read("client/src/pages/oneCalendar.css");
 
   it("registers the hotel calendar under the hotel-view permission", () => {
@@ -22,8 +23,17 @@ describe("one calendar page contract", () => {
     expect(page).toContain('setMode("month")');
     expect(page).toContain('setMode("timeline")');
     expect(page).toContain("selectCalendarDate(range[0], range[1], date)");
-    expect(page).toContain("one-calendar-panel panel");
+    expect(page).toContain("<OneCalendarSidePanel");
+    expect(panel).toContain("one-calendar-panel panel");
     expect(page).toContain("data.save.mutateAsync(input as any)");
+  });
+
+  it("shows room controls per selected type, hides rate fields without rate access, and surfaces localized save errors", () => {
+    expect(panel).toContain("roomTypes.map(roomType =>");
+    expect(panel).toContain("{canManageRates &&");
+    expect(panel).toContain("{canManageAllotment &&");
+    expect(panel).toContain('role="alert"');
+    expect(page).toContain('setError(t("oneCalendar.saveError"))');
   });
 
   it("keeps prices in month cells only and gates price controls by permission", () => {
@@ -33,7 +43,7 @@ describe("one calendar page contract", () => {
     expect(css).toContain(".one-calendar-page { min-width: 0;");
     expect(css).toContain(".one-calendar-timeline { border-collapse: separate; border-spacing: 0; min-width: max-content;");
     expect(page).toContain("data.calendar.data?.canSeePrice &&");
-    expect(page).toContain("data.canManageRates && <div className=\"one-calendar-control-grid\">");
+    expect(panel).toContain("{canManageRates && <div className=\"one-calendar-control-grid\">");
     expect(hook).toContain('permissions.includes("revenue.manage_rates")');
   });
 });

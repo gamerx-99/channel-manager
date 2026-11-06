@@ -4961,6 +4961,14 @@ Not tested in a browser or with a real email.
 - Thai copy before → after: new keys `oneCalendar.title` = “ปฏิทินราคาและห้องว่าง”, `oneCalendar.month` = “รายเดือน”, `oneCalendar.timeline` = “ไทม์ไลน์”, `oneCalendar.rooms` = “จำนวนห้องที่ขาย”, `oneCalendar.price` = “ราคาต่อคืน”, `oneCalendar.minStay` = “จำนวนคืนขั้นต่ำ”, `oneCalendar.basePrice` = “กลับไปใช้ราคาฐาน”.
 - PARTS 4–7 remain in progress.
 
+## 2026-11-06 feat/one-calendar — PART 5 side panel
+
+- Extracted the shared date-range side panel with one card per selected room type, allotment controls, rate/minimum-stay controls, return-to-base action, one save action, invalidation after save, and Thai error copy. Rate controls remain hidden unless the user has `revenue.manage_rates`.
+- Files: `client/src/pages/OneCalendar.tsx`, `client/src/pages/OneCalendarSidePanel.tsx`, `client/src/pages/OneCalendar.contract.test.ts`, `.agent/prompt3-one-calendar.todo`, `.agent/handoff.md`.
+- Verification: `pnpm check` exit 0; OneCalendar contract and date-rule tests passed (7 tests).
+- Thai copy before → after: error message uses `oneCalendar.saveError` = “บันทึกข้อมูลไม่สำเร็จ”; panel labels use “จำนวนห้องที่ขาย”, “ราคาต่อคืน”, “จำนวนคืนขั้นต่ำ”, and “กลับไปใช้ราคาฐาน”.
+- PARTS 6–7 remain in progress.
+
 ## 2026-11-06 feat/one-calendar — PART 4 timeline
 
 - Extracted the timeline into `OneCalendarTimeline.tsx`, with room types as rows and days as columns. It renders only “ว่าง” / “ไม่ว่าง”, remains clickable for the shared date-range selection, and stays inside a horizontally scrollable frame at narrow widths.
