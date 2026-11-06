@@ -139,7 +139,7 @@ function overlapNights(checkIn: string, checkOut: string, periodStart: string, p
 }
 
 /**
- * Revenue is money received on each Thai payment day and refunded on the Thai refund day.
+ * Revenue from bookings that still stand is counted on each Thai payment day.
  */
 export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Date(), periodInput?: FinancialsPeriodInput): FinancialsResult {
   const generatedAt = now.toISOString();
@@ -148,9 +148,8 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
 
   const allBookings = hotels.flatMap(hotel => hotel.bookings);
   const revenueBookings = allBookings.filter(booking => isRevenueStatus(booking.status) && booking.payment_status === "verified" && booking.paid_at && bangkokDate(new Date(booking.paid_at)) >= periodStart && bangkokDate(new Date(booking.paid_at)) <= periodEnd);
-  const dayRevenue = revenueByThaiDay(allBookings.filter(booking => booking.payment_status === "verified" || booking.refunded_at).map(booking => ({ amount: booking.price, paidAt: booking.payment_status === "verified" ? booking.paid_at : null, refundedAt: booking.refunded_at })));
+  const dayRevenue = revenueByThaiDay(allBookings.filter(booking => booking.payment_status === "verified").map(booking => ({ status: booking.status, amount: booking.price, paidAt: booking.paid_at })));
   const cancelledBookings = allBookings.filter(booking => booking.check_in >= periodStart && booking.check_in <= periodEnd && isCancelledStatus(booking.status));
-  const refundRows = allBookings.filter(booking => booking.refunded_at && bangkokDate(new Date(booking.refunded_at)) >= periodStart && bangkokDate(new Date(booking.refunded_at)) <= periodEnd);
   const revenueSatang = Array.from(dayRevenue.entries()).filter(([date]) => date >= periodStart && date <= periodEnd).reduce((total, [, amount]) => total + toSatang(amount), 0);
   let collectedSatang = 0;
   let outstandingSatang = 0;
@@ -205,15 +204,12 @@ export function buildFinancialsSummary(hotels: HotelWithBookings[], now = new Da
   const roomTypeTotals = new Map<string, { bookings: number; satang: number }>();
   for (const booking of allBookings) {
     const paidDay = booking.payment_status === 'verified' && booking.paid_at ? bangkokDate(new Date(booking.paid_at)) : null;
-    const refundDay = booking.refunded_at ? bangkokDate(new Date(booking.refunded_at)) : null;
     const paidInPeriod = Boolean(paidDay && paidDay >= periodStart && paidDay <= periodEnd);
-    const refundInPeriod = Boolean(refundDay && refundDay >= periodStart && refundDay <= periodEnd);
-    if (!paidInPeriod && !refundInPeriod) continue;
+    if (!paidInPeriod || !isRevenueStatus(booking.status)) continue;
     const name = booking.rooms?.room_types?.name ?? 'Unassigned';
     const entry = roomTypeTotals.get(name) ?? { bookings: 0, satang: 0 };
-    if (paidInPeriod && isRevenueStatus(booking.status)) entry.bookings += 1;
-    if (paidInPeriod) entry.satang += toSatang(booking.price);
-    if (refundInPeriod) entry.satang -= toSatang(booking.price);
+    entry.bookings += 1;
+    entry.satang += toSatang(booking.price);
     roomTypeTotals.set(name, entry);
   }
   const roomTypeBreakdown: FinancialsRoomTypeBreakdown[] = Array.from(roomTypeTotals.entries())

@@ -5248,3 +5248,10 @@ Exit 0
 
 - Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` — 237 files passed, 1,657 tests passed, exit 0 (TEMP/TMP set to repo-local `.tmp-vitest` due system temp EPERM). `pnpm build` — Vite build and Wrangler dry-run completed, exit 0; Wrangler reported a blocked write to its user log path but printed `--dry-run: exiting now.` No commit, push or deploy.
 
+
+## 2026-11-06 fix/cancelled-not-revenue
+
+- Updated the shared paid-day revenue function to exclude `cancelled`, `refund_pending`, `refunded`, `payment_rejected`, and `expired` bookings from their paid date. Dashboard, report totals/trends/room breakdown, and CSV eligibility now agree; removed refund-day subtraction. Arrival/departure counting is unchanged.
+- Updated the decision register to done and revised `shared/finance.ts` documentation.
+- Existing refund-day subtraction assertions updated (not deleted or weakened): `shared/finance.test.ts` — the former `subtracts the refund on its Thai refund day` assertion is now `removes a cancelled payment from its paid day and adds nothing on the refund day`; `server/financials.test.ts` — the former `uses shared paid-day net revenue for the report total and trend` assertion is now `removes a refunded payment from its paid day without subtracting on the refund day`. Added coverage for all excluded statuses while preserving standing paid revenue.
+- Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` (with worktree-local `TEMP`/`TMP`) — 237 files passed, 1,658 tests passed, exit 0. `pnpm build` (with Wrangler `--dry-run`) — Vite build succeeded and `--dry-run: exiting now.`, exit 0; existing large-chunk advisory and no-target-environment warning.

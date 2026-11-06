@@ -134,12 +134,13 @@ describe('financials summary', () => {
     expect(result.totals.revenue).toBe(0.3);
   });
 
-  it('uses shared paid-day net revenue for the report total and trend', () => {
+  it('removes a refunded payment from its paid day without subtracting on the refund day', () => {
     const result = buildFinancialsSummary([{ id: 'hotel-1', bookings: [
-      { id: 'paid', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-19T17:00:00Z', refunded_at: '2026-08-20T17:00:00Z', check_in: '2026-08-21', check_out: '2026-08-22', price: 700, rooms: null },
+      { id: 'paid', status: 'refunded', payment_status: 'verified', paid_at: '2026-08-19T17:00:00Z', refunded_at: '2026-08-20T17:00:00Z', check_in: '2026-08-21', check_out: '2026-08-22', price: 700, rooms: null },
     ] }], now, { from: '2026-08-20', to: '2026-08-21' });
     expect(result.totals.revenue).toBe(0);
-    expect(result.trend.map(point => point.revenue)).toEqual([700, -700]);
+    expect(result.trend.map(point => point.revenue)).toEqual([0, 0]);
+    expect(result.roomTypeBreakdown).toEqual([]);
   });
 
   it('creates one daily trend point for every day in the period', () => {

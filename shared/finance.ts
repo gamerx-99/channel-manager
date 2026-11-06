@@ -2,7 +2,8 @@
  * One definition of "revenue", "today" and the dashboard money and arrival figures, shared by the
  * server (financial report) and the client (dashboard), so the two can never disagree.
  *
- * Revenue is money received on its Thai payment day, less refunds on their Thai refund day.
+ * Revenue includes paid bookings that still stand, on their Thai payment day. Cancelled,
+ * refund-pending, refunded, rejected and expired bookings contribute nothing.
  * Confirmed, checked-in and checked-out bookings with no paid timestamp are not collected revenue.
  */
 export const REVENUE_STATUSES = ["confirmed", "checked_in", "checked_out"] as const;
@@ -35,9 +36,9 @@ export function toSatang(value: string | number | null | undefined): number {
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
 }
 
-export type RevenueEvent = { amount: string | number | null | undefined; paidAt?: string | Date | null; refundedAt?: string | Date | null };
+export type RevenueEvent = { status: string; amount: string | number | null | undefined; paidAt?: string | Date | null };
 
-/** Net money received on each Thai calendar day. Refunds are charged to their refund day. */
+/** Revenue from bookings that still stand, on each Thai calendar day they were paid. */
 export function revenueByThaiDay(events: readonly RevenueEvent[]): Map<string, number> {
   const satangByDay = new Map<string, number>();
   const add = (instant: string | Date | null | undefined, amount: number) => {
@@ -46,8 +47,8 @@ export function revenueByThaiDay(events: readonly RevenueEvent[]): Map<string, n
     satangByDay.set(date, (satangByDay.get(date) ?? 0) + amount);
   };
   for (const event of events) {
+    if (!isRevenueStatus(event.status)) continue;
     add(event.paidAt, toSatang(event.amount));
-    add(event.refundedAt, -toSatang(event.amount));
   }
   return new Map(Array.from(satangByDay.entries(), ([date, satang]) => [date, fromSatang(satang)]));
 }
@@ -72,7 +73,7 @@ export function dashboardFigures(bookings: readonly FigureBooking[], now: Date =
   const month = bangkokMonth(now);
   const active = bookings.filter(booking => isRevenueStatus(booking.status));
   const counted = bookings.filter(booking => booking.payment_status === "verified" && booking.paid_at);
-  const dayRevenue = revenueByThaiDay([...counted.map(booking => ({ amount: booking.price, paidAt: booking.paid_at })), ...bookings.filter(booking => booking.refunded_at).map(booking => ({ amount: booking.price, refundedAt: booking.refunded_at }))]);
+  const dayRevenue = revenueByThaiDay(counted.map(booking => ({ status: booking.status, amount: booking.price, paidAt: booking.paid_at })));
   return {
     arrivalsToday: active.filter(booking => booking.check_in === today).length,
     departuresToday: active.filter(booking => booking.check_out === today).length,
