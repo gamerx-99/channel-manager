@@ -1,14 +1,17 @@
 import React from "react";
+import "./minimal-white.css";
 import { MapPin } from "lucide-react";
-import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
-import { PoweredByHayhost } from "./PoweredByHayhost";
+import { ThemeLanding } from "../ThemeLanding";
+import type { ThemeLandingProps } from "../ThemeProps";
+import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
-import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
 
-type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName">;
+type Props = ThemeLandingProps;
 
 export default function MinimalWhiteLanding({
   hotelName,
+  bookingLink,
+  colours,
   hotel,
   roomTypes,
   media,
@@ -28,7 +31,7 @@ export default function MinimalWhiteLanding({
   const canBook = isVisible("booking");
 
   return (
-    <ThemeLanding themeId="minimal-white" hotelName={hotelName}>
+    <ThemeLanding themeId="minimal-white" hotelName={hotelName} colors={colours}>
       <div className="minimal-page">
         <header className="minimal-header">
           <a className="minimal-wordmark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>
@@ -43,7 +46,7 @@ export default function MinimalWhiteLanding({
               <span aria-hidden="true">/</span>
               <button type="button" aria-pressed={language !== "th"} onClick={() => setLanguage("en")}>EN</button>
             </div>
-            {canBook && <a className="theme-book-button" href={bookingPageHref(slug)}>{t("hotelThemes.minimalWhite.bookDirect")}</a>}
+            {canBook && <a className="theme-book-button" href={bookingLink()}>{t("hotelThemes.minimalWhite.bookDirect")}</a>}
           </div>
         </header>
         <main>
@@ -89,7 +92,7 @@ export default function MinimalWhiteLanding({
                       )}
                       <div className="minimal-room-info">
                         <span className="minimal-label">{t("hotelThemes.minimalWhite.room", { number: String(index + 1).padStart(2, "0") })}</span>
-                        <h3>{canBook ? <a className="theme-room-link" href={bookingPageHref(slug, room.id)}>{room.name}</a> : room.name}</h3>
+                        <h3>{canBook ? <a className="theme-room-link" href={bookingLink(room.id)}>{room.name}</a> : room.name}</h3>
                         <div className="minimal-room-meta">
                           <span>{t("hotelThemes.minimalWhite.capacity", { capacity: room.capacity })}</span>
                           <strong>฿{Number(room.basePrice).toLocaleString()} <small>{t("hotelThemes.minimalWhite.perNight")}</small></strong>

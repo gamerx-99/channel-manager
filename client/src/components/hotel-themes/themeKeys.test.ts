@@ -6,7 +6,7 @@ import th from '../../lib/i18n/th';
 import en from '../../lib/i18n/en';
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const themeFiles = ['MinimalWhiteLanding.tsx', 'LannaTeakLanding.tsx', 'CafeHomestayLanding.tsx'];
+const themeFiles = ['minimal-white/MinimalWhite.tsx', 'lanna-teak/LannaTeak.tsx', 'cafe-homestay/CafeHomestay.tsx'];
 
 function collectKeys(): Set<string> {
   const keys = new Set<string>();

@@ -5255,3 +5255,10 @@ Exit 0
 - Updated the decision register to done and revised `shared/finance.ts` documentation.
 - Existing refund-day subtraction assertions updated (not deleted or weakened): `shared/finance.test.ts` — the former `subtracts the refund on its Thai refund day` assertion is now `removes a cancelled payment from its paid day and adds nothing on the refund day`; `server/financials.test.ts` — the former `uses shared paid-day net revenue for the report total and trend` assertion is now `removes a refunded payment from its paid day without subtracting on the refund day`. Added coverage for all excluded statuses while preserving standing paid revenue.
 - Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` (with worktree-local `TEMP`/`TMP`) — 237 files passed, 1,658 tests passed, exit 0. `pnpm build` (with Wrangler `--dry-run`) — Vite build succeeded and `--dry-run: exiting now.`, exit 0; existing large-chunk advisory and no-target-environment warning.
+
+## 2026-11-06 refactor/theme-registry
+
+- Added `client/src/components/hotel-themes/registry.ts` as the source for landing components and template-card preview styles. `PublicHotel` and `TemplateCardPreview` now look up themes by id; unknown ids keep the existing default public page. Theme colours still come from `shared/hotelThemes.ts`.
+- Moved Minimal White, Lanna Teak, and Cafe Homestay into one folder each, with exactly a TSX and CSS file. Their shared props include hotel data, rooms, photos, booking link, contacts, map, translations, and colours. No new themes were added.
+- To add a theme: create `<theme-id>/<ThemeName>.tsx` and `<theme-id>.css`, add one entry to `shared/hotelThemes.ts`, one registry line, and its `hotelThemes` i18n block.
+- Verification: `pnpm check` — exit 0. `pnpm test` — 238 files passed, 1,663 tests passed, exit 0 (worktree-local `TEMP`/`TMP`). `pnpm build` — Vite built; Wrangler `--dry-run` exited successfully. Existing large-chunk and no-target-environment warnings. The final build used worktree-local `XDG_CONFIG_HOME` for Wrangler logs.

@@ -1,13 +1,22 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import CafeHomestayLanding from "./CafeHomestayLanding";
+import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
+import CafeHomestayLanding from "./cafe-homestay/CafeHomestay";
 
 vi.mock("./ThemeLanding", () => ({ ThemeLanding: ({ children }: any) => <div className="theme-cafe-homestay">{children}</div> }));
 
 describe("Cafe Homestay landing", () => {
   it("renders hotel and room data with links to the booking page and no forbidden content", () => {
     const html = renderToStaticMarkup(<CafeHomestayLanding
+      bookingLink={(roomTypeId?: string) => bookingPageHref("nap-latte", roomTypeId)}
+      themeId="cafe-homestay"
+      rooms={[] as any}
+      photos={[] as any}
+      contacts={null}
+      map={null}
+      locationMap={null}
+      colours={{ buttonBackground: "#123456", buttonText: "#ffffff", highlight: "#654321" }}
       hotelName="Nap & Latte Homestay"
       hotel={{ id: "hotel-1", name: "Nap & Latte Homestay", slug: "nap-latte", address: "Pai, Thailand" } as any}
       roomTypes={[{ id: "room-1", name: "Garden Room", capacity: 2, basePrice: 1800 }, { id: "room-2", name: "Loft Room", capacity: 3, basePrice: 2400 }] as any}

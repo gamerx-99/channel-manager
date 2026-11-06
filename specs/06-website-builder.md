@@ -1,5 +1,5 @@
 # 06 Website Builder
-Status: IMPLEMENTED (photo captions, gallery selection, and theme-owned colours; 2026-11-06)
+Status: IMPLEMENTED (photo captions, gallery selection, theme-owned colours, and a registry for the three existing themes; 2026-11-06)
 Depends on: —
 Owner-tier: worker-code
 
