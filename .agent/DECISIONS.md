@@ -15,6 +15,9 @@ prompt or ticket that will fix it. **open** = not decided; never present it to c
 
 | Date | Decision | Status |
 |---|---|---|
+| 2026-11-06 | **Housekeeping will be redesigned by the owner.** Do not change the housekeeping pages until the owner gives the new design. | open (owner) |
+| 2026-11-06 | **Minimum stay is 1 night by default** (owner: a guest may stay any number of nights; one night is still income). Nothing forces a longer stay unless the hotel itself sets a minimum on some nights in the calendar. | done (no minimum unless a rate override sets one) |
+| 2026-11-06 | **A hotel belongs to the account that owns it, and the hotel settings page holds the hotel's own data tools** (owner). One account owns one hotel (self-signup already refuses a second hotel). The hotel settings page (`/hotels/:id`) gets (a) export of the hotel's data to a file and import of that file back, and (b) the PromptPay ID setting, moved from the finance page. `ASSUMPTION:` the export holds the hotel setup only (profile, contacts, room types with amenities, base prices, rate overrides, services, website text and settings), never guests' personal data or bookings; import shows what will change and asks to confirm, adds or updates, and never deletes rooms or anything a booking uses. | pending: agents (codex: export/import, agy: PromptPay move), 2026-11-06 |
 | 2026-10-30 | No OTA API (Channex etc.) until there is funding. | done |
 | 2026-10-30 | Hide OTA / iCal sync in the UI. Keep the code, do not delete it. | done (Batch A item 7, deployed f32773f9 2026-11-03) |
 | 2026-10-30 | The landing page sells TM.30 and direct booking, not OTA sync. | done |
