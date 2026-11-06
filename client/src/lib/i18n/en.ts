@@ -1879,7 +1879,7 @@ const en = {
     menuToggleAria: "Open navigation menu",
     heroEyebrow: "Independent hotel",
     defaultHeroCopy: "Explore room types, rates, and availability directly from this hotel.",
-    heroViewRooms: "View rooms",
+    heroBookNow: "Book now",
     heroCountry: "Thailand",
     storyEyebrow: "The hotel",
     storyStayAt: "Stay at",
@@ -1954,11 +1954,18 @@ const en = {
     locationTitleHighlight: "the hotel.",
     footerManagedSecurely: "Property information is managed securely.",
   },
+  publicBooking: {
+    language: "Language",
+    footerBooking: "Booking powered by hayhost",
+    contactsLabel: "Property contact details",
+    bookingWith: "You are booking a room with {{name}}",
+    contactDirect: "If you have a question or a problem, contact the property directly.",
+  },
   guidedTour: { restart: "See the guide again", skip: "Skip", next: "Next", startUsing: "Start using hayhost", step: "Step {{current}} of {{total}}", done: "All set", hotelTitle: "Add your hotel details", hotelBody: "Open hotel settings and fill in the required hotel name, address and contact fields.", hotelAction: "Choose Edit hotel, complete the required fields, then save.", roomTitle: "Add a room type and room", roomBody: "Create a room type, then add at least one room so you can manage availability.", roomAction: "Choose Add room type and follow the required fields.", finishTitle: "You are ready to start", finishBody: "Your hotel details and at least one room are set up. You can start using hayhost.", pendingTitle: "You have seen every step", pendingHotel: "Fill in the hotel name, address and contact number.", pendingRooms: "Add at least one room before taking bookings.", pendingFooter: "You can open \"See the guide again\" at any time.", helpTitle: "Getting started guide", helpEyebrow: "Help", helpLede: "Set up your hotel and first room in a few steps.", hotelScreenshotAlt: "Hotel settings example screenshot", roomScreenshotAlt: "Room settings example screenshot", screenshotPlaceholder: "Screenshot placeholder: local test data screenshot not captured yet.", problemsTitle: "Common questions", problemHotel: "Hotel details are not saved until you complete each required field and save.", problemRoom: "A room type alone is not enough. Add at least one room under the room type.", problemPublish: "The public page is visible after the hotel is published.", askHelpTitle: "Ask for help", askHelpBody: "Email the hayhost team at", supportAccessHint: "You can also approve temporary access for the hayhost team to help with this hotel.", supportAccessLink: "Manage hayhost support access", roomProblem: "If you cannot add a room, check that its required details are complete." },
   hotelThemes: {
     lannaTeak: { sections: "Hotel sections", story: "Our story", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language", kicker: "A quiet stay", welcomeKicker: "A quiet stay", exploreRooms: "Explore rooms", viewRooms: "View rooms", restWell: "Rest well", roomsTitle: "Rooms for|your stay", capacity: "Up to {{capacity}} guests", perNight: "/ night", galleryKicker: "The feeling of here", galleryTitle: "Small moments,|well kept.", findWay: "Find your way", locationTitle: "A warm welcome", footerBooking: "Booking powered by hayhost", bookDirect: "Book now" },
-    cafeHomestay: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language switch", heroKicker: "A little pause, a little comfort", exploreRooms: "Explore rooms", homeKicker: "Make yourself at home", roomsTitle: "Rooms for resting well", capacity: "Up to {{capacity}} guests", perNight: "/ night", galleryKicker: "Little moments", galleryTitle: "A glimpse of the stay", comeFindUs: "Come find us", locationTitle: "Find your way here", footerBooking: "Booking powered by hayhost" },
-    minimalWhite: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language switch", stay: "01 · Stay", room: "Room {{number}}", capacity: "Up to {{capacity}} guests", perNight: "/ night", details: "02 · Details", findUs: "03 · Find us", footerBooking: "Booking powered by hayhost" }
+    cafeHomestay: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language switch", heroKicker: "A little pause, a little comfort", exploreRooms: "Explore rooms", homeKicker: "Make yourself at home", roomsTitle: "Rooms for resting well", capacity: "Up to {{capacity}} guests", perNight: "/ night", galleryKicker: "Little moments", galleryTitle: "A glimpse of the stay", comeFindUs: "Come find us", locationTitle: "Find your way here", footerBooking: "Booking powered by hayhost", bookDirect: "Book now" },
+    minimalWhite: { sections: "Hotel sections", rooms: "Rooms", gallery: "Gallery", location: "Location", language: "Language switch", stay: "01 · Stay", room: "Room {{number}}", capacity: "Up to {{capacity}} guests", perNight: "/ night", details: "02 · Details", findUs: "03 · Find us", footerBooking: "Booking powered by hayhost", bookDirect: "Book now" }
   },
   roomAmenities: {
     groups: {

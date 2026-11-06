@@ -4934,3 +4934,66 @@ Not tested in a browser or with a real email.
 - Task 2 fix(themes): add missing lanna teak labels (story, bookDirect, welcomeKicker, viewRooms). themeKeys.test.ts guards keys.
 - Verification: pnpm check exit 0; pnpm test 1551 passed; pnpm build exit 0.
 - Thai copy: showLineOnSite "แสดงลิงก์ LINE บนหน้าเว็บ" / "Show LINE link on website"; lanna story "เรื่องราว"/"Our story"; bookDirect "จองเลย"/"Book now".
+
+## 2026-11-06 feat/booking-page — PART 5 handoff (commit & push)
+
+### Files changed (PARTs 1–4, all on branch claude/feat-booking-page-96221b)
+
+**New files (created)**
+- `client/src/pages/PublicBooking.tsx` — booking page shell: hotel bar, reassurance banner, booking steps, PoweredByHayhost footer
+- `client/src/pages/PublicBooking.css` — layout and responsive CSS for the booking page
+- `client/src/pages/PublicBooking.contract.test.ts` — contract test: route order, banner copy, contacts, booking steps
+- `client/src/pages/PublicBooking.render.test.tsx` — render test: loading/error/data states and query prefill
+- `client/src/components/public-hotel/BookingReassurance.tsx` — reassurance banner component (bookingWith line, contactDirect line, address, HotelContactsList)
+- `client/src/components/public-hotel/BookingReassurance.test.tsx` — unit test for the banner
+- `client/src/components/public-hotel/bookingPageLink.ts` — pure functions: `bookingUrl(slug)`, `bookingUrlWithRoom(slug, params)`, `parseBookingQuery(search)` with validation
+- `client/src/components/public-hotel/bookingPageLink.test.ts` — unit tests for valid params, bad dates, reversed dates, past dates, unknown roomType
+- `client/src/components/public-hotel/usePublicBookingPage.ts` — thin hook wrapping usePublicHotelPage for the booking page
+- `client/src/components/public-hotel/public-booking-page.css` — booking-page-specific overrides
+
+**Modified files**
+- `client/src/App.tsx` — added `/:slug/book` route before `/:slug`
+- `client/src/pages/PublicHotel.tsx` — removed inline `<PublicBookingSection>`; nav Book button and hero CTA now navigate to `/:slug/book`
+- `client/src/components/hotel-themes/ThemeLanding.tsx` — removed `<PublicBookingSection>` from themed landing
+- `client/src/components/hotel-themes/CafeHomestayLanding.tsx` — Book Now button navigates to `/:slug/book`; room cards link with `?roomType=<id>`
+- `client/src/components/hotel-themes/LannaTeakLanding.tsx` — same pattern
+- `client/src/components/hotel-themes/MinimalWhiteLanding.tsx` — same pattern
+- `client/src/components/hotel-themes/themes.css` — minor overrides for booking-page header accent strip
+- `client/src/components/public-hotel/public-hotel.css` — removed booking-section margin that assumed it was embedded on the hotel page
+- `client/src/lib/i18n/th.ts` — added `publicBooking` section; added `bookDirect` to cafeHomestay & minimalWhite; renamed `heroViewRooms` → `heroBookNow` on the no-theme hotel page
+- `client/src/lib/i18n/en.ts` — same symmetric changes
+
+**Tests modified (with reasons — per AGENTS.md rule 6)**
+- `client/src/pages/PublicHotel.render.test.tsx` — PART 4 removed `<PublicBookingSection>` from the hotel page. The existing test was asserting the booking form was present on `/slug`; updated to assert it is *absent* from that page (the form now lives on `/:slug/book`). This is a spec change, not a loosening: the behaviour the test described no longer exists in the design.
+- `client/src/components/hotel-themes/CafeHomestayLanding.test.tsx` — Book button now points to `/:slug/book` not an inline section; test updated to assert the new navigation target.
+- `client/src/components/hotel-themes/LannaTeakLanding.test.tsx` — same reason as CafeHomestay.
+- `client/src/components/hotel-themes/MinimalWhiteLanding.test.tsx` — same reason as CafeHomestay.
+
+### Thai string before / after table
+
+| Key | ก่อน (Before) | หลัง (After — th) | หลัง (After — en) |
+|-----|--------------|------------------|------------------|
+| `publicBooking.bookingWith` | — (ไม่มี) | ท่านกำลังจองห้องพักกับ {{name}} | You are booking a room with {{name}} |
+| `publicBooking.contactDirect` | — (ไม่มี) | หากมีข้อสงสัยหรือพบปัญหา ติดต่อที่พักได้โดยตรง | If you have a question or a problem, contact the property directly. |
+| `publicBooking.contactsLabel` | — (ไม่มี) | ข้อมูลติดต่อที่พัก | Property contact details |
+| `publicBooking.footerBooking` | — (ไม่มี) | ระบบจองโดย hayhost | Booking powered by hayhost |
+| `publicBooking.language` | — (ไม่มี) | เลือกภาษา | Language |
+| `hotelThemes.cafeHomestay.bookDirect` | — (ไม่มี) | จองเลย | Book now |
+| `hotelThemes.minimalWhite.bookDirect` | — (ไม่มี) | จองเลย | Book now |
+| `publicHotel.heroBookNow` (เปลี่ยนชื่อ key) | `heroViewRooms`: "ดูห้องพัก" | `heroBookNow`: "จองเลย" | `heroBookNow`: "Book now" |
+
+### Verification evidence (PART 5 — real output)
+
+```
+pnpm check (tsc --noEmit):  exit 0  — no output (clean)
+
+pnpm test (Vitest):
+  Test Files  225 passed (225)
+      Tests  1593 passed (1593)
+   Start at  09:21:11
+   Duration  120.79s
+
+pnpm build (vite build && wrangler deploy --dry-run):
+  ✓ 3569 modules transformed.  built in 15.84s
+  --dry-run: exiting now.  exit 0
+```

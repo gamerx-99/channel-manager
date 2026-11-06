@@ -22,7 +22,6 @@ vi.mock("@/lib/trpc", () => ({ trpc: { channelManager: {
   holdRoomType: { useMutation: () => ({ mutate: mocks.mutate, isPending: false }) },
   confirmBookingDetails: { useMutation: () => ({ mutate: mocks.mutate, isPending: false }) },
 } } }));
-vi.mock("@/components/public-hotel/PublicBookingSection", () => ({ default: () => <div>Booking section</div> }));
 vi.mock("@/lib/pageMeta", () => ({ usePageMeta: vi.fn() }));
 
 const hotelData = {
@@ -52,7 +51,24 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("
     expect(() => view.rerender(<PublicHotel slug="sample-stay" />)).not.toThrow();
     expect(screen.getByRole("heading", { name: "Sample Stay" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "Sample Stay" }).getAttribute("style")).toContain("object-position: 27% 73%");
-    if (theme) expect(screen.getByText("Booking section")).toBeTruthy();
+    // The booking steps live on the hayhost booking page now, not inside the hotel website.
+    expect(view.container.querySelector("#book")).toBeNull();
+  });
+
+  it("sends the book button and every room card to the booking page", () => {
+    mocks.loaded = true;
+    mocks.theme = theme;
+    const view = render(<PublicHotel slug="sample-stay" />);
+    expect(view.container.querySelector('a[href="/sample-stay/book"]')).toBeTruthy();
+    expect(view.container.querySelector('a[href="/sample-stay/book?roomType=room-1"]')?.textContent).toBe("Garden Room");
+    expect(view.container.querySelector('a[href="#book"]')).toBeNull();
+  });
+
+  it("hides the book links when the hotel switched the booking section off", () => {
+    mocks.loaded = true;
+    mocks.siteConfigQuery.mockReturnValue({ data: { theme, accentColor: "#954831", heroCopy: "Rest here.", visibleSections: { booking: false } }, isLoading: false, error: null });
+    const view = render(<PublicHotel slug="sample-stay" />);
+    expect(view.container.querySelector('a[href^="/sample-stay/book"]')).toBeNull();
   });
 
   it("uses contrast text for hotel-accent calls to action", () => {

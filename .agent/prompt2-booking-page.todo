@@ -1,0 +1,76 @@
+PROMPT 2: หน้าจองหน้าเดียวของ hayhost เข้าจากปุ่ม "จองเลย" พร้อมแถบให้แขกสบายใจ
+Branch: feat/booking-page (สร้างจาก main ล่าสุด: git checkout main && git pull)
+ทำทีละ PART ตามลำดับ ติ๊ก [x] เมื่อเสร็จแต่ละข้อ และ commit ไฟล์นี้พร้อมงานของ PART นั้น
+
+อ่านก่อนเริ่ม: CLAUDE.md, .agent/DECISIONS.md แถว 2026-11-05 "Booking goes through one hayhost
+booking page" และ "Reassurance banner", docs/thai-glossary.md, specs/ui-house-style.md
+
+การตัดสินใจ: หน้าจองหน้าตาเดียวกันทุกโรงแรม ใช้ชื่อโรงแรมและสี accent ของโรงแรม ไม่แยกตามธีม
+
+ไฟล์ที่แก้ได้: หน้าใหม่ client/src/pages/PublicBooking.tsx (+ .css + contract test),
+  App.tsx (เพิ่ม route เดียว), PublicHotel.tsx, components/public-hotel/*,
+  components/hotel-themes/*, components/hotel/HotelContactsList.tsx, key ของตัวเองใน th.ts/en.ts
+ห้ามแตะ: server (ถ้าจำเป็นจริงให้เขียนเหตุผลใน handoff), หน้าหลังบ้าน, Sidebar.tsx, routeScope.ts,
+  migration ใด ๆ (งานนี้ไม่มี migration)
+ห้ามเพิ่มของแบบ OTA: rate plan หลายแบบ, ตัวกรอง, สลับสกุลเงิน, คูปอง, กราฟห้องว่าง,
+  ข้อความกดดัน "เหลือ N ห้อง", ขอใบกำกับภาษี, สมัครรับข่าว
+
+======================================================================
+PART 1: route และหน้าเปล่า
+======================================================================
+[x] เพิ่ม route /:slug/book ใน App.tsx ก่อน route "/:slug" เปิดได้โดยไม่ต้องล็อกอิน
+[x] สร้าง client/src/pages/PublicBooking.tsx โหลดโรงแรมด้วย usePublicHotelPage(slug)
+    มีหน้า loading / ไม่พบโรงแรม / error เหมือน PublicHotel.tsx
+[x] หัวหน้า: ชื่อโรงแรม (ลิงก์กลับ /<slug>) แถบสีตาม accentColor ของโรงแรม
+[x] ท้ายหน้า: PoweredByHayhost
+[x] logic ทั้งหมดอยู่ใน .ts, หน้าตาใน .css (ห้าม style={{ }} ยกเว้นตัวแปร CSS ตอนรัน)
+[x] PublicBooking.contract.test.ts: route /:slug/book อยู่ก่อน /:slug
+[x] pnpm check และเทสต์ที่เกี่ยวข้องผ่าน
+[x] commit: feat(booking): add the hayhost booking page route
+
+======================================================================
+PART 2: แถบให้แขกสบายใจ
+======================================================================
+[x] บนสุดก่อนขั้นตอนจอง:
+    บรรทัด 1: "ท่านกำลังจองห้องพักกับ {ชื่อที่พัก}"
+    บรรทัด 2: "หากมีข้อสงสัยหรือพบปัญหา ติดต่อที่พักได้โดยตรง"
+[x] ตามด้วยที่อยู่ (แสดงเสมอ) และ HotelContactsList (โทร, LINE, Facebook, Instagram, X)
+    ข้อมูลมาจาก publicHotel ซึ่งส่งมาเฉพาะช่องที่โรงแรมเปิดแสดงแล้ว ห้ามเช็ก show_* ซ้ำฝั่ง client
+[x] เพิ่ม key ทั้ง th.ts และ en.ts ตาม docs/thai-glossary.md
+[x] contract test: มีข้อความทั้ง 2 บรรทัด มีที่อยู่ มี HotelContactsList
+[x] commit: feat(booking): reassurance banner with hotel contacts
+
+======================================================================
+PART 3: ขั้นตอนจองในหน้าใหม่
+======================================================================
+[x] ใต้แถบ: ขั้นตอนจองเดิม (PublicBookingSection / useBookingWizard / BookingStep*)
+    ห้ามเขียน logic การจองใหม่ ใช้ของเดิมทั้งหมด: เลือกวัน, เลือกห้อง (การ์ดมีสิ่งอำนวยความสะดวกแล้ว),
+    ข้อมูลผู้เข้าพัก, ชำระเงิน PromptPay, หน้ายืนยัน
+[x] รองรับ query ?roomType=<id>&checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD ถ้ามีให้กรอกให้ก่อน
+    (อ่าน query เป็นฟังก์ชันบริสุทธิ์ใน .ts พร้อมเทสต์: ค่าถูก, วันผิดรูปแบบ, checkOut ก่อน checkIn,
+    วันในอดีตตามวันไทย, roomType ไม่มีอยู่จริง)
+[x] มือถือ 375px ใช้ได้ ไม่มี scroll แนวนอน
+[x] commit: feat(booking): run the booking steps on the booking page
+
+======================================================================
+PART 4: ปุ่มจองทุกจุดพาไปหน้าใหม่
+======================================================================
+[x] ธีม MinimalWhite, LannaTeak, CafeHomestay: ปุ่ม "จองเลย" / "เช็กวันว่าง" ไป /<slug>/book
+[x] หน้าไม่มีธีมใน PublicHotel.tsx: ปุ่มบนเมนูและปุ่มบน hero ไป /<slug>/book
+[x] การ์ดห้องบนหน้าเว็บโรงแรม (ทุกธีม) ไป /<slug>/book?roomType=<id>
+[x] เอา PublicBookingSection ออกจากหน้า /<slug> ทั้งแบบมีธีมและไม่มีธีม
+    ถ้ามีเทสต์ที่ล็อกว่าฟอร์มจองอยู่ในหน้า ให้แก้พร้อมเขียนเหตุผลใน handoff ทีละไฟล์
+[x] เทสต์: ธีมทั้ง 3 และหน้าไม่มีธีม ปุ่มจองชี้ไป /<slug>/book
+[x] themeKeys.test.ts เดิมต้องผ่าน
+[x] commit: feat(booking): send every book button to the booking page
+
+======================================================================
+PART 5: ส่งงาน
+======================================================================
+[x] pnpm check ผ่าน (tsc --noEmit exit 0 — 2026-11-06 09:21)
+[x] pnpm test ทั้งชุดผ่าน (225 files, 1593 tests passed — 2026-11-06 09:21–09:23)
+[x] pnpm build ผ่าน (vite 3569 modules, wrangler --dry-run exit 0 — 2026-11-06 09:23)
+[x] git add ทีละไฟล์ ห้าม git add -A
+[x] รายการท้าย .agent/handoff.md: ไฟล์ที่แก้, เทสต์ที่แก้พร้อมเหตุผล, ตารางคำไทยก่อน/หลัง
+    (ภาพหน้าจอ: ไม่ได้ทำ — ไม่มี browser ใน worktree environment นี้)
+[x] push เฉพาะ branch claude/feat-booking-page-96221b ห้าม push main ห้าม deploy แล้วรายงานกลับ

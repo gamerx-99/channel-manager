@@ -6,7 +6,7 @@ import LannaTeakLanding from "./LannaTeakLanding";
 vi.mock("./ThemeLanding", () => ({ ThemeLanding: ({ children }: any) => <div className="theme-lanna-teak">{children}</div> }));
 
 describe("Lanna Teak landing", () => {
-  it("renders hotel and room data with the booking slot and no forbidden content", () => {
+  it("renders hotel and room data with links to the booking page and no forbidden content", () => {
     const html = renderToStaticMarkup(<LannaTeakLanding
       hotelName="Baan Mai Sak"
       accentColor="#aa342d"
@@ -18,7 +18,6 @@ describe("Lanna Teak landing", () => {
       language="en"
       setLanguage={() => {}}
       isVisible={() => true}
-      booking={<div id="booking-slot">Booking slot</div>}
       siteConfig={null} visibleSections={null} t={(key: string) => key} loading={false} error={null} notFound={false} refetch={async () => ({}) as any}
     />);
 
@@ -27,7 +26,12 @@ describe("Lanna Teak landing", () => {
     expect(html).toContain("฿3,200");
     expect(html).toContain("Garden Room");
     expect(html).toContain("฿2,800");
-    expect(html).toContain("Booking slot");
+    // The booking steps moved to the hayhost booking page; the theme links there instead.
+    expect(html).toContain('class="lanna-reserve theme-book-button" href="/baan-mai-sak/book"');
+    expect(html).toContain('class="lanna-hero-cta theme-book-button" href="/baan-mai-sak/book"');
+    expect(html).toContain('href="/baan-mai-sak/book?roomType=room-1"');
+    expect(html).toContain('href="/baan-mai-sak/book?roomType=room-2"');
+    expect(html).not.toContain('href="#book"');
     expect(html).toContain("Teak room");
     expect(html).not.toContain("room.jpg</figcaption>");
     expect(html).not.toContain("<figcaption>legacy-file.jpg</figcaption>");

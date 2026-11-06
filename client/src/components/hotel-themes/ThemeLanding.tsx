@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 import type { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
 import { getContrastText } from "@/lib/contrastText";
 
+// Themes do not embed the booking steps: their book buttons open the hayhost booking page (/:slug/book).
 export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & {
-  booking: React.ReactNode;
   contacts?: React.ReactNode;
   locationMap?: React.ReactNode;
   setLanguage: (language: "en" | "th") => void;

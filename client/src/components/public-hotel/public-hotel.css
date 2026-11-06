@@ -72,3 +72,9 @@
 }
 .public-photo-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:56px 7%}.public-photo-gallery figure{margin:0}.public-photo-gallery img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}.public-photo-gallery figcaption{padding-top:10px;color:#6c7e75;font-size:14px}
 @media(max-width:760px){.public-photo-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:42px 6%}.public-photo-gallery figcaption{font-size:12px}}
+
+/* Room cards open the booking page with that room type picked. */
+.public-room-card{position:relative}
+.room-card-link{color:inherit;text-decoration:none}
+.room-card-link::after{content:"";position:absolute;inset:0}
+.room-card-link:focus-visible{outline:2px solid var(--pine);outline-offset:2px}

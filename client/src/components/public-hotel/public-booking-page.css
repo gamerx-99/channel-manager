@@ -1,0 +1,176 @@
+/* The hayhost booking page (/:slug/book). One layout for every hotel: only the hotel name and
+   its accent colour (--booking-page-accent, set at runtime) change. */
+.booking-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.booking-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 6%;
+  background: var(--booking-page-accent);
+  color: var(--booking-page-accent-text);
+}
+
+.booking-page-hotel {
+  color: inherit;
+  font-family: 'Fraunces', 'Noto Sans Thai Looped', serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  text-decoration: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.booking-page-hotel:hover,
+.booking-page-hotel:focus-visible {
+  text-decoration: underline;
+}
+
+.booking-page-language {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.booking-page-language button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: .7;
+  min-height: 44px;
+  min-width: 36px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.booking-page-language button[aria-pressed="true"] {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.booking-page-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 6% 56px;
+  box-sizing: border-box;
+}
+
+.booking-reassurance {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+  background: #ffffff;
+  border: 1px solid #d8d1c2;
+  border-left: 4px solid var(--booking-page-accent);
+  border-radius: 10px;
+  color: #27322f;
+}
+
+.booking-reassurance-icon {
+  flex-shrink: 0;
+  color: var(--booking-page-accent);
+  margin-top: 2px;
+}
+
+.booking-reassurance-body {
+  min-width: 0;
+}
+
+.booking-reassurance-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.booking-reassurance-help {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4f5a55;
+}
+
+.booking-reassurance-address {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #4f5a55;
+  overflow-wrap: anywhere;
+}
+
+.booking-reassurance-address svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.booking-reassurance-contacts .contact-link {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d8d1c2;
+  border-radius: 999px;
+  color: #27322f;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.booking-reassurance-contacts .contact-link:hover,
+.booking-reassurance-contacts .contact-link:focus-visible {
+  border-color: var(--booking-page-accent);
+}
+
+/* The booking steps keep their own look (public-booking.css); on this page they sit in one
+   column under the reassurance banner instead of a full-width two-column band. */
+.booking-page .public-booking {
+  grid-template-columns: 1fr;
+  gap: 24px;
+  padding: 36px 40px;
+  border-radius: 12px;
+}
+
+.booking-page .public-booking h2 {
+  font-size: 36px;
+}
+
+.booking-page .public-booking p {
+  margin-bottom: 0;
+}
+
+.booking-page-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 20px 6%;
+  border-top: 1px solid #d8d1c2;
+  font-size: 12px;
+  color: #6f776f;
+}
+
+@media (max-width: 760px) {
+  .booking-page-header { padding: 10px 16px; }
+  .booking-page-hotel { font-size: 17px; }
+  .booking-page-main { padding: 20px 16px 40px; }
+  .booking-reassurance { padding: 14px; gap: 10px; margin-bottom: 20px; }
+  .booking-reassurance-title { font-size: 16px; }
+  .booking-page .public-booking { display: block; padding: 24px 16px; }
+  .booking-page .public-booking h2 { font-size: 28px; }
+  .booking-page .booking-box { padding: 16px 12px; margin-top: 20px; }
+  .booking-page-footer { padding: 18px 16px; }
+}
