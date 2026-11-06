@@ -14,13 +14,20 @@ export function documentNumber(type: BookingDocumentType, seq: number): string {
   return `${NUMBER_PREFIX[type]}-${String(seq).padStart(6, "0")}`;
 }
 
-// ASSUMPTION: Thai VAT is 7% and booking prices already include it. The hotel's accountant confirms.
-export const VAT_RATE_PERCENT = 7;
+export type BookingDocumentTaxSettings = { vatEnabled: boolean; vatRate: number; withholdingEnabled: boolean; withholdingRate: number };
+export type BookingDocumentAmounts = {
+  subtotalSatang: number; vatSatang: number; totalSatang: number; withholdingSatang: number; netToPaySatang: number;
+};
 
-/** The VAT part of a VAT-inclusive total, rounded to the nearest satang. */
-export function splitVatSatang(totalSatang: number): { netSatang: number; vatSatang: number } {
-  const vatSatang = Math.round((totalSatang * VAT_RATE_PERCENT) / (100 + VAT_RATE_PERCENT));
-  return { netSatang: totalSatang - vatSatang, vatSatang };
+/** Prices paid by guests include VAT when enabled. Every printed amount is rounded to satang. */
+export function calculateBookingDocumentAmounts(priceSatang: number, settings: BookingDocumentTaxSettings, priceIncludesVat = false): BookingDocumentAmounts {
+  const subtotalSatang = settings.vatEnabled && priceIncludesVat
+    ? Math.round(priceSatang * 100 / (100 + settings.vatRate))
+    : Math.round(priceSatang);
+  const vatSatang = settings.vatEnabled ? Math.round(subtotalSatang * settings.vatRate / 100) : 0;
+  const totalSatang = priceIncludesVat && settings.vatEnabled ? Math.round(priceSatang) : subtotalSatang + vatSatang;
+  const withholdingSatang = settings.withholdingEnabled ? Math.round(subtotalSatang * settings.withholdingRate / 100) : 0;
+  return { subtotalSatang, vatSatang, totalSatang, withholdingSatang, netToPaySatang: totalSatang - withholdingSatang };
 }
 
 /** Money must have been received: a receipt records a payment, and a cancelled booking is not revenue. */
@@ -39,9 +46,15 @@ export type BookingDocumentSnapshot = {
   issuer: DocumentParty & { phone: string | null };
   buyer: DocumentParty;
   booking: { id: string; checkIn: string; checkOut: string; nights: number; roomType: string | null; paymentMethod: string | null };
+  subtotalSatang: number;
+  vatEnabled: boolean;
+  vatRate: number;
+  vatSatang: number;
   totalSatang: number;
-  vatSatang: number | null;
-  netSatang: number | null;
+  withholdingEnabled: boolean;
+  withholdingRate: number;
+  withholdingSatang: number;
+  netToPaySatang: number;
 };
 
 export const TAX_ID_PATTERN = /^\d{13}$/;

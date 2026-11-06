@@ -543,6 +543,10 @@ export const hotelInvoiceSettings = sqliteTable("hotel_invoice_settings", {
   taxId: text("tax_id"),
   branch: text("branch"),
   phone: text("phone"),
+  vatEnabled: integer("vat_enabled", { mode: "boolean" }).notNull().default(false),
+  vatRate: real("vat_rate").notNull().default(7),
+  withholdingEnabled: integer("withholding_enabled", { mode: "boolean" }).notNull().default(false),
+  withholdingRate: real("withholding_rate").notNull().default(3),
   updatedAt: updatedAt(),
 }, table => [
   check("hotel_invoice_settings_tax_id_check", sql`${table.taxId} is null or (length(${table.taxId}) = 13 and ${table.taxId} not glob '*[^0-9]*')`),

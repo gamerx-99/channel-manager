@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 
 const LABEL_KEYS = [
   "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
-  "amount", "stay", "nights", "net", "vat", "total", "paymentMethod", "bookingRef", "signature",
+  "amount", "stay", "nights", "subtotal", "net", "vat", "total", "withholding", "paymentMethod", "bookingRef", "signature",
 ] as const satisfies ReadonlyArray<keyof BookingDocumentLabels>;
 const PAYMENT_METHODS = ["promptpay", "cash", "transfer"] as const;
 

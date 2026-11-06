@@ -5279,3 +5279,15 @@ Exit 0
 - Removed the "เปิดขาย" pill and "ดูหน้าเว็บที่พัก" link beneath the sidebar hotel switcher, along with the `activeHotel` prop and now-unused `sidebar.viewPropertySite` translations. The "ข้อมูลโรงแรม" settings item and guided-tour target remain.
 - Updated `HotelNameOnce.contract.test.ts` to assert the pill and link metadata are absent. Updated `Sidebar.contract.test.ts` to assert Sidebar no longer passes the metadata prop or references the site link; existing settings and guided-tour assertions remain unchanged.
 - Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` — 242 files passed, 1,684 tests passed, exit 0. `pnpm build` — Vite build succeeded and Wrangler `--dry-run` exited successfully; existing large-chunk and no-target-environment warnings. No commit, push, deploy, or non-dry-run Wrangler command.
+
+
+## 2026-11-06 — Hotel VAT and withholding switches on booking documents
+
+- Added hotel bill-header switches and 0–100% rate fields; booking documents now snapshot configured tax rates and satang-rounded amounts, and print the enabled tax lines. Existing issued snapshots remain unchanged. Permissions are unchanged.
+- Migration: `20261106020000_invoice_tax_switches.sql` (not applied). `pnpm exec drizzle-kit generate --config drizzle.d1.config.ts` failed with `uv_os_get_passwd returned ENOMEM`; migration SQL and journal entry were added manually.
+- Thai copy before/after:
+
+  | Before | After |
+  |---|---|
+  | No VAT switch or rate field | `คิดภาษีมูลค่าเพิ่มหรือไม่` → `ภาษีมูลค่าเพิ่ม [อัตรา] %` |
+  | No withholding switch or rate field | `หัก ณ ที่จ่าย หรือไม่` → `หัก ณ ที่จ่าย [อัตรา] %` |

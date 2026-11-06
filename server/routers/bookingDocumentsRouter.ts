@@ -32,12 +32,18 @@ export const bookingDocumentsRouter = router({
     tax_id: taxId,
     branch: optionalText(100),
     phone: optionalText(40),
+    vat_enabled: z.boolean(),
+    vat_rate: z.number().min(0).max(100).multipleOf(0.01),
+    withholding_enabled: z.boolean(),
+    withholding_rate: z.number().min(0).max(100).multipleOf(0.01),
   })).mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
     try {
       return await saveInvoiceSettings(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, {
         enabled: input.enabled, issuerName: input.issuer_name, address: input.address,
         taxId: input.tax_id, branch: input.branch, phone: input.phone,
+        vatEnabled: input.vat_enabled, vatRate: input.vat_rate,
+        withholdingEnabled: input.withholding_enabled, withholdingRate: input.withholding_rate,
       });
     } catch (error) {
       return rethrowDomainError(error);

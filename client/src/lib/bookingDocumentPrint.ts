@@ -1,10 +1,10 @@
 import { escapeHtml } from "@shared/escapeHtml";
-import { VAT_RATE_PERCENT, type BookingDocumentSnapshot, type DocumentParty } from "@shared/bookingDocuments";
+import { type BookingDocumentSnapshot, type DocumentParty } from "@shared/bookingDocuments";
 
 export type BookingDocumentLabels = {
   receiptTitle: string; taxInvoiceTitle: string; number: string; issuedOn: string; issuer: string; buyer: string;
   taxId: string; branch: string; phone: string; description: string; amount: string; stay: string; nights: string;
-  net: string; vat: string; total: string; paymentMethod: string; bookingRef: string; signature: string;
+  subtotal: string; net: string; vat: string; total: string; withholding: string; paymentMethod: string; bookingRef: string; signature: string;
 };
 
 /** Thai readers see the Buddhist year (docs/thai-glossary.md rule 4); th-TH formats with it. */
@@ -32,9 +32,18 @@ export function buildBookingDocumentHtml(doc: BookingDocumentSnapshot, labels: B
   const title = doc.type === "tax_invoice" ? labels.taxInvoiceTitle : labels.receiptTitle;
   const stay = `${formatDocumentDate(doc.booking.checkIn, language)} – ${formatDocumentDate(doc.booking.checkOut, language)} (${doc.booking.nights} ${labels.nights})`;
   const description = [labels.stay, doc.booking.roomType].filter(Boolean).join(" ");
-  const vatRows = doc.vatSatang == null || doc.netSatang == null ? "" : `
-    <tr class="sum"><td>${escapeHtml(labels.net)}</td><td class="num">${formatSatang(doc.netSatang)}</td></tr>
-    <tr class="sum"><td>${escapeHtml(labels.vat)} ${VAT_RATE_PERCENT}%</td><td class="num">${formatSatang(doc.vatSatang)}</td></tr>`;
+  // Older issued snapshots used netSatang as the VAT-exclusive subtotal and vatSatang as nullable.
+  const legacy = doc as BookingDocumentSnapshot & { netSatang?: number | null };
+  const subtotalSatang = doc.subtotalSatang ?? legacy.netSatang ?? doc.totalSatang;
+  const vatEnabled = doc.vatEnabled ?? doc.vatSatang != null;
+  const withholdingEnabled = Boolean(doc.withholdingEnabled);
+  const vatLabel = doc.vatRate == null ? labels.vat : `${labels.vat} ${doc.vatRate}%`;
+  const taxRows = `
+    <tr class="sum"><td>${escapeHtml(labels.subtotal)}</td><td class="num">${formatSatang(subtotalSatang)}</td></tr>
+    ${vatEnabled ? `<tr class="sum"><td>${escapeHtml(vatLabel)}</td><td class="num">${formatSatang(doc.vatSatang ?? 0)}</td></tr>` : ""}
+    <tr class="total"><td>${escapeHtml(labels.total)}</td><td class="num">${formatSatang(doc.totalSatang)}</td></tr>
+    ${withholdingEnabled ? `<tr class="sum"><td>${escapeHtml(labels.withholding)} ${doc.withholdingRate}%</td><td class="num">${formatSatang(doc.withholdingSatang)}</td></tr>` : ""}
+    ${withholdingEnabled ? `<tr class="total"><td>${escapeHtml(labels.net)}</td><td class="num">${formatSatang(doc.netToPaySatang)}</td></tr>` : ""}`;
   return `<!DOCTYPE html>
 <html lang="${language}">
 <head>
@@ -71,8 +80,7 @@ export function buildBookingDocumentHtml(doc: BookingDocumentSnapshot, labels: B
     <thead><tr><th>${escapeHtml(labels.description)}</th><th class="num">${escapeHtml(labels.amount)}</th></tr></thead>
     <tbody>
       <tr><td>${escapeHtml(description)}<br><small>${escapeHtml(stay)}</small></td><td class="num">${formatSatang(doc.totalSatang)}</td></tr>
-      ${vatRows}
-      <tr class="total"><td>${escapeHtml(labels.total)}</td><td class="num">${formatSatang(doc.totalSatang)}</td></tr>
+      ${taxRows}
     </tbody>
   </table>
   <div class="foot">

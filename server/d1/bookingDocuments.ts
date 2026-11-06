@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, max } from "drizzle-orm";
 import {
-  canIssueBookingDocument, documentNumber, splitVatSatang,
+  calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber,
   type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
 } from "@shared/bookingDocuments";
 import { bangkokDate, toSatang } from "@shared/finance";
@@ -10,6 +10,7 @@ import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } fro
 
 export type InvoiceSettingsInput = {
   enabled: boolean; issuerName: string; address: string; taxId: string | null; branch: string | null; phone: string | null;
+  vatEnabled: boolean; vatRate: number; withholdingEnabled: boolean; withholdingRate: number;
 };
 
 /** Not secret: everything here is printed on the hotel's own documents. */
@@ -62,8 +63,10 @@ export async function issueBookingDocument(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a paid booking that still stands gets a document." });
   }
 
-  const totalSatang = toSatang(booking.price);
-  const vat = input.type === "tax_invoice" ? splitVatSatang(totalSatang) : null;
+  const amounts = calculateBookingDocumentAmounts(toSatang(booking.price), {
+    vatEnabled: settings.vatEnabled, vatRate: settings.vatRate,
+    withholdingEnabled: settings.withholdingEnabled, withholdingRate: settings.withholdingRate,
+  }, true);
   const nights = Math.round((Date.parse(booking.checkOut) - Date.parse(booking.checkIn)) / 86_400_000);
   const base: Omit<BookingDocumentSnapshot, "number"> = {
     type: input.type,
@@ -71,9 +74,11 @@ export async function issueBookingDocument(
     issuer: { name: settings.issuerName, address: settings.address, taxId: settings.taxId, branch: settings.branch, phone: settings.phone },
     buyer: input.buyer,
     booking: { id: booking.id, checkIn: booking.checkIn, checkOut: booking.checkOut, nights, roomType: booking.roomType, paymentMethod: booking.paymentMethod },
-    totalSatang,
-    vatSatang: vat?.vatSatang ?? null,
-    netSatang: vat?.netSatang ?? null,
+    ...amounts,
+    vatEnabled: settings.vatEnabled,
+    vatRate: settings.vatRate,
+    withholdingEnabled: settings.withholdingEnabled,
+    withholdingRate: settings.withholdingRate,
   };
 
   // Two staff issuing at once can read the same last number; the unique index refuses the

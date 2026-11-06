@@ -12,7 +12,7 @@ vi.mock('./d1/bookingDocuments', () => repoMocks);
 
 const HOME_HOTEL = '88ed76e4-cc93-4aa7-9c4d-30999d35ada4';
 const OTHER_HOTEL = 'b2c1d1a0-0000-4000-8000-000000000000';
-const header = { hotel_id: HOME_HOTEL, enabled: true, issuer_name: 'Hotel', address: '1 Road', tax_id: '0105555555555', branch: null, phone: null };
+const header = { hotel_id: HOME_HOTEL, enabled: true, issuer_name: 'Hotel', address: '1 Road', tax_id: '0105555555555', branch: null, phone: null, vat_enabled: false, vat_rate: 7, withholding_enabled: false, withholding_rate: 3 };
 const issue = { hotel_id: HOME_HOTEL, booking_id: 'b1', type: 'receipt' as const, buyer_name: 'Guest', buyer_address: null, buyer_tax_id: null, buyer_branch: null };
 
 beforeEach(() => {

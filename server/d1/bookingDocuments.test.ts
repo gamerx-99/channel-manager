@@ -16,7 +16,7 @@ let db: D1ScopedDatabase;
 const NOW = new Date("2026-11-06T20:00:00.000Z"); // 03:00 on 7 Nov in Thailand
 const owner = { userId: "owner" };
 const exec = (query: string, ...params: Array<string | number | null>) => sqlite.prepare(query).run(...params);
-const header = { enabled: true, issuerName: "บริษัท ลานนา จำกัด", address: "1 Road", taxId: "0105555555555", branch: "สำนักงานใหญ่", phone: null };
+const header = { enabled: true, issuerName: "บริษัท ลานนา จำกัด", address: "1 Road", taxId: "0105555555555", branch: "สำนักงานใหญ่", phone: null, vatEnabled: true, vatRate: 7, withholdingEnabled: true, withholdingRate: 3 };
 const buyer = { name: "Guest Co", address: "2 Road", taxId: null, branch: null };
 
 beforeEach(() => {
@@ -74,13 +74,14 @@ describe("issuing documents", () => {
     const tax = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "tax_invoice", buyer }, NOW);
 
     expect([first.number, second.number, tax.number]).toEqual(["RC-000001", "RC-000002", "TX-000001"]);
-    expect(first).toMatchObject({ issuedOn: "2026-11-07", totalSatang: 107000, vatSatang: null, booking: { nights: 2, roomType: "Deluxe", paymentMethod: "promptpay" } });
-    expect(tax).toMatchObject({ vatSatang: 7000, netSatang: 100000, issuer: { taxId: header.taxId } });
+    expect(first).toMatchObject({ issuedOn: "2026-11-07", subtotalSatang: 100000, totalSatang: 107000, vatEnabled: true, vatRate: 7, vatSatang: 7000, withholdingEnabled: true, withholdingRate: 3, withholdingSatang: 3000, netToPaySatang: 104000, booking: { nights: 2, roomType: "Deluxe", paymentMethod: "promptpay" } });
+    expect(tax).toMatchObject({ vatSatang: 7000, withholdingSatang: 3000, netToPaySatang: 104000, issuer: { taxId: header.taxId } });
 
     await saveInvoiceSettings(db, owner, "h1", { ...header, issuerName: "New name" }, NOW);
     const listed = await listBookingDocuments(db, owner, "h1", "paid");
     expect(listed).toHaveLength(3);
     expect(listed.every(row => row.snapshot.issuer.name === header.issuerName)).toBe(true);
+    expect(listed.every(row => row.snapshot.vatRate === 7 && row.snapshot.withholdingRate === 3)).toBe(true);
   });
 
   it("refuses unpaid and cancelled bookings", async () => {
