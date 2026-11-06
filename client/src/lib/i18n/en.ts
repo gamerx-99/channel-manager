@@ -413,6 +413,15 @@ const en = {
     startingFromPrice: ", starting from {price}",
     noRoomTypesCalendar: "No room types set up yet. Add a room type to manage availability.",
   },
+  oneCalendar: {
+    eyebrow: "Rooms and rates", title: "Calendar for rates and availability", description: "Choose nights and room types to update together.",
+    month: "Month", timeline: "Timeline", previousMonth: "Previous month", nextMonth: "Next month", today: "Today",
+    selectRooms: "Choose room types", selectedRange: "Selected nights", chooseRange: "Choose a date range", startDate: "Start date", endDate: "End date",
+    available: "Available", unavailable: "Unavailable", closed: "Closed", sold: "for sale", of: "of", rooms: "Rooms for sale", price: "Price per night", minStay: "Minimum nights", basePrice: "Use base price", openSales: "Open for sale", closeSales: "Close for sale", save: "Save changes", saving: "Saving…", saved: "Changes saved", saveError: "Could not save these changes.",
+    chooseRoomTypes: "Select at least one room type.", noRoomTypes: "No room types are set up yet.", frontDeskHint: "Prices and minimum nights are hidden for your account.",
+    weekdaySun: "Sun", weekdayMon: "Mon", weekdayTue: "Tue", weekdayWed: "Wed", weekdayThu: "Thu", weekdayFri: "Fri", weekdaySat: "Sat",
+    roomTypeAria: "Select room type {{name}}", dayAria: "{{date}}, {{available}} of {{total}} rooms for sale{{price}}", timelineAria: "{{name}}, {{date}}: {{status}}",
+  },
   dashboardCalendar: {
     loadingDescNoOta: "Checking room availability for your hotels…", emptyDescNoOta: "Add a hotel and room types to see activity here.", eyebrowNoOta: "Room availability", subtitleNoOta: "Review availability and occupied rooms in one place.",
     loadingTitle: "Loading operations calendar",

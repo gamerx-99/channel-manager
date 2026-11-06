@@ -4951,3 +4951,12 @@ Not tested in a browser or with a real email.
 - Verification: targeted Vitest suite passed (pending final full-suite verification); `pnpm check` passed (exit 0).
 - Thai copy before → after: no UI copy changed.
 - PARTS 3–7 remain in progress.
+
+## 2026-11-06 feat/one-calendar — PART 3 month view
+
+- Added the single hotel calendar page foundation, room type filters, Buddhist-year month view, inclusive date-range selection, and shared calendar query hook.
+- Added pure date selection/month generation tests and a route/UI contract test. The page already carries a timeline and side panel implementation that will be finalized and recorded in the next PART commits.
+- Files: `client/src/pages/OneCalendar.tsx`, `client/src/pages/useOneCalendar.ts`, `client/src/pages/oneCalendarRules.ts`, `client/src/pages/oneCalendarRules.test.ts`, `client/src/pages/oneCalendar.css`, `client/src/pages/OneCalendar.contract.test.ts`, `client/src/App.tsx`, `client/src/lib/i18n/en.ts`, `client/src/lib/i18n/th.ts`, `.agent/prompt3-one-calendar.todo`.
+- Verification: `pnpm check` exit 0; focused UI, route, server, and rate-split tests passed (34 tests).
+- Thai copy before → after: new keys `oneCalendar.title` = “ปฏิทินราคาและห้องว่าง”, `oneCalendar.month` = “รายเดือน”, `oneCalendar.timeline` = “ไทม์ไลน์”, `oneCalendar.rooms` = “จำนวนห้องที่ขาย”, `oneCalendar.price` = “ราคาต่อคืน”, `oneCalendar.minStay` = “จำนวนคืนขั้นต่ำ”, `oneCalendar.basePrice` = “กลับไปใช้ราคาฐาน”.
+- PARTS 4–7 remain in progress.

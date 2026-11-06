@@ -25,7 +25,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
 import Bookings from "./pages/Bookings";
-import Calendar from "./pages/Calendar";
+import OneCalendar from "./pages/OneCalendar";
 import PublicHotel from "./pages/PublicHotel";
 import AdminUsers from "./pages/AdminUsers";
 import SecuritySettings from "./pages/SecuritySettings";
@@ -107,7 +107,7 @@ function Router() {
         {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/calendar">
-        {(params) => <PrivateRoute><Calendar id={params.id} /></PrivateRoute>}
+        {(params) => <PrivateRoute><OneCalendar id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/ota">
         {(params) => otaSyncEnabled && otaConnectivityEnabled ? <PrivateRoute><OtaSync hotelId={params.id} /></PrivateRoute> : <Redirect to={`/hotels/${params.id}`} />}
