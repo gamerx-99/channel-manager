@@ -1,0 +1,5 @@
+.hotel-invoice-settings { display: grid; gap: 1rem; }
+.hotel-invoice-settings > .panel-heading { margin-bottom: 0; }
+.hotel-invoice-form { display: grid; gap: 1rem; }
+.hotel-invoice-switch { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; }
+.hotel-invoice-form textarea { resize: vertical; }

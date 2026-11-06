@@ -61,7 +61,7 @@ export async function listBookingsForHotel(db: D1ScopedDatabase, caller: D1Calle
     return {
       id: row.id, hotel_id: row.hotelId, room_id: row.roomId, guest_name: row.guestName,
       check_in: row.checkIn, check_out: row.checkOut, price: hasFinancialAccess ? row.price : null,
-      source: row.source, status: row.status, created_at: row.createdAt.toISOString(),
+      source: row.source, status: row.status, payment_status: row.paymentStatus, created_at: row.createdAt.toISOString(),
       rooms: room ? { room_number: room.roomNumber, room_types: roomType ? { name: roomType.name } : null } : null,
       guests: guestsByBooking.get(row.id) ?? [],
     };

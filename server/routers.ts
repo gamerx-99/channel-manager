@@ -4,6 +4,7 @@ import { systemRouter } from './_core/systemRouter';
 import { notificationsRouter } from './routers/notificationsRouter';
 import { authRouter } from './routers/authRouter';
 import { hotelClosureRouter } from './routers/hotelClosureRouter';
+import { bookingDocumentsRouter } from './routers/bookingDocumentsRouter';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
 import { subscriptionBillingRouter } from './subscriptionBillingRouter';
@@ -102,6 +103,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   auth: authRouter,
   hotelClosure: hotelClosureRouter,
+  bookingDocuments: bookingDocumentsRouter,
   staff: staffRouter,
   channelManager: router({
     dashboard,

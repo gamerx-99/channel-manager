@@ -10,6 +10,7 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { BookingDocumentSnapshot } from "../shared/bookingDocuments";
 import { SUPPORT_GRANT_DURATION_HOURS } from "../shared/permissions";
 
 const id = (name = "id") => text(name).primaryKey().$defaultFn(() => crypto.randomUUID());
@@ -533,6 +534,38 @@ export const bookingStatusLog = sqliteTable("booking_status_log", {
   createdAt: createdAt(),
 }, table => [index("idx_booking_status_log_booking_id").on(table.bookingId)]);
 
+/** The header the hotel prints on its receipts and tax invoices. */
+export const hotelInvoiceSettings = sqliteTable("hotel_invoice_settings", {
+  hotelId: text("hotel_id").primaryKey().references(() => hotels.id, { onDelete: "cascade" }),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(false),
+  issuerName: text("issuer_name").notNull(),
+  address: text("address").notNull(),
+  taxId: text("tax_id"),
+  branch: text("branch"),
+  phone: text("phone"),
+  updatedAt: updatedAt(),
+}, table => [
+  check("hotel_invoice_settings_tax_id_check", sql`${table.taxId} is null or (length(${table.taxId}) = 13 and ${table.taxId} not glob '*[^0-9]*')`),
+]);
+
+/** Issued documents never change; the snapshot holds exactly what was printed. */
+export const bookingDocuments = sqliteTable("booking_documents", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  bookingId: text("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
+  docType: text("doc_type").notNull(),
+  seq: integer("seq").notNull(),
+  docNumber: text("doc_number").notNull(),
+  snapshot: json<BookingDocumentSnapshot>("snapshot_json").notNull(),
+  issuedBy: text("issued_by"),
+  createdAt: createdAt(),
+}, table => [
+  check("booking_documents_doc_type_check", sql`${table.docType} in ('receipt', 'tax_invoice')`),
+  check("booking_documents_seq_check", sql`${table.seq} > 0`),
+  uniqueIndex("booking_documents_hotel_type_seq_key").on(table.hotelId, table.docType, table.seq),
+  index("idx_booking_documents_booking_id").on(table.bookingId),
+]);
+
 export const hotelServices = sqliteTable("hotel_services", {
   id: id(),
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
@@ -654,6 +687,8 @@ export const d1Schema = {
   bookingServices,
   paymentSessions,
   bookingStatusLog,
+  hotelInvoiceSettings,
+  bookingDocuments,
   hotelServices,
   supportAccessGrants,
   supportAccessLog,

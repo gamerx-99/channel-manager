@@ -1,6 +1,6 @@
 # 15 — Invoicing and tax documents
 
-Status: draft, not approved (2026-11-05). Owner and accountant review required before implementation.
+Status: in progress (2026-11-06). The owner approved a basic tool (DECISIONS 2026-11-06): bill header, receipt and tax invoice from a paid booking, printed or saved as PDF, on `feat/invoicing`. Quotations, invoices before payment, voids, withholding tax and the monthly export are not built.
 
 ## Scope
 
