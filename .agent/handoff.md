@@ -5421,3 +5421,44 @@ Exit 0
 - 375px verification: local Chrome CDP preview measured `innerWidth=375`, `document.documentElement.scrollWidth=375`, and `document.body.scrollWidth=375`; header language control, hero CTA/photo, and sticky booking button were visible.
 - Verification: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 255 files and 1,735 tests passed, exit 0. `pnpm build` → Vite built and Wrangler `--dry-run: exiting now.`, exit 0 (existing chunk-size and no-target-environment warnings). `git diff --check` → no output, exit 0.
 - Removed the temporary `design/themes/06-hostel-pop/out/` handoff folder. No migration, commit, push, or deploy.
+
+## 2026-11-07 — Riverside Calm public theme
+
+- Added Riverside Calm (`riverside-calm`) as a premium public website theme named `สไตล์รีสอร์ท`. Registered its landing component, design-derived teal button/text/highlight palette, and website-builder preview. The single shared booking page remains the destination for every CTA. Added Pridi, Noto Serif, Noto Sans Thai, and Noto Sans to the existing Google Fonts loader.
+- Kept the owner's hero, wave/story, room, gallery, location/map, footer, and mobile sticky booking sections. Integration changes: shared `bookingLink` replaces local URL construction; button colors come from `getHotelThemeColors` through `ThemeLanding`; gallery uses `MAX_WEBSITE_GALLERY_PHOTOS`; focal positions use runtime CSS variables; `PoweredByHayhost` renders the footer credit; and the sticky bar has a 320px width fix. The owner mock-up's sample assets are not requested by the theme.
+- Added all 27 source translation keys to English and Thai. Thai wording matches the supplied table and uses no banned term in `docs/thai-glossary.md`. Thai before → after:
+
+| Key | Before (th) | After (th) |
+|---|---|---|
+| `hotelThemes.riversideCalm.mainNav` | — (new theme) | เมนูหลัก |
+| `hotelThemes.riversideCalm.navRooms` | — (new theme) | ห้องพัก |
+| `hotelThemes.riversideCalm.navGallery` | — (new theme) | รูปที่พัก |
+| `hotelThemes.riversideCalm.navLocation` | — (new theme) | ที่ตั้ง |
+| `hotelThemes.riversideCalm.language` | — (new theme) | เปลี่ยนภาษา |
+| `hotelThemes.riversideCalm.bookNow` | — (new theme) | จองเลย |
+| `hotelThemes.riversideCalm.storyEyebrow` | — (new theme) | พักผ่อนริมน้ำ |
+| `hotelThemes.riversideCalm.story` | — (new theme) | บรรยากาศริมน้ำปิง |
+| `hotelThemes.riversideCalm.storyQuote` | — (new theme) | พักผ่อนสบาย ๆ ริมแม่น้ำปิง นั่งรับลม ชมวิวสายน้ำ และสัมผัสความเงียบสงบอย่างแท้จริง |
+| `hotelThemes.riversideCalm.roomsEyebrow` | — (new theme) | ห้องพักของเรา |
+| `hotelThemes.riversideCalm.rooms` | — (new theme) | ห้องพักริมน้ำ |
+| `hotelThemes.riversideCalm.roomsSubtitle` | — (new theme) | สัมผัสความเงียบสงบและวิวแม่น้ำปิงจากระเบียงห้องพัก |
+| `hotelThemes.riversideCalm.roomViewTag` | — (new theme) | วิวแม่น้ำ |
+| `hotelThemes.riversideCalm.sleeps` | — (new theme) | พักได้ |
+| `hotelThemes.riversideCalm.persons` | — (new theme) | คน |
+| `hotelThemes.riversideCalm.from` | — (new theme) | เริ่มต้น |
+| `hotelThemes.riversideCalm.currency` | — (new theme) | ฿ |
+| `hotelThemes.riversideCalm.perNight` | — (new theme) | / คืน |
+| `hotelThemes.riversideCalm.select` | — (new theme) | เลือกห้องนี้ |
+| `hotelThemes.riversideCalm.galleryEyebrow` | — (new theme) | มุมมองริมน้ำ |
+| `hotelThemes.riversideCalm.gallery` | — (new theme) | รูปที่พัก |
+| `hotelThemes.riversideCalm.gallerySubtitle` | — (new theme) | ภาพบรรยากาศและความสงบเงียบริมสายน้ำ |
+| `hotelThemes.riversideCalm.locationEyebrow` | — (new theme) | การเดินทาง |
+| `hotelThemes.riversideCalm.location` | — (new theme) | ที่ตั้งและการเดินทาง |
+| `hotelThemes.riversideCalm.locationBadge` | — (new theme) | ริมฝั่งแม่น้ำปิง |
+| `hotelThemes.riversideCalm.address` | — (new theme) | ที่อยู่ |
+| `hotelThemes.riversideCalm.poweredBy` | — (new theme) | จองผ่าน hayhost |
+
+- Tests added or extended: Riverside Calm landing render, registry, key completeness, palette/style name, booking-color contract, PublicHotel theme contract, and Website Builder picker preview. The PublicHotel contract's LINE assertion now matches the standalone contact name, because the SVG `linearGradient` name caused a false positive; it still rejects a LINE contact.
+- Responsive preview: local Chrome with device metrics set to 320px reported `innerWidth=320`, `document.documentElement.scrollWidth=320`, `body.scrollWidth=304`; at 375px the values were `375`, `375`, and `359`. Both rendered a room card, and no element extended beyond the screen width.
+- Verification: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` with repo-local TEMP/TMP → 256 files and 1,741 tests passed, exit 0. `pnpm build` with repo-local XDG_CONFIG_HOME → Vite built 3,610 modules; Wrangler `--dry-run: exiting now.`, exit 0. `git diff --check` → no output, exit 0. Build showed the existing large-chunk advisory and no-target-environment warning.
+- Deleted the supplied `design/themes/07-riverside-calm/out/` handoff copy. No commit, push, deploy, or migration operation. Independent reviewer verdict: APPROVE after the room-photo, hidden-gallery, mobile-sticky, and LINE-contract fixes (2026-11-07).

@@ -10,11 +10,12 @@ describe("hotel theme colours", () => {
       ["mountain-mist", "สไตล์ธรรมชาติ"],
       ["boutique-noir", "สไตล์ลักชัวรี"],
       ["hostel-pop", "สไตล์ป๊อปอาร์ต"],
+      ["riverside-calm", "สไตล์รีสอร์ท"],
     ]);
   });
 
   it("defines readable fixed button and highlight colours for every theme", () => {
-    expect(HOTEL_THEMES).toHaveLength(6);
+    expect(HOTEL_THEMES).toHaveLength(7);
     for (const theme of HOTEL_THEMES) {
       expect(theme.buttonBackground).toMatch(/^#[0-9a-f]{6}$/i);
       expect(theme.buttonText).toMatch(/^#[0-9a-f]{6}$/i);
@@ -25,6 +26,10 @@ describe("hotel theme colours", () => {
 
   it("registers Hostel Pop as a premium theme with the design palette", () => {
     expect(HOTEL_THEMES.find(theme => theme.id === "hostel-pop")).toMatchObject({ tier: "premium", buttonBackground: "#ffd23f", buttonText: "#000000", highlight: "#fd5c8e" });
+  });
+
+  it("registers Riverside Calm as a premium theme with the design palette", () => {
+    expect(HOTEL_THEMES.find(theme => theme.id === "riverside-calm")).toMatchObject({ tier: "premium", buttonBackground: "#0d575a", buttonText: "#ffffff", highlight: "#2f6f73" });
   });
 
   it("uses hayhost colours when the hotel has no recognized theme", () => {

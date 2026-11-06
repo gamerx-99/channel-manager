@@ -26,6 +26,7 @@ const fonts: Partial<Record<ThemeLandingProps["themeId"], string>> = {
   "mountain-mist": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
   "boutique-noir": "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Taviraj:wght@400;500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bai+Jamjuree:wght@400;500;600;700&display=swap",
   // Kanit supplies Thai script alongside the two Latin display families.
+  "riverside-calm": "https://fonts.googleapis.com/css2?family=Pridi:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap",
   "hostel-pop": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Kanit:wght@400;500;600;700;800;900&display=swap",
 };
 
