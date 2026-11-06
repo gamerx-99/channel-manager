@@ -4934,3 +4934,10 @@ Not tested in a browser or with a real email.
 - Task 2 fix(themes): add missing lanna teak labels (story, bookDirect, welcomeKicker, viewRooms). themeKeys.test.ts guards keys.
 - Verification: pnpm check exit 0; pnpm test 1551 passed; pnpm build exit 0.
 - Thai copy: showLineOnSite "แสดงลิงก์ LINE บนหน้าเว็บ" / "Show LINE link on website"; lanna story "เรื่องราว"/"Our story"; bookDirect "จองเลย"/"Book now".
+
+## 2026-11-06 feat/photo-reorder
+
+- Files: PhotosSection.tsx, useWebsiteBuilder.ts, WebsiteBuilder.tsx, WebsiteBuilder.test.tsx, photoReorder.ts, photoReorder.test.ts, server/d1/siteConfig.ts, server/routers/hotelRouter.ts, server/routers.ts, package.json, pnpm-lock.yaml.
+- Drag-and-drop reorder with @dnd-kit; keyboard support; cover slot makes hero.
+- Pure function reorderPhotoIds; server procedure reorderHotelMedia saves draft.
+- Thai copy: no new Thai strings.
