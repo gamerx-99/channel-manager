@@ -1,0 +1,15 @@
+.staff-shifts-page { display: grid; gap: 1rem; min-width: 0; }
+.staff-month-controls { display: flex; gap: .35rem; }
+.staff-shifts-frame { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.staff-shifts-table { min-width: max-content; font-size: .76rem; }
+.staff-shifts-table th, .staff-shifts-table td { padding: .4rem .35rem; white-space: nowrap; }
+.staff-shifts-table th:first-child, .staff-shifts-table td:first-child { min-width: 9rem; position: sticky; left: 0; z-index: 1; background: var(--panel, #fff); }
+.staff-shifts-table th:nth-child(2), .staff-shifts-table td:nth-child(2) { min-width: 7rem; }
+.staff-shifts-table .weekend-shading { background: #263b35; color: #fff; }
+.staff-shifts-table .staff-total-column { position: sticky; right: 0; z-index: 1; background: #edf3ef; font-weight: 700; }
+.staff-shift-cell { display: flex; gap: .25rem; align-items: center; }
+.staff-shift-cell button, .staff-empty-cell { border: 0; background: transparent; color: inherit; cursor: pointer; min-width: 1.25rem; min-height: 1.5rem; }
+.staff-member-edit { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; text-align: left; }
+.staff-shift-dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; background: #15221fcc; }
+.staff-shift-dialog { width: min(38rem, 100%); max-height: 90vh; overflow: auto; }
+@media (max-width: 600px) { .staff-shifts-table { font-size: .68rem; } .staff-shifts-table th, .staff-shifts-table td { padding: .35rem .25rem; } }

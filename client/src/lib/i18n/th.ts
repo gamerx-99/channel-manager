@@ -37,6 +37,8 @@ const th: TranslationDictionary = {
     paymentsComingSoon: "โมดูลระบบชำระเงินและเกตเวย์จะเปิดให้บริการในเวอร์ชันถัดไป",
     communications: "การสื่อสารและแชท",
     housekeeping: "แม่บ้านและทำความสะอาด",
+    staff: "พนักงาน",
+    staffShifts: "กะพนักงาน",
     websiteBuilder: "สร้างเว็บไซต์",
     advancedPricing: "ตั้งราคาขั้นสูง",
     system: "ระบบ",
@@ -1022,6 +1024,9 @@ const th: TranslationDictionary = {
       transfer: "โอนเงิน",
     },
   },
+  staffShifts: {
+    eyebrow: "พนักงาน", title: "กะพนักงาน", lede: "วางแผนกะพนักงานรายเดือน", section: "ตารางกะรายเดือน", addShift: "เพิ่มกะ", previousMonth: "เดือนก่อน", nextMonth: "เดือนถัดไป", name: "ชื่อ-นามสกุล", position: "ตำแหน่ง", monthTotal: "ชั่วโมงรวม", memberDetails: "ข้อมูลพนักงาน", date: "วันที่", startTime: "เวลาเริ่ม", endTime: "เวลาสิ้นสุด", breakMinutes: "เวลาพัก (นาที)", editShift: "แก้ไขกะ", deleteShift: "ลบกะ", editTitle: "แก้ไขกะ", empty: "ยังไม่มีพนักงานให้จัดกะ",
+  },
   housekeeping: {
     loadingAriaLabel: "กำลังโหลดข้อมูลแม่บ้าน",
     loadingBoard: "กำลังโหลดกระดานงานแม่บ้าน…",
@@ -1323,6 +1328,8 @@ const th: TranslationDictionary = {
     permTm30: "ส่งออก ตม.30",
     permHousekeepingView: "ดูงานแม่บ้าน",
     permHousekeepingUpdate: "อัปเดตงานแม่บ้าน",
+    permStaffShiftsView: "ดูตารางกะพนักงาน",
+    permStaffShiftsManage: "จัดการกะพนักงาน",
     permRates: "ราคาและห้องว่าง",
     permOtaView: "ดูสถานะ OTA",
     permOtaManage: "จัดการการเชื่อมต่อ OTA",

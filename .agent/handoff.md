@@ -5291,3 +5291,17 @@ Exit 0
   |---|---|
   | No VAT switch or rate field | `คิดภาษีมูลค่าเพิ่มหรือไม่` → `ภาษีมูลค่าเพิ่ม [อัตรา] %` |
   | No withholding switch or rate field | `หัก ณ ที่จ่าย หรือไม่` → `หัก ณ ที่จ่าย [อัตรา] %` |
+
+
+## 2026-11-06 — Staff shifts
+
+- Added the staff month schedule and scoped shift CRUD in `drizzle/d1/20261106060000_staff_shifts.sql`, `server/d1/staffShifts.ts`, and `server/routers/staffShiftsRouter.ts`. The roster excludes the hotel owner, falls back to Better Auth account names, and lets owners/managers set hotel-specific names and free-text positions. Weekend cells shade dark; month totals subtract breaks and count overnight shifts into the next day. Housekeeping now redirects to the staff shifts route; no time clock was added.
+- Thai before / after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | แม่บ้านและทำความสะอาด (sidebar) | พนักงาน / กะพนักงาน |
+  | — (staff shifts page) | กะพนักงาน; เพิ่มกะ; ชั่วโมงรวม; ตำแหน่ง |
+
+- Verification: `pnpm check` — `$ tsc --noEmit`, Exit 0. `pnpm test` — 241 files passed, 1,664 tests passed, Exit 0. `pnpm build` — Vite built; Wrangler `--dry-run: exiting now.`, Exit 0. Commands used `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false` because pnpm's automatic package-manager verification tried to write a lock in a read-only location.
+- Migration not applied. No commit, push, deploy, or non-dry-run Wrangler command.

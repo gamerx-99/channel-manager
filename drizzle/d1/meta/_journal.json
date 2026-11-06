@@ -162,6 +162,13 @@
       "when": 1793959352573,
       "tag": "20261106020000_invoice_tax_switches",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1793967522020,
+      "tag": "20261106030000_staff_shifts",
+      "breakpoints": true
     }
   ]
 }

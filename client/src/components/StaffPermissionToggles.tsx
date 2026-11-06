@@ -7,6 +7,7 @@ import { useTranslation, type TranslationKey } from "@/lib/i18n";
 const labelKeys: Record<(typeof PERMISSION_TOGGLES)[number]["key"], TranslationKey> = {
   bookings_view: "hotelStaff.permBookingsView", bookings_manage: "hotelStaff.permBookingsManage", bookings_cancel: "hotelStaff.permBookingsCancel",
   tm30: "hotelStaff.permTm30", housekeeping_view: "hotelStaff.permHousekeepingView", housekeeping_update: "hotelStaff.permHousekeepingUpdate",
+  staff_shifts_view: "hotelStaff.permStaffShiftsView", staff_shifts_manage: "hotelStaff.permStaffShiftsManage",
   rates: "hotelStaff.permRates", ota_view: "hotelStaff.permOtaView", ota_manage: "hotelStaff.permOtaManage",
   property_setup: "hotelStaff.permPropertySetup", reports: "hotelStaff.permReports", financials: "hotelStaff.permFinancials", staff: "hotelStaff.permStaff",
 };
