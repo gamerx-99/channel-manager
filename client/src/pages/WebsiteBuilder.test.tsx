@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const { saveConfig, setObjectPosition, deleteMedia, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
   deleteMedia: vi.fn(),
-  configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
+  configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
   saveConfig: vi.fn(),
   setObjectPosition: vi.fn(),
   language: { current: "en" as "en" | "th" },
@@ -51,25 +51,23 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
-const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
+const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); deleteMedia.mockReset(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
-  it("saves the headline and accent colour the owner typed (regression: edits were dropped)", () => {
+  it("saves the headline without sending an accent colour", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     const hero = document.getElementById("wb-hero-copy") as HTMLTextAreaElement;
     fireEvent.change(hero, { target: { value: "New headline" } });
     expect(hero.value).toBe("New headline");
-    fireEvent.change(screen.getByLabelText("accent_color"), { target: { value: "#aa3300" } });
     fireEvent.click(screen.getAllByRole("button").find(button => /save draft/i.test(button.textContent ?? ""))!);
-    expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline", accent_color: "#aa3300" }));
+    expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline" }));
   });
 
-  it("keeps the page up while the owner types a half-finished colour code (regression: white screen)", () => {
+  it("does not render an accent colour field", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    const accent = screen.getByLabelText("accent_color") as HTMLInputElement;
-    for (const partial of ["#", "#1", "#1d6", "#1d6b5", "red"]) fireEvent.change(accent, { target: { value: partial } });
-    expect(accent.value).toBe("red");
+    expect(screen.queryByLabelText("accent_color")).toBeNull();
+    expect(screen.queryByLabelText("accent_color picker")).toBeNull();
     expect(document.getElementById("wb-hero-copy")).toBeTruthy();
   });
 

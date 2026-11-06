@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import type { usePublicHotelPage } from "@/components/public-hotel/usePublicHotelPage";
-import { getContrastText } from "@/lib/contrastText";
+import { getHotelThemeColors } from "@shared/hotelThemes";
 
 // Themes do not embed the booking steps: their book buttons open the hayhost booking page (/:slug/book).
-export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking"> & {
+export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "booking" | "accentColor" | "accentTextColor" | "highlightColor"> & {
   contacts?: React.ReactNode;
   locationMap?: React.ReactNode;
   setLanguage: (language: "en" | "th") => void;
@@ -13,7 +13,6 @@ export type ThemeLayoutProps = Omit<ReturnType<typeof usePublicHotelPage>, "book
 export type ThemeLandingProps = {
   themeId: "minimal-white" | "lanna-teak" | "cafe-homestay";
   hotelName: string;
-  accentColor: string;
   children: React.ReactNode;
 };
 
@@ -23,7 +22,8 @@ const fonts: Record<ThemeLandingProps["themeId"], string> = {
   "cafe-homestay": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Epilogue:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap",
 };
 
-export function ThemeLanding({ themeId, accentColor, children }: ThemeLandingProps) {
+export function ThemeLanding({ themeId, children }: ThemeLandingProps) {
+  const colors = getHotelThemeColors(themeId);
   useEffect(() => {
     const existing = document.querySelector<HTMLLinkElement>(`link[data-hotel-theme-font="${themeId}"]`);
     if (existing) return;
@@ -34,5 +34,5 @@ export function ThemeLanding({ themeId, accentColor, children }: ThemeLandingPro
     document.head.appendChild(link);
   }, [themeId]);
 
-  return <div className={`public-page theme-${themeId}`} style={{ "--owner-accent": accentColor, "--owner-accent-text": getContrastText(accentColor) } as React.CSSProperties}>{children}</div>;
+  return <div className={`public-page theme-${themeId}`} style={{ "--owner-accent": colors.buttonBackground, "--owner-accent-text": colors.buttonText, "--owner-highlight": colors.highlight } as React.CSSProperties}>{children}</div>;
 }

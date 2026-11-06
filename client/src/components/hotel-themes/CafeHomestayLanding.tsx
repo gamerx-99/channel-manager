@@ -13,11 +13,10 @@ function LeafDecoration() {
   return <div className="cafe-leaf-stamp" aria-hidden="true"><svg viewBox="0 0 44 44" width="44" height="44" fill="none"><path d="M6 38 C 10 22, 22 10, 38 6 C 34 22, 22 34, 6 38 Z" fill="currentColor" opacity="0.12" /><path d="M6 38 Q 22 22 38 6" stroke="currentColor" strokeWidth="1.5" opacity="0.3" /></svg></div>;
 }
 
-type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
+type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName">;
 
 export default function CafeHomestayLanding({
   hotelName,
-  accentColor,
   hotel,
   roomTypes,
   media,
@@ -37,7 +36,7 @@ export default function CafeHomestayLanding({
   const canBook = isVisible("booking");
 
   return (
-    <ThemeLanding themeId="cafe-homestay" hotelName={hotelName} accentColor={accentColor}>
+    <ThemeLanding themeId="cafe-homestay" hotelName={hotelName}>
       <div className="cafe-page">
         <header className="cafe-header">
           <a className="cafe-wordmark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>

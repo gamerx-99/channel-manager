@@ -74,14 +74,14 @@
   margin-bottom: 28px;
   background: #ffffff;
   border: 1px solid #d8d1c2;
-  border-left: 4px solid var(--booking-page-accent);
+  border-left: 4px solid var(--booking-page-highlight);
   border-radius: 10px;
   color: #27322f;
 }
 
 .booking-reassurance-icon {
   flex-shrink: 0;
-  color: var(--booking-page-accent);
+  color: var(--booking-page-highlight);
   margin-top: 2px;
 }
 

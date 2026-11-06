@@ -3,12 +3,12 @@ import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
 import { hasAnyPermission, hasHotelPermission, type AppRole } from "@shared/authorization";
-import { HOTEL_THEMES, MAX_WEBSITE_GALLERY_PHOTOS, type HotelThemeId } from "@shared/hotelThemes";
+import { HOTEL_THEMES, MAX_WEBSITE_GALLERY_PHOTOS, getHotelThemeColors, type HotelThemeId } from "@shared/hotelThemes";
 import { uploadHotelMediaFile } from "@/lib/hotelMedia";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
-import { defaultConfig, isValidHexColor, themeSaveErrorMessage, type SiteConfig } from "./websiteBuilderRules";
+import { defaultConfig, themeSaveErrorMessage, type SiteConfig } from "./websiteBuilderRules";
 import { displayPhotoCaption } from "@shared/websitePhotos";
 import { splitWebsitePhotos } from "./photoReorder";
 
@@ -58,7 +58,7 @@ export function useWebsiteBuilder() {
   const [draft, setDraft] = useState<SiteConfig>(() => ({ ...defaultConfig(effectiveHotelId), heroCopy: t("publicHotel.defaultHeroCopy") }));
   const publishedConfig = useMemo(() => {
     const base = defaultConfig(effectiveHotelId);
-    return { ...base, ...(serverConfig ?? {}), heroCopy: serverConfig?.heroCopy ?? t("publicHotel.defaultHeroCopy"), accentColor: serverConfig?.accentColor ?? base.accentColor, visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) } } as SiteConfig;
+    return { ...base, ...(serverConfig ?? {}), heroCopy: serverConfig?.heroCopy ?? t("publicHotel.defaultHeroCopy"), visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) } } as SiteConfig;
   }, [serverConfig, effectiveHotelId, language]);
   const storedDraft = useMemo(() => {
     if (!serverConfig?.draftJson) return null;
@@ -67,7 +67,7 @@ export function useWebsiteBuilder() {
   const discardDraftMut = trpc.channelManager.discardHotelSiteConfigDraft.useMutation({ onSuccess: async () => { await refetchConfig(); setDraft(publishedConfig); toast.success(t("websiteBuilder.draftDiscarded")); }, onError: e => setFormError(e.message) });
   const config = storedDraft ?? publishedConfig;
   const [initializedFor, setInitializedFor] = useState("");
-  const previewAccentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56";
+  const previewAccentColor = getHotelThemeColors(draft.theme).buttonBackground;
   useEffect(() => {
     if (!effectiveHotelId || isFetchingConfig) return;
     // Load the draft once per hotel. Re-running on every refetch (caption, gallery and focal
@@ -125,11 +125,10 @@ export function useWebsiteBuilder() {
     const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
     setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` }, { onSuccess: () => { void refetchConfig(); } });
   }
-  // Shared by "save draft" and "choose a design": both send the headline and colour to the server.
+  // Shared by "save draft" and "choose a design": both send the headline to the server.
   function draftProblem(): string | null {
     if (!canManage) return t("websiteBuilder.errorNoPermissionSave");
     if (!effectiveHotelId) return t("websiteBuilder.errorSelectHotelFirst");
-    if (!isValidHexColor(draft.accentColor)) return t("websiteBuilder.errorInvalidHex");
     if (draft.heroCopy.trim().length === 0) return t("websiteBuilder.errorHeroCopyEmpty");
     if (draft.heroCopy.length > 500) return t("websiteBuilder.errorHeroCopyTooLong");
     return null;
@@ -138,13 +137,13 @@ export function useWebsiteBuilder() {
     setFormError(null); setSaveNote(null);
     const problem = draftProblem();
     if (problem) { setFormError(problem); return; }
-    saveConfigMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections });
+    saveConfigMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, visible_sections: draft.visibleSections });
   }
   function handleSaveTheme(theme: HotelThemeId) {
     setFormError(null);
     const problem = draftProblem();
     if (problem) { setFormError(problem); return; }
-    saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
+    saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
   }
   return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, reorderMediaMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, hasCover, orderedPhotos, otherPhotos, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, photoError, saveNote, handleResetFocalPoint, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleReorderPhotos, handleFocalPoint, handleSave, handleSaveTheme };
 }

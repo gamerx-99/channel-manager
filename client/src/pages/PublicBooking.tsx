@@ -13,12 +13,12 @@ export default function PublicBooking({ slug }: { slug: string }) {
   if (data.loading) return <div className="public-page"><main className="public-loading" role="status" aria-live="polite">{t("publicHotel.loadingHotelDetails")}</main></div>;
   if (data.notFound || (!data.error && !data.hotel)) return <div className="public-page"><main className="public-loading" data-testid="public-booking-not-found"><h1>{t("publicHotel.hotelUnavailableTitle")}</h1><p>{t("publicHotel.hotelUnavailableDesc")}</p><div className="public-state-actions"><Link className="button public-button" href="/">{t("publicHotel.goHome")}</Link></div></main></div>;
   if (data.error || !data.hotel) return <div className="public-page"><main className="public-loading" role="alert" data-testid="public-booking-load-error"><h1>{t("publicHotel.loadErrorTitle")}</h1><p>{t("publicHotel.loadErrorDesc")}</p><button type="button" className="button public-button" onClick={() => void data.refetch?.()}>{t("publicHotel.tryAgain")}</button></main></div>;
-  const { hotel, accentColor, accentTextColor, hotelHref, language, setLanguage } = data;
+  const { hotel, accentColor, accentTextColor, highlightColor, hotelHref, language, setLanguage } = data;
 
   return (
     <div
       className="public-page booking-page"
-      style={{ "--booking-page-accent": accentColor, "--booking-page-accent-text": accentTextColor } as React.CSSProperties}
+      style={{ "--booking-page-accent": accentColor, "--booking-page-accent-text": accentTextColor, "--booking-page-highlight": highlightColor } as React.CSSProperties}
     >
       <header className="booking-page-header">
         <a className="booking-page-hotel" href={hotelHref}>{hotel.name}</a>

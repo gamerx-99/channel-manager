@@ -2,10 +2,9 @@ import { useTranslation } from "@/lib/i18n";
 import { Palette, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { isValidHexColor, type SiteConfig } from "@/components/website-builder/websiteBuilderRules";
+import type { SiteConfig } from "@/components/website-builder/websiteBuilderRules"
 import { SectionsToggleSection } from "@/components/website-builder/SectionsToggleSection";
 
 interface ContentSectionProps {
@@ -81,32 +80,6 @@ export function ContentSection({
             aria-label="hero_copy"
           />
           <p className="text-[11px] text-[#778a80]">{draft.heroCopy.length} / 500</p>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="wb-accent-color" className="text-xs text-[#52655b]">
-            {t("websiteBuilder.accentColorLabel")}
-          </Label>
-          <div className="flex items-center gap-2">
-            <Input
-              id="wb-accent-color"
-              type="color"
-              value={isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56"}
-              onChange={e => setDraft(p => ({ ...p, accentColor: e.target.value }))}
-              disabled={!canManage}
-              className="h-9 w-14 border-[#dce4df] p-1"
-              aria-label="accent_color picker"
-            />
-            <Input
-              placeholder="#1d6b56"
-              value={draft.accentColor}
-              onChange={e => setDraft(p => ({ ...p, accentColor: e.target.value }))}
-              disabled={!canManage}
-              className="flex-1 border-[#dce4df] font-mono text-sm"
-              aria-label="accent_color"
-            />
-          </div>
-          <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.accentColorHint")}</p>
         </div>
 
         <div className="space-y-3">

@@ -1,6 +1,5 @@
 import React from "react";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
-import { getContrastText } from "@/lib/contrastText";
 import "./public-booking.css";
 import BookingStepDates from "./BookingStepDates";
 import BookingStepRooms from "./BookingStepRooms";
@@ -13,8 +12,7 @@ type Page = ReturnType<typeof usePublicHotelPage>;
 type Booking = NonNullable<Page["booking"]>;
 
 export default function PublicBookingSection({ page }: { page: Page }) {
-  const { hotel, accentColor, t, booking } = page;
-  const accentTextColor = getContrastText(accentColor);
+  const { hotel, accentColor, accentTextColor, t, booking } = page;
   if (!booking) return null;
   const { wizardStep, setWizardStep, checkIn, setCheckIn, checkOut, setCheckOut, adults, setAdults, children, setChildren, preferredRoomTypeId, heldBooking, selectedServiceQty, setSelectedServiceQty, guestName, setGuestName, guestPhone, setGuestPhone, guestEmail, setGuestEmail, specialRequests, setSpecialRequests, confirmedBookingId, wizardError, setWizardError, paymentSuccess, setPaymentSuccess, remainingMs, isDatesValid, propertyChildRule, childRulesConfigured, childMeasurements, guestsValid, availabilityQuery, availableRoomTypes, holdRoomTypeMutation, servicesQuery, confirmDetailsMutation, handleResetBooking, handleHoldRoom, handleConfirmDetails, serviceLineTotal, selectedServicesTotal } = booking;
   const renderStepContent = () => {

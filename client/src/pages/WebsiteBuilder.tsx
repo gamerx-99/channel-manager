@@ -13,7 +13,6 @@ import { PreviewSection } from "@/components/website-builder/PreviewSection";
 import { ContentSection } from "@/components/website-builder/ContentSection";
 import { DomainInfoCard } from "@/components/website-builder/DomainInfoCard";
 import "@/components/website-builder/website-builder.css";
-import type { CSSProperties } from "react";
 
 function LoadingWebsiteBuilder() {
   const { t } = useTranslation();
@@ -110,7 +109,7 @@ export default function WebsiteBuilder() {
                 ? t("websiteBuilder.unpublishedStatus")
                 : serverConfig?.publishedAt
                 ? t("websiteBuilder.publishedDate", { date: new Date(serverConfig.publishedAt).toLocaleDateString(dateLocale(language)) })
-                : serverConfig && (serverConfig.heroCopy || serverConfig.theme || serverConfig.accentColor || serverConfig.visibleSections)
+                : serverConfig && (serverConfig.heroCopy || serverConfig.theme || serverConfig.visibleSections)
                 ? t("websiteBuilder.published")
                 : t("websiteBuilder.notPublishedYet")}
             </span>
@@ -182,16 +181,6 @@ export default function WebsiteBuilder() {
               <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryMediaItems")}</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#263b31]">{media.length}</p>
               <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryMediaHint")}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-            <CardContent className="p-5">
-              <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#789087]">{t("websiteBuilder.summaryAccentColor")}</p>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="h-6 w-6 rounded-full border border-[#dce4df] wb-accent-swatch" style={{ "--wb-accent": draft.accentColor } as CSSProperties} aria-hidden="true" />
-                <span className="text-sm font-mono font-semibold text-[#263b31]">{draft.accentColor}</span>
-              </div>
-              <p className="mt-1 text-xs text-[#778a80]">{t("websiteBuilder.summaryAccentHint")}</p>
             </CardContent>
           </Card>
           <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">

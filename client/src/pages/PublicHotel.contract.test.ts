@@ -26,28 +26,27 @@ describe('PublicHotel site config fallback contract (T06-03)', () => {
 
   it('PublicHotel falls back to fixed copy/colors when no config (42P01 or missing row)', () => {
     expect(publicHotelSource).toContain('DEFAULT_HERO_COPY');
-    expect(publicHotelSource).toContain('DEFAULT_ACCENT_COLOR');
     expect(publicHotelSource).toContain('เลือกห้องพัก ดูราคา และตรวจสอบวันว่างได้ที่นี่');
-    expect(publicHotelSource).toContain('#954831');
     // Fallback via nullish coalescing
     expect(publicHotelSource).toMatch(/const heroCopy\s*=\s*siteConfig\?\.heroCopy\s*\?\?\s*DEFAULT_HERO_COPY/s);
-    expect(publicHotelSource).toMatch(/const accentColor\s*=\s*siteConfig\?\.accentColor\s*\?\?\s*DEFAULT_ACCENT_COLOR/s);
+    expect(publicHotelSource).toContain('getHotelThemeColors(siteConfig?.theme)');
     // Also checks siteConfigQuery.data ?? null
     expect(publicHotelSource).toContain('siteConfigQuery.data');
     expect(publicHotelSource).toContain('siteConfig?.heroCopy');
-    expect(publicHotelSource).toContain('siteConfig?.accentColor');
+    expect(publicHotelSource).not.toContain('siteConfig?.accentColor');
   });
 
-  it('PublicHotel applies accent_color to CTA buttons and hero copy comes from config', () => {
+  it('PublicHotel applies theme colours to CTA buttons and hero copy comes from config', () => {
     expect(publicHotelPage).toContain('{heroCopy}');
     expect(publicHotelSource).toContain('accentColor');
     expect(publicHotelSource).toContain('backgroundColor: accentColor');
   });
 
-  it('PublicHotel shows default hero_copy/accent_color when config missing, and configured values when present (derived logic)', () => {
+  it('PublicHotel shows default hero copy and derives colours from the selected theme', () => {
     // Derive logic string is present: heroCopy = siteConfig?.heroCopy ?? DEFAULT_HERO_COPY
     expect(publicHotelSource).toMatch(/const heroCopy = siteConfig\?\.heroCopy \?\? DEFAULT_HERO_COPY/);
-    expect(publicHotelSource).toMatch(/const accentColor = siteConfig\?\.accentColor \?\? DEFAULT_ACCENT_COLOR/);
+    expect(publicHotelSource).toContain('getHotelThemeColors(siteConfig?.theme)');
+    expect(publicHotelSource).not.toContain('siteConfig?.accentColor');
   });
 
   it('server/d1/siteConfig.ts scopes public and managed reads and returns null for missing config', () => {

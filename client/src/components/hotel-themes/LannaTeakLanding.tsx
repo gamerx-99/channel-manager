@@ -9,11 +9,10 @@ function KanokDivider() {
   return <div className="lanna-divider" aria-hidden="true"><span /><i /><span /></div>;
 }
 
-type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
+type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName">;
 
 export default function LannaTeakLanding({
   hotelName,
-  accentColor,
   hotel,
   roomTypes,
   media,
@@ -33,7 +32,7 @@ export default function LannaTeakLanding({
   const canBook = isVisible("booking");
 
   return (
-    <ThemeLanding themeId="lanna-teak" hotelName={hotelName} accentColor={accentColor}>
+    <ThemeLanding themeId="lanna-teak" hotelName={hotelName}>
       <div className="lanna-page">
         <header className="lanna-header">
           <a className="lanna-mark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>

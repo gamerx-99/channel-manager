@@ -39,7 +39,7 @@ const hotelData = {
 beforeEach(() => {
   mocks.firstCheckIn = undefined;
   mocks.publicHotelQuery.mockReturnValue({ data: hotelData, isLoading: false, error: null, refetch: vi.fn() });
-  mocks.siteConfigQuery.mockReturnValue({ data: { theme: "lanna-teak", accentColor: "#ffdd00", heroCopy: "", visibleSections: null }, isLoading: false, error: null });
+  mocks.siteConfigQuery.mockReturnValue({ data: { theme: "lanna-teak", heroCopy: "", accentColor: "#ffdd00", visibleSections: null }, isLoading: false, error: null });
   mocks.availabilityQuery.mockReturnValue({ data: { room_types: [] }, isLoading: false, error: null });
   mocks.servicesQuery.mockReturnValue({ data: [], isLoading: false, error: null });
 });
@@ -53,8 +53,8 @@ describe("PublicBooking page", () => {
     window.history.replaceState(null, "", "/sample-stay/book");
     const view = render(<PublicBooking slug="sample-stay" />);
     const bar = view.container.querySelector<HTMLElement>(".booking-page");
-    expect(bar?.style.getPropertyValue("--booking-page-accent")).toBe("#ffdd00");
-    expect(bar?.style.getPropertyValue("--booking-page-accent-text")).toBe("#000000");
+    expect(bar?.style.getPropertyValue("--booking-page-accent")).toBe("#6b3f2a");
+    expect(bar?.style.getPropertyValue("--booking-page-accent-text")).toBe("#ffffff");
     expect(screen.getByRole("link", { name: "Sample Stay" }).getAttribute("href")).toBe("/sample-stay");
     expect(screen.getByText("12 River Road")).toBeTruthy();
     expect(view.container.querySelector('a[href="tel:081-234-5678"]')).toBeTruthy();

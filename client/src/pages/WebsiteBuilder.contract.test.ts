@@ -59,9 +59,9 @@ describe('WebsiteBuilder contract — Phase 06', () => {
   });
 
   // ── Site config form ─────────────────────────────────────────────────────
-  it('WebsiteBuilder has hero_copy textarea, accent_color picker, and visible_sections toggles', () => {
+  it('WebsiteBuilder has hero_copy textarea and visible_sections toggles, with no colour field', () => {
     expect(wbSource).toContain('hero_copy');
-    expect(wbSource).toContain('accent_color');
+    expect(wbSource).not.toContain('accent_color');
     expect(wbSource).toContain('visible_sections');
     // Section keys: hero, story, rooms, booking, location
     expect(wbSource).toContain("hero: true");
@@ -74,7 +74,7 @@ describe('WebsiteBuilder contract — Phase 06', () => {
     // Note: Updated per Rule 6 to match translation dictionary key
     expect(wbSource).toContain('websiteBuilder.publicPreviewTitle');
     expect(wbSource).toContain('heroImage');
-    expect(wbSource).toContain('draft.accentColor');
+    expect(wbSource).not.toContain('draft.accentColor');
     expect(wbSource).toContain('draft.heroCopy');
   });
 

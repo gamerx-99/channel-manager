@@ -36,7 +36,7 @@ beforeEach(() => {
   mocks.publicHotelQuery.mockImplementation(() => mocks.loaded
     ? { data: hotelData, isLoading: false, error: null, refetch: vi.fn() }
     : { data: undefined, isLoading: true, error: null, refetch: vi.fn() });
-  mocks.siteConfigQuery.mockImplementation(() => ({ data: mocks.loaded && mocks.theme ? { theme: mocks.theme, heroCopy: "A welcoming place to rest.", accentColor: "#954831", visibleSections: null } : null, isLoading: false, error: null }));
+  mocks.siteConfigQuery.mockImplementation(() => ({ data: mocks.loaded && mocks.theme ? { theme: mocks.theme, heroCopy: "A welcoming place to rest.", accentColor: "#ffdd00", visibleSections: null } : null, isLoading: false, error: null }));
   mocks.availabilityQuery.mockReturnValue({ data: { room_types: [] }, isLoading: false, error: null });
   mocks.servicesQuery.mockReturnValue({ data: [], isLoading: false, error: null });
 });
@@ -66,25 +66,26 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay"] as const)("
 
   it("hides the book links when the hotel switched the booking section off", () => {
     mocks.loaded = true;
-    mocks.siteConfigQuery.mockReturnValue({ data: { theme, accentColor: "#954831", heroCopy: "Rest here.", visibleSections: { booking: false } }, isLoading: false, error: null });
+    mocks.siteConfigQuery.mockReturnValue({ data: { theme, heroCopy: "Rest here.", accentColor: "#ffdd00", visibleSections: { booking: false } }, isLoading: false, error: null });
     const view = render(<PublicHotel slug="sample-stay" />);
     expect(view.container.querySelector('a[href^="/sample-stay/book"]')).toBeNull();
   });
 
-  it("uses contrast text for hotel-accent calls to action", () => {
+  it("uses the theme palette for calls to action, ignoring any stored hotel colour", () => {
     mocks.loaded = true;
     mocks.theme = theme;
-    mocks.siteConfigQuery.mockReturnValue({ data: { theme, accentColor: "#ffdd00", heroCopy: "Rest here.", visibleSections: null }, isLoading: false, error: null });
+    mocks.siteConfigQuery.mockReturnValue({ data: { theme, heroCopy: "Rest here.", accentColor: "#ffdd00", visibleSections: null }, isLoading: false, error: null });
     const view = render(<PublicHotel slug="sample-stay" />);
     if (theme) {
       const themedPage = view.container.querySelector<HTMLElement>(`.theme-${theme}`);
-      expect(themedPage?.style.getPropertyValue("--owner-accent")).toBe("#ffdd00");
-      expect(themedPage?.style.getPropertyValue("--owner-accent-text")).toBe("#000000");
+      const expected: Record<string, string> = { "minimal-white": "#34423a", "lanna-teak": "#6b3f2a", "cafe-homestay": "#8d4e35" };
+      expect(themedPage?.style.getPropertyValue("--owner-accent")).toBe(expected[theme]);
+      expect(themedPage?.style.getPropertyValue("--owner-accent-text")).toBe("#ffffff");
     } else {
       for (const selector of [".public-nav-cta", ".public-hero-content .public-button"]) {
         const cta = view.container.querySelector<HTMLElement>(selector);
-        expect(cta?.style.backgroundColor).toBe("rgb(255, 221, 0)");
-        expect(cta?.style.color).toBe("rgb(0, 0, 0)");
+        expect(cta?.style.backgroundColor).toBe("rgb(149, 72, 49)");
+        expect(cta?.style.color).toBe("rgb(255, 255, 255)");
       }
     }
   });

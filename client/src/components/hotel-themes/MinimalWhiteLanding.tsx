@@ -5,11 +5,10 @@ import { PoweredByHayhost } from "./PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
 
-type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
+type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName">;
 
 export default function MinimalWhiteLanding({
   hotelName,
-  accentColor,
   hotel,
   roomTypes,
   media,
@@ -29,7 +28,7 @@ export default function MinimalWhiteLanding({
   const canBook = isVisible("booking");
 
   return (
-    <ThemeLanding themeId="minimal-white" hotelName={hotelName} accentColor={accentColor}>
+    <ThemeLanding themeId="minimal-white" hotelName={hotelName}>
       <div className="minimal-page">
         <header className="minimal-header">
           <a className="minimal-wordmark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>

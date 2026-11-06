@@ -110,3 +110,7 @@
 .theme-room-link::after{content:"";position:absolute;inset:0}
 .theme-room-link:focus-visible{outline:2px solid var(--owner-accent);outline-offset:2px}
 @media(max-width:760px){.theme-book-button{min-height:36px;padding:0 12px;font-size:12px}.theme-minimal-white .minimal-actions{grid-column:2;grid-row:1;gap:10px}.theme-lanna-teak .lanna-actions,.theme-cafe-homestay .cafe-actions{gap:8px}}
+/* Each theme supplies its fixed palette at the landing wrapper. */
+.theme-minimal-white .minimal-section-heading h2 i,.theme-minimal-white .minimal-location h2 i{color:var(--owner-highlight)}
+.theme-lanna-teak .lanna-intro h2 i,.theme-lanna-teak .lanna-section-title h2 i,.theme-lanna-teak .lanna-location h2 i{color:var(--owner-highlight)}
+.theme-cafe-homestay .cafe-section-heading h2 i,.theme-cafe-homestay .cafe-location h2 i{color:var(--owner-highlight)}

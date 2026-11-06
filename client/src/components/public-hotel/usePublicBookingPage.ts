@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearch } from "wouter";
-import { getContrastText } from "@/lib/contrastText";
 import { usePublicHotelPage } from "./usePublicHotelPage";
 import { getTodayDateString } from "./useBookingWizard";
 import { parseBookingPrefill } from "./bookingPageLink";
@@ -37,7 +36,7 @@ export function usePublicBookingPage(slug: string) {
 
   return {
     ...page,
-    accentTextColor: getContrastText(page.accentColor),
+    accentTextColor: page.accentTextColor,
     hotelHref: `/${slug}`,
     prefillReady: hotelId !== null && prefillReadyFor === hotelId,
   };

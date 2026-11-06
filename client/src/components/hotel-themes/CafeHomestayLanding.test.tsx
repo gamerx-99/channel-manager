@@ -9,7 +9,6 @@ describe("Cafe Homestay landing", () => {
   it("renders hotel and room data with links to the booking page and no forbidden content", () => {
     const html = renderToStaticMarkup(<CafeHomestayLanding
       hotelName="Nap & Latte Homestay"
-      accentColor="#a45b3f"
       hotel={{ id: "hotel-1", name: "Nap & Latte Homestay", slug: "nap-latte", address: "Pai, Thailand" } as any}
       roomTypes={[{ id: "room-1", name: "Garden Room", capacity: 2, basePrice: 1800 }, { id: "room-2", name: "Loft Room", capacity: 3, basePrice: 2400 }] as any}
       media={[{ url: "/hero.jpg", is_hero: true }, { url: "/room.jpg", caption: "Garden" }, { url: "/gallery.jpg", caption: "Morning coffee" }, { url: "/legacy-file.jpg", caption: null }] as any}

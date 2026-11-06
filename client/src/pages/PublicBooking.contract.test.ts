@@ -27,7 +27,7 @@ describe("PublicBooking page contract", () => {
     expect(page).toContain("onClick={() => void data.refetch?.()}");
   });
 
-  it("shows the hotel name linking back to the hotel website on an accent-coloured bar", () => {
+  it("shows the hotel name linking back to the hotel website on the theme-coloured bar", () => {
     expect(hook).toContain("hotelHref: `/${slug}`");
     expect(page).toContain('<a className="booking-page-hotel" href={hotelHref}>{hotel.name}</a>');
     expect(page).toContain('"--booking-page-accent": accentColor');

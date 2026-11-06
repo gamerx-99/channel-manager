@@ -1,5 +1,5 @@
 # 06 Website Builder
-Status: IN PROGRESS (photo captions and gallery selection implemented; automated checks run (one unrelated failure), browser verification pending, 2026-11-04)
+Status: IMPLEMENTED (photo captions, gallery selection, and theme-owned colours; 2026-11-06)
 Depends on: —
 Owner-tier: worker-code
 

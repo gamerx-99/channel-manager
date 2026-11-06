@@ -5191,3 +5191,16 @@ Exit 0
   | — | ตำแหน่งรูปภาพไม่ถูกต้อง กรุณาปรับตำแหน่งรูปภาพแล้วลองอีกครั้ง |
 - Regex audit of `server/` and `shared/`: the only mistaken escaped digit pattern was the `media_positions` pattern in `server/routers/hotelRouter.ts`, now corrected. No mistaken escaped whitespace patterns found.
 - Verification: `pnpm check` (`tsc --noEmit`, Exit 0); `pnpm test` (233 files, 1,639 tests passed, Exit 0); `pnpm build` (Vite + Wrangler dry-run, `--dry-run: exiting now.`, Exit 0). Wrangler config/log warnings avoided on final run by setting `APPDATA` to a repo-local directory.
+
+
+## 2026-11-06 - Use theme colours for public buttons and highlights
+
+- Removed the builder colour input, summary, hex validation, and mutation payload. Theme palettes now supply button background, button text, and highlight colours to public hotel and booking pages; hotels without a theme use the hayhost default. The API still accepts legacy `accent_color`; no migration.
+- Updated only tests that asserted the removed builder field or stored-colour behaviour. Added fixed-palette coverage and conflicting stored-colour fixtures to verify the screens ignore that value.
+- Thai before/after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | สีเน้น | ไม่มีช่องเลือกสี; ใช้สีของธีม |
+
+- Verification: `pnpm check` - `tsc --noEmit`, Exit 0; `pnpm test` - 234 files and 1,640 tests passed, Exit 0; `pnpm build` - Vite build and Wrangler dry-run completed, `--dry-run: exiting now.`, Exit 0.

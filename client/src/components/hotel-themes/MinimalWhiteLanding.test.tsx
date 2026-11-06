@@ -9,7 +9,6 @@ describe("Minimal White landing", () => {
   it("renders provided hotel and room data with links to the booking page and without never-render content", () => {
     const html = renderToStaticMarkup(<MinimalWhiteLanding
       hotelName="Haus Nimman"
-      accentColor="#4f5d48"
       hotel={{ id: "hotel-1", name: "Haus Nimman", slug: "haus-nimman", address: "Nimman Road, Chiang Mai" } as any}
       roomTypes={[{ id: "room-1", name: "Garden Room", capacity: 2, basePrice: 1800 }, { id: "room-2", name: "Loft Room", capacity: 3, basePrice: 2400 }] as any}
       media={[{ url: "/hero.jpg", is_hero: true }, { url: "/room.jpg", caption: "Courtyard" }, { url: "/gallery.jpg", caption: "Morning light" }, { url: "/legacy-file.jpg", caption: null }] as any}
