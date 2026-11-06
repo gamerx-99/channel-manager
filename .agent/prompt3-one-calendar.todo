@@ -38,7 +38,7 @@ PART 2: บันทึกหลายห้องพร้อมกัน (serv
 [x] query สำหรับหน้าใหม่: ต่อวันต่อประเภทห้อง ส่ง ห้องที่เปิดขาย/ทั้งหมด, ปิดหรือไม่, ราคาที่แขกจ่ายจริง
     (ตรงกับ resolveRateSatang: ราคาฐาน หรือ rate override ช่วงที่แคบที่สุด ห้ามใช้ availability.price)
 [x] front desk (ไม่มี revenue.manage_rates) ได้ราคาเป็น null และแก้ราคาไม่ได้ แต่เห็นห้องว่างได้
-[ ] เทสต์: atomic (ห้องหนึ่งผิด ไม่มีอะไรถูกบันทึก), ราคาตรงกับ resolveRateSatang,
+[x] เทสต์: atomic (ห้องหนึ่งผิด ไม่มีอะไรถูกบันทึก), ราคาตรงกับ resolveRateSatang,
     mocked-router test ของ front desk (ราคา null, แก้ราคาโดน FORBIDDEN)
 [x] commit: feat(availability): save prices and rooms for many room types at once
 
@@ -83,7 +83,7 @@ PART 6: เมนูและ redirect
 [x] Sidebar เหลือรายการเดียว "ปฏิทินราคาและห้องว่าง" (คำตาม glossary)
 [x] /dashboard/pricing redirect ไป /hotels/<โรงแรมที่เลือก>/calendar
 [x] routeScope.ts และ Topbar breadcrumb ตรงกับหน้าใหม่
-[ ] เลิกใช้ AdvancedPricing.tsx (ลบไฟล์และเทสต์ที่ล็อกหน้าเก่า เขียนเหตุผลใน handoff ทีละไฟล์)
+[x] เลิกใช้ AdvancedPricing.tsx (ลบไฟล์และเทสต์ที่ล็อกหน้าเก่า เขียนเหตุผลใน handoff ทีละไฟล์)
 [x] contract test หน้าใหม่: route, permission gate, สวิตช์ 2 มุมมอง, ไทม์ไลน์ไม่มีราคา, redirect
 [x] commit: refactor(nav): one calendar entry for prices and rooms
 
@@ -94,6 +94,6 @@ PART 7: ส่งงาน
 [x] pnpm test ทั้งชุดผ่าน (แปะบรรทัดท้ายจริง)
 [x] pnpm build ผ่าน (แปะบรรทัดท้ายจริง)
 [x] git add ทีละไฟล์ ห้าม git add -A
-[ ] รายการท้าย .agent/handoff.md: ไฟล์ที่แก้, เทสต์ที่แก้/ลบพร้อมเหตุผล, ตารางคำไทยก่อน/หลัง,
+[x] รายการท้าย .agent/handoff.md: ไฟล์ที่แก้, เทสต์ที่แก้/ลบพร้อมเหตุผล, ตารางคำไทยก่อน/หลัง,
     สิ่งที่ยังไม่ได้ทำ
 [x] push เฉพาะ branch feat/one-calendar ห้าม push main ห้าม deploy แล้วรายงานกลับ

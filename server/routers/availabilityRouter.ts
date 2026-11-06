@@ -216,8 +216,10 @@ export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOv
 });
 
 export const saveCalendarRangeProcedure = protectedProcedure.input(saveCalendarRangeSchema).mutation(async ({ ctx, input }) => {
-  const permission = input.price !== undefined && input.price !== null ? 'revenue.manage_rates' : 'revenue.manage_allotment';
-  requireHotelPermission(ctx.user, input.hotel_id, permission);
+  const touchesPrice = input.price !== undefined || input.base === true || input.min_stay_nights !== undefined;
+  if (touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_rates');
+  if (input.rooms_available !== undefined) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
+  if (input.rooms_available === undefined && !touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
     return await dbSaveCalendarRange(ctx.db, ctx.caller ?? { userId: ctx.user.id }, {

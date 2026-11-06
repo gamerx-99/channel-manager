@@ -281,7 +281,7 @@ function canonicalThreshold(value: string) {
   return normalizedFraction ? `${normalizedInteger}.${normalizedFraction}` : normalizedInteger;
 }
 
-function resolveRateSatang(roomTypeId: string, basePrice: string, date: string, overrides: Array<typeof rateOverrides.$inferSelect>) {
+export function resolveRateSatang(roomTypeId: string, basePrice: string, date: string, overrides: Array<typeof rateOverrides.$inferSelect>) {
   const matches = overrides.filter(row => row.roomTypeId === roomTypeId && date >= row.startDate && date <= row.endDate);
   if (!matches.length) return moneyToSatang(basePrice);
   const winner = matches.reduce((selected, candidate) => {

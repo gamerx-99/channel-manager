@@ -5,6 +5,8 @@ import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } fro
 import { moneyToSatang } from "../db/money";
 import { AVAILABILITY_BATCH_MAX_DAYS, AVAILABILITY_BATCH_MAX_ROOM_TYPES } from "@shared/availabilityBatch";
 import { splitRateRanges } from "../../shared/rateRangeSplit";
+import { resolveRateSatang } from "./bookingService";
+import { isBookingOccupyingInventory } from "../../shared/bookingLifecycle";
 
 function canonicalMoney(value: string): string {
   const satang = moneyToSatang(value);
@@ -75,6 +77,11 @@ export async function updateAvailability(
 // D1 allows 100 bound parameters per statement; a row uses 5, so 18 rows (90) per statement.
 const AVAILABILITY_ROWS_PER_STATEMENT = 18;
 
+function nextDay(iso: string): string {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 function datesBetween(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
   const end = Date.parse(`${endDate}T00:00:00.000Z`);
@@ -208,7 +215,10 @@ export async function saveCalendarRange(
   },
   now = new Date(),
 ) {
-  await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_rates", "calendar.save", now);
+  const touchesRates = input.base === true || input.price !== undefined || input.minStayNights !== undefined;
+  if (touchesRates) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_rates", "calendar.save", now);
+  if (input.roomsAvailable !== undefined && input.roomsAvailable !== null) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_allotment", "calendar.save", now);
+  if (!touchesRates && (input.roomsAvailable === undefined || input.roomsAvailable === null)) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_allotment", "calendar.save", now);
   const roomTypeIds = Array.from(new Set(input.roomTypeIds));
   if (!roomTypeIds.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose at least one room type." });
   const types = await db.select({ id: roomTypes.id, basePrice: roomTypes.basePrice }).from(roomTypes)
@@ -232,20 +242,31 @@ export async function saveCalendarRange(
   }
 
   // rate overrides
-  if (input.price !== undefined) {
+  const touchRates = input.base === true || input.price !== undefined || input.minStayNights !== undefined;
+  if (touchRates) {
     for (const type of types) {
       const existing = await db.select().from(rateOverrides).where(eq(rateOverrides.roomTypeId, type.id));
       const overlapping = existing.filter(r => !(r.endDate < input.startDate || r.startDate > input.endDate));
+      // determine price for new range when not explicitly provided
+      let newPrice: string | undefined;
+      if (input.price !== undefined && input.price !== null) newPrice = String(input.price);
+      if (newPrice === undefined && input.base !== true && input.minStayNights !== undefined) {
+        const cov = overlapping.find(r => r.startDate <= input.startDate && r.endDate >= input.startDate);
+        newPrice = cov ? cov.overridePrice : type.basePrice;
+      }
+      const next = input.base ? { start_date: input.startDate, end_date: input.endDate, base: true } : (newPrice !== undefined ? { start_date: input.startDate, end_date: input.endDate, override_price: newPrice, min_stay_nights: input.minStayNights ?? null } : null);
+      // if no price and no base and no minStay, skip
+      if (next === null && input.minStayNights === undefined) continue;
       const split = splitRateRanges(
         overlapping.map(r => ({ id: r.id, start_date: r.startDate, end_date: r.endDate, override_price: r.overridePrice, min_stay_nights: r.minStayNights })),
-        input.base ? null : { start_date: input.startDate, end_date: input.endDate, override_price: input.price ?? "0", min_stay_nights: input.minStayNights ?? null },
+        next,
       );
       for (const id of split.deleteIds) {
         statements.push(db.$client.prepare("delete from rate_overrides where id = ?").bind(id));
       }
       for (const c of split.create) {
-        if (input.base) continue;
-        statements.push(db.$client.prepare("insert into rate_overrides (id, room_type_id, start_date, end_date, override_price, min_stay_nights) values (?, ?, ?, ?, ?, ?)").bind(crypto.randomUUID(), type.id, c.start_date, c.end_date, canonicalMoney(c.override_price!), c.min_stay_nights));
+        if (c.override_price === undefined) continue;
+        statements.push(db.$client.prepare("insert into rate_overrides (id, room_type_id, start_date, end_date, override_price, min_stay_nights) values (?, ?, ?, ?, ?, ?)").bind(crypto.randomUUID(), type.id, c.start_date, c.end_date, canonicalMoney(c.override_price), c.min_stay_nights));
       }
     }
   }
@@ -272,31 +293,47 @@ export async function listCalendarForHotel(
   const availRows = await db.select().from(availability).where(and(inArray(availability.roomTypeId, types.map(t => t.id)), sql`${availability.date} >= ${startDate} and ${availability.date} <= ${endDate}`));
   const overrides = await db.select().from(rateOverrides).where(inArray(rateOverrides.roomTypeId, types.map(t => t.id)));
   const availMap = new Map(availRows.map(r => [`${r.roomTypeId}:${r.date}`, r]));
+  // bookings in range
+  const bookingRows = await db.select({ roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(and(eq(bookings.hotelId, hotelId), sql`${bookings.checkIn} < ${endDate} and ${bookings.checkOut} > ${startDate}`));
+  const roomTypeByRoom = new Map((await db.select({ id: rooms.id, roomTypeId: rooms.roomTypeId }).from(rooms).where(eq(rooms.hotelId, hotelId))).map(r => [r.id, r.roomTypeId]));
+  const bookedMap = new Map<string, number>();
+  for (const b of bookingRows) {
+    if (!b.roomId) continue;
+    const rt = roomTypeByRoom.get(b.roomId);
+    if (!rt) continue;
+    if (!isBookingOccupyingInventory({ status: b.status as any, expiresAt: b.expiresAt ? new Date(b.expiresAt).toISOString() : null })) continue;
+    // increment each date in [checkIn, checkOut)
+    for (let d = b.checkIn; d < b.checkOut; d = nextDay(d)) {
+      if (d < startDate || d > endDate) continue;
+      const key = `${rt}:${d}`;
+      bookedMap.set(key, (bookedMap.get(key) ?? 0) + 1);
+    }
+  }
   const result: any[] = [];
   for (const type of types) {
     const typeOverrides = overrides.filter(o => o.roomTypeId === type.id);
     const dates = datesBetween(startDate, endDate);
+    const total = totalByType.get(type.id) ?? 0;
     for (const date of dates) {
       const a = availMap.get(`${type.id}:${date}`);
-      // resolve real price
+      const booked = bookedMap.get(`${type.id}:${date}`) ?? 0;
+      const cap = a ? a.roomsAvailable : total;
+      const available = Math.max(0, Math.min(cap, total) - booked);
+      const closed = !!a && a.roomsAvailable === 0;
       let price: string | null = null;
       if (canSeePrice) {
-        const matches = typeOverrides.filter(o => o.startDate <= date && o.endDate >= date);
-        const chosen = matches.reduce((narrowest, o) => {
-          if (!narrowest) return o;
-          const w1 = daysBetween(o.startDate, o.endDate);
-          const w2 = daysBetween(narrowest.startDate, narrowest.endDate);
-          return w1 < w2 ? o : narrowest;
-        }, null as any);
-        price = chosen ? chosen.overridePrice : type.basePrice;
+        const satang = resolveRateSatang(type.id, type.basePrice, date, typeOverrides);
+        price = `${satang / BigInt(100)}.${String(satang % BigInt(100)).padStart(2, '0')}`;
       }
       result.push({
         roomTypeId: type.id,
         roomTypeName: type.name,
         date,
-        roomsAvailable: a?.roomsAvailable ?? null,
-        totalRooms: totalByType.get(type.id) ?? 0,
-        closed: (a?.roomsAvailable ?? 0) === 0,
+        roomsAvailable: a?.roomsAvailable ?? total,
+        totalRooms: total,
+        bookedRooms: booked,
+        availableRooms: available,
+        closed,
         price,
       });
     }
