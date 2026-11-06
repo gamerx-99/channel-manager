@@ -47,6 +47,8 @@ import {
   createRateOverrideProcedure as createRateOverride,
   listRateOverridesProcedure as listRateOverrides,
   deleteRateOverrideProcedure as deleteRateOverride,
+  saveCalendarRangeProcedure as saveCalendarRange,
+  listCalendarProcedure as listCalendar,
 } from './routers/availabilityRouter';
 import {
   hotels,
@@ -140,6 +142,8 @@ export const appRouter = router({
     createRateOverride,
     listRateOverrides,
     deleteRateOverride,
+    saveCalendarRange,
+    listCalendar,
     createHousekeepingTask,
     listHousekeepingTasks,
     updateHousekeepingTaskStatus,

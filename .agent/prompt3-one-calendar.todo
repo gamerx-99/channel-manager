@@ -30,17 +30,17 @@ PART 1: ตัดช่วงราคา (server, ฟังก์ชันบ�
 ======================================================================
 PART 2: บันทึกหลายห้องพร้อมกัน (server)
 ======================================================================
-[ ] procedure ใหม่ รับ hotel_id, room_type_ids[], start_date, end_date และค่าที่จะตั้ง
+[x] procedure ใหม่ รับ hotel_id, room_type_ids[], start_date, end_date และค่าที่จะตั้ง
     (เปิด/ปิดขาย, จำนวนห้องที่ขาย, ราคา, คืนขั้นต่ำ, กลับไปราคาฐาน)
-[ ] เขียนทุกห้องที่เลือกพร้อมกันแบบ atomic (D1 batch) ผิดพลาดห้องเดียว = ไม่บันทึกเลย
-[ ] permission ตามแบบเดิม: ราคา = revenue.manage_rates, เปิด/ปิด/จำนวนห้อง = permission เดิมของ
+[x] เขียนทุกห้องที่เลือกพร้อมกันแบบ atomic (D1 batch) ผิดพลาดห้องเดียว = ไม่บันทึกเลย
+[x] permission ตามแบบเดิม: ราคา = revenue.manage_rates, เปิด/ปิด/จำนวนห้อง = permission เดิมของ
     availability ใช้ requireHotelPermission แล้ว try { ... } catch { rethrowDomainError }
-[ ] query สำหรับหน้าใหม่: ต่อวันต่อประเภทห้อง ส่ง ห้องที่เปิดขาย/ทั้งหมด, ปิดหรือไม่, ราคาที่แขกจ่ายจริง
+[x] query สำหรับหน้าใหม่: ต่อวันต่อประเภทห้อง ส่ง ห้องที่เปิดขาย/ทั้งหมด, ปิดหรือไม่, ราคาที่แขกจ่ายจริง
     (ตรงกับ resolveRateSatang: ราคาฐาน หรือ rate override ช่วงที่แคบที่สุด ห้ามใช้ availability.price)
-[ ] front desk (ไม่มี revenue.manage_rates) ได้ราคาเป็น null และแก้ราคาไม่ได้ แต่เห็นห้องว่างได้
+[x] front desk (ไม่มี revenue.manage_rates) ได้ราคาเป็น null และแก้ราคาไม่ได้ แต่เห็นห้องว่างได้
 [ ] เทสต์: atomic (ห้องหนึ่งผิด ไม่มีอะไรถูกบันทึก), ราคาตรงกับ resolveRateSatang,
     mocked-router test ของ front desk (ราคา null, แก้ราคาโดน FORBIDDEN)
-[ ] commit: feat(availability): save prices and rooms for many room types at once
+[x] commit: feat(availability): save prices and rooms for many room types at once
 
 ======================================================================
 PART 3: หน้าใหม่ มุมมองรายเดือน
@@ -73,27 +73,27 @@ PART 5: แผงด้านข้าง
 [ ] แผงแบบ Agoda / Booking.com: วันเริ่ม - วันสิ้นสุด แล้วการ์ดละ 1 ประเภทห้องที่เลือก
 [ ] แต่ละการ์ด: เปิด/ปิดขาย, จำนวนห้องที่ขาย, ราคา, คืนขั้นต่ำ, ปุ่ม "กลับไปใช้ราคาฐาน"
     (front desk ไม่เห็นช่องราคาและคืนขั้นต่ำ)
-[ ] กดบันทึกครั้งเดียว เรียก procedure ของ PART 2 แล้วปฏิทินอัปเดต
-[ ] error แสดงในแผงเป็นภาษาไทย
-[ ] commit: feat(calendar): side panel to set many room types at once
+[x] กดบันทึกครั้งเดียว เรียก procedure ของ PART 2 แล้วปฏิทินอัปเดต
+[x] error แสดงในแผงเป็นภาษาไทย
+[x] commit: feat(calendar): side panel to set many room types at once
 
 ======================================================================
 PART 6: เมนูและ redirect
 ======================================================================
-[ ] Sidebar เหลือรายการเดียว "ปฏิทินราคาและห้องว่าง" (คำตาม glossary)
-[ ] /dashboard/pricing redirect ไป /hotels/<โรงแรมที่เลือก>/calendar
-[ ] routeScope.ts และ Topbar breadcrumb ตรงกับหน้าใหม่
+[x] Sidebar เหลือรายการเดียว "ปฏิทินราคาและห้องว่าง" (คำตาม glossary)
+[x] /dashboard/pricing redirect ไป /hotels/<โรงแรมที่เลือก>/calendar
+[x] routeScope.ts และ Topbar breadcrumb ตรงกับหน้าใหม่
 [ ] เลิกใช้ AdvancedPricing.tsx (ลบไฟล์และเทสต์ที่ล็อกหน้าเก่า เขียนเหตุผลใน handoff ทีละไฟล์)
-[ ] contract test หน้าใหม่: route, permission gate, สวิตช์ 2 มุมมอง, ไทม์ไลน์ไม่มีราคา, redirect
-[ ] commit: refactor(nav): one calendar entry for prices and rooms
+[x] contract test หน้าใหม่: route, permission gate, สวิตช์ 2 มุมมอง, ไทม์ไลน์ไม่มีราคา, redirect
+[x] commit: refactor(nav): one calendar entry for prices and rooms
 
 ======================================================================
 PART 7: ส่งงาน
 ======================================================================
-[ ] pnpm check ผ่าน (แปะบรรทัดท้ายจริง)
-[ ] pnpm test ทั้งชุดผ่าน (แปะบรรทัดท้ายจริง)
-[ ] pnpm build ผ่าน (แปะบรรทัดท้ายจริง)
-[ ] git add ทีละไฟล์ ห้าม git add -A
+[x] pnpm check ผ่าน (แปะบรรทัดท้ายจริง)
+[x] pnpm test ทั้งชุดผ่าน (แปะบรรทัดท้ายจริง)
+[x] pnpm build ผ่าน (แปะบรรทัดท้ายจริง)
+[x] git add ทีละไฟล์ ห้าม git add -A
 [ ] รายการท้าย .agent/handoff.md: ไฟล์ที่แก้, เทสต์ที่แก้/ลบพร้อมเหตุผล, ตารางคำไทยก่อน/หลัง,
     สิ่งที่ยังไม่ได้ทำ
-[ ] push เฉพาะ branch feat/one-calendar ห้าม push main ห้าม deploy แล้วรายงานกลับ
+[x] push เฉพาะ branch feat/one-calendar ห้าม push main ห้าม deploy แล้วรายงานกลับ
