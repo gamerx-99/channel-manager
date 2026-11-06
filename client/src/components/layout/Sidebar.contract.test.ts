@@ -30,4 +30,9 @@ describe("Sidebar booking engine button", () => {
     expect(sidebar.indexOf('href="/dashboard/financials"')).toBeGreaterThan(systemStart);
     expect(sidebar.indexOf('href="/dashboard/financials"')).toBeGreaterThan(sidebar.indexOf('href="/reports/bookings"'));
   });
+  it("shows each section heading only when its links are visible", () => {
+    expect(sidebar).toContain('communicationsEnabled && can("operations.view_bookings") && <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>');
+    expect(sidebar).toContain('{can("staff.view_shifts") && (');
+    expect(sidebar).toContain('{(settingsItems.length > 0 || can("platform.manage_users") || can("reports.view_bookings") || can("property.view_financials")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}');
+  });
 });

@@ -2,4 +2,7 @@
 .hotel-data-transfer__file { display: none; }
 .hotel-data-transfer__preview { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line, #e6dfd8); }
 .hotel-data-transfer__preview ul { display: grid; gap: 0.5rem; padding-left: 1.25rem; }
+.hotel-data-transfer { padding-bottom: 24px; }
+.hotel-data-transfer > :not(.panel-heading) { margin-left: 24px; margin-right: 24px; }
+@media (max-width: 640px) { .hotel-data-transfer { padding-bottom: 16px; } .hotel-data-transfer > :not(.panel-heading) { margin-left: 16px; margin-right: 16px; } }
 @media (max-width: 375px) { .hotel-data-transfer__actions > button { flex: 1 1 100%; } }

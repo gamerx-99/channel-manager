@@ -49,7 +49,7 @@
 .dashboard-calendar-cell.low strong{color:var(--amber)}
 .dashboard-calendar-cell.closed strong{color:var(--slate)}
 .calendar-sync-marker{position:absolute;right:4px;top:4px;display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--pine-soft);color:var(--pine);font-style:normal}
-.dashboard-calendar-details{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.8fr);gap:18px;padding:18px 22px;background:#fbfaf6;border-bottom:1px solid var(--rule)}
+.dashboard-calendar-details{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.8fr);gap:18px;padding:18px 24px;background:#fbfaf6;border-bottom:1px solid var(--rule)}
 .dashboard-calendar-day-summary h3{margin:0;color:var(--ink);font-family:'Fraunces','Mitr',serif;font-size:19px;font-weight:500;letter-spacing:-.035em}
 .dashboard-calendar-summary-stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;color:var(--ink-muted);font-size:10px}
 .dashboard-calendar-summary-stats strong{color:var(--ink);font-size:15px}
@@ -65,7 +65,7 @@
 .dashboard-calendar-panel .calendar-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 22px;color:var(--ink-muted);font-size:10px}
 .dashboard-calendar-scroll-hint{display:none}
 
-.dashboard-calendar-quick-actions{grid-column:1 / -1;padding-top:16px;border-top:1px solid var(--rule)}
+.dashboard-calendar-quick-actions{grid-column:1 / -1;min-width:0;padding-top:16px;border-top:1px solid var(--rule)}
 .dashboard-calendar-quick-actions-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
 .dashboard-calendar-quick-actions-heading h4{margin:4px 0 0;color:var(--ink);font-family:'Fraunces','Mitr',serif;font-size:16px;font-weight:500;letter-spacing:-.025em}
 .calendar-view-only-note{color:var(--ink-muted);font-size:10px;line-height:1.4;text-align:right}
@@ -208,7 +208,7 @@
   .calendar-property-filter select{flex:1;max-width:none}
   .dashboard-calendar-legend{padding-left:18px;padding-right:18px}
   .dashboard-calendar-scroll-hint{display:flex}
-  .dashboard-calendar-details{grid-template-columns:1fr;padding-left:18px;padding-right:18px}
+  .dashboard-calendar-details{grid-template-columns:1fr;padding-left:16px;padding-right:16px}
   .dashboard-calendar-panel .calendar-footer{align-items:flex-start;flex-direction:column;padding-left:18px;padding-right:18px}
   .dashboard-calendar-quick-actions-heading{flex-direction:column;gap:6px}
   .calendar-view-only-note{text-align:left}

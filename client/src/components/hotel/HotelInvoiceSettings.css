@@ -3,3 +3,6 @@
 .hotel-invoice-form { display: grid; gap: 1rem; }
 .hotel-invoice-switch { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; }
 .hotel-invoice-form textarea { resize: vertical; }
+.hotel-invoice-settings > .field-help { margin: 0; padding: 0 24px; }
+.hotel-invoice-form { padding: 0 24px 24px; }
+@media (max-width: 640px) { .hotel-invoice-settings > .field-help { padding: 0 16px; } .hotel-invoice-form { padding: 0 16px 16px; } }

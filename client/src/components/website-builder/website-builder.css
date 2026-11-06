@@ -7,3 +7,6 @@
 .wb-drag-handle { cursor: grab; touch-action: none; }
 .wb-drag-handle:active { cursor: grabbing; }
 .website-builder-photo-caption{display:block;width:100%;border:1px solid #dce4df;border-radius:6px;padding:6px 8px;font:inherit}
+.website-builder-page > .panel { padding-bottom: 24px; }
+.website-builder-page > .panel > :not(.panel-heading) { margin-left: 24px; margin-right: 24px; }
+@media (max-width: 640px) { .website-builder-page > .panel { padding-bottom: 16px; } .website-builder-page > .panel > :not(.panel-heading) { margin-left: 16px; margin-right: 16px; } }

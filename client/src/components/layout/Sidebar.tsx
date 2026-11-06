@@ -213,7 +213,7 @@ export function Sidebar({
             )}
           </>
         )}
-        <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>
+        {communicationsEnabled && can("operations.view_bookings") && <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>}
         {communicationsEnabled && can("operations.view_bookings") && (
           <Link
             href="/communications"

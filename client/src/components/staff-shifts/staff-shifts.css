@@ -12,4 +12,8 @@
 .staff-member-edit { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; text-align: left; }
 .staff-shift-dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; background: #15221fcc; }
 .staff-shift-dialog { width: min(38rem, 100%); max-height: 90vh; overflow: auto; }
+.staff-shift-dialog > .form-grid { margin: 0; padding: 0 24px; }
+.staff-shift-dialog > .form-submit { padding: 0 24px 24px; }
 @media (max-width: 600px) { .staff-shifts-table { font-size: .68rem; } .staff-shifts-table th, .staff-shifts-table td { padding: .35rem .25rem; } }
+@media (max-width: 600px) { .staff-shift-dialog > .form-grid { padding: 0 16px; } .staff-shift-dialog > .form-submit { padding: 0 16px 16px; } }
+@media (max-width: 600px), (pointer: coarse) { .staff-shift-cell button, .staff-empty-cell { min-width: 32px; min-height: 32px; } }

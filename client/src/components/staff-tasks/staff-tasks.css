@@ -9,6 +9,7 @@
 .staff-task-group:first-of-type { border-top: 0; }
 .staff-task-group h3 { margin: 0; color: var(--ink); font-size: .95rem; }
 .staff-task-list { display: grid; gap: .5rem; }
+.staff-task-my-list .staff-task-list { padding: 0 22px 22px; }
 .staff-task-item { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; padding: .7rem; border: 1px solid var(--line, #e0e7e2); border-radius: .65rem; min-width: 0; }
 .staff-task-item.is-done { background: var(--surface-muted, #f3f6f4); color: var(--ink-muted); }
 .staff-task-item.is-done .staff-task-copy strong { color: var(--ink-muted); text-decoration: line-through; }
@@ -24,6 +25,7 @@
   .staff-tasks-page .page-intro > .button { width: 100%; }
   .staff-task-item { flex-direction: column; }
   .staff-task-group { padding-left: 16px; padding-right: 16px; }
+  .staff-task-my-list .staff-task-list { padding: 0 16px 16px; }
   .staff-task-dialog-body { padding: 0 16px 16px; }
   .staff-task-before-shift { padding: 0 16px 12px; }
   .staff-task-item > button, .staff-task-actions, .staff-task-actions button, .staff-task-add button { width: 100%; }

@@ -29,7 +29,7 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="page-content">
+    <div className="page-content admin-users-page">
       <section className="page-intro intro-split">
         <div>
           <div className="eyebrow">{t('adminUsers.eyebrow')}</div>

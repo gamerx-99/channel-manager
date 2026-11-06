@@ -81,7 +81,7 @@ export default function WebsiteBuilder() {
   }
 
   return (
-    <div className="page-content space-y-7 pb-8">
+    <div className="page-content website-builder-page space-y-7 pb-8">
       <section className="page-intro intro-split">
         <div>
           <h1>{t("websiteBuilder.title")}</h1>

@@ -15,6 +15,9 @@ describe('bookings report page contract', () => {
     expect(page).toContain('bookingsReport.createdBasis');
     expect(page).toContain('bookingsReport.byRoomType');
     expect(page).toContain('bookingsReport.daily');
+    expect(page).toContain('<BarChart data={data.daily}');
+    expect(page).toContain('className="sr-only" aria-label={t(\'bookingsReport.daily\')}');
+    expect(page).not.toContain('bookings-report-daily"><table');
     expect(page).toContain('bookingsReport.exportCsv');
     expect(page).not.toContain('<main');
     expect(read('client/src/pages/BookingsReport.css')).toContain('overflow-x: auto');

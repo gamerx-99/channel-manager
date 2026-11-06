@@ -1,2 +1,5 @@
 .hotel-payment-settings { display: grid; gap: 1rem; }
 .hotel-payment-settings > .panel-heading { margin-bottom: 0; }
+.hotel-payment-settings { padding-bottom: 24px; }
+.hotel-payment-settings > :not(.panel-heading) { margin-left: 24px; margin-right: 24px; min-width: 0; }
+@media (max-width: 640px) { .hotel-payment-settings { padding-bottom: 16px; } .hotel-payment-settings > :not(.panel-heading) { margin-left: 16px; margin-right: 16px; } }
