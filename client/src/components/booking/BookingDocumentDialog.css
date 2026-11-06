@@ -1,0 +1,9 @@
+.booking-document-dialog { max-width: 640px; width: 95vw; display: grid; gap: 1rem; }
+.booking-document-form { display: grid; gap: 1rem; }
+.booking-document-form fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+.booking-document-form legend { font-weight: 600; margin-bottom: 0.25rem; }
+.booking-document-type { display: flex; align-items: center; gap: 0.4rem; }
+.booking-document-form textarea { resize: vertical; }
+.booking-document-list h3 { font-size: 0.95rem; margin: 0 0 0.5rem; }
+.booking-document-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.booking-document-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
