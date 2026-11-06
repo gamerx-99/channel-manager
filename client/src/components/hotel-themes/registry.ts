@@ -5,6 +5,7 @@ import LannaTeakLanding from "./lanna-teak/LannaTeak";
 import CafeHomestayLanding from "./cafe-homestay/CafeHomestay";
 import MountainMistLanding from "./mountain-mist/MountainMist";
 import BoutiqueNoirLanding from "./boutique-noir/BoutiqueNoir";
+import HostelPopLanding from "./hostel-pop/HostelPop";
 import type { ThemeLandingProps } from "./ThemeProps";
 import type { CSSProperties } from "react";
 
@@ -17,6 +18,7 @@ export const HOTEL_THEME_REGISTRY: Record<HotelThemeId, HotelThemeRegistryEntry>
   "cafe-homestay": { landing: CafeHomestayLanding, previewStyle: { "--preview-bg": "#fff8f0", "--preview-surface": "#f2dfc9", "--preview-ink": "#321f12", "--preview-muted": "#7a573d", "--preview-accent": "#a66b4f" } as CSSProperties },
   "mountain-mist": { landing: MountainMistLanding, previewStyle: { "--preview-bg": "#f5fbf8", "--preview-surface": "#e9efec", "--preview-ink": "#171d1b", "--preview-muted": "#424844", "--preview-accent": "#e0a458" } as CSSProperties },
   "boutique-noir": { landing: BoutiqueNoirLanding, previewStyle: { "--preview-bg": "#131313", "--preview-surface": "#201f1f", "--preview-ink": "#e5e2e1", "--preview-muted": "#9a8f81", "--preview-accent": "#b8955a" } as CSSProperties },
+  "hostel-pop": { landing: HostelPopLanding, previewStyle: { "--preview-bg": "#ffd23f", "--preview-surface": "#ffffff", "--preview-ink": "#1b1b1b", "--preview-muted": "#4d4634", "--preview-accent": "#fd5c8e" } as CSSProperties },
 };
 
 export function getHotelThemeRegistryEntry(themeId: unknown): HotelThemeRegistryEntry | undefined {

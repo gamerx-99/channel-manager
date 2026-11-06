@@ -112,9 +112,10 @@ describe("WebsiteBuilder editing", () => {
 
   it("renders the published theme cards and saves a selected theme through the site config mutation", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(5);
-    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Baan", "Baan", "Baan", "Baan", "Baan"]);
-    expect(document.querySelectorAll(".template-card-preview")).toHaveLength(5);
+    expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(6);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Baan", "Baan", "Baan", "Baan", "Baan", "Baan"]);
+    expect(document.querySelectorAll(".template-card-preview")).toHaveLength(6);
+    expect(document.querySelector('button[data-theme-id="hostel-pop"] .template-card-preview')).not.toBeNull();
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
     expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", theme: "lanna-teak", hero_copy: "Old headline" }));
   });
@@ -122,17 +123,18 @@ describe("WebsiteBuilder editing", () => {
   it("shows the localized fallback when the selected hotel has no name", () => {
     hotelsData.current = [{ id: "hotel-1", name: "", slug: "baan", room_types: [], rooms: [] }];
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Your hotel", "Your hotel", "Your hotel", "Your hotel", "Your hotel"]);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Your hotel", "Your hotel", "Your hotel", "Your hotel", "Your hotel", "Your hotel"]);
     cleanup();
     language.current = "th";
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ"]);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ"]);
   });
 
   it("uses the selected hotel's uploaded hero photo in each card preview", () => {
     mediaData.current = [{ id: "hero-1", url: "https://media.example/hotel-hero.jpg", isHero: true, displayOrder: 0 }];
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     expect(Array.from(document.querySelectorAll<HTMLElement>(".template-card-preview .preview-hero"), node => node.style.backgroundImage)).toEqual([
+      'url("https://media.example/hotel-hero.jpg")',
       'url("https://media.example/hotel-hero.jpg")',
       'url("https://media.example/hotel-hero.jpg")',
       'url("https://media.example/hotel-hero.jpg")',

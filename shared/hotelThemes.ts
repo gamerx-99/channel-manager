@@ -4,6 +4,8 @@ export const HOTEL_THEMES = [
   { id: "cafe-homestay", tier: "premium", name: "สไตล์คาเฟ่", description: "นุ่มนวล เป็นกันเอง ในบรรยากาศคาเฟ่", primaryColor: "#a66b4f", buttonBackground: "#8d4e35", buttonText: "#ffffff", highlight: "#c28a65" },
   { id: "mountain-mist", tier: "premium", name: "สไตล์ธรรมชาติ", description: "สงบสดชื่นท่ามกลางธรรมชาติ", primaryColor: "#1f3b2d", buttonBackground: "#e0a458", buttonText: "#1f3b2d", highlight: "#4f6b4a" },
   { id: "boutique-noir", tier: "premium", name: "สไตล์ลักชัวรี", description: "หรูสงบในโทนดำและสีทอง", primaryColor: "#131313", buttonBackground: "#b8955a", buttonText: "#141414", highlight: "#e7c182" },
+  // ASSUMPTION: new owner-designed themes use the existing premium tier.
+  { id: "hostel-pop", tier: "premium", name: "สไตล์ป๊อปอาร์ต", description: "สีสันสดใส สนุก และเป็นกันเอง", primaryColor: "#ffd23f", buttonBackground: "#ffd23f", buttonText: "#000000", highlight: "#fd5c8e" },
 ] as const;
 
 export type HotelThemeId = typeof HOTEL_THEMES[number]["id"];

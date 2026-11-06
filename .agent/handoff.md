@@ -5378,3 +5378,46 @@ Exit 0
 - Added a shared registry test asserting all five exact ID/name pairs. Repository search found no other old Thai display-name occurrences and no English display-name map.
 - Verification: `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm check` — `$ tsc --noEmit`, exit 0. `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm test -- --maxWorkers=3 --minWorkers=1` — 254 files passed, 1,730 tests passed, exit 0.
 - No commit, push, deploy, or migration operation.
+
+## 2026-11-07 — Hostel Pop public theme
+
+- Added the owner-designed Hostel Pop landing and scoped stylesheet, registered it as a premium theme and added a distinct website-builder card preview. The theme uses the shared room/media/hero/contact/map data, booking links, fixed yellow/black button palette, six-photo limit, and `PoweredByHayhost`. Loaded Epilogue, Space Grotesk, and Kanit through the existing theme font loader.
+- The original neo-brutalist layout and yellow/pink/cyan decorative palette remain. Integration deviations: booking URLs use `bookingLink`; booking buttons use the fixed theme yellow/black palette instead of mixed pink/white states; photos honor the builder focal positions through runtime CSS variables; mobile header, grid, stickers, and sticky bar gained 375px overflow fixes; the footer credit uses the shared component. The original design HTML’s external sample photos and Material Symbols were not used.
+- Added all 30 keys from the source translation table to Thai and English. `docs/thai-glossary.md` and its banned-term test were checked; none of the source phrases needed replacement. Thai before → after:
+
+| Key | Before (th) | After (th) |
+|---|---|---|
+| `hotelThemes.hostelPop.mainNav` | — (new theme) | เมนูหลัก |
+| `hotelThemes.hostelPop.navRooms` | — (new theme) | ห้องพัก |
+| `hotelThemes.hostelPop.navGallery` | — (new theme) | รูปที่พัก |
+| `hotelThemes.hostelPop.navLocation` | — (new theme) | แผนที่ & ที่ตั้ง |
+| `hotelThemes.hostelPop.language` | — (new theme) | เปลี่ยนภาษา |
+| `hotelThemes.hostelPop.bookNow` | — (new theme) | จองเลย! |
+| `hotelThemes.hostelPop.heroBadge1` | — (new theme) | แบ็คแพ็คเกอร์ตัวจริง! |
+| `hotelThemes.hostelPop.heroBadge2` | — (new theme) | ไวบ์ดีสุด ๆ! |
+| `hotelThemes.hostelPop.heroBadge3` | — (new theme) | ใกล้ที่เที่ยวฮิต! |
+| `hotelThemes.hostelPop.heroPhotoBadge` | — (new theme) | วิวดาดฟ้าสุดปัง! |
+| `hotelThemes.hostelPop.storyEyebrow` | — (new theme) | สไตล์ของเรา |
+| `hotelThemes.hostelPop.story` | — (new theme) | ยินดีต้อนรับสู่โฮสเทล! |
+| `hotelThemes.hostelPop.storyBody` | — (new theme) | พื้นที่พบปะของนักเดินทางจากทั่วโลก นอนสบาย เป็นกันเอง ปลอดภัย พร้อมพื้นที่ส่วนกลางและดาดฟ้าชมพระอาทิตย์ตกสุดชิลล์ |
+| `hotelThemes.hostelPop.roomsEyebrow` | — (new theme) | เลือกห้องนอนกัน |
+| `hotelThemes.hostelPop.rooms` | — (new theme) | ห้องพักและพอดนอน |
+| `hotelThemes.hostelPop.roomsSubtitle` | — (new theme) | เตียงนุ่ม แอร์เย็น มีม่านส่วนตัว ล็อกเกอร์ และที่ชาร์จไฟครบครัน |
+| `hotelThemes.hostelPop.sleeps` | — (new theme) | พักได้ |
+| `hotelThemes.hostelPop.persons` | — (new theme) | คน |
+| `hotelThemes.hostelPop.from` | — (new theme) | เริ่มต้น |
+| `hotelThemes.hostelPop.currency` | — (new theme) | ฿ |
+| `hotelThemes.hostelPop.perNight` | — (new theme) | / คืน |
+| `hotelThemes.hostelPop.select` | — (new theme) | เลือกห้องนี้ |
+| `hotelThemes.hostelPop.galleryEyebrow` | — (new theme) | ชมบรรยากาศ |
+| `hotelThemes.hostelPop.gallery` | — (new theme) | ชีวิตที่โฮสเทล |
+| `hotelThemes.hostelPop.gallerySubtitle` | — (new theme) | รวมมุมชิลล์ พื้นที่ส่วนกลาง และโมเมนต์สนุก ๆ ของพวกเรา |
+| `hotelThemes.hostelPop.locationEyebrow` | — (new theme) | เดินทางง่ายมาก |
+| `hotelThemes.hostelPop.location` | — (new theme) | พิกัดใจกลางเมือง |
+| `hotelThemes.hostelPop.locationSubtitle` | — (new theme) | เดินทางสะดวก ใกล้ตลาดและย่านคาเฟ่ยอดฮิต |
+| `hotelThemes.hostelPop.pinLabel` | — (new theme) | เราอยู่ที่นี่! |
+| `hotelThemes.hostelPop.poweredBy` | — (new theme) | จองผ่าน hayhost |
+
+- 375px verification: local Chrome CDP preview measured `innerWidth=375`, `document.documentElement.scrollWidth=375`, and `document.body.scrollWidth=375`; header language control, hero CTA/photo, and sticky booking button were visible.
+- Verification: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 255 files and 1,735 tests passed, exit 0. `pnpm build` → Vite built and Wrangler `--dry-run: exiting now.`, exit 0 (existing chunk-size and no-target-environment warnings). `git diff --check` → no output, exit 0.
+- Removed the temporary `design/themes/06-hostel-pop/out/` handoff folder. No migration, commit, push, or deploy.

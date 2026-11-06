@@ -6,6 +6,7 @@ import LannaTeak from "./lanna-teak/LannaTeak";
 import CafeHomestay from "./cafe-homestay/CafeHomestay";
 import MountainMist from "./mountain-mist/MountainMist";
 import BoutiqueNoir from "./boutique-noir/BoutiqueNoir";
+import HostelPop from "./hostel-pop/HostelPop";
 
 describe("hotel theme registry", () => {
   it.each([
@@ -14,6 +15,7 @@ describe("hotel theme registry", () => {
     ["cafe-homestay", CafeHomestay],
     ["mountain-mist", MountainMist],
     ["boutique-noir", BoutiqueNoir],
+    ["hostel-pop", HostelPop],
   ] as const)("returns the landing for %s", (id, component) => {
     expect(getHotelThemeRegistryEntry(id)?.landing).toBe(component);
   });

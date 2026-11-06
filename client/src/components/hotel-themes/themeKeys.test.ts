@@ -6,7 +6,7 @@ import th from '../../lib/i18n/th';
 import en from '../../lib/i18n/en';
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const themeFiles = ['minimal-white/MinimalWhite.tsx', 'lanna-teak/LannaTeak.tsx', 'cafe-homestay/CafeHomestay.tsx', 'mountain-mist/MountainMist.tsx', 'boutique-noir/BoutiqueNoir.tsx'];
+const themeFiles = ['minimal-white/MinimalWhite.tsx', 'lanna-teak/LannaTeak.tsx', 'cafe-homestay/CafeHomestay.tsx', 'mountain-mist/MountainMist.tsx', 'boutique-noir/BoutiqueNoir.tsx', 'hostel-pop/HostelPop.tsx'];
 
 function collectKeys(): Set<string> {
   const keys = new Set<string>();
@@ -15,9 +15,14 @@ function collectKeys(): Set<string> {
     const src = readFileSync(resolve(dir, file), 'utf8');
     let m: RegExpExecArray | null;
     while ((m = re.exec(src)) !== null) keys.add(m[1]);
-    if (file.includes("BoutiqueNoir")) {
+    if (file.includes("HostelPop")) {
+      const table = src.split("*/", 1)[0];
+      const row = /^\s*\*\s*([a-z][a-zA-Z0-9]*)\s*\|/gm;
+      while ((m = row.exec(table)) !== null) if (m[1] !== "key") keys.add(`hostelPop.${m[1]}`);
+    }
+    if (file.includes("BoutiqueNoir") || file.includes("HostelPop")) {
       const helper = /tt\("([a-zA-Z0-9_.]+)"/g;
-      while ((m = helper.exec(src)) !== null) keys.add(`boutiqueNoir.${m[1]}`);
+      while ((m = helper.exec(src)) !== null) keys.add(`${file.includes("HostelPop") ? "hostelPop" : "boutiqueNoir"}.${m[1]}`);
     }
   }
   for (const suffix of ["mainNav", "navRooms", "navGallery", "navLocation", "language", "bookNow", "storyEyebrow", "story", "storyBody", "roomsEyebrow", "rooms", "sleeps", "persons", "from", "currency", "perNight", "select", "galleryEyebrow", "gallery", "locationEyebrow", "location", "poweredBy"]) keys.add(`mountainMist.${suffix}`);

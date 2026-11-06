@@ -9,17 +9,22 @@ describe("hotel theme colours", () => {
       ["cafe-homestay", "สไตล์คาเฟ่"],
       ["mountain-mist", "สไตล์ธรรมชาติ"],
       ["boutique-noir", "สไตล์ลักชัวรี"],
+      ["hostel-pop", "สไตล์ป๊อปอาร์ต"],
     ]);
   });
 
   it("defines readable fixed button and highlight colours for every theme", () => {
-    expect(HOTEL_THEMES).toHaveLength(5);
+    expect(HOTEL_THEMES).toHaveLength(6);
     for (const theme of HOTEL_THEMES) {
       expect(theme.buttonBackground).toMatch(/^#[0-9a-f]{6}$/i);
       expect(theme.buttonText).toMatch(/^#[0-9a-f]{6}$/i);
       expect(theme.highlight).toMatch(/^#[0-9a-f]{6}$/i);
-      expect(theme.buttonText).toBe(theme.id === "mountain-mist" ? "#1f3b2d" : theme.id === "boutique-noir" ? "#141414" : "#ffffff");
+      expect(theme.buttonText).toBe(theme.id === "mountain-mist" ? "#1f3b2d" : theme.id === "boutique-noir" ? "#141414" : theme.id === "hostel-pop" ? "#000000" : "#ffffff");
     }
+  });
+
+  it("registers Hostel Pop as a premium theme with the design palette", () => {
+    expect(HOTEL_THEMES.find(theme => theme.id === "hostel-pop")).toMatchObject({ tier: "premium", buttonBackground: "#ffd23f", buttonText: "#000000", highlight: "#fd5c8e" });
   });
 
   it("uses hayhost colours when the hotel has no recognized theme", () => {
