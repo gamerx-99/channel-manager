@@ -34,6 +34,7 @@ export function getRequiredRoutePermission(pathname: string): Permission | null 
   if (pathname.includes("/support-access")) return "property.manage_support_access";
   if (pathname === "/hotels") return "platform.view_all_hotels";
   if (pathname.startsWith("/dashboard/financials")) return "property.view_financials";
+  if (pathname.startsWith("/reports/bookings")) return "reports.view_bookings";
   if (pathname.startsWith("/communications")) return "operations.view_bookings";
   if (pathname.startsWith("/housekeeping") || pathname.startsWith("/dashboard/housekeeping")) return "housekeeping.view_room_status";
   if (pathname.startsWith("/staff-shifts")) return "staff.view_shifts";

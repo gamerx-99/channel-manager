@@ -68,6 +68,7 @@ export const PERMISSIONS = [
   "property.transfer_ownership",
   "property.close_hotel",
   "property.view_reports",
+  "reports.view_bookings",
   "property.view_financials",
   "revenue.manage_rates",
   "revenue.manage_pricing_rules",
@@ -108,7 +109,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   // only the hotel_owner can see a property's revenue — not even the platform operator.
   // Closing a hotel and taking its guest data out is the owner's alone in the same way.
   super_admin: PERMISSIONS.filter(
-    permission => !permission.startsWith("service.") && permission !== "property.view_financials" && permission !== "property.close_hotel",
+    permission => !permission.startsWith("service.") && permission !== "property.view_financials" && permission !== "reports.view_bookings" && permission !== "property.close_hotel",
   ),
   // Platform operations / support: cross-hotel READ only. Every write capability is
   // withheld here and at the database layer, where `admin` is granted nothing beyond
@@ -129,6 +130,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "property.manage_room_structure",
     "property.manage_staff",
     "property.view_reports",
+    "reports.view_bookings",
     "property.view_financials",
     "operations.view_bookings",
     "operations.manage_bookings",
@@ -167,6 +169,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   ],
   front_desk: [
     "property.view",
+    "reports.view_bookings",
     "operations.view_bookings",
     "operations.manage_bookings",
     "operations.manage_guests",

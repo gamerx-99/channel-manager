@@ -54,6 +54,7 @@ export const PERMISSION_TOGGLES = [
   { key: "ota_manage", permissions: ["ota.manage_ical_connection", "ota.trigger_ical_sync"], requires: ["ota_view"] },
   { key: "property_setup", permissions: ["property.manage_profile", "property.manage_room_structure"] },
   { key: "reports", permissions: ["property.view_reports"] },
+  { key: "bookings_report", permissions: ["reports.view_bookings"], requires: ["bookings_view"] },
   { key: "financials", permissions: ["property.view_financials"], ownerGrantOnly: true },
   { key: "staff", permissions: ["property.manage_staff"], ownerGrantOnly: true },
 ] as const satisfies readonly PermissionToggle[];

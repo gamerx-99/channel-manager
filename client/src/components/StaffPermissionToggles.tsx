@@ -10,7 +10,7 @@ const labelKeys: Record<(typeof PERMISSION_TOGGLES)[number]["key"], TranslationK
   staff_shifts_view: "hotelStaff.permStaffShiftsView", staff_shifts_manage: "hotelStaff.permStaffShiftsManage",
   staff_tasks_manage: "hotelStaff.permStaffTasksManage", staff_tasks_view: "hotelStaff.permStaffTasksView",
   rates: "hotelStaff.permRates", ota_view: "hotelStaff.permOtaView", ota_manage: "hotelStaff.permOtaManage",
-  property_setup: "hotelStaff.permPropertySetup", reports: "hotelStaff.permReports", financials: "hotelStaff.permFinancials", staff: "hotelStaff.permStaff",
+  property_setup: "hotelStaff.permPropertySetup", reports: "hotelStaff.permReports", bookings_report: "hotelStaff.permBookingsReport", financials: "hotelStaff.permFinancials", staff: "hotelStaff.permStaff",
 };
 
 export function StaffPermissionToggles({ hotelId, target, targetLabel, actor, onSaved }: {

@@ -5624,3 +5624,32 @@ Exit 0
 - Verification on the final code: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 258 test files passed, 1,749 tests passed, exit 0 (TEMP/TMP inside the worktree because the default temp directory is sandbox-blocked). `pnpm build` → Vite transformed 3,612 modules and Wrangler ended with `--dry-run: exiting now.`, exit 0. Wrangler could not write its optional log outside the worktree (EPERM), but the dry-run completed. `git diff --check` → exit 0.
 - Mobile document-width measurements: **not obtained** at either 320px or 375px. The connected browser host was unavailable; the browser-skill daemon could not discover its home directory, and computer-use approval rejected opening local Chrome. Responsive CSS has a 768px single-column layout, a 375px tightening rule and a clipped theme root, but those rules do not prove the measured document width. Reviewer verdict: REJECT solely for this open acceptance check, after the code findings (story paragraph and room price assertion) were fixed.
 - No commit, push, deploy or migration.
+
+## 2026-11-07 — Reports in the system menu (`feat/reports`)
+
+- Moved the existing `/dashboard/financials` link into the system section as “รายงานการเงิน” / “Financial report”. The old URL and paid Thai-day revenue logic remain in place.
+- Added `/reports/bookings` for the selected hotel with month and custom periods, stay/booking-date mode, summary metrics, room type/source/status breakdowns, daily sold nights, booking rows and CSV. The report has a named permission in the route, sidebar, router, and scoped D1 repository. The dedicated staff switch requires booking-view permission.
+- Corrected room revenue and ADR to subtract `booking_services` from the booking total in satang. The booking table shows the full amount for standing bookings, zero for cancelled rows. Assumptions about created-date occupancy, maintenance capacity and table amount are recorded in `.agent/OPEN_QUESTIONS.md`.
+- Thai copy before → after (new keys had no prior copy):
+
+| Key(s) | Before | After |
+|---|---|---|
+| `sidebar.financials`, `breadcrumb.financials` | การเงิน | รายงานการเงิน |
+| `financials.title` | การเงินและรายได้ | รายงานการเงิน |
+| `sidebar.bookingsReport`, `breadcrumb.bookingsReport`, `bookingsReport.title`, `hotelStaff.permBookingsReport` | — | รายงานการจองห้องพัก |
+| `bookingsReport.eyebrow`, `.lede`, `.noHotel`, `.loading`, `.error` | — | รายงาน; ดูการจองและคืนที่ขายได้ของที่พักที่เลือก; เลือกที่พักเพื่อดูรายงาน; กำลังโหลดรายงานการจองห้องพัก; โหลดรายงานการจองห้องพักไม่สำเร็จ |
+| `bookingsReport.period`, `.customRange`, `.from`, `.to`, `.apply`, `.createdBasis` | — | ช่วงเวลา; กำหนดช่วงวัน; ตั้งแต่; ถึง; แสดงผล; นับตามวันที่จอง |
+| `bookingsReport.summary`, `.bookings`, `.roomNights`, `.occupancy`, `.adr`, `.cancelled`, `.averageStay`, `.averageLead` | — | สรุปการจอง; การจอง; คืนที่ขายได้; อัตราการเข้าพัก; ราคาห้องพักเฉลี่ยต่อคืน; การจองที่ยกเลิก; จำนวนคืนเฉลี่ยต่อการจอง; จองล่วงหน้าเฉลี่ย (วัน) |
+| `bookingsReport.byRoomType`, `.bySource`, `.byStatus`, `.nights`, `.revenue`, `.share`, `.daily`, `.date` | — | แยกตามประเภทห้องพัก; แยกตามช่องทางจอง; แยกตามสถานะ; คืน; รายได้ค่าห้อง; สัดส่วน; คืนที่ขายได้รายวัน; วันที่ |
+| `bookingsReport.table`, `.exportCsv`, `.reference`, `.guest`, `.roomType`, `.checkIn`, `.checkOut`, `.status`, `.amount`, `.empty` | — | รายการจองในช่วงเวลา; ดาวน์โหลด CSV; รหัสจอง; ชื่อผู้เข้าพัก; ประเภทห้องพัก; วันเข้าพัก; วันออก; สถานะ; ยอดเงิน; ไม่มีการจองในช่วงเวลานี้ |
+| `bookingsReport.status_*`, `.source_*` | — | สถานะการจองและช่องทางจองที่ตรงกับข้อมูลในระบบ (ดูค่าทั้งหมดใน `th.ts`) |
+
+- Verification output: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → **262 test files passed, 1,764 tests passed**, exit 0; a CSV unit test added during that run separately passed **1 file, 1 test**. TEMP/TMP pointed to `.tmp-tests` inside the worktree because the default temp path is blocked. `pnpm build` → Vite transformed **3,615 modules**; Wrangler ended `--dry-run: exiting now.`, exit 0. `git diff --check` → exit 0. Independent reviewer verdict: **APPROVE** after the service-revenue correction.
+- No migration, commit, push or deploy. A rendered 375px browser-width check was not available; responsive CSS stacks cards and keeps tables inside scrollable wrappers.
+
+## 2026-11-07 - Reports reviewer access fix (`feat/reports`)
+
+- The bookings report router now applies the financial report's `requireFinancialsAccess` check to the selected hotel. Callers with bookings-report access but without financial access receive a payload with no ADR, revenue, revenue share or booking amount keys. The aggregator omits these keys before serialization; the page omits the matching cards and columns, and CSV omits the amount column.
+- Removed `property.view_reports` from the front desk template while retaining `reports.view_bookings`. Added aggregation, mocked-router and CSV tests for the count-only response; the owner response retains money fields.
+- `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 263 test files passed, 1,768 tests passed, exit 0 (TEMP/TMP inside worktree). `pnpm build` -> Vite transformed 3,615 modules; Wrangler ended `--dry-run: exiting now.`, exit 0. Wrangler's optional log write reported EPERM outside the worktree. `git diff --check` -> exit 0.
+- Rendered 375px browser verification was unavailable. CSS inspection confirms each table has a wrapper with `overflow-x: auto`, the report grid becomes one column below 768px, and metric cards become one column at 375px. Cleanup of `.tmp-tests/node-compile-cache` was attempted twice and both recursive deletion commands were rejected by workspace policy; the generated folder remains untracked. No commit, push or deploy.

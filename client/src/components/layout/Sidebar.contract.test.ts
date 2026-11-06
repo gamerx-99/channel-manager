@@ -24,4 +24,10 @@ describe("Sidebar booking engine button", () => {
   it("has no Channel analytics link", () => {
     expect(sidebar).not.toContain("/dashboard/channels");
   });
+  it("places both report links in the system section", () => {
+    const systemStart = sidebar.indexOf('t("sidebar.system")');
+    expect(sidebar.indexOf('href="/reports/bookings"')).toBeGreaterThan(systemStart);
+    expect(sidebar.indexOf('href="/dashboard/financials"')).toBeGreaterThan(systemStart);
+    expect(sidebar.indexOf('href="/dashboard/financials"')).toBeGreaterThan(sidebar.indexOf('href="/reports/bookings"'));
+  });
 });

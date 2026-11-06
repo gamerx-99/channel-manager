@@ -10,6 +10,10 @@ Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+## Reports (2026-11-07)
+- [ ] In created-date mode, should nights sold and occupancy use the full stay of bookings created in the period? `ASSUMPTION:` yes; the daily table places those nights on the booking's Thai creation day. Raised 2026-11-07.
+- [ ] Should maintenance rooms reduce historical occupancy capacity by each affected night? `ASSUMPTION:` current maintenance status applies across the selected period because no dated maintenance history exists. Raised 2026-11-07.
+- [ ] Should the bookings table amount show the whole booking or only the nights in the period, and what should cancelled rows show? `ASSUMPTION:` the whole booking amount for standing rows and zero for cancelled rows; room revenue breakdowns allocate revenue across stay nights. These money fields appear only when the caller passes the financial report's `property.view_financials` check for the selected hotel. Raised 2026-11-07; access clarification 2026-11-07.
 ## Staff daily tasks (2026-11-06)
 - [ ] `ASSUMPTION:` undone tasks from earlier Thai dates remain visible to the assignee until completed. Raised 2026-11-06; implemented in `shared/staffTaskVisibility.ts`.
 ## Spec 15 — invoicing and tax (2026-11-05)

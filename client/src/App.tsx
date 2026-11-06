@@ -10,6 +10,7 @@ import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Home";
 import Financials from "./pages/Financials";
+import BookingsReport from "./pages/BookingsReport";
 import Housekeeping from "./pages/Housekeeping";
 import StaffShifts from "./pages/StaffShifts";
 import StaffTasks from "./pages/StaffTasks";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
+      <Route path="/reports/bookings"><PrivateRoute><BookingsReport /></PrivateRoute></Route>
       <Route path="/hotels/:id/billing"><PrivateRoute><SubscriptionPlan /></PrivateRoute></Route>
       <Route path="/dashboard/pricing">
         <PrivateRoute><PricingRedirect /></PrivateRoute>

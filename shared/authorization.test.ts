@@ -88,6 +88,12 @@ describe("seven-role authorization matrix", () => {
     }
   });
 
+  it("defaults the bookings report to the owner and booking-view staff only", () => {
+    for (const role of APP_ROLES) {
+      expect(roleHasPermission(role, "reports.view_bookings")).toBe(role === "hotel_owner" || role === "front_desk");
+    }
+  });
+
   it("grants platform.manage_signup_links to super_admin only", () => {
     for (const role of APP_ROLES) {
       expect(roleHasPermission(role, "platform.manage_signup_links")).toBe(role === "super_admin");

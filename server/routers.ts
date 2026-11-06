@@ -7,6 +7,7 @@ import { notificationsRouter } from './routers/notificationsRouter';
 import { authRouter } from './routers/authRouter';
 import { hotelClosureRouter } from './routers/hotelClosureRouter';
 import { bookingDocumentsRouter } from './routers/bookingDocumentsRouter';
+import { bookingsReport } from './routers/bookingsReportRouter';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
 import { subscriptionBillingRouter } from './subscriptionBillingRouter';
@@ -112,6 +113,7 @@ export const appRouter = router({
   channelManager: router({
     dashboard,
       financials,
+    bookingsReport,
     dashboardCalendar,
     hotels,
     canCreateHotel,

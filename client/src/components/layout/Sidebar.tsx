@@ -214,16 +214,6 @@ export function Sidebar({
           </>
         )}
         <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>
-        {can("property.view_financials") && (
-          <Link
-            href="/dashboard/financials"
-            className={`nav-link ${location === "/dashboard/financials" ? "active" : ""}`}
-            onClick={() => onClose()}
-          >
-            <BarChart3 size={17} strokeWidth={location === "/dashboard/financials" ? 2.3 : 1.8} />
-            <span>{t("sidebar.financials")}</span>
-          </Link>
-        )}
         {communicationsEnabled && can("operations.view_bookings") && (
           <Link
             href="/communications"
@@ -258,7 +248,9 @@ export function Sidebar({
             <span>{t("sidebar.websiteBuilder")}</span>
           </Link>
         )}
-        {(settingsItems.length > 0 || can("platform.manage_users")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}
+        {(settingsItems.length > 0 || can("platform.manage_users") || can("reports.view_bookings") || can("property.view_financials")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}
+        {can("reports.view_bookings") && <Link href="/reports/bookings" className={`nav-link ${location === "/reports/bookings" ? "active" : ""}`} onClick={() => onClose()}><BarChart3 size={17} /><span>{t("sidebar.bookingsReport")}</span></Link>}
+        {can("property.view_financials") && <Link href="/dashboard/financials" className={`nav-link ${location === "/dashboard/financials" ? "active" : ""}`} onClick={() => onClose()}><BarChart3 size={17} /><span>{t("sidebar.financials")}</span></Link>}
         {settingsItems.length > 0 && (
           <>
             <button
