@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import "@/components/public-hotel/public-hotel.css";
 import "@/components/public-hotel/public-booking-page.css";
 import { PoweredByHayhost } from "@/components/hotel-themes/PoweredByHayhost";
+import BookingReassurance from "@/components/public-hotel/BookingReassurance";
 import { usePublicBookingPage } from "@/components/public-hotel/usePublicBookingPage";
 
 export default function PublicBooking({ slug }: { slug: string }) {
@@ -27,6 +28,16 @@ export default function PublicBooking({ slug }: { slug: string }) {
         </div>
       </header>
       <main className="booking-page-main">
+        <BookingReassurance
+          t={t}
+          hotelName={hotel.name}
+          address={hotel.address}
+          phone={hotel.public_phone}
+          lineUrl={hotel.line_url}
+          facebookUrl={hotel.facebook_url}
+          instagramUrl={hotel.instagram_url}
+          xUrl={hotel.x_url}
+        />
       </main>
       <footer className="booking-page-footer">
         <span>{hotel.name}</span>

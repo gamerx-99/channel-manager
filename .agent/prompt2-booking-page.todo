@@ -31,14 +31,14 @@ PART 1: route และหน้าเปล่า
 ======================================================================
 PART 2: แถบให้แขกสบายใจ
 ======================================================================
-[ ] บนสุดก่อนขั้นตอนจอง:
+[x] บนสุดก่อนขั้นตอนจอง:
     บรรทัด 1: "ท่านกำลังจองห้องพักกับ {ชื่อที่พัก}"
     บรรทัด 2: "หากมีข้อสงสัยหรือพบปัญหา ติดต่อที่พักได้โดยตรง"
-[ ] ตามด้วยที่อยู่ (แสดงเสมอ) และ HotelContactsList (โทร, LINE, Facebook, Instagram, X)
+[x] ตามด้วยที่อยู่ (แสดงเสมอ) และ HotelContactsList (โทร, LINE, Facebook, Instagram, X)
     ข้อมูลมาจาก publicHotel ซึ่งส่งมาเฉพาะช่องที่โรงแรมเปิดแสดงแล้ว ห้ามเช็ก show_* ซ้ำฝั่ง client
-[ ] เพิ่ม key ทั้ง th.ts และ en.ts ตาม docs/thai-glossary.md
-[ ] contract test: มีข้อความทั้ง 2 บรรทัด มีที่อยู่ มี HotelContactsList
-[ ] commit: feat(booking): reassurance banner with hotel contacts
+[x] เพิ่ม key ทั้ง th.ts และ en.ts ตาม docs/thai-glossary.md
+[x] contract test: มีข้อความทั้ง 2 บรรทัด มีที่อยู่ มี HotelContactsList
+[x] commit: feat(booking): reassurance banner with hotel contacts
 
 ======================================================================
 PART 3: ขั้นตอนจองในหน้าใหม่
