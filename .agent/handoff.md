@@ -4940,3 +4940,14 @@ Not tested in a browser or with a real email.
 - Implemented shared/rateRangeSplit.ts pure function with tests.
 - Full UI (unified calendar page, month/timeline switch, side panel, nav/redirect) pending due to scope.
 - Thai copy: no changes.
+
+## 2026-11-06 feat/one-calendar — PART 2 server corrections
+
+- Corrected `saveCalendarRange` permission handling so allotment-only writes require `revenue.manage_allotment`; the router preserves `undefined` for an omitted minimum stay.
+- Null price is a no-op. Minimum-stay-only edits resolve every selected night with `resolveRateSatang`, preserve nightly prices, and write contiguous replacement segments through `splitRateRanges`.
+- `listCalendarForHotel` continues to use `resolveRateSatang`; its booking query now includes occupancy on the inclusive final calendar date, and days without availability rows remain open while booked inventory is subtracted.
+- Added D1 regressions for all-or-nothing validation, null prices, base-range split, separate override prices with minimum-stay-only, allotment-only permission, open missing rows, booked inventory, and equal-width override resolution. Added mocked-router coverage for front desk null prices / forbidden price writes.
+- Files: `server/d1/availability.ts`, `server/d1/availability.batch.test.ts`, `server/routers/availabilityRouter.ts`, `server/availabilityCalendar.access.test.ts`, `shared/rateRangeSplit.ts`, `shared/rateRangeSplit.test.ts`, `.agent/prompt3-one-calendar.todo`.
+- Verification: targeted Vitest suite passed (pending final full-suite verification); `pnpm check` passed (exit 0).
+- Thai copy before → after: no UI copy changed.
+- PARTS 3–7 remain in progress.

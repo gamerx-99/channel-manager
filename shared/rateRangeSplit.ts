@@ -23,37 +23,43 @@ export interface SplitResult {
 // Returns ids to delete and rows to create, all non-overlapping.
 export function splitRateRanges(
   existing: RateRange[],
-  next: NewRateRange | null,
+  next: NewRateRange | NewRateRange[] | null,
 ): SplitResult {
   const deleteIds: string[] = [];
   const create: NewRateRange[] = [];
-  if (next === null) {
+  if (next === null || (Array.isArray(next) && next.length === 0)) {
     return { deleteIds: [], create: [] };
   }
 
-  const baseMode = next.base === true || next.override_price === undefined;
+  const replacements = Array.isArray(next) ? next : [next];
+  const selectionStart = replacements[0]!.start_date;
+  const selectionEnd = replacements[replacements.length - 1]!.end_date;
+  const baseMode = !Array.isArray(next) && (next.base === true || next.override_price === undefined);
 
   for (const r of existing) {
-    if (r.end_date < next.start_date || r.start_date > next.end_date) {
+    if (r.end_date < selectionStart || r.start_date > selectionEnd) {
       continue;
     }
     deleteIds.push(r.id);
-    if (r.start_date < next.start_date) {
-      const end = prevDay(next.start_date);
+    if (r.start_date < selectionStart) {
+      const end = prevDay(selectionStart);
       if (r.start_date <= end) {
         create.push({ start_date: r.start_date, end_date: end, override_price: r.override_price, min_stay_nights: r.min_stay_nights });
       }
     }
-    if (r.end_date > next.end_date) {
-      const start = nextDay(next.end_date);
+    if (r.end_date > selectionEnd) {
+      const start = nextDay(selectionEnd);
       if (start <= r.end_date) {
         create.push({ start_date: start, end_date: r.end_date, override_price: r.override_price, min_stay_nights: r.min_stay_nights });
       }
     }
   }
 
-  if (!baseMode && next.override_price !== undefined) {
-    create.push({ start_date: next.start_date, end_date: next.end_date, override_price: next.override_price, min_stay_nights: next.min_stay_nights ?? null });
+  if (!baseMode) {
+    for (const replacement of replacements) {
+      if (replacement.override_price === undefined) continue;
+      create.push({ start_date: replacement.start_date, end_date: replacement.end_date, override_price: replacement.override_price, min_stay_nights: replacement.min_stay_nights ?? null });
+    }
   }
 
   // sort by start

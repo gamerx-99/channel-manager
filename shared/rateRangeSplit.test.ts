@@ -55,4 +55,16 @@ describe('splitRateRanges', () => {
     expect(res.create[0].min_stay_nights).toBe(3);
     expect(res.create[2].min_stay_nights).toBe(3);
   });
+  it('replaces a range with multiple adjacent price-preserving segments', () => {
+    const res = splitRateRanges([R('a', '2026-01-01', '2026-01-10', '90.00')], [
+      { start_date: '2026-01-03', end_date: '2026-01-04', override_price: '100.00', min_stay_nights: 2 },
+      { start_date: '2026-01-05', end_date: '2026-01-06', override_price: '120.00', min_stay_nights: 2 },
+    ]);
+    expect(res).toEqual({ deleteIds: ['a'], create: [
+      { start_date: '2026-01-01', end_date: '2026-01-02', override_price: '90.00', min_stay_nights: null },
+      { start_date: '2026-01-03', end_date: '2026-01-04', override_price: '100.00', min_stay_nights: 2 },
+      { start_date: '2026-01-05', end_date: '2026-01-06', override_price: '120.00', min_stay_nights: 2 },
+      { start_date: '2026-01-07', end_date: '2026-01-10', override_price: '90.00', min_stay_nights: null },
+    ] });
+  });
 });

@@ -216,7 +216,7 @@ export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOv
 });
 
 export const saveCalendarRangeProcedure = protectedProcedure.input(saveCalendarRangeSchema).mutation(async ({ ctx, input }) => {
-  const touchesPrice = input.price !== undefined || input.base === true || input.min_stay_nights !== undefined;
+  const touchesPrice = (input.price !== undefined && input.price !== null) || input.base === true || input.min_stay_nights !== undefined;
   if (touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_rates');
   if (input.rooms_available !== undefined) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
   if (input.rooms_available === undefined && !touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
@@ -229,7 +229,7 @@ export const saveCalendarRangeProcedure = protectedProcedure.input(saveCalendarR
       endDate: input.end_date,
       roomsAvailable: input.rooms_available ?? null,
       price: input.price === undefined ? undefined : (input.price === null ? null : String(input.price)),
-      minStayNights: input.min_stay_nights ?? null,
+      minStayNights: input.min_stay_nights,
       base: input.base,
     });
   } catch (error) {
