@@ -5122,3 +5122,10 @@ Also: the line under each photo "ลำดับการแสดง N" now sho
 
 - `pnpm build` completed the Wrangler dry run; no deployment or migration was run. The build emitted a large-chunk advisory for the 1,291.21 kB main JS bundle.
 - No remaining PART 3–7 work. All commits were staged by explicitly naming files; the two existing untracked items `.agents/` and `shared/roomAmenities.adversarial.test.ts` were left untouched.
+
+## 2026-11-06 fix/theme-switch — theme picker validation feedback
+
+- **Cause:** `handleSaveTheme` calls `draftProblem()`, which can reject theme selection because of invalid unsaved hero copy or accent color. The error was rendered only in the lower Content section, making the theme picker appear unresponsive.
+- **Change:** Show the existing translated validation error next to the theme cards. Added a picker regression test and updated the page test to assert the alert in the picker specifically.
+- **Verification:** `pnpm check` passed; `pnpm test` passed (229 files, 1,616 tests); `pnpm build` passed including Wrangler `--dry-run` (exit code 0).
+- **Commit:** pending.

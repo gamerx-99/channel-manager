@@ -109,7 +109,7 @@ describe("WebsiteBuilder editing", () => {
     fireEvent.change(document.getElementById("wb-hero-copy") as HTMLTextAreaElement, { target: { value: "" } });
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
     expect(saveConfig).not.toHaveBeenCalled();
-    expect(screen.getByText("Hero copy cannot be empty.")).toBeTruthy();
+    expect(document.querySelector('section[aria-label="Choose a website design"] [role="alert"]')?.textContent).toBe("Hero copy cannot be empty.");
   });
 
   it("renders all three theme cards and saves a selected theme through the site config mutation", () => {

@@ -10,6 +10,7 @@ interface ThemePickerSectionProps {
   previewHotelName?: string;
   selectedHotelHeroImage?: string | null;
   heroObjectPosition?: string | null;
+  error?: string | null;
   onSelectTheme: (themeId: HotelThemeId) => void;
 }
 
@@ -20,6 +21,7 @@ export function ThemePickerSection({
   previewHotelName = "",
   selectedHotelHeroImage = null,
   heroObjectPosition = null,
+  error = null,
   onSelectTheme,
 }: ThemePickerSectionProps) {
   const { t } = useTranslation();
@@ -31,6 +33,7 @@ export function ThemePickerSection({
         <CardDescription>{t("websiteBuilder.themePickerDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
+        {error ? <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p> : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label={t("websiteBuilder.themePickerTitle")}>
           {HOTEL_THEMES.map(theme => {
             const selected = currentTheme === theme.id;

@@ -219,6 +219,7 @@ export default function WebsiteBuilder() {
               previewHotelName={previewHotelName}
               selectedHotelHeroImage={selectedHotelHeroImage}
               heroObjectPosition={draftMedia.find(item => item.isHero)?.objectPosition}
+              error={formError}
               onSelectTheme={handleSaveTheme}
             />
 
