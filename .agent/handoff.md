@@ -4941,3 +4941,34 @@ Not tested in a browser or with a real email.
 - Drag-and-drop reorder with @dnd-kit; keyboard support; cover slot makes hero.
 - Pure function reorderPhotoIds; server procedure reorderHotelMedia saves draft.
 - Thai copy: no new Thai strings.
+
+## 2026-11-06 fix: photo reorder (branch `claude/feat-photo-reorder-fix-3e0ea5`, on top of `feat/photo-reorder`)
+
+Written by a Claude session started by the coordinating session; it fixes the review findings on the first version above.
+
+- **Drag list**: only the cover and the gallery photos currently selected can be dragged, in the draft order (`heroMediaId`, then `galleryMediaIds`), not `display_order`. Other photos (turned off "แสดงบนเว็บไซต์", or over the six) are listed below under their own heading, with no drag handle. Dragging uses a handle button (mouse, touch, keyboard), so typing a caption or tapping the photo for the focal point no longer starts a drag. Grid uses `rectSortingStrategy`. Helper `splitWebsitePhotos` in `photoReorder.ts`.
+- **Server** `reorderHotelMedia`: accepts exactly the current draft cover + gallery (same set, order only); anything else is `BAD_REQUEST`. The zod schema caps the list at 7. Hidden photos and hotels with more than seven photos now work.
+- **Publish**: the public page orders photos by `display_order`, but publish never wrote it, so guests would never have seen the new order. `publishHotelSiteConfig` now writes `display_order` = cover, gallery, then the rest in their old order, when the draft has a staged gallery. In the same commit as the reorder fix, because the reorder test checks what guests see after publish.
+- **Evidence**: `pnpm check` exit 0 (`tsc --noEmit`); `pnpm test` exit 0 (223 files, 1574 tests passed); `pnpm build` exit 0 (`--dry-run: exiting now.`).
+- **Cleanup**: removed all alias exports (`reorderPhotos`, `reorderMedia`, `reorderWebsitePhotos`, `movePhotoById`, `reorderHotelSiteMedia`, `setHotelMediaOrder`); the router keeps only `reorderHotelMedia`. The hook calls `trpc.channelManager.reorderHotelMedia.useMutation` directly. `@dnd-kit/*` pinned to exact versions (6.3.1 / 10.0.0 / 3.2.2), lockfile updated.
+- **ASSUMPTION** (in code): if the draft has no cover, every dragged id is a gallery photo and the cover stays unset.
+- **Tests**: `server/d1/siteConfig.test.ts` (draft-only until publish then guests see new cover/order; rejects another hotel's id, a photo not in the gallery, an incomplete set, duplicates, other owner; hotel with 9 photos); `PhotosSection.test.tsx` (keyboard Space/arrow/Space, drop on cover, Thai announcements, other photos not draggable); `photoReorder.test.ts` (draft order, drop on cover first).
+- **Not done**: no browser check by hand on a phone; no deploy, no migration (none needed).
+- **Thai copy, before → after** (the brief suggested "รูปปก"; the screen already says "รูปหลัก" on the badge and button, so the announcements use "รูปหลัก" to match):
+
+| Key | Before | After (th) | After (en) |
+|---|---|---|---|
+| `websiteBuilder.reorderHint` | — | จับไอคอนจุดที่มุมรูปแล้วลากเพื่อเรียงลำดับ วางบนรูปหลักเพื่อให้เป็นรูปหลักแทน | Drag a photo by its dotted handle to change the order. Drop it on the hero photo to make it the hero. |
+| `websiteBuilder.dragHandleAria` | — | ย้ายรูปที่ {{position}} | Move photo {{position}} |
+| `websiteBuilder.otherPhotosTitle` | — | รูปอื่นที่ยังไม่แสดงบนเว็บไซต์ | Other photos (not on the website yet) |
+| `websiteBuilder.otherPhotosHint` | — | ติ๊ก "แสดงบนเว็บไซต์" เพื่อเพิ่มรูปเข้าแกลเลอรี แล้วจึงลากเรียงลำดับได้ | Tick "Show on website" to add a photo to the gallery, then drag it into order. |
+| `websiteBuilder.notOnWebsiteLabel` | — (card said "แกลเลอรี") | ไม่ได้แสดงบนเว็บไซต์ | Not on the website |
+| `websiteBuilder.reorderInstructions` | (dnd-kit English default) | กด Space เพื่อหยิบรูป ใช้ปุ่มลูกศรเพื่อย้าย กด Space อีกครั้งเพื่อวาง หรือกด Esc เพื่อยกเลิก | Press Space to pick up a photo, use the arrow keys to move it, press Space again to drop it, or Esc to cancel. |
+| `websiteBuilder.reorderPickedUp` | Picked up photo {id} | หยิบรูปที่ {{position}} แล้ว | Picked up photo {{position}}. |
+| `websiteBuilder.reorderOver` | Photo {id} is over position N | รูปที่ {{from}} อยู่ที่ตำแหน่งที่ {{to}} | Photo {{from}} is over position {{to}}. |
+| `websiteBuilder.reorderMoved` | Photo {id} was dropped at position N | ย้ายรูปที่ {{from}} ไปตำแหน่งที่ {{to}} | Moved photo {{from}} to position {{to}}. |
+| `websiteBuilder.reorderCover` | — | รูปที่ {{position}} เป็นรูปหลักแล้ว | Photo {{position}} is now the hero. |
+| `websiteBuilder.reorderUnchanged` | — | วางรูปที่ {{position}} ไว้ที่เดิม | Photo {{position}} was dropped in its place. |
+| `websiteBuilder.reorderCancelled` | Dragging photo {id} was cancelled | ยกเลิกการย้ายรูปที่ {{position}} | Moving photo {{position}} was cancelled. |
+
+Also: the line under each photo "ลำดับการแสดง N" now shows the place on the website (1 = cover), not the raw `display_order`.
