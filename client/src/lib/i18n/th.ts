@@ -946,6 +946,11 @@ const th: TranslationDictionary = {
     mfaEnrollNeeded: "การเปลี่ยนบัญชีรับเงินต้องเปิดใช้แอปยืนยันตัวตน (เช่น Google Authenticator) ก่อน ตั้งค่าเสร็จแล้วกลับมาบันทึกได้เลย",
     mfaEnrollLink: "ตั้งค่าแอปยืนยันตัวตน",
   },
+  hotelPaymentSettings: {
+    eyebrow: "การรับชำระเงิน",
+    title: "การรับชำระเงิน",
+    manageLink: "จัดการการรับชำระเงิน",
+  },
   housekeeping: {
     loadingAriaLabel: "กำลังโหลดข้อมูลแม่บ้าน",
     loadingBoard: "กำลังโหลดกระดานงานแม่บ้าน…",

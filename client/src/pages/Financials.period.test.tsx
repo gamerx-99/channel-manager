@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PeriodPicker } from "./Financials";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth } from "./financialsPeriod";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 vi.mock("@/lib/trpc", () => ({ trpc: {} }));
 vi.mock("@/contexts/HotelContext", () => ({ useHotel: () => ({ hotels: [], selectedHotelId: null }) }));
@@ -71,5 +73,15 @@ describe("bookings CSV", () => {
   it("neutralises cells a spreadsheet would run as a formula and doubles quotes", () => {
     const line = bookingsCsv([{ ...row, room_type: '=HYPERLINK("x")' }]).split("\n")[1];
     expect(line).toContain(`"'=HYPERLINK(""x"")"`);
+  });
+});
+
+describe("Financials payment settings move", () => {
+  it("removes the old form and shows the edit-only hotel settings link", () => {
+    const page = readFileSync(resolve(process.cwd(), "client/src/pages/Financials.tsx"), "utf8");
+    expect(page).not.toContain("promptpay-id-input");
+    expect(page).not.toContain("promptpay-timeout");
+    expect(page).toContain("canManagePaymentSettings");
+    expect(page).toContain("/hotels/${hotelId}");
   });
 });

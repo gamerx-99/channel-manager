@@ -1,0 +1,29 @@
+import React from "react";
+import { QrCode } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import SlipOkSettings from "@/components/SlipOkSettings";
+import { useTranslation } from "@/lib/i18n";
+import { useHotelPromptPaySettings } from "./useHotelPaymentSettings";
+import "./HotelPaymentSettings.css";
+
+export default function HotelPaymentSettings({ hotelId }: { hotelId: string }) {
+  const { t } = useTranslation();
+  const state = useHotelPromptPaySettings(hotelId);
+  return <section className="panel hotel-payment-settings" aria-label={t("hotelPaymentSettings.title")}>
+    <div className="panel-heading"><div><div className="eyebrow">{t("hotelPaymentSettings.eyebrow")}</div><h2>{t("hotelPaymentSettings.title")}</h2></div></div>
+    <section className="panel" aria-labelledby="promptpay-settings-heading">
+      <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h3>{t("financials.promptPayTitle")}</h3></div></div>
+      <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+        <CardHeader className="pb-3"><div className="flex items-center gap-3"><span className="rounded-xl bg-[#edf7f1] p-2 text-[#1d6b56]"><QrCode size={18} aria-hidden="true" /></span><div><CardTitle id="promptpay-settings-heading" className="text-base font-semibold text-[#1b2c25]">{t("financials.promptPayTitle")}</CardTitle><CardDescription className="text-xs text-[#6c7e75]">{t("financials.promptPayDesc")}</CardDescription></div></div></CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          <div className="form-grid"><label className="form-span-two">{t("financials.promptPayIdLabel")}<input id="promptpay-id-input" type="text" inputMode="numeric" autoComplete="off" value={state.promptPayId} onChange={e => state.setPromptPayId(e.target.value.replace(/\D/g, ""))} placeholder="0812345678" maxLength={13} className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm font-mono" /></label>
+            <label>{t("financials.timeoutLabel")}<select id="promptpay-timeout" value={state.timeoutMin} onChange={e => state.setTimeoutMin(Number(e.target.value))} className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm">{[5, 10, 15, 20, 30, 60].map(m => <option key={m} value={m}>{t("financials.minutes", { count: m })}</option>)}</select></label></div>
+          {state.mfaState.status === "needs_challenge" && <div className="flex flex-col gap-2 rounded-lg border border-[#dce4df] bg-[#f6faf7] p-4"><label htmlFor="promptpay-totp-input">{t("financials.mfaPrompt")}</label><div className="flex flex-wrap gap-2"><label>{t("financials.mfaCodeLabel")}<input id="promptpay-totp-input" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" value={state.totpCode} onChange={e => state.setTotpCode(e.target.value.replace(/\D/g, ""))} /></label><button id="promptpay-totp-submit" type="button" disabled={state.totpCode.length !== 6} onClick={() => void state.handleVerify()} className="button button-primary">{t("financials.mfaVerify")}</button><button type="button" onClick={state.handleCancel} className="button button-quiet">{t("financials.mfaCancel")}</button></div>{state.mfaState.error && <p className="form-error" role="alert">{state.mfaState.error}</p>}</div>}
+          {state.mfaState.status === "pending" && <p role="status">{t("financials.mfaChecking")}</p>}{state.mfaState.status === "error" && <p className="form-error" role="alert">{state.mfaState.message}</p>}{state.saveError && <p className="form-error" role="alert">{state.saveError}</p>}{state.saved && <p role="status">{t("financials.savedSuccess")}</p>}
+          <button id="promptpay-save-btn" type="button" disabled={state.promptPayId.replace(/\D/g, "").length < 10 || state.savePromptPay.isPending || state.mfaState.status === "pending"} onClick={() => void state.handleSave()} className="button button-primary">{state.savePromptPay.isPending ? t("financials.saving") : t("financials.savePromptPayId")}</button><p className="field-help">{t("financials.promptPayDisclaimer")}</p>
+        </CardContent>
+      </Card>
+    </section>
+    <SlipOkSettings hotelId={hotelId} />
+  </section>;
+}

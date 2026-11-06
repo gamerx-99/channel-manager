@@ -5204,3 +5204,16 @@ Exit 0
   | สีเน้น | ไม่มีช่องเลือกสี; ใช้สีของธีม |
 
 - Verification: `pnpm check` - `tsc --noEmit`, Exit 0; `pnpm test` - 234 files and 1,640 tests passed, Exit 0; `pnpm build` - Vite build and Wrangler dry-run completed, `--dry-run: exiting now.`, Exit 0.
+
+## 2026-11-06 — Move hotel payment settings
+
+- Added the HotelDetail `การรับชำระเงิน` section for PromptPay ID, timeout and SlipOK branch/key. PromptPay state and save/MFA flow live in `useHotelPaymentSettings.ts`; SlipOK keeps its existing query, mutations, encrypted-key masking, edit and remove behavior. The HotelDetail mount uses the existing `property.manage_profile` permission helper. Financials and SecuritySettings now show edit-only links to the hotel page.
+- Tests changed: Financials contract and period tests assert the old form is gone and the editor link is present; SecuritySettings contract asserts SlipOK left the security page and its permission-gated link remains; HotelDetail contract asserts the section mount and permission boundary; new `HotelPaymentSettings.test.tsx` covers both sections, PromptPay and SlipOK saves, and the initially empty password field.
+- Thai before/after:
+
+  | Before (th) | After (th) |
+  |---|---|
+  | — (section/link not present) | การรับชำระเงิน; จัดการการรับชำระเงิน |
+
+- No server or migration changes. Decision register updated to done.
+- Verification: `pnpm check` — `tsc --noEmit`, Exit 0. `pnpm test` — 235 files passed, 1,645 tests passed, Exit 0. `pnpm build` — Vite build succeeded; Wrangler `--dry-run: exiting now.`, Exit 0. Vite emitted the existing large-chunk advisory; Wrangler reported that no environment target was specified for this dry run.

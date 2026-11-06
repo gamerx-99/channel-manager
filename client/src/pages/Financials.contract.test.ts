@@ -7,6 +7,8 @@ describe("Financials dashboard contract", () => {
   const dashboardRouterText = readFileSync(resolve(process.cwd(), 'server/routers/dashboardRouter.ts'), 'utf8');
   const router = routerText + dashboardRouterText;
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Financials.tsx"), "utf8");
+  const paymentHook = readFileSync(resolve(process.cwd(), "client/src/components/hotel/useHotelPaymentSettings.ts"), "utf8");
+  const paymentSettings = readFileSync(resolve(process.cwd(), "client/src/components/hotel/HotelPaymentSettings.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
@@ -50,10 +52,17 @@ describe("Financials dashboard contract", () => {
     expect(component).toContain('t("financials.pendingRevenue")');
   });
 
+  it("removes payment forms and links editors to hotel settings", () => {
+    expect(component).not.toContain("PromptPaySettings");
+    expect(component).not.toContain('id="promptpay-id-input"');
+    expect(component).toContain('canManagePaymentSettings && <p');
+    expect(component).toContain('href={`/hotels/${hotelId}`}');
+  });
+
   it("asks for an authenticator code before saving PromptPay and does not send owners without 2FA to enrol", () => {
-    expect(component).toContain("useMfaStepUp()");
-    expect(component).toContain('(await triggerStepUp()) === "verified"');
-    expect(component).toContain('id="promptpay-totp-input"');
-    expect(component).not.toContain("/mfa/enroll");
+    expect(paymentHook).toContain("useMfaStepUp()");
+    expect(paymentHook).toContain('(await triggerStepUp()) === "verified"');
+    expect(paymentSettings).toContain('id="promptpay-totp-input"');
+    expect(paymentHook).not.toContain("/mfa/enroll");
   });
 });

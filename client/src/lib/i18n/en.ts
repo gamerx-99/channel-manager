@@ -959,6 +959,11 @@ const en = {
     mfaEnrollNeeded: "Changing where guests pay needs an authenticator app on your account. Set one up first, then come back to save.",
     mfaEnrollLink: "Set up an authenticator app",
   },
+  hotelPaymentSettings: {
+    eyebrow: "Payments",
+    title: "Payment settings",
+    manageLink: "Manage payment settings",
+  },
   housekeeping: {
     loadingAriaLabel: "Loading housekeeping data",
     loadingBoard: "Loading housekeeping board…",
