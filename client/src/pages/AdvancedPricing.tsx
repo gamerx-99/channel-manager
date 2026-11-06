@@ -8,6 +8,7 @@ import { PageState } from "@/components/PageState";
 import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
 import { dateLocale } from "@/lib/dateLocale";
+import { isDayInPickedRange, nextPickedRange } from "@/lib/pricingDayPick";
 
 type RateOverride = {
   id: string;
@@ -350,10 +351,20 @@ export default function AdvancedPricing() {
                 const resolved = resolveEffectiveRate(iso);
                 const isOverride = resolved.source === "override";
                 const matchingOverride = isOverride ? overridesForRoom.find((o) => o.id === resolved.overrideId) : null;
+                const isPicked = isDayInPickedRange(form, iso);
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={iso}
-                    className={`flex h-[72px] flex-col rounded-xl border p-2 text-left ${isOverride ? "border-[#b7d8c8] bg-[#edf7f1]" : "border-[#e5ebe7] bg-white"}`}
+                    data-testid="pricing-day"
+                    aria-pressed={isPicked}
+                    onClick={() => {
+                      const next = nextPickedRange(form, iso);
+                      setForm((p) => ({ ...p, ...next }));
+                      setFormError(null);
+                      if (next.end_date) document.getElementById("override-price")?.focus();
+                    }}
+                    className={`flex h-[72px] cursor-pointer flex-col rounded-xl border p-2 text-left transition-colors hover:border-[#1d6b56] ${isPicked ? "border-[#1d6b56] ring-2 ring-[#1d6b56]" : ""} ${isOverride ? "border-[#b7d8c8] bg-[#edf7f1]" : "border-[#e5ebe7] bg-white"}`}
                     title={isOverride ? `Override ${formatCurrency(resolved.price)} (${matchingOverride?.start_date} → ${matchingOverride?.end_date})` : `Base ${formatCurrency(resolved.price)}`}
                   >
                     <span className="text-xs font-semibold text-[#263b31]">{day.getDate()}</span>
@@ -362,7 +373,7 @@ export default function AdvancedPricing() {
                     {isOverride && matchingOverride?.min_stay_nights ? (
                       <span className="text-[10px] text-[#6c7e75]">{t("advancedPricing.minNights", { count: matchingOverride.min_stay_nights })}</span>
                     ) : null}
-                  </div>
+                  </button>
                 );
               })}
             </div>
