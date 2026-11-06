@@ -6,7 +6,7 @@ import CafeHomestayLanding from "./CafeHomestayLanding";
 vi.mock("./ThemeLanding", () => ({ ThemeLanding: ({ children }: any) => <div className="theme-cafe-homestay">{children}</div> }));
 
 describe("Cafe Homestay landing", () => {
-  it("renders hotel and room data with the booking slot and no forbidden content", () => {
+  it("renders hotel and room data with links to the booking page and no forbidden content", () => {
     const html = renderToStaticMarkup(<CafeHomestayLanding
       hotelName="Nap & Latte Homestay"
       accentColor="#a45b3f"
@@ -18,7 +18,6 @@ describe("Cafe Homestay landing", () => {
       language="en"
       setLanguage={() => {}}
       isVisible={() => true}
-      booking={<div id="booking-slot">Booking slot</div>}
       siteConfig={null} visibleSections={null} t={(key: string) => key} loading={false} error={null} notFound={false} refetch={async () => ({}) as any}
     />);
 
@@ -27,7 +26,10 @@ describe("Cafe Homestay landing", () => {
     expect(html).toContain("฿1,800");
     expect(html).toContain("Loft Room");
     expect(html).toContain("฿2,400");
-    expect(html).toContain("Booking slot");
+    // The booking steps moved to the hayhost booking page; the theme links there instead.
+    expect(html).toContain('class="theme-book-button" href="/nap-latte/book"');
+    expect(html).toContain('href="/nap-latte/book?roomType=room-1"');
+    expect(html).toContain('href="/nap-latte/book?roomType=room-2"');
     expect(html).toContain("Morning coffee");
     expect(html).not.toContain("gallery.jpg</figcaption>");
     expect(html).not.toContain("<figcaption>legacy-file.jpg</figcaption>");

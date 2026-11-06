@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import { ThemeLanding, type ThemeLandingProps, type ThemeLayoutProps } from "./ThemeLanding";
 import { PoweredByHayhost } from "./PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
+import { bookingPageHref } from "@/components/public-hotel/bookingPageLink";
 
 type Props = ThemeLayoutProps & Pick<ThemeLandingProps, "hotelName" | "accentColor">;
 
@@ -17,7 +18,6 @@ export default function MinimalWhiteLanding({
   language,
   setLanguage,
   isVisible,
-  booking,
   contacts,
   locationMap,
   t,
@@ -25,6 +25,8 @@ export default function MinimalWhiteLanding({
   const gallery = media.filter(item => !item.is_hero && item.url).slice(0, MAX_WEBSITE_GALLERY_PHOTOS);
   const roomPhotos = gallery;
   const address = hotel?.address?.trim() ?? "";
+  const slug = hotel?.slug ?? "";
+  const canBook = isVisible("booking");
 
   return (
     <ThemeLanding themeId="minimal-white" hotelName={hotelName} accentColor={accentColor}>
@@ -36,10 +38,13 @@ export default function MinimalWhiteLanding({
             <a href="#gallery">{t("hotelThemes.minimalWhite.gallery")}</a>
             <a href="#location">{t("hotelThemes.minimalWhite.location")}</a>
           </nav>
-          <div className="minimal-language" role="group" aria-label={t("hotelThemes.minimalWhite.language")}>
-            <button type="button" aria-pressed={language === "th"} onClick={() => setLanguage("th")}>TH</button>
-            <span aria-hidden="true">/</span>
-            <button type="button" aria-pressed={language !== "th"} onClick={() => setLanguage("en")}>EN</button>
+          <div className="minimal-actions">
+            <div className="minimal-language" role="group" aria-label={t("hotelThemes.minimalWhite.language")}>
+              <button type="button" aria-pressed={language === "th"} onClick={() => setLanguage("th")}>TH</button>
+              <span aria-hidden="true">/</span>
+              <button type="button" aria-pressed={language !== "th"} onClick={() => setLanguage("en")}>EN</button>
+            </div>
+            {canBook && <a className="theme-book-button" href={bookingPageHref(slug)}>{t("hotelThemes.minimalWhite.bookDirect")}</a>}
           </div>
         </header>
         <main>
@@ -85,7 +90,7 @@ export default function MinimalWhiteLanding({
                       )}
                       <div className="minimal-room-info">
                         <span className="minimal-label">{t("hotelThemes.minimalWhite.room", { number: String(index + 1).padStart(2, "0") })}</span>
-                        <h3>{room.name}</h3>
+                        <h3>{canBook ? <a className="theme-room-link" href={bookingPageHref(slug, room.id)}>{room.name}</a> : room.name}</h3>
                         <div className="minimal-room-meta">
                           <span>{t("hotelThemes.minimalWhite.capacity", { capacity: room.capacity })}</span>
                           <strong>฿{Number(room.basePrice).toLocaleString()} <small>{t("hotelThemes.minimalWhite.perNight")}</small></strong>
@@ -117,7 +122,6 @@ export default function MinimalWhiteLanding({
               </div>
             </section>
           )}
-          {isVisible("booking") && booking}
           {isVisible("location") && address && (
             <section className="minimal-location" id="location">
               <div>

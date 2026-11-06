@@ -6,7 +6,7 @@ import MinimalWhiteLanding from "./MinimalWhiteLanding";
 vi.mock("./ThemeLanding", () => ({ ThemeLanding: ({ children }: any) => <div className="theme-minimal-white">{children}</div> }));
 
 describe("Minimal White landing", () => {
-  it("renders provided hotel and room data with booking and without never-render content", () => {
+  it("renders provided hotel and room data with links to the booking page and without never-render content", () => {
     const html = renderToStaticMarkup(<MinimalWhiteLanding
       hotelName="Haus Nimman"
       accentColor="#4f5d48"
@@ -18,7 +18,6 @@ describe("Minimal White landing", () => {
       language="en"
       setLanguage={() => {}}
       isVisible={() => true}
-      booking={<div id="booking-slot">Booking slot</div>}
       siteConfig={null} visibleSections={null} t={(key: string, params?: Record<string, string | number>) => key === "hotelThemes.minimalWhite.room" ? `Room ${params?.number}` : key} loading={false} error={null} notFound={false} refetch={async () => ({}) as any}
     />);
 
@@ -28,7 +27,10 @@ describe("Minimal White landing", () => {
     expect(html).toContain("Loft Room");
     expect(html).toContain("฿2,400");
     expect(html).toContain("Room 01");
-    expect(html).toContain("Booking slot");
+    // The booking steps moved to the hayhost booking page; the theme links there instead.
+    expect(html).toContain('class="theme-book-button" href="/haus-nimman/book"');
+    expect(html).toContain('href="/haus-nimman/book?roomType=room-1"');
+    expect(html).toContain('href="/haus-nimman/book?roomType=room-2"');
     expect(html).toContain("Morning light");
     expect(html).not.toContain("gallery.jpg</figcaption>");
     expect(html).not.toContain("<figcaption>legacy-file.jpg</figcaption>");

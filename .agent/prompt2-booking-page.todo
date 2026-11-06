@@ -55,14 +55,14 @@ PART 3: ขั้นตอนจองในหน้าใหม่
 ======================================================================
 PART 4: ปุ่มจองทุกจุดพาไปหน้าใหม่
 ======================================================================
-[ ] ธีม MinimalWhite, LannaTeak, CafeHomestay: ปุ่ม "จองเลย" / "เช็กวันว่าง" ไป /<slug>/book
-[ ] หน้าไม่มีธีมใน PublicHotel.tsx: ปุ่มบนเมนูและปุ่มบน hero ไป /<slug>/book
-[ ] การ์ดห้องบนหน้าเว็บโรงแรม (ทุกธีม) ไป /<slug>/book?roomType=<id>
-[ ] เอา PublicBookingSection ออกจากหน้า /<slug> ทั้งแบบมีธีมและไม่มีธีม
+[x] ธีม MinimalWhite, LannaTeak, CafeHomestay: ปุ่ม "จองเลย" / "เช็กวันว่าง" ไป /<slug>/book
+[x] หน้าไม่มีธีมใน PublicHotel.tsx: ปุ่มบนเมนูและปุ่มบน hero ไป /<slug>/book
+[x] การ์ดห้องบนหน้าเว็บโรงแรม (ทุกธีม) ไป /<slug>/book?roomType=<id>
+[x] เอา PublicBookingSection ออกจากหน้า /<slug> ทั้งแบบมีธีมและไม่มีธีม
     ถ้ามีเทสต์ที่ล็อกว่าฟอร์มจองอยู่ในหน้า ให้แก้พร้อมเขียนเหตุผลใน handoff ทีละไฟล์
-[ ] เทสต์: ธีมทั้ง 3 และหน้าไม่มีธีม ปุ่มจองชี้ไป /<slug>/book
-[ ] themeKeys.test.ts เดิมต้องผ่าน
-[ ] commit: feat(booking): send every book button to the booking page
+[x] เทสต์: ธีมทั้ง 3 และหน้าไม่มีธีม ปุ่มจองชี้ไป /<slug>/book
+[x] themeKeys.test.ts เดิมต้องผ่าน
+[x] commit: feat(booking): send every book button to the booking page
 
 ======================================================================
 PART 5: ส่งงาน
