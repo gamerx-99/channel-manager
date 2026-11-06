@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearch } from "wouter";
 import { getContrastText } from "@/lib/contrastText";
 import { usePublicHotelPage } from "./usePublicHotelPage";
@@ -14,12 +14,16 @@ export function usePublicBookingPage(slug: string) {
   const page = usePublicHotelPage(slug);
   const search = useSearch();
   const prefilledHotelId = useRef<string | null>(null);
+  // The date picker reads its dates only when it mounts, so the booking steps wait until the
+  // query has been applied (one render after the hotel loads) and then mount with those dates.
+  const [prefillReadyFor, setPrefillReadyFor] = useState<string | null>(null);
   const hotelId = page.hotel?.id ?? null;
   const { booking, roomTypes } = page;
 
   useEffect(() => {
     if (!hotelId || !booking || prefilledHotelId.current === hotelId) return;
     prefilledHotelId.current = hotelId;
+    setPrefillReadyFor(hotelId);
     const prefill = parseBookingPrefill(search, {
       today: getTodayDateString(),
       roomTypeIds: roomTypes.map((room: { id: string }) => room.id),
@@ -35,5 +39,6 @@ export function usePublicBookingPage(slug: string) {
     ...page,
     accentTextColor: getContrastText(page.accentColor),
     hotelHref: `/${slug}`,
+    prefillReady: hotelId !== null && prefillReadyFor === hotelId,
   };
 }

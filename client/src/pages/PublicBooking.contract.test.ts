@@ -55,7 +55,7 @@ describe("PublicBooking page contract", () => {
 
   it("runs the existing booking steps under the banner and fills them from the query", () => {
     const main = page.slice(page.indexOf('<main className="booking-page-main">'));
-    expect(main.indexOf("<PublicBookingSection page={data} />")).toBeGreaterThan(main.indexOf("<BookingReassurance"));
+    expect(main.indexOf("{data.prefillReady && <PublicBookingSection page={data} />}")).toBeGreaterThan(main.indexOf("<BookingReassurance"));
     expect(hook).toContain("parseBookingPrefill(search");
     expect(hook).toContain("today: getTodayDateString()");
   });

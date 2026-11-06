@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   availabilityQuery: vi.fn(),
   servicesQuery: vi.fn(),
   mutate: vi.fn(),
+  firstCheckIn: undefined as string | null | undefined,
 }));
 
 vi.mock("@/lib/trpc", () => ({ trpc: { channelManager: {
@@ -21,7 +22,11 @@ vi.mock("@/lib/trpc", () => ({ trpc: { channelManager: {
   confirmBookingDetails: { useMutation: () => ({ mutate: mocks.mutate, isPending: false }) },
 } } }));
 vi.mock("@/components/public-hotel/PublicBookingSection", () => ({
-  default: ({ page }: any) => <div data-testid="booking-steps">preferred:{page.booking?.preferredRoomTypeId ?? "none"}</div>,
+  default: ({ page }: any) => {
+    // The date picker only reads its dates on mount, so the steps must first appear with the query dates.
+    if (mocks.firstCheckIn === undefined) mocks.firstCheckIn = page.booking?.checkIn ?? null;
+    return <div data-testid="booking-steps">preferred:{page.booking?.preferredRoomTypeId ?? "none"}</div>;
+  },
 }));
 vi.mock("@/lib/pageMeta", () => ({ usePageMeta: vi.fn() }));
 
@@ -32,6 +37,7 @@ const hotelData = {
 };
 
 beforeEach(() => {
+  mocks.firstCheckIn = undefined;
   mocks.publicHotelQuery.mockReturnValue({ data: hotelData, isLoading: false, error: null, refetch: vi.fn() });
   mocks.siteConfigQuery.mockReturnValue({ data: { theme: "lanna-teak", accentColor: "#ffdd00", heroCopy: "", visibleSections: null }, isLoading: false, error: null });
   mocks.availabilityQuery.mockReturnValue({ data: { room_types: [] }, isLoading: false, error: null });
@@ -62,6 +68,7 @@ describe("PublicBooking page", () => {
     const lastInput = mocks.availabilityQuery.mock.calls.at(-1)?.[0] as { check_in: string; check_out: string };
     expect(lastInput.check_in).toBe("2099-01-10");
     expect(lastInput.check_out).toBe("2099-01-12");
+    expect(mocks.firstCheckIn).toBe("2099-01-10");
   });
 
   it("ignores a room type the hotel does not have", () => {

@@ -49,7 +49,7 @@ PART 3: ขั้นตอนจองในหน้าใหม่
 [x] รองรับ query ?roomType=<id>&checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD ถ้ามีให้กรอกให้ก่อน
     (อ่าน query เป็นฟังก์ชันบริสุทธิ์ใน .ts พร้อมเทสต์: ค่าถูก, วันผิดรูปแบบ, checkOut ก่อน checkIn,
     วันในอดีตตามวันไทย, roomType ไม่มีอยู่จริง)
-[ ] มือถือ 375px ใช้ได้ ไม่มี scroll แนวนอน
+[x] มือถือ 375px ใช้ได้ ไม่มี scroll แนวนอน
 [x] commit: feat(booking): run the booking steps on the booking page
 
 ======================================================================

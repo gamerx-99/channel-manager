@@ -39,7 +39,7 @@ export default function PublicBooking({ slug }: { slug: string }) {
           instagramUrl={hotel.instagram_url}
           xUrl={hotel.x_url}
         />
-        <PublicBookingSection page={data} />
+        {data.prefillReady && <PublicBookingSection page={data} />}
       </main>
       <footer className="booking-page-footer">
         <span>{hotel.name}</span>
