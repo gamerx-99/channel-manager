@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isRoomAmenityKey } from '../../shared/roomAmenities';
-import { HOTEL_THEMES, isHotelThemeId } from '@shared/hotelThemes';
+import { HOTEL_THEMES, isHotelThemeId, MAX_WEBSITE_GALLERY_PHOTOS } from '@shared/hotelThemes';
 import { isValidCoordinates, validateHotelContacts } from '@shared/hotelLocationRules';
 import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
@@ -37,6 +37,7 @@ import {
   setHotelMediaObjectPosition as d1SetHotelMediaObjectPosition,
   setHotelMediaCaption as d1SetHotelMediaCaption,
   setHotelMediaGallerySelection as d1SetHotelMediaGallerySelection,
+  reorderHotelMedia as d1ReorderHotelMedia,
 } from '../d1/siteConfig';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
@@ -213,6 +214,7 @@ export const setHotelMediaObjectPositionSchema = z.object({
 });
 export const setHotelMediaCaptionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), caption: z.string().max(120) });
 export const setHotelMediaGallerySelectionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), shown: z.boolean() });
+export const reorderHotelMediaSchema = z.object({ hotel_id: hotelIdSchema, ids: z.array(z.string().uuid()).max(MAX_WEBSITE_GALLERY_PHOTOS + 1) });
 
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
@@ -646,6 +648,13 @@ export const setHotelMediaGallerySelection = protectedProcedure.input(setHotelMe
   catch (error) { return rethrowDomainError(error); }
 });
 
+export const reorderHotelMedia = protectedProcedure.input(reorderHotelMediaSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await d1ReorderHotelMedia(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
 export const hotelRouter = router({
   hotels,
   canCreateHotel,
@@ -670,5 +679,6 @@ export const hotelRouter = router({
   deleteHotelMedia,
   setHotelMediaHero,
   setHotelMediaObjectPosition,
+  reorderHotelMedia,
   updateHotelProfile,
 });

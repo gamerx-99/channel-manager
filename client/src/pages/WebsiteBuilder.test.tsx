@@ -28,6 +28,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     setHotelMediaObjectPosition: mutation(setObjectPosition),
     setHotelMediaCaption: mutation(),
     setHotelMediaGallerySelection: mutation(),
+    reorderHotelMedia: mutation(),
     saveHotelSiteConfig: mutation(saveConfig),
     publishHotelSiteConfig: mutation(),
     discardHotelSiteConfigDraft: mutation(),
