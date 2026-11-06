@@ -5180,3 +5180,14 @@ Exit 0
   - `pnpm check` — `tsc --noEmit`, Exit 0.
   - `pnpm test` — 232 files passed, 1,630 tests passed, Exit 0.
   - `pnpm build` — Vite build and Wrangler dry-run completed; `--dry-run: exiting now.`, Exit 0.
+
+## 2026-11-06 – Fix theme save photo positions
+
+- Shared one focal-point regex for `media_positions` and `object_position`. Router schema coverage accepts `50% 40%`, `0% 100%`, `100% 0%` and rejects `101% 0%`, `50%40%`, `abc`; D1 coverage saves a theme draft with a stored two-digit focal point.
+- Theme save maps server errors mentioning `media_positions` to a translated message.
+
+  | Before (th) | After (th) |
+  |---|---|
+  | — | ตำแหน่งรูปภาพไม่ถูกต้อง กรุณาปรับตำแหน่งรูปภาพแล้วลองอีกครั้ง |
+- Regex audit of `server/` and `shared/`: the only mistaken escaped digit pattern was the `media_positions` pattern in `server/routers/hotelRouter.ts`, now corrected. No mistaken escaped whitespace patterns found.
+- Verification: `pnpm check` (`tsc --noEmit`, Exit 0); `pnpm test` (233 files, 1,639 tests passed, Exit 0); `pnpm build` (Vite + Wrangler dry-run, `--dry-run: exiting now.`, Exit 0). Wrangler config/log warnings avoided on final run by setting `APPDATA` to a repo-local directory.

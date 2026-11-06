@@ -33,3 +33,7 @@ export function defaultConfig(hotelId: string): SiteConfig {
 export function isValidHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(value.trim());
 }
+
+export function themeSaveErrorMessage(message: string, mediaPositionError: string): string {
+  return message.includes("media_positions") ? mediaPositionError : message;
+}

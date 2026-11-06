@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultConfig, isValidHexColor } from "./websiteBuilderRules";
+import { defaultConfig, isValidHexColor, themeSaveErrorMessage } from "./websiteBuilderRules";
 
 describe("website builder rules", () => {
   it("returns the existing default site config for a hotel", () => {
@@ -16,5 +16,10 @@ describe("website builder rules", () => {
     expect(isValidHexColor(" #aBc123 ")).toBe(true);
     expect(isValidHexColor("#abc1234")).toBe(false);
     expect(isValidHexColor("red")).toBe(false);
+  });
+
+  it("localizes theme save errors that mention a photo position", () => {
+    expect(themeSaveErrorMessage('{"path":["media_positions","photo-id"],"code":"invalid_format"}', "Photo position is invalid.")).toBe("Photo position is invalid.");
+    expect(themeSaveErrorMessage("A different save error", "Photo position is invalid.")).toBe("A different save error");
   });
 });

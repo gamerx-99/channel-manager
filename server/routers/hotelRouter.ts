@@ -209,6 +209,8 @@ export const listPublicHotelServicesSchema = z.object({
   slug: z.string().trim().min(1).max(100),
 });
 
+const hotelMediaPositionPattern = /^(?:0|[1-9]\d?|100)% (?:0|[1-9]\d?|100)%$/;
+
 export const hotelSiteConfigSaveSchema = z.object({
   hotel_id: hotelIdSchema,
   hero_copy: z.string().trim().max(500).nullable().optional(),
@@ -216,7 +218,7 @@ export const hotelSiteConfigSaveSchema = z.object({
   visible_sections: z.record(z.string(), z.boolean()).nullable().optional(),
   theme: z.string().nullable().optional().refine(value => value == null || isHotelThemeId(value), 'Unknown hotel theme.'),
   hero_media_id: z.string().uuid().nullable().optional(),
-  media_positions: z.record(z.string().uuid(), z.string().regex(/^(?:0|[1-9]\\d?|100)% (?:0|[1-9]\\d?|100)%$/).nullable()).optional(),
+  media_positions: z.record(z.string().uuid(), z.string().regex(hotelMediaPositionPattern).nullable()).optional(),
 });
 
 export const uploadHotelMediaSchema = z.object({
@@ -238,7 +240,7 @@ export const setHotelMediaHeroSchema = z.object({
 export const setHotelMediaObjectPositionSchema = z.object({
   hotel_id: hotelIdSchema,
   media_id: z.string().uuid(),
-  object_position: z.string().regex(/^(?:0|[1-9]\d?|100)% (?:0|[1-9]\d?|100)%$/).nullable(),
+  object_position: z.string().regex(hotelMediaPositionPattern).nullable(),
 });
 export const setHotelMediaCaptionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), caption: z.string().max(120) });
 export const setHotelMediaGallerySelectionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), shown: z.boolean() });
