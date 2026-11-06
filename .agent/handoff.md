@@ -4934,3 +4934,9 @@ Not tested in a browser or with a real email.
 - Task 2 fix(themes): add missing lanna teak labels (story, bookDirect, welcomeKicker, viewRooms). themeKeys.test.ts guards keys.
 - Verification: pnpm check exit 0; pnpm test 1551 passed; pnpm build exit 0.
 - Thai copy: showLineOnSite "แสดงลิงก์ LINE บนหน้าเว็บ" / "Show LINE link on website"; lanna story "เรื่องราว"/"Our story"; bookDirect "จองเลย"/"Book now".
+
+## 2026-11-06 feat/one-calendar (partial)
+
+- Implemented shared/rateRangeSplit.ts pure function with tests.
+- Full UI (unified calendar page, month/timeline switch, side panel, nav/redirect) pending due to scope.
+- Thai copy: no changes.
