@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
+import { useHotel } from "@/contexts/HotelContext";
 
 type CommThread = {
   id: string;
@@ -48,7 +49,7 @@ function LoadingCommunications() {
 export default function Communications() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
-  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
+  const { selectedHotelId, setSelectedHotelId } = useHotel();
   const [selectedThreadId, setSelectedThreadId] = useState<string>("");
   const [query, setQuery] = useState("");
   const [composer, setComposer] = useState("");
@@ -61,7 +62,7 @@ export default function Communications() {
   const canView = hasAnyPermission(authRoles, "operations.view_bookings");
   const canPost = hasAnyPermission(authRoles, "operations.manage_bookings");
 
-  const effectiveHotelId = selectedHotelId || hotels?.[0]?.id || "";
+  const effectiveHotelId = selectedHotelId ?? "";
 
   const bookingOptions = useMemo(() => {
     const opts: Array<{ booking_id: string; guest_name: string; hotel_name: string; hotel_id: string }> = [];
@@ -228,22 +229,6 @@ export default function Communications() {
           {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("communications.updatingDataAriaLabel")} />}
         </div>
       </section>
-
-      {(hotels ?? []).length > 1 && (
-        <section className="flex items-center gap-2 text-sm" aria-label={t("communications.hotelSelectorAria")}>
-          <span className="text-[#52655b]">{t("communications.property")}</span>
-          <Select value={effectiveHotelId} onValueChange={(v) => { setSelectedHotelId(v); setSelectedThreadId(""); }}>
-            <SelectTrigger className="w-full max-w-sm border-[#dce4df] bg-white">
-              <SelectValue placeholder={t("communications.selectHotelPlaceholder")} />
-            </SelectTrigger>
-            <SelectContent>
-              {(hotels ?? []).map((hotel: any) => (
-                <SelectItem key={hotel.id} value={hotel.id}>{hotel.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </section>
-      )}
 
       <section className="grid gap-4 sm:grid-cols-3" aria-label={t("communications.summaryAria")}>
         <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">

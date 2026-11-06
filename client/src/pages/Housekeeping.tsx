@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { hasAnyPermission, type AppRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
 import { dateLocale } from "@/lib/dateLocale";
+import { useHotel } from "@/contexts/HotelContext";
 
 type HousekeepingStatus = "pending" | "in_progress" | "done";
 
@@ -77,7 +78,7 @@ export default function Housekeeping() {
   const locale = dateLocale(language);
   const utils = trpc.useUtils();
   const [selectedDate, setSelectedDate] = useState(() => toIsoDate(new Date()));
-  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
+  const { selectedHotelId } = useHotel();
   const [form, setForm] = useState({ room_id: "", assigned_to: "", due_date: "", booking_id: "", status: "pending" as HousekeepingStatus });
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -93,7 +94,7 @@ export default function Housekeeping() {
   const canView = hasAnyPermission(authRoles, "housekeeping.view_room_status");
   const canUpdate = hasAnyPermission(authRoles, "housekeeping.update_room_status");
 
-  const effectiveHotelId = selectedHotelId || hotels?.[0]?.id || "";
+  const effectiveHotelId = selectedHotelId ?? "";
 
   const hotelDetailQuery = trpc.channelManager.hotel.useQuery(effectiveHotelId, { enabled: Boolean(effectiveHotelId) });
   const staffQuery = trpc.channelManager.hotelStaff.useQuery({ hotel_id: effectiveHotelId }, { enabled: Boolean(effectiveHotelId) });
@@ -241,22 +242,6 @@ export default function Housekeeping() {
           {isFetching && <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#b7c9c0] border-t-[#1d6b56]" aria-label={t("housekeeping.updatingDataAriaLabel")} />}
         </div>
       </section>
-
-      {(hotels ?? []).length > 1 && (
-        <section className="panel flex flex-wrap items-center gap-2 text-sm" aria-label={t("housekeeping.hotelSelectorAria")}>
-          <span className="text-[#52655b]">{t("housekeeping.property")}</span>
-          <Select value={effectiveHotelId} onValueChange={setSelectedHotelId}>
-            <SelectTrigger className="w-full max-w-sm border-[#dce4df] bg-white">
-              <SelectValue placeholder={t("housekeeping.selectHotelPlaceholder")} />
-            </SelectTrigger>
-            <SelectContent>
-              {(hotels ?? []).map((hotel: any) => (
-                <SelectItem key={hotel.id} value={hotel.id}>{hotel.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </section>
-      )}
 
       <section className="panel" aria-label={t("housekeeping.daySelectorAria")}>
         <div className="panel-heading"><div><div className="eyebrow">{t("housekeeping.eyebrow")}</div><h2>{t("housekeeping.dayViewGroupedByRoom")}</h2></div></div>

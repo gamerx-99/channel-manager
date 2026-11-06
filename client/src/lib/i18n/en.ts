@@ -27,6 +27,8 @@ const en = {
     otaSync: "OTA Sync",
     hotelStaff: "Hotel Staff",
     hotelSettings: "Hotel settings",
+    hotelProfile: "Hotel information",
+    viewPropertySite: "View property website",
     workspace: "Workspace",
     operationsModules: "Operations & Modules",
     financials: "Financials",

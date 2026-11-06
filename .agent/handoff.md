@@ -5233,3 +5233,18 @@ Exit 0
 
 - Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` — 236 files passed, 1,651 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed; `--dry-run: exiting now.`, exit 0. No migration applied, no commit, push, deploy, or non-dry-run Wrangler command.
 
+## refactor/hotel-name-once-v2 — hotel name appears once
+
+- Removed hotel name/address hero and breadcrumb from HotelDetail, HotelServices and Bookings; removed their unused legacy CSS selectors. Housekeeping and Communications now use `useHotel().selectedHotelId` instead of page-local hotel pickers. The booking deep link still switches the shared hotel context.
+- Added the existing public status pill and a new-tab “ดูหน้าเว็บที่พัก” link below the sidebar hotel switcher. Added the first hotel settings item “ข้อมูลโรงแรม”, gated by `property.manage_profile`; `/hotels/:id?edit=profile` opens the existing profile dialog. GuidedTour opens the collapsed settings group before locating its step target.
+- Tests changed: `Sidebar.hotelSettings.test.ts` now expects the additional first profile link; it verifies the new menu item while retaining the existing staff/support assertions. `HotelDetail.contract.test.ts` now asserts opening from `?edit=profile` because the edit control moved out of the removed hero. `GuidedTour.contract.test.ts` checks the sidebar target and collapsed-group toggle because the target moved from HotelDetail into Sidebar. Added `HotelNameOnce.contract.test.ts` for removed headers, switcher status/site link, permission gate and shared hotel context.
+- Thai before / after:
+
+  | Before | After |
+  |---|---|
+  | ชื่อโรงแรมซ้ำในหัวการ์ดและ breadcrumb | ชื่อโรงแรมอยู่ที่ตัวสลับโรงแรมใน sidebar ที่เดียว |
+  | สถานะและลิงก์เว็บอยู่ในหน้าข้อมูลโรงแรม | เปิดขาย / ยังไม่เปิดขาย และ ดูหน้าเว็บที่พัก อยู่ใต้ตัวสลับโรงแรม |
+  | ไม่มีรายการข้อมูลโรงแรมในกลุ่มตั้งค่าโรงแรม | ข้อมูลโรงแรม อยู่รายการแรกและเปิดหน้าต่างแก้ไขข้อมูล |
+
+- Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test` — 237 files passed, 1,657 tests passed, exit 0 (TEMP/TMP set to repo-local `.tmp-vitest` due system temp EPERM). `pnpm build` — Vite build and Wrangler dry-run completed, exit 0; Wrangler reported a blocked write to its user log path but printed `--dry-run: exiting now.` No commit, push or deploy.
+
