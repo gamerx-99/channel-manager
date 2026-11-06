@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { isStaffTaskVisibleToAssignee } from "./staffTaskVisibility";
+import { getStaffTaskWaitingState, isStaffTaskVisibleToAssignee } from "./staffTaskVisibility";
 
 const task = { task_date: "2026-11-06", status: "pending" as const };
 describe("staff task visibility", () => {
+  it("reports when today's shift has not started, without depending on task contents", () => {
+    expect(getStaffTaskWaitingState([{ start_time: "09:00" }, { start_time: "07:30" }], new Date("2026-11-06T00:29:00Z"))).toEqual({ waiting_for_shift_start: true, shift_start: "07:30" });
+    expect(getStaffTaskWaitingState([{ start_time: "07:30" }], new Date("2026-11-06T00:30:00Z"))).toEqual({ waiting_for_shift_start: false, shift_start: "07:30" });
+    expect(getStaffTaskWaitingState([], new Date("2026-11-06T00:00:00Z"))).toEqual({ waiting_for_shift_start: false, shift_start: null });
+  });
   it("reveals tasks at the earliest shift start in Thai time", () => {
     expect(isStaffTaskVisibleToAssignee(task, [{ start_time: "09:00" }, { start_time: "07:30" }], new Date("2026-11-06T00:29:00Z"))).toBe(false);
     expect(isStaffTaskVisibleToAssignee(task, [{ start_time: "09:00" }, { start_time: "07:30" }], new Date("2026-11-06T00:30:00Z"))).toBe(true);

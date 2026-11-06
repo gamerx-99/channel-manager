@@ -12,7 +12,7 @@ export async function listStaffShifts(db: D1ScopedDatabase, caller: D1CallerCont
   const next = new Date(`${start}T00:00:00Z`); next.setUTCMonth(next.getUTCMonth() + 1);
   const end = next.toISOString().slice(0, 10);
   const [members, rows] = await Promise.all([
-    db.select({ id: hotelUsers.id, full_name: sql<string | null>`coalesce(${hotelUsers.fullName}, ${user.name})`, position: hotelUsers.position, role: hotelUsers.role }).from(hotelUsers).leftJoin(user, eq(user.id, hotelUsers.userId)).where(and(eq(hotelUsers.hotelId, hotelId), sql`${hotelUsers.role} <> 'hotel_owner'`)).orderBy(asc(hotelUsers.fullName), asc(user.name)),
+    db.select({ id: hotelUsers.id, full_name: sql<string | null>`coalesce(${hotelUsers.fullName}, ${user.name})`, email: user.email, position: hotelUsers.position, role: hotelUsers.role }).from(hotelUsers).leftJoin(user, eq(user.id, hotelUsers.userId)).where(and(eq(hotelUsers.hotelId, hotelId), sql`${hotelUsers.role} <> 'hotel_owner'`)).orderBy(asc(hotelUsers.fullName), asc(user.name)),
     db.select().from(staffShifts).where(and(eq(staffShifts.hotelId, hotelId), gte(staffShifts.date, start), lt(staffShifts.date, end))).orderBy(asc(staffShifts.date)),
   ]);
   const shifts = rows.map(row => ({ id: row.id, hotel_user_id: row.hotelUserId, date: row.date, start_time: row.startTime, end_time: row.endTime, break_minutes: row.breakMinutes }));

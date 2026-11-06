@@ -1,5 +1,6 @@
 export type VisibilityTask = { task_date: string; status: "pending" | "done" };
 export type VisibilityShift = { start_time: string };
+export type StaffTaskWaitingState = { waiting_for_shift_start: boolean; shift_start: string | null };
 
 function thaiWallClock(date: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -19,4 +20,13 @@ export function isStaffTaskVisibleToAssignee(task: VisibilityTask, shifts: reado
   if (!shifts.length) return true;
   const earliest = shifts.map(shift => shift.start_time).sort()[0];
   return `${today.hour}:${today.minute}` >= earliest;
+}
+
+export function getStaffTaskWaitingState(shifts: readonly VisibilityShift[], now: Date): StaffTaskWaitingState {
+  const today = thaiWallClock(now);
+  const shiftStart = shifts.map(shift => shift.start_time).sort()[0] ?? null;
+  return {
+    waiting_for_shift_start: shiftStart !== null && `${today.hour}:${today.minute}` < shiftStart,
+    shift_start: shiftStart,
+  };
 }

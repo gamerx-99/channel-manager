@@ -6,10 +6,22 @@
 .staff-task-group h3 { margin: 0; font-size: .95rem; }
 .staff-task-list { display: grid; gap: .5rem; }
 .staff-task-item { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; padding: .7rem; border: 1px solid var(--line, #e0e7e2); border-radius: .65rem; min-width: 0; }
+.staff-task-item.is-done { background: var(--surface-muted, #f3f6f4); color: var(--muted, #63756b); }
+.staff-task-item.is-done .staff-task-copy strong { color: var(--muted, #63756b); }
+.staff-task-item .status-pill.done { width: fit-content; background: #eceeed; color: #5d6a66; }
 .staff-task-copy { min-width: 0; display: grid; gap: .2rem; }
 .staff-task-copy strong { overflow-wrap: anywhere; }
 .staff-task-meta { color: var(--muted, #63756b); font-size: .8rem; }
 .staff-task-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+.staff-task-add { display: flex; justify-content: flex-end; margin-top: .75rem; }
 .staff-task-dialog-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgb(20 30 25 / .48); }
 .staff-task-dialog { width: min(100%, 38rem); max-height: calc(100vh - 2rem); overflow: auto; }
-@media (max-width: 600px) { .staff-task-item { flex-direction: column; } .staff-task-actions { width: 100%; } .staff-task-actions button { min-height: 2.6rem; } }
+@media (max-width: 600px) {
+  .staff-tasks-page .page-intro > .button { width: 100%; }
+  .staff-task-item { flex-direction: column; }
+  .staff-task-item > button, .staff-task-actions, .staff-task-actions button, .staff-task-add button { width: 100%; }
+  .staff-task-actions { display: grid; grid-template-columns: 1fr; }
+  .staff-task-actions button, .staff-task-item > button, .staff-task-add button { min-height: 2.6rem; }
+  .staff-task-dialog-backdrop { place-items: start center; overflow-y: auto; padding: .5rem; }
+  .staff-task-dialog { max-height: calc(100dvh - 1rem); }
+}

@@ -2,7 +2,7 @@ import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { hotelUsers, rooms, staffShifts, staffTasks } from "../../drizzle/d1-schema";
 import { user } from "../../drizzle/auth-schema";
-import { isStaffTaskVisibleToAssignee } from "../../shared/staffTaskVisibility";
+import { getStaffTaskWaitingState, isStaffTaskVisibleToAssignee } from "../../shared/staffTaskVisibility";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 
 export type StaffTaskInput = { assigned_to: string; task_date: string; title: string; details?: string | null; room_id?: string | null };
@@ -39,8 +39,12 @@ export async function listMyStaffTasks(db: D1ScopedDatabase, caller: D1CallerCon
     .from(staffTasks).innerJoin(hotelUsers, eq(staffTasks.assignedTo, hotelUsers.id)).leftJoin(user, eq(user.id, hotelUsers.userId)).leftJoin(rooms, eq(rooms.id, staffTasks.roomId))
     .where(and(eq(staffTasks.hotelId, hotelId), eq(staffTasks.assignedTo, membership.id))).orderBy(asc(staffTasks.taskDate), asc(staffTasks.createdAt));
   const shifts = await db.select({ date: staffShifts.date, startTime: staffShifts.startTime }).from(staffShifts).where(and(eq(staffShifts.hotelId, hotelId), eq(staffShifts.hotelUserId, membership.id)));
-  return rows.filter(({ task }) => isStaffTaskVisibleToAssignee({ task_date: task.taskDate, status: task.status as "pending" | "done" }, shifts.filter(shift => shift.date === task.taskDate).map(shift => ({ start_time: shift.startTime })), now))
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const todaysShifts = shifts.filter(shift => shift.date === today).map(shift => ({ start_time: shift.startTime }));
+  const waiting = getStaffTaskWaitingState(todaysShifts, now);
+  const tasks = rows.filter(({ task }) => isStaffTaskVisibleToAssignee({ task_date: task.taskDate, status: task.status as "pending" | "done" }, shifts.filter(shift => shift.date === task.taskDate).map(shift => ({ start_time: shift.startTime })), now))
     .map(({ task, fullName, position, roomNumber }) => taskRecord(task, { full_name: fullName, position, room_number: roomNumber }));
+  return { tasks, ...waiting };
 }
 
 export async function createStaffTask(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, input: StaffTaskInput, now = new Date()) {

@@ -1,15 +1,77 @@
 import { useStaffTasks } from "@/components/staff-tasks/useStaffTasks";
+import StaffTaskDialog from "@/components/staff-tasks/StaffTaskDialog";
+import StaffTaskManagerPanel from "@/components/staff-tasks/StaffTaskManagerPanel";
+import StaffTaskMyList from "@/components/staff-tasks/StaffTaskMyList";
+import { staffTaskFormToInput, type StaffTaskRecord } from "@/components/staff-tasks/staffTaskForm";
 import "@/components/staff-tasks/staff-tasks.css";
 
 export default function StaffTasks() {
-  const state = useStaffTasks(); const { t } = state;
-  const submit = (form: HTMLFormElement) => { const data = new FormData(form); const room = String(data.get("room_id")); const input = { hotel_id: state.selectedHotelId!, assigned_to: String(data.get("assigned_to")), task_date: String(data.get("task_date")), title: String(data.get("title")).trim(), details: String(data.get("details")).trim() || null, room_id: room || null }; if (state.editing?.id) state.update.mutate({ ...input, id: state.editing.id }); else state.create.mutate(input); };
-  const label = (date: string) => new Intl.DateTimeFormat(state.language === "th" ? "th-TH-u-ca-buddhist" : "en-US", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${date}T00:00:00Z`));
-  return <main className="staff-tasks-page">
-    <section className="page-intro intro-split"><div><div className="eyebrow">{t("staffTasks.eyebrow")}</div><h1>{t("staffTasks.title")}<span className="title-mark">.</span></h1><p className="lede">{t("staffTasks.lede")}</p></div>{state.canManage && <button className="button button-primary" onClick={() => state.setEditing({ task_date: state.date })}>{t("staffTasks.addTask")}</button>}</section>
-    {state.canManage ? <section className="panel"><div className="panel-heading"><div><div className="eyebrow">{t("staffTasks.section")}</div><h2>{t("staffTasks.managerHeading")}</h2></div><div className="staff-task-controls"><label>{t("staffTasks.date")}<input type="date" value={state.date} onChange={event => state.setDate(event.target.value)} /></label></div></div>
-      {state.list.isLoading ? <div className="empty-state">{t("common.loading")}</div> : Object.keys(state.grouped).length ? Object.entries(state.grouped).map(([memberId, tasks]) => { const member = state.staff.data?.members.find(item => item.id === memberId); return <section className="staff-task-group" key={memberId}><h3>{member?.full_name || member?.position || memberId}{member?.position ? ` · ${member.position}` : ""}</h3><div className="staff-task-list">{tasks?.map(item => <article className="staff-task-item" key={item.id}><div className="staff-task-copy"><strong>{item.title}</strong>{item.details && <span>{item.details}</span>}<span className="staff-task-meta">{item.room_number ? t("staffTasks.roomNumber", { room: item.room_number }) : ""} · {item.status === "done" ? t("staffTasks.done") : t("staffTasks.pending")}</span></div><div className="staff-task-actions"><button className="button button-quiet button-small" onClick={() => state.setEditing(item)}>{t("common.edit")}</button><button className="button button-quiet button-small" onClick={() => state.remove.mutate({ hotel_id: state.selectedHotelId!, id: item.id })}>{t("common.delete")}</button><button className="button button-quiet button-small" onClick={() => state.setDone.mutate({ hotel_id: state.selectedHotelId!, id: item.id, done: item.status !== "done" })}>{item.status === "done" ? t("staffTasks.undo") : t("staffTasks.complete")}</button></div></article>)}</div></section>; }) : <div className="empty-state">{t("staffTasks.empty")}</div>}
-    </section> : state.canViewOwn && <section className="panel"><div className="panel-heading"><div><div className="eyebrow">{t("staffTasks.eyebrow")}</div><h2>{t("staffTasks.myTasks")}</h2></div></div>{state.mine.isLoading ? <div className="empty-state">{t("common.loading")}</div> : state.mine.data?.length ? <div className="staff-task-list">{state.mine.data.map(item => <article className="staff-task-item" key={item.id}><div className="staff-task-copy"><strong>{item.title}</strong>{item.details && <span>{item.details}</span>}<span className="staff-task-meta">{label(item.task_date)}{item.room_number ? ` · ${t("staffTasks.roomNumber", { room: item.room_number })}` : ""}</span></div><button className="button button-primary" onClick={() => state.setDone.mutate({ hotel_id: state.selectedHotelId!, id: item.id, done: item.status !== "done" })}>{item.status === "done" ? t("staffTasks.undo") : t("staffTasks.complete")}</button></article>)}</div> : <div className="panel empty-state">{t("staffTasks.beforeShift")}</div>}</section>}
-    {state.editing && state.canManage && <div className="staff-task-dialog-backdrop"><form className="panel staff-task-dialog" onSubmit={event => { event.preventDefault(); submit(event.currentTarget); }}><div className="panel-heading"><h2>{state.editing.id ? t("staffTasks.editTask") : t("staffTasks.assignTask")}</h2><button type="button" className="button button-quiet button-small" onClick={() => state.setEditing(null)}>{t("common.close")}</button></div><div className="form-grid"><label>{t("staffTasks.staff")}<select name="assigned_to" required defaultValue={state.editing.assigned_to ?? ""}><option value="" disabled>{t("staffTasks.selectStaff")}</option>{(state.staff.data?.members ?? []).map(member => <option key={member.id} value={member.id}>{member.full_name || member.position || member.id}</option>)}</select></label><label>{t("staffTasks.date")}<input name="task_date" type="date" required defaultValue={state.editing.task_date ?? state.date} /></label><label>{t("staffTasks.titleLabel")}<input name="title" required maxLength={160} defaultValue={state.editing.title ?? ""} /></label><label>{t("staffTasks.room")}<select name="room_id" defaultValue={state.editing.room_id ?? ""}><option value="">{t("staffTasks.noRoom")}</option>{state.rooms.map((room: any) => <option key={room.id} value={room.id}>{room.room_number}</option>)}</select></label><label className="form-span-two">{t("staffTasks.details")}<textarea name="details" maxLength={2000} defaultValue={state.editing.details ?? ""} /></label></div><div className="form-submit"><button className="button button-primary">{t("staffTasks.saveTask")}</button><button type="button" className="button button-quiet" onClick={() => state.setEditing(null)}>{t("common.cancel")}</button></div></form></div>}
-  </main>;
+  const state = useStaffTasks();
+  const { t } = state;
+
+  function handleSubmit(data: FormData) {
+    const input = { hotel_id: state.selectedHotelId!, ...staffTaskFormToInput(data) };
+    if (state.editing?.id) state.update.mutate({ ...input, id: state.editing.id });
+    else state.create.mutate(input);
+  }
+
+  function handleDelete(task: StaffTaskRecord) {
+    if (!window.confirm(t("staffTasks.confirmDelete"))) return;
+    state.remove.mutate({ hotel_id: state.selectedHotelId!, id: task.id });
+  }
+
+  function toggleDone(task: StaffTaskRecord) {
+    state.setDone.mutate({ hotel_id: state.selectedHotelId!, id: task.id, done: task.status !== "done" });
+  }
+
+  return (
+    <main className="staff-tasks-page">
+      <section className="page-intro intro-split">
+        <div>
+          <div className="eyebrow">{t("staffTasks.eyebrow")}</div>
+          <h1>{t("staffTasks.title")}<span className="title-mark">.</span></h1>
+          <p className="lede">{t("staffTasks.lede")}</p>
+        </div>
+        {state.canManage && <button className="button button-primary" onClick={() => state.setEditing({ task_date: state.date })}>{t("staffTasks.addTask")}</button>}
+      </section>
+
+      {state.canManage && (
+        <StaffTaskManagerPanel
+          t={t}
+          date={state.date}
+          setDate={state.setDate}
+          loading={state.list.isLoading}
+          tasks={state.grouped as Record<string, StaffTaskRecord[]>}
+          members={state.staff.data?.members ?? []}
+          onEdit={task => state.setEditing(task)}
+          onDelete={handleDelete}
+          onToggle={toggleDone}
+        />
+      )}
+
+      {!state.canManage && state.canViewOwn && (
+        <StaffTaskMyList
+          t={t}
+          language={state.language}
+          loading={state.mine.isLoading}
+          tasks={state.mine.data?.tasks ?? []}
+          waitingForShiftStart={state.mine.data?.waiting_for_shift_start ?? false}
+          shiftStart={state.mine.data?.shift_start ?? null}
+          onToggle={toggleDone}
+        />
+      )}
+
+      {state.editing && state.canManage && (
+        <StaffTaskDialog
+          t={t}
+          editing={state.editing}
+          members={state.staff.data?.members ?? []}
+          rooms={state.rooms}
+          date={state.date}
+          onClose={() => state.setEditing(null)}
+          onSubmit={handleSubmit}
+        />
+      )}
+    </main>
+  );
 }

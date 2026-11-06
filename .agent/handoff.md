@@ -5320,3 +5320,11 @@ Exit 0
 
 - Verification (after final changes): `pnpm check` — `$ tsc --noEmit`, exit 0. `pnpm test` — 251 files passed, 1,706 tests passed, exit 0. `pnpm build` — Vite built; Wrangler `--dry-run: exiting now.`, exit 0 (existing large-chunk and no-target-environment warnings). `git diff --check` — no output, exit 0. Commands used `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false`; build also set `XDG_CONFIG_HOME=/tmp/hayhost-xdg`.
 - No migration application, commit, push, or deploy.
+
+## 2026-11-07 — Staff daily tasks reviewer fixes
+
+- Split the staff tasks page into readable manager, staff list, task row, and dialog components. Moved form conversion and locale-aware date formatting into tested pure helpers; removed feature `any` types and inline styles. Added delete confirmation, mobile full-width actions and scrolling dialog, muted done rows with a badge, and manager name/email fallbacks.
+- `myTasks` now returns `{ tasks, waiting_for_shift_start, shift_start }`. The waiting summary uses only the member's shifts for today; hidden task content remains filtered. Added shared helper, repository, access, and page contract coverage. Server visibility and completion rules are unchanged.
+- Thai before → after: `งานจะแสดงเมื่อถึงเวลาเริ่มกะของคุณ` → `งานจะแสดงเมื่อถึงเวลาเริ่มกะ {{time}} น.` when waiting; empty list after shift start → `วันนี้ไม่มีงานที่มอบหมายให้คุณ`. Added fallback label `พนักงาน` when neither account name nor email is available.
+- Verification: `pnpm check` — `tsc --noEmit`, exit 0. `pnpm test --maxWorkers=3 --minWorkers=1` — 252 files, 1,711 tests passed, exit 0. `pnpm build` — Vite build and Wrangler dry-run completed, exit 0. `git diff --check` — no output, exit 0. Wrangler emitted its existing chunk-size advisory and the no-target-environment dry-run warning.
+- No migration, commit, push, deploy, or remote database operation.
