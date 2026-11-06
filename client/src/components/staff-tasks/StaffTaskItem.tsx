@@ -25,7 +25,7 @@ export default function StaffTaskItem({ task, t, roomLabel, dateLabel, doneLabel
         <strong>{task.title}</strong>
         {task.details && <span>{task.details}</span>}
         <span className="staff-task-meta">{meta}</span>
-        {manager && <span className={`status-pill ${done ? "done" : "pending"}`}>{done ? doneLabel : pendingLabel}</span>}
+        {(manager || done) && <span className={`status-pill ${done ? "done" : "pending"}`}>{done ? doneLabel : pendingLabel}</span>}
       </div>
       {manager ? (
         <div className="staff-task-actions">

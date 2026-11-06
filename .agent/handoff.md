@@ -1,5 +1,12 @@
 # Handoff log
 
+## 2026-11-07 — Staff task manager inset and title label
+
+- Merged duplicate `.staff-task-group` and heading rules. Groups now use `.8rem` vertical and 22px horizontal padding on desktop, with the existing 16px horizontal inset at the <=600px breakpoint to match the panel heading. The border between groups remains.
+- Updated the task dialog title label: `งาน` → `ชื่องาน` (English: `Task` → `Task title`). The Thai glossary permits this plain, owner-facing wording.
+- Verification: `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm check` — `$ tsc --noEmit`, exit 0. `PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS=false PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm test -- --maxWorkers=3 --minWorkers=1` — 252 files passed, 1,713 tests passed, exit 0.
+- No commit, push, or deploy.
+
 > **อ่านก่อน: ผู้เขียนเปลี่ยนคนแล้ว (2026-11-05 22:00 น.)**
 > ฉันคือ Claude (Opus 5.5) ในเซสชันใหม่ **ไม่ใช่คนเดียวกับเซสชัน/เอเจนต์ที่ทำงานค้างไว้ก่อนหน้า**
 > (เซสชัน Claude Sonnet 5.5 ที่สั่ง Codex ทำ Part B / Task C และ deploy production ไปเมื่อคืนนี้).
