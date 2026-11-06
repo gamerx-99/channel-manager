@@ -693,6 +693,10 @@
   align-items: stretch;
 }
 
+.theme-riverside-calm .location-grid:not(.has-map) {
+  grid-template-columns: 1fr;
+}
+
 .theme-riverside-calm .location-card {
   background: var(--rc-surface-lowest);
   border-radius: var(--rc-radius-card);

@@ -1,43 +1,3 @@
-/*
- * (a) Google Fonts ที่ธีมนี้ใช้:
- *   - Pridi (หัวข้อภาษาไทย)
- *   - Noto Serif (หัวข้อภาษาอังกฤษ)
- *   - Noto Sans Thai (เนื้อหาภาษาไทย)
- *   - Noto Sans (เนื้อหาภาษาอังกฤษ)
- *
- * (b) ตารางคำแปล (prefix ทุก key = hotelThemes.riversideCalm.)
- *
- * key              | ไทย                                                                                     | English
- * -----------------|-----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------
- * mainNav          | เมนูหลัก                                                                                | Main menu
- * navRooms         | ห้องพัก                                                                                 | Rooms
- * navGallery       | รูปที่พัก                                                                               | Gallery
- * navLocation      | ที่ตั้ง                                                                                 | Location
- * language         | เปลี่ยนภาษา                                                                             | Change language
- * bookNow          | จองเลย                                                                                  | Book now
- * storyEyebrow     | พักผ่อนริมน้ำ                                                                           | Riverside retreat
- * story            | บรรยากาศริมน้ำปิง                                                                       | Life by the Ping
- * storyQuote       | พักผ่อนสบาย ๆ ริมแม่น้ำปิง นั่งรับลม ชมวิวสายน้ำ และสัมผัสความเงียบสงบอย่างแท้จริง       | Unhurried comfort by the river. Savor the slow drift of the water, gentle breezes, and tranquil seclusion.
- * roomsEyebrow     | ห้องพักของเรา                                                                           | Accommodations
- * rooms            | ห้องพักริมน้ำ                                                                           | Riverside rooms
- * roomsSubtitle    | สัมผัสความเงียบสงบและวิวแม่น้ำปิงจากระเบียงห้องพัก                                       | Tranquil riverside spaces with direct views of the Ping River
- * roomViewTag      | วิวแม่น้ำ                                                                               | River view
- * sleeps           | พักได้                                                                                  | Sleeps up to
- * persons          | คน                                                                                      | guests
- * from             | เริ่มต้น                                                                                | From
- * currency         | ฿                                                                                       | ฿
- * perNight         | / คืน                                                                                   | / night
- * select           | เลือกห้องนี้                                                                            | Choose this room
- * galleryEyebrow   | มุมมองริมน้ำ                                                                            | Visual retreat
- * gallery          | รูปที่พัก                                                                               | Photos
- * gallerySubtitle  | ภาพบรรยากาศและความสงบเงียบริมสายน้ำ                                                     | Glimpses of quiet riparian retreat
- * locationEyebrow  | การเดินทาง                                                                              | Our setting
- * location         | ที่ตั้งและการเดินทาง                                                                    | Location & directions
- * locationBadge    | ริมฝั่งแม่น้ำปิง                                                                        | Riverfront location
- * address          | ที่อยู่                                                                                 | Address
- * poweredBy        | จองผ่าน hayhost                                                                         | Booking powered by hayhost
- */
-
 import React, { type CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight, MapPin, Users, Waves } from "lucide-react";
 import { ThemeLanding } from "../ThemeLanding";
@@ -180,7 +140,7 @@ export default function RiversideCalmLanding(props: ThemeLandingProps) {
                   <p className="story-quote">“{heroCopy || tt("storyQuote")}”</p>
                   {hotel?.address && (
                     <span className="chip chip-sand">
-                      <Waves size={14} aria-hidden="true" />
+                      <MapPin size={14} aria-hidden="true" />
                       <span>{hotel.address}</span>
                     </span>
                   )}
@@ -220,7 +180,6 @@ export default function RiversideCalmLanding(props: ThemeLandingProps) {
                           </div>
                         )}
                         <div className="water-reflect" aria-hidden="true" />
-                        <span className="room-chip">{tt("roomViewTag")}</span>
                       </div>
                       <div className="room-body">
                         <div className="room-header-row">
@@ -299,13 +258,9 @@ export default function RiversideCalmLanding(props: ThemeLandingProps) {
                 <span className="eyebrow">{tt("locationEyebrow")}</span>
                 <h2 className="section-title">{tt("location")}</h2>
               </header>
-              <div className="location-grid">
+              <div className={`location-grid${locationMap ? " has-map" : ""}`}>
                 <div className="location-card">
                   <div className="location-card-head">
-                    <span className="chip chip-teal">
-                      <span className="pulse-dot" aria-hidden="true" />
-                      <span>{tt("locationBadge")}</span>
-                    </span>
                     <h3 className="location-name">{hotelName}</h3>
                   </div>
                   <div className="location-details">
@@ -318,39 +273,7 @@ export default function RiversideCalmLanding(props: ThemeLandingProps) {
                     {contacts && <div className="location-contacts">{contacts}</div>}
                   </div>
                 </div>
-                <div className="location-map">
-                  {locationMap ?? (
-                    <div className="location-map-fallback" aria-hidden="true">
-                      <svg className="river-map-svg" viewBox="0 0 700 420" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="rcRiverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#2F6F73" stopOpacity="0.85" />
-                            <stop offset="50%" stopColor="#26676B" stopOpacity="0.95" />
-                            <stop offset="100%" stopColor="#2F6F73" stopOpacity="0.85" />
-                          </linearGradient>
-                        </defs>
-                        <rect width="100%" height="100%" fill="#F5EFE6" />
-                        <path d="M 0,90 Q 200,120 400,80 T 700,110" fill="none" stroke="#E2D5C3" strokeWidth="1.5" opacity="0.6" />
-                        <path d="M 0,220 Q 250,240 500,200 T 700,230" fill="none" stroke="#E2D5C3" strokeWidth="1.5" opacity="0.6" />
-                        <path d="M 0,340 Q 220,320 450,370 T 700,330" fill="none" stroke="#E2D5C3" strokeWidth="1.5" opacity="0.6" />
-                        <path d="M 120,0 L 220,420" fill="none" stroke="#DCCBB5" strokeWidth="3" strokeDasharray="4,6" />
-                        <path d="M 520,0 L 460,420" fill="none" stroke="#DCCBB5" strokeWidth="3" />
-                        <path d="M 220,230 L 480,210" fill="none" stroke="#DCCBB5" strokeWidth="4" />
-                        <path d="M 260,0 C 290,80 320,130 350,190 C 380,250 360,290 330,350 C 310,390 290,410 280,420" fill="none" stroke="url(#rcRiverGradient)" strokeWidth="36" strokeLinecap="round" />
-                        <path d="M 260,0 C 290,80 320,130 350,190 C 380,250 360,290 330,350 C 310,390 290,410 280,420" fill="none" stroke="#A8D5D1" strokeWidth="3" strokeDasharray="10,10" opacity="0.75" />
-                        <g transform="translate(370, 205)">
-                          <circle cx="0" cy="0" r="14" fill="#2F6F73" opacity="0.25" />
-                          <circle cx="0" cy="0" r="8" fill="#0D575A" />
-                          <circle cx="0" cy="0" r="4" fill="#FFFFFF" />
-                        </g>
-                      </svg>
-                      <div className="river-map-badge">
-                        <span className="pulse-dot" />
-                        <span className="river-map-badge-text">{hotelName}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {locationMap && <div className="location-map">{locationMap}</div>}
               </div>
             </div>
           </section>

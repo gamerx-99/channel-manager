@@ -5462,3 +5462,100 @@ Exit 0
 - Responsive preview: local Chrome with device metrics set to 320px reported `innerWidth=320`, `document.documentElement.scrollWidth=320`, `body.scrollWidth=304`; at 375px the values were `375`, `375`, and `359`. Both rendered a room card, and no element extended beyond the screen width.
 - Verification: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` with repo-local TEMP/TMP → 256 files and 1,741 tests passed, exit 0. `pnpm build` with repo-local XDG_CONFIG_HOME → Vite built 3,610 modules; Wrangler `--dry-run: exiting now.`, exit 0. `git diff --check` → no output, exit 0. Build showed the existing large-chunk advisory and no-target-environment warning.
 - Deleted the supplied `design/themes/07-riverside-calm/out/` handoff copy. No commit, push, deploy, or migration operation. Independent reviewer verdict: APPROVE after the room-photo, hidden-gallery, mobile-sticky, and LINE-contract fixes (2026-11-07).
+
+
+## 2026-11-07 — Four website themes: property-neutral fixed copy (uncommitted)
+
+- Scope: Mountain Mist, Boutique Noir, Hostel Pop, and Riverside Calm. The theme text now sets tone without asserting a hotel location, facilities, views, building materials, room type, proximity, price policy, or booking guarantee. Hotel name, address, descriptions, amenities, photos, and prices still come from the hotel record.
+- Removed fact-only UI: Boutique Noir suite label, historic-center subtitle, and direct-booking guarantee card; Hostel Pop walkable-location badge, rooftop photo sticker, and proximity subtitle; Riverside Calm river-view room tag, riverfront badge, and decorative river map fallback. A real hotel map still displays when supplied.
+- The old component translation tables were removed because they duplicated the dictionaries and would otherwise retain false sample-property claims.
+
+### Fixed-copy changes (old → new)
+
+| Language | Key | Old | New |
+|---|---|---|---|
+| th | `hotelThemes.mountainMist.locationEyebrow` | มาหาเราได้ง่าย ๆ | ที่ตั้งของเรา |
+| en | `hotelThemes.mountainMist.storyBody` | A quiet corner to slow down. Wake up to fresh air and start the day your way. | A calm mood for taking your time and unwinding your way. |
+| th | `hotelThemes.mountainMist.storyBody` | มุมสงบให้คุณได้พักใจ ตื่นมารับอากาศดี ๆ แล้วค่อยเริ่มวัน | มุมสงบให้คุณได้พักใจ ค่อย ๆ ใช้เวลาในแบบที่ชอบ |
+| en | `hotelThemes.mountainMist.storyEyebrow` | About us | A moment to unwind |
+| th | `hotelThemes.mountainMist.storyEyebrow` | ที่นี่คือที่ไหน | มุมสงบ |
+| en | `hotelThemes.boutiqueNoir.directGuarantee` | Direct reservation guaranteed | (element removed) |
+| th | `hotelThemes.boutiqueNoir.directGuarantee` | รับประกันการจองตรง | (element removed) |
+| en | `hotelThemes.boutiqueNoir.directGuaranteeBody` | Secure direct booking, instant confirmation, zero hidden fees. | (element removed) |
+| th | `hotelThemes.boutiqueNoir.directGuaranteeBody` | ระบบจองตรงปลอดภัย สะดวก รวดเร็ว ไม่มีค่าธรรมเนียมแอบแฝง | (element removed) |
+| th | `hotelThemes.boutiqueNoir.galleryEyebrow` | บรรยากาศยามค่ำคืน | ชมบรรยากาศ |
+| en | `hotelThemes.boutiqueNoir.gallerySubtitle` | An intimate chronicle of quiet quarters, warm amber glow, and artisan craft. | A visual pause for a quieter frame of mind. |
+| th | `hotelThemes.boutiqueNoir.gallerySubtitle` | บันทึกความเงียบสงบ แสงไฟอบอุ่น และงานช่างศิลป์ | ภาพบรรยากาศสำหรับช่วงเวลาที่อยากพักใจ |
+| en | `hotelThemes.boutiqueNoir.heroEyebrow` | Private Sanctuary | A quieter mood |
+| th | `hotelThemes.boutiqueNoir.heroEyebrow` | ที่พักอันเงียบสงบ | ช่วงเวลาเงียบสงบ |
+| en | `hotelThemes.boutiqueNoir.locationSubtitle` | In the historic city center, moments from cultural landmarks. | (element removed) |
+| th | `hotelThemes.boutiqueNoir.locationSubtitle` | ใจกลางย่านเมืองเก่า ใกล้แหล่งวัฒนธรรมสำคัญ | (element removed) |
+| en | `hotelThemes.boutiqueNoir.navRooms` | Suites | Rooms |
+| th | `hotelThemes.boutiqueNoir.navRooms` | ห้องพักและสวีท | ห้องพัก |
+| en | `hotelThemes.boutiqueNoir.rooms` | Curated Suites | Find Your Room |
+| th | `hotelThemes.boutiqueNoir.rooms` | ห้องพักที่คัดสรร | เลือกห้องที่ถูกใจ |
+| en | `hotelThemes.boutiqueNoir.roomsEyebrow` | Accommodations | Rooms |
+| th | `hotelThemes.boutiqueNoir.roomsEyebrow` | ห้องพักและสวีท | ห้องพัก |
+| en | `hotelThemes.boutiqueNoir.roomsSubtitle` | Individually appointed with natural teakwood, hand-loomed textiles, and restorative quiet. | Choose a room that suits your pace. |
+| th | `hotelThemes.boutiqueNoir.roomsSubtitle` | แต่ละห้องตกแต่งเฉพาะตัวด้วยไม้สักธรรมชาติ ผ้าทอมือ และความสงบเงียบเป็นส่วนตัว | เลือกห้องที่เข้ากับจังหวะการพักผ่อนของคุณ |
+| en | `hotelThemes.boutiqueNoir.select` | Reserve Suite | Choose this room |
+| th | `hotelThemes.boutiqueNoir.select` | สำรองห้องนี้ | เลือกห้องนี้ |
+| en | `hotelThemes.boutiqueNoir.story` | Sanctuary & Heritage | Moments of Calm |
+| th | `hotelThemes.boutiqueNoir.story` | เรื่องราวและความเงียบสงบ | ช่วงเวลาแห่งความสงบ |
+| en | `hotelThemes.boutiqueNoir.storyBody` | Concealed within ancient walls, an intimate retreat designed for unhurried contemplation where time slows down amid aged teakwood and quiet courtyards. | Leave the rush behind and take each moment at your own pace. |
+| th | `hotelThemes.boutiqueNoir.storyBody` | หลบเร้นความเร่งรีบสู่ความสงบเงียบหลังกำแพงเมืองเก่า ทุกพื้นที่ได้รับการจัดวางอย่างประณีตเพื่อให้เวลาเดินช้าลง ท่ามกลางเรือนไม้สักทองและสวนร่มรื่น | ปล่อยความเร่งรีบไว้ข้างหลัง แล้วค่อย ๆ ใช้เวลากับช่วงเวลาของคุณ |
+| en | `hotelThemes.boutiqueNoir.suite` | Suite | (element removed) |
+| th | `hotelThemes.boutiqueNoir.suite` | สวีท | (element removed) |
+| en | `hotelThemes.hostelPop.gallery` | Life at the Hostel | Photos |
+| th | `hotelThemes.hostelPop.gallery` | ชีวิตที่โฮสเทล | รูปที่พัก |
+| en | `hotelThemes.hostelPop.gallerySubtitle` | Chillout zones, communal spaces, and memorable moments. | A playful look at the atmosphere. |
+| th | `hotelThemes.hostelPop.gallerySubtitle` | รวมมุมชิลล์ พื้นที่ส่วนกลาง และโมเมนต์สนุก ๆ ของพวกเรา | ภาพบรรยากาศในมุมสนุก ๆ |
+| en | `hotelThemes.hostelPop.heroBadge1` | Backpackers Hub! | Good times ahead! |
+| th | `hotelThemes.hostelPop.heroBadge1` | แบ็คแพ็คเกอร์ตัวจริง! | พักแบบสนุก ๆ! |
+| en | `hotelThemes.hostelPop.heroBadge2` | Best Vibes! | Good vibes! |
+| th | `hotelThemes.hostelPop.heroBadge2` | ไวบ์ดีสุด ๆ! | ชิลล์ไปด้วยกัน! |
+| en | `hotelThemes.hostelPop.heroBadge3` | Walkable Location! | (element removed) |
+| th | `hotelThemes.hostelPop.heroBadge3` | ใกล้ที่เที่ยวฮิต! | (element removed) |
+| en | `hotelThemes.hostelPop.heroPhotoBadge` | Sunset Vibes! | (element removed) |
+| th | `hotelThemes.hostelPop.heroPhotoBadge` | วิวดาดฟ้าสุดปัง! | (element removed) |
+| en | `hotelThemes.hostelPop.location` | Central Location | Location |
+| th | `hotelThemes.hostelPop.location` | พิกัดใจกลางเมือง | ที่ตั้ง |
+| th | `hotelThemes.hostelPop.locationEyebrow` | เดินทางง่ายมาก | มาหาเรา |
+| en | `hotelThemes.hostelPop.locationSubtitle` | Walkable to night markets, street food, and top cafes. | (element removed) |
+| th | `hotelThemes.hostelPop.locationSubtitle` | เดินทางสะดวก ใกล้ตลาดและย่านคาเฟ่ยอดฮิต | (element removed) |
+| th | `hotelThemes.hostelPop.navLocation` | แผนที่ & ที่ตั้ง | ที่ตั้ง |
+| en | `hotelThemes.hostelPop.pinLabel` | You are here! | Location |
+| th | `hotelThemes.hostelPop.pinLabel` | เราอยู่ที่นี่! | ที่ตั้ง |
+| en | `hotelThemes.hostelPop.rooms` | Rooms & Pods | Rooms |
+| th | `hotelThemes.hostelPop.rooms` | ห้องพักและพอดนอน | ห้องพัก |
+| en | `hotelThemes.hostelPop.roomsEyebrow` | Sleep Here | Pick a Room |
+| th | `hotelThemes.hostelPop.roomsEyebrow` | เลือกห้องนอนกัน | เลือกห้องกัน |
+| en | `hotelThemes.hostelPop.roomsSubtitle` | Crisp pod beds, air conditioning, blackout curtains, lockers, and personal sockets. | Choose a room you like and settle in your way. |
+| th | `hotelThemes.hostelPop.roomsSubtitle` | เตียงนุ่ม แอร์เย็น มีม่านส่วนตัว ล็อกเกอร์ และที่ชาร์จไฟครบครัน | เลือกห้องที่ถูกใจ แล้วพักในแบบของคุณ |
+| en | `hotelThemes.hostelPop.story` | Hey Backpackers! | Make It Your Stay! |
+| th | `hotelThemes.hostelPop.story` | ยินดีต้อนรับสู่โฮสเทล! | มาใช้เวลาดี ๆ กัน! |
+| en | `hotelThemes.hostelPop.storyBody` | Your social hub in the heart of town. Comfortable crash pads, warm global community, and epic rooftop sunsets. | Set your own pace and bring a little color to the day. |
+| th | `hotelThemes.hostelPop.storyBody` | พื้นที่พบปะของนักเดินทางจากทั่วโลก นอนสบาย เป็นกันเอง ปลอดภัย พร้อมพื้นที่ส่วนกลางและดาดฟ้าชมพระอาทิตย์ตกสุดชิลล์ | พักผ่อนในแบบของคุณ แล้วเติมสีสันให้วันธรรมดา |
+| en | `hotelThemes.riversideCalm.galleryEyebrow` | Visual retreat | Take a look |
+| th | `hotelThemes.riversideCalm.galleryEyebrow` | มุมมองริมน้ำ | ชมบรรยากาศ |
+| en | `hotelThemes.riversideCalm.gallerySubtitle` | Glimpses of quiet riparian retreat | A glimpse of a calmer mood. |
+| th | `hotelThemes.riversideCalm.gallerySubtitle` | ภาพบรรยากาศและความสงบเงียบริมสายน้ำ | ภาพบรรยากาศที่ชวนให้พักใจ |
+| en | `hotelThemes.riversideCalm.locationBadge` | Riverfront location | (element removed) |
+| th | `hotelThemes.riversideCalm.locationBadge` | ริมฝั่งแม่น้ำปิง | (element removed) |
+| en | `hotelThemes.riversideCalm.locationEyebrow` | Our setting | Find us |
+| en | `hotelThemes.riversideCalm.roomViewTag` | River view | (element removed) |
+| th | `hotelThemes.riversideCalm.roomViewTag` | วิวแม่น้ำ | (element removed) |
+| en | `hotelThemes.riversideCalm.rooms` | Riverside rooms | Rooms |
+| th | `hotelThemes.riversideCalm.rooms` | ห้องพักริมน้ำ | ห้องพัก |
+| en | `hotelThemes.riversideCalm.roomsSubtitle` | Tranquil riverside spaces with direct views of the Ping River | Choose a room for a restful stay. |
+| th | `hotelThemes.riversideCalm.roomsSubtitle` | สัมผัสความเงียบสงบและวิวแม่น้ำปิงจากระเบียงห้องพัก | เลือกห้องที่ถูกใจสำหรับวันพักผ่อนของคุณ |
+| en | `hotelThemes.riversideCalm.story` | Life by the Ping | A Moment of Calm |
+| th | `hotelThemes.riversideCalm.story` | บรรยากาศริมน้ำปิง | ช่วงเวลาแห่งความสงบ |
+| en | `hotelThemes.riversideCalm.storyEyebrow` | Riverside retreat | A slower pace |
+| th | `hotelThemes.riversideCalm.storyEyebrow` | พักผ่อนริมน้ำ | พักผ่อนสบาย ๆ |
+| en | `hotelThemes.riversideCalm.storyQuote` | Unhurried comfort by the river. Savor the slow drift of the water, gentle breezes, and tranquil seclusion. | Slow down, take a breath, and enjoy the day at your own pace. |
+| th | `hotelThemes.riversideCalm.storyQuote` | พักผ่อนสบาย ๆ ริมแม่น้ำปิง นั่งรับลม ชมวิวสายน้ำ และสัมผัสความเงียบสงบอย่างแท้จริง | ค่อย ๆ พักใจ ปล่อยเวลาให้เดินช้าลง แล้วใช้วันของคุณอย่างสบาย ๆ |
+
+- Verification after the copy and test update: `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 257 test files passed, 1,743 tests passed, exit 0 (TEMP/TMP pointed inside the worktree for sandbox access). `pnpm build` → Vite transformed 3,610 modules; Wrangler reported `--dry-run: exiting now.`, exit 0. `git diff --check` → exit 0. The build showed the existing large-chunk and no-target-environment advisories.
+- The PublicHotel render assertion changed from `Reserve Suite` to `Choose this room` because the fixed suite claim was removed; it still verifies the room-specific booking link. No commit, push, or deploy.
+- Independent reviewer verdict: APPROVE (2026-11-07). The reviewer confirmed neutral Thai/English copy, removal of fact-only UI, preservation of hotel-owned data, tests, build, and clean working-file scope.

@@ -1,50 +1,5 @@
-/*
- * (ก) Google Fonts ที่ธีมนี้ใช้:
- *   - Playfair Display (หัวข้อภาษาอังกฤษ / ตัวเลขโรมัน)
- *   - Taviraj (หัวข้อภาษาไทย)
- *   - Be Vietnam Pro (เนื้อหาภาษาอังกฤษ)
- *   - Bai Jamjuree (เนื้อหาภาษาไทย)
- *
- * (ข) ตารางคำแปล  (prefix ทุก key = hotelThemes.boutiqueNoir.)
- *
- * key                  | ไทย                                                                                                       | English
- * ---------------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------
- * mainNav              | เมนูหลัก                                                                                                  | Main menu
- * navRooms             | ห้องพักและสวีท                                                                                            | Suites
- * navGallery           | แกลเลอรี                                                                                                  | Visuals
- * navLocation          | การเดินทาง                                                                                                | Location
- * language             | เปลี่ยนภาษา                                                                                               | Change language
- * bookNow              | สำรองห้องพัก                                                                                              | Reserve
- * heroEyebrow          | ที่พักอันเงียบสงบ                                                                                          | Private Sanctuary
- * storyEyebrow         | ปรัชญาแห่งการพักผ่อน                                                                                      | Essence
- * storyChapter         | I.                                                                                                        | I.
- * story                | เรื่องราวและความเงียบสงบ                                                                                  | Sanctuary & Heritage
- * storyBody            | หลบเร้นความเร่งรีบสู่ความสงบเงียบหลังกำแพงเมืองเก่า ทุกพื้นที่ได้รับการจัดวางอย่างประณีตเพื่อให้เวลาเดินช้าลง ท่ามกลางเรือนไม้สักทองและสวนร่มรื่น | Concealed within ancient walls, an intimate retreat designed for unhurried contemplation where time slows down amid aged teakwood and quiet courtyards.
- * roomsEyebrow         | ห้องพักและสวีท                                                                                            | Accommodations
- * roomsChapter         | II.                                                                                                       | II.
- * rooms                | ห้องพักที่คัดสรร                                                                                          | Curated Suites
- * roomsSubtitle        | แต่ละห้องตกแต่งเฉพาะตัวด้วยไม้สักธรรมชาติ ผ้าทอมือ และความสงบเงียบเป็นส่วนตัว                               | Individually appointed with natural teakwood, hand-loomed textiles, and restorative quiet.
- * suite                | สวีท                                                                                                      | Suite
- * sleeps               | รองรับได้                                                                                                 | Sleeps
- * persons              | ท่าน                                                                                                      | guests
- * from                 | เริ่มต้น                                                                                                  | From
- * currency             | ฿                                                                                                         | ฿
- * perNight             | / คืน                                                                                                     | / night
- * select               | สำรองห้องนี้                                                                                              | Reserve Suite
- * galleryEyebrow       | บรรยากาศยามค่ำคืน                                                                                         | Visuals
- * galleryChapter       | III.                                                                                                      | III.
- * gallery              | ภาพบรรยากาศ                                                                                               | Atmospheres
- * gallerySubtitle      | บันทึกความเงียบสงบ แสงไฟอบอุ่น และงานช่างศิลป์                                                             | An intimate chronicle of quiet quarters, warm amber glow, and artisan craft.
- * locationEyebrow      | การเดินทาง                                                                                                | Location
- * locationChapter      | IV.                                                                                                       | IV.
- * location             | ที่ตั้งและการเดินทาง                                                                                      | Location & Arrival
- * locationSubtitle     | ใจกลางย่านเมืองเก่า ใกล้แหล่งวัฒนธรรมสำคัญ                                                                | In the historic city center, moments from cultural landmarks.
- * directGuarantee      | รับประกันการจองตรง                                                                                        | Direct reservation guaranteed
- * directGuaranteeBody  | ระบบจองตรงปลอดภัย สะดวก รวดเร็ว ไม่มีค่าธรรมเนียมแอบแฝง                                                    | Secure direct booking, instant confirmation, zero hidden fees.
- * poweredBy            | จองผ่าน hayhost                                                                                           | Booking powered by hayhost
- */
 import React, { type CSSProperties } from "react";
-import { ArrowRight, ArrowUpRight, MapPin, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, MapPin, Sparkles, Users } from "lucide-react";
 import { ThemeLanding } from "../ThemeLanding";
 import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
@@ -95,7 +50,7 @@ export default function BoutiqueNoirLanding(props: ThemeLandingProps) {
           </div><div className="story-accent" aria-hidden="true"><div className="story-frame"><div className="story-frame-inner"><Sparkles size={32} className="story-frame-icon" /><div className="story-frame-divider" /><span className="story-frame-caption">{hotelName}</span></div></div></div></div></div></section>}
           {showRooms && <section className="rooms section section-tint" id="rooms"><div className="container"><header className="section-head"><div className="chapter-label"><span className="chapter-numeral">{tt("roomsChapter")}</span><span className="eyebrow">{tt("roomsEyebrow")}</span></div><h2 className="section-title">{tt("rooms")}</h2><p className="section-subtitle">{tt("roomsSubtitle")}</p></header>
             <ul className="room-list">{roomTypes.map((room, idx) => { const href = isVisible("booking") ? bookingLink(room.id) : null; const amenities = (room.amenities ?? []).slice(0, 4); const suiteNumber = String(idx + 1).padStart(2, "0"); return <li className="room-card" key={room.id}>
-              <div className="room-aside" aria-hidden="true"><div className="room-badge"><span className="room-badge-suite">{tt("suite")}</span><span className="room-badge-num">{suiteNumber}</span></div><div className="room-aside-glow" /></div>
+              <div className="room-aside" aria-hidden="true"><div className="room-badge"><span className="room-badge-num">{suiteNumber}</span></div><div className="room-aside-glow" /></div>
               <div className="room-body"><div className="room-info"><h3 className="room-name">{room.name}</h3><p className="room-capacity"><Users size={16} aria-hidden="true" /><span>{tt("sleeps")} {room.capacity} {tt("persons")}</span></p>{room.description && <p className="room-desc">{room.description}</p>}
                 {amenities.length > 0 && <ul className="chip-list">{amenities.map((a) => <li className="chip" key={a}>{a}</li>)}</ul>}</div>
                 <div className="room-foot"><div className="room-price"><span className="room-price-label">{tt("from")}</span><span className="room-price-value">{tt("currency")}{formatPrice(room.basePrice)}</span><span className="room-price-unit">{tt("perNight")}</span></div>{href && <a className="btn btn-primary room-book" href={href}><span>{tt("select")}</span><ArrowRight size={16} aria-hidden="true" /></a>}</div>
@@ -104,9 +59,9 @@ export default function BoutiqueNoirLanding(props: ThemeLandingProps) {
           {gallery.length > 0 && <section className="gallery section" id="gallery"><div className="container"><header className="section-head text-center"><div className="chapter-label center"><span className="chapter-numeral">{tt("galleryChapter")}</span><span className="eyebrow">{tt("galleryEyebrow")}</span></div><h2 className="section-title">{tt("gallery")}</h2><p className="section-subtitle">{tt("gallerySubtitle")}</p></header>
             <ul className="gallery-grid">{gallery.map((m, i) => <li className="gallery-item" key={m.id ?? `${m.url}-${i}`}><img src={m.url} alt={m.caption || hotelName} loading="lazy" /><div className="gallery-overlay" aria-hidden="true" />{m.caption && <span className="gallery-caption">{m.caption}</span>}</li>)}</ul>
           </div></section>}
-          {showLocation && <section className="location section section-tint" id="location"><div className="container"><header className="section-head"><div className="chapter-label"><span className="chapter-numeral">{tt("locationChapter")}</span><span className="eyebrow">{tt("locationEyebrow")}</span></div><h2 className="section-title">{tt("location")}</h2><p className="section-subtitle">{tt("locationSubtitle")}</p></header>
+          {showLocation && <section className="location section section-tint" id="location"><div className="container"><header className="section-head"><div className="chapter-label"><span className="chapter-numeral">{tt("locationChapter")}</span><span className="eyebrow">{tt("locationEyebrow")}</span></div><h2 className="section-title">{tt("location")}</h2></header>
             <div className={`location-grid${locationMap ? " has-map" : ""}`}>{locationMap && <div className="location-map">{locationMap}</div>}<div className="location-info"><div className="location-card"><div className="location-head"><span className="location-icon" aria-hidden="true"><MapPin size={20} /></span><h3 className="location-name">{hotelName}</h3></div>{hotel?.address && <p className="location-address">{hotel.address}</p>}{contacts && <div className="location-contacts">{contacts}</div>}</div>
-              <div className="guarantee-card"><div className="guarantee-head"><ShieldCheck size={20} className="guarantee-icon" aria-hidden="true" /><span className="guarantee-title">{tt("directGuarantee")}</span></div><p className="guarantee-body">{tt("directGuaranteeBody")}</p></div></div></div>
+              </div></div>
           </div></section>}
         </main>
         <footer className="site-footer"><div className="container footer-inner"><div className="footer-brand"><p className="footer-name">© {hotelName}</p>{hotel?.address && <p className="footer-address">{hotel.address}</p>}</div><p className="footer-powered"><PoweredByHayhost label={tt("poweredBy")} /></p></div></footer>

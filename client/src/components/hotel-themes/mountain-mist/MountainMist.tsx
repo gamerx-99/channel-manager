@@ -1,37 +1,3 @@
-/*
- * (ก) Google Fonts ที่ธีมนี้ใช้:
- *   - Epilogue (หัวข้อภาษาอังกฤษ)
- *   - Prompt (หัวข้อภาษาไทย)
- *   - Noto Sans (เนื้อหาภาษาอังกฤษ)
- *   - Noto Sans Thai (เนื้อหาภาษาไทย)
- *
- * (ข) ตารางคำแปล  (prefix ทุก key = hotelThemes.mountainMist.)
- *
- * key          | ไทย                                           | English
- * -------------|-----------------------------------------------|---------------------------------------------
- * mainNav      | เมนูหลัก                                      | Main menu
- * navRooms     | ห้องพัก                                       | Rooms
- * navGallery   | รูปที่พัก                                     | Gallery
- * navLocation  | ที่ตั้ง                                       | Location
- * language     | เปลี่ยนภาษา                                   | Change language
- * bookNow      | จองเลย                                        | Book now
- * storyEyebrow | ที่นี่คือที่ไหน                               | About us
- * story        | เรื่องราวของเรา                               | Our story
- * storyBody    | มุมสงบให้คุณได้พักใจ ตื่นมารับอากาศดี ๆ แล้วค่อยเริ่มวัน | A quiet corner to slow down. Wake up to fresh air and start the day your way.
- * roomsEyebrow | ที่พักของเรา                                  | Stay with us
- * rooms        | ห้องพัก                                       | Rooms
- * sleeps       | พักได้                                        | Sleeps up to
- * persons      | คน                                            | guests
- * from         | เริ่มต้น                                      | From
- * currency     | ฿                                             | ฿
- * perNight     | / คืน                                         | / night
- * select       | เลือกห้องนี้                                  | Choose this room
- * galleryEyebrow | ดูบรรยากาศ                                  | Take a look
- * gallery      | รูปที่พัก                                     | Photos
- * locationEyebrow | มาหาเราได้ง่าย ๆ                           | Find us
- * location     | ที่ตั้ง                                       | Location
- * poweredBy    | จองผ่าน hayhost                               | Booking powered by hayhost
- */
 import React, { type CSSProperties } from "react";
 import "./mountain-mist.css";
 import { ThemeLanding } from "../ThemeLanding";

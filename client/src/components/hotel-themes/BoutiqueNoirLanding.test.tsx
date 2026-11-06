@@ -21,6 +21,8 @@ describe("Boutique Noir landing", () => {
     />);
     expect(html).toContain("Haus Nimman");
     expect(html).toContain("Garden Room");
+    expect(html).not.toContain('class="room-badge-suite"');
+    expect(html).not.toContain('class="guarantee-card"');
     expect(html).toContain('href="/haus-nimman/book?roomType=room-1"');
     expect(html).toContain("Photo 5");
     expect(html).not.toContain("Photo 6");

@@ -21,6 +21,7 @@ describe("Hostel Pop landing", () => {
     />);
     expect(html).toContain("Haus Nimman");
     expect(html).toContain("Garden Pod");
+    expect(html).not.toContain('class="hero-photo-sticker');
     expect(html).toContain("Lockers");
     expect(html).toContain('href="/haus-nimman/book"');
     expect(html).toContain('href="/haus-nimman/book?roomType=room-1"');

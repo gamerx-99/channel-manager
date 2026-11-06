@@ -1,44 +1,3 @@
-/*
- * (a) Google Fonts ที่ธีมนี้ใช้:
- *   - Epilogue (หัวข้อหลักและเนื้อหาภาษาอังกฤษ)
- *   - Space Grotesk (ป้าย สติกเกอร์ และตัวเลขราคา)
- *   - Kanit (ฟอนต์ภาษาไทยสำหรับหัวข้อและเนื้อหา)
- *
- * (b) ตารางคำแปล (prefix ทุก key = hotelThemes.hostelPop.)
- *
- * key             | Thai                                                                       | English
- * ----------------|----------------------------------------------------------------------------|---------------------------------------------
- * mainNav         | เมนูหลัก                                                                   | Main menu
- * navRooms        | ห้องพัก                                                                    | Rooms
- * navGallery      | รูปที่พัก                                                                  | Gallery
- * navLocation     | แผนที่ & ที่ตั้ง                                                            | Location
- * language        | เปลี่ยนภาษา                                                                | Change language
- * bookNow         | จองเลย!                                                                    | Book now!
- * heroBadge1      | แบ็คแพ็คเกอร์ตัวจริง!                                                      | Backpackers Hub!
- * heroBadge2      | ไวบ์ดีสุด ๆ!                                                               | Best Vibes!
- * heroBadge3      | ใกล้ที่เที่ยวฮิต!                                                          | Walkable Location!
- * heroPhotoBadge  | วิวดาดฟ้าสุดปัง!                                                           | Sunset Vibes!
- * storyEyebrow    | สไตล์ของเรา                                                                | Our Vibe
- * story           | ยินดีต้อนรับสู่โฮสเทล!                                                      | Hey Backpackers!
- * storyBody       | พื้นที่พบปะของนักเดินทางจากทั่วโลก นอนสบาย เป็นกันเอง ปลอดภัย พร้อมพื้นที่ส่วนกลางและดาดฟ้าชมพระอาทิตย์ตกสุดชิลล์ | Your social hub in the heart of town. Comfortable crash pads, warm global community, and epic rooftop sunsets.
- * roomsEyebrow    | เลือกห้องนอนกัน                                                             | Sleep Here
- * rooms           | ห้องพักและพอดนอน                                                           | Rooms & Pods
- * roomsSubtitle   | เตียงนุ่ม แอร์เย็น มีม่านส่วนตัว ล็อกเกอร์ และที่ชาร์จไฟครบครัน            | Crisp pod beds, air conditioning, blackout curtains, lockers, and personal sockets.
- * sleeps          | พักได้                                                                     | Sleeps up to
- * persons         | คน                                                                         | guests
- * from            | เริ่มต้น                                                                   | From
- * currency        | ฿                                                                          | ฿
- * perNight        | / คืน                                                                      | / night
- * select          | เลือกห้องนี้                                                               | Choose this room
- * galleryEyebrow  | ชมบรรยากาศ                                                                 | Visual Tour
- * gallery         | ชีวิตที่โฮสเทล                                                             | Life at the Hostel
- * gallerySubtitle | รวมมุมชิลล์ พื้นที่ส่วนกลาง และโมเมนต์สนุก ๆ ของพวกเรา                      | Chillout zones, communal spaces, and memorable moments.
- * locationEyebrow | เดินทางง่ายมาก                                                             | Find Us
- * location        | พิกัดใจกลางเมือง                                                           | Central Location
- * locationSubtitle| เดินทางสะดวก ใกล้ตลาดและย่านคาเฟ่ยอดฮิต                                    | Walkable to night markets, street food, and top cafes.
- * pinLabel        | เราอยู่ที่นี่!                                                             | You are here!
- * poweredBy       | จองผ่าน hayhost                                                            | Booking powered by hayhost
- */
 import React, { type CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight, Bed, MapPin, Sparkles, Users } from "lucide-react";
 
@@ -196,9 +155,6 @@ export default function HostelPopLanding(props: ThemeLandingProps) {
                 {heroUrl && (
                   <div className="hero-visual-col">
                     <div className="hero-photo-frame rotate-neg-2">
-                      <span className="hero-photo-sticker sticker-pink rotate-3">
-                        {tt("heroPhotoBadge")}
-                      </span>
                       <img src={heroUrl} alt={hotelName} className="hero-photo" />
                     </div>
                   </div>
@@ -342,7 +298,6 @@ export default function HostelPopLanding(props: ThemeLandingProps) {
                   </span>
                   <h2 className="section-title">{tt("location")}</h2>
                 </div>
-                <p className="section-subtitle">{tt("locationSubtitle")}</p>
               </header>
 
               <div className="location-grid">

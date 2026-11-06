@@ -61,7 +61,7 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay", "mountain-m
     mocks.theme = theme;
     const view = render(<PublicHotel slug="sample-stay" />);
     expect(view.container.querySelector('a[href="/sample-stay/book"]')).toBeTruthy();
-    expect(view.container.querySelector('a[href="/sample-stay/book?roomType=room-1"]')?.textContent).toContain(theme === "mountain-mist" ? "Choose this room" : theme === "boutique-noir" ? "Reserve Suite" : "Garden Room");
+    expect(view.container.querySelector('a[href="/sample-stay/book?roomType=room-1"]')?.textContent).toContain(theme === "mountain-mist" || theme === "boutique-noir" ? "Choose this room" : "Garden Room");
     expect(view.container.querySelector('a[href="#book"]')).toBeNull();
   });
 
