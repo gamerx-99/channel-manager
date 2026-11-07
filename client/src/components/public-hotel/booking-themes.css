@@ -17,7 +17,7 @@
 .booking-page[data-booking-theme="mountain-mist"] {
   --bt-page:#f5fbf8;--bt-surface:#e9efec;--bt-card:#fff;--bt-ink:#171d1b;--bt-muted:#424844;--bt-border:#c2c8c2;--bt-border-width:1px;--bt-radius:20px;
   --bt-heading:'Prompt','Epilogue',sans-serif;--bt-body:'Noto Sans Thai','Noto Sans',sans-serif;
-  --bt-button:#e0a458;--bt-button-text:#1f3b2d;--bt-button-radius:999px;--bt-button-shadow:0 4px 24px -2px rgba(31,59,45,.12);--bt-selected:#1f3b2d;--bt-selected-text:#fff;--bt-header:#1f3b2d;--bt-header-ink:#fff;--bt-highlight:#1f3b2d;
+  --bt-button:#1f3b2d;--bt-button-text:#fff;--bt-button-radius:999px;--bt-button-shadow:0 4px 24px -2px rgba(31,59,45,.12);--bt-selected:#1f3b2d;--bt-selected-text:#fff;--bt-header:#1f3b2d;--bt-header-ink:#fff;--bt-highlight:#1f3b2d;
 }
 .booking-page[data-booking-theme="boutique-noir"] {
   --bt-page:#131313;--bt-surface:#201f1f;--bt-card:#2a2a2a;--bt-ink:#e5e2e1;--bt-muted:#d1c5b5;--bt-border:#b8955a;--bt-border-width:1px;--bt-radius:0px;
@@ -27,7 +27,7 @@
 .booking-page[data-booking-theme="hostel-pop"] {
   --bt-page:#f9f9f9;--bt-surface:#ffd23f;--bt-card:#fff;--bt-ink:#1b1b1b;--bt-muted:#4d4634;--bt-border:#000;--bt-border-width:3px;--bt-radius:4px;
   --bt-heading:'Epilogue','Kanit',sans-serif;--bt-body:'Epilogue','Kanit',sans-serif;
-  --bt-button:#ffd23f;--bt-button-text:#000;--bt-button-radius:4px;--bt-button-shadow:4px 4px 0 #000;--bt-selected:#000;--bt-selected-text:#fff;--bt-header:#ffd23f;--bt-header-ink:#000;--bt-highlight:#000;
+  --bt-button:#fd5c8e;--bt-button-text:#000;--bt-button-radius:4px;--bt-button-shadow:4px 4px 0 #000;--bt-selected:#000;--bt-selected-text:#fff;--bt-header:#ffd23f;--bt-header-ink:#000;--bt-highlight:#000;
 }
 .booking-page[data-booking-theme="riverside-calm"] {
   --bt-page:#f3faff;--bt-surface:#def1fa;--bt-card:#fff;--bt-ink:#0c1e24;--bt-muted:#3f4849;--bt-border:#bfc8c9;--bt-border-width:1px;--bt-radius:16px;
@@ -91,8 +91,12 @@
 .booking-page:not([data-booking-theme="default"]) .booking-confirmed-header,
 .booking-page:not([data-booking-theme="default"]) .booking-confirmed-total-row { color:var(--bt-highlight); }
 .booking-page:not([data-booking-theme="default"]) .booking-action-button { background:var(--bt-button);color:var(--bt-button-text);border:var(--bt-border-width) solid var(--bt-button);border-radius:var(--bt-button-radius);box-shadow:var(--bt-button-shadow);font-family:var(--bt-body);min-height:40px; }
-.booking-page:not([data-booking-theme="default"]) .booking-nav-row button:not(.booking-action-button) { background:var(--bt-card);color:var(--bt-ink);border-color:var(--bt-border);border-radius:var(--bt-button-radius);min-height:40px; }
+.booking-page[data-booking-theme="hostel-pop"] .booking-action-button { border:3px solid #000; }
+.booking-page[data-booking-theme="hostel-pop"] .booking-action-button:not(:disabled):hover { box-shadow:var(--bt-button-shadow); }
+.booking-page:not([data-booking-theme="default"]) .booking-nav-row button:not(.booking-action-button) { background:var(--bt-card);color:var(--bt-ink);border:var(--bt-border-width) solid var(--bt-border);border-radius:var(--bt-button-radius);min-height:40px; }
 .booking-page:not([data-booking-theme="default"]) .booking-calendar { --booking-calendar-accent:var(--bt-selected);--booking-calendar-accent-text:var(--bt-selected-text);background:var(--bt-card);color:var(--bt-ink);border:var(--bt-border-width) solid var(--bt-border);border-radius:var(--bt-radius);min-width:0; }
+.booking-page:not([data-booking-theme="default"]) .booking-calendar .rdp-button_previous,
+.booking-page:not([data-booking-theme="default"]) .booking-calendar .rdp-button_next { border:var(--bt-border-width) solid var(--bt-border);background:var(--bt-card);color:var(--bt-ink); }
 .booking-page:not([data-booking-theme="default"]) .booking-calendar .rdp-day_button { color:var(--bt-ink);border-radius:var(--bt-button-radius); }
 .booking-page:not([data-booking-theme="default"]) .booking-calendar .rdp-range_start .rdp-day_button,
 .booking-page:not([data-booking-theme="default"]) .booking-calendar .rdp-range_end .rdp-day_button { color:var(--bt-selected-text);background:var(--bt-selected); }
@@ -114,7 +118,8 @@
 .booking-page:not([data-booking-theme="default"]) .payment-slip-instruction,
 .booking-page:not([data-booking-theme="default"]) .payment-slip-placeholder { color:var(--bt-muted); }
 .booking-page:not([data-booking-theme="default"]) .payment-countdown-value { color:var(--bt-highlight); }
-.booking-page:not([data-booking-theme="default"]) .payment-slip-submit { background:var(--bt-button);color:var(--bt-button-text);border-radius:var(--bt-button-radius);min-height:40px; }
+.booking-page:not([data-booking-theme="default"]) .payment-slip-submit { background:var(--bt-button);color:var(--bt-button-text);border:var(--bt-border-width) solid var(--bt-button);border-radius:var(--bt-button-radius);box-shadow:var(--bt-button-shadow);min-height:40px; }
+.booking-page[data-booking-theme="hostel-pop"] .payment-slip-submit { border:3px solid #000; }
 .booking-page .payment-qr { width:100%;max-width:420px;box-sizing:border-box; }
 .booking-page .payment-qr-image { max-width:100%;height:auto;aspect-ratio:1; }
 .booking-page .booking-box,.booking-page .booking-form-two-col,.booking-page .booking-summary-details { min-width:0; }
