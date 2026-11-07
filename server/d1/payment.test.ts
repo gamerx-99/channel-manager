@@ -5,7 +5,7 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookings, d1Schema, hotelPaymentSettings, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createPaymentSession, finalizePaymentSession, getHotelPaymentConfig, getLatestPaymentSession, savePromptPaySettings, updateBookingPaymentStatus, updatePaymentSessionStatus } from "./payment";
+import { createPaymentSession, finalizePaymentSession, getBookingRequestTimeout, getHotelPaymentConfig, getLatestPaymentSession, saveBookingRequestTimeout, savePromptPaySettings, updateBookingPaymentStatus, updatePaymentSessionStatus } from "./payment";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -35,6 +35,15 @@ async function seed() {
 }
 
 describe("D1 payment repository", () => {
+  it("saves a hotel-scoped web booking request timeout without changing another hotel's setting", async () => {
+    await seed();
+    expect(await getBookingRequestTimeout(db, { userId: "ua" }, "a")).toEqual({ booking_request_timeout_hours: 24 });
+    await saveBookingRequestTimeout(db, { userId: "ua" }, "a", 6);
+    expect(await getBookingRequestTimeout(db, { userId: "ua" }, "a")).toEqual({ booking_request_timeout_hours: 6 });
+    expect(await getBookingRequestTimeout(db, { userId: "ub" }, "b")).toEqual({ booking_request_timeout_hours: 24 });
+    await expect(saveBookingRequestTimeout(db, { userId: "ua" }, "b", 8)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(saveBookingRequestTimeout(db, { userId: "ua" }, "a", 0)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
   it("rejects an invalid PromptPay ID without writing it", async () => {
     await seed();
     await expect(savePromptPaySettings(db, { userId: "ua" }, "a", "06151256579", 15)).rejects.toMatchObject({ code: "BAD_REQUEST" });

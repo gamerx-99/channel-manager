@@ -8,6 +8,8 @@ const database = vi.hoisted(() => ({
   saveSlipOkSettings: vi.fn(),
   removeSlipOkKey: vi.fn(),
   savePromptPaySettings: vi.fn(),
+  getBookingRequestTimeout: vi.fn(),
+  saveBookingRequestTimeout: vi.fn(),
   getLatestPaymentSession: vi.fn(),
   createPaymentSession: vi.fn(),
   updateBookingPaymentStatus: vi.fn(),
@@ -44,7 +46,7 @@ const BOOKING_MANUAL = "55555555-5555-4555-8555-555555555555";
 const SESSION = "66666666-6666-4666-8666-666666666666";
 
 function fakeDb() {
-  const row = { id: BOOKING_VERIFY, hotelId: HOTEL, publicEnabled: true, status: "pending_payment", expiresAt: null, price: "120.00" };
+  const row = { id: BOOKING_VERIFY, hotelId: HOTEL, publicEnabled: true, status: "pending_payment", expiresAt: null, createdAt: new Date(), price: "120.00" };
   const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [row] };
   return {
     select: () => selectChain,
@@ -85,6 +87,8 @@ function assertNoSecrets(outcome: Awaited<ReturnType<typeof capture>>) {
 beforeEach(() => {
   vi.clearAllMocks();
   database.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
+  database.getBookingRequestTimeout.mockResolvedValue({ booking_request_timeout_hours: 24 });
+  database.saveBookingRequestTimeout.mockResolvedValue(undefined);
   database.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "SENTINEL_ENC_KEY", slipok_branch_id: "SENTINEL_BRANCH" });
   database.getSlipOkSettings.mockResolvedValue({ configured: true, enabled: true, branchId: "visible-branch-id" });
   database.getLatestPaymentSession.mockImplementation(async (_client: unknown, _caller: unknown, bookingId: string) => {
@@ -110,6 +114,8 @@ describe("payment router secret response boundary", () => {
       manualVerify: { booking_id: BOOKING_MANUAL, hotel_id: HOTEL, approved: true, note: "reviewed" },
     };
     const slipokInputs: Record<string, unknown> = {
+      getBookingRequestTimeout: { hotel_id: HOTEL },
+      saveBookingRequestTimeout: { hotel_id: HOTEL, booking_request_timeout_hours: 24 },
       getPromptPaySettings: { hotel_id: HOTEL },
       getSettings: { hotel_id: HOTEL },
       saveKey: { hotel_id: HOTEL, api_key: "SENTINEL_API_KEY", branch_id: "SENTINEL_BRANCH" },

@@ -6,6 +6,8 @@ const dbMocks = vi.hoisted(() => ({
   saveSlipOkSettings: vi.fn(),
   removeSlipOkKey: vi.fn(),
   getHotelPaymentConfig: vi.fn(),
+  getBookingRequestTimeout: vi.fn(),
+  saveBookingRequestTimeout: vi.fn(),
 }));
 const cryptoMocks = vi.hoisted(() => ({
   encryptSlipOkKey: vi.fn((key: string) => `encrypted:${key}`),
@@ -82,9 +84,9 @@ describe('slipok.saveKey (D1 router)', () => {
 });
 
 describe('SlipOK settings access boundaries', () => {
-  const operations = ['getSettings', 'getPromptPaySettings', 'saveKey', 'removeKey'] as const;
+  const operations = ['getSettings', 'getPromptPaySettings', 'getBookingRequestTimeout', 'saveBookingRequestTimeout', 'saveKey', 'removeKey'] as const;
   const mfaOperations = ['getSettings', 'saveKey', 'removeKey'] as const;
-  const input = { hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'branch-42' };
+  const input = { hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'branch-42', booking_request_timeout_hours: 24 };
 
   it.each(operations)('rejects %s without property.manage_profile before accessing credentials', async operation => {
     const app = await caller('front_desk');

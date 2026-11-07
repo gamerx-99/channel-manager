@@ -29,7 +29,7 @@ const HOLD_EXPIRES = new Date("2099-01-01T00:00:00.000Z");
 
 function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, status = "pending_payment", claimRows: unknown[] = [{ id: BOOKING }]) {
   const writes: Array<Record<string, unknown>> = [];
-  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, expiresAt: HOLD_EXPIRES }] };
+  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, expiresAt: HOLD_EXPIRES, createdAt: new Date() }] };
   const db = {
     select: () => selectChain,
     update: () => ({
@@ -103,7 +103,7 @@ describe("verifySlip outcomes", () => {
     await expect(submit(db, 5)).resolves.toMatchObject({ verified: true });
 
     expect(verify).toHaveBeenCalledWith({ apiKey: "hotel-key", branchId: "hotel-branch" }, expect.objectContaining({ expectedAmount: 120 }));
-    expect(writes.at(-1)).toEqual({ status: "confirmed" });
+    expect(writes.at(-1)).toEqual({ status: "confirmed", expiresAt: null });
   });
 
   it("sends the slip to manual review when the hotel has no SlipOK key", async () => {
@@ -171,7 +171,7 @@ describe("verifySlip outcomes", () => {
     await expect(submit(db, 12)).resolves.toMatchObject({ verified: true });
 
     expect(booking.claimBookingNights).toHaveBeenCalledWith(db, expect.anything(), HOTEL, BOOKING);
-    expect(writes.at(-1)).toEqual({ status: "confirmed" });
+    expect(writes.at(-1)).toEqual({ status: "confirmed", expiresAt: null });
   });
 
   it("sends a payment_rejected booking to manual review when its room is taken", async () => {

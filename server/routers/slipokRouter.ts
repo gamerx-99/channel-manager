@@ -39,7 +39,11 @@ export const slipokRouter = router({
     .query(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
       if (!ctx.db) throw new Error('D1 database required.');
-      return getBookingRequestTimeout(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      try {
+        return await getBookingRequestTimeout(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
     }),
 
   saveBookingRequestTimeout: protectedProcedure
@@ -47,8 +51,12 @@ export const slipokRouter = router({
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
       if (!ctx.db) throw new Error('D1 database required.');
-      await saveBookingRequestTimeout(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.booking_request_timeout_hours);
-      return { success: true as const };
+      try {
+        await saveBookingRequestTimeout(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.booking_request_timeout_hours);
+        return { success: true as const };
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
     }),
   getSettings: protectedProcedure
     .input(z.object({ hotel_id: hotelIdSchema }))
