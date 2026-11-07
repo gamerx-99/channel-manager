@@ -5831,3 +5831,10 @@ Exit 0
 | `oneCalendar.checkoutDay` | — | วันเช็กเอาต์ · ไม่แก้ไข | Check-out · no change |
 
 - Verification: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 269 passed (269)`, `Tests 1795 passed (1795)`, exit 0. `pnpm build` → `3615 modules transformed`, `--dry-run: exiting now.`, exit 0 (Wrangler printed a non-fatal AppData log EPERM). `git diff --check` → exit 0. `.tmp-vitest/` removed. No commit, push, or deploy.
+
+## 2026-11-07 - Calendar values per room type (`fix/calendar-per-room-type`)
+
+- Each room card now owns its rooms, price, minimum nights, and base-price choice. The pure payload builder omits untouched types and sends one existing `saveCalendarRange` call per changed type. Successful cards clear their edits; failed cards keep theirs, show the room type name in the error, and do not hide successful results. The calendar refetches after the batch. The last-night `end_date` and server permissions were unchanged.
+- Intentional test changes: `OneCalendarSidePanel.test.tsx` uses the new per-type props; `OneCalendar.contract.test.ts` replaces assertions for one shared input with the builder call and per-type edit bindings; `OneCalendar.save.test.tsx` changes its one-type fixture to Deluxe and Family and verifies isolated fields, one-type save, partial failure, and clearing a stale saved status. New `useCalendarEdits.test.ts` covers untouched Family, different prices and room counts, and per-type base price.
+- Verification: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 271 passed (271)`, `Tests 1823 passed (1823)`, exit 0. `pnpm build` → `3617 modules transformed`, `--dry-run: exiting now.`, exit 0; Wrangler printed a non-fatal AppData log EPERM. Independent reviewer: APPROVE after the stale status fix. No commit, push, deploy, or remote database access.
+- `git diff --check` → exit 0. `.tmp-vitest/` remains untracked: automatic command review rejected both recursive cleanup and explicit individual-file removal.

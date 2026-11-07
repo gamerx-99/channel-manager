@@ -22,21 +22,23 @@ describe("one calendar page contract", () => {
     expect(getRequiredRoutePermission("/dashboard/pricing")).toBeNull();
   });
 
-  it("offers month and timeline modes with range selection and a shared save panel", () => {
+  it("offers month and timeline modes with range selection and a per-type save panel", () => {
     expect(page).toContain('setMode("month")');
     expect(page).toContain('setMode("timeline")');
     expect(page).toContain("selectCalendarDate(range[0], range[1], date)");
     expect(page).toContain("<OneCalendarSidePanel");
     expect(panel).toContain("one-calendar-panel panel");
-    expect(page).toContain("end_date: selection.lastNight");
+    expect(page).toContain("range[0], selection.lastNight");
     expect(page).toContain("nightCount={selection.nightCount}");
     expect(panel).toContain('t("oneCalendar.editOneNight"');
     expect(panel).toContain('t("oneCalendar.editNights"');
-    expect(page).toContain("data.save.mutateAsync(input as any)");
+    expect(page).toContain("data.save.mutateAsync(input)");
   });
 
   it("shows room controls per selected type, hides rate fields without rate access, and surfaces localized save errors", () => {
     expect(panel).toContain("roomTypes.map(roomType =>");
+    expect(panel).toContain("edits[roomType.id]");
+    expect(panel).toContain("props.onEditChange(roomType.id");
     expect(panel).toContain("{canManageRates &&");
     expect(panel).toContain("{canManageAllotment &&");
     expect(panel).toContain('role="alert"');
