@@ -7,6 +7,7 @@ import PageState from "@/components/PageState";
 import { useOneCalendar } from "./useOneCalendar";
 import OneCalendarTimeline from "./OneCalendarTimeline";
 import OneCalendarSidePanel from "./OneCalendarSidePanel";
+import { buildCalendarSaveInputs, useCalendarEdits } from "./useCalendarEdits";
 import { formatBuddhistDate, getCalendarNightSelection, isCheckoutDate, isDateSelected, selectCalendarDate } from "./oneCalendarRules";
 import "./oneCalendar.css";
 
@@ -28,10 +29,9 @@ export default function OneCalendar({ id }: { id: string }) {
   const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
   const [range, setRange] = useState<[string | null, string | null]>([null, null]);
   const selection = getCalendarNightSelection(range[0], range[1]);
-  const [rooms, setRooms] = useState("");
-  const [price, setPrice] = useState("");
-  const [minimum, setMinimum] = useState("");
-  const [useBase, setUseBase] = useState(false);
+  const { edits, updateEdit, clearEdit, clearAll } = useCalendarEdits();
+  const [saveResults, setSaveResults] = useState<Record<string, "saved" | "failed">>({});
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const data = useOneCalendar(id, month);
   useEffect(() => {
@@ -55,39 +55,55 @@ export default function OneCalendar({ id }: { id: string }) {
     const next = selectCalendarDate(range[0], range[1], date);
     setRange(next);
     setError(null);
+    setSaveResults({});
     if (next[1]) {
-      setRooms(""); setPrice(""); setMinimum(""); setUseBase(false);
+      clearAll();
     }
   };
 
   const save = async () => {
     if (!range[0] || !range[1] || !selection.lastNight) return;
     if (!selectedTypes.length) { setError(t("oneCalendar.chooseRoomTypes")); return; }
-    const input: Record<string, unknown> = {
-      hotel_id: id,
-      room_type_ids: selectedTypes.map((roomType: CalendarRoomType) => roomType.id),
-      start_date: range[0],
-      end_date: selection.lastNight,
-    };
-    if (data.canManageAllotment && rooms !== "") input.rooms_available = Number(rooms);
-    if (data.canManageRates && price !== "" && !useBase) input.price = Number(price);
-    if (data.canManageRates && minimum !== "") input.min_stay_nights = Number(minimum);
-    if (useBase && data.canManageRates) input.base = true;
-    if (!("rooms_available" in input) && !("price" in input) && !("min_stay_nights" in input) && !("base" in input)) {
+    const inputs = buildCalendarSaveInputs(selectedTypes.map(type => type.id), edits, id, range[0], selection.lastNight, data.canManageRates, data.canManageAllotment);
+    if (!inputs.length) {
       setError(t("oneCalendar.saveError")); return;
     }
     setError(null);
+    setSaveResults({});
+    setSaving(true);
+    const results: Record<string, "saved" | "failed"> = {};
+    for (const input of inputs) {
+      const roomTypeId = input.room_type_ids[0]!;
+      try {
+        await data.save.mutateAsync(input);
+        results[roomTypeId] = "saved";
+        clearEdit(roomTypeId);
+      } catch {
+        results[roomTypeId] = "failed";
+      }
+    }
+    setSaveResults(results);
+    const failedNames = selectedTypes.filter(type => results[type.id] === "failed").map(type => type.name);
+    if (failedNames.length) setError(`${t("oneCalendar.saveError")} ${failedNames.join(", ")}`);
     try {
-      await data.save.mutateAsync(input as any);
-      setRooms(""); setPrice(""); setMinimum(""); setUseBase(false);
-    } catch (cause) {
-      void cause;
-      setError(t("oneCalendar.saveError"));
+      await data.calendar.refetch();
+    } catch {
+      setError(current => current ?? t("oneCalendar.saveError"));
+    } finally {
+      setSaving(false);
     }
   };
 
   const toggleRoomType = (roomTypeId: string) => setSelectedRoomTypes(current =>
     current.includes(roomTypeId) ? current.filter(id => id !== roomTypeId) : [...current, roomTypeId]);
+  const changeRoomTypeEdit = (roomTypeId: string, change: Parameters<typeof updateEdit>[1]) => {
+    updateEdit(roomTypeId, change);
+    setSaveResults(current => {
+      const next = { ...current };
+      delete next[roomTypeId];
+      return next;
+    });
+  };
 
   return <div className="page-content one-calendar-page">
     <section className="page-intro intro-split"><div><div className="eyebrow">{t("oneCalendar.eyebrow")}</div><h1>{t("oneCalendar.title")}<span className="title-mark">.</span></h1><p className="lede">{t("oneCalendar.description")}</p></div></section>
@@ -107,6 +123,6 @@ export default function OneCalendar({ id }: { id: string }) {
       </div> : <OneCalendarTimeline dates={dates} roomTypes={selectedTypes} rowMap={rowMap} selectedStart={range[0]} checkoutDate={range[1]} t={t} onChooseDay={chooseDay} />}
       <p className="field-help">{t("oneCalendar.chooseRange")}</p>
     </section>
-    {range[0] && range[1] && <OneCalendarSidePanel startDate={range[0]} checkoutDate={range[1]} lastNight={selection.lastNight!} nightCount={selection.nightCount} language={language} roomTypes={selectedTypes} rowMap={rowMap} canManageRates={data.canManageRates} canManageAllotment={data.canManageAllotment} rooms={rooms} price={price} minimum={minimum} useBase={useBase} saving={data.save.isPending} error={error} t={t} onRoomsChange={setRooms} onPriceChange={setPrice} onMinimumChange={setMinimum} onUseBaseChange={setUseBase} onSave={() => void save()} />}
+    {range[0] && range[1] && <OneCalendarSidePanel startDate={range[0]} checkoutDate={range[1]} lastNight={selection.lastNight!} nightCount={selection.nightCount} language={language} roomTypes={selectedTypes} rowMap={rowMap} canManageRates={data.canManageRates} canManageAllotment={data.canManageAllotment} edits={edits} saveResults={saveResults} saving={saving} error={error} t={t} onEditChange={changeRoomTypeEdit} onSave={() => void save()} />}
   </div>;
 }

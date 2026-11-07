@@ -6,9 +6,8 @@ import OneCalendarSidePanel from "./OneCalendarSidePanel";
 
 const common = {
   roomTypes: [], rowMap: new Map(), canManageRates: true, canManageAllotment: true,
-  rooms: "", price: "", minimum: "", useBase: false, saving: false, error: null,
-  onRoomsChange: () => {}, onPriceChange: () => {}, onMinimumChange: () => {},
-  onUseBaseChange: () => {}, onSave: () => {},
+  edits: {}, saveResults: {}, saving: false, error: null,
+  onEditChange: () => {}, onSave: () => {},
 };
 
 describe("calendar edit heading", () => {
