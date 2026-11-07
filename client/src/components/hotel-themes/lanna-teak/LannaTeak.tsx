@@ -57,7 +57,7 @@ export default function LannaTeakLanding({
         <main>
           {isVisible("hero") && (heroImage || heroCopy || hotelName) && (
             <section className="lanna-hero">
-              <div className="lanna-hero-frame">
+              <div className={`lanna-hero-frame${heroImage ? "" : " lanna-hero-frame--placeholder"}`}>
                 {heroImage ? (
                   <img
                     className="lanna-hero-img"
