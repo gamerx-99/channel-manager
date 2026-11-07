@@ -27,6 +27,7 @@ describe('hotel profile page contract', () => {
     expect(page).toContain('type="submit" disabled={isPending}');
     expect(page).toContain('role="status"');
     expect(page).toContain('role="alert"');
+    expect(page).toContain('<HotelGeneralOperations hotel={hotelQuery.data} />');
   });
 
   it('keeps coordinate control styling in CSS', () => {

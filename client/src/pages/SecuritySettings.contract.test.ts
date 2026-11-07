@@ -71,6 +71,6 @@ describe("Security settings page contract", () => {
     expect(page).toContain('"property.manage_profile"');
     expect(page).not.toContain("SlipOkSettings");
     expect(page).toContain("canManageSlipOk && <p");
-    expect(page).toContain("/hotels/${hotelId}");
+    expect(page).toContain("/hotels/${hotelId}/settings/finance");
   });
 });

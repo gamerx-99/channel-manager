@@ -94,7 +94,7 @@ describe("HotelPaymentSettings", () => {
     fireEvent.change(screen.getByLabelText("financials.promptPayIdLabel"), { target: { value: "0812345678" } });
     fireEvent.click(screen.getByRole("button", { name: "financials.savePromptPayId" }));
     await waitFor(() => expect(savePromptPay).toHaveBeenCalledWith({ hotel_id: "hotel-1", promptpay_id: "0812345678", payment_timeout_minutes: 15 }));
-    fireEvent.change(screen.getByLabelText("slipOk.branchLabel"), { target: { value: "branch-1" } });
+    fireEvent.change(screen.getByLabelText("slipOk.apiLabel"), { target: { value: "https://api.slipok.com/api/line/apikey/branch-1" } });
     fireEvent.change(screen.getByLabelText("slipOk.keyLabel"), { target: { value: "secret-key-123" } });
     fireEvent.click(screen.getByRole("button", { name: "slipOk.save" }));
     await waitFor(() => expect(saveKey).toHaveBeenCalledWith({ hotel_id: "hotel-1", api_key: "secret-key-123", branch_id: "branch-1" }));

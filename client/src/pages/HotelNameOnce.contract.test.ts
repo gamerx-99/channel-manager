@@ -26,11 +26,11 @@ describe("single hotel name surface", () => {
     expect(sidebar).not.toContain("activeHotel={selectedHotel}");
   });
 
-  it("gates the hotel profile link by property.manage_profile", () => {
+  it("gates the general settings link by property.manage_profile", () => {
     const sidebar = read("client/src/components/layout/Sidebar.tsx");
     expect(sidebar).toContain('can("property.manage_profile")');
-    expect(sidebar).toContain('label: t("sidebar.hotelProfile")');
-    expect(sidebar).toContain("/profile`");
+    expect(sidebar).toContain('label: t("sidebar.generalSettings")');
+    expect(sidebar).toContain("/settings/general`");
   });
 
   it("uses the shared hotel selection on housekeeping and communications", () => {

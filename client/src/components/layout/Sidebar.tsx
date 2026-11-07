@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BarChart3,
+  CreditCard,
   BedDouble,
   Bell,
   CalendarDays,
@@ -50,7 +51,8 @@ export function getHotelSettingsItems(
 ): Array<{ href: string; label: string; icon: typeof Hotel; tourTarget?: string }> {
   if (!selectedHotelId) return [];
   return [
-    ...(can("property.manage_profile") ? [{ href: `/hotels/${selectedHotelId}/profile`, label: t("sidebar.hotelProfile"), icon: Hotel, tourTarget: "hotel-settings" }] : []),
+    ...(can("property.manage_profile") ? [{ href: `/hotels/${selectedHotelId}/settings/general`, label: t("sidebar.generalSettings"), icon: Hotel, tourTarget: "hotel-settings" }] : []),
+    ...(can("property.manage_profile") ? [{ href: `/hotels/${selectedHotelId}/settings/finance`, label: t("sidebar.financeSettings"), icon: CreditCard }] : []),
     ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: Users }] : []),
     ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
   ];
@@ -72,7 +74,7 @@ export function getRoomsAndPricingItems(
 
 function getActivePath(location: string, selectedHotelId?: string | null) {
   if (!selectedHotelId) return location;
-  const hotelSubPaths = ["bookings", "calendar", "services", "ota", "staff", "support-access", "profile"];
+  const hotelSubPaths = ["settings/general", "settings/finance", "bookings", "calendar", "services", "ota", "staff", "support-access", "profile"];
   for (const subPath of hotelSubPaths) {
     const prefix = `/hotels/${selectedHotelId}/${subPath}`;
     if (location.startsWith(prefix)) return prefix;

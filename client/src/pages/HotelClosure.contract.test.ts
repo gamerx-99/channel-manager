@@ -13,8 +13,8 @@ describe("hotel closure pages", () => {
   });
 
   it("offers closing only with the owner's permission", () => {
-    expect(read("./SecuritySettings.tsx")).toContain(`"property.close_hotel"`);
-    expect(read("./SecuritySettings.tsx")).toContain("canCloseHotel && <HotelClosureSettings");
+    expect(read("../components/hotel/HotelGeneralOperations.tsx")).toContain("'property.close_hotel'");
+    expect(read("../components/hotel/HotelGeneralOperations.tsx")).toContain("canClose && <HotelClosureSettings");
   });
 
   it("makes the owner choose, and signing in never cancels", () => {

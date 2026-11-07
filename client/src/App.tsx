@@ -26,6 +26,7 @@ import AccountOnboarding from "./pages/AccountOnboarding";
 import AcceptInvite from "./pages/AcceptInvite";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
+import HotelFinanceSettings from "./pages/HotelFinanceSettings";
 import Bookings from "./pages/Bookings";
 import OneCalendar from "./pages/OneCalendar";
 import { useHotel } from "./contexts/HotelContext";
@@ -133,6 +134,12 @@ function Router() {
       </Route>
       <Route path="/hotels/:id/profile">
         {(params) => <PrivateRoute><HotelProfile id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/hotels/:id/settings/general">
+        {(params) => <PrivateRoute><HotelProfile id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/hotels/:id/settings/finance">
+        {(params) => <PrivateRoute><HotelFinanceSettings id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id">
         {(params) => <PrivateRoute><HotelDetail id={params.id} /></PrivateRoute>}

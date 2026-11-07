@@ -7,7 +7,7 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8"
 describe("receipts and tax invoices contract", () => {
   const router = read("server/routers.ts");
   const bookings = read("client/src/pages/Bookings.tsx");
-  const hotelDetail = read("client/src/pages/HotelDetail.tsx");
+  const finance = read("client/src/pages/HotelFinanceSettings.tsx");
   const dialog = read("client/src/components/booking/BookingDocumentDialog.tsx");
   const settings = read("client/src/components/hotel/HotelInvoiceSettings.tsx");
 
@@ -16,8 +16,8 @@ describe("receipts and tax invoices contract", () => {
   });
 
   it("puts the bill header on the hotel settings page behind the profile permission", () => {
-    expect(hotelDetail).toContain("{canPublish && <HotelInvoiceSettings");
-    expect(hotelDetail).toContain("'property.manage_profile'");
+    expect(finance).toContain("<HotelInvoiceSettings");
+    expect(finance).toContain("'property.manage_profile'");
     expect(settings).toContain('id="invoice-tax-id"');
     expect(settings).toContain('id="invoice-enabled"');
   });

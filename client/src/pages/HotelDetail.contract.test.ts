@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 describe('Hotel Detail calendar navigation', () => {
   const hotelDetail = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelDetail.tsx'), 'utf8');
+  const general = readFileSync(resolve(process.cwd(), 'client/src/components/hotel/HotelGeneralOperations.tsx'), 'utf8');
+  const finance = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelFinanceSettings.tsx'), 'utf8');
   const app = readFileSync(resolve(process.cwd(), 'client/src/App.tsx'), 'utf8');
 
   it('links availability to the registered calendar route', () => {
@@ -25,16 +27,17 @@ describe('Hotel Detail calendar navigation', () => {
   });
 
   it('lets a holder of property.manage_profile publish or unpublish the hotel page', () => {
-    expect(hotelDetail).toContain("hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], id, 'property.manage_profile')");
-    expect(hotelDetail).toContain('trpc.channelManager.setHotelPublished.useMutation');
-    expect(hotelDetail).toContain('{canPublish && <div className="publish-control">');
-    expect(hotelDetail).toContain('id="hotel-publish-toggle"');
-    expect(hotelDetail).toContain("t('hotelDetail.confirmUnpublish')");
+    expect(app).toContain('path="/hotels/:id/settings/general"');
+    expect(general).toContain('trpc.channelManager.setHotelPublished.useMutation');
+    expect(general).toContain('id="hotel-publish-toggle"');
+    expect(general).toContain("t('hotelDetail.confirmUnpublish')");
   });
 
-  it('mounts hotel payment settings only for property profile managers', () => {
-    expect(hotelDetail).toContain("import HotelPaymentSettings from '@/components/hotel/HotelPaymentSettings'");
-    expect(hotelDetail).toContain("{canPublish && <HotelPaymentSettings hotelId={hotel.id} />}");
+  it('moves payment and invoice settings to the finance page', () => {
+    expect(finance).toContain("'property.manage_profile'");
+    expect(finance).toContain('<HotelPaymentSettings hotelId={id} />');
+    expect(finance).toContain('<HotelInvoiceSettings');
+    expect(hotelDetail).not.toContain('HotelPaymentSettings');
     expect(hotelDetail).not.toContain('<Dialog open={showEditHotel}');
   });
 

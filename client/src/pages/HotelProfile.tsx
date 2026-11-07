@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { PageState } from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import { useHotelProfileForm, type HotelProfileForm } from '@/components/hotel/useHotelProfileForm';
+import HotelGeneralOperations from '@/components/hotel/HotelGeneralOperations';
 import './HotelProfile.css';
 
 const HotelMapPicker = lazy(() => import('@/components/hotel/HotelMapPicker'));
@@ -10,7 +11,7 @@ const HotelMapPicker = lazy(() => import('@/components/hotel/HotelMapPicker'));
 export default function HotelProfile({ id }: { id: string }) {
   const { t } = useTranslation();
   const { hotelQuery, authLoading, canManage, form, change, submit, error, saved, isPending, retry } = useHotelProfileForm(id);
-  const intro = <section className="page-intro intro-split"><div><div className="eyebrow">{t('hotelProfile.eyebrow')}</div><h1>{t('hotelProfile.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotelProfile.lede')}</p></div></section>;
+  const intro = <section className="page-intro intro-split"><div><div className="eyebrow">{t('sidebar.hotelSettings')}</div><h1>{t('sidebar.generalSettings')}<span className="title-mark">.</span></h1><p className="lede">{t('hotelSettings.generalDescription')}</p></div></section>;
   if (hotelQuery.isLoading || authLoading) return <div className="page-content hotel-profile-page">{intro}<section className="panel empty-state"><PageState tone="loading" title={t('hotelDetail.loadingTitle')} description={t('hotelDetail.loadingDesc')} /></section></div>;
   if (!canManage) return <div className="page-content hotel-profile-page">{intro}<section className="panel empty-state"><PageState tone="error" title={t('accessRestricted.title')} description={t('accessRestricted.permissionRequired')} /></section></div>;
   if (hotelQuery.error || !hotelQuery.data) return <div className="page-content hotel-profile-page">{intro}<section className="panel empty-state"><PageState tone="error" title={t('hotelDetail.errorTitle')} description={hotelQuery.error?.message ?? t('hotelDetail.errorDescFallback')} actionLabel={t('hotelDetail.retryButton')} onAction={retry} /></section></div>;
@@ -42,5 +43,6 @@ export default function HotelProfile({ id }: { id: string }) {
       </section>
       <div className="hotel-profile-savebar">{error && <p className="form-error" role="alert">{error}</p>}{saved && <p className="hotel-profile-success" role="status">{t('hotelProfile.saved')}</p>}<div className="form-submit"><Link href={`/hotels/${id}`} className="button button-quiet">{t('hotelProfile.back')}</Link><button className="button button-primary" type="submit" disabled={isPending}>{isPending ? t('hotelDetail.savingProfile') : t('hotelDetail.saveProfile')}</button></div></div>
     </form>
+    <HotelGeneralOperations hotel={hotelQuery.data} />
   </div>;
 }

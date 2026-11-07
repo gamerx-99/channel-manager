@@ -90,3 +90,7 @@ both as proposals to confirm before implementation starts, not settled decisions
       `20260908_add_payment_flow.sql` (Phase 12B) applied and verified 2026-09-01 — all 8 checks PASS
 - [x] Spec status updated to DONE, `.agent/handoff.md` entry written
 - [x] Reviewer approved with evidence (this entry — Claude, 2026-09-01)
+
+## 2026-11-08 UI update
+
+The hotel finance form accepts the full SlipOK API URL and API Key shown in SlipOK, storing the URL's branch segment in the existing field.

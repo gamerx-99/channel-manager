@@ -56,7 +56,7 @@ describe("Financials dashboard contract", () => {
     expect(component).not.toContain("PromptPaySettings");
     expect(component).not.toContain('id="promptpay-id-input"');
     expect(component).toContain('canManagePaymentSettings && <p');
-    expect(component).toContain('href={`/hotels/${hotelId}`}');
+    expect(component).toContain('href={`/hotels/${hotelId}/settings/finance`}');
   });
 
   it("asks for an authenticator code before saving PromptPay and does not send owners without 2FA to enrol", () => {

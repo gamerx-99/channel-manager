@@ -17,8 +17,7 @@ describe("owner subscription pages", () => {
     expect(logic).toContain("subscriptionBilling.createPayment");
     expect(logic).toContain("subscriptionBilling.verifySlip");
     expect(page).toContain("PromptPayQr");
-    // AGENTS.md Rule 6 rationale: Commit 35880ef relocated the package card component
-    // from Home.tsx to SecuritySettings.tsx as part of the dashboard decluttering.
-    expect(read("client/src/pages/SecuritySettings.tsx")).toContain("home-plan-card");
+    // The hotel's billing card is grouped with its payment and invoice settings.
+    expect(read("client/src/pages/HotelFinanceSettings.tsx")).toContain("home-plan-card");
   });
 });

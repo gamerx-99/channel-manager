@@ -262,7 +262,7 @@ export default function Financials() {
         </div>
         <p className="field-help financials-bookings-help">{data.bookings.length > 0 ? t("financials.bookingsExportDesc", { count: data.bookings.length }) : t("financials.bookingsExportEmpty")}</p>
       </section>
-      {hotelId && canManagePaymentSettings && <p className="field-help"><Link href={`/hotels/${hotelId}`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
+      {hotelId && canManagePaymentSettings && <p className="field-help"><Link href={`/hotels/${hotelId}/settings/finance`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
     </div>
   );
 }
