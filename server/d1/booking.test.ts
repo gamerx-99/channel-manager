@@ -12,6 +12,7 @@ import * as bookingRepository from "./booking";
 import { transitionBookingStatus, updateRoomTypeWithOccupancyConfig, calculateNightPriceSatang, calculateServiceTotalSatang, priceStayForRoomType } from "./bookingService";
 import { addNightsStatement } from "./bookingNights";
 import { syncOtaIcalBlocks } from "./ota";
+import { expireOutstandingBookingRequests } from "./bookingExpiry";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -199,6 +200,19 @@ describe("D1 booking repositories", () => {
     expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, hold.booking_id))).toEqual([]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, hold.booking_id))).map(row => row.toStatus)).toEqual(["held", "expired"]);
     await expect(createPublicBooking(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", guest_name: "Available Guest", check_in: "2026-11-01", check_out: "2026-11-02" }, now)).resolves.toMatchObject({ success: true });
+  });
+
+  it("expires a web booking awaiting slip review and releases its room for a new guest", async () => {
+    await seedHotel("a", "owner-a");
+    const now = new Date("2026-10-28T00:00:00Z");
+    const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] }, now);
+    await db.update(bookings).set({ status: "pending_verification", expiresAt: new Date(now.getTime() + 24 * 60 * 60_000) }).where(eq(bookings.id, hold.booking_id));
+    const afterExpiry = new Date(now.getTime() + 25 * 60 * 60_000);
+    await expect(expireOutstandingBookingRequests(db, afterExpiry)).resolves.toEqual({ expired: 1 });
+    expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("expired");
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, hold.booking_id))).toEqual([]);
+    expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, hold.booking_id))).at(-1)?.reason).toBe("timer_expired");
+    await expect(holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] }, afterExpiry)).resolves.toHaveProperty("booking_id");
   });
 
   it("cleans an expired-but-still-held row before a new hold without waiting for lazy expiry", async () => {

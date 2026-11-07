@@ -471,9 +471,11 @@ export const hotelPaymentSettings = sqliteTable("hotel_payment_settings", {
   paymentTimeoutMinutes: integer("payment_timeout_minutes").notNull().default(15),
   slipokBranchId: text("slipok_branch_id"),
   holdTimeoutMinutes: integer("hold_timeout_minutes").notNull().default(15),
+  bookingRequestTimeoutHours: integer("booking_request_timeout_hours").notNull().default(24),
 }, table => [
   check("hotel_payment_settings_payment_timeout_check", sql`${table.paymentTimeoutMinutes} between 5 and 60`),
   check("hotel_payment_settings_hold_timeout_check", sql`${table.holdTimeoutMinutes} between 5 and 60`),
+  check("hotel_payment_settings_booking_request_timeout_check", sql`${table.bookingRequestTimeoutHours} between 1 and 168`),
   uniqueIndex("hotel_payment_settings_hotel_id_unique").on(table.hotelId),
 ]);
 

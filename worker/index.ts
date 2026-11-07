@@ -5,6 +5,7 @@ import { d1Schema } from "../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../server/db/scope";
 import { purgeClosedHotels } from "../server/d1/hotelClosure";
 import { runScheduledD1OtaSync } from "../server/d1/otaScheduler";
+import { expireOutstandingBookingRequests } from "../server/d1/bookingExpiry";
 import type { WorkerEnv } from "./app";
 
 const app = createWorkerApp();
@@ -17,10 +18,14 @@ export const handleScheduledOtaSync = (env: Pick<WorkerEnv, "DB">, fetchImpl: ty
 export const handleScheduledHotelPurge = (env: Pick<WorkerEnv, "DB" | "MEDIA">) =>
   purgeClosedHotels(drizzle(env.DB, { schema: d1Schema }) as unknown as D1ScopedDatabase, env.MEDIA);
 
+export const handleScheduledBookingExpiry = (env: Pick<WorkerEnv, "DB">) =>
+  expireOutstandingBookingRequests(drizzle(env.DB, { schema: d1Schema }) as unknown as D1ScopedDatabase);
+
 const worker: ExportedHandler<WorkerEnv> = {
   fetch: app.fetch as unknown as NonNullable<ExportedHandler<WorkerEnv>["fetch"]>,
   scheduled(_controller, env, ctx) {
     ctx.waitUntil(handleScheduledHotelPurge(env));
+    ctx.waitUntil(handleScheduledBookingExpiry(env));
   },
 };
 

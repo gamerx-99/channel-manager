@@ -12,7 +12,7 @@ import {
   finalizePaymentSession,
 } from '../d1/payment';
 import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
-import { bookings, hotels } from '../../drizzle/d1-schema';
+import { bookings, hotels, hotelPaymentSettings } from '../../drizzle/d1-schema';
 import { eq, and } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
 import { normalisePromptPayId } from '../../shared/promptPayId';
@@ -134,8 +134,10 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
         }
 
-        // A slip waiting for staff keeps its session open: the guest has paid
-        // as far as they know, so the QR timer no longer applies.
+        const bookingState = await expireBookingIfPast(db, guest, input.booking_id, hotelId);
+        if (bookingState?.status === 'expired') return { status: 'expired' as const, verifiedAt: null };
+        // A slip waiting for staff keeps its session open while the booking
+        // request's review window remains active.
         const [booking] = await db.select({ status: bookings.status }).from(bookings)
           .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, hotelId))).limit(1);
         if (booking?.status === 'pending_verification' && session.status === 'pending') {
@@ -191,7 +193,7 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
         }
 
-        const [booking] = await db.select({ id: bookings.id, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(eq(bookings.id, session.booking_id)).limit(1);
+        const [booking] = await db.select({ id: bookings.id, status: bookings.status, expiresAt: bookings.expiresAt, createdAt: bookings.createdAt }).from(bookings).where(eq(bookings.id, session.booking_id)).limit(1);
         if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
         const bookingStatus = booking.status as BookingStatus;
 
@@ -201,7 +203,11 @@ export const paymentRouter = router({
 
         assertValidTransition(bookingStatus, 'pending_verification');
         // Only one submit may move the booking on; a concurrent one sees no row.
-        const [claimed] = await db.update(bookings).set({ status: 'pending_verification', expiresAt: null })
+        const [requestSettings] = await db.select({ hours: hotelPaymentSettings.bookingRequestTimeoutHours })
+          .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+        const reviewExpiresAt = new Date(booking.createdAt.getTime() + (requestSettings?.hours ?? 24) * 60 * 60 * 1000);
+        if (reviewExpiresAt.getTime() <= Date.now()) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This booking request has expired.' });
+        const [claimed] = await db.update(bookings).set({ status: 'pending_verification', expiresAt: reviewExpiresAt })
           .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, bookingStatus)))
           .returning({ id: bookings.id });
         if (!claimed) {
@@ -246,7 +252,7 @@ export const paymentRouter = router({
             }
 
             assertValidTransition('pending_verification', 'confirmed');
-            const [confirmed] = await db.update(bookings).set({ status: 'confirmed' })
+            const [confirmed] = await db.update(bookings).set({ status: 'confirmed', expiresAt: null })
               .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')))
               .returning({ id: bookings.id });
             if (!confirmed) return await manualReview('booking_changed_manual_review_required');
@@ -290,8 +296,8 @@ export const paymentRouter = router({
               return await manualReview('slipok_key_rejected_manual_review_required');
             }
           }
-          // The booking is already pending_verification with no expiry, so an
-          // unexpected failure must hand it to staff rather than strand it.
+          // Unexpected verification failures still require staff review, until
+          // the configured booking request window closes.
           console.error('[verifySlip] unexpected error after claim:', error instanceof Error ? error.message : error);
           return await manualReview('verification_error_manual_review_required');
         }
@@ -315,6 +321,8 @@ export const paymentRouter = router({
       const caller = ctx.caller ?? { userId: ctx.user.id };
       try {
         await authorizeHotelAction(db, caller, input.hotel_id, 'operations.manage_bookings', 'payment.manual_verify');
+        const current = await expireBookingIfPast(db, caller, input.booking_id, input.hotel_id);
+        if (current?.status === 'expired') throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This booking request has expired.' });
         const [booking] = await db.select({ id: bookings.id, hotelId: bookings.hotelId, status: bookings.status }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
         if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
 

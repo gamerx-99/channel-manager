@@ -64,6 +64,20 @@ export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1Call
   return { promptpay_id: row.promptpayId, payment_timeout_minutes: row.paymentTimeoutMinutes };
 }
 
+export async function getBookingRequestTimeout(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "booking_request.timeout.read", now);
+  const [row] = await db.select({ hours: hotelPaymentSettings.bookingRequestTimeoutHours })
+    .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  return { booking_request_timeout_hours: row?.hours ?? 24 };
+}
+
+export async function saveBookingRequestTimeout(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, hours: number, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "booking_request.timeout.save", now);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 168) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking request timeout must be between 1 and 168 hours." });
+  await db.insert(hotelPaymentSettings).values({ hotelId, bookingRequestTimeoutHours: hours, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { bookingRequestTimeoutHours: hours, updatedAt: now } });
+}
+
 export async function createPaymentSession(db: D1ScopedDatabase, caller: D1CallerContext, input: CreatePaymentSessionInput, now = new Date()) {
   await authorizeHotelAction(db, caller, input.hotel_id, "operations.manage_bookings", "payment_session.create", now);
   const [booking] = await db.select({ id: bookings.id }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
