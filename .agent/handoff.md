@@ -5816,3 +5816,9 @@ Exit 0
 | `serverErrors.promptPayMissing` → `serverErrors.promptPayUnavailable` | ที่พักนี้ยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาติดต่อที่พักโดยตรง | ขณะนี้ที่พักยังรับชำระผ่านพร้อมเพย์ไม่ได้ กรุณาติดต่อที่พักโดยตรง | This property cannot take PromptPay payments right now. Please contact the property directly. |
 
 - Verification output: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 268 passed (268)` and `Tests 1809 passed (1809)`, exit 0. `pnpm build` → `3616 modules transformed` and `--dry-run: exiting now.`, exit 0. `git diff --check` → exit 0 (line-ending warnings only). Independent reviewer: APPROVE after adding denied-access, missing-config and separator tests. Temp folder cleanup was rejected twice by automatic command review, including explicit nonrecursive file removal; `.tmp-vitest/` remains untracked. No commit, push, deploy or database access.
+
+## 2026-11-07 - PromptPay settings prefill (`fix/promptpay-prefill`)
+
+- The hotel payment form loads the saved PromptPay ID and timeout once per hotel, including an invalid saved ID, while refetches leave edits alone. A successful save leaves the normalized stored ID visible. The query already returns both fields; no server or database change.
+- Component tests cover initial load, invalid ID with warning, refetch preserving edits, hotel switch, and normalized save display.
+- Verification: `pnpm check` → `tsc --noEmit`, exit 0; `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 268 passed (268)`, `Tests 1816 passed (1816)`, exit 0; `pnpm build` → `3616 modules transformed`, `--dry-run: exiting now.`, exit 0 (Wrangler printed a non-fatal local log EPERM). Cleanup of `.tmp-vitest/` was rejected twice by automatic command review, including nonrecursive file removal, so it remains untracked. No commit, push, deploy, or database access.
