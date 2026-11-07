@@ -22,8 +22,7 @@ function ProductMock() {
     <div className="landing-browser">
       <div className="landing-browser-bar"><span /><span /><span /><div><LockKeyhole size={13} /> hayhostth.com/your-stay</div></div>
       <div className="landing-site-preview">
-        <header><img src="/logo-wide.png" alt="hayhost" /><nav>{t("landing.mockRooms")}　 {t("landing.mockAbout")}　 {t("landing.mockContact")}</nav><button>{t("landing.mockBook")}</button></header>
-        <div className="landing-site-content"><div className="landing-site-photo"><img src="/landing/hero-lanna-roof.jpg" alt={t("landing.heroPhotoAlt")} width={880} height={340} /></div><div className="landing-booking-card"><span className="landing-mini-eyebrow">hayhost</span><h3>{t("landing.mockProperty")}</h3><p>{t("landing.mockSubtitle")}</p><div className="landing-mock-field">{t("landing.mockDates")}</div><div className="landing-mock-field">{t("landing.mockRoom")}</div><strong>{t("landing.mockPromptPay")}</strong><button>{t("landing.mockBook")}</button></div></div>
+        <img src="/landing/hero-theme-preview.jpg" alt="" width={1600} height={800} loading="eager" fetchPriority="high" />
       </div>
     </div>
     <div className="landing-admin-preview"><div className="landing-admin-top"><span><i />{t("landing.mockAvailability")}</span><span>{t("landing.mockMonth")}</span></div><div className="landing-calendar"><span>{t("landing.mockDay1")}<b>{t("landing.mockBooked")}</b></span><span>{t("landing.mockDay2")}<b>{t("landing.mockBooked")}</b></span><span>{t("landing.mockDay3")}<b>{t("landing.mockOpen")}</b></span><span>{t("landing.mockDay4")}<b>{t("landing.mockOpen")}</b></span></div><div className="landing-admin-note"><Check size={14}/>{t("landing.mockReady")}</div></div>

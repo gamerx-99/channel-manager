@@ -1,5 +1,5 @@
 # 06 Website Builder
-Status: IMPLEMENTED (photo captions, gallery selection, full-photo focal point editor, numbered photo order, theme-owned colours, eight registered themes, and property-neutral fixed copy; 2026-11-07)
+Status: IMPLEMENTED (photo captions, gallery selection, full-photo focal point editor, numbered photo order, theme-owned colours, eight registered themes, property-neutral fixed copy, and a real vintage-theme screenshot on the marketing landing page; rendered landing-width verification pending; 2026-11-07)
 Depends on: —
 Owner-tier: worker-code
 

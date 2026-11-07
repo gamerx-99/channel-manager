@@ -5682,3 +5682,15 @@ Exit 0
 
 - The large editor image shows the whole photo at its natural aspect ratio, capped at 60vh; the marker and pointer calculation use the drawn image. Only the two small previews follow the draft crop position. The editor image alone disables touch gestures.
 - Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 264 files and 1,775 tests passed, exit 0. `pnpm build` -> Vite transformed 3,612 modules; Wrangler dry run exited 0, with an optional AppData log EPERM. `git diff --check` -> exit 0. `.tmp-vitest/` predates this fix and remains untracked. No commit, push, or deploy.
+
+## 2026-11-07 - Real theme preview on the marketing landing page (`feat/photo-position-order`)
+
+- Replaced the hand-built browser mock in the React landing page and static crawler shell with the supplied 1600×800 vintage-theme screenshot. It fills the clipped browser frame without cropping. The availability card stays at the lower-right corner on desktop and moves below the frame at 860px and narrower. Removed the unused mock styles, ten translation keys in each language, and the unreferenced old photo.
+- Thai copy before → after:
+
+| Key | Before | After |
+|---|---|---|
+| `landing.mockAria` | ตัวอย่างเว็บไซต์ที่พักและปฏิทินหลังบ้าน | ตัวอย่างหน้าเว็บไซต์ที่พักที่สร้างด้วย hayhost และปฏิทินห้องว่าง |
+
+- Removed Thai/English keys: `mockRooms`, `mockAbout`, `mockContact`, `mockBook`, `mockProperty`, `mockSubtitle`, `mockDates`, `mockRoom`, `mockPromptPay`, `heroPhotoAlt`. Added no keys.
+- Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 264 files and 1,776 tests passed, exit 0. `pnpm build` -> Vite transformed 3,612 modules; Wrangler ended `--dry-run: exiting now.`, exit 0 (optional AppData log EPERM). `git diff --check` -> exit 0. Rendered 320/375/768/1280/1440px measurements were blocked because browser-skill could not reach its daemon, the browser host was unavailable, and computer-use review rejected Chrome access. Automatic command review rejected both recursive and validated per-file cleanup of `.tmp-vitest/`, so it remains untracked. Reviewer verdict: REJECT solely for the unverified responsive acceptance checks and `.tmp-vitest/` cleanup. No commit, push, or deploy.
