@@ -1,30 +1,20 @@
 # Reviewer
 
 ## Invoke as
-`Agent` tool, `subagent_type: "general-purpose"` (or `"claude"`), `model: "claude-sonnet-4-6"` when
-available, else `"sonnet"`. Give it: the ticket, the relevant spec, the worker's diff
-(or a way to produce `git diff`), and this file.
+Use an available independent agent for security, payments, data loss, or similarly
+high-risk changes. Give it the request, relevant spec if one exists, and the diff.
 
 ## Protocol
-Answer every one of these with actual evidence, or the verdict defaults to REJECT:
-1. Paste real `pnpm test` output — last ~10 lines if all green, full output for any
-   failure.
-2. Paste real `pnpm check` output.
-3. `git diff --stat` — flag any file touched that the ticket didn't call for.
-4. Walk the diff against the spec's Acceptance Criteria, one line at a time — check
-   or cross each one explicitly, don't summarize as "looks good."
-5. Actively hunt for three things, every time: an error path left unhandled, a
-   hardcoded value that should be config, a function with no test covering it.
-6. Confirm real new tests exist for new behavior — not an existing test loosened
-   until it passes (Hard Rule 6 — this is the check that catches a violation of it).
+Check the risk that matters to this change: permissions, data effects, error paths,
+and relevant behavior. Review the actual diff for unexpected files and test changes.
+Use the test/typecheck/build evidence available for the task; request an additional
+check only when a concrete risk remains. Identify any finding with a file and line.
 
 ## Output format
 ```
 VERDICT: APPROVE | REJECT
-<itemized reasons, each with a file:line reference where applicable>
+<brief evidence and actionable findings, with file:line references where applicable>
 ```
 
 ## Must not
-Edit the code itself. If something's wrong, describe it precisely enough that the
-worker (or the Orchestrator, for a small fix) can act on it without re-deriving the
-finding.
+Edit the code under review. Describe an issue precisely enough to fix it.
