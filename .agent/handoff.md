@@ -5816,3 +5816,18 @@ Exit 0
 | `serverErrors.promptPayMissing` → `serverErrors.promptPayUnavailable` | ที่พักนี้ยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาติดต่อที่พักโดยตรง | ขณะนี้ที่พักยังรับชำระผ่านพร้อมเพย์ไม่ได้ กรุณาติดต่อที่พักโดยตรง | This property cannot take PromptPay payments right now. Please contact the property directly. |
 
 - Verification output: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 268 passed (268)` and `Tests 1809 passed (1809)`, exit 0. `pnpm build` → `3616 modules transformed` and `--dry-run: exiting now.`, exit 0. `git diff --check` → exit 0 (line-ending warnings only). Independent reviewer: APPROVE after adding denied-access, missing-config and separator tests. Temp folder cleanup was rejected twice by automatic command review, including explicit nonrecursive file removal; `.tmp-vitest/` remains untracked. No commit, push, deploy or database access.
+## 2026-11-07 - Rate calendar edits nights (`fix/rate-calendar-nights`)
+
+- `ASSUMPTION:` first click is the first night, second click is check-out, and clicking the same date twice edits one night. The month grid and timeline fill only edited nights; check-out has a separate outline. The side panel states the night count and exact dates. Save now sends the last night as inclusive `end_date`, matching the unchanged D1 range writer. Existing data and reads are untouched.
+- The prior inclusive-range assertion in `oneCalendarRules.test.ts` was intentionally replaced. New tests cover 29→30, same-day/month-end, October 29→November 2 (four nights), reverse click, month boundary, an executed 29→30 save mutation, and Thai/English panel headings. November 29→December 2 is three nights because November has 30 days.
+- Thai copy before → after (new keys had no previous text):
+
+| Key | Before (Thai) | After (Thai) | English |
+|---|---|---|---|
+| `oneCalendar.selectedRange` | คืนที่เลือก | คืนที่จะแก้ไข | Nights to edit |
+| `oneCalendar.chooseRange` | เลือกช่วงวัน | กดวันแรกที่เข้าพัก แล้วกดวันเช็กเอาต์ · กดวันเดิมซ้ำเพื่อแก้คืนเดียว | Click the first night, then check-out · Click the same day twice to edit one night |
+| `oneCalendar.editOneNight` | — | แก้ไข 1 คืน · คืนวันที่ {{date}} | Edit 1 night · {{date}} |
+| `oneCalendar.editNights` | — | แก้ไข {{count}} คืน · คืนวันที่ {{start}} – {{last}} (เช็กเอาต์ {{checkout}}) | Edit {{count}} nights · {{start}} – {{last}} (check-out {{checkout}}) |
+| `oneCalendar.checkoutDay` | — | วันเช็กเอาต์ · ไม่แก้ไข | Check-out · no change |
+
+- Verification: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 269 passed (269)`, `Tests 1795 passed (1795)`, exit 0. `pnpm build` → `3615 modules transformed`, `--dry-run: exiting now.`, exit 0 (Wrangler printed a non-fatal AppData log EPERM). `git diff --check` → exit 0. `.tmp-vitest/` removed. No commit, push, or deploy.

@@ -28,6 +28,10 @@ describe("one calendar page contract", () => {
     expect(page).toContain("selectCalendarDate(range[0], range[1], date)");
     expect(page).toContain("<OneCalendarSidePanel");
     expect(panel).toContain("one-calendar-panel panel");
+    expect(page).toContain("end_date: selection.lastNight");
+    expect(page).toContain("nightCount={selection.nightCount}");
+    expect(panel).toContain('t("oneCalendar.editOneNight"');
+    expect(panel).toContain('t("oneCalendar.editNights"');
     expect(page).toContain("data.save.mutateAsync(input as any)");
   });
 

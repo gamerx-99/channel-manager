@@ -403,7 +403,8 @@ const th: TranslationDictionary = {
   oneCalendar: {
     eyebrow: "ห้องพักและราคา", title: "ปฏิทินราคาและห้องว่าง", description: "เลือกวันและประเภทห้องเพื่อแก้ไขพร้อมกัน",
     month: "รายเดือน", timeline: "ไทม์ไลน์", previousMonth: "เดือนก่อน", nextMonth: "เดือนถัดไป", today: "วันนี้",
-    selectRooms: "เลือกประเภทห้อง", selectedRange: "คืนที่เลือก", chooseRange: "เลือกช่วงวัน", startDate: "วันเริ่มต้น", endDate: "วันสิ้นสุด",
+    selectRooms: "เลือกประเภทห้อง", selectedRange: "คืนที่จะแก้ไข", chooseRange: "กดวันแรกที่เข้าพัก แล้วกดวันเช็กเอาต์ · กดวันเดิมซ้ำเพื่อแก้คืนเดียว", startDate: "วันเริ่มต้น", endDate: "วันสิ้นสุด",
+    editOneNight: "แก้ไข 1 คืน · คืนวันที่ {{date}}", editNights: "แก้ไข {{count}} คืน · คืนวันที่ {{start}} – {{last}} (เช็กเอาต์ {{checkout}})", checkoutDay: "วันเช็กเอาต์ · ไม่แก้ไข",
     available: "ว่าง", unavailable: "ไม่ว่าง", closed: "ปิด", sold: "เปิดขาย", of: "จาก", rooms: "จำนวนห้องที่ขาย", price: "ราคาต่อคืน", minStay: "จำนวนคืนขั้นต่ำ", basePrice: "กลับไปใช้ราคาฐาน", openSales: "เปิดขาย", closeSales: "ปิดขาย", save: "บันทึก", saving: "กำลังบันทึก…", saved: "บันทึกแล้ว", saveError: "บันทึกข้อมูลไม่สำเร็จ",
     chooseRoomTypes: "เลือกประเภทห้องอย่างน้อยหนึ่งรายการ", noRoomTypes: "ยังไม่มีประเภทห้อง", frontDeskHint: "บัญชีนี้ไม่แสดงราคาและจำนวนคืนขั้นต่ำ",
     weekdaySun: "อา", weekdayMon: "จ", weekdayTue: "อ", weekdayWed: "พ", weekdayThu: "พฤ", weekdayFri: "ศ", weekdaySat: "ส",

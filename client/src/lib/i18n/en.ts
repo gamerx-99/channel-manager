@@ -416,7 +416,8 @@ const en = {
   oneCalendar: {
     eyebrow: "Rooms and rates", title: "Calendar for rates and availability", description: "Choose nights and room types to update together.",
     month: "Month", timeline: "Timeline", previousMonth: "Previous month", nextMonth: "Next month", today: "Today",
-    selectRooms: "Choose room types", selectedRange: "Selected nights", chooseRange: "Choose a date range", startDate: "Start date", endDate: "End date",
+    selectRooms: "Choose room types", selectedRange: "Nights to edit", chooseRange: "Click the first night, then check-out · Click the same day twice to edit one night", startDate: "Start date", endDate: "End date",
+    editOneNight: "Edit 1 night · {{date}}", editNights: "Edit {{count}} nights · {{start}} – {{last}} (check-out {{checkout}})", checkoutDay: "Check-out · no change",
     available: "Available", unavailable: "Unavailable", closed: "Closed", sold: "for sale", of: "of", rooms: "Rooms for sale", price: "Price per night", minStay: "Minimum nights", basePrice: "Use base price", openSales: "Open for sale", closeSales: "Close for sale", save: "Save changes", saving: "Saving…", saved: "Changes saved", saveError: "Could not save these changes.",
     chooseRoomTypes: "Select at least one room type.", noRoomTypes: "No room types are set up yet.", frontDeskHint: "Prices and minimum nights are hidden for your account.",
     weekdaySun: "Sun", weekdayMon: "Mon", weekdayTue: "Tue", weekdayWed: "Wed", weekdayThu: "Thu", weekdayFri: "Fri", weekdaySat: "Sat",

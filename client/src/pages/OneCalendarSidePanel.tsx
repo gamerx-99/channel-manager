@@ -1,3 +1,4 @@
+import React from "react";
 import { formatBuddhistDate } from "./oneCalendarRules";
 
 type RoomType = { id: string; name: string; totalRooms: number };
@@ -5,7 +6,10 @@ type CalendarRow = { roomsAvailable: number; price: string | null };
 
 type Props = {
   startDate: string;
-  endDate: string;
+  checkoutDate: string;
+  lastNight: string;
+  nightCount: number;
+  language: "th" | "en";
   roomTypes: RoomType[];
   rowMap: Map<string, CalendarRow>;
   canManageRates: boolean;
@@ -25,9 +29,12 @@ type Props = {
 };
 
 export default function OneCalendarSidePanel(props: Props) {
-  const { startDate, endDate, roomTypes, rowMap, canManageRates, canManageAllotment, rooms, price, minimum, useBase, saving, error, t } = props;
+  const { startDate, checkoutDate, lastNight, nightCount, language, roomTypes, rowMap, canManageRates, canManageAllotment, rooms, price, minimum, useBase, saving, error, t } = props;
+  const formatDate = (date: string) => formatBuddhistDate(date, language === "th" ? "th-TH" : "en-US-u-ca-gregory");
   return <aside className="one-calendar-panel panel" aria-label={t("oneCalendar.selectedRange")}>
-    <div className="panel-heading"><div><div className="eyebrow">{t("oneCalendar.selectedRange")}</div><h2>{formatBuddhistDate(startDate)} – {formatBuddhistDate(endDate)}</h2></div></div>
+    <div className="panel-heading"><div><div className="eyebrow">{t("oneCalendar.selectedRange")}</div><h2>{nightCount === 1
+      ? t("oneCalendar.editOneNight", { date: formatDate(startDate) })
+      : t("oneCalendar.editNights", { count: nightCount, start: formatDate(startDate), last: formatDate(lastNight), checkout: formatDate(checkoutDate) })}</h2></div></div>
     {!canManageRates && <p className="field-help">{t("oneCalendar.frontDeskHint")}</p>}
     {!roomTypes.length ? <p>{t("oneCalendar.chooseRoomTypes")}</p> : roomTypes.map(roomType => {
       const current = rowMap.get(`${roomType.id}:${startDate}`);
