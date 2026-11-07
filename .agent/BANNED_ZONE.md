@@ -1,7 +1,7 @@
 # Banned zone
 
-Paths and actions no ticket may touch without an explicit, separate human approval,
-even if a spec seems to imply it's needed.
+Protected paths and actions. Unless an exception is stated below, changing or running
+them needs explicit, separate owner approval, even if a spec implies it is needed.
 
 ## Paths
 - `.env`, `.dev.vars` — never read their contents into a ticket, worker prompt, or
@@ -28,8 +28,11 @@ even if a spec seems to imply it's needed.
 - `DROP TABLE`, or any SQL that deletes data rather than adding to the schema —
   same rule.
 - Rotating or regenerating the `SUPABASE_SERVICE_ROLE_KEY` or any other live credential.
-- `wrangler deploy` (without `--dry-run`), `wrangler d1 migrations apply --remote`,
-  `wrangler d1 execute --remote`, `wrangler secret put` — human-only.
+- `wrangler deploy` (without `--dry-run`) and `wrangler secret put` require explicit
+  owner approval each time. Remote D1 migration application is allowed only under the
+  owner authorization and verification sequence in `AGENTS.md` / `CLAUDE.md`.
+  Read-only `wrangler d1 execute --remote` is allowed for inspection; ad hoc remote
+  data or schema writes require separate owner approval.
 - Pushing to `origin/main` — always requires the explicit approval gate described in
   `CLAUDE.md` and `MASTER_PROMPT.md`, every time, regardless of how many tickets have
   been approved since the last push.

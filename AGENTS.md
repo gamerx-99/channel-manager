@@ -19,8 +19,9 @@ file stays short enough to read every time.
   one mid-ticket — if a phase needs it, that's its own ticket first.
 - `pnpm dev` — `vite build` + `wrangler dev` (http://localhost:8787, local D1/R2 state
   in `.wrangler/state`). The client is built once; rerun after client changes.
-- `wrangler` is only ever run with `--dry-run` by agents; real deploys are a human step
-  (Hard rule 3).
+- Real `wrangler deploy` needs explicit owner approval each time (Hard rule 3).
+  Read-only remote D1 checks and owner-authorized migrations follow the Migrations
+  section below.
 
 ## Folder structure
 ```
@@ -75,10 +76,20 @@ bindings, D1 ids and crons per environment — changes need extra care).
 ## Migrations
 The database is D1. Schema lives in `drizzle/d1-schema.ts` + `drizzle/auth-schema.ts`;
 migrations are generated into `drizzle/d1/` with
-`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. Agents never apply them
-to a remote database: the human runs `wrangler d1 migrations apply <database> --env
-staging|production --remote`. Never mark a migration-touching ticket DONE until the
-human confirms it was applied. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the
+`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. Agents may apply a
+remote migration when the owner explicitly requests D1 application in chat for the
+ticket and target environment. Before applying, verify the D1 database name and ID
+against `wrangler.toml`, inspect the SQL, run `wrangler d1 migrations list <database>
+--env staging|production --remote`, and confirm that only the intended migrations are
+pending. Run the ticket's required `pnpm test`, `pnpm check`, and (when applicable)
+`pnpm build` before applying. Apply to staging first when both environments are
+requested; verify the new schema/data and an empty pending list there before applying
+to production. Verify production the same way and record commands and results in
+`.agent/handoff.md`. If unrelated migrations are pending or a check fails, stop and
+resolve the discrepancy before any remote write. Read-only `wrangler d1 execute
+--remote` is allowed for inspection; ad hoc remote writes need separate owner approval.
+Do not mark a migration-touching ticket DONE for a target environment until its
+migration is verified there. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the
 historical Supabase record — keep them, never edit them.
 
 ## Hard rules (non-negotiable, copied from `.agent/MASTER_PROMPT.md` so no sub-agent
