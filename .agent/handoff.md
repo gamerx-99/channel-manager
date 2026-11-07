@@ -5859,3 +5859,16 @@ Exit 0
 - `20261108010000_booking_request_expiry.sql` adds the setting and backfills existing public pending-verification requests. New pending-verification requests expire from booking creation time. Lazy checks and the existing scheduled Worker run release inventory; confirmed bookings clear the expiry. Remote D1 migration application is still required; no remote database or deployment action was taken.
 - Updated older contract assertions because their setting controls moved; updated payment test fixtures with booking creation times and confirmed-status expiry behavior. No real keys were added.
 - Verification on current main: `pnpm check` passed (`tsc --noEmit`, exit 0); `pnpm build` passed (Vite 3620 modules, Wrangler dry run exit 0); `pnpm exec vitest run --reporter=dot` passed 272 files / 1836 tests; new hotel-settings contract passed 3/3; `git diff --check` passed. Visual browser verification was not performed.
+
+## 2026-11-08 - Apply booking expiry D1 migration and align remote D1 rules
+
+- Owner explicitly requested D1 application and a central-rule update. Both `hayhost-staging` and `hayhost-production` had only `20261108010000_booking_request_expiry.sql` pending. Preflight read-only queries found the payment-settings table without the new column and zero public pending-verification bookings lacking an expiry in either database.
+- Applied that one migration to staging, verified `booking_request_timeout_hours` exists with default `24`, zero public pending-verification bookings lack an expiry, and `wrangler d1 migrations list` shows no pending migrations. Applied and verified the same on production; its existing payment-settings row reads the default `24`.
+- Aligned `AGENTS.md`, `CLAUDE.md`, and `.agent/BANNED_ZONE.md`: an owner request can authorize agents to apply reviewed remote D1 migrations to the named environments; preflight, staging-first order, postflight, and a separate approval gate for deployment and ad hoc writes are explicit. No Worker deployment was run.
+- Verification: `pnpm check` -> `tsc --noEmit`, exit 0; `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 273 passed (273)`, `Tests 1839 passed (1839)`, exit 0; `git diff --check` -> exit 0. Independent reviewer: APPROVE after aligning `CLAUDE.md`'s introductory rule. No application code or deploy configuration changed, so a new build was not required.
+
+## 2026-11-08 - Relax agent workflow and combined shipping authorization
+
+- Owner chose a lighter rule set and confirmed that one combined instruction can authorize push to `main` and deploy without repeated approval. The current request changes policy; it does not itself request a Worker deployment.
+- `AGENTS.md`, `CLAUDE.md`, `.agent/BANNED_ZONE.md`, `.agent/MASTER_PROMPT.md`, and reviewer guidance now use risk-based checks and review. Routine work no longer requires a separate spec, reviewer, handoff, or full test run. Production deployments and remote D1 migrations still require full tests and target checks; secrets, applied migrations, destructive database changes, and force pushes remain protected.
+- The owner decision is recorded in `.agent/DECISIONS.md`. Documentation-only verification: `git diff --check` passed; no application code or deploy configuration changed. Independent reviewer: APPROVE after adding a stop condition for failed production checks.

@@ -10,18 +10,19 @@ file stays short enough to read every time.
   Deployed with `wrangler deploy --env staging|production` (see `wrangler.toml`).
   There is no Express/Node server and no Vercel deploy any more.
 - Package manager: `pnpm` (see `pnpm-lock.yaml` — never mix in `npm install`).
-- `pnpm test` — Vitest, must pass before any ticket closes.
-- `pnpm check` — `tsc --noEmit`, must pass before any ticket closes.
+- `pnpm test` — Vitest. Run relevant tests during development; run the full suite
+  before production deployment or a remote D1 migration.
+- `pnpm check` — `tsc --noEmit`. Run for TypeScript changes before shipping.
 - `pnpm build` — `vite build` + `wrangler deploy --dry-run --outdir dist-worker`
-  (bundles the Worker, uploads nothing), must pass before any ticket that touches
-  server/client/deploy config closes.
-- No lint script exists yet (`package.json` has no `"lint"` entry). Do not invent
-  one mid-ticket — if a phase needs it, that's its own ticket first.
+  (bundles the Worker, uploads nothing). Run before shipping server, client, or
+  deploy-config changes.
+- No lint script exists yet; add one only when the work calls for it.
 - `pnpm dev` — `vite build` + `wrangler dev` (http://localhost:8787, local D1/R2 state
   in `.wrangler/state`). The client is built once; rerun after client changes.
-- Real `wrangler deploy` and remote migrations run when the owner orders it in chat
-  (Hard rule 3), after `pnpm check`, `pnpm test` and `pnpm build` pass. Without that
-  order, `wrangler` runs with `--dry-run` only. Report the deployed version ID.
+- An owner instruction can authorize commit, push to `main`, D1 migration, and
+  deployment together. Follow the named scope and environments; do not ask again
+  between authorized steps. Read-only remote D1 checks need no approval. Report
+  the deployed version ID after deployment.
 
 ## Folder structure
 ```
@@ -39,11 +40,9 @@ drizzle/               D1 schema (d1-schema.ts, auth-schema.ts) and D1 migration
 specs/                  Executable specs for the roadmap in todo.md's "Roadmap" section
 ```
 
-## Do not touch without asking
-See `.agent/BANNED_ZONE.md` for the enforced list. Highlights: `.env` (never commit
-real secrets), already-applied migrations (root `*.sql` and applied `drizzle/d1/*.sql` —
-write a new migration instead of editing these), `wrangler.toml` (deploy-critical:
-bindings, D1 ids and crons per environment — changes need extra care).
+## Protected files and actions
+See `.agent/BANNED_ZONE.md`. Keep secrets out of commits, do not rewrite applied
+migrations, and review deploy configuration and destructive operations carefully.
 
 ## Conventions
 - Permissions: every capability gate is a named `Permission` in
@@ -65,62 +64,55 @@ bindings, D1 ids and crons per environment — changes need extra care).
 - New pure aggregation logic (reports, summaries) should be a standalone,
   unit-testable function taking plain data in and plain data out — follow
   `server/financials.ts`.
-- Tests: server-side logic gets a plain Vitest unit test; router procedures that
-  enforce a permission boundary get a mocked-router test (see
-  `server/financials.access.test.ts`); new pages get a string-contract test (see
-  `client/src/pages/Financials.contract.test.ts`) asserting the route is registered,
-  the permission gate is present, and key UI markers exist.
+- Tests should cover behavior that can fail in a meaningful way. Use unit, router,
+  or UI tests as appropriate; a new page does not automatically need a string-contract
+  test.
 - File roles: `.tsx` = UI only, `.ts` = logic (hooks + tested pure functions), `.css` = look
   (no `style={{ }}` except runtime CSS variables). Details in `specs/ui-house-style.md`.
 - Thai UI copy: read `docs/thai-glossary.md` before writing or changing any Thai string. It lists the
   approved wording for each term in context and the literal translations that are banned.
   `client/src/lib/i18n/thaiGlossary.test.ts` fails on a banned term or a missing th/en key.
-- Git: commits are conventional (`feat(scope): ...`, `fix(scope): ...`). One ticket
-  = one concern per commit, per the Hard Rules below — this repo's history before
-  this workflow existed doesn't always follow that; new work should.
+- Use conventional commit messages when practical. Related fixes may share a commit
+  or batch; keep unrelated changes reviewable.
 
 ## Migrations
 The database is D1. Schema lives in `drizzle/d1-schema.ts` + `drizzle/auth-schema.ts`;
 migrations are generated into `drizzle/d1/` with
-`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. A remote database gets
-`wrangler d1 migrations apply <database> --env staging|production --remote` only when
-the owner orders it in chat: first run `wrangler d1 migrations list ... --remote` and
-check that only the intended files are pending, then apply, then deploy the code that
-needs them. A migration-touching ticket is DONE only once the migration is applied. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the
-historical Supabase record — keep them, never edit them.
+`pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`. Agents may apply a
+remote migration when the owner authorizes it, including in a combined ship request.
+Before applying, verify the D1 database name and ID
+against `wrangler.toml`, inspect the SQL, run `wrangler d1 migrations list <database>
+--env staging|production --remote`, and confirm that only the intended migrations are
+pending. Run the full test suite and relevant typecheck/build before applying. Apply
+to staging first when both environments are requested; verify the new schema/data
+and an empty pending list there before applying
+to production. Verify production the same way and record the result in the handoff or
+delivery summary. If unrelated migrations are pending or a check fails, stop and
+resolve the discrepancy before any remote write. Read-only `wrangler d1 execute
+--remote` is allowed for inspection; ad hoc remote writes need separate owner approval.
+Do not mark a migration-touching ticket DONE for a target environment until its
+migration is verified there. A combined owner instruction may also authorize code
+deployment. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the historical
+Supabase record — keep them, never edit them.
 
-## Hard rules (non-negotiable, copied from `.agent/MASTER_PROMPT.md` so no sub-agent
-misses them even if it never reads the master prompt)
-1. Never delete or modify anything outside this repo, and never touch
-   `.agent/BANNED_ZONE.md`'s list without asking first.
-2. Never run destructive commands (`rm -rf`, `git reset --hard`, `git push --force`,
-   `DROP TABLE`, rewriting git history) without explicit human approval first — no
-   exceptions, regardless of how confident the ticket seems.
-3. **Pushing to `main` and deploying are always an explicit-approval step**, every
-   single time, even mid-autonomous-loop. This overrides the master prompt's "don't
-   stop to ask" framing — that framing applies to implementation decisions, never to
-   push/deploy.
-4. Never commit secrets/tokens/API keys. `.env` stays untracked; `.env.example`
-   documents variable names only.
-5. Never claim a ticket is done without pasting real `pnpm test`/`pnpm check`
-   output as evidence.
-6. Never edit a test to make it pass. If a test is genuinely wrong, fix it and say
-   why in the ticket — don't quietly loosen an assertion.
-7. Never invent a requirement the spec doesn't state. Log it in
-   `.agent/OPEN_QUESTIONS.md` and pick the safest default, marked `ASSUMPTION:` in
-   the code comment.
-8. One ticket = one concern = one commit.
-9. Write a `.agent/handoff.md` entry at the end of every ticket, before moving on.
-
-## Definition of Done (every ticket)
-- [ ] `pnpm test` passes — output pasted in the ticket
-- [ ] `pnpm check` passes — output pasted in the ticket
-- [ ] `pnpm build` passes if server/client/deploy config changed
-- [ ] No stray `TODO`/`FIXME` left in touched files
-- [ ] Spec status updated (`specs/<file>.md`'s `Status:` line) and
-      `.agent/handoff.md` has a new entry
-- [ ] Reviewer approved (see `.agent/agents/reviewer.md`) with evidence, for any
-      ticket above trivial size
+## Working rules
+1. Work within this repo unless the owner asks otherwise. Never commit secrets or
+   credentials. Keep `.env` and `.dev.vars` untracked.
+2. Do not rewrite applied migrations or shared Git history. Destructive database
+   changes, force pushes, and deleting data need explicit authorization for that action.
+3. A request such as "finish, commit, push, and deploy" authorizes those steps for
+   that batch; one approval covers the sequence. If the request names only some steps,
+   do only those steps. Verify the target branch and environment before pushing or
+   deploying, and report the result. A later, unrelated batch needs its own instruction.
+4. Match verification to risk. Documentation-only changes need a diff check. Code
+   changes need relevant tests and typecheck/build as applicable. Before production
+   deployment, run the full test suite, typecheck, and build. If a required check
+   fails, fix it or get the owner's explicit acceptance before deploying.
+5. Do not weaken tests merely to make them pass. Correct genuinely wrong tests with
+   an explanation. Record important assumptions in code or the delivery summary.
+6. Update specs when the task changes a tracked spec; write a short handoff for a
+   milestone or remote operation. Seek an independent review for security, payments,
+   data loss, or similarly high-risk changes. Routine fixes may use self-review.
 
 ## Where to start
 - `.agent/DECISIONS.md` — read the "Current owner decisions" register at the top first.

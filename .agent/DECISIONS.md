@@ -93,14 +93,26 @@ prompt or ticket that will fix it. **open** = not decided; never present it to c
 
 | Date | Decision |
 |---|---|
+| 2026-11-08 | The owner wants lighter agent rules. One instruction may authorize a full batch including commit, push to `main`, D1 migration and deploy; do not stop for repeated approval between named steps. Match testing and review to risk, and let any capable agent implement and verify the work. A later unrelated batch still needs its own shipping instruction. |
 | 2026-11-02 | The owner judges by using production (www.hayhostth.com), not local. |
-| 2026-11-02 | Commit without asking. Ask once per finished batch: "push and deploy?" Never stop mid-batch for approval. |
+| 2026-11-02 | ~~Commit without asking. Ask once per finished batch: "push and deploy?" Never stop mid-batch for approval.~~ Superseded by the 2026-11-08 combined-instruction decision. |
 | 2026-11-02 | Batch fixes. Do not send the owner one bug fix at a time. |
-| 2026-11-02 | Code work goes to Codex; Claude writes prompts, reviews, verifies and deploys after approval. |
+| 2026-11-02 | ~~Code work goes to Codex; Claude writes prompts, reviews, verifies and deploys after approval.~~ Superseded by the 2026-11-08 flexible-agent decision. |
 | 2026-11-01 | Thai copy must read naturally, never a word-for-word translation. |
 | 2026-11-05 | **Thai wording does not wait for the owner.** New or changed Thai text is used right away, and a "before, after" table goes in the handoff entry so the owner can review it later. The owner says so when a wording is wrong and it is fixed then (owner: "ถ้าผิดจะบอกแก้เอง"). The glossary and the tests still apply. |
 
 ---
+
+## 2026-11-08 — One instruction can authorize a full shipping batch
+**Decision** (owner): make the agent rules lighter. If the owner asks for a batch to
+be committed, pushed to `main`, migrated, and deployed, that one instruction covers
+all named steps; do not request separate confirmations during the batch. Choose
+tests, review, specs, and handoff depth based on risk. Any capable agent may complete
+the work.
+**Why**: repeated approval gates and fixed model handoffs slowed delivery. Keep
+target checks, migration order, secret protection, and full verification before
+production deploys or remote migrations while removing routine paperwork.
+**Status**: closed; reflected in `AGENTS.md`, `CLAUDE.md`, and `.agent/` guidance.
 
 ## 2026-10-26 — Move the whole platform to Cloudflare before launch (spec 13)
 **Decision** (human): leave Vercel and Supabase entirely. Target stack: one Worker (Hono +
