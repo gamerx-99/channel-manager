@@ -1,5 +1,5 @@
 # 06 Website Builder
-Status: IMPLEMENTED (photo captions, gallery selection, theme-owned colours, a registry including Mountain Mist, Boutique Noir, Hostel Pop, Riverside Calm, and Vintage Old Town, and property-neutral fixed copy for those themes; 2026-11-07)
+Status: IMPLEMENTED (photo captions, gallery selection, focal point editor, numbered photo order, theme-owned colours, eight registered themes, and property-neutral fixed copy; 2026-11-07)
 Depends on: —
 Owner-tier: worker-code
 

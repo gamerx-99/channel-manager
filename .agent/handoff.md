@@ -5661,3 +5661,19 @@ Exit 0
 - Sidebar section headings are conditional on visible links. Replaced the daily sold-nights table with a Recharts bar chart with tooltip and a screen-reader date/value list. Mobile staff shift action buttons have at least 32px by 32px targets. Updated the sidebar and bookings report contracts without loosening assertions.
 - Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 263 files and 1,769 tests passed with TEMP/TMP inside the worktree; the default temp path produced EPERM before tests ran. `pnpm build` -> Vite transformed 3,615 modules; Wrangler completed `--dry-run: exiting now.`, exit 0. Wrangler's optional log outside the worktree produced EPERM. `git diff --check` -> exit 0. Independent reviewer verdict: APPROVE.
 - No commit, push or deploy. No rendered 1280px/375px browser pass was performed in this worktree; the spacing changes were reviewed against the CSS and the prior page-by-page measurements. Cleanup of `.tmp-vitest/node-compile-cache` was attempted with a verified repo-local path and again with a literal absolute path; automatic command review rejected both recursive deletes, so `.tmp-vitest/` remains untracked.
+
+## 2026-11-07 - Website photo position and order controls (`feat/photo-position-order`)
+
+- Card images no longer accept photo-position input. Each photo has an Adjust position button opening one local editor with a larger draggable/tappable preview, horizontal and vertical sliders, live crop previews, Save, Cancel, and reset-to-centre that saves `null` only on Save. The editor stays open with its local value if Save fails. Website photos use a numbered order select; the server still makes the first ID the cover only when a cover exists. Removed drag controls and announcements. No dependency changes.
+- Thai copy before → after (— means new):
+
+| Key | Before | After |
+|---|---|---|
+| `resetFocalPoint` | กลับไปตรงกลาง | กลับเป็นค่าเริ่มต้น |
+| `adjustPosition`, `adjustPositionNamedAria` | — | ปรับตำแหน่งรูป; ปรับตำแหน่งรูป {{name}} |
+| `horizontal`, `vertical` | — | แนวนอน; แนวตั้ง |
+| `displayOrderLabel` → `orderLabel`, `orderNamedAria`, `orderCoverOption` | ลำดับการแสดง {{order}} | ลำดับที่; ลำดับที่ของรูป {{name}}; 1 (รูปหลัก) |
+| `reorderHint` | จับไอคอนจุดที่มุมรูปแล้วลากเพื่อเรียงลำดับ วางบนรูปหลักเพื่อให้เป็นรูปหลักแทน | เลือกลำดับที่ของรูปจากรายการ |
+| `otherPhotosHint` | ติ๊ก "แสดงบนเว็บไซต์" เพื่อเพิ่มรูปเข้าแกลเลอรี แล้วจึงลากเรียงลำดับได้ | ติ๊ก "แสดงบนเว็บไซต์" เพื่อเพิ่มรูปเข้าแกลเลอรี แล้วเลือกลำดับที่ได้ |
+
+- `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 264 files, 1,775 tests passed, exit 0 (TEMP/TMP inside worktree). `pnpm build` → Vite transformed 3,612 modules; Wrangler ended `--dry-run: exiting now.`, exit 0. Its optional log write outside the worktree reported EPERM. `git diff --check` → exit 0 with only line-ending warnings. Reviewer verdict: APPROVE. Browser width screenshots were not captured; responsive CSS wraps footer controls and sets 32px minimum targets. No commit, push, or deploy.

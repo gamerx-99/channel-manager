@@ -2,10 +2,17 @@
 .wb-focal-marker { left: var(--wb-focal-x, 50%); top: var(--wb-focal-y, 50%); }
 .wb-preview-accent { background: var(--wb-accent); color: var(--wb-accent-contrast); }
 .wb-object-position { object-position: var(--wb-object-position, 50% 50%); }
-.wb-sortable { position: relative; transform: var(--wb-sort-transform, none); transition: var(--wb-sort-transition, none); }
-.wb-sortable-dragging { opacity: 0.6; z-index: 10; }
-.wb-drag-handle { cursor: grab; touch-action: none; }
-.wb-drag-handle:active { cursor: grabbing; }
+.wb-card-image { pointer-events: none; }
+.wb-focal-editor { touch-action: none; cursor: crosshair; }
+.wb-focal-sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.wb-focal-sliders label { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
+.wb-focal-sliders input { width: 100%; min-height: 32px; }
+.wb-photo-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.wb-order-label { display: inline-flex; align-items: center; gap: 6px; }
+.wb-order-select { min-height: 32px; min-width: 80px; }
+.wb-photo-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.wb-photo-action { min-height: 32px; min-width: 32px; }
+@media (max-width: 375px) { .wb-focal-sliders { grid-template-columns: 1fr; } .wb-photo-actions { width: 100%; margin-left: 0; } }
 .website-builder-photo-caption{display:block;width:100%;border:1px solid #dce4df;border-radius:6px;padding:6px 8px;font:inherit}
 .website-builder-page > .panel { padding-bottom: 24px; }
 .website-builder-page > .panel > :not(.panel-heading) { margin-left: 24px; margin-right: 24px; }

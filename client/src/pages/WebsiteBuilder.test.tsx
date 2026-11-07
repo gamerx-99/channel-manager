@@ -4,16 +4,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { saveConfig, setObjectPosition, deleteMedia, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
+const { saveConfig, setObjectPosition, reorderMedia, deleteMedia, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
   deleteMedia: vi.fn(),
   configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
   saveConfig: vi.fn(),
   setObjectPosition: vi.fn(),
+  reorderMedia: vi.fn(),
   language: { current: "en" as "en" | "th" },
   hotelsData: { current: [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }] as Array<{ id: string; name?: string; slug: string; room_types: unknown[]; rooms: unknown[] }> },
   mediaData: { current: [] as Array<{ id: string; url: string; isHero: boolean; displayOrder: number; objectPosition?: string | null }> },
   query: (data: unknown) => ({ useQuery: () => ({ data, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) }),
-  mutation: (mutate: (...args: unknown[]) => void = () => undefined) => ({ useMutation: () => ({ mutate, isPending: false }) }),
+  mutation: (mutate: (...args: unknown[]) => void = () => undefined) => ({ useMutation: () => ({ mutate, mutateAsync: async (...args: unknown[]) => { mutate(...args); }, isPending: false }) }),
 }));
 
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: language.current, setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
@@ -28,7 +29,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     setHotelMediaObjectPosition: mutation(setObjectPosition),
     setHotelMediaCaption: mutation(),
     setHotelMediaGallerySelection: mutation(),
-    reorderHotelMedia: mutation(),
+    reorderHotelMedia: mutation(reorderMedia),
     saveHotelSiteConfig: mutation(saveConfig),
     publishHotelSiteConfig: mutation(),
     discardHotelSiteConfigDraft: mutation(),
@@ -52,7 +53,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
 const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); deleteMedia.mockReset(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); deleteMedia.mockReset(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); reorderMedia.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
   it("saves the headline without sending an accent colour", () => {
@@ -147,13 +148,31 @@ describe("WebsiteBuilder editing", () => {
     ]);
   });
 
-  it("saves the tapped point on a photo as its focal point", () => {
+  it("saves the adjusted point only after opening the editor and choosing Save", () => {
     mediaData.current = [{ id: "photo-1", url: "/photo.jpg", isHero: true, displayOrder: 0 }];
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     const photo = screen.getByAltText("Hotel media preview");
-    vi.spyOn(photo, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, toJSON: () => ({}) });
     fireEvent.pointerDown(photo, { clientX: 50, clientY: 75 });
-    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" }, expect.objectContaining({ onSuccess: expect.any(Function) }));
+    expect(setObjectPosition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Adjust position of photo 1" }));
     expect(screen.getByText("Choose the part of the photo to keep in view")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Horizontal"), { target: { value: "25" } });
+    fireEvent.change(screen.getByLabelText("Vertical"), { target: { value: "75" } });
+    expect(setObjectPosition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(setObjectPosition).toHaveBeenCalledTimes(1);
+    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" });
+  });
+
+  it("moves a gallery photo into the cover position from its order select", () => {
+    mediaData.current = [
+      { id: "cover", url: "/cover.jpg", isHero: true, displayOrder: 0 },
+      { id: "gallery", url: "/gallery.jpg", isHero: false, displayOrder: 1, isPublished: true },
+    ] as typeof mediaData.current;
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    const select = screen.getByRole("combobox", { name: "Order of photo 2" }) as HTMLSelectElement;
+    expect(Array.from(select.options, option => option.textContent)).toEqual(["1 (Hero image)", "2"]);
+    fireEvent.change(select, { target: { value: "1" } });
+    expect(reorderMedia).toHaveBeenCalledWith({ hotel_id: "hotel-1", ids: ["gallery", "cover"] });
   });
 });

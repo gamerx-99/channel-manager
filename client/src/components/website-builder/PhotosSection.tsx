@@ -1,22 +1,20 @@
 import { useTranslation } from "@/lib/i18n";
-import { Image as ImageIcon, Trash2, Upload, GripVertical } from "lucide-react";
-import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, useSensors, type Announcements, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { Image as ImageIcon, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { HotelMediaItem } from "@/components/website-builder/useWebsiteBuilder";
-import { photoPosition, reorderPhotoIds } from "@/components/website-builder/photoReorder";
-import type { CSSProperties, ReactNode, RefObject } from "react";
+import { movePhotoToIndex } from "@/components/website-builder/photoReorder";
+import { formatFocalPoint, parseFocalPoint, pointFromPointer } from "./focalPoint";
+import { useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
 
 export type BuilderMediaItem = HotelMediaItem & { isGallerySelected?: boolean };
 
 interface PhotosSectionProps {
   canManage: boolean;
   media: unknown[];
-  /** Cover first, then the gallery in draft order. Only these can be dragged. */
+  /** Cover first, then the gallery in draft order. */
   orderedPhotos: BuilderMediaItem[];
-  /** Photos not on the website. Shown below, not draggable. */
+  /** Photos not on the website. */
   otherPhotos: BuilderMediaItem[];
   hasCover: boolean;
   selectedGalleryIds: string[];
@@ -24,57 +22,82 @@ interface PhotosSectionProps {
   focalMediaId: string | null;
   setFocalMediaId: (id: string | null) => void;
   handleUploadFiles: (files: FileList | null) => void;
-  handleFocalPoint: (event: React.PointerEvent<HTMLImageElement>, item: BuilderMediaItem) => void;
+  handleFocalPoint: (mediaId: string, objectPosition: string | null) => Promise<boolean>;
   handleSetHero: (id: string) => void;
   handleDeleteMedia: (id: string) => void;
   handleSetCaption: (id: string, caption: string) => void;
   handleToggleGallery: (id: string, checked: boolean) => void;
   handleReorderPhotos: (ids: string[]) => void;
-  onResetFocalPoint: (mediaId: string) => void;
   photoError?: string | null;
 }
 
-type PhotoCardProps = Pick<PhotosSectionProps, "canManage" | "focalMediaId" | "setFocalMediaId" | "handleFocalPoint" | "handleSetHero" | "handleDeleteMedia" | "handleSetCaption" | "handleToggleGallery" | "onResetFocalPoint"> & {
+type PhotoCardProps = Pick<PhotosSectionProps, "canManage" | "focalMediaId" | "setFocalMediaId" | "handleFocalPoint" | "handleSetHero" | "handleDeleteMedia" | "handleSetCaption" | "handleToggleGallery"> & {
   item: BuilderMediaItem;
   /** 1-based place on the website, or null for a photo that is not shown. */
   position: number | null;
-  dragHandle?: ReactNode;
+  orderCount: number;
+  hasCover: boolean;
+  onMove: (id: string, toIndex: number) => void;
 };
 
-function PhotoCard({ item, position, dragHandle, canManage, focalMediaId, setFocalMediaId, handleFocalPoint, handleSetHero, handleDeleteMedia, handleSetCaption, handleToggleGallery, onResetFocalPoint }: PhotoCardProps) {
+function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, focalMediaId, setFocalMediaId, handleFocalPoint, handleSetHero, handleDeleteMedia, handleSetCaption, handleToggleGallery }: PhotoCardProps) {
   const { t } = useTranslation();
+  const [draftPosition, setDraftPosition] = useState<string | null>(item.objectPosition);
+  const [isSaving, setIsSaving] = useState(false);
   const name = item.caption?.trim() || t("websiteBuilder.photoFallback", { order: item.displayOrder + 1 });
   const placeLabel = position === null ? t("websiteBuilder.notOnWebsiteLabel") : item.isHero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel");
+  const isEditing = focalMediaId === item.id;
+  const point = parseFocalPoint(draftPosition);
+  const previewStyle = { "--wb-object-position": formatFocalPoint(point) } as CSSProperties;
+  const markerStyle = { "--wb-focal-x": `${point.x}%`, "--wb-focal-y": `${point.y}%` } as CSSProperties;
+  function updateFromPointer(event: PointerEvent<HTMLDivElement>) {
+    setDraftPosition(formatFocalPoint(pointFromPointer(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect())));
+  }
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    updateFromPointer(event);
+  }
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) updateFromPointer(event);
+  }
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+  async function savePosition() {
+    setIsSaving(true);
+    try {
+      if (await handleFocalPoint(item.id, draftPosition)) setFocalMediaId(null);
+    } finally {
+      setIsSaving(false);
+    }
+  }
   return (
-    <div className="group overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
+    <div className="group min-w-0 overflow-hidden rounded-xl border border-[#e6eee9] bg-white" data-photo-id={item.id}>
       <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.url}
           alt={item.caption ?? "Hotel media preview"}
-          className={`h-full w-full object-cover wb-object-position ${canManage ? "cursor-crosshair touch-manipulation" : ""}`}
+          className="wb-card-image h-full w-full object-cover wb-object-position"
           style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined}
-          onClick={() => setFocalMediaId(item.id)}
-          onPointerDown={event => handleFocalPoint(event, item)}
         />
-        {focalMediaId === item.id && (
-          <span
-            className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow wb-focal-marker"
-            style={{
-              "--wb-focal-x": item.objectPosition?.split(" ")[0] ?? "50%",
-              "--wb-focal-y": item.objectPosition?.split(" ")[1] ?? "50%",
-            } as CSSProperties}
-          />
-        )}
         {item.isHero && (
           <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">
             {t("websiteBuilder.heroBadge")}
           </span>
         )}
       </div>
-      {focalMediaId === item.id && (
+      {isEditing && (
         <div className="space-y-2 border-t border-[#e6eee9] p-3">
           <p className="text-xs font-medium">{t("websiteBuilder.chooseFocalPoint")}</p>
+          <div className="wb-focal-editor relative aspect-[4/3] overflow-hidden rounded bg-slate-100" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+            <img src={item.url} alt="" draggable={false} className="pointer-events-none h-full w-full select-none object-cover wb-object-position" style={previewStyle} />
+            <span className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow wb-focal-marker" style={markerStyle} />
+          </div>
+          <div className="wb-focal-sliders">
+            <label>{t("websiteBuilder.horizontal")}<input type="range" min="0" max="100" value={point.x} disabled={!canManage} onChange={event => setDraftPosition(formatFocalPoint({ ...point, x: Number(event.currentTarget.value) }))} /></label>
+            <label>{t("websiteBuilder.vertical")}<input type="range" min="0" max="100" value={point.y} disabled={!canManage} onChange={event => setDraftPosition(formatFocalPoint({ ...point, y: Number(event.currentTarget.value) }))} /></label>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="aspect-[16/7] overflow-hidden rounded bg-slate-100">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -82,7 +105,7 @@ function PhotoCard({ item, position, dragHandle, canManage, focalMediaId, setFoc
                 src={item.url}
                 alt=""
                 className="h-full w-full object-cover wb-object-position"
-                style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined}
+                style={previewStyle}
               />
             </div>
             <div className="aspect-[4/3] overflow-hidden rounded bg-slate-100">
@@ -91,33 +114,37 @@ function PhotoCard({ item, position, dragHandle, canManage, focalMediaId, setFoc
                 src={item.url}
                 alt=""
                 className="h-full w-full object-cover wb-object-position"
-                style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined}
+                style={previewStyle}
               />
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={!canManage || !item.objectPosition} onClick={() => onResetFocalPoint(item.id)}>
+            <Button type="button" variant="outline" size="sm" className="wb-photo-action" disabled={!canManage || isSaving} onClick={() => setDraftPosition(null)}>
               {t("websiteBuilder.resetFocalPoint")}
             </Button>
-            <Button type="button" size="sm" onClick={() => setFocalMediaId(null)}>
-              {t("websiteBuilder.focalDone")}
+            <Button type="button" variant="outline" size="sm" className="wb-photo-action" disabled={isSaving} onClick={() => setFocalMediaId(null)}>{t("common.cancel")}</Button>
+            <Button type="button" size="sm" className="wb-photo-action" disabled={!canManage || isSaving} onClick={() => { void savePosition(); }}>
+              {t("common.save")}
             </Button>
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between gap-2 p-3">
+      <div className="wb-photo-footer p-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-medium text-[#2a4035]">{placeLabel}</p>
-          {position !== null && (
-            <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.displayOrderLabel", { order: position })}</p>
-          )}
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        {position !== null && <label className="wb-order-label text-xs text-[#52655b]">{t("websiteBuilder.orderLabel")}
+          <select className="wb-order-select rounded-md border border-[#dce4df] bg-white px-2 text-sm" value={position} disabled={!canManage || orderCount < 2} aria-label={t("websiteBuilder.orderNamedAria", { name })} onChange={event => onMove(item.id, Number(event.currentTarget.value) - 1)}>
+            {Array.from({ length: orderCount }, (_, index) => <option key={index} value={index + 1}>{index === 0 && hasCover ? t("websiteBuilder.orderCoverOption") : index + 1}</option>)}
+          </select>
+        </label>}
+        <div className="wb-photo-actions">
+          <Button type="button" variant="outline" size="sm" className="wb-photo-action border-[#dce4df] px-2 text-xs" onClick={() => { setDraftPosition(item.objectPosition); setFocalMediaId(item.id); }} disabled={!canManage} aria-expanded={isEditing} aria-label={t("websiteBuilder.adjustPositionNamedAria", { name })}>{t("websiteBuilder.adjustPosition")}</Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className={`h-7 border-[#dce4df] px-2 text-xs ${item.isHero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
+            className={`wb-photo-action border-[#dce4df] px-2 text-xs ${item.isHero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
             onClick={() => handleSetHero(item.id)}
             disabled={!canManage || item.isHero}
             aria-label={t("websiteBuilder.setHeroNamedAria", { name })}
@@ -128,14 +155,13 @@ function PhotoCard({ item, position, dragHandle, canManage, focalMediaId, setFoc
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-[#8a9a93] hover:text-red-600"
+            className="wb-photo-action text-[#8a9a93] hover:text-red-600"
             onClick={() => handleDeleteMedia(item.id)}
             disabled={!canManage || item.isHero}
             aria-label={t("websiteBuilder.deleteNamedMediaAria", { name })}
           >
             <Trash2 size={14} />
           </Button>
-          {dragHandle}
         </div>
       </div>
       <div className="space-y-2 px-3 pb-3">
@@ -168,33 +194,6 @@ function PhotoCard({ item, position, dragHandle, canManage, focalMediaId, setFoc
   );
 }
 
-function SortablePhotoCard(props: Omit<PhotoCardProps, "dragHandle"> & { position: number }) {
-  const { t } = useTranslation();
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.id, disabled: !props.canManage });
-  // Runtime values only, passed as CSS variables (house style); the look is in website-builder.css.
-  const sortStyle = { "--wb-sort-transform": CSS.Transform.toString(transform) ?? "none", "--wb-sort-transition": transition ?? "none" } as CSSProperties;
-  return (
-    <div ref={setNodeRef} style={sortStyle} className={`wb-sortable ${isDragging ? "wb-sortable-dragging" : ""}`} data-photo-id={props.item.id}>
-      <PhotoCard
-        {...props}
-        dragHandle={(
-          <button
-            type="button"
-            ref={setActivatorNodeRef}
-            className="wb-drag-handle inline-flex h-7 w-7 items-center justify-center rounded-md text-[#8a9a93] hover:bg-[#f1f5f2] disabled:opacity-50"
-            aria-label={t("websiteBuilder.dragHandleAria", { position: props.position })}
-            disabled={!props.canManage}
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical size={14} aria-hidden="true" />
-          </button>
-        )}
-      />
-    </div>
-  );
-}
-
 export function PhotosSection({
   canManage,
   media,
@@ -212,35 +211,14 @@ export function PhotosSection({
   handleSetCaption,
   handleToggleGallery,
   handleReorderPhotos,
-  onResetFocalPoint,
   photoError,
 }: PhotosSectionProps) {
   const { t } = useTranslation();
-  const sensors = useSensors(
-    // A small distance keeps taps on the handle from starting a drag.
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
   const orderedIds = orderedPhotos.map(photo => photo.id);
-  const cardProps = { canManage, focalMediaId, setFocalMediaId, handleFocalPoint, handleSetHero, handleDeleteMedia, handleSetCaption, handleToggleGallery, onResetFocalPoint };
-  // Screen readers hear places on the website, never photo ids.
-  const at = (id: string | number) => photoPosition(orderedIds, String(id));
-  const announcements: Announcements = {
-    onDragStart: ({ active }) => t("websiteBuilder.reorderPickedUp", { position: at(active.id) }),
-    // Silent while over its own place, so the pick-up message is not cut off right away.
-    onDragOver: ({ active, over }) => over && over.id !== active.id ? t("websiteBuilder.reorderOver", { from: at(active.id), to: at(over.id) }) : undefined,
-    onDragEnd: ({ active, over }) => {
-      const from = at(active.id);
-      const to = over ? at(over.id) : from;
-      if (to === from) return t("websiteBuilder.reorderUnchanged", { position: from });
-      if (hasCover && to === 1) return t("websiteBuilder.reorderCover", { position: from });
-      return t("websiteBuilder.reorderMoved", { from, to });
-    },
-    onDragCancel: ({ active }) => t("websiteBuilder.reorderCancelled", { position: at(active.id) }),
-  };
-  function onDragEnd({ active, over }: DragEndEvent) {
-    if (!over || active.id === over.id) return;
-    const next = reorderPhotoIds(orderedIds, String(active.id), String(over.id));
+  const cardProps = { canManage, focalMediaId, setFocalMediaId, handleFocalPoint, handleSetHero, handleDeleteMedia, handleSetCaption, handleToggleGallery, orderCount: orderedPhotos.length, hasCover };
+  function onMove(id: string, toIndex: number) {
+    if (!canManage) return;
+    const next = movePhotoToIndex(orderedIds, id, toIndex);
     if (next.join() !== orderedIds.join()) handleReorderPhotos(next);
   }
 
@@ -293,20 +271,9 @@ export function PhotosSection({
             {orderedPhotos.length > 0 && (
               <>
                 {canManage && orderedPhotos.length > 1 && <p className="field-help">{t("websiteBuilder.reorderHint")}</p>}
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={onDragEnd}
-                  accessibility={{ announcements, screenReaderInstructions: { draggable: t("websiteBuilder.reorderInstructions") } }}
-                >
-                  <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
-                    <div className="grid gap-3 sm:grid-cols-2" data-testid="website-photos">
-                      {orderedPhotos.map((item, index) => (
-                        <SortablePhotoCard key={item.id} item={item} position={index + 1} {...cardProps} />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
+                <div className="grid gap-3 sm:grid-cols-2" data-testid="website-photos">
+                  {orderedPhotos.map((item, index) => <PhotoCard key={item.id} item={item} position={index + 1} onMove={onMove} {...cardProps} />)}
+                </div>
               </>
             )}
             {otherPhotos.length > 0 && (
@@ -315,7 +282,7 @@ export function PhotosSection({
                 <p className="field-help">{t("websiteBuilder.otherPhotosHint")}</p>
                 <div className="grid gap-3 sm:grid-cols-2" data-testid="other-photos">
                   {otherPhotos.map(item => (
-                    <PhotoCard key={item.id} item={item} position={null} {...cardProps} />
+                    <PhotoCard key={item.id} item={item} position={null} onMove={onMove} {...cardProps} />
                   ))}
                 </div>
               </section>

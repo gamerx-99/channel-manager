@@ -26,7 +26,7 @@ export function movePhotoToIndex(ids: readonly string[], activeId: string, toInd
 
 /**
  * Splits the builder photos into the ones on the website (cover first, then the gallery in the
- * draft order) and the rest. Only the first group can be dragged; the order comes from the draft
+ * draft order) and the rest. Only the first group can be reordered; the order comes from the draft
  * (`heroMediaId` + `galleryMediaIds`), never from `display_order`.
  */
 export function splitWebsitePhotos<T extends { id: string }>(photos: readonly T[], coverId: string | null, galleryIds: readonly string[]) {
@@ -38,7 +38,7 @@ export function splitWebsitePhotos<T extends { id: string }>(photos: readonly T[
   return { hasCover: Boolean(cover), ordered, others: photos.filter(photo => !shown.has(photo.id)) };
 }
 
-/** 1-based position of a photo in the draggable list, or 0 when it is not there. */
+/** 1-based position of a photo in the ordered list, or 0 when it is not there. */
 export function photoPosition(ids: readonly string[], id: string): number {
   return ids.indexOf(id) + 1;
 }

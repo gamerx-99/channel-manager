@@ -79,7 +79,7 @@ export function useWebsiteBuilder() {
   const media = serverMedia;
   const selectedGalleryIds: string[] = storedDraft?.galleryMediaIds ?? media.filter(item => item.isPublished && !item.isHero).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(item => item.id);
   const draftMedia = media.map(item => ({ ...item, caption: storedDraft?.mediaCaptions?.[item.id] ?? displayPhotoCaption(item.caption), isHero: storedDraft?.heroMediaId ? item.id === storedDraft.heroMediaId : item.isHero, isGallerySelected: selectedGalleryIds.includes(item.id), objectPosition: Object.prototype.hasOwnProperty.call(storedDraft?.mediaPositions ?? {}, item.id) ? storedDraft?.mediaPositions?.[item.id] ?? null : item.objectPosition }));
-  // Cover first, then the gallery in draft order: the only photos the owner can drag (the server accepts no others).
+  // Cover first, then the gallery in draft order: the only photos the owner can reorder.
   const draftCoverId = storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null;
   const { hasCover, ordered: orderedPhotos, others: otherPhotos } = splitWebsitePhotos(draftMedia, draftCoverId, selectedGalleryIds);
   const heroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? draftMedia[0]?.url ?? null, [draftMedia]);
@@ -113,17 +113,18 @@ export function useWebsiteBuilder() {
     setPhotoError(null);
     deleteMediaMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
   }
-  function handleResetFocalPoint(mediaId: string) {
-    if (!canManage) return;
-    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: mediaId, object_position: null }, { onSuccess: () => { void refetchConfig(); } });
-  }
   function handleSetHero(id: string) { if (!canManage) return; setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id }, { onSuccess: () => { void refetchConfig(); } }); }
   function handleReorderPhotos(ids: string[]) { if (!canManage) return; setPhotoError(null); reorderMediaMut.mutate({ hotel_id: effectiveHotelId, ids }); }
-  function handleFocalPoint(event: React.PointerEvent<HTMLImageElement>, item: HotelMediaItem) {
-    if (!canManage) return; setFocalMediaId(item.id); const rect = event.currentTarget.getBoundingClientRect(); if (!rect.width || !rect.height) return;
-    const x = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
-    const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
-    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` }, { onSuccess: () => { void refetchConfig(); } });
+  async function handleFocalPoint(mediaId: string, objectPosition: string | null): Promise<boolean> {
+    if (!canManage) return false;
+    setPhotoError(null);
+    try {
+      await setObjectPositionMut.mutateAsync({ hotel_id: effectiveHotelId, media_id: mediaId, object_position: objectPosition });
+      void refetchConfig();
+      return true;
+    } catch {
+      return false;
+    }
   }
   // Shared by "save draft" and "choose a design": both send the headline to the server.
   function draftProblem(): string | null {
@@ -145,5 +146,5 @@ export function useWebsiteBuilder() {
     if (problem) { setFormError(problem); return; }
     saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
   }
-  return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, reorderMediaMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, hasCover, orderedPhotos, otherPhotos, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, photoError, saveNote, handleResetFocalPoint, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleReorderPhotos, handleFocalPoint, handleSave, handleSaveTheme };
+  return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, reorderMediaMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, hasCover, orderedPhotos, otherPhotos, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, photoError, saveNote, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleReorderPhotos, handleFocalPoint, handleSave, handleSaveTheme };
 }

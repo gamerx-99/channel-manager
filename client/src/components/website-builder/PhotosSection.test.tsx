@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: "th", setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
+vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: "en", setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
 
 import { PhotosSection, type BuilderMediaItem } from "./PhotosSection";
 (globalThis as { React?: typeof React }).React = React;
@@ -12,100 +12,112 @@ const photo = (id: string, displayOrder: number, isHero = false): BuilderMediaIt
   id, hotelId: "hotel-1", url: `/${id}.jpg`, caption: null, isHero, isPublished: true, displayOrder, objectPosition: null, isGallerySelected: !isHero, createdAt: new Date(0),
 } as unknown as BuilderMediaItem);
 
-// jsdom has no layout. Lay the draggable cards out in one row, 200px apart, so the keyboard
-// sensor can find the neighbour to the right of the picked-up photo.
-let restoreRect: () => void = () => undefined;
-beforeEach(() => {
-  const original = Element.prototype.getBoundingClientRect;
-  Element.prototype.getBoundingClientRect = function (this: Element) {
-    const card = this.closest("[data-photo-id]");
-    const index = card ? Array.from(card.parentElement!.children).indexOf(card) : 0;
-    const left = index * 200;
-    return { x: left, y: 0, left, top: 0, right: left + 180, bottom: 100, width: 180, height: 100, toJSON: () => ({}) } as DOMRect;
+afterEach(cleanup);
+
+function renderSection(overrides: Partial<React.ComponentProps<typeof PhotosSection>> = {}) {
+  const ordered = [photo("cover", 0, true), photo("g1", 1), photo("g2", 2)];
+  const props: React.ComponentProps<typeof PhotosSection> = {
+    canManage: true, media: [...ordered, photo("off", 3)], orderedPhotos: ordered, otherPhotos: [{ ...photo("off", 3), isGallerySelected: false }], hasCover: true,
+    selectedGalleryIds: ["g1", "g2"], fileInputRef: { current: null }, focalMediaId: null, setFocalMediaId: vi.fn(), handleUploadFiles: vi.fn(),
+    handleFocalPoint: vi.fn(), handleSetHero: vi.fn(), handleDeleteMedia: vi.fn(), handleSetCaption: vi.fn(), handleToggleGallery: vi.fn(), handleReorderPhotos: vi.fn(), ...overrides,
   };
-  restoreRect = () => { Element.prototype.getBoundingClientRect = original; };
-});
-afterEach(() => { cleanup(); restoreRect(); });
-
-const tick = () => act(() => new Promise(resolve => setTimeout(resolve, 0)));
-
-function renderSection(handleReorderPhotos = vi.fn()) {
-  const ordered = [photo("cover", 2, true), photo("g1", 0), photo("g2", 1)];
-  render(
-    <PhotosSection
-      canManage
-      media={[...ordered, photo("off", 3)]}
-      orderedPhotos={ordered}
-      otherPhotos={[{ ...photo("off", 3), isGallerySelected: false }]}
-      hasCover
-      selectedGalleryIds={["g1", "g2"]}
-      fileInputRef={{ current: null }}
-      focalMediaId={null}
-      setFocalMediaId={vi.fn()}
-      handleUploadFiles={vi.fn()}
-      handleFocalPoint={vi.fn()}
-      handleSetHero={vi.fn()}
-      handleDeleteMedia={vi.fn()}
-      handleSetCaption={vi.fn()}
-      handleToggleGallery={vi.fn()}
-      handleReorderPhotos={handleReorderPhotos}
-      onResetFocalPoint={vi.fn()}
-    />,
-  );
-  return handleReorderPhotos;
+  const view = render(<PhotosSection {...props} />);
+  return { props, view };
 }
 
-describe("PhotosSection drag and drop", () => {
-  it("moves a photo with the keyboard (Space, arrow, Space) and sends only cover + gallery in the new order", async () => {
-    const handleReorderPhotos = renderSection();
-    const handle = screen.getByRole("button", { name: "ย้ายรูปที่ 2" });
-    handle.focus();
-    fireEvent.keyDown(handle, { code: "Space", key: " " });
-    await tick();
-    fireEvent.keyDown(document.activeElement ?? handle, { code: "ArrowRight", key: "ArrowRight" });
-    await tick();
-    fireEvent.keyDown(document.activeElement ?? handle, { code: "Space", key: " " });
-    await tick();
-    expect(handleReorderPhotos).toHaveBeenCalledWith(["cover", "g2", "g1"]);
+describe("PhotosSection controls", () => {
+  it("offers positions 1..N with the cover named, and moves only website photo ids", () => {
+    const { props } = renderSection();
+    const selects = screen.getAllByRole("combobox");
+    expect(selects).toHaveLength(3);
+    expect(within(selects[1]).getAllByRole("option").map(option => option.textContent)).toEqual(["1 (Hero image)", "2", "3"]);
+    expect((selects[1] as HTMLSelectElement).value).toBe("2");
+    fireEvent.change(screen.getByRole("combobox", { name: "Order of photo 3" }), { target: { value: "1" } });
+    expect(props.handleReorderPhotos).toHaveBeenCalledWith(["g2", "cover", "g1"]);
+    expect(screen.getByTestId("other-photos").querySelector("select")).toBeNull();
   });
 
-  it("shows photos not on the website separately, without a drag handle", () => {
-    renderSection();
-    expect(screen.getAllByRole("button", { name: /^ย้ายรูปที่ \d$/ })).toHaveLength(3);
-    const others = screen.getByTestId("other-photos");
-    expect(others.querySelector(".wb-drag-handle")).toBeNull();
-    expect(screen.getByText("รูปอื่นที่ยังไม่แสดงบนเว็บไซต์")).toBeTruthy();
+  it("does not edit or save from the card image, and opens the editor from its button", () => {
+    const setFocalMediaId = vi.fn();
+    const handleFocalPoint = vi.fn();
+    const { view } = renderSection({ setFocalMediaId, handleFocalPoint });
+    const cardImage = screen.getAllByAltText("Hotel media preview")[0];
+    expect(cardImage.getAttribute("class")).toContain("wb-card-image");
+    expect(Object.keys((cardImage as HTMLElement)).some(key => key.startsWith("__reactProps") && Boolean((cardImage as any)[key].onPointerDown))).toBe(false);
+    fireEvent.pointerDown(cardImage, { clientX: 25, clientY: 75 });
+    fireEvent.click(cardImage);
+    expect(setFocalMediaId).not.toHaveBeenCalled();
+    expect(handleFocalPoint).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Adjust position of photo 1" }));
+    expect(setFocalMediaId).toHaveBeenCalledWith("cover");
+    view.rerender(<PhotosSection {...renderProps(setFocalMediaId, handleFocalPoint)} focalMediaId="cover" />);
+    expect(screen.getByLabelText("Horizontal")).toBeTruthy();
+    expect(screen.getByLabelText("Vertical")).toBeTruthy();
   });
 
-  it("tells screen readers the move in Thai by position, never by photo id", async () => {
-    renderSection();
-    const handle = screen.getByRole("button", { name: "ย้ายรูปที่ 3" });
-    handle.focus();
-    fireEvent.keyDown(handle, { code: "Space", key: " " });
-    await tick();
-    expect(document.body.textContent).toContain("หยิบรูปที่ 3 แล้ว");
-    expect(document.body.textContent).toContain("กด Space เพื่อหยิบรูป");
-    // ArrowLeft twice: from place 3 over the cover (place 1), then drop.
-    fireEvent.keyDown(document.activeElement ?? handle, { code: "ArrowLeft", key: "ArrowLeft" });
-    await tick();
-    expect(document.body.textContent).toContain("รูปที่ 3 อยู่ที่ตำแหน่งที่ 2");
-    fireEvent.keyDown(document.activeElement ?? handle, { code: "ArrowLeft", key: "ArrowLeft" });
-    await tick();
-    fireEvent.keyDown(document.activeElement ?? handle, { code: "Space", key: " " });
-    await tick();
-    expect(document.body.textContent).toContain("รูปที่ 3 เป็นรูปหลักแล้ว");
-    expect(document.body.textContent).not.toMatch(/Picked up|g2|cover was/);
+  it("keeps slider changes local until Save and discards them on Cancel", () => {
+    const handleFocalPoint = vi.fn();
+    const setFocalMediaId = vi.fn();
+    const { view, props } = renderSection({ handleFocalPoint, setFocalMediaId, focalMediaId: "cover" });
+    fireEvent.change(screen.getByLabelText("Horizontal"), { target: { value: "25" } });
+    fireEvent.change(screen.getByLabelText("Vertical"), { target: { value: "75" } });
+    expect(handleFocalPoint).not.toHaveBeenCalled();
+    expect((screen.getByLabelText("Horizontal") as HTMLInputElement).value).toBe("25");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(handleFocalPoint).not.toHaveBeenCalled();
+    view.rerender(<PhotosSection {...props} focalMediaId={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Adjust position of photo 1" }));
+    view.rerender(<PhotosSection {...props} focalMediaId="cover" />);
+    expect((screen.getByLabelText("Horizontal") as HTMLInputElement).value).toBe("50");
+    fireEvent.change(screen.getByLabelText("Horizontal"), { target: { value: "25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(handleFocalPoint).toHaveBeenCalledTimes(1);
+    expect(handleFocalPoint).toHaveBeenCalledWith("cover", "25% 50%");
   });
 
-  it("dropping a gallery photo on the cover sends it first", async () => {
-    const handleReorderPhotos = renderSection();
-    const handle = screen.getByRole("button", { name: "ย้ายรูปที่ 3" });
-    handle.focus();
-    fireEvent.keyDown(handle, { code: "Space", key: " " });
-    await tick();
-    for (let i = 0; i < 2; i++) { fireEvent.keyDown(document.activeElement ?? handle, { code: "ArrowLeft", key: "ArrowLeft" }); await tick(); }
-    fireEvent.keyDown(document.activeElement ?? handle, { code: "Space", key: " " });
-    await tick();
-    expect(handleReorderPhotos).toHaveBeenCalledWith(["g2", "cover", "g1"]);
+  it("resets locally and sends null only on Save", () => {
+    const handleFocalPoint = vi.fn();
+    renderSection({ focalMediaId: "cover", handleFocalPoint });
+    fireEvent.change(screen.getByLabelText("Horizontal"), { target: { value: "20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reset to centre" }));
+    expect((screen.getByLabelText("Horizontal") as HTMLInputElement).value).toBe("50");
+    expect(handleFocalPoint).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(handleFocalPoint).toHaveBeenCalledWith("cover", null);
+  });
+
+  it("keeps the chosen point in the editor when Save fails", async () => {
+    const handleFocalPoint = vi.fn().mockResolvedValue(false);
+    const setFocalMediaId = vi.fn();
+    renderSection({ focalMediaId: "cover", handleFocalPoint, setFocalMediaId });
+    fireEvent.change(screen.getByLabelText("Horizontal"), { target: { value: "30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(false));
+    expect((screen.getByLabelText("Horizontal") as HTMLInputElement).value).toBe("30");
+    expect(setFocalMediaId).not.toHaveBeenCalled();
+  });
+
+  it("captures a drag on the editor preview and updates both crop previews", () => {
+    const handleFocalPoint = vi.fn();
+    renderSection({ focalMediaId: "cover", handleFocalPoint });
+    const editor = document.querySelector<HTMLElement>(".wb-focal-editor")!;
+    const captured = new Set<number>();
+    editor.setPointerCapture = vi.fn(id => { captured.add(id); });
+    editor.hasPointerCapture = vi.fn(id => captured.has(id));
+    editor.releasePointerCapture = vi.fn(id => { captured.delete(id); });
+    vi.spyOn(editor, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, width: 200, height: 100 } as DOMRect);
+    fireEvent.pointerDown(editor, { pointerId: 1, clientX: 50, clientY: 75 });
+    fireEvent.pointerMove(editor, { pointerId: 1, clientX: 150, clientY: 25 });
+    expect((screen.getByLabelText("Horizontal") as HTMLInputElement).value).toBe("75");
+    expect((screen.getByLabelText("Vertical") as HTMLInputElement).value).toBe("25");
+    expect(document.querySelectorAll('.wb-focal-editor img[style*="75% 25%"], .wb-focal-editor ~ div img[style*="75% 25%"]')).toHaveLength(3);
+    fireEvent.pointerUp(editor, { pointerId: 1 });
+    expect(editor.releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(handleFocalPoint).not.toHaveBeenCalled();
   });
 });
+
+function renderProps(setFocalMediaId: (id: string | null) => void, handleFocalPoint: (id: string, position: string | null) => Promise<boolean>): React.ComponentProps<typeof PhotosSection> {
+  const ordered = [photo("cover", 0, true), photo("g1", 1), photo("g2", 2)];
+  return { canManage: true, media: [...ordered, photo("off", 3)], orderedPhotos: ordered, otherPhotos: [photo("off", 3)], hasCover: true, selectedGalleryIds: ["g1", "g2"], fileInputRef: { current: null }, focalMediaId: null, setFocalMediaId, handleUploadFiles: vi.fn(), handleFocalPoint, handleSetHero: vi.fn(), handleDeleteMedia: vi.fn(), handleSetCaption: vi.fn(), handleToggleGallery: vi.fn(), handleReorderPhotos: vi.fn() };
+}
