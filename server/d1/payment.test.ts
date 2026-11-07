@@ -35,11 +35,16 @@ async function seed() {
 }
 
 describe("D1 payment repository", () => {
+  it("rejects an invalid PromptPay ID without writing it", async () => {
+    await seed();
+    await expect(savePromptPaySettings(db, { userId: "ua" }, "a", "06151256579", 15)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await getHotelPaymentConfig(db, { userId: "ua" }, "a")).toBeNull();
+  });
   it("scopes settings, sessions and booking payment updates to hotel", async () => {
     await seed(); const caller = { userId: "ua" };
-    await savePromptPaySettings(db, caller, "a", "prompt", 30);
+    await savePromptPaySettings(db, caller, "a", "+66 81 234 5678", 30);
     const config = await getHotelPaymentConfig(db, caller, "a");
-    expect(config).toEqual({ promptpay_id: "prompt", payment_timeout_minutes: 30 });
+    expect(config).toEqual({ promptpay_id: "0812345678", payment_timeout_minutes: 30 });
     expect(Object.keys(config!).sort()).toEqual(["payment_timeout_minutes", "promptpay_id"]);
     expect(config).not.toHaveProperty("slipok_key_enc");
     expect(config).not.toHaveProperty("slipok_key_hash");
@@ -59,9 +64,9 @@ describe("D1 payment repository", () => {
     await seed();
     const callerA = { userId: "ua" };
     const sessionB = await createPaymentSession(db, { userId: 'ub' }, { booking_id: 'bb', hotel_id: 'b', amount: 10, qr_reference: 'reference-b', qr_string: 'qr-b', expires_at: '2026-11-01T00:00:00.000Z' });
-    await savePromptPaySettings(db, { userId: "ub" }, "b", "prompt-b", 15);
+    await savePromptPaySettings(db, { userId: "ub" }, "b", "0912345678", 15);
     await expect(getHotelPaymentConfig(db, callerA, "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(savePromptPaySettings(db, callerA, "b", "prompt-a", 30)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(savePromptPaySettings(db, callerA, "b", "0812345678", 30)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(createPaymentSession(db, callerA, { booking_id: "bb", hotel_id: "b", amount: 10, qr_reference: "x", qr_string: "x", expires_at: "2026-11-01T00:00:00.000Z" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(getLatestPaymentSession(db, callerA, "bb", "b")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(updatePaymentSessionStatus(db, callerA, "b", sessionB.id, "paid")).rejects.toMatchObject({ code: "FORBIDDEN" });

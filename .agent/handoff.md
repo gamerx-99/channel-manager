@@ -5759,3 +5759,20 @@ Exit 0
 
 - Final verification: `pnpm check` -> `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 267 passed (267)` and `Tests 1784 passed (1784)`, exit 0; Thai glossary passed. `pnpm build` -> `3615 modules transformed` and `--dry-run: exiting now.`, exit 0. Wrangler's optional AppData log write reported EPERM. `git diff --check` -> exit 0. Independent reviewer: APPROVE after the tour-remount and mobile-map fixes. No rendered viewport pass, commit, push or deploy.
 - Browser follow-up: fixed profile checkbox sizing/wrapping at narrow and two-column widths, restored styled map coordinate fields and hint, and aligned the save bar right on desktop with stacked Save-first mobile actions; `pnpm check` passed, Vitest 267 files/1,785 tests passed, `pnpm build` dry-run passed, and `git diff --check` passed. `.tmp-vitest/` cleanup was rejected by automatic command review. No commit, push or deploy.
+
+## 2026-11-07 - PromptPay ID validation (`fix/promptpay-id-validation`)
+
+- Added one shared PromptPay validator for hotel settings and QR generation. It stores 06/08/09 mobiles in local form, accepts international forms and 13-digit IDs, and rejects the owner's 11-digit typo. The settings panel validates before MFA and warns on load if its saved ID is invalid. Guests receive a translated, number-free error for missing or invalid settings; Worker logs contain only the hotel ID. The scoped save normalises the value. No database change.
+- `066615125657` is rejected as a mixed prefix. The existing 13-digit ID behaviour remains checksum-free; both assumptions are logged in `.agent/OPEN_QUESTIONS.md`. The former `prompt` test fixture was changed because it is invalid under the new rule, not to loosen an assertion.
+- Thai copy before → after (new keys have `—` before):
+
+| Key | Before (Thai) | After (Thai) | English |
+|---|---|---|---|
+| `financials.promptPayIdLabel` | PromptPay ID (เบอร์โทร 10 หลัก หรือ บัตรประชาชน/Tax ID 13 หลัก) | หมายเลขพร้อมเพย์ | PromptPay ID |
+| `financials.promptPayIdHint` | — | ใส่เบอร์มือถือ 10 หลัก (ขึ้นต้น 06, 08 หรือ 09) หรือเลขบัตรประชาชน/เลขผู้เสียภาษี 13 หลัก | Enter a 10-digit mobile starting 06, 08 or 09, or a 13-digit National/Tax ID. |
+| `financials.promptPayInvalid` | — | หมายเลขพร้อมเพย์ไม่ถูกต้อง ใส่เบอร์มือถือ 10 หลัก (ขึ้นต้น 06, 08 หรือ 09) หรือเลขบัตรประชาชน/เลขผู้เสียภาษี 13 หลัก | Invalid PromptPay ID. Enter a 10-digit mobile starting 06, 08 or 09, or a 13-digit National/Tax ID. |
+| `financials.promptPaySavedInvalid` | — | หมายเลขพร้อมเพย์ที่บันทึกไว้ไม่ถูกต้อง กรุณาแก้ไขและบันทึกใหม่เพื่อให้ลูกค้าชำระเงินได้ | The saved PromptPay ID is invalid. Enter a correct number and save it so guests can pay. |
+| `bookingPayment.contactProperty` | — | กรุณาติดต่อที่พักโดยตรง | Please contact the property directly. |
+| `serverErrors.promptPayMissing` → `serverErrors.promptPayUnavailable` | ที่พักนี้ยังไม่ได้ตั้งค่าพร้อมเพย์ กรุณาติดต่อที่พักโดยตรง | ขณะนี้ที่พักยังรับชำระผ่านพร้อมเพย์ไม่ได้ กรุณาติดต่อที่พักโดยตรง | This property cannot take PromptPay payments right now. Please contact the property directly. |
+
+- Verification output: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 268 passed (268)` and `Tests 1809 passed (1809)`, exit 0. `pnpm build` → `3616 modules transformed` and `--dry-run: exiting now.`, exit 0. `git diff --check` → exit 0 (line-ending warnings only). Independent reviewer: APPROVE after adding denied-access, missing-config and separator tests. Temp folder cleanup was rejected twice by automatic command review, including explicit nonrecursive file removal; `.tmp-vitest/` remains untracked. No commit, push, deploy or database access.

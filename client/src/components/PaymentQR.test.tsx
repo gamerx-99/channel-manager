@@ -3,23 +3,34 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { PaymentQR } from "./PaymentQR";
+import { LanguageProvider } from "../contexts/LanguageContext";
+import { en, th } from "../lib/i18n";
 
 const QR_STRING = "00020101021229370016A000000677010111011300668123456785802TH53037645406100.006304ABCD";
-const state = vi.hoisted(() => ({ expiresInMs: 600_000, verifyReply: {} as Record<string, unknown> }));
+const state = vi.hoisted(() => ({ expiresInMs: 600_000, verifyReply: {} as Record<string, unknown>, createError: false }));
 
 vi.mock("../lib/trpc", () => ({ trpc: { payment: {
   createSession: { useMutation: (options: { onSuccess: (data: unknown) => void }) => ({
-    isPending: false, isError: false,
-    mutate: () => options.onSuccess({ sessionId: "s", qrString: QR_STRING, qrImageUrl: "https://api.qrserver.com/v1/create-qr-code/?data=x", amount: 100, expiresAt: new Date(Date.now() + state.expiresInMs).toISOString() }),
+    isPending: false, isError: state.createError, error: { message: "This property cannot take PromptPay payments right now. Please contact the property directly." },
+    mutate: () => { if (!state.createError) options.onSuccess({ sessionId: "s", qrString: QR_STRING, qrImageUrl: "https://api.qrserver.com/v1/create-qr-code/?data=x", amount: 100, expiresAt: new Date(Date.now() + state.expiresInMs).toISOString() }); },
   }) },
   checkStatus: { useQuery: () => ({ data: undefined }) },
   verifySlip: { useMutation: (options: { onSuccess: (data: unknown) => void }) => ({ isPending: false, mutate: () => options.onSuccess(state.verifyReply) }) },
 } } }));
 
 (globalThis as { React?: typeof React }).React = React;
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); state.createError = false; localStorage.removeItem("language"); });
 
 describe("PaymentQR", () => {
+  it.each(["th", "en"] as const)("shows the friendly %s error once without a stored ID", language => {
+    state.createError = true;
+    localStorage.setItem("language", language);
+    render(<LanguageProvider><PaymentQR bookingId="b" hotelId="h" onSuccess={vi.fn()} onExpired={vi.fn()} /></LanguageProvider>);
+    const message = language === "th" ? th.serverErrors.promptPayUnavailable : en.serverErrors.promptPayUnavailable;
+    expect(screen.getByText(message)).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).not.toContain("06151256579");
+    expect(screen.getByRole("alert").querySelectorAll("p")).toHaveLength(1);
+  });
   it("draws the PromptPay QR in the browser instead of loading it from a third-party service", () => {
     render(<PaymentQR bookingId="b" hotelId="h" onSuccess={vi.fn()} onExpired={vi.fn()} />);
     const img = screen.getByAltText("QR Code สำหรับชำระเงินผ่าน PromptPay") as HTMLImageElement;

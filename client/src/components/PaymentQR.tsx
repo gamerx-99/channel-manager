@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { trpc } from '../lib/trpc';
 import { generateQrDataUrl } from '../lib/qr';
+import { useTranslation } from '../lib/i18n';
+import { localizeServerMessage } from '../lib/serverErrors';
 
 interface PaymentQRProps {
   bookingId: string;
@@ -27,6 +29,7 @@ function formatCountdown(ms: number): string {
  * 5. Shows SlipUpload tab for manual slip submission.
  */
 export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQRProps) {
+  const { t, language } = useTranslation();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(0);
@@ -145,11 +148,12 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   }
 
   if (createSession.isError) {
+    const message = localizeServerMessage(createSession.error.message, language);
+    const contactIncluded = message === t('serverErrors.promptPayUnavailable') || message.includes(t('bookingPayment.contactProperty'));
     return (
       <div className="payment-qr payment-qr--error" role="alert">
-        <p className="payment-error-msg">{createSession.error.message}</p>
-        {/* Some server messages already end with this advice; do not print it twice. */}
-        {!createSession.error.message.includes("กรุณาติดต่อที่พักโดยตรง") && <p className="payment-error-sub">กรุณาติดต่อที่พักโดยตรง</p>}
+        <p className="payment-error-msg">{message}</p>
+        {!contactIncluded && <p className="payment-error-sub">{t('bookingPayment.contactProperty')}</p>}
       </div>
     );
   }

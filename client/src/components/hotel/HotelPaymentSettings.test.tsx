@@ -7,9 +7,11 @@ import HotelPaymentSettings from "./HotelPaymentSettings";
 const savePromptPay = vi.fn();
 const saveKey = vi.fn(async () => undefined);
 const refetch = vi.fn();
+let savedPromptPayId: string | null = null;
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     slipok: {
+      getPromptPaySettings: { useQuery: () => ({ data: { promptpay_id: savedPromptPayId }, refetch }) },
       savePromptPayId: { useMutation: () => ({ mutate: savePromptPay, isPending: false }) },
       getSettings: { useQuery: () => ({ data: { configured: false, branchId: null }, isLoading: false, isError: false, refetch }) },
       saveKey: { useMutation: () => ({ mutateAsync: saveKey, isPending: false }) },
@@ -23,6 +25,7 @@ vi.mock("@/lib/i18n", () => ({ useTranslation: () => ({ t: (key: string) => key 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  savedPromptPayId = null;
 });
 
 describe("HotelPaymentSettings", () => {
@@ -45,5 +48,15 @@ describe("HotelPaymentSettings", () => {
     fireEvent.change(screen.getByLabelText("slipOk.keyLabel"), { target: { value: "secret-key-123" } });
     fireEvent.click(screen.getByRole("button", { name: "slipOk.save" }));
     await waitFor(() => expect(saveKey).toHaveBeenCalledWith({ hotel_id: "hotel-1", api_key: "secret-key-123", branch_id: "branch-1" }));
+  });
+
+  it("warns about a saved invalid ID and rejects another invalid entry before MFA", async () => {
+    savedPromptPayId = "06151256579";
+    render(<HotelPaymentSettings hotelId="hotel-1" />);
+    expect(screen.getByText("financials.promptPaySavedInvalid")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("financials.promptPayIdLabel"), { target: { value: "0212345678" } });
+    fireEvent.click(screen.getByRole("button", { name: "financials.savePromptPayId" }));
+    expect(await screen.findByText("financials.promptPayInvalid")).toBeTruthy();
+    expect(savePromptPay).not.toHaveBeenCalled();
   });
 });

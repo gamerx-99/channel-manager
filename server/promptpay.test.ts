@@ -45,6 +45,12 @@ describe('generatePromptPayQR', () => {
     expect(qr).toContain('0066812345678');
   });
 
+  it('produces the same payload for international and local mobile forms', () => {
+    const local = generatePromptPayQR({ promptPayId: '0615125657', amount: 100, ref: 'REF' });
+    const international = generatePromptPayQR({ promptPayId: '+66 61 512 5657', amount: 100, ref: 'REF' });
+    expect(international).toBe(local);
+  });
+
   it('accepts 13-digit National ID as-is', () => {
     const qr = generatePromptPayQR({ promptPayId: '1234567890123', amount: 100, ref: 'REF' });
     expect(qr).toContain('1234567890123');
