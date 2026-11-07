@@ -230,3 +230,8 @@ answer noted.
 - [x] (answered 2026-11-05: yes, a cap per night, counted including rooms already booked) Partial caps (sell at most N rooms of a type) as well as open/closed? ASSUMPTION: both.
 - [x] (answered 2026-11-05: hayhost sets no staff rule; notice and confirm only, the hotel controls staff permissions) Do staff bookings respect stop sell? ASSUMPTION: warn and allow; guests cannot book a stopped night.
 - [ ] Old `availability` rows on production: confirm each with its hotel or delete them before enforcement. Needs the two read-only audit queries in `specs/20-stop-sell-and-allotment.md` run by someone with production access (agents were blocked from reading production on 2026-11-05).
+
+## PromptPay ID validation (2026-11-07)
+
+- [ ] ASSUMPTION: accept any 13-digit National/Tax ID without a checksum, preserving the existing QR generator behaviour. There is no shared Thai ID checksum helper. Confirm whether a checksum should be required before changing this rule.
+- [ ] ASSUMPTION: reject `066615125657` as a mixed local/international prefix; accept `0066615125657` as the international form of `0615125657`.

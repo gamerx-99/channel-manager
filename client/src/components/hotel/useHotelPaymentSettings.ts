@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useMfaStepUp } from "@/lib/mfa";
+import { normalisePromptPayId } from "../../../../shared/promptPayId";
+import { useTranslation } from "@/lib/i18n";
 
 export function useHotelPromptPaySettings(hotelId: string) {
   const [promptPayId, setPromptPayId] = useState("");
@@ -8,9 +10,14 @@ export function useHotelPromptPaySettings(hotelId: string) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [totpCode, setTotpCode] = useState("");
+  const { t } = useTranslation();
+  const settings = trpc.slipok.getPromptPaySettings.useQuery({ hotel_id: hotelId });
+  const savedId = settings.data?.promptpay_id;
+  const savedIdInvalid = Boolean(savedId && !normalisePromptPayId(savedId));
   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
   const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
     onSuccess() {
+      void settings.refetch();
       setSaved(true);
       setSaveError(null);
       setPromptPayId("");
@@ -22,17 +29,24 @@ export function useHotelPromptPaySettings(hotelId: string) {
         void triggerStepUp();
         return;
       }
-      setSaveError(err.message);
+      setSaveError(err.data?.code === "BAD_REQUEST" ? t("financials.promptPayInvalid") : err.message);
     },
   });
-  const save = () => savePromptPay.mutate({
-    hotel_id: hotelId,
-    promptpay_id: promptPayId.replace(/\D/g, ""),
-    payment_timeout_minutes: timeoutMin,
-  });
+  const save = () => {
+    const normalised = normalisePromptPayId(promptPayId);
+    if (!normalised) {
+      setSaveError(t("financials.promptPayInvalid"));
+      return;
+    }
+    savePromptPay.mutate({ hotel_id: hotelId, promptpay_id: normalised.value, payment_timeout_minutes: timeoutMin });
+  };
   async function handleSave() {
     setSaveError(null);
     setSaved(false);
+    if (!normalisePromptPayId(promptPayId)) {
+      setSaveError(t("financials.promptPayInvalid"));
+      return;
+    }
     if ((await triggerStepUp()) === "verified") save();
   }
   async function handleVerify() {
@@ -45,5 +59,5 @@ export function useHotelPromptPaySettings(hotelId: string) {
     setTotpCode("");
     reset();
   }
-  return { promptPayId, setPromptPayId, timeoutMin, setTimeoutMin, saveError, saved, totpCode, setTotpCode, mfaState, savePromptPay, handleSave, handleVerify, handleCancel };
+  return { promptPayId, setPromptPayId, timeoutMin, setTimeoutMin, saveError, saved, savedIdInvalid, totpCode, setTotpCode, mfaState, savePromptPay, handleSave, handleVerify, handleCancel };
 }

@@ -110,6 +110,7 @@ describe("payment router secret response boundary", () => {
       manualVerify: { booking_id: BOOKING_MANUAL, hotel_id: HOTEL, approved: true, note: "reviewed" },
     };
     const slipokInputs: Record<string, unknown> = {
+      getPromptPaySettings: { hotel_id: HOTEL },
       getSettings: { hotel_id: HOTEL },
       saveKey: { hotel_id: HOTEL, api_key: "SENTINEL_API_KEY", branch_id: "SENTINEL_BRANCH" },
       removeKey: { hotel_id: HOTEL },
@@ -137,6 +138,36 @@ describe("payment router secret response boundary", () => {
     expect(slip.verifySlipWithSlipOk).toHaveBeenCalled();
     expect(database.saveSlipOkSettings).toHaveBeenCalled();
     expect(database.getSlipOkSettings).toHaveBeenCalled();
+  });
+
+  it("returns a friendly domain error for an invalid stored ID without exposing it", async () => {
+    const { paymentRouter } = await import("./routers/paymentRouter");
+    database.getHotelPaymentConfig.mockResolvedValueOnce({ promptpay_id: "06151256579", payment_timeout_minutes: 15 });
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const caller = paymentRouter.createCaller(context(101) as never);
+      const outcome = await capture(() => caller.createSession({ booking_id: BOOKING_CREATE, hotel_id: HOTEL }));
+      expect(outcome).toHaveProperty("error");
+      expect(serialized(outcome)).toContain("This property cannot take PromptPay payments right now.");
+      expect(serialized(outcome)).not.toContain("06151256579");
+      expect(warning).toHaveBeenCalledWith("[payment.createSession] PromptPay unavailable for hotel", HOTEL);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it("uses the same friendly error when PromptPay has not been configured", async () => {
+    const { paymentRouter } = await import("./routers/paymentRouter");
+    database.getHotelPaymentConfig.mockResolvedValueOnce(null);
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const caller = paymentRouter.createCaller(context(102) as never);
+      await expect(caller.createSession({ booking_id: BOOKING_CREATE, hotel_id: HOTEL }))
+        .rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "This property cannot take PromptPay payments right now. Please contact the property directly." });
+      expect(warning).toHaveBeenCalledWith("[payment.createSession] PromptPay unavailable for hotel", HOTEL);
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   it("does not expose decrypted credentials when SlipOK refuses the key", async () => {

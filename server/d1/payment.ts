@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { normalisePromptPayId } from "../../shared/promptPayId";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { bookings, hotelPaymentSettings, paymentSessions } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
@@ -46,9 +47,11 @@ export async function getSlipOkCredentialsForVerification(db: D1ScopedDatabase, 
 
 export async function savePromptPaySettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, promptPayId: string, timeoutMinutes: number, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.promptpay.save", now);
+  const normalised = normalisePromptPayId(promptPayId);
+  if (!normalised) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid PromptPay ID." });
   if (!Number.isInteger(timeoutMinutes) || timeoutMinutes < 5 || timeoutMinutes > 60) throw new TRPCError({ code: "BAD_REQUEST", message: "Payment timeout must be between 5 and 60 minutes." });
-  await db.insert(hotelPaymentSettings).values({ hotelId, promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now })
-    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now } });
+  await db.insert(hotelPaymentSettings).values({ hotelId, promptpayId: normalised.value, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { promptpayId: normalised.value, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now } });
 }
 
 export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {

@@ -15,6 +15,7 @@ import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from 
 import { bookings, hotels } from '../../drizzle/d1-schema';
 import { eq, and } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
+import { normalisePromptPayId } from '../../shared/promptPayId';
 import { decryptSlipOkKey } from '../slipokCrypto';
 import { verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
@@ -43,10 +44,11 @@ export const paymentRouter = router({
       try {
         const guest = await guestPaymentCaller(db, input.booking_id, input.hotel_id);
         const config = await getHotelPaymentConfig(db, guest, input.hotel_id);
-        if (!config?.promptpay_id) {
+        if (!config?.promptpay_id || !normalisePromptPayId(config.promptpay_id)) {
+          console.warn('[payment.createSession] PromptPay unavailable for hotel', input.hotel_id);
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
-            message: 'This hotel has not configured PromptPay. Please contact the hotel directly.',
+            message: 'This property cannot take PromptPay payments right now. Please contact the property directly.',
           });
         }
 

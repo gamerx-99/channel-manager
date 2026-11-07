@@ -5,6 +5,7 @@ const dbMocks = vi.hoisted(() => ({
   getSlipOkSettings: vi.fn(),
   saveSlipOkSettings: vi.fn(),
   removeSlipOkKey: vi.fn(),
+  getHotelPaymentConfig: vi.fn(),
 }));
 const cryptoMocks = vi.hoisted(() => ({
   encryptSlipOkKey: vi.fn((key: string) => `encrypted:${key}`),
@@ -81,7 +82,8 @@ describe('slipok.saveKey (D1 router)', () => {
 });
 
 describe('SlipOK settings access boundaries', () => {
-  const operations = ['getSettings', 'saveKey', 'removeKey'] as const;
+  const operations = ['getSettings', 'getPromptPaySettings', 'saveKey', 'removeKey'] as const;
+  const mfaOperations = ['getSettings', 'saveKey', 'removeKey'] as const;
   const input = { hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'branch-42' };
 
   it.each(operations)('rejects %s without property.manage_profile before accessing credentials', async operation => {
@@ -100,7 +102,7 @@ describe('SlipOK settings access boundaries', () => {
     expect(cryptoMocks.encryptSlipOkKey).not.toHaveBeenCalled();
   });
 
-  it.each(operations)('rejects %s when recent MFA verification fails before accessing credentials', async operation => {
+  it.each(mfaOperations)('rejects %s when recent MFA verification fails before accessing credentials', async operation => {
     mfaMocks.requireRecentMfaVerification.mockImplementationOnce(() => {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Recent MFA verification required.' });
     });

@@ -12,6 +12,7 @@
  * The string is returned to the client which renders it via a QR library or
  * a QR image API — no binary output here.
  */
+import { normalisePromptPayId } from '../shared/promptPayId';
 
 /** CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF) — required by EMVCo */
 function crc16(data: string): string {
@@ -32,23 +33,9 @@ function tlv(tag: string, value: string): string {
 }
 
 /**
- * Normalise a PromptPay ID to the EMVCo format:
- * - Mobile (10 digits starting with 0): prefix 0066, drop leading 0 → 14 digits
- * - National ID (13 digits): use as-is
- * - Tax ID (13 digits): use as-is
+ * The shared validator supplies the EMVCo receiver value while preserving the
+ * existing payload for valid local mobile and 13-digit IDs.
  */
-function normalisePromptPayId(raw: string): { type: 'mobile' | 'id'; value: string } {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.length === 10 && digits.startsWith('0')) {
-    return { type: 'mobile', value: `0066${digits.slice(1)}` }; // 14 digits
-  }
-  if (digits.length === 13) {
-    return { type: 'id', value: digits };
-  }
-  throw new Error(
-    `Invalid PromptPay ID "${raw}". Expected 10-digit mobile (08x) or 13-digit National/Tax ID.`,
-  );
-}
 
 export interface GenerateQROptions {
   promptPayId: string;
@@ -69,7 +56,8 @@ export function generatePromptPayQR({ promptPayId, amount, ref }: GenerateQROpti
   if (amount <= 0) throw new Error('Amount must be greater than zero.');
   if (!ref || ref.length > 25) throw new Error('ref must be 1–25 characters.');
 
-  const { value: ppId } = normalisePromptPayId(promptPayId);
+  const ppId = normalisePromptPayId(promptPayId)?.emvValue;
+  if (!ppId) throw new Error('Invalid PromptPay ID. Expected a 06, 08 or 09 mobile or 13-digit National/Tax ID.');
 
   // Merchant Account Info (tag 29 for PromptPay)
   //   00: GUID  "A000000677010111"
