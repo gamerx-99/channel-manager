@@ -5677,3 +5677,8 @@ Exit 0
 | `otherPhotosHint` | ติ๊ก "แสดงบนเว็บไซต์" เพื่อเพิ่มรูปเข้าแกลเลอรี แล้วจึงลากเรียงลำดับได้ | ติ๊ก "แสดงบนเว็บไซต์" เพื่อเพิ่มรูปเข้าแกลเลอรี แล้วเลือกลำดับที่ได้ |
 
 - `pnpm check` → `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → 264 files, 1,775 tests passed, exit 0 (TEMP/TMP inside worktree). `pnpm build` → Vite transformed 3,612 modules; Wrangler ended `--dry-run: exiting now.`, exit 0. Its optional log write outside the worktree reported EPERM. `git diff --check` → exit 0 with only line-ending warnings. Reviewer verdict: APPROVE. Browser width screenshots were not captured; responsive CSS wraps footer controls and sets 32px minimum targets. No commit, push, or deploy.
+
+## 2026-11-07 - Full-photo focal editor (`feat/photo-position-order`)
+
+- The large editor image shows the whole photo at its natural aspect ratio, capped at 60vh; the marker and pointer calculation use the drawn image. Only the two small previews follow the draft crop position. The editor image alone disables touch gestures.
+- Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 264 files and 1,775 tests passed, exit 0. `pnpm build` -> Vite transformed 3,612 modules; Wrangler dry run exited 0, with an optional AppData log EPERM. `git diff --check` -> exit 0. `.tmp-vitest/` predates this fix and remains untracked. No commit, push, or deploy.

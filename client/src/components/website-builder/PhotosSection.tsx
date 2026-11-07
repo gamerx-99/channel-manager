@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { HotelMediaItem } from "@/components/website-builder/useWebsiteBuilder";
 import { movePhotoToIndex } from "@/components/website-builder/photoReorder";
 import { formatFocalPoint, parseFocalPoint, pointFromPointer } from "./focalPoint";
-import { useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
+import { useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
 
 export type BuilderMediaItem = HotelMediaItem & { isGallerySelected?: boolean };
 
@@ -44,14 +44,18 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
   const { t } = useTranslation();
   const [draftPosition, setDraftPosition] = useState<string | null>(item.objectPosition);
   const [isSaving, setIsSaving] = useState(false);
+  const [imageAspect, setImageAspect] = useState<number | null>(null);
+  const editorImageRef = useRef<HTMLImageElement>(null);
   const name = item.caption?.trim() || t("websiteBuilder.photoFallback", { order: item.displayOrder + 1 });
   const placeLabel = position === null ? t("websiteBuilder.notOnWebsiteLabel") : item.isHero ? t("websiteBuilder.heroImageLabel") : t("websiteBuilder.galleryLabel");
   const isEditing = focalMediaId === item.id;
   const point = parseFocalPoint(draftPosition);
   const previewStyle = { "--wb-object-position": formatFocalPoint(point) } as CSSProperties;
   const markerStyle = { "--wb-focal-x": `${point.x}%`, "--wb-focal-y": `${point.y}%` } as CSSProperties;
+  const editorStyle = imageAspect ? { "--wb-focal-aspect": imageAspect } as CSSProperties : undefined;
   function updateFromPointer(event: PointerEvent<HTMLDivElement>) {
-    setDraftPosition(formatFocalPoint(pointFromPointer(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect())));
+    const image = editorImageRef.current;
+    if (image) setDraftPosition(formatFocalPoint(pointFromPointer(event.clientX, event.clientY, image.getBoundingClientRect())));
   }
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -90,9 +94,14 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
       {isEditing && (
         <div className="space-y-2 border-t border-[#e6eee9] p-3">
           <p className="text-xs font-medium">{t("websiteBuilder.chooseFocalPoint")}</p>
-          <div className="wb-focal-editor relative aspect-[4/3] overflow-hidden rounded bg-slate-100" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
-            <img src={item.url} alt="" draggable={false} className="pointer-events-none h-full w-full select-none object-cover wb-object-position" style={previewStyle} />
-            <span className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow wb-focal-marker" style={markerStyle} />
+          <div className="text-center">
+            <div className="wb-focal-editor relative inline-block max-w-full overflow-hidden rounded" style={editorStyle} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+              <img ref={editorImageRef} src={item.url} alt="" draggable={false} className="wb-focal-editor-image" onLoad={event => {
+                const { naturalWidth, naturalHeight } = event.currentTarget;
+                if (naturalHeight > 0) setImageAspect(naturalWidth / naturalHeight);
+              }} />
+              <span className="pointer-events-none absolute z-[2] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-600 shadow wb-focal-marker" style={markerStyle} />
+            </div>
           </div>
           <div className="wb-focal-sliders">
             <label>{t("websiteBuilder.horizontal")}<input type="range" min="0" max="100" value={point.x} disabled={!canManage} onChange={event => setDraftPosition(formatFocalPoint({ ...point, x: Number(event.currentTarget.value) }))} /></label>

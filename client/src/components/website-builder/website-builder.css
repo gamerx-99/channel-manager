@@ -3,7 +3,8 @@
 .wb-preview-accent { background: var(--wb-accent); color: var(--wb-accent-contrast); }
 .wb-object-position { object-position: var(--wb-object-position, 50% 50%); }
 .wb-card-image { pointer-events: none; }
-.wb-focal-editor { touch-action: none; cursor: crosshair; }
+.wb-focal-editor { width: min(100%, calc(60vh * var(--wb-focal-aspect, 10000))); cursor: crosshair; }
+.wb-focal-editor-image { display: block; width: 100%; height: auto; max-height: 60vh; touch-action: none; user-select: none; }
 .wb-focal-sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .wb-focal-sliders label { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
 .wb-focal-sliders input { width: 100%; min-height: 32px; }
