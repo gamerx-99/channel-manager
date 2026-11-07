@@ -66,77 +66,7 @@
   box-sizing: border-box;
 }
 
-.booking-reassurance {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 18px 20px;
-  margin-bottom: 28px;
-  background: #ffffff;
-  border: 1px solid #d8d1c2;
-  border-left: 4px solid var(--booking-page-highlight);
-  border-radius: 10px;
-  color: #27322f;
-}
-
-.booking-reassurance-icon {
-  flex-shrink: 0;
-  color: var(--booking-page-highlight);
-  margin-top: 2px;
-}
-
-.booking-reassurance-body {
-  min-width: 0;
-}
-
-.booking-reassurance-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-
-.booking-reassurance-help {
-  margin: 4px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #4f5a55;
-}
-
-.booking-reassurance-address {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
-  margin: 10px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #4f5a55;
-  overflow-wrap: anywhere;
-}
-
-.booking-reassurance-address svg {
-  flex-shrink: 0;
-  margin-top: 3px;
-}
-
-.booking-reassurance-contacts .contact-link {
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid #d8d1c2;
-  border-radius: 999px;
-  color: #27322f;
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.booking-reassurance-contacts .contact-link:hover,
-.booking-reassurance-contacts .contact-link:focus-visible {
-  border-color: var(--booking-page-accent);
-}
-
-/* The booking steps keep their own look (public-booking.css); on this page they sit in one
-   column under the reassurance banner instead of a full-width two-column band. */
+/* The booking steps keep their own look (public-booking.css) in one column. */
 .booking-page .public-booking {
   grid-template-columns: 1fr;
   gap: 24px;
@@ -163,12 +93,38 @@
   color: #6f776f;
 }
 
+.booking-page-footer > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  align-self: center;
+}
+
+.booking-page-hayhost-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #d8d1c2;
+}
+
+.booking-page-hayhost-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.booking-page-hayhost-link img {
+  display: block;
+  width: auto;
+  height: 24px;
+}
+
 @media (max-width: 760px) {
   .booking-page-header { padding: 10px 16px; }
   .booking-page-hotel { font-size: 17px; }
   .booking-page-main { padding: 20px 16px 40px; }
-  .booking-reassurance { padding: 14px; gap: 10px; margin-bottom: 20px; }
-  .booking-reassurance-title { font-size: 16px; }
   .booking-page .public-booking { display: block; padding: 24px 16px; }
   .booking-page .public-booking h2 { font-size: 28px; }
   .booking-page .booking-box { padding: 16px 12px; margin-top: 20px; }

@@ -3,10 +3,10 @@ import { useSearch } from "wouter";
 import { usePublicHotelPage } from "./usePublicHotelPage";
 import { getTodayDateString } from "./useBookingWizard";
 import { parseBookingPrefill } from "./bookingPageLink";
+import { isHotelThemeId } from "@shared/hotelThemes";
 
 /**
- * Data for the hayhost booking page (/:slug/book). Every hotel gets the same layout; only the
- * hotel name and its accent colour change. The booking steps are the existing wizard from
+ * Data for the themed booking page (/:slug/book). The booking steps are the existing wizard from
  * usePublicHotelPage; this hook only fills it once from ?roomType=&checkIn=&checkOut=.
  */
 export function usePublicBookingPage(slug: string) {
@@ -36,6 +36,7 @@ export function usePublicBookingPage(slug: string) {
 
   return {
     ...page,
+    bookingTheme: isHotelThemeId(page.siteConfig?.theme) ? page.siteConfig.theme : null,
     accentTextColor: page.accentTextColor,
     hotelHref: `/${slug}`,
     prefillReady: hotelId !== null && prefillReadyFor === hotelId,

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { HOTEL_THEMES } from "@shared/hotelThemes";
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 const app = read("client/src/App.tsx");
@@ -35,37 +36,36 @@ describe("PublicBooking page contract", () => {
     expect(css).toContain("background: var(--booking-page-accent)");
   });
 
-  it("opens with the reassurance banner: both lines, the address and the hotel contacts", () => {
-    const banner = read("client/src/components/public-hotel/BookingReassurance.tsx");
-    const th = read("client/src/lib/i18n/th.ts");
-    expect(th).toContain('bookingWith: "ท่านกำลังจองห้องพักกับ {{name}}"');
-    expect(th).toContain('contactDirect: "หากมีข้อสงสัยหรือพบปัญหา ติดต่อที่พักได้โดยตรง"');
-    expect(banner).toContain('t("publicBooking.bookingWith", { name: hotelName })');
-    expect(banner).toContain('t("publicBooking.contactDirect")');
-    expect(banner).toContain("<span>{shownAddress}</span>");
-    expect(banner).toContain("<HotelContactsList");
-    // The server already leaves out contacts the hotel switched off; the client must not re-check show_*.
-    expect(banner).not.toMatch(/show_/);
-    expect(page).not.toMatch(/show_/);
-    expect(page).toContain("address={hotel.address}");
-    expect(page).toContain("lineUrl={hotel.line_url}");
-    const main = page.slice(page.indexOf('<main className="booking-page-main">'));
-    expect(main.indexOf("<BookingReassurance")).toBeGreaterThan(-1);
+  it("opens the booking steps without a reassurance box", () => {
+    expect(page).not.toContain("BookingReassurance");
+    expect(page).not.toContain("booking-reassurance");
+    expect(page).toContain("{data.prefillReady && <PublicBookingSection page={data} />}");
   });
 
-  it("runs the existing booking steps under the banner and fills them from the query", () => {
-    const main = page.slice(page.indexOf('<main className="booking-page-main">'));
-    expect(main.indexOf("{data.prefillReady && <PublicBookingSection page={data} />}")).toBeGreaterThan(main.indexOf("<BookingReassurance"));
+  it("fills the existing booking steps from the query", () => {
     expect(hook).toContain("parseBookingPrefill(search");
     expect(hook).toContain("today: getTodayDateString()");
   });
 
-  it("ends with the hayhost credit", () => {
-    expect(page).toContain('<PoweredByHayhost label={t("publicBooking.footerBooking")} />');
+  it("ends with the hotel name and a linked hayhost logo", () => {
+    expect(page).toContain("<span>{hotel.name}</span>");
+    expect(page).toContain('href="https://www.hayhostth.com/" target="_blank" rel="noopener"');
+    expect(page).toContain('<img src="/logo-wide.png" alt={t("publicBooking.footerLogoAlt")} />');
   });
 
   it("keeps the look in CSS: inline styles only carry runtime CSS variables", () => {
     const inlineStyles = page.match(/style=\{\{[^}]*\}\}/g) ?? [];
     for (const style of inlineStyles) expect(style).toMatch(/^style=\{\{\s*"--/);
+  });
+
+  it("defines the complete booking token set for every registered hotel theme", () => {
+    const css = read("client/src/components/public-hotel/booking-themes.css");
+    const tokens = ["page", "surface", "card", "ink", "muted", "border", "border-width", "radius", "heading", "body", "button", "button-text", "button-radius", "button-shadow", "selected", "selected-text", "header", "header-ink"];
+    for (const { id } of HOTEL_THEMES) {
+      const block = css.match(new RegExp(`\\.booking-page\\[data-booking-theme="${id}"\\]\\s*\\{([^}]*)\\}`))?.[1];
+      expect(block, `${id} booking tokens`).toBeTruthy();
+      for (const token of tokens) expect(block, `${id}: --bt-${token}`).toContain(`--bt-${token}:`);
+    }
+    expect(page).toContain('data-booking-theme={bookingTheme ?? "default"}');
   });
 });

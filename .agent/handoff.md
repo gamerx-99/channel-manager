@@ -5694,3 +5694,33 @@ Exit 0
 
 - Removed Thai/English keys: `mockRooms`, `mockAbout`, `mockContact`, `mockBook`, `mockProperty`, `mockSubtitle`, `mockDates`, `mockRoom`, `mockPromptPay`, `heroPhotoAlt`. Added no keys.
 - Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 264 files and 1,776 tests passed, exit 0. `pnpm build` -> Vite transformed 3,612 modules; Wrangler ended `--dry-run: exiting now.`, exit 0 (optional AppData log EPERM). `git diff --check` -> exit 0. Rendered 320/375/768/1280/1440px measurements were blocked because browser-skill could not reach its daemon, the browser host was unavailable, and computer-use review rejected Chrome access. Automatic command review rejected both recursive and validated per-file cleanup of `.tmp-vitest/`, so it remains untracked. Reviewer verdict: REJECT solely for the unverified responsive acceptance checks and `.tmp-vitest/` cleanup. No commit, push, or deploy.
+
+## 2026-11-07 - Public booking page follows the published hotel theme
+
+- The booking page reads the existing published `siteConfig.theme`, validates it against `HOTEL_THEMES`, and sets `data-booking-theme`; missing or unknown themes keep the hayhost default. It reuses `ThemeLanding`'s Google Font loader and changes no booking step, validation, endpoint, or payload.
+- Added one booking theme stylesheet with eight token sets and scoped styles for the header, reassurance, all six wizard steps, calendar, payment and confirmation, and footer. At 320px the calendar gets tighter nested padding so seven day cells retain a usable width. Rendered measurements at 320/375/768/1280px were not available in this worktree, so horizontal overflow and measured contrast still need a browser pass.
+- Thai copy before -> after:
+
+| Key | Before | After |
+|---|---|---|
+| `publicHotel.bookingTitleHighlight` | การเข้าพักครั้งต่อไป | พักครั้งหน้า |
+| `publicHotel.bookingDesc` | ระบบจองห้องพักโดยตรงสำหรับผู้เข้าพัก พร้อมคำนวณอัตราค่าบริการและสถานะห้องว่างแบบเรียลไทม์ | เลือกวันเข้าพักและจำนวนผู้เข้าพัก ดูราคา แล้วจองกับที่พักได้เลย |
+
+- English copy: `bookingTitleHighlight` next visit. -> next stay.; `bookingDesc` Direct guest reservation engine with real-time rate & availability calculation. -> Choose your dates and guests, see the price, then book directly with the property.
+- Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> 264 files and 1,778 tests passed, exit 0, with TEMP/TMP set to the worktree. `pnpm build` -> Vite transformed 3,613 modules and Wrangler ended `--dry-run: exiting now.`, exit 0. Wrangler printed an optional AppData log EPERM. `git diff --check` -> exit 0. The test run left an untracked `node-compile-cache/` in the worktree; it was not removed because cleanup commands are restricted. No independent reviewer or browser pass, and no commit, push, or deploy.
+
+### Owner follow-up: remove reassurance and use hayhost logo in booking footer
+
+- Removed the reassurance box from `/:slug/book`, its sole-use component and test, and its CSS. The booking footer retains the hotel name and links a 24px `logo-wide.png` image to `https://www.hayhostth.com/` in a new tab with `rel="noopener"`. A white badge keeps the logo's dark lettering legible on dark themes. The shared `PoweredByHayhost` component and hotel website footers were not changed.
+- Thai copy before -> after:
+
+| Key | Before | After |
+|---|---|---|
+| `publicBooking.footerLogoAlt` | - | จองผ่านระบบ hayhost |
+| `publicBooking.footerBooking` | ระบบจองโดย hayhost | removed (logo replaces visible text) |
+| `publicBooking.contactsLabel` | ข้อมูลติดต่อที่พัก | removed |
+| `publicBooking.bookingWith` | ท่านกำลังจองห้องพักกับ {{name}} | removed |
+| `publicBooking.contactDirect` | หากมีข้อสงสัยหรือพบปัญหา ติดต่อที่พักได้โดยตรง | removed |
+
+- English keys: added `publicBooking.footerLogoAlt` = "Booking powered by hayhost"; removed `publicBooking.footerBooking`, `contactsLabel`, `bookingWith`, and `contactDirect`. The `hotelThemes.*.footerBooking` keys remain for hotel website footers.
+- Verification on final code: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 263 passed (263)` and `Tests 1776 passed (1776)`, exit 0 (TEMP/TMP pointed inside the worktree). `pnpm build` -> `3612 modules transformed`, `--dry-run: exiting now.`, exit 0; Wrangler reported an optional log write EPERM outside the worktree. `git diff --check` -> exit 0. Rendered 320/375/768/1280px viewport measurements and contrast sampling were unavailable because the browser access host did not connect. CSS review covers footer wrapping and the light logo badge. No commit, push or deploy.

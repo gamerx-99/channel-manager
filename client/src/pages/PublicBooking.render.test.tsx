@@ -49,16 +49,32 @@ afterEach(() => {
 });
 
 describe("PublicBooking page", () => {
-  it("shows the hotel bar, the reassurance banner and the booking steps", () => {
+  it("shows the hotel bar, booking steps and linked hayhost logo without the reassurance box", () => {
     window.history.replaceState(null, "", "/sample-stay/book");
     const view = render(<PublicBooking slug="sample-stay" />);
     const bar = view.container.querySelector<HTMLElement>(".booking-page");
+    expect(bar?.dataset.bookingTheme).toBe("lanna-teak");
     expect(bar?.style.getPropertyValue("--booking-page-accent")).toBe("#6b3f2a");
     expect(bar?.style.getPropertyValue("--booking-page-accent-text")).toBe("#ffffff");
     expect(screen.getByRole("link", { name: "Sample Stay" }).getAttribute("href")).toBe("/sample-stay");
-    expect(screen.getByText("12 River Road")).toBeTruthy();
-    expect(view.container.querySelector('a[href="tel:081-234-5678"]')).toBeTruthy();
+    expect(view.container.querySelector(".booking-reassurance")).toBeNull();
+    expect(screen.queryByText("12 River Road")).toBeNull();
+    const logo = screen.getByRole("img", { name: "Booking powered by hayhost" });
+    expect(logo.getAttribute("src")).toBe("/logo-wide.png");
+    const logoLink = logo.closest("a");
+    expect(logoLink?.getAttribute("href")).toBe("https://www.hayhostth.com/");
+    expect(logoLink?.getAttribute("target")).toBe("_blank");
+    expect(logoLink?.getAttribute("rel")).toBe("noopener");
     expect(screen.getByTestId("booking-steps").textContent).toBe("preferred:none");
+  });
+
+  it("uses the default look when the published theme is missing or unknown", () => {
+    for (const theme of [null, "unknown-theme"]) {
+      mocks.siteConfigQuery.mockReturnValue({ data: { theme, visibleSections: null }, isLoading: false, error: null });
+      const view = render(<PublicBooking slug="sample-stay" />);
+      expect(view.container.querySelector<HTMLElement>(".booking-page")?.dataset.bookingTheme).toBe("default");
+      cleanup();
+    }
   });
 
   it("fills the room type and dates from the query once the hotel is loaded", () => {

@@ -31,9 +31,9 @@ const fonts: Partial<Record<ThemeLandingProps["themeId"], string>> = {
   "hostel-pop": "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Kanit:wght@400;500;600;700;800;900&display=swap",
 };
 
-export function ThemeLanding({ themeId, children, colors }: ThemeLandingProps) {
-  const resolvedColors = colors ?? getHotelThemeColors(themeId);
+export function useHotelThemeFont(themeId: HotelThemeId | null) {
   useEffect(() => {
+    if (!themeId) return;
     const font = fonts[themeId];
     if (!font) return;
     const existing = document.querySelector<HTMLLinkElement>(`link[data-hotel-theme-font="${themeId}"]`);
@@ -44,6 +44,11 @@ export function ThemeLanding({ themeId, children, colors }: ThemeLandingProps) {
     link.dataset.hotelThemeFont = themeId;
     document.head.appendChild(link);
   }, [themeId]);
+}
+
+export function ThemeLanding({ themeId, children, colors }: ThemeLandingProps) {
+  const resolvedColors = colors ?? getHotelThemeColors(themeId);
+  useHotelThemeFont(themeId);
 
   return <div className={`public-page theme-${themeId}`} style={{ "--owner-accent": resolvedColors.buttonBackground, "--owner-accent-text": resolvedColors.buttonText, "--owner-highlight": resolvedColors.highlight } as React.CSSProperties}>{children}</div>;
 }
