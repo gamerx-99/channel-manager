@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type TourStep = { target?: string; title: string; body: string; action?: string };
+export const TOUR_STEP_KEY = 'hayhost-guided-tour-step';
+const initialStep = () => window.sessionStorage.getItem(TOUR_STEP_KEY) === 'rooms' ? 1 : 0;
 export function useGuidedTour(steps: TourStep[], active: boolean, onFinish: (skipped: boolean) => void) {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(initialStep);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const step = steps[stepIndex];
-  useEffect(() => { if (active) setStepIndex(0); }, [active]);
+  useEffect(() => { if (active) setStepIndex(initialStep()); }, [active]);
   const recalculate = useCallback(() => {
     if (!active || !step?.target) { setRect(null); return; }
     const target = step.target === "hotel-settings" && document.querySelector('[data-tour="hotel-settings-fields"]')

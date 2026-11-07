@@ -1,6 +1,6 @@
 import { ArrowUpRight, BedDouble, CalendarDays, Check, Plus, Users } from 'lucide-react';
-import { Link, useLocation } from 'wouter';
-import { FormEvent, Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { Link, Redirect } from 'wouter';
+import { FormEvent, useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import {
   Dialog,
@@ -16,9 +16,7 @@ import { PageState } from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import { hasHotelPermission } from '@shared/authorization';
 import { defaultChildRateConfig, defaultOccupancyPricing, getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
-import { validateHotelContacts } from '@shared/hotelLocationRules';
 
-const HotelMapPicker = lazy(() => import('@/components/hotel/HotelMapPicker'));
 import RoomAmenitiesPicker from '@/components/hotel/RoomAmenitiesPicker';
 import { HotelDataTransfer } from '@/components/hotel/HotelDataTransfer';
 import HotelPaymentSettings from '@/components/hotel/HotelPaymentSettings';
@@ -45,47 +43,14 @@ function normalizeAgeGroupRanges(groups: ChildRateConfig['age_groups']) {
 
 export default function HotelDetail({ id }: { id: string }) {
   const { t } = useTranslation();
-  const [location] = useLocation();
   const [showCreateRoomType, setShowCreateRoomType] = useState(false);
   const [showEditRoomType, setShowEditRoomType] = useState(false);
   const [showDeleteRoomType, setShowDeleteRoomType] = useState(false);
-  const [showEditHotel, setShowEditHotel] = useState(false);
-  const profileEditRequested = useRef(false);
-  // The guided tour closes the hotel editor when it moves on to the rooms step.
-  useEffect(() => {
-    const close = () => setShowEditHotel(false);
-    window.addEventListener('guided-tour:close-hotel-editor', close);
-    return () => window.removeEventListener('guided-tour:close-hotel-editor', close);
-  }, []);
-  const [hotelProfileForm, setHotelProfileForm] = useState({
-    name: '',
-    address: '',
-    owner_contact: '',
-    latitude: null as number | null,
-    longitude: null as number | null,
-    public_phone: '',
-    show_public_phone: false,
-    facebook_url: '',
-    show_facebook: false,
-    line_url: '',
-    show_line: false,
-    instagram_url: '',
-    show_instagram: false,
-    x_url: '',
-    show_x: false,
-  });
-  const [hotelProfileError, setHotelProfileError] = useState<string | null>(null);
   const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string | null>(null);
   const [roomTypeForm, setRoomTypeForm] = useState(emptyRoomTypeForm);
   const [roomTypeError, setRoomTypeError] = useState<string | null>(null);
   const utils = trpc.useUtils();
   const { data: hotel, isLoading, error } = trpc.channelManager.hotel.useQuery(id);
-  useEffect(() => {
-    if (hotel && !profileEditRequested.current && new URLSearchParams(window.location.search).get('edit') === 'profile') {
-      profileEditRequested.current = true;
-      openHotelEditor();
-    }
-  }, [id, location, hotel]);
   const authMeQuery = trpc.auth.me.useQuery();
   const canPublish = hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], id, 'property.manage_profile');
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -100,73 +65,6 @@ export default function HotelDetail({ id }: { id: string }) {
     },
     onError: mutationError => setPublishError(mutationError.message),
   });
-  const updateHotelProfile = trpc.channelManager.updateHotelProfile.useMutation({
-    onSuccess: async () => {
-      await Promise.all([utils.channelManager.hotel.invalidate(id), utils.channelManager.hotels.invalidate(), utils.channelManager.dashboard.invalidate()]);
-      setShowEditHotel(false);
-      setHotelProfileError(null);
-    },
-    onError: mutationError => setHotelProfileError(mutationError.message),
-  });
-  function openHotelEditor() {
-    setHotelProfileForm({
-      name: hotel?.name ?? '',
-      address: hotel?.address ?? '',
-      owner_contact: hotel?.owner_contact ?? '',
-      latitude: hotel?.latitude ?? null,
-      longitude: hotel?.longitude ?? null,
-      public_phone: hotel?.public_phone ?? '',
-      show_public_phone: Boolean(hotel?.show_public_phone),
-      facebook_url: hotel?.facebook_url ?? '',
-      show_facebook: Boolean(hotel?.show_facebook),
-      line_url: hotel?.line_url ?? '',
-      show_line: Boolean(hotel?.show_line),
-      instagram_url: hotel?.instagram_url ?? '',
-      show_instagram: Boolean(hotel?.show_instagram),
-      x_url: hotel?.x_url ?? '',
-      show_x: Boolean(hotel?.show_x),
-    });
-    setHotelProfileError(null);
-    setShowEditHotel(true);
-  }
-  function submitHotelProfile(event: FormEvent) {
-    event.preventDefault();
-    setHotelProfileError(null);
-    const contactErr = validateHotelContacts({
-      phone: hotelProfileForm.public_phone,
-      facebook: hotelProfileForm.facebook_url,
-      line: hotelProfileForm.line_url,
-      instagram: hotelProfileForm.instagram_url,
-      x: hotelProfileForm.x_url,
-      showPhone: hotelProfileForm.show_public_phone,
-      showFacebook: hotelProfileForm.show_facebook,
-      showLine: hotelProfileForm.show_line,
-      showInstagram: hotelProfileForm.show_instagram,
-      showX: hotelProfileForm.show_x,
-    });
-    if (contactErr) {
-      setHotelProfileError(contactErr);
-      return;
-    }
-    updateHotelProfile.mutate({
-      hotel_id: id,
-      name: hotelProfileForm.name,
-      address: hotelProfileForm.address,
-      owner_contact: hotelProfileForm.owner_contact,
-      latitude: hotelProfileForm.latitude,
-      longitude: hotelProfileForm.longitude,
-      public_phone: hotelProfileForm.public_phone || null,
-      show_public_phone: hotelProfileForm.show_public_phone,
-      facebook_url: hotelProfileForm.facebook_url || null,
-      show_facebook: hotelProfileForm.show_facebook,
-      line_url: hotelProfileForm.line_url || null,
-      show_line: hotelProfileForm.show_line,
-      instagram_url: hotelProfileForm.instagram_url || null,
-      show_instagram: hotelProfileForm.show_instagram,
-      x_url: hotelProfileForm.x_url || null,
-      show_x: hotelProfileForm.show_x,
-    });
-  }
   function togglePublished(next: boolean) {
     if (!next && !window.confirm(t('hotelDetail.confirmUnpublish'))) return;
     setPublishError(null);
@@ -417,6 +315,7 @@ export default function HotelDetail({ id }: { id: string }) {
       <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" checked={roomTypeForm.children_count_toward_max} onChange={event => setRoomTypeForm({ ...roomTypeForm, children_count_toward_max: event.target.checked })} />{t('hotelDetail.childrenCountTowardMaxLabel')}</label>
     </fieldset>;
   }
+  if (new URLSearchParams(window.location.search).get('edit') === 'profile') return <Redirect to={`/hotels/${id}/profile`} />;
   const pageIntro = <section className="page-intro intro-split"><div><div className="eyebrow">{t('hotelDetail.eyebrowRoomTypes')}</div><h1>{t('hotelDetail.headingRoomTypes')}<span className="title-mark">.</span></h1><p className="lede">{t('hotelDetail.pageLede')}</p></div></section>;
   if (isLoading) return <div className="page-content">{pageIntro}<section className="panel empty-state"><PageState tone="loading" title={t('hotelDetail.loadingTitle')} description={t('hotelDetail.loadingDesc')} /></section></div>;
   if (error || !hotel) return <div className="page-content">{pageIntro}<section className="panel empty-state"><PageState tone="error" title={t('hotelDetail.errorTitle')} description={error?.message ?? t('hotelDetail.errorDescFallback')} actionLabel={t('hotelDetail.retryButton')} onAction={() => void utils.channelManager.hotel.invalidate(id)} /></section></div>;
@@ -426,145 +325,6 @@ export default function HotelDetail({ id }: { id: string }) {
     {canPublish && <HotelDataTransfer hotelId={hotel.id} slug={hotel.slug} />}
     {canPublish && <HotelPaymentSettings hotelId={hotel.id} />}
     {canPublish && <HotelInvoiceSettings hotelId={hotel.id} hotelName={hotel.name} hotelAddress={hotel.address ?? ''} />}
-    <Dialog open={showEditHotel} onOpenChange={setShowEditHotel}>
-      {/* The guided tour card sits outside this modal; a click on it must not close the editor. */}
-      <DialogContent className="modal-card" onInteractOutside={event => { const target = event.target as Element | null; if (target?.closest?.('.guided-tour-card') || target?.closest?.('.leaflet-container')) event.preventDefault(); }}>
-        <DialogHeader className="modal-head"><div><div className="eyebrow">{t('hotelDetail.editProperty')}</div><DialogTitle>{t('hotelDetail.editProperty')}</DialogTitle><DialogDescription className="modal-lede">{t('hotelDetail.editProfileDescription')}</DialogDescription></div></DialogHeader>
-        <form onSubmit={submitHotelProfile}>
-          {hotelProfileError && <p className="form-error" role="alert">{hotelProfileError}</p>}
-          <div data-tour="hotel-settings-fields" className="form-grid">
-            <label className="form-span-two">{t('hotelDetail.hotelNameLabel')}<input autoFocus required maxLength={160} value={hotelProfileForm.name} onChange={event => setHotelProfileForm({ ...hotelProfileForm, name: event.target.value })} /></label>
-            <label className="form-span-two">{t('hotelDetail.addressLabel')}<input required maxLength={500} autoComplete="street-address" value={hotelProfileForm.address} onChange={event => setHotelProfileForm({ ...hotelProfileForm, address: event.target.value })} /></label>
-            <label className="form-span-two">{t('hotelDetail.contactLabel')}<input required maxLength={180} autoComplete="tel" value={hotelProfileForm.owner_contact} onChange={event => setHotelProfileForm({ ...hotelProfileForm, owner_contact: event.target.value })} /></label>
-
-            <Suspense fallback={<div style={{ gridColumn: '1 / -1', height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717a' }}>กำลังโหลดแผนที่...</div>}>
-              <HotelMapPicker
-                latitude={hotelProfileForm.latitude}
-                longitude={hotelProfileForm.longitude}
-                onChange={({ latitude, longitude }) => setHotelProfileForm(prev => ({ ...prev, latitude, longitude }))}
-                disabled={updateHotelProfile.isPending}
-              />
-            </Suspense>
-
-            <div className="form-span-two" style={{ marginTop: 12 }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: 8 }}>{t('hotelDetail.contactChannelsHeading')}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: '0.85rem' }}>
-                    {t('hotelDetail.publicPhoneLabel')}
-                    <input
-                      type="tel"
-                      maxLength={80}
-                      placeholder="เช่น 081 234 5678"
-                      value={hotelProfileForm.public_phone}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, public_phone: e.target.value })}
-                      style={{ width: '100%', marginTop: 4 }}
-                    />
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', marginTop: 4 }}>
-                    <input
-                      type="checkbox"
-                      checked={hotelProfileForm.show_public_phone}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_public_phone: e.target.checked })}
-                    />
-                    {t('hotelDetail.showPhoneOnSite')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.85rem' }}>
-                    Facebook Page URL
-                    <input
-                      type="url"
-                      maxLength={500}
-                      placeholder="https://facebook.com/yourhotel"
-                      value={hotelProfileForm.facebook_url}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, facebook_url: e.target.value })}
-                      style={{ width: '100%', marginTop: 4 }}
-                    />
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', marginTop: 4 }}>
-                    <input
-                      type="checkbox"
-                      checked={hotelProfileForm.show_facebook}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_facebook: e.target.checked })}
-                    />
-                    {t('hotelDetail.showFacebookOnSite')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.85rem' }}>
-                    LINE
-                    <input
-                      type="url"
-                      maxLength={500}
-                      placeholder="@hotelname หรือ ลิงก์ line.me"
-                      value={hotelProfileForm.line_url}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, line_url: e.target.value })}
-                      style={{ width: '100%', marginTop: 4 }}
-                    />
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', marginTop: 4 }}>
-                    <input
-                      type="checkbox"
-                      checked={hotelProfileForm.show_line}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_line: e.target.checked })}
-                    />
-                    {t('hotelDetail.showLineOnSite')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.85rem' }}>
-                    Instagram URL
-                    <input
-                      type="url"
-                      maxLength={500}
-                      placeholder="https://instagram.com/yourhotel"
-                      value={hotelProfileForm.instagram_url}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, instagram_url: e.target.value })}
-                      style={{ width: '100%', marginTop: 4 }}
-                    />
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', marginTop: 4 }}>
-                    <input
-                      type="checkbox"
-                      checked={hotelProfileForm.show_instagram}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_instagram: e.target.checked })}
-                    />
-                    {t('hotelDetail.showInstagramOnSite')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.85rem' }}>
-                    X (Twitter) URL
-                    <input
-                      type="url"
-                      maxLength={500}
-                      placeholder="https://x.com/yourhotel"
-                      value={hotelProfileForm.x_url}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, x_url: e.target.value })}
-                      style={{ width: '100%', marginTop: 4 }}
-                    />
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', marginTop: 4 }}>
-                    <input
-                      type="checkbox"
-                      checked={hotelProfileForm.show_x}
-                      onChange={e => setHotelProfileForm({ ...hotelProfileForm, show_x: e.target.checked })}
-                    />
-                    {t('hotelDetail.showXOnSite')}
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="modal-actions form-submit"><button className="button button-quiet" type="button" onClick={() => setShowEditHotel(false)} disabled={updateHotelProfile.isPending}>{t('hotelDetail.cancel')}</button><button className="button button-primary" type="submit" disabled={updateHotelProfile.isPending}>{updateHotelProfile.isPending ? t('hotelDetail.savingProfile') : t('hotelDetail.saveProfile')}</button></DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
     <Dialog open={showCreateRoomType} onOpenChange={closeRoomTypeDialog}>
       <DialogContent className="modal-card">
         <DialogHeader className="modal-head"><div><div className="eyebrow">{t('hotelDetail.newRoomTypeEyebrow')}</div><DialogTitle>{t('hotelDetail.newRoomTypeTitle')}</DialogTitle><DialogDescription className="modal-lede">{t('hotelDetail.newRoomTypeDesc', { name: hotel.name })}</DialogDescription></div></DialogHeader>

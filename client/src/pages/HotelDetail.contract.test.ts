@@ -35,16 +35,13 @@ describe('Hotel Detail calendar navigation', () => {
   it('mounts hotel payment settings only for property profile managers', () => {
     expect(hotelDetail).toContain("import HotelPaymentSettings from '@/components/hotel/HotelPaymentSettings'");
     expect(hotelDetail).toContain("{canPublish && <HotelPaymentSettings hotelId={hotel.id} />}");
-    expect(hotelDetail.indexOf("HotelPaymentSettings hotelId={hotel.id}")).toBeLessThan(hotelDetail.indexOf("<Dialog open={showEditHotel}"));
+    expect(hotelDetail).not.toContain('<Dialog open={showEditHotel}');
   });
 
-  it('opens the hotel profile form and saves name, address and owner contact', () => {
-    expect(hotelDetail).toContain('trpc.channelManager.updateHotelProfile.useMutation');
+  it('redirects the former profile query to the dedicated page', () => {
     expect(hotelDetail).toContain("get('edit') === 'profile'");
-    expect(hotelDetail).toContain('openHotelEditor();');
-    expect(hotelDetail).toContain("t('hotelDetail.hotelNameLabel')");
-    expect(hotelDetail).toContain("t('hotelDetail.addressLabel')");
-    expect(hotelDetail).toContain("t('hotelDetail.contactLabel')");
+    expect(hotelDetail).toContain('return <Redirect to={`/hotels/${id}/profile`} />');
+    expect(hotelDetail).not.toContain('openHotelEditor');
     expect(hotelDetail).not.toContain('hotelDetail.comingSoon');
   });
 

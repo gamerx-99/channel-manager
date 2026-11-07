@@ -5731,3 +5731,31 @@ Exit 0
 - Added `booking-themes.contract.test.ts` covering every registered theme: primary fill differs from its panel token and primary text meets WCAG AA (at least 4.5:1). It also pins hostel-pop's fill, border and shadow and the secondary borders. Updated spec 05 status. No existing tests were loosened.
 - Verification output: `pnpm check` -> `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 264 passed (264)` and `Tests 1778 passed (1778)`, exit 0 (TEMP/TMP inside the worktree). `pnpm build` -> `3612 modules transformed`, `--dry-run: exiting now.`, exit 0; Wrangler reported an optional log write EPERM outside the worktree. `git diff --check` -> exit 0 (only an LF-to-CRLF warning). Independent reviewer: APPROVE after inspecting the CSS cascade, eight theme tokens and new test.
 - `.tmp-vitest/` and `node-compile-cache/` were already untracked and remain untouched. No commit, push or deploy.
+
+## 2026-11-07 - Hotel information full page (`feat/hotel-profile-page`)
+
+- Moved the hotel profile editor from the room-types dialog to `/hotels/:id/profile`. The new page has basic information, map and website-contact panels; the form hook keeps the existing validation and mutation payload, preserves edits during refetch, and shows inline save feedback. `property.manage_profile` gates the route and page. The old `?edit=profile` URL redirects to the page. Sidebar and guided-tour navigation use the new route; the tour resumes its rooms step across the route remount.
+- The intentional markup changes update `Sidebar.hotelSettings.test.ts`, `HotelNameOnce.contract.test.ts`, `GuidedTour.contract.test.ts`, and `HotelDetail.contract.test.ts`. New contracts cover the route and page; pure form mapping and tour route remount have tests. `specs/21-hotel-profile-page.md` records the owner request as DONE for this local worktree.
+- Thai copy before → after (all keys are new; no keys removed):
+
+| Key | Before (Thai) | After (Thai) | English |
+|---|---|---|---|
+| `hotelProfile.eyebrow` | — | ตั้งค่าโรงแรม | Hotel settings |
+| `hotelProfile.title` | — | ข้อมูลโรงแรม | Hotel information |
+| `hotelProfile.lede` | — | แก้ไขข้อมูลโรงแรมและช่องทางติดต่อที่แสดงบนเว็บไซต์ | Update your hotel details and the contact channels shown on your website. |
+| `hotelProfile.basicEyebrow` | — | รายละเอียดโรงแรม | Hotel details |
+| `hotelProfile.basicHeading` | — | ข้อมูลพื้นฐาน | Basic information |
+| `hotelProfile.locationEyebrow` | — | ที่ตั้งโรงแรม | Find us |
+| `hotelProfile.channelsEyebrow` | — | ติดต่อบนเว็บไซต์ | Website contacts |
+| `hotelProfile.mapLoading` | — | กำลังโหลดแผนที่... | Loading map... |
+| `hotelProfile.phonePlaceholder` | — | เช่น 081 234 5678 | e.g. 081 234 5678 |
+| `hotelProfile.facebookLabel` | — | ลิงก์เพจ Facebook | Facebook Page URL |
+| `hotelProfile.lineLabel` | — | LINE | LINE |
+| `hotelProfile.linePlaceholder` | — | @hotelname หรือลิงก์ line.me | @hotelname or a line.me link |
+| `hotelProfile.instagramLabel` | — | ลิงก์ Instagram | Instagram URL |
+| `hotelProfile.xLabel` | — | ลิงก์ X (Twitter) | X (Twitter) URL |
+| `hotelProfile.saved` | — | บันทึกข้อมูลโรงแรมแล้ว | Hotel information saved. |
+| `hotelProfile.back` | — | กลับไปหน้าประเภทห้องพัก | Back to room types |
+
+- Final verification: `pnpm check` -> `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 267 passed (267)` and `Tests 1784 passed (1784)`, exit 0; Thai glossary passed. `pnpm build` -> `3615 modules transformed` and `--dry-run: exiting now.`, exit 0. Wrangler's optional AppData log write reported EPERM. `git diff --check` -> exit 0. Independent reviewer: APPROVE after the tour-remount and mobile-map fixes. No rendered viewport pass, commit, push or deploy.
+- Browser follow-up: fixed profile checkbox sizing/wrapping at narrow and two-column widths, restored styled map coordinate fields and hint, and aligned the save bar right on desktop with stacked Save-first mobile actions; `pnpm check` passed, Vitest 267 files/1,785 tests passed, `pnpm build` dry-run passed, and `git diff --check` passed. `.tmp-vitest/` cleanup was rejected by automatic command review. No commit, push or deploy.

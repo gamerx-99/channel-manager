@@ -30,7 +30,7 @@ describe("single hotel name surface", () => {
     const sidebar = read("client/src/components/layout/Sidebar.tsx");
     expect(sidebar).toContain('can("property.manage_profile")');
     expect(sidebar).toContain('label: t("sidebar.hotelProfile")');
-    expect(sidebar).toContain("?edit=profile");
+    expect(sidebar).toContain("/profile`");
   });
 
   it("uses the shared hotel selection on housekeeping and communications", () => {

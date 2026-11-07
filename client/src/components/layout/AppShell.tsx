@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { getTourProgress } from "@/lib/tour/tourProgress";
 import { GuidedTour } from "@/components/tour/GuidedTour";
+import { TOUR_STEP_KEY } from "@/components/tour/useGuidedTour";
 
 export function AppShell({ children, userName, userEmail, onLogout, roles, memberships = [] }: { children: React.ReactNode; userName: string; userEmail: string | null; onLogout: () => void; roles: readonly AppRole[]; memberships?: readonly (PermissionMembership & { expiresAt?: Date | string; mode?: "view" | "edit" })[] }) {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const [tourRequested, setTourRequested] = useState(false);
+  const [tourRequested, setTourRequested] = useState(() => window.sessionStorage.getItem(TOUR_STEP_KEY) === 'rooms');
   const { selectedHotelId } = useHotel();
   const [location, navigate] = useLocation();
   const onboarding = trpc.auth.onboardingStatus.useQuery();
@@ -31,7 +32,8 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
     && m.permissions?.includes("property.manage_profile") && m.permissions?.includes("property.manage_room_structure"))
     && !roles.some(role => isPlatformRole(role));
   const autoStart = canSetUpHotel && !onboarding.isLoading && !hotelQuery.isLoading && progress.shouldAutoStart;
-  const tourActive = location === `/hotels/${selectedHotelId}` && autoStart;
+  const onTourRoute = location === `/hotels/${selectedHotelId}` || location === `/hotels/${selectedHotelId}/profile`;
+  const tourActive = onTourRoute && autoStart;
   useEffect(() => {
     if (location === "/dashboard" && autoStart) navigate(`/hotels/${selectedHotelId}`);
   }, [location, selectedHotelId, autoStart, navigate]);
@@ -86,11 +88,11 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
           userMenuOpen={userMenuOpen}
           onToggleUserMenu={() => { setUserMenuOpen(prev => !prev); setAddMenuOpen(false); setWorkspaceMenuOpen(false); }}
           onCloseUserMenu={() => setUserMenuOpen(false)}
-          onRestartTour={() => { setUserMenuOpen(false); if (selectedHotelId) navigate(`/hotels/${selectedHotelId}`); setTourRequested(true); setTourState.mutate({ state: "reset" }); }}
+          onRestartTour={() => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setUserMenuOpen(false); if (selectedHotelId) navigate(`/hotels/${selectedHotelId}`); setTourRequested(true); setTourState.mutate({ state: "reset" }); }}
         />
         <SupportAccessBanner memberships={memberships} />
         <div className="page-wrap">{children}</div>
-        {location === `/hotels/${selectedHotelId}` && <GuidedTour steps={tourSteps} active={tourActive || tourRequested} onFinish={skipped => { setTourRequested(false); setTourState.mutate({ state: skipped ? "skipped" : "completed" }); }} onRestart={() => { setTourRequested(true); setTourState.mutate({ state: "reset" }); }} />}
+        {onTourRoute && <GuidedTour steps={tourSteps} active={tourActive || tourRequested} onRoomStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms'); navigate(`/hotels/${selectedHotelId}`); }} onFinish={skipped => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(false); setTourState.mutate({ state: skipped ? "skipped" : "completed" }); }} onRestart={() => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(true); setTourState.mutate({ state: "reset" }); }} />}
       </main>
     </div>
   );

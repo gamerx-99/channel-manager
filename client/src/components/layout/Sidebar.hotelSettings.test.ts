@@ -11,7 +11,7 @@ const canFor = (permissions: readonly Permission[]) => (permission: Permission) 
 describe("sidebar hotel settings group", () => {
   it("gives the owner profile, staff and hayhost support access links", () => {
     const items = getHotelSettingsItems("h1", canFor(resolveMembershipPermissions("hotel_owner")), t);
-    expect(items.map(item => item.href)).toEqual(["/hotels/h1?edit=profile", "/hotels/h1/staff", "/hotels/h1/support-access"]);
+    expect(items.map(item => item.href)).toEqual(["/hotels/h1/profile", "/hotels/h1/staff", "/hotels/h1/support-access"]);
     expect(items.map(item => item.label)).toEqual(["sidebar.hotelProfile", "sidebar.hotelStaff", "supportAccess.navLabel"]);
   });
 

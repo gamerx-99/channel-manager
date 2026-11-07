@@ -145,25 +145,23 @@ export function HotelMapPicker({ latitude, longitude, onChange, disabled }: Hote
       className="hotel-map-picker"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      style={{ gridColumn: '1 / -1', marginTop: 12, marginBottom: 12 }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>ตำแหน่งที่ตั้งบนแผนที่</span>
+      <div className="hotel-map-picker-heading">
+        <span className="hotel-map-picker-title">ตำแหน่งที่ตั้งบนแผนที่</span>
         {hasCoords && (
           <button
             type="button"
-            className="button button-quiet"
+            className="button button-quiet hotel-map-picker-clear"
             onClick={handleClear}
             disabled={disabled}
-            style={{ fontSize: '0.8rem', padding: '4px 8px' }}
           >
             ล้างตำแหน่ง
           </button>
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-        <label style={{ fontSize: '0.85rem' }}>
+      <div className="hotel-map-coordinates">
+        <label>
           ละติจูด
           <input
             type="number"
@@ -175,10 +173,9 @@ export function HotelMapPicker({ latitude, longitude, onChange, disabled }: Hote
             onChange={(e) => handleLatitudeChange(e.target.value)}
             onPaste={handlePaste}
             disabled={disabled}
-            style={{ width: '100%', marginTop: 4 }}
           />
         </label>
-        <label style={{ fontSize: '0.85rem' }}>
+        <label>
           ลองจิจูด
           <input
             type="number"
@@ -190,27 +187,18 @@ export function HotelMapPicker({ latitude, longitude, onChange, disabled }: Hote
             onChange={(e) => handleLongitudeChange(e.target.value)}
             onPaste={handlePaste}
             disabled={disabled}
-            style={{ width: '100%', marginTop: 4 }}
           />
         </label>
       </div>
-      <p style={{ fontSize: '0.75rem', color: 'var(--color-muted, #71717a)', margin: '0 0 8px 0' }}>
+      <p className="hotel-map-picker-hint">
         เคล็ดลับ: สามารถวางพิกัด "19.30, 97.97" ในช่องใดช่องหนึ่งเพื่อแยกพิกัดอัตโนมัติ
       </p>
 
       <div
         ref={mapContainerRef}
-        style={{
-          width: '100%',
-          height: 220,
-          borderRadius: 8,
-          border: '1px solid var(--color-border, #e4e4e7)',
-          overflow: 'hidden',
-          position: 'relative',
-          zIndex: 1,
-        }}
+        className="hotel-map-canvas"
       />
-      <small style={{ display: 'block', marginTop: 4, color: 'var(--color-muted, #71717a)', fontSize: '0.75rem' }}>
+      <small className="hotel-map-picker-help">
         คลิกบนแผนที่หรือลากหมุดเพื่อระบุตำแหน่งโรงแรม
       </small>
     </div>

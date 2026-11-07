@@ -41,6 +41,7 @@ import PlatformCrm from "./pages/PlatformCrm";
 import PlatformCoupons from "./pages/PlatformCoupons";
 import SubscriptionPlan from "./pages/SubscriptionPlan";
 import HotelStaff from "./pages/HotelStaff";
+import HotelProfile from "./pages/HotelProfile";
 import HotelServices from "./pages/HotelServices";
 import OtaSync from "./pages/OtaSync";
 import { otaConnectivityEnabled } from "@shared/otaAvailability";
@@ -129,6 +130,9 @@ function Router() {
       </Route>
       <Route path="/hotels/:id/services">
         {(params) => <PrivateRoute><HotelServices id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/hotels/:id/profile">
+        {(params) => <PrivateRoute><HotelProfile id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id">
         {(params) => <PrivateRoute><HotelDetail id={params.id} /></PrivateRoute>}
