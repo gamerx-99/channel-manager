@@ -5,13 +5,14 @@ import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
 import { useMfaStepUp } from "@/lib/mfa";
 import { Card, CardContent } from "@/components/ui/card";
+import { branchIdFromApiUrl, SLIPOK_API_PREFIX } from "@/lib/slipokApi";
 
 // SlipOK is optional per hotel: without a key, staff check each slip by hand.
 export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
   const { t } = useTranslation();
   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
   const [apiKey, setApiKey] = useState("");
-  const [branchId, setBranchId] = useState("");
+  const [apiUrl, setApiUrl] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -28,7 +29,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
   useEffect(() => {
     return () => {
       setApiKey("");
-      setBranchId("");
+      setApiUrl("");
       setTotpCode("");
       setSaveError(null);
       setIsEditing(false);
@@ -58,11 +59,16 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
 
   async function handleSaveKey(hotelId: string) {
     setSaveError(null);
+    const branchId = branchIdFromApiUrl(apiUrl);
+    if (!branchId) {
+      setSaveError(t("slipOk.invalidApi"));
+      return;
+    }
     try {
       await saveKey.mutateAsync({ hotel_id: hotelId, api_key: apiKey, branch_id: branchId });
       // Clear form and reset edit mode after successful save
       setApiKey("");
-      setBranchId("");
+      setApiUrl("");
       setIsEditing(false);
       // Refetch to get updated settings from server
       await settingsQuery.refetch();
@@ -84,7 +90,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
         await removeKey.mutateAsync({ hotel_id: hotelId });
         // Clear form after successful removal
         setApiKey("");
-        setBranchId("");
+        setApiUrl("");
         setIsEditing(false);
         // Refetch to get updated settings from server
         await settingsQuery.refetch();
@@ -96,12 +102,13 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
 
   function handleEdit() {
     setIsEditing(true);
+    setApiUrl(settingsQuery.data?.branchId ? `${SLIPOK_API_PREFIX}${settingsQuery.data.branchId}` : "");
     setSaveError(null);
   }
 
   function handleCancel() {
     setApiKey("");
-    setBranchId("");
+    setApiUrl("");
     setSaveError(null);
     setIsEditing(false);
   }
@@ -217,7 +224,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                     <div className="flex-1">
                       <p className="text-xs font-medium text-[#456156]">{t("slipOk.connected")}</p>
                       <p className="mt-2 font-mono text-sm text-[#263b31]">
-                        {t("slipOk.branchLabel")}: <span className="text-[#1d6b56]">{settingsQuery.data.branchId}</span> • {t("slipOk.keyLabel")}: <span className="text-[#789087]">••••••••</span>
+                        {t("slipOk.apiLabel")}: <span className="text-[#1d6b56] break-all">{settingsQuery.data.branchId ? `${SLIPOK_API_PREFIX}${settingsQuery.data.branchId}` : "—"}</span> • {t("slipOk.keyLabel")}: <span className="text-[#789087]">••••••••</span>
                       </p>
                       <p className="mt-1 text-xs text-[#6c7e75]">{t("slipOk.keyHiddenNote")}</p>
                     </div>
@@ -249,17 +256,18 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                   <p className="text-xs font-medium text-[#456156]">{isEditing ? t("slipOk.editTitle") : t("slipOk.addTitle")}</p>
                   <p className="text-xs text-[#6c7e75]">{t("slipOk.formHint")}</p>
                   <div className="form-grid">
-                    <label htmlFor="slipok-branch-id">
-                      {t("slipOk.branchLabel")}
+                    <label htmlFor="slipok-api-url">
+                      {t("slipOk.apiLabel")}
                       <input
-                        id="slipok-branch-id"
-                        type="text"
+                        id="slipok-api-url"
+                        type="url"
                         autoComplete="off"
-                        value={branchId}
-                        onChange={(e) => setBranchId(e.target.value)}
-                        placeholder={t("slipOk.branchPlaceholder")}
+                        value={apiUrl}
+                        onChange={(e) => setApiUrl(e.target.value)}
+                        placeholder={t("slipOk.apiPlaceholder")}
                         className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
                       />
+                      {apiUrl && !branchIdFromApiUrl(apiUrl) && <span className="field-help text-red-600">{t("slipOk.invalidApi")}</span>}
                     </label>
                     <label htmlFor="slipok-api-key">
                       {t("slipOk.keyLabel")}
@@ -277,7 +285,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                     <button
                       id="slipok-save-btn"
                       type="button"
-                      disabled={apiKey.trim().length < 8 || branchId.trim().length < 1 || saveKey.isPending}
+                      disabled={apiKey.trim().length < 8 || !branchIdFromApiUrl(apiUrl) || saveKey.isPending}
                       onClick={() => void handleSaveKey(hotelId)}
                       className="rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
                     >
