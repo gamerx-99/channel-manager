@@ -13,13 +13,32 @@ export function getMonthDates(anchor: Date): string[] {
 }
 
 export function selectCalendarDate(start: string | null, end: string | null, date: string): [string, string | null] {
+  // ASSUMPTION: the second click is check-out, except clicking the first date again edits that one night.
   if (!start || end) return [date, null];
   return date < start ? [date, start] : [start, date];
 }
 
+export function getCalendarNightSelection(start: string | null, checkout: string | null) {
+  if (!start) return { nights: [], lastNight: null, nightCount: 0 };
+  const lastNight = checkout && checkout > start
+    ? new Date(Date.parse(`${checkout}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+    : start;
+  const nights: string[] = [];
+  for (let day = start; day <= lastNight; day = new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)) {
+    nights.push(day);
+  }
+  return { nights, lastNight, nightCount: nights.length };
+}
+
 export function isDateSelected(date: string, start: string | null, end: string | null): boolean {
   if (!start) return false;
-  return date === start || (end !== null && date >= start && date <= end);
+  return date >= start && date <= (end && end > start
+    ? new Date(Date.parse(`${end}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+    : start);
+}
+
+export function isCheckoutDate(date: string, start: string | null, checkout: string | null): boolean {
+  return Boolean(start && checkout && checkout > start && date === checkout);
 }
 
 export function formatBuddhistDate(iso: string, locale = "th-TH"): string {

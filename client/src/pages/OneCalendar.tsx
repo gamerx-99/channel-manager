@@ -7,7 +7,7 @@ import PageState from "@/components/PageState";
 import { useOneCalendar } from "./useOneCalendar";
 import OneCalendarTimeline from "./OneCalendarTimeline";
 import OneCalendarSidePanel from "./OneCalendarSidePanel";
-import { formatBuddhistDate, isDateSelected, selectCalendarDate } from "./oneCalendarRules";
+import { formatBuddhistDate, getCalendarNightSelection, isCheckoutDate, isDateSelected, selectCalendarDate } from "./oneCalendarRules";
 import "./oneCalendar.css";
 
 type CalendarMode = "month" | "timeline";
@@ -27,6 +27,7 @@ export default function OneCalendar({ id }: { id: string }) {
   const [mode, setMode] = useState<CalendarMode>("month");
   const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
   const [range, setRange] = useState<[string | null, string | null]>([null, null]);
+  const selection = getCalendarNightSelection(range[0], range[1]);
   const [rooms, setRooms] = useState("");
   const [price, setPrice] = useState("");
   const [minimum, setMinimum] = useState("");
@@ -60,13 +61,13 @@ export default function OneCalendar({ id }: { id: string }) {
   };
 
   const save = async () => {
-    if (!range[0] || !range[1]) return;
+    if (!range[0] || !range[1] || !selection.lastNight) return;
     if (!selectedTypes.length) { setError(t("oneCalendar.chooseRoomTypes")); return; }
     const input: Record<string, unknown> = {
       hotel_id: id,
       room_type_ids: selectedTypes.map((roomType: CalendarRoomType) => roomType.id),
       start_date: range[0],
-      end_date: range[1],
+      end_date: selection.lastNight,
     };
     if (data.canManageAllotment && rooms !== "") input.rooms_available = Number(rooms);
     if (data.canManageRates && price !== "" && !useBase) input.price = Number(price);
@@ -99,13 +100,13 @@ export default function OneCalendar({ id }: { id: string }) {
       {mode === "month" ? <div className="one-calendar-month-grid">
         {weekdays.map(key => <div key={key} className="one-calendar-weekday">{t(`oneCalendar.${key}`)}</div>)}
         {Array.from({ length: leading }, (_, index) => <div className="one-calendar-blank" key={`blank-${index}`} />)}
-        {dates.map(date => <button type="button" key={date} onClick={() => chooseDay(date)} className={`one-calendar-day ${isDateSelected(date, range[0], range[1]) ? "is-selected" : ""}`} aria-label={t("oneCalendar.dayAria", { date: formatBuddhistDate(date), available: String(selectedTypes.reduce((sum: number, roomType: any) => sum + ((rowMap.get(`${roomType.id}:${date}`) as any)?.roomsAvailable ?? roomType.totalRooms), 0)), total: String(selectedTypes.reduce((sum: number, roomType: any) => sum + roomType.totalRooms, 0)), price: "" })}>
+        {dates.map(date => <button type="button" key={date} onClick={() => chooseDay(date)} className={`one-calendar-day ${isDateSelected(date, range[0], range[1]) ? "is-selected" : ""} ${isCheckoutDate(date, range[0], range[1]) ? "is-checkout" : ""}`} aria-label={`${t("oneCalendar.dayAria", { date: formatBuddhistDate(date), available: String(selectedTypes.reduce((sum: number, roomType: any) => sum + ((rowMap.get(`${roomType.id}:${date}`) as any)?.roomsAvailable ?? roomType.totalRooms), 0)), total: String(selectedTypes.reduce((sum: number, roomType: any) => sum + roomType.totalRooms, 0)), price: "" })}${isCheckoutDate(date, range[0], range[1]) ? ` · ${t("oneCalendar.checkoutDay")}` : ""}`}>
           <span className="one-calendar-day-number">{Number(date.slice(-2))}</span><span className="one-calendar-day-room-count">{selectedTypes.map((roomType: any) => { const row = rowMap.get(`${roomType.id}:${date}`) as any; const roomsForSale = row?.roomsAvailable ?? roomType.totalRooms; return <small key={roomType.id}>{roomsForSale === 0 ? t("oneCalendar.closed") : `${roomsForSale}/${roomType.totalRooms}`}</small>; })}</span>
           {data.calendar.data?.canSeePrice && <span className="one-calendar-day-price">{selectedTypes.map((roomType: any) => { const row = rowMap.get(`${roomType.id}:${date}`) as any; return row?.price == null ? null : <small key={roomType.id}>฿{Number(row.price).toLocaleString()}</small>; })}</span>}
         </button>)}
-      </div> : <OneCalendarTimeline dates={dates} roomTypes={selectedTypes} rowMap={rowMap} t={t} onChooseDay={chooseDay} />}
-      <p className="field-help">{t("oneCalendar.chooseRange")}{range[0] && ` · ${formatBuddhistDate(range[0])}${range[1] ? ` – ${formatBuddhistDate(range[1])}` : ""}`}</p>
+      </div> : <OneCalendarTimeline dates={dates} roomTypes={selectedTypes} rowMap={rowMap} selectedStart={range[0]} checkoutDate={range[1]} t={t} onChooseDay={chooseDay} />}
+      <p className="field-help">{t("oneCalendar.chooseRange")}</p>
     </section>
-    {range[0] && range[1] && <OneCalendarSidePanel startDate={range[0]} endDate={range[1]} roomTypes={selectedTypes} rowMap={rowMap} canManageRates={data.canManageRates} canManageAllotment={data.canManageAllotment} rooms={rooms} price={price} minimum={minimum} useBase={useBase} saving={data.save.isPending} error={error} t={t} onRoomsChange={setRooms} onPriceChange={setPrice} onMinimumChange={setMinimum} onUseBaseChange={setUseBase} onSave={() => void save()} />}
+    {range[0] && range[1] && <OneCalendarSidePanel startDate={range[0]} checkoutDate={range[1]} lastNight={selection.lastNight!} nightCount={selection.nightCount} language={language} roomTypes={selectedTypes} rowMap={rowMap} canManageRates={data.canManageRates} canManageAllotment={data.canManageAllotment} rooms={rooms} price={price} minimum={minimum} useBase={useBase} saving={data.save.isPending} error={error} t={t} onRoomsChange={setRooms} onPriceChange={setPrice} onMinimumChange={setMinimum} onUseBaseChange={setUseBase} onSave={() => void save()} />}
   </div>;
 }
