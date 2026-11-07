@@ -5759,3 +5759,43 @@ Exit 0
 
 - Final verification: `pnpm check` -> `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 267 passed (267)` and `Tests 1784 passed (1784)`, exit 0; Thai glossary passed. `pnpm build` -> `3615 modules transformed` and `--dry-run: exiting now.`, exit 0. Wrangler's optional AppData log write reported EPERM. `git diff --check` -> exit 0. Independent reviewer: APPROVE after the tour-remount and mobile-map fixes. No rendered viewport pass, commit, push or deploy.
 - Browser follow-up: fixed profile checkbox sizing/wrapping at narrow and two-column widths, restored styled map coordinate fields and hint, and aligned the save bar right on desktop with stacked Save-first mobile actions; `pnpm check` passed, Vitest 267 files/1,785 tests passed, `pnpm build` dry-run passed, and `git diff --check` passed. `.tmp-vitest/` cleanup was rejected by automatic command review. No commit, push or deploy.
+## 2026-11-07 - Bilingual theme brand names (`feat/theme-brand-names`)
+
+- Kept all eight stored theme IDs and palettes. Theme picker now resolves name, description, and suitable-stay text in the current language; cards include the muted `เหมาะกับ` / `Suits` line and wrap long names in the existing one-column phone, three-column `sm` grid. Updated the landing gallery translations and the static `client/index.html` captions. Server uses theme IDs only and needs no text change.
+- **ASSUMPTION:** `riverside-calm` uses **Serene - เซรีน** and `vintage-old-town` uses **Postcard - โพสต์การ์ด**. The owner may change these names.
+- Intentional test changes: `shared/hotelThemes.test.ts` replaces assertions for the old names and checks complete Thai/English display copy for every ID, plus no Thai name starting with `สไตล์`; `ThemePickerSection.test.tsx` checks the new suits line. `themeCopy.contract.test.ts` checks only `th.ts`/`en.ts` `hotelThemes` fixed copy, not `shared/hotelThemes.ts`, and its banned-word list is unaffected.
+- Thai copy before → after and full display string table (new suits entries had no previous text):
+
+| Key | Before (Thai) | Thai | English |
+|---|---|---|---|
+| `minimal-white.name` | สไตล์มินิมอล | Pure - เพียว | Pure |
+| `minimal-white.description` | เรียบง่าย สบายตา เน้นภาพและข้อมูลที่พัก | เรียบ สะอาด เน้นภาพและข้อมูล | Clean and simple, puts photos and details first |
+| `minimal-white.suits` | — | โฮมสเตย์ใหม่ / ห้องพักโมเดิร์น | New homestays / modern rooms |
+| `lanna-teak.name` | สไตล์ล้านนา | Warm Wood - วอร์ม วู้ด | Warm Wood |
+| `lanna-teak.description` | อบอุ่นแบบบ้านไม้ล้านนา โทนครีมและสีไม้ | อบอุ่นแบบบ้านไม้ โทนครีมและสีไม้ | Warm wooden-home feel in cream and wood tones |
+| `lanna-teak.suits` | — | บ้านไม้เก่า / วิลล่าภาคเหนือ | Old wooden homes / northern villas |
+| `cafe-homestay.name` | สไตล์คาเฟ่ | Café Slow - คาเฟ่ สโลว์ | Café Slow |
+| `cafe-homestay.description` | นุ่มนวล เป็นกันเอง ในบรรยากาศคาเฟ่ | นุ่มนวล เป็นกันเอง เหมือนนั่งคาเฟ่ | Soft and welcoming, like time spent in a café |
+| `cafe-homestay.suits` | — | คาเฟ่ + ที่พัก / โฮมสเตย์เล็กๆ | Cafés with rooms / small homestays |
+| `mountain-mist.name` | สไตล์ธรรมชาติ | Terra - เทอร์ร่า | Terra |
+| `mountain-mist.description` | สงบสดชื่นท่ามกลางธรรมชาติ | สงบ สดชื่น ท่ามกลางธรรมชาติ | Calm and refreshing, surrounded by nature |
+| `mountain-mist.suits` | — | ที่พักในป่า / ริมน้ำ / บนดอย | Forest, riverside or mountain stays |
+| `boutique-noir.name` | สไตล์ลักชัวรี | Noir Luxe - นัวร์ ลักซ์ | Noir Luxe |
+| `boutique-noir.description` | หรูสงบในโทนดำและสีทอง | หรู สงบ โทนดำ - ทอง | Quiet luxury in black and gold |
+| `boutique-noir.suits` | — | วิลล่าพูล / บูทีคโฮเทล | Pool villas / boutique hotels |
+| `hostel-pop.name` | สไตล์ป๊อปอาร์ต | Vivid Pop - วิวิด ป๊อป | Vivid Pop |
+| `hostel-pop.description` | สีสันสดใส สนุก และเป็นกันเอง | สีสันสดใส สนุก เป็นกันเอง | Bright, playful and welcoming |
+| `hostel-pop.suits` | — | โฮสเทล / ที่พักวัยรุ่น | Hostels / stays for young travellers |
+| `riverside-calm.name` | สไตล์รีสอร์ท | Serene - เซรีน (ASSUMPTION) | Serene |
+| `riverside-calm.description` | สงบริมแม่น้ำ ผ่อนคลายท่ามกลางธรรมชาติ | สงบ ผ่อนคลาย แบบรีสอร์ท | Peaceful and relaxing, with a resort feel |
+| `riverside-calm.suits` | — | รีสอร์ท / ที่พักริมน้ำ ริมทะเล | Resorts / riverside or seaside stays |
+| `vintage-old-town.name` | สไตล์วินเทจ | Postcard - โพสต์การ์ด (ASSUMPTION) | Postcard |
+| `vintage-old-town.description` | กลิ่นอายวันวานในบรรยากาศแบบโปสต์การ์ด | กลิ่นอายวันวาน แบบโปสต์การ์ด | Nostalgic, like a postcard from another time |
+| `vintage-old-town.suits` | — | เกสต์เฮาส์ / ตึกเก่ารีโนเวท | Guesthouses / renovated old buildings |
+| `landing.template1` | เรียบง่าย | Pure - เพียว | Pure |
+| `landing.template2` | ล้านนาร่วมสมัย | Warm Wood - วอร์ม วู้ด | Warm Wood |
+| `landing.template3` | โฮมสเตย์อบอุ่น | Café Slow - คาเฟ่ สโลว์ | Café Slow |
+| `websiteBuilder.themeSuits` | — | เหมาะกับ | Suits |
+
+- Verification: `pnpm check` -> `tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` -> `Test Files 267 passed (267)`, `Tests 1787 passed (1787)`, exit 0 (TEMP/TMP inside worktree; Vitest emitted a late `MutationObserver` stderr message from `useGuidedTour.ts` after tests). `pnpm build` -> `3615 modules transformed`, Wrangler `--dry-run: exiting now.`, exit 0; Wrangler printed a non-fatal AppData log EPERM. `git diff --check` -> exit 0. `.tmp-vitest/` removed. No rendered mobile or independent reviewer pass. No commit, push, or deploy.
+- Follow-up: split theme labels into unbroken English brand and Thai reading spans, with Pro beside the brand; 320px/375px one-column classes checked (rendered browser unavailable); `pnpm check`, 267-file/1,789-test Vitest run, dry-run build, and `git diff --check` passed; no commit, push, or deploy.

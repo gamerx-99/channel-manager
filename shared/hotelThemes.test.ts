@@ -1,18 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_HOTEL_COLORS, HOTEL_THEMES, getHotelThemeColors } from "./hotelThemes";
+import { DEFAULT_HOTEL_COLORS, HOTEL_THEMES, getHotelThemeColors, themeDisplay } from "./hotelThemes";
 
 describe("hotel theme colours", () => {
-  it("uses the owner-approved style names without changing theme ids", () => {
-    expect(HOTEL_THEMES.map(({ id, name }) => [id, name])).toEqual([
-      ["minimal-white", "สไตล์มินิมอล"],
-      ["lanna-teak", "สไตล์ล้านนา"],
-      ["cafe-homestay", "สไตล์คาเฟ่"],
-      ["mountain-mist", "สไตล์ธรรมชาติ"],
-      ["boutique-noir", "สไตล์ลักชัวรี"],
-      ["hostel-pop", "สไตล์ป๊อปอาร์ต"],
-      ["riverside-calm", "สไตล์รีสอร์ท"],
-      ["vintage-old-town", "สไตล์วินเทจ"],
+  it("uses brand names without changing theme ids", () => {
+    expect(HOTEL_THEMES.map(theme => [theme.id, theme.name.brand])).toEqual([
+      ["minimal-white", "Pure"],
+      ["lanna-teak", "Warm Wood"],
+      ["cafe-homestay", "Café Slow"],
+      ["mountain-mist", "Terra"],
+      ["boutique-noir", "Noir Luxe"],
+      ["hostel-pop", "Vivid Pop"],
+      ["riverside-calm", "Serene"],
+      ["vintage-old-town", "Postcard"],
     ]);
+  });
+
+  it("has complete bilingual display copy for every theme", () => {
+    expect(HOTEL_THEMES.map(theme => [theme.id, theme.name.th])).toEqual([
+      ["minimal-white", "เพียว"],
+      ["lanna-teak", "วอร์ม วู้ด"],
+      ["cafe-homestay", "คาเฟ่ สโลว์"],
+      ["mountain-mist", "เทอร์ร่า"],
+      ["boutique-noir", "นัวร์ ลักซ์"],
+      ["hostel-pop", "วิวิด ป๊อป"],
+      ["riverside-calm", "เซรีน"],
+      ["vintage-old-town", "โพสต์การ์ด"],
+    ]);
+    for (const theme of HOTEL_THEMES) {
+      for (const language of ["th", "en"] as const) {
+        const display = themeDisplay(theme, language);
+        for (const value of [display.name, display.brand, display.description, display.suits]) expect(value.trim()).not.toBe("");
+        expect(display.name).toBe(language === "th" ? `${theme.name.brand} - ${theme.name.th}` : theme.name.brand);
+        expect(display.reading).toBe(language === "th" ? theme.name.th : null);
+      }
+      expect(theme.name.th).not.toMatch(/^สไตล์/);
+    }
   });
 
   it("defines readable fixed button and highlight colours for every theme", () => {
