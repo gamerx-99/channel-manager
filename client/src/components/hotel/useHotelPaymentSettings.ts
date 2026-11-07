@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useMfaStepUp } from "@/lib/mfa";
 import { normalisePromptPayId } from "../../../../shared/promptPayId";
@@ -12,15 +12,29 @@ export function useHotelPromptPaySettings(hotelId: string) {
   const [totpCode, setTotpCode] = useState("");
   const { t } = useTranslation();
   const settings = trpc.slipok.getPromptPaySettings.useQuery({ hotel_id: hotelId });
+  const activeHotelId = useRef(hotelId);
+  const loadedHotelId = useRef<string | null>(null);
+  useEffect(() => {
+    if (activeHotelId.current !== hotelId) {
+      activeHotelId.current = hotelId;
+      loadedHotelId.current = null;
+      setPromptPayId("");
+      setTimeoutMin(15);
+    }
+    if (settings.data === undefined || loadedHotelId.current === hotelId) return;
+    loadedHotelId.current = hotelId;
+    setPromptPayId(settings.data?.promptpay_id ?? "");
+    setTimeoutMin(settings.data?.payment_timeout_minutes ?? 15);
+  }, [hotelId, settings.data]);
   const savedId = settings.data?.promptpay_id;
   const savedIdInvalid = Boolean(savedId && !normalisePromptPayId(savedId));
   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
   const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
-    onSuccess() {
+    onSuccess(_data, variables) {
       void settings.refetch();
       setSaved(true);
       setSaveError(null);
-      setPromptPayId("");
+      setPromptPayId(variables.promptpay_id);
       reset();
       setTimeout(() => setSaved(false), 3000);
     },

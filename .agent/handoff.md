@@ -5831,3 +5831,9 @@ Exit 0
 | `oneCalendar.checkoutDay` | — | วันเช็กเอาต์ · ไม่แก้ไข | Check-out · no change |
 
 - Verification: `pnpm check` → `> tsc --noEmit`, exit 0. `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 269 passed (269)`, `Tests 1795 passed (1795)`, exit 0. `pnpm build` → `3615 modules transformed`, `--dry-run: exiting now.`, exit 0 (Wrangler printed a non-fatal AppData log EPERM). `git diff --check` → exit 0. `.tmp-vitest/` removed. No commit, push, or deploy.
+
+## 2026-11-07 - PromptPay settings prefill (`fix/promptpay-prefill`)
+
+- The hotel payment form loads the saved PromptPay ID and timeout once per hotel, including an invalid saved ID, while refetches leave edits alone. A successful save leaves the normalized stored ID visible. The query already returns both fields; no server or database change.
+- Component tests cover initial load, invalid ID with warning, refetch preserving edits, hotel switch, and normalized save display.
+- Verification: `pnpm check` → `tsc --noEmit`, exit 0; `pnpm test -- --maxWorkers=3 --minWorkers=1` → `Test Files 268 passed (268)`, `Tests 1816 passed (1816)`, exit 0; `pnpm build` → `3616 modules transformed`, `--dry-run: exiting now.`, exit 0 (Wrangler printed a non-fatal local log EPERM). Cleanup of `.tmp-vitest/` was rejected twice by automatic command review, including nonrecursive file removal, so it remains untracked. No commit, push, deploy, or database access.
