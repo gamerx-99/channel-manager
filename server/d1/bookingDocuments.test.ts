@@ -68,25 +68,43 @@ describe("bill header", () => {
 describe("issuing documents", () => {
   beforeEach(async () => { await saveInvoiceSettings(db, owner, "h1", header, NOW); });
 
-  it("numbers receipts and tax invoices separately and keeps the issued snapshot", async () => {
-    const first = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW);
+  it("numbers each document type separately each year and keeps the issued snapshot", async () => {
+    const first = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer, paymentMethod: "cash" }, NOW);
     const second = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW);
+    const paymentReceipt = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "payment_receipt", buyer, paymentMethod: "transfer" }, NOW);
     const tax = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "tax_invoice", buyer }, NOW);
 
-    expect([first.number, second.number, tax.number]).toEqual(["RC-000001", "RC-000002", "TX-000001"]);
-    expect(first).toMatchObject({ issuedOn: "2026-11-07", subtotalSatang: 100000, totalSatang: 107000, vatEnabled: true, vatRate: 7, vatSatang: 7000, withholdingEnabled: true, withholdingRate: 3, withholdingSatang: 3000, netToPaySatang: 104000, booking: { nights: 2, roomType: "Deluxe", paymentMethod: "promptpay" } });
+    expect([first.number, second.number, paymentReceipt.number, tax.number]).toEqual(["RC-2026-000001", "RC-2026-000002", "PR-2026-000001", "TX-2026-000001"]);
+    expect(first).toMatchObject({ issuedOn: "2026-11-07", subtotalSatang: 100000, totalSatang: 107000, vatEnabled: true, vatRate: 7, vatSatang: 7000, withholdingEnabled: true, withholdingRate: 3, withholdingSatang: 3000, netToPaySatang: 104000, booking: { nights: 2, roomType: "Deluxe", paymentMethod: "cash" } });
+    expect(paymentReceipt.booking.paymentMethod).toBe("transfer");
     expect(tax).toMatchObject({ vatSatang: 7000, withholdingSatang: 3000, netToPaySatang: 104000, issuer: { taxId: header.taxId } });
 
     await saveInvoiceSettings(db, owner, "h1", { ...header, issuerName: "New name" }, NOW);
     const listed = await listBookingDocuments(db, owner, "h1", "paid");
-    expect(listed).toHaveLength(3);
+    expect(listed).toHaveLength(4);
     expect(listed.every(row => row.snapshot.issuer.name === header.issuerName)).toBe(true);
     expect(listed.every(row => row.snapshot.vatRate === 7 && row.snapshot.withholdingRate === 3)).toBe(true);
+  });
+
+  it("issues a quotation before payment and restarts the counter in the next Bangkok year", async () => {
+    const quote = await issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "quotation", buyer, paymentMethod: "transfer" }, NOW);
+    const currentYearReceipt = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW);
+    const newYearReceipt = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, new Date("2026-12-31T17:00:00.000Z"));
+
+    expect(quote).toMatchObject({ number: "QT-2026-000001", type: "quotation", booking: { paymentMethod: "transfer" } });
+    expect(currentYearReceipt.number).toBe("RC-2026-000001");
+    expect(newYearReceipt).toMatchObject({ number: "RC-2027-000001", issuedOn: "2027-01-01" });
   });
 
   it("refuses unpaid and cancelled bookings", async () => {
     await expect(issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "receipt", buyer }, NOW)).rejects.toThrow(/paid booking/);
     await expect(issueBookingDocument(db, owner, "h1", { bookingId: "cancelled", type: "receipt", buyer }, NOW)).rejects.toThrow(/paid booking/);
+  });
+
+  it("requires a payment method for a paid receipt when the booking has none", async () => {
+    exec("update bookings set payment_method = null where id = 'paid'");
+    await expect(issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW)).rejects.toThrow(/Choose a payment method/);
+    await expect(issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer, paymentMethod: "cash" }, NOW)).resolves.toMatchObject({ booking: { paymentMethod: "cash" } });
   });
 
   it("needs the switch on, the hotel tax ID and the buyer address for a tax invoice", async () => {

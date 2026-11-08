@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, max } from "drizzle-orm";
 import {
-  calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber,
-  type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
+  BOOKING_DOCUMENT_PAYMENT_METHODS, calculateBookingDocumentAmounts, canIssueBookingDocument, canIssueBookingQuotation, documentNumber,
+  type BookingDocumentPaymentMethod, type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
 } from "@shared/bookingDocuments";
 import { bangkokDate, toSatang } from "@shared/finance";
 import { bookingDocuments, bookings, hotelInvoiceSettings, roomTypes, rooms } from "../../drizzle/d1-schema";
@@ -39,7 +39,7 @@ export async function listBookingDocuments(db: D1ScopedDatabase, caller: D1Calle
 
 export async function issueBookingDocument(
   db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string,
-  input: { bookingId: string; type: BookingDocumentType; buyer: DocumentParty }, now = new Date(),
+  input: { bookingId: string; type: BookingDocumentType; buyer: DocumentParty; paymentMethod?: BookingDocumentPaymentMethod | null }, now = new Date(),
 ) {
   await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "booking_documents.issue", now);
   const [settings] = await db.select().from(hotelInvoiceSettings).where(eq(hotelInvoiceSettings.hotelId, hotelId)).limit(1);
@@ -52,15 +52,20 @@ export async function issueBookingDocument(
   }
 
   const [booking] = await db.select({
-    id: bookings.id, status: bookings.status, paymentStatus: bookings.paymentStatus, paymentMethod: bookings.paymentMethod,
+    id: bookings.id, status: bookings.status, paymentStatus: bookings.paymentStatus, paymentMethod: bookings.paymentMethod, expiresAt: bookings.expiresAt,
     checkIn: bookings.checkIn, checkOut: bookings.checkOut, price: bookings.price, roomType: roomTypes.name,
   }).from(bookings)
     .leftJoin(rooms, eq(bookings.roomId, rooms.id))
     .leftJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
     .where(and(eq(bookings.id, input.bookingId), eq(bookings.hotelId, hotelId))).limit(1);
   if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
-  if (!canIssueBookingDocument({ status: booking.status, payment_status: booking.paymentStatus })) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a paid booking that still stands gets a document." });
+  const quotation = input.type === "quotation";
+  if (quotation ? !canIssueBookingQuotation({ status: booking.status, expires_at: booking.expiresAt?.getTime() ?? null }, now.getTime()) : !canIssueBookingDocument({ status: booking.status, payment_status: booking.paymentStatus })) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: quotation ? "A quotation needs an active booking." : "Only a paid booking that still stands gets a receipt." });
+  }
+  const paymentMethod = input.paymentMethod ?? booking.paymentMethod;
+  if (!quotation && !BOOKING_DOCUMENT_PAYMENT_METHODS.includes(paymentMethod as BookingDocumentPaymentMethod)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a payment method for the receipt." });
   }
 
   const amounts = calculateBookingDocumentAmounts(toSatang(booking.price), {
@@ -73,7 +78,7 @@ export async function issueBookingDocument(
     issuedOn: bangkokDate(now),
     issuer: { name: settings.issuerName, address: settings.address, taxId: settings.taxId, branch: settings.branch, phone: settings.phone },
     buyer: input.buyer,
-    booking: { id: booking.id, checkIn: booking.checkIn, checkOut: booking.checkOut, nights, roomType: booking.roomType, paymentMethod: booking.paymentMethod },
+    booking: { id: booking.id, checkIn: booking.checkIn, checkOut: booking.checkOut, nights, roomType: booking.roomType, paymentMethod: paymentMethod as BookingDocumentPaymentMethod | null },
     ...amounts,
     vatEnabled: settings.vatEnabled,
     vatRate: settings.vatRate,
@@ -81,16 +86,17 @@ export async function issueBookingDocument(
     withholdingRate: settings.withholdingRate,
   };
 
-  // Two staff issuing at once can read the same last number; the unique index refuses the
-  // second insert, so it reads again and takes the next number.
+  // Numbers are per hotel, type and Bangkok calendar year. The unique index makes the
+  // counter safe when two staff issue the same type at once.
+  const issuedYear = Number(base.issuedOn.slice(0, 4));
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const [last] = await db.select({ seq: max(bookingDocuments.seq) }).from(bookingDocuments)
-      .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.docType, input.type)));
+      .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.docType, input.type), eq(bookingDocuments.issuedYear, issuedYear)));
     const seq = (last?.seq ?? 0) + 1;
-    const snapshot: BookingDocumentSnapshot = { ...base, number: documentNumber(input.type, seq) };
+    const snapshot: BookingDocumentSnapshot = { ...base, number: documentNumber(input.type, issuedYear, seq) };
     try {
       await db.insert(bookingDocuments).values({
-        hotelId, bookingId: booking.id, docType: input.type, seq, docNumber: snapshot.number, snapshot,
+        hotelId, bookingId: booking.id, docType: input.type, issuedYear, seq, docNumber: snapshot.number, snapshot,
         issuedBy: caller.userId ?? null, createdAt: now,
       });
       return snapshot;

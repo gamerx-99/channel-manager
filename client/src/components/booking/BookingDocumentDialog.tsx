@@ -6,12 +6,16 @@ import { useTranslation } from "@/lib/i18n";
 import { useBookingDocuments } from "./useBookingDocuments";
 import "./BookingDocumentDialog.css";
 
-const TYPE_LABEL = { receipt: "bookingDocuments.typeReceipt", tax_invoice: "bookingDocuments.typeTaxInvoice" } as const;
+const TYPE_LABEL = {
+  quotation: "bookingDocuments.typeQuotation", payment_receipt: "bookingDocuments.typePaymentReceipt",
+  receipt: "bookingDocuments.typeReceipt", tax_invoice: "bookingDocuments.typeTaxInvoice",
+} as const;
 const PROBLEM_LABEL = {
-  name: null, taxId: "bookingDocuments.taxIdInvalid", hotelTaxId: "bookingDocuments.taxInvoiceNeedsTaxId", address: "bookingDocuments.buyerAddressRequired",
+  name: null, taxId: "bookingDocuments.taxIdInvalid", hotelTaxId: "bookingDocuments.taxInvoiceNeedsTaxId",
+  address: "bookingDocuments.buyerAddressRequired", paymentMethod: "bookingDocuments.paymentMethodRequired",
 } as const;
 
-export default function BookingDocumentDialog({ hotelId, booking, onClose }: { hotelId: string; booking: { id: string; guest_name: string }; onClose: () => void }) {
+export default function BookingDocumentDialog({ hotelId, booking, onClose }: { hotelId: string; booking: { id: string; guest_name: string; status: string; payment_status?: string | null }; onClose: () => void }) {
   const { t } = useTranslation();
   const state = useBookingDocuments(hotelId, booking);
   const { buyer } = state;
@@ -26,6 +30,7 @@ export default function BookingDocumentDialog({ hotelId, booking, onClose }: { h
           <label className="form-span-two">{t("bookingDocuments.buyerAddressLabel")}<textarea id="document-buyer-address" rows={2} maxLength={500} required={state.type === "tax_invoice"} value={buyer.address} onChange={event => state.setBuyer({ address: event.target.value })} /></label>
           <label>{t("bookingDocuments.buyerTaxIdLabel")}<input id="document-buyer-tax-id" inputMode="numeric" maxLength={13} value={buyer.taxId} onChange={event => state.setBuyer({ taxId: event.target.value.replace(/\D/g, "") })} /></label>
           <label>{t("bookingDocuments.buyerBranchLabel")}<input id="document-buyer-branch" maxLength={100} value={buyer.branch} onChange={event => state.setBuyer({ branch: event.target.value })} /></label>
+          <label>{t("bookingDocuments.paymentMethodLabel")}<select id="document-payment-method" value={state.paymentMethod} required={state.type !== "quotation"} onChange={event => state.setPaymentMethod(event.target.value as typeof state.paymentMethod)}><option value="">{t("bookingDocuments.choosePaymentMethod")}</option>{state.paymentMethods.map(method => <option key={method} value={method}>{t(`bookingDocuments.print.${method}`)}</option>)}</select></label>
         </div>
         {problemLabel && <p className="form-error" role="alert">{t(problemLabel)}</p>}
         {state.issue.error && <p className="form-error" role="alert">{state.issue.error.message}</p>}

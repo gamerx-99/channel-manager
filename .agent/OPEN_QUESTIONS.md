@@ -13,14 +13,10 @@ answer noted.
 ## Staff daily tasks (2026-11-06)
 - [ ] `ASSUMPTION:` undone tasks from earlier Thai dates remain visible to the assignee until completed. Raised 2026-11-06; implemented in `shared/staffTaskVisibility.ts`.
 ## Spec 15 — invoicing and tax (2026-11-05)
-- [ ] Which legal entity issues each document: the hotel, hayhost, or both for different charges? Who is responsible for numbering and record retention?
-- [ ] Is each hotel VAT-registered, and what evidence or admin approval is required before enabling tax invoices? Which tax invoice format and issue timing apply?
-- [ ] What hotel and buyer fields, branch information, language, signature and logo must appear on each document? Can staff override prefilled buyer data before issue?
-- [ ] Does the owner want invoice and quotation numbering per hotel and per year? What correction, cancellation, credit/debit note and partial-payment flow is required?
-- [ ] Should a generated A4 PDF be a printable document only, or should the hotel enrol in a Revenue Department electronic tax invoice service? If electronic, which approved method and provider?
 - [ ] What monthly CSV/Excel columns and date basis (issue date, stay date or payment date) does the accountant need? How should voids, refunds and adjustments appear?
+- [ ] Which correction, cancellation, credit/debit note and partial-payment flow should be supported?
 - [ ] Which hotel roles may draft, issue, void, view and export documents containing guest/company tax details? What retention and deletion periods apply?
-- [ ] Built 2026-11-06 on `feat/invoicing` (owner: "ทำตามพื้นฐานของระบบ"; the hotel is the issuer). `ASSUMPTION:` one running number per hotel and type (RC-000001, TX-000001), never reset each year; an issued document cannot be voided or corrected yet; one line per booking (room stay, booking total); only paid bookings that still stand get a document.
+- [ ] Built on `feat/invoicing`: hotel-issued printable documents, configurable VAT/withholding and a saved header. The owner later requested quotations before payment, payment receipts and receipts; yearly numbering and method selection are specified in the 2026-11-08 owner decision. No e-Tax Invoice workflow.
 
 - [ ] Website builder (2026-11-04): confirm the safeguards chosen for draft/publish. `ASSUMPTION:` users with `property.manage_profile` may discard a saved draft after confirmation; uploads are stored immediately but hidden from public output until selected as hero and published; hero selection and image focal points are staged until publish; deleting the currently published hero is blocked; the protected builder's local preview is visible only to users with `property.manage_profile` and is never public. Draft preview uses the existing in-page renderer and does not emulate every theme exactly. Raised 2026-11-04.
 - [ ] ASSUMPTION (2026-11-04): only the hotel's `hotel_owner` may manage or pay its subscription; super admins use CRM billing tools and cannot purchase on behalf of a hotel. Confirm if platform staff should be able to make a payment for a customer.
@@ -124,6 +120,9 @@ answer noted.
       for fail-closed. Raised 2026-10-30.
 
 ## Resolved
+
+- [x] [2026-11-08] Spec 15 document scope: add quotations before payment, payment receipts and receipts; retain the existing tax invoice option. Each hotel/type sequence restarts by calendar year; use the Bangkok issue year and include the Gregorian year in the number. The issuing staff member selects cash, bank transfer or PromptPay on the document. See the `feat/financial-documents` implementation.
+- [x] [2026-11-06] Spec 15 issuer model and electronic output: the hotel issues and prints or saves the document locally; hayhost is not the issuer and does not submit e-Tax invoices.
 
 - [x] [2026-11-01] Spec 17: an owner with nobody to transfer to had no self-service way to close a hotel. Spec 18 adds one on the security settings page.
 

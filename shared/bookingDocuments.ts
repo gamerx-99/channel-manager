@@ -4,14 +4,19 @@ import { isRevenueStatus } from "./finance";
  * Receipts and tax invoices a hotel issues from a booking (DECISIONS 2026-11-06: the hotel is the
  * issuer, printed or saved as PDF at the hotel; no e-Tax Invoice).
  */
-export const BOOKING_DOCUMENT_TYPES = ["receipt", "tax_invoice"] as const;
+export const BOOKING_DOCUMENT_TYPES = ["quotation", "payment_receipt", "receipt", "tax_invoice"] as const;
 export type BookingDocumentType = (typeof BOOKING_DOCUMENT_TYPES)[number];
 
-// ASSUMPTION: one running number per hotel and document type that never resets, e.g. RC-000001.
-const NUMBER_PREFIX: Record<BookingDocumentType, string> = { receipt: "RC", tax_invoice: "TX" };
+export const BOOKING_DOCUMENT_PAYMENT_METHODS = ["cash", "transfer", "promptpay"] as const;
+export type BookingDocumentPaymentMethod = (typeof BOOKING_DOCUMENT_PAYMENT_METHODS)[number];
 
-export function documentNumber(type: BookingDocumentType, seq: number): string {
-  return `${NUMBER_PREFIX[type]}-${String(seq).padStart(6, "0")}`;
+const NUMBER_PREFIX: Record<BookingDocumentType, string> = {
+  quotation: "QT", payment_receipt: "PR", receipt: "RC", tax_invoice: "TX",
+};
+
+/** ASSUMPTION: the year in each number is Gregorian, matching the ISO year of the Bangkok issue date. */
+export function documentNumber(type: BookingDocumentType, year: number, seq: number): string {
+  return `${NUMBER_PREFIX[type]}-${year}-${String(seq).padStart(6, "0")}`;
 }
 
 export type BookingDocumentTaxSettings = { vatEnabled: boolean; vatRate: number; withholdingEnabled: boolean; withholdingRate: number };
@@ -35,6 +40,14 @@ export function canIssueBookingDocument(booking: { status: string; payment_statu
   return isRevenueStatus(booking.status) && booking.payment_status === "verified";
 }
 
+/** A quotation is allowed before payment while a reservation remains active. */
+export function canIssueBookingQuotation(booking: { status: string; expires_at?: number | null }, now = Date.now()): boolean {
+  const activeStatuses = ["held", "pending_payment", "pending_verification", "confirmed"];
+  if (!activeStatuses.includes(booking.status)) return false;
+  return !["held", "pending_payment", "pending_verification"].includes(booking.status)
+    || booking.expires_at == null || booking.expires_at >= now;
+}
+
 export type DocumentParty = { name: string; address: string | null; taxId: string | null; branch: string | null };
 
 /** What was printed, kept as issued so later edits to the hotel or booking never change it. */
@@ -45,7 +58,7 @@ export type BookingDocumentSnapshot = {
   issuedOn: string;
   issuer: DocumentParty & { phone: string | null };
   buyer: DocumentParty;
-  booking: { id: string; checkIn: string; checkOut: string; nights: number; roomType: string | null; paymentMethod: string | null };
+  booking: { id: string; checkIn: string; checkOut: string; nights: number; roomType: string | null; paymentMethod: BookingDocumentPaymentMethod | null };
   subtotalSatang: number;
   vatEnabled: boolean;
   vatRate: number;

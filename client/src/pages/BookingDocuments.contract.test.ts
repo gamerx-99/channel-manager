@@ -22,10 +22,13 @@ describe("receipts and tax invoices contract", () => {
     expect(settings).toContain('id="invoice-enabled"');
   });
 
-  it("offers documents only on paid bookings to staff who manage bookings", () => {
+  it("offers quotations before payment and receipts for paid bookings to staff who manage bookings", () => {
     expect(bookings).toContain("'operations.manage_bookings'");
-    expect(bookings).toContain("canIssueDocuments && canIssueBookingDocument(booking)");
+    expect(bookings).toContain("canIssueDocuments && (canIssueBookingDocument(booking) || canIssueBookingQuotation(booking))");
     expect(bookings).toContain("<BookingDocumentDialog");
+    expect(dialog).toContain("bookingDocuments.typeQuotation");
+    expect(dialog).toContain("bookingDocuments.typePaymentReceipt");
+    expect(dialog).toContain('id="document-payment-method"');
     expect(dialog).toContain('id="document-issue"');
     expect(dialog).toContain("bookingDocuments.printAgain");
   });

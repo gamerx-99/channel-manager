@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { BOOKING_DOCUMENT_TYPES, TAX_ID_PATTERN } from '@shared/bookingDocuments';
+import { BOOKING_DOCUMENT_PAYMENT_METHODS, BOOKING_DOCUMENT_TYPES, TAX_ID_PATTERN } from '@shared/bookingDocuments';
 import { protectedProcedure, router } from '../_core/trpc';
 import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
 import { requireHotelPermission, rethrowDomainError } from '../routerUtils';
@@ -66,6 +66,7 @@ export const bookingDocumentsRouter = router({
     buyer_address: optionalText(500),
     buyer_tax_id: taxId,
     buyer_branch: optionalText(100),
+    payment_method: z.enum(BOOKING_DOCUMENT_PAYMENT_METHODS).nullable().optional(),
   })).mutation(async ({ ctx, input }) => {
     // ASSUMPTION: staff who may manage bookings may issue documents; no separate permission yet.
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
@@ -73,6 +74,7 @@ export const bookingDocumentsRouter = router({
       return await issueBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, {
         bookingId: input.booking_id,
         type: input.type,
+        paymentMethod: input.payment_method,
         buyer: { name: input.buyer_name, address: input.buyer_address, taxId: input.buyer_tax_id, branch: input.buyer_branch },
       });
     } catch (error) {

@@ -2,7 +2,8 @@ import { escapeHtml } from "@shared/escapeHtml";
 import { type BookingDocumentSnapshot, type DocumentParty } from "@shared/bookingDocuments";
 
 export type BookingDocumentLabels = {
-  receiptTitle: string; taxInvoiceTitle: string; number: string; issuedOn: string; issuer: string; buyer: string;
+  quotationTitle: string; paymentReceiptTitle: string; receiptTitle: string; taxInvoiceTitle: string; quotationNote: string; quotationSignature: string;
+  number: string; issuedOn: string; issuer: string; buyer: string;
   taxId: string; branch: string; phone: string; description: string; amount: string; stay: string; nights: string;
   subtotal: string; net: string; vat: string; total: string; withholding: string; paymentMethod: string; bookingRef: string; signature: string;
 };
@@ -29,7 +30,9 @@ function party(title: string, value: DocumentParty & { phone?: string | null }, 
 
 /** Hotel and guest values are typed by people, so every value is escaped. */
 export function buildBookingDocumentHtml(doc: BookingDocumentSnapshot, labels: BookingDocumentLabels, language: "th" | "en", paymentMethodLabel: string | null) {
-  const title = doc.type === "tax_invoice" ? labels.taxInvoiceTitle : labels.receiptTitle;
+  const title = doc.type === "quotation" ? labels.quotationTitle
+    : doc.type === "payment_receipt" ? labels.paymentReceiptTitle
+      : doc.type === "tax_invoice" ? labels.taxInvoiceTitle : labels.receiptTitle;
   const stay = `${formatDocumentDate(doc.booking.checkIn, language)} – ${formatDocumentDate(doc.booking.checkOut, language)} (${doc.booking.nights} ${labels.nights})`;
   const description = [labels.stay, doc.booking.roomType].filter(Boolean).join(" ");
   // Older issued snapshots used netSatang as the VAT-exclusive subtotal and vatSatang as nullable.
@@ -84,10 +87,11 @@ export function buildBookingDocumentHtml(doc: BookingDocumentSnapshot, labels: B
     </tbody>
   </table>
   <div class="foot">
+    ${doc.type === "quotation" ? `<div>${escapeHtml(labels.quotationNote)}</div>` : ""}
     ${paymentMethodLabel ? `<div>${escapeHtml(labels.paymentMethod)} ${escapeHtml(paymentMethodLabel)}</div>` : ""}
     <div>${escapeHtml(labels.bookingRef)} ${escapeHtml(doc.booking.id.slice(0, 8))}</div>
   </div>
-  <div class="sign"><div>${escapeHtml(labels.signature)}</div></div>
+  <div class="sign"><div>${escapeHtml(doc.type === "quotation" ? labels.quotationSignature : labels.signature)}</div></div>
   <script>window.print();</script>
 </body>
 </html>`;

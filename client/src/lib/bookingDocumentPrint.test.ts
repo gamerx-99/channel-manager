@@ -8,7 +8,7 @@ import en from "./i18n/en";
 const labels = th.bookingDocuments.print as unknown as BookingDocumentLabels;
 const englishLabels = en.bookingDocuments.print as unknown as BookingDocumentLabels;
 const receipt: BookingDocumentSnapshot = {
-  type: "receipt", number: "RC-000001", issuedOn: "2026-11-07",
+  type: "receipt", number: "RC-2026-000001", issuedOn: "2026-11-07",
   issuer: { name: "Hotel <b>", address: "1 Road", taxId: "0105555555555", branch: "สำนักงานใหญ่", phone: "053000000" },
   buyer: { name: "<script>alert(1)</script>", address: null, taxId: null, branch: null },
   booking: { id: "abcdef12-0000", checkIn: "2026-12-01", checkOut: "2026-12-03", nights: 2, roomType: "Deluxe", paymentMethod: "promptpay" },
@@ -21,9 +21,9 @@ describe("booking document print page", () => {
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain("Hotel &lt;b&gt;");
-    expect(html).toContain("RC-000001");
+    expect(html).toContain("RC-2026-000001");
     expect(html).toContain("1,070.00");
-    expect(html).toContain("ชำระโดย พร้อมเพย์");
+    expect(html).toContain("ช่องทางการชำระ พร้อมเพย์");
     expect(html).toContain("@page { size: A4");
     expect(html).not.toContain(labels.vat);
   });
@@ -34,6 +34,20 @@ describe("booking document print page", () => {
     expect(html).toContain("ภาษีมูลค่าเพิ่ม 7%");
     expect(html).toContain("1,000.00");
     expect(html).toContain("70.00");
+  });
+
+  it("prints a quotation as a proposal, never as proof of payment", () => {
+    const html = buildBookingDocumentHtml({ ...receipt, type: "quotation", number: "QT-2026-000001", booking: { ...receipt.booking, paymentMethod: null } }, labels, "th", null);
+    expect(html).toContain("ใบเสนอราคา");
+    expect(html).toContain("เอกสารนี้เป็นใบเสนอราคา ไม่ใช่หลักฐานการรับเงิน");
+    expect(html).toContain("QT-2026-000001");
+    expect(html).not.toContain("ชำระโดย");
+  });
+
+  it("prints a payment receipt with its selected payment channel", () => {
+    const html = buildBookingDocumentHtml({ ...receipt, type: "payment_receipt", number: "PR-2026-000001" }, labels, "th", "โอนเงิน");
+    expect(html).toContain("ใบรับเงิน");
+    expect(html).toContain("ช่องทางการชำระ โอนเงิน");
   });
 
   it("renders withholding and net to pay from the issued snapshot", () => {
@@ -66,13 +80,15 @@ describe("booking document print page", () => {
 describe("issue form rules", () => {
   const form = { name: "Guest", address: "", taxId: "" };
   it("allows a receipt with only a name", () => {
-    expect(issueFormProblem("receipt", form, false)).toBeNull();
+    expect(issueFormProblem("receipt", form, false, "cash")).toBeNull();
+    expect(issueFormProblem("quotation", form, false, "")).toBeNull();
+    expect(issueFormProblem("receipt", form, false, "")).toBe("paymentMethod");
   });
   it("needs a name, a 13-digit tax ID if typed, the hotel tax ID and an address for a tax invoice", () => {
-    expect(issueFormProblem("receipt", { ...form, name: " " }, true)).toBe("name");
-    expect(issueFormProblem("receipt", { ...form, taxId: "123" }, true)).toBe("taxId");
-    expect(issueFormProblem("tax_invoice", form, false)).toBe("hotelTaxId");
-    expect(issueFormProblem("tax_invoice", form, true)).toBe("address");
-    expect(issueFormProblem("tax_invoice", { ...form, address: "2 Road" }, true)).toBeNull();
+    expect(issueFormProblem("receipt", { ...form, name: " " }, true, "cash")).toBe("name");
+    expect(issueFormProblem("receipt", { ...form, taxId: "123" }, true, "cash")).toBe("taxId");
+    expect(issueFormProblem("tax_invoice", form, false, "transfer")).toBe("hotelTaxId");
+    expect(issueFormProblem("tax_invoice", form, true, "transfer")).toBe("address");
+    expect(issueFormProblem("tax_invoice", { ...form, address: "2 Road" }, true, "transfer")).toBeNull();
   });
 });

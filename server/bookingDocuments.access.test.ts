@@ -61,7 +61,17 @@ describe('receipts and tax invoices follow hotel permissions', () => {
     const app = await caller('hotel_owner');
     await expect(app.bookingDocuments.issue({ ...issue, hotel_id: OTHER_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(app.bookingDocuments.saveSettings({ ...header, tax_id: '12345' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    await expect(app.bookingDocuments.issue({ ...issue, payment_method: 'crypto' } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(repoMocks.issueBookingDocument).not.toHaveBeenCalled();
     expect(repoMocks.saveInvoiceSettings).not.toHaveBeenCalled();
+  });
+
+  it('passes the selected payment method and quotation type through the router', async () => {
+    const app = await caller('hotel_owner');
+    await app.bookingDocuments.issue({ ...issue, type: 'quotation', payment_method: 'transfer' });
+    expect(repoMocks.issueBookingDocument).toHaveBeenCalledWith(
+      expect.anything(), expect.anything(), HOME_HOTEL,
+      expect.objectContaining({ type: 'quotation', paymentMethod: 'transfer' }),
+    );
   });
 });

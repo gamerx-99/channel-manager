@@ -1,5 +1,36 @@
 # Handoff log
 
+## 2026-11-08 — Hotel financial documents
+
+- **Branch/base**: `feat/financial-documents` from `origin/main` (`8bc8a5f`). Existing hotel bill header and VAT/withholding settings remain the source of document header and tax behavior.
+- **Implemented**: added quotation for active bookings before payment; payment receipt and receipt for verified payments; retained tax invoice. Staff select cash, bank transfer or PromptPay for each payment document. Method is snapshotted on the document and does not modify the booking payment. Counters are per hotel, document type and Bangkok issue year; numbers include Gregorian year (for example `RC-2026-000001`). Existing documents are backfilled to their issue year from the snapshot, with created-at fallback.
+- **Migration**: `drizzle/d1/20261108000000_booking_documents_annual_types.sql`, generated with `corepack pnpm exec drizzle-kit generate --config drizzle.d1.config.ts`, then adjusted to backfill existing rows. **Not applied to any remote database.**
+- **Tests**: new migration test verifies prior issue-year backfill and uniqueness across years/types; D1 and shared tests cover the annual sequence, unpaid quotation, verified-payment restriction, payment method and type output; print test distinguishes quotation/payment receipt/receipt. An existing print assertion changed from `RC-000001` to `RC-2026-000001` because the number format now includes its year.
+- **Verification evidence**: `corepack pnpm check` — `tsc --noEmit`, exit 0. `corepack pnpm test` — 254 files passed, 1,729 tests passed, exit 0. `corepack pnpm build` — Vite and Wrangler `--dry-run`, exit 0; Wrangler reported its standard large-chunk warning. No deployment or remote migration was run.
+- **New copy, before → after** (new entries show `—` before):
+
+| Key | Before (th / en) | After (th) | After (en) |
+|---|---|---|---|
+| `bookingDocuments.settingsEyebrow` | ใบเสร็จและใบกำกับภาษี / Receipts and tax invoices | เอกสารการเงิน | Financial documents |
+| `bookingDocuments.settingsDesc` | ข้อมูลนี้พิมพ์บนใบเสร็จและใบกำกับภาษีที่ที่พักออกให้ลูกค้า ที่พักเป็นผู้ออกเอกสารและรับผิดชอบข้อมูลภาษีเอง / Printed on the receipts and tax invoices your property gives guests. Your property issues them and is responsible for its tax details. | ข้อมูลนี้พิมพ์บนเอกสารที่ที่พักออกให้ลูกค้า ที่พักเป็นผู้ออกเอกสารและรับผิดชอบข้อมูลภาษีเอง | Printed on documents your property gives guests. Your property issues them and is responsible for its tax details. |
+| `bookingDocuments.enabledLabel` | เปิดใช้การออกใบเสร็จจากการจอง / Issue receipts from bookings | เปิดใช้การออกเอกสารจากการจอง | Issue documents from bookings |
+| `bookingDocuments.openButton` | ใบเสร็จ / Receipt | ออกเอกสาร | Issue document |
+| `bookingDocuments.openAria` | ใบเสร็จหรือใบกำกับภาษีของการจอง {{id}} / Receipt or tax invoice for booking {{id}} | ออกเอกสารการเงินของการจอง {{id}} | Issue a financial document for booking {{id}} |
+| `bookingDocuments.dialogTitle` | ใบเสร็จ / ใบกำกับภาษี / Receipt / tax invoice | ออกเอกสารการเงิน | Issue a financial document |
+| `bookingDocuments.notEnabled` | เปิดใช้การออกใบเสร็จและตั้งหัวบิลในหน้าตั้งค่าโรงแรมก่อน / Turn on receipts and set the document header on the hotel settings page first. | เปิดใช้การออกเอกสารและตั้งหัวบิลในหน้าตั้งค่าโรงแรมก่อน | Turn on document issuing and set the document header on the hotel settings page first. |
+| `bookingDocuments.typeQuotation` | — | ใบเสนอราคา | Quotation |
+| `bookingDocuments.typePaymentReceipt` | — | ใบรับเงิน | Payment receipt |
+| `bookingDocuments.paymentMethodLabel` | — | ช่องทางการชำระ | Payment method |
+| `bookingDocuments.choosePaymentMethod` | — | เลือกช่องทางการชำระ | Choose a payment method |
+| `bookingDocuments.paymentMethodRequired` | — | เลือกช่องทางการชำระก่อนออกเอกสาร | Choose a payment method before issuing this document. |
+| `bookingDocuments.print.quotationTitle` | — | ใบเสนอราคา | Quotation |
+| `bookingDocuments.print.paymentReceiptTitle` | — | ใบรับเงิน | Payment receipt |
+| `bookingDocuments.print.quotationNote` | — | เอกสารนี้เป็นใบเสนอราคา ไม่ใช่หลักฐานการรับเงิน | This is a quotation, not proof of payment. |
+| `bookingDocuments.print.quotationSignature` | — | ผู้เสนอราคา | Prepared by |
+| `bookingDocuments.print.paymentMethod` | ชำระโดย / Paid by | ช่องทางการชำระ | Payment method |
+
+- **No commit/push/deploy**. The migration must be applied before this branch's document schema can run on a remote database.
+
 ## 2026-11-07 — Staff task manager inset and title label
 
 - Merged duplicate `.staff-task-group` and heading rules. Groups now use `.8rem` vertical and 22px horizontal padding on desktop, with the existing 16px horizontal inset at the <=600px breakpoint to match the panel heading. The border between groups remains.
