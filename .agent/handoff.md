@@ -1,5 +1,12 @@
 # Handoff log
 
+## 2026-11-08 — Financial documents migration applied to staging
+
+- Applied `drizzle/d1/20261108000000_booking_documents_annual_types.sql` to `hayhost-staging` (database ID `f7fb735d-59a0-4a56-a8b4-bacb654d53d7`) through the Cloudflare D1 API after the Wrangler OAuth device flow timed out. The same SQL and `d1_migrations` ledger insert used by Wrangler were submitted together.
+- Before applying: confirmed this file was not in `d1_migrations`; other locally present migrations were already recorded. Two previously applied staging migrations are absent from this branch; no additional branch migrations were pending. `booking_documents` had 0 rows.
+- Verified after applying: `d1_migrations` records this file at `2026-11-08 15:53:56`; table schema has `issued_year`, the expanded document type check, and the hotel/type/year/sequence unique index; `PRAGMA foreign_key_check` returned no rows; `booking_documents` still has 0 rows. `PRAGMA integrity_check` is restricted by the D1 API (`SQLITE_AUTH`), so that check was unavailable.
+- Staging only. No production migration, deploy, or push was performed.
+
 ## 2026-11-08 — Hotel financial documents
 
 - **Branch/base**: `feat/financial-documents` from `origin/main` (`8bc8a5f`). Existing hotel bill header and VAT/withholding settings remain the source of document header and tax behavior.
