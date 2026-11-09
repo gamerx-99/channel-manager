@@ -26,17 +26,29 @@ Prepared 2026-11-10 for branch `codex/high-season-release`.
    ```
 
    These rows have no historical allotment to restore automatically. Treat each as a hotel-confirmation item; do not infer a prior positive cap. After migration, use the confirmed cap when reopening.
-4. Create a protected backup location with restricted access and enough space. D1 SQL exports contain hotel and guest data; encrypt at rest and keep them out of the repository and chat.
+4. Create a protected backup location with restricted access and enough space. D1 SQL exports contain hotel and guest data; keep plaintext off persistent storage, encrypt the export at rest, and keep it out of the repository and chat. On this host, `systemd-creds --user` encryption/decryption was tested with a disposable payload before use; it uses the current OS user's credential key.
 
 ## Production backup and migration (not executed)
 
-Run only after separate owner approval. Replace the backup path with an access-controlled location and a unique timestamped filename:
+Run only after separate owner approval. This streams SQL through an encrypted credential file: plaintext passes through a FIFO in `/dev/shm`, while only ciphertext persists. Replace the timestamp for each backup.
 
 ```bash
-corepack pnpm exec wrangler d1 export hayhost-production --remote --env production --config wrangler.toml --output /secure-backups/hayhost-production-before-20261109010000.sql
+umask 077
+mkdir -p /home/gserver/.local/share/hayhost-release-backups
+chmod 700 /home/gserver/.local/share/hayhost-release-backups
+mkdir -m 700 /dev/shm/hayhost-production-backup
+mkfifo -m 600 /dev/shm/hayhost-production-backup/export.sql
+systemd-creds encrypt --user --name=hayhost-production-before-20261109010000 /dev/shm/hayhost-production-backup/export.sql /home/gserver/.local/share/hayhost-release-backups/hayhost-production-before-20261109010000.cred &
+BACKUP_ENCRYPT_PID=$!
+corepack pnpm exec wrangler d1 export hayhost-production --remote --env production --config wrangler.toml --output /dev/shm/hayhost-production-backup/export.sql
+wait "$BACKUP_ENCRYPT_PID"
+test -s /home/gserver/.local/share/hayhost-release-backups/hayhost-production-before-20261109010000.cred
+systemd-creds decrypt --user --name=hayhost-production-before-20261109010000 /home/gserver/.local/share/hayhost-release-backups/hayhost-production-before-20261109010000.cred /dev/stdout | sha256sum
+unlink /dev/shm/hayhost-production-backup/export.sql
+rmdir /dev/shm/hayhost-production-backup
 ```
 
-Verify the export completed, is non-empty, and is stored securely. Wrangler documents that `d1 migrations apply` captures a backup after applying and rolls back a failed migration; the external export above is an additional pre-change recovery copy.
+Verify the export and encryption commands succeeded, the ciphertext is non-empty, and decryption produces a checksum without printing SQL. Retain the ciphertext and current user's systemd credential key for recovery. Wrangler documents that `d1 migrations apply` captures a backup after applying and rolls back a failed migration; this encrypted export is an additional pre-change recovery copy.
 
 After the owner approves applying Production migration, run:
 
