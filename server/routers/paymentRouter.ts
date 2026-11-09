@@ -12,6 +12,7 @@ import {
   finalizePaymentSession,
 } from '../d1/payment';
 import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
+import { releaseNightsStatement } from '../d1/bookingNights';
 import { bookings, hotels, hotelPaymentSettings } from '../../drizzle/d1-schema';
 import { eq, and } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
@@ -138,8 +139,15 @@ export const paymentRouter = router({
         if (bookingState?.status === 'expired') return { status: 'expired' as const, verifiedAt: null };
         // A slip waiting for staff keeps its session open while the booking
         // request's review window remains active.
-        const [booking] = await db.select({ status: bookings.status }).from(bookings)
+        const [booking] = await db.select({ status: bookings.status, paymentStatus: bookings.paymentStatus }).from(bookings)
           .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, hotelId))).limit(1);
+        // A staff decision is authoritative for the guest-facing payment result.
+        if (booking?.status === 'confirmed' && booking.paymentStatus === 'verified') {
+          return { status: 'paid' as const, verifiedAt: session.verified_at };
+        }
+        if (booking?.status === 'payment_rejected' && booking.paymentStatus === 'failed') {
+          return { status: 'failed' as const, verifiedAt: null };
+        }
         if (booking?.status === 'pending_verification' && session.status === 'pending') {
           return { status: 'under_review' as const, verifiedAt: null };
         }
@@ -270,6 +278,7 @@ export const paymentRouter = router({
           if (!rejected) {
             return { verified: false as const, pendingManualReview: true as const, message: 'ระบบกำลังตรวจสอบสลิปของคุณ กรุณารอการยืนยันจากเจ้าหน้าที่' };
           }
+          await db.$client.batch([releaseNightsStatement(db, session.booking_id)]);
           await finalizePaymentSession(db, guest, hotelId, session.id, {
             status: 'failed',
             rawResponse: result.raw,
@@ -334,8 +343,16 @@ export const paymentRouter = router({
         const nextStatus: BookingStatus = input.approved ? 'confirmed' : 'payment_rejected';
         assertValidTransition('pending_verification', nextStatus);
 
-        await db.update(bookings).set({ status: nextStatus }).where(eq(bookings.id, input.booking_id));
+        const [updated] = await db.update(bookings).set({ status: nextStatus, ...(input.approved ? { expiresAt: null } : {}) })
+          .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id), eq(bookings.status, 'pending_verification')))
+          .returning({ id: bookings.id });
+        if (!updated) throw new TRPCError({ code: 'CONFLICT', message: 'This booking verification was already resolved.' });
+        if (!input.approved) await db.$client.batch([releaseNightsStatement(db, input.booking_id)]);
         await updateBookingPaymentStatus(db, caller, input.hotel_id, input.booking_id, input.approved ? 'verified' : 'failed');
+        const session = await getLatestPaymentSession(db, caller, input.booking_id, input.hotel_id);
+        if (session?.status === 'pending') {
+          await updatePaymentSessionStatus(db, caller, input.hotel_id, session.id, input.approved ? 'paid' : 'failed', input.approved ? new Date().toISOString() : undefined);
+        }
         await logBookingStatusChange(db, caller, { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: 'pending_verification', to_status: nextStatus, changed_by: ctx.user.id, reason: input.note?.trim() || (input.approved ? 'manual_approve' : 'manual_reject') });
 
         return { booking_id: input.booking_id, status: nextStatus };

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { availability, bookingNights, bookings, bookingStatusLog, d1Schema, hotels, hotelUsers, otaConnections, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { availability, bookingNights, bookings, bookingStatusLog, d1Schema, hotelPaymentSettings, hotels, hotelUsers, otaConnections, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { createD1SystemCallerContext } from "../db/scope";
 import { confirmBookingDetails, createBookingWithGuests, createPublicBooking, expireBookingIfPast, getPublicHotelAvailability, holdRoomType } from "./booking";
@@ -54,6 +54,7 @@ const slug = "a-slug";
 
 async function seed(quantity = 2) {
   await db.insert(hotels).values({ id: "a", name: "Hotel a", slug, address: "Address", ownerContact: "a@example.test", publicEnabled: true });
+  await db.insert(hotelPaymentSettings).values({ hotelId: "a", promptpayId: "0812345678" });
   await db.insert(hotelUsers).values({ id: "membership-a", hotelId: "a", userId: "owner-a", role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
   await db.insert(roomTypes).values({ id: "type-a", hotelId: "a", name: "Standard", capacity: 2, basePrice: "100.00", baseOccupancy: 2, maxOccupancy: 2, occupancyPricing: { "1": { enabled: false, mode: "percent", value: -10 }, "2": { enabled: true, mode: "percent", value: 0 } }, childRates: { infant: { mode: "free", value: 0 }, age_groups: [], height: { mode: "free", value: 0 } } });
   for (let i = 1; i <= quantity; i++) await db.insert(rooms).values({ id: `room-a-${i}`, hotelId: "a", roomTypeId: "type-a", roomNumber: String(i).padStart(3, "0") });

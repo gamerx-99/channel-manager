@@ -8,6 +8,7 @@ import { moneyToSatang, satangToMoney } from "../db/money";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { calculateServiceTotalSatang, getPublicHotelBySlug, getPublicRoomTypeAvailabilityForGuests, priceBaseStaySatang, priceStayForRoomType, roundAverageNightlySatang, transitionBookingStatus } from "./bookingService";
 import { getRequiredMinStayNights } from "../pricing";
+import { normalisePromptPayId } from "../../shared/promptPayId";
 import { CLOSED_NIGHT_ERROR_PREFIX, closedNightsForRoomType, NO_CLOSED_NIGHT_SQL, noClosedNightParams } from "./closedNights";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
@@ -218,6 +219,17 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   const dates = getStayDates(input.check_in, input.check_out);
   if (!dates.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Check-out date must be after check-in date." });
   const hotel = await getPublicHotelBySlug(db, caller, input.slug);
+  // Do not create a room hold or collect guest details when this hotel cannot
+  // complete the only online payment flow currently supported (PromptPay).
+  // SlipOK remains optional: a staff review is the existing fallback.
+  const [paymentSettings] = await db.select({ promptpayId: hotelPaymentSettings.promptpayId })
+    .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotel.id)).limit(1);
+  if (!paymentSettings?.promptpayId || !normalisePromptPayId(paymentSettings.promptpayId)) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "This property cannot take PromptPay payments right now. Please contact the property directly.",
+    });
+  }
   if (input.createdIpHash) {
     const activeHolds = await countActiveHoldsForIp(db, hotel.id, input.createdIpHash, now);
     if (activeHolds >= 3) {

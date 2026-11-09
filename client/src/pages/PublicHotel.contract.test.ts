@@ -111,7 +111,8 @@ describe('PublicHotel Wizard Booking Engine contract (Stage E2)', () => {
     expect(publicHotelSource).toContain('guestEmail');
     expect(publicHotelSource).toContain('specialRequests');
     expect(publicBookingSource).toContain('<PaymentQR');
-    expect(publicBookingSource).toContain('publicHotel.bookingConfirmedTitle');
+    // Successful slip verification now names the financial outcome directly.
+    expect(publicBookingSource).toContain('publicHotel.paymentSuccessTitle');
     expect(publicBookingSource).toContain('publicHotel.bookAnotherStay');
   });
 

@@ -36,7 +36,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
     <div className="booking-confirmed-card">
       <div className="booking-confirmed-header">
         <CheckCircle2 size={28} />
-        <h3 className="booking-confirmed-title">{t("publicHotel.bookingConfirmedTitle")}</h3>
+        <h3 className="booking-confirmed-title">{t("publicHotel.paymentSuccessTitle")}</h3>
       </div>
       <p className="booking-confirmed-notice">
         {t("publicHotel.bookingConfirmedNotice", { name: guestName.trim(), reference: (confirmedBookingId ?? heldBooking?.bookingId ?? "").slice(0, 8).toUpperCase() })}

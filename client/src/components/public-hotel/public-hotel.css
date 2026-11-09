@@ -5,6 +5,8 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 .payment-error-msg{color:#a63d31;font-weight:600;font-size:0.95rem}
 .payment-error-sub{color:#789087;font-size:0.8rem}
+.payment-review-title,.payment-slip-result h3{margin:0;color:#1b2c25;font-size:1.1rem;font-weight:700}
+.payment-slip-result .payment-error-msg{color:#a63d31}
 .payment-qr-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:#f6faf7;border-radius:12px;border:1px solid #dce4df}
 .payment-amount{display:flex;flex-direction:column;gap:2px}
 .payment-amount-label{font-size:0.7rem;color:#789087;text-transform:uppercase;letter-spacing:0.08em}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { localizeServerMessage, storedLanguage } from "@/lib/serverErrors";
 import { bangkokDate } from "@shared/finance";
 import {
   isDatesValid as checkDatesValid,
@@ -101,7 +102,7 @@ export function useBookingWizard(args: {
       setWizardError(null);
       setWizardStep(3);
     },
-    onError: (err) => setWizardError(err.message),
+    onError: (err) => setWizardError(localizeServerMessage(err.message, storedLanguage())),
   });
 
   const servicesQuery = trpc.channelManager.listPublicHotelServices.useQuery({ slug }, { enabled: wizardStep >= 3 });

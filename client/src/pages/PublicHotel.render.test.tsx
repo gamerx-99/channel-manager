@@ -92,3 +92,25 @@ describe.each([null, "minimal-white", "lanna-teak", "cafe-homestay", "mountain-m
     }
   });
 });
+
+describe("PublicHotel API error states", () => {
+  it("shows a recoverable error state and retries a failed public hotel request", () => {
+    const refetch = vi.fn();
+    mocks.publicHotelQuery.mockReturnValueOnce({ data: undefined, isLoading: false, error: { data: { code: "INTERNAL_SERVER_ERROR" } }, refetch });
+
+    render(<PublicHotel slug="sample-stay" />);
+
+    expect(screen.getByRole("alert").textContent).toContain("We could not load this hotel");
+    screen.getByRole("button", { name: "Try again" }).click();
+    expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it("shows the unavailable state for a hotel that does not exist", () => {
+    mocks.publicHotelQuery.mockReturnValueOnce({ data: undefined, isLoading: false, error: { data: { code: "NOT_FOUND" } }, refetch: vi.fn() });
+
+    render(<PublicHotel slug="missing-stay" />);
+
+    expect(screen.getByTestId("public-hotel-not-found")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});

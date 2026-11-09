@@ -10,7 +10,7 @@ export async function expireOutstandingBookingRequests(db: D1ScopedDatabase, now
       FROM bookings WHERE ${eligible}`).bind(cutoff),
     db.$client.prepare(`UPDATE bookings SET status = 'expired' WHERE ${eligible}`).bind(cutoff),
     db.$client.prepare(`DELETE FROM booking_nights WHERE booking_id IN
-      (SELECT id FROM bookings WHERE status = 'expired' AND expires_at IS NOT NULL AND expires_at < ?)`)
+      (SELECT id FROM bookings WHERE (status = 'expired' AND expires_at IS NOT NULL AND expires_at < ?) OR status = 'payment_rejected')`)
       .bind(cutoff),
   ]);
   return { expired: results[1]?.meta.changes ?? 0 };

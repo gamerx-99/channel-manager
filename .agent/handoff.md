@@ -1,3 +1,20 @@
+## 2026-11-09 — High season booking and payment recovery (Agy)
+
+- Continued the existing uncommitted booking/payment work on `fix/page-titles-booking-flow`; did not reset, switch, or move its prior edits. Added a server-side PromptPay readiness check before a public room hold is created, so an unconfigured hotel cannot hold inventory or collect guest details before the payment dead end. This follows the current owner decision that PromptPay is the only online payment method; SlipOK remains optional, with hotel staff review as the fallback.
+- Kept rejected-slip status separate from unreadable slips and transport errors: a rejected result asks the guest to contact the hotel, an unreadable slip can be uploaded again, and staff approval/rejection is reflected by the status poll. Manual review expiry remains bounded by the hotel's existing booking-request timeout; rejected room-night rows are released and the cron also cleans stale rows.
+- Added a responsive, theme-token based stylesheet for the previously unstyled Terms / Privacy / DPA pages. Added render coverage for the public hotel API retry and not-found states (the UI already had the error state; this adds regression coverage).
+- Thai and English payment wording, before → after:
+
+  | Key | Before | After (th) | After (en) |
+  |---|---|---|---|
+  | `publicHotel.paymentSuccessTitle` (replaces `bookingConfirmedTitle` on the post-payment screen) | การจองได้รับการยืนยันแล้ว! / Booking Confirmed! | ชำระเงินสำเร็จ | Payment successful |
+  | `publicHotel.paymentUnderReviewTitle` | ได้รับสลิปของคุณแล้ว / (not localized) | ได้รับสลิปแล้ว | Slip received |
+  | `publicHotel.paymentUnderReviewDesc` | ที่พักกำลังตรวจสอบการชำระเงิน การจองของคุณจะได้รับการยืนยันเมื่อเจ้าหน้าที่ตรวจสอบเสร็จ ไม่ต้องชำระเงินซ้ำ / (not localized) | ที่พักกำลังตรวจสอบการชำระเงิน จะแจ้งยืนยันการจองเมื่อการตรวจสอบเสร็จ ไม่ต้องชำระเงินซ้ำ | The property is checking your payment. Your booking will be confirmed after the review. Please do not pay again. |
+  | `publicHotel.paymentRejectedTitle` | — | ตรวจสอบสลิปไม่ผ่าน | Slip verification failed |
+  | `publicHotel.paymentRejectedDesc` | — | กรุณาติดต่อโรงแรมโดยตรงเพื่อสอบถามสถานะการชำระเงิน | Please contact the hotel directly to ask about your payment status. |
+
+- Tests: complete `pnpm test` passed (275 files, 1,856 tests); focused booking/payment/public hotel regression tests passed (8 files, 121 tests); `pnpm check` passed; `pnpm build` passed with Wrangler dry-run using `hayhost-dev`; `git diff --check` passed. No migration, remote database access, real payment, push, or deploy was run.
+
 ## 2026-11-09 — Migration check, commit and push
 
 - Checked remote D1 migration status for `hayhost-staging` and `hayhost-production`; both Wrangler commands reported `No migrations to apply!`, so no migration was run.
