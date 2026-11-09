@@ -22,6 +22,7 @@ import { useTranslation } from "@/lib/i18n";
 import { dateLocale } from "@/lib/dateLocale";
 import { bangkokMonth } from "@shared/finance";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth, type FinancialsChoice } from "./financialsPeriod";
+import "./Financials.css";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },

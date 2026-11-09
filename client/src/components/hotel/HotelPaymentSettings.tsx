@@ -11,11 +11,10 @@ export default function HotelPaymentSettings({ hotelId }: { hotelId: string }) {
   const state = useHotelPromptPaySettings(hotelId);
   return <section className="panel hotel-payment-settings" aria-label={t("hotelPaymentSettings.title")}>
     <div className="panel-heading"><div><div className="eyebrow">{t("hotelPaymentSettings.eyebrow")}</div><h2>{t("hotelPaymentSettings.title")}</h2></div></div>
-    <section className="panel" aria-labelledby="promptpay-settings-heading">
-      <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h3>{t("financials.promptPayTitle")}</h3></div></div>
-      <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-        <CardHeader className="pb-3"><div className="flex items-center gap-3"><span className="rounded-xl bg-[#edf7f1] p-2 text-[#1d6b56]"><QrCode size={18} aria-hidden="true" /></span><div><CardTitle id="promptpay-settings-heading" className="text-base font-semibold text-[#1b2c25]">{t("financials.promptPayTitle")}</CardTitle><CardDescription className="text-xs text-[#6c7e75]">{t("financials.promptPayDesc")}</CardDescription></div></div></CardHeader>
-        <CardContent className="flex flex-col gap-5">
+    <section className="hotel-promptpay-settings" aria-labelledby="promptpay-settings-heading">
+      <Card className="hotel-payment-card">
+        <CardHeader className="hotel-payment-card-header"><div className="hotel-payment-card-title"><span className="hotel-payment-icon"><QrCode size={18} aria-hidden="true" /></span><div><CardTitle id="promptpay-settings-heading">{t("financials.promptPayTitle")}</CardTitle><CardDescription>{t("financials.promptPayDesc")}</CardDescription></div></div></CardHeader>
+        <CardContent className="hotel-payment-card-content">
           {state.savedIdInvalid && <p className="form-error" role="alert">{t("financials.promptPaySavedInvalid")}</p>}
           <div className="form-grid"><div className="form-span-two"><label htmlFor="promptpay-id-input">{t("financials.promptPayIdLabel")}</label><input id="promptpay-id-input" type="text" inputMode="tel" autoComplete="off" value={state.promptPayId} onChange={e => state.setPromptPayId(e.target.value)} placeholder="0812345678" maxLength={32} aria-describedby="promptpay-id-hint" className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm font-mono" /><p id="promptpay-id-hint" className="field-help">{t("financials.promptPayIdHint")}</p></div>
             <label>{t("financials.timeoutLabel")}<select id="promptpay-timeout" value={state.timeoutMin} onChange={e => state.setTimeoutMin(Number(e.target.value))} className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm">{[5, 10, 15, 20, 30, 60].map(m => <option key={m} value={m}>{t("financials.minutes", { count: m })}</option>)}</select></label></div>

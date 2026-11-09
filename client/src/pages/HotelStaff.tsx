@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { DELETED_USER_ID } from "@shared/accountDeletion";
 import { ASSIGNABLE_STAFF_ROLES, ROLE_LABELS, isPlatformRole, type AppRole, type AssignableStaffRole, type HumanRole } from "@shared/authorization";
 import { useTranslation } from "@/lib/i18n";
+import "./HotelStaff.css";
 import { dateLocale } from "@/lib/dateLocale";
 
 type HotelStaffProps = { id: string };
@@ -284,7 +285,7 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
 
       {!staffQuery.isLoading && !staffQuery.error && (
         <>
-          <section className="summary-strip">
+          <section className="summary-strip hotel-staff-summary">
             <div><span className="strip-label">{t("hotelStaff.summaryHotelStaff")}</span><strong>{staff.length}</strong></div>
             <div><span className="strip-label">{t("hotelStaff.summaryActiveAccounts")}</span><strong>{activeStaffCount}</strong></div>
             <div className="strip-caption"><ShieldCheck size={16} /> {t("hotelStaff.summaryCaption")}</div>

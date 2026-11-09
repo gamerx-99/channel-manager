@@ -5,6 +5,7 @@ import { PageState } from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
 import { Link } from 'wouter';
+import './HotelFinanceSettings.css';
 
 export default function HotelFinanceSettings({ id }: { id: string }) {
   const { t, language } = useTranslation();
@@ -18,7 +19,7 @@ export default function HotelFinanceSettings({ id }: { id: string }) {
   if (!canManage) return <PageState tone="error" title={t('accessRestricted.title')} description={t('accessRestricted.permissionRequired')} />;
   if (!hotel.data) return <PageState tone="error" title={t('hotelDetail.errorTitle')} description={hotel.error?.message ?? t('hotelDetail.errorDescFallback')} />;
 
-  return <div className="page-content">
+  return <div className="page-content hotel-finance-settings-page">
     <section className="page-intro intro-split"><div><div className="eyebrow">{t('sidebar.hotelSettings')}</div><h1>{t('sidebar.financeSettings')}<span className="title-mark">.</span></h1><p className="lede">{t('hotelSettings.financeDescription')}</p></div></section>
     <HotelPaymentSettings hotelId={id} />
     <HotelInvoiceSettings hotelId={id} hotelName={hotel.data.name} hotelAddress={hotel.data.address ?? ''} />

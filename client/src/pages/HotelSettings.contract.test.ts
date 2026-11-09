@@ -38,4 +38,13 @@ describe('hotel settings pages', () => {
     expect(finance).toContain('home-plan-card');
     expect(read('client/src/components/hotel/HotelPaymentSettings.tsx')).toContain('<SlipOkSettings');
   });
+
+  it('keeps invoice switches aligned and the finance form within the responsive page grid', () => {
+    const invoiceCss = read('client/src/components/hotel/HotelInvoiceSettings.css');
+    const financeCss = read('client/src/pages/HotelFinanceSettings.css');
+    expect(invoiceCss).toContain('align-items: flex-start');
+    expect(invoiceCss).toContain('flex: 0 0 18px');
+    expect(invoiceCss).toContain('@media (max-width: 640px)');
+    expect(financeCss).toContain('max-width: 1120px');
+  });
 });

@@ -11,6 +11,7 @@ export const formatReportNumber = (value: number, digits = 0) => new Intl.Number
 export const formatReportMoney = (value: number) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(value);
 export const formatReportDate = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
 export const formatReportMonth = (value: string, locale: string) => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}-01T00:00:00Z`));
+export const bookingSourceTranslationKey = (source: string) => `bookingsReport.source_${source.trim().toLowerCase().replace(/[\s-]+/g, '_')}`;
 
 function csvCell(value: string | number) {
   const text = String(value);
