@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowRight } from "lucide-react";
 import { BookingDateRangePicker } from "@/components/BookingDateRangePicker";
 import { getTodayDateString } from "./useBookingWizard";
+import { useTranslation } from "@/lib/i18n";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
 
 type Page = ReturnType<typeof usePublicHotelPage>;
@@ -26,6 +27,7 @@ export type BookingStepDatesProps = {
 };
 
 export default function BookingStepDates(props: BookingStepDatesProps) {
+  const { language } = useTranslation();
   const {
     t,
     checkIn,
@@ -55,6 +57,13 @@ export default function BookingStepDates(props: BookingStepDatesProps) {
         minDateIso={getTodayDateString()}
         accentColor={props.accentColor}
       />
+      {checkIn && <div className="booking-date-summary" aria-live="polite">
+        <div><span>{t("publicHotel.bookingCheckIn")}</span><strong>{new Date(`${checkIn}T00:00:00Z`).toLocaleDateString(language === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</strong></div>
+        {checkOut ? <>
+          <div><span>{t("publicHotel.bookingCheckOut")}</span><strong>{new Date(`${checkOut}T00:00:00Z`).toLocaleDateString(language === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</strong></div>
+          <div className="booking-date-summary-nights"><span>{t("publicHotel.bookingDuration")}</span><strong>{t("publicHotel.bookingNights", { count: Math.round((Date.parse(`${checkOut}T00:00:00Z`) - Date.parse(`${checkIn}T00:00:00Z`)) / 86_400_000) })}</strong></div>
+        </> : <div className="booking-date-summary-prompt"><span>{t("publicHotel.bookingCheckOutPrompt")}</span></div>}
+      </div>}
       <div className="booking-guests">
         <label className="booking-guest-label">{t("publicHotel.adultsLabel")}
           <input aria-label={t("publicHotel.adultsLabel")} type="number" min="1" max="20" step="1" value={adults} onChange={event => setAdults(Math.max(1, Number(event.target.value) || 1))} />
@@ -76,7 +85,7 @@ export default function BookingStepDates(props: BookingStepDatesProps) {
           disabled={!isDatesValid || !guestsValid}
           onClick={() => setWizardStep(2)}
         >
-          {t("publicHotel.wizardNext")} <ArrowRight size={14} />
+          {t("publicHotel.bookingViewAvailableRooms")} <ArrowRight size={18} />
         </button>
       </div>
     </div>
