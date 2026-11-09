@@ -100,6 +100,13 @@ describe("SlipOK WebCrypto / Node format compatibility", () => {
     await expect(decryptSlipOkKey("invalid_format")).rejects.toThrow("Invalid encrypted key format.");
   });
 
+  it("encrypts and decrypts with the Cloudflare binding value without process.env", async () => {
+    const workerKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const stored = await encryptSlipOkKey("worker-bound-key", workerKey);
+    await expect(decryptSlipOkKey(stored, workerKey)).resolves.toBe("worker-bound-key");
+    await expect(decryptSlipOkKey(stored, `${workerKey.slice(0, -2)}00`)).rejects.toThrow();
+  });
+
   it("throws for a wrong-length key without leaking the key in the error message", async () => {
     const badKey = "too_short_key_12345";
     process.env.SLIPOK_ENCRYPTION_KEY = badKey;

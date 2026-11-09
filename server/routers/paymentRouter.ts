@@ -226,7 +226,7 @@ export const paymentRouter = router({
           if (!config?.slipok_key_enc || !config.slipok_branch_id) {
             return await manualReview('slipok_not_configured_manual_review_required');
           }
-          const apiKey = await decryptSlipOkKey(config.slipok_key_enc);
+          const apiKey = await decryptSlipOkKey(config.slipok_key_enc, ctx.billingEnv?.SLIPOK_ENCRYPTION_KEY);
 
           const result = await verifySlipWithSlipOk({ apiKey, branchId: config.slipok_branch_id }, {
             slipData: input.slip_data,

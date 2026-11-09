@@ -1,4 +1,34 @@
+## 2026-11-09 — Migration check, commit and push
+
+- Checked remote D1 migration status for `hayhost-staging` and `hayhost-production`; both Wrangler commands reported `No migrations to apply!`, so no migration was run.
+- Committed the completed booking flow, SlipOK Worker key handling, page title/navigation and platform color/bundle changes on `fix/page-titles-booking-flow`; pushed only that branch to `origin`.
+- Commit details are in the Git history for this branch.
+- Verification already completed before commit: `pnpm check`, `pnpm test` (274 files, 1,842 tests), `CLOUDFLARE_ENV=production pnpm build` including production Wrangler dry-run, and `git diff --check` all passed. Production deployment was recorded in the entry below.
+
 # Handoff log
+
+## 2026-11-09 — Brand palette consistency and production deployment
+
+- Aligned the dashboard's shared brand tokens to brick (`#954831`), dark brick (`#77311c`), soft brick and near-black ink. Sidebar active/hover states, shared buttons, fields and calendar selection now use the brand colors. Calendar prices use black; green remains on availability/success statuses and hotel-owned public themes.
+- Reduced the largest client JavaScript chunk from 1,416.55 KB to 453.72 KB by lazy-loading route pages and splitting React DOM, shared UI utilities and common vendor code. No client chunk exceeds Vite's 500 KB warning threshold.
+- Verification: `pnpm check` passed; `pnpm test` passed (274 files, 1,842 tests); `CLOUDFLARE_ENV=production pnpm build` passed with a production-targeted Wrangler dry-run and no missing-environment warning. `git diff --check` passed.
+- Deployed with `wrangler deploy --env production` to Worker `hayhost`, using D1 `hayhost-production`; no migration was run. Wrangler reported version `82338ef7-ef18-4775-88aa-999796230408`, and `https://www.hayhostth.com/` returned HTTP 200 after deployment.
+- Not committed or pushed.
+
+## 2026-11-09 — Page title, duplicated navigation, booking email and SlipOK Worker key
+
+- Changed the room-types H1 to match the sidebar action label in Thai and English, and removed the duplicated horizontal hotel navigation from the room-types page. The sidebar remains the page navigation; the title-mark and eyebrow remain intact.
+- Public booking detail confirmation now sends a bilingual booking email when a guest email was provided. It includes a link to reopen the payment step. Opening that link restores the booking and hotel IDs into the payment step; the payment API validates that they belong together.
+- SlipOK encryption and decryption now accept `SLIPOK_ENCRYPTION_KEY` from Worker bindings. The Worker passes that binding through tRPC context to the save and verify procedures. This addresses the Cloudflare Worker runtime path where relying on `process.env` alone can make stored SlipOK keys unusable at verification time. The secret must be configured for each Cloudflare environment where SlipOK is used; I did not inspect or change remote secrets.
+- Thai/English wording changes:
+
+  | Before | After |
+  |---|---|
+  | ประเภทห้องพัก / Room types (room-types H1) | จัดการประเภทห้องพัก / Manage room types |
+  | ไม่มีอีเมลรายการจอง | รายการจอง / Booking details; ผู้เข้าพัก / Guest; ยอดชำระ / Amount; กลับไปชำระเงิน / Return to payment |
+
+- Verification: focused tests passed (5 files, 34 tests). `pnpm check` passed. `pnpm test -- --maxWorkers=3 --minWorkers=1` passed (274 files, 1,842 tests). `pnpm build` passed including Wrangler `--dry-run` (dev bindings only). The first test run exposed one outdated SlipOK mock assertion and it was updated to verify the new binding argument. No real booking, email, SlipOK request, migration, push, or deploy was run.
+- No commit, push, or deploy.
 
 ## 2026-11-07 — Staff task manager inset and title label
 

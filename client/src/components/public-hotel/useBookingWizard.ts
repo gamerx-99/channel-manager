@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { bangkokDate } from "@shared/finance";
 import {
@@ -66,6 +66,7 @@ export function useBookingWizard(args: {
   const [wizardError, setWizardError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
+  const resumedFromLink = useRef(false);
 
   const resolvedRoomTypes = roomTypes ?? [];
   const propertyChildRule = resolvedRoomTypes[0]?.childRule ?? "age";
@@ -115,6 +116,30 @@ export function useBookingWizard(args: {
   });
 
   const availableRoomTypes = availabilityQuery.data?.room_types ?? [];
+
+  // The payment email carries the booking and hotel IDs. The server validates
+  // their relationship before creating or returning a payment session.
+  useEffect(() => {
+    if (!hotelReady || resumedFromLink.current || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const bookingId = params.get("booking_id");
+    const hotelId = params.get("hotel_id");
+    if (!bookingId || !hotelId) return;
+    resumedFromLink.current = true;
+    setHeldBooking({
+      bookingId,
+      hotelId,
+      roomId: "",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+      roomTypeName: "",
+      roomNumber: "",
+      totalPrice: 0,
+      nights: 0,
+    });
+    setConfirmedBookingId(bookingId);
+    setWizardError(null);
+    setWizardStep(6);
+  }, [hotelReady]);
 
   const handleSelectRoom = (roomTypeId: string) => {
     setPreferredRoomTypeId(roomTypeId);

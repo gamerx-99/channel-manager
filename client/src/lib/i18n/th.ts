@@ -719,7 +719,7 @@ const th: TranslationDictionary = {
     kpiPublicSite: "เว็บไซต์สาธารณะ",
     kpiPublicSiteSub: "กำหนดตามสถานะเปิดขาย",
     eyebrowRoomTypes: "คลังห้องพัก / ประเภทห้อง",
-    headingRoomTypes: "ประเภทห้องพัก",
+    headingRoomTypes: "จัดการประเภทห้องพัก",
     addRoomType: "เพิ่มประเภทห้อง",
     roomsAndRate: "{{count}} ห้อง · ราคาเริ่มต้น {{rate}}",
     occupied: "มีผู้เข้าพัก",

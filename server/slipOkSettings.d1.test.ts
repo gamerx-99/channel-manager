@@ -46,6 +46,7 @@ function caller(role: 'hotel_owner' | 'super_admin' | 'front_desk' = 'hotel_owne
     },
     db: {} as any,
     caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: [role], access: 'authenticated' } as any,
+    billingEnv: { SLIPOK_ENCRYPTION_KEY: '1'.repeat(64) },
   }));
 }
 
@@ -69,7 +70,7 @@ describe('slipok.saveKey (D1 router)', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(cryptoMocks.encryptSlipOkKey).toHaveBeenCalledWith('a-real-looking-key');
+    expect(cryptoMocks.encryptSlipOkKey).toHaveBeenCalledWith('a-real-looking-key', '1'.repeat(64));
     expect(cryptoMocks.hashSlipOkKey).toHaveBeenCalledWith('a-real-looking-key');
     expect(dbMocks.saveSlipOkSettings).toHaveBeenCalledWith(
       {},
