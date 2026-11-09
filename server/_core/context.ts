@@ -16,6 +16,7 @@ import { createAuth, type AuthInstance } from "../auth";
 import { createEmailSender } from "../email";
 import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
+import type { R2Bucket } from "@cloudflare/workers-types/index.ts";
 
 export type SupabaseMembership = {
   hotelId: string;
@@ -54,6 +55,8 @@ export type TrpcContext = {
   session?: unknown;
   /** PUBLIC_BOOKING_LIMITER binding; set by the Worker only. */
   publicBookingLimiter?: PublicBookingLimiter;
+  /** Private object storage used for guest payment evidence. */
+  media?: R2Bucket;
   /** CF-Connecting-IP header, the PUBLIC_BOOKING_LIMITER key; set by the Worker only. */
   cfConnectingIp?: string;
   /** Better Auth instance that resolved the session, for server-side auth calls. */

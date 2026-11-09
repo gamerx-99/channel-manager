@@ -69,11 +69,12 @@ describe("stop-sell migration", () => {
         for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) legacyDb.exec(statement);
       }
       legacyDb.exec("PRAGMA foreign_keys = OFF");
-      legacyDb.exec("INSERT INTO availability (id, room_type_id, date, price, rooms_available) VALUES ('legacy', 'legacy-type', '2026-12-01', '1200.00', 2)");
+      legacyDb.exec("INSERT INTO availability (id, room_type_id, date, price, rooms_available) VALUES ('legacy-open', 'legacy-type', '2026-12-01', '1200.00', 2), ('legacy-stop', 'legacy-type', '2026-12-02', '900.00', 0)");
       legacyDb.exec(readFileSync(resolve(migrationFolder, "20261109010000_restore_stop_sell_allotment.sql"), "utf8"));
-      expect(legacyDb.prepare("SELECT id, date, price, rooms_available, reopen_rooms_available FROM availability").get()).toEqual({
-        id: "legacy", date: "2026-12-01", price: "1200.00", rooms_available: 2, reopen_rooms_available: null,
-      });
+      expect(legacyDb.prepare("SELECT id, date, price, rooms_available, reopen_rooms_available FROM availability ORDER BY date").all()).toEqual([
+        { id: "legacy-open", date: "2026-12-01", price: "1200.00", rooms_available: 2, reopen_rooms_available: null },
+        { id: "legacy-stop", date: "2026-12-02", price: "900.00", rooms_available: 0, reopen_rooms_available: null },
+      ]);
     } finally {
       legacyDb.close();
     }

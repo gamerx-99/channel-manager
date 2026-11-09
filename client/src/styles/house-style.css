@@ -350,6 +350,8 @@
 .bookings-page .status-pill.done { background: #eceeed; color: #5d6a66; }
 .bookings-page .status-pill.pending i, .bookings-page .status-pill.done i { background: currentColor; }
 .bookings-page .tm30-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bookings-page .payment-slip-dialog { max-width: min(720px, 95vw); }
+.bookings-page .payment-slip-preview { display: block; max-width: 100%; max-height: 70vh; object-fit: contain; margin: 1rem auto; }
 @media (max-width: 760px) {
   .dashboard-page .metric-group-operations { flex-basis: 100%; }
   .dashboard-page .metric-group-money { flex-basis: 100%; }

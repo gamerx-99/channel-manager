@@ -10,11 +10,12 @@ import {
   updateBookingPaymentStatus,
   updatePaymentSessionStatus,
   finalizePaymentSession,
+  savePaymentSessionSlip,
 } from '../d1/payment';
 import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
 import { releaseNightsStatement } from '../d1/bookingNights';
-import { bookings, hotels, hotelPaymentSettings } from '../../drizzle/d1-schema';
-import { eq, and } from 'drizzle-orm';
+import { bookings, hotels, hotelPaymentSettings, paymentSessions } from '../../drizzle/d1-schema';
+import { eq, and, desc } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
 import { normalisePromptPayId } from '../../shared/promptPayId';
 import { decryptSlipOkKey } from '../slipokCrypto';
@@ -31,6 +32,26 @@ async function guestPaymentCaller(db: D1ScopedDatabase, bookingId: string, hotel
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
   }
   return createD1GuestPaymentCallerContext(row.hotelId);
+}
+
+function decodeSlipBase64(value: string) {
+  try {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return bytes;
+  } catch {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid slip image.' });
+  }
+}
+
+function base64FromBytes(bytes: Uint8Array) {
+  let binary = '';
+  const step = 0x8000;
+  for (let start = 0; start < bytes.length; start += step) {
+    binary += String.fromCharCode(...Array.from(bytes.subarray(start, start + step)));
+  }
+  return btoa(binary);
 }
 
 export const paymentRouter = router({
@@ -176,6 +197,7 @@ export const paymentRouter = router({
       hotel_id: z.string().uuid().optional(),
       session_id: z.string().uuid(),
       slip_data: z.string().min(1).max(5_000_000),
+      slip_content_type: z.enum(['image/jpeg', 'image/png', 'image/webp']).optional().default('image/jpeg'),
     }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
@@ -185,6 +207,11 @@ export const paymentRouter = router({
         const session = await getLatestPaymentSession(db, guest, input.booking_id, guest.guestPaymentHotelId);
         if (!session || session.id !== input.session_id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment session not found.' });
+        }
+        if (!ctx.media) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Private slip storage is unavailable.' });
+        const slipBytes = decodeSlipBase64(input.slip_data);
+        if (slipBytes.byteLength === 0 || slipBytes.byteLength > 3_500_000) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Slip image must be 3.5 MiB or smaller.' });
         }
         if (input.hotel_id && input.hotel_id !== session.hotel_id) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment session does not belong to the supplied hotel.' });
@@ -222,6 +249,22 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'CONFLICT', message: 'This booking is already being verified. Please wait for the result.' });
         }
         await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: bookingStatus, to_status: 'pending_verification', reason: 'slip_submitted' });
+
+        const slipObjectKey = `payment-slips/${hotelId}/${session.id}`;
+        try {
+          await ctx.media.put(slipObjectKey, slipBytes, {
+            httpMetadata: { contentType: input.slip_content_type, cacheControl: 'private, no-store' },
+            customMetadata: { hotelId, bookingId: session.booking_id },
+          });
+          await savePaymentSessionSlip(db, guest, hotelId, session.id, slipObjectKey);
+        } catch (error) {
+          try { await ctx.media.delete(slipObjectKey); } catch { /* Best effort cleanup for a failed evidence write. */ }
+          await db.update(bookings).set({ status: bookingStatus, expiresAt: booking.expiresAt })
+            .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')));
+          await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: bookingStatus, reason: 'slip_storage_failed' });
+          console.error('[verifySlip] could not persist uploaded slip:', error instanceof Error ? error.message : error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Slip could not be saved. Please retry the upload.' });
+        }
 
         const manualReview = async (reason: string) => {
           await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason });
@@ -356,6 +399,31 @@ export const paymentRouter = router({
         await logBookingStatusChange(db, caller, { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: 'pending_verification', to_status: nextStatus, changed_by: ctx.user.id, reason: input.note?.trim() || (input.approved ? 'manual_approve' : 'manual_reject') });
 
         return { booking_id: input.booking_id, status: nextStatus };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        return rethrowDomainError(error);
+      }
+    }),
+
+  getSlip: protectedProcedure
+    .input(z.object({ booking_id: z.string().uuid(), hotel_id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
+      if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+      if (!ctx.media) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Private slip storage is unavailable.' });
+      const caller = ctx.caller ?? { userId: ctx.user.id };
+      try {
+        await authorizeHotelAction(ctx.db, caller, input.hotel_id, 'operations.view_bookings', 'payment.slip.read');
+        const [session] = await ctx.db.select({ slipUrl: paymentSessions.slipUrl })
+          .from(paymentSessions)
+          .where(and(eq(paymentSessions.bookingId, input.booking_id), eq(paymentSessions.hotelId, input.hotel_id)))
+          .orderBy(desc(paymentSessions.createdAt)).limit(1);
+        if (!session?.slipUrl) return null;
+        const evidence = await ctx.media.get(session.slipUrl);
+        if (!evidence) return null;
+        const bytes = new Uint8Array(await evidence.arrayBuffer());
+        const contentType = evidence.httpMetadata?.contentType ?? 'image/jpeg';
+        return { contentType, dataUrl: `data:${contentType};base64,${base64FromBytes(bytes)}` };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         return rethrowDomainError(error);

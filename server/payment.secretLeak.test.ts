@@ -15,6 +15,7 @@ const database = vi.hoisted(() => ({
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  savePaymentSessionSlip: vi.fn(),
   logBookingStatusChange: vi.fn(),
   expireBookingIfPast: vi.fn(),
   claimBookingNights: vi.fn(),
@@ -56,6 +57,7 @@ function fakeDb() {
 
 const context = (index: number) => ({
   db: fakeDb(),
+  media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) },
   req: {} as Request,
   res: {} as Response,
   clientIp: `secret-leak-test-${index}`,
@@ -98,6 +100,7 @@ beforeEach(() => {
   database.createPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING_CREATE, hotel_id: HOTEL, status: "pending", amount: "120.00", qr_string: "promptpay", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   database.expireBookingIfPast.mockResolvedValue({ status: "pending_payment", expires_at: null });
   database.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  database.savePaymentSessionSlip.mockResolvedValue(undefined);
   crypto.encryptSlipOkKey.mockResolvedValue("SENTINEL_ENC_KEY");
   crypto.hashSlipOkKey.mockResolvedValue("SENTINEL_HASH");
   crypto.decryptSlipOkKey.mockResolvedValue("SENTINEL_DECRYPTED_KEY");

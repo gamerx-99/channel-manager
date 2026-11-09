@@ -8,6 +8,7 @@ const payment = vi.hoisted(() => ({
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  savePaymentSessionSlip: vi.fn(),
 }));
 const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn() }));
 const verify = vi.hoisted(() => vi.fn());
@@ -46,7 +47,7 @@ function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, s
 }
 
 const submit = (db: unknown, index: number) => paymentRouter
-  .createCaller({ db, clientIp: `verify-slip-${index}`, user: null } as never)
+  .createCaller({ db, media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) }, clientIp: `verify-slip-${index}`, user: null } as never)
   .verifySlip({ booking_id: BOOKING, session_id: SESSION, slip_data: "c2xpcA==" });
 
 beforeEach(() => {
@@ -54,6 +55,7 @@ beforeEach(() => {
   payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   payment.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
   payment.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  payment.savePaymentSessionSlip.mockResolvedValue(undefined);
   booking.expireBookingIfPast.mockResolvedValue({ status: "pending_payment" });
   booking.claimBookingNights.mockResolvedValue(true);
   payment.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "encrypted", slipok_branch_id: "hotel-branch" });
@@ -116,6 +118,7 @@ describe("verifySlip outcomes", () => {
     expect(verify).not.toHaveBeenCalled();
     expect(writes.at(-1)).toMatchObject({ status: "pending_verification" });
     expect(loggedReasons()).toContain("slipok_not_configured_manual_review_required");
+    expect(payment.savePaymentSessionSlip).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, `payment-slips/${HOTEL}/${SESSION}`);
   });
 
   it("sends the slip to manual review when SlipOK refuses the hotel key", async () => {

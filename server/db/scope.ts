@@ -25,6 +25,7 @@ const GUEST_PAYMENT_ACTIONS = new Set([
   "payment.config.read",
   "payment.slipok.verify_credentials",
   "payment_session.create",
+  "payment_session.save_slip",
   "payment_session.read",
   "payment_session.update",
   "payment_session.finalize",

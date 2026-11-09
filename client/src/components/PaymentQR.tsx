@@ -127,6 +127,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
         hotel_id: hotelId,
         session_id: sessionId,
         slip_data: base64,
+        slip_content_type: slipFile.type as 'image/jpeg' | 'image/png' | 'image/webp',
       });
     };
     reader.readAsDataURL(slipFile);

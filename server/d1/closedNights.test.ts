@@ -6,8 +6,8 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { availability, bookingNights, bookings, bookingStatusLog, d1Schema, hotelPaymentSettings, hotels, hotelUsers, otaConnections, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createD1SystemCallerContext } from "../db/scope";
-import { confirmBookingDetails, createBookingWithGuests, createPublicBooking, expireBookingIfPast, getPublicHotelAvailability, holdRoomType } from "./booking";
+import { createD1GuestPaymentCallerContext, createD1SystemCallerContext } from "../db/scope";
+import { claimBookingNights, confirmBookingDetails, createBookingWithGuests, createPublicBooking, expireBookingIfPast, getPublicHotelAvailability, holdRoomType } from "./booking";
 import { getPublicRoomTypeAvailability } from "./bookingService";
 import { syncOtaIcalBlocks } from "./ota";
 
@@ -71,6 +71,44 @@ const staffInput = (checkIn: string, checkOut: string) => ({
 });
 
 describe("closed nights for guests", () => {
+  it("counts positive allotment against active booking nights and prevents concurrent overbooking", async () => {
+    await seed(2);
+    await setNight("2026-11-02", 1);
+    const results = await Promise.allSettled([
+      holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW),
+      holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW),
+    ]);
+
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter(result => result.status === "rejected")).toHaveLength(1);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(bookingNights)).toHaveLength(1);
+    expect(await offered("2026-11-02", "2026-11-03")).toEqual([]);
+  });
+
+  it("keeps existing booking nights when online allotment is closed afterward", async () => {
+    await seed(2);
+    await setNight("2026-11-02", 2);
+    const created = await createPublicBooking(db, publicCaller, publicInput("2026-11-02", "2026-11-03"), NOW);
+    await db.$client.batch([db.$client.prepare("update availability set rooms_available = 0 where room_type_id = ? and date = ?").bind("type-a", "2026-11-02")]);
+
+    expect(await db.select({ status: bookings.status }).from(bookings)).toEqual([{ status: "confirmed" }]);
+    expect(await db.select().from(bookingNights)).toHaveLength(1);
+    await expect(holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(created.success).toBe(true);
+  });
+
+  it("does not reclaim a rejected guest payment after another booking consumes the online cap", async () => {
+    await seed(2);
+    await setNight("2026-11-02", 1);
+    const rejected = await createPublicBooking(db, publicCaller, publicInput("2026-11-02", "2026-11-03"), NOW);
+    await db.update(bookings).set({ status: "payment_rejected" }).where(eq(bookings.id, rejected.booking_id));
+    await db.$client.batch([db.$client.prepare("delete from booking_nights where booking_id = ?").bind(rejected.booking_id)]);
+    await holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW);
+
+    expect(await claimBookingNights(db, createD1GuestPaymentCallerContext("a"), "a", rejected.booking_id, NOW)).toBe(false);
+  });
+
   it("does not offer a stay with one closed night and refuses to insert it", async () => {
     await seed();
     await close("2026-11-02");
