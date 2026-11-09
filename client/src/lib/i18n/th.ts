@@ -32,7 +32,7 @@ const th: TranslationDictionary = {
     hotelProfile: "ข้อมูลโรงแรม",
     generalSettings: "ตั้งค่าทั่วไป",
     financeSettings: "ตั้งค่าการเงิน",
-    workspace: "พื้นที่ทำงาน",
+    workspace: "เมนูหลัก",
     operationsModules: "การปฏิบัติการและโมดูล",
     financials: "รายงานการเงิน",
     bookingsReport: "รายงานการจองห้องพัก",
