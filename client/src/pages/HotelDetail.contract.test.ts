@@ -48,14 +48,13 @@ describe('Hotel Detail calendar navigation', () => {
     expect(hotelDetail).not.toContain('hotelDetail.comingSoon');
   });
 
-  it('has no dead href="#" tabs: Photos opens the website builder for this hotel, Domains is gone', () => {
+  it('keeps hotel navigation in the sidebar without duplicating page tabs', () => {
     const services = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelServices.tsx'), 'utf8');
     const builder = readFileSync(resolve(process.cwd(), 'client/src/components/website-builder/useWebsiteBuilder.ts'), 'utf8');
 
-    // AGENTS.md Rule 6 rationale: HotelDetail retains the full sub-navigation bar including the website builder link.
     expect(hotelDetail).not.toContain('href="#"');
     expect(hotelDetail).not.toContain('tabDomains');
-    expect(hotelDetail).toContain("<Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>");
+    expect(hotelDetail).not.toContain('detail-tabs');
 
     // AGENTS.md Rule 6 rationale: Commit b3f8b3f removed duplicate nav tabs from HotelServices;
     // assert no dead links, no tabDomains, and no detail-tabs.
@@ -64,6 +63,15 @@ describe('Hotel Detail calendar navigation', () => {
     expect(services).not.toContain('detail-tabs');
 
     expect(builder).toContain('new URLSearchParams(window.location.search).get("hotel")');
+  });
+
+  it('matches the room management heading to its sidebar label in both languages', () => {
+    const th = readFileSync(resolve(process.cwd(), 'client/src/lib/i18n/th.ts'), 'utf8');
+    const en = readFileSync(resolve(process.cwd(), 'client/src/lib/i18n/en.ts'), 'utf8');
+    expect(th).toContain('roomTypesManage: "จัดการประเภทห้องพัก"');
+    expect(th).toContain('headingRoomTypes: "จัดการประเภทห้องพัก"');
+    expect(en).toContain('roomTypesManage: "Manage room types"');
+    expect(en).toContain('headingRoomTypes: "Manage room types"');
   });
 
   it('manages room type amenities with RoomAmenitiesPicker instead of freeform textarea', () => {

@@ -733,7 +733,7 @@ const en = {
     kpiPublicSite: "Public site",
     kpiPublicSiteSub: "governed by public flag",
     eyebrowRoomTypes: "Inventory / Room types",
-    headingRoomTypes: "Room types",
+    headingRoomTypes: "Manage room types",
     addRoomType: "Add room type",
     roomsAndRate: "{{count}} rooms · Base rate {{rate}}",
     occupied: "Occupied",

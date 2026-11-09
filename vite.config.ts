@@ -31,9 +31,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          "vendor-react": ["react", "react-dom", "wouter"],
+          "vendor-react": ["react", "wouter"],
+          "vendor-react-dom": ["react-dom/client"],
           "vendor-ui": ["recharts", "lucide-react"],
           "vendor-query": ["@tanstack/react-query", "@trpc/client", "@trpc/react-query"],
+          "vendor-common": ["tailwind-merge", "sonner", "@radix-ui/react-tooltip"],
         },
       },
     },
