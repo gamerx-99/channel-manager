@@ -57,6 +57,35 @@ describe("public booking pages use today in Thailand", () => {
     expect(pickerProps.current?.minDateIso).toBe("2026-11-05");
   });
 
+  it("summarizes selected check-in, check-out and nights and names the next action", () => {
+    const markup = renderToStaticMarkup(
+      <BookingStepDates
+        {...({
+          t: (key: string, params?: Record<string, string | number>) => key === "publicHotel.bookingNights" ? `${params?.count} nights` : key,
+          checkIn: "2026-11-29",
+          checkOut: "2026-11-30",
+          setCheckIn: () => {},
+          setCheckOut: () => {},
+          adults: 2,
+          setAdults: () => {},
+          children: [],
+          setChildren: () => {},
+          isDatesValid: true,
+          guestsValid: true,
+          setWizardStep: () => {},
+          propertyChildRule: "age",
+          childRulesConfigured: true,
+          accentColor: "#954831",
+        } as any)}
+      />,
+    );
+
+    expect(markup).toContain("publicHotel.bookingCheckIn");
+    expect(markup).toContain("publicHotel.bookingCheckOut");
+    expect(markup).toContain("1 nights");
+    expect(markup).toContain("publicHotel.bookingViewAvailableRooms");
+  });
+
   it("today is the Thai day", () => {
     expect(getTodayDateString()).toBe("2026-11-05");
   });
