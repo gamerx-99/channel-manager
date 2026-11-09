@@ -576,6 +576,7 @@ const th: TranslationDictionary = {
     syncSuccess: "ซิงค์ปฏิทินสำหรับ {{provider}} ({{hotelName}}) สำเร็จ",
     syncFailed: "ซิงค์ปฏิทินสำหรับ {{provider}} ไม่สำเร็จ: {{error}}",
     retry: "ลองใหม่",
+    unknownError: "ไม่ทราบสาเหตุ",
     never: "ไม่เคย",
   },
   bookings: {

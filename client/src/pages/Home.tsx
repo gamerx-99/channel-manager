@@ -1,4 +1,4 @@
-import { ArrowUpRight, BedDouble, CalendarCheck2, ChevronRight, CircleAlert, ClipboardCheck, CreditCard, Hotel, MoreHorizontal, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, BedDouble, CalendarCheck2, CreditCard } from 'lucide-react';
 import { Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import { useTranslation } from '@/lib/i18n';
 import { otaSyncEnabled } from '@/lib/featureFlags';
 import { useHotel } from '@/contexts/HotelContext';
 import { dashboardFigures, isRevenueStatus } from '@shared/finance';
+import { recentBookingStatusTone } from './homeRules';
 
 const formatCurrency = (value: number | string) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
 
@@ -52,7 +53,7 @@ export default function Home() {
       await utils.channelManager.ota.summary.invalidate();
       toast.success(t('home.syncSuccess', { provider, hotelName }));
     } catch (err: any) {
-      toast.error(t('home.syncFailed', { provider, error: err.message || 'Unknown error' }), {
+      toast.error(t('home.syncFailed', { provider, error: err.message || t('home.unknownError') }), {
         action: {
           label: t('home.retry'),
           onClick: () => handleSync(hotelId, provider, hotelName),
@@ -97,7 +98,7 @@ export default function Home() {
     <section className="metric-row metric-groups" aria-label={t('home.metricAriaLabel')}>
       {(canViewRooms || canViewBookings) && <div className="metric-group metric-group-operations">
         {canViewRooms && <article className="metric-card"><div className="metric-icon muted"><BedDouble size={18} /></div><div className="metric-label">{t('home.roomsAvailableToday')}</div><div className="metric-value">{roomsAvailableToday} <small>/ {totalRooms}</small></div><div className="metric-meta"><span className="dot ok" /> {t('home.currentInventory')}</div></article>}
-        {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.arrivalsToday')}</div><div className="metric-value">{checkInsToday}</div><div className="metric-meta positive"><ArrowUpRight size={14} /> {t('home.confirmedStays')}</div></article>}
+        {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.arrivalsToday')}</div><div className="metric-value">{checkInsToday}</div><div className="metric-meta">{t('home.confirmedStays')}</div></article>}
         {canViewBookings && <article className="metric-card"><div className="metric-icon muted"><CalendarCheck2 size={18} /></div><div className="metric-label">{t('home.checkOutsToday')}</div><div className="metric-value">{checkOutsToday}</div><div className="metric-meta">{t('home.confirmedStays')}</div></article>}
       </div>}
       {canViewRevenue && <div className="metric-group metric-group-money">
@@ -108,7 +109,7 @@ export default function Home() {
 
     <DashboardCalendarView canEditAvailability={canEditCalendar} />
 
-    {recentBookings.length > 0 && <section className="content-grid lower-grid"><div className="panel bookings-panel"><div className="panel-heading"><div><div className="eyebrow">{t('home.latestActivity', { count: recentBookings.length })}</div><h2>{t('home.recentBookings')}</h2></div><Link href={selectedHotelId ? `/hotels/${selectedHotelId}/bookings` : '/hotels'} className="text-link">{t('home.openBookings')} <ArrowUpRight size={14} /></Link></div><div className="table-wrap"><table className="data-table compact-table"><thead><tr><th>{t('home.bookingCol')}</th><th>{t('home.stayCol')}</th><th>{t('home.sourceCol')}</th><th>{t('home.statusCol')}</th><th className="align-right">{t('home.valueCol')}</th></tr></thead><tbody>{recentBookings.map((booking: any) => <tr key={booking.id}><td><strong>{booking.guest_name ?? booking.id.slice(0, 8)}</strong><small>{booking.id.slice(0, 8)} · {t('home.confirmedRecord')}</small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('home.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-text ${booking.status}`}>{statusLabel[booking.status] ?? booking.status}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td></tr>)}</tbody></table></div></div><div className="panel insight-panel"><div className="eyebrow">{t('home.latestConfirmedBookings')}</div><div className="insight-number">{formatCurrency(revenue)}</div><h3>{t('home.recordedBookingValue')}</h3><p>{t('home.bookingValueDesc')}</p><div className="sparkline"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="insight-footer"><span><i className="dot pine" /> {t('home.supabaseData')}</span><strong>{t('home.live')}</strong></div></div></section>}
+    {recentBookings.length > 0 && <section className="content-grid lower-grid"><div className="panel bookings-panel"><div className="panel-heading"><div><div className="eyebrow">{t('home.latestActivity', { count: recentBookings.length })}</div><h2>{t('home.recentBookings')}</h2></div><Link href={selectedHotelId ? `/hotels/${selectedHotelId}/bookings` : '/hotels'} className="text-link">{t('home.openBookings')} <ArrowUpRight size={14} /></Link></div><div className="table-wrap"><table className="data-table compact-table"><thead><tr><th>{t('home.bookingCol')}</th><th>{t('home.stayCol')}</th><th>{t('home.sourceCol')}</th><th>{t('home.statusCol')}</th><th className="align-right">{t('home.valueCol')}</th></tr></thead><tbody>{recentBookings.map((booking: any) => <tr key={booking.id}><td><strong>{booking.guest_name ?? booking.id.slice(0, 8)}</strong><small>{booking.id.slice(0, 8)}</small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('home.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-pill ${recentBookingStatusTone(booking.status)}`}><i />{statusLabel[booking.status] ?? booking.status}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td></tr>)}</tbody></table></div></div><div className="panel insight-panel"><div className="eyebrow">{t('home.latestConfirmedBookings')}</div><div className="insight-number">{formatCurrency(revenue)}</div><h3>{t('home.recordedBookingValue')}</h3><p>{t('home.bookingValueDesc')}</p><div className="sparkline"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="insight-footer"><span><i className="dot pine" /> {t('home.supabaseData')}</span><strong>{t('home.live')}</strong></div></div></section>}
 
     {otaSyncEnabled && <OtaSyncStatusWidget
       items={otaSummary ?? []}

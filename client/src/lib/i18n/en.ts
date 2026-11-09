@@ -589,6 +589,7 @@ const en = {
     syncSuccess: "Calendar sync completed for {{provider}} ({{hotelName}})",
     syncFailed: "Calendar sync failed for {{provider}}: {{error}}",
     retry: "Retry",
+    unknownError: "Unknown error",
     never: "Never",
   },
   bookings: {
