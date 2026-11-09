@@ -7,6 +7,7 @@ import { AVAILABILITY_BATCH_MAX_DAYS, AVAILABILITY_BATCH_MAX_ROOM_TYPES } from "
 import { splitRateRanges } from "../../shared/rateRangeSplit";
 import { resolveRateSatang } from "./bookingService";
 import { isBookingOccupyingInventory } from "../../shared/bookingLifecycle";
+import type { Permission } from "../../shared/authorization";
 
 function canonicalMoney(value: string): string {
   const satang = moneyToSatang(value);
@@ -39,19 +40,14 @@ export async function listBookingOccupancyForHotel(
 }
 
 export async function listAvailabilityForHotel(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
-  let scope;
-  try {
-    scope = await authorizeHotelAction(db, caller, hotelId, "operations.view_bookings", "availability.read", now);
-  } catch (error) {
-    if (!(error instanceof TRPCError) || error.code !== "FORBIDDEN") throw error;
-    scope = await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "availability.read", now);
-  }
+  const scope = await authorizeAvailabilityRead(db, caller, hotelId, "availability.read", now);
   const rows = await db.select({
     id: availability.id,
     roomTypeId: availability.roomTypeId,
     date: availability.date,
     price: availability.price,
     roomsAvailable: availability.roomsAvailable,
+    reopenRoomsAvailable: availability.reopenRoomsAvailable,
     roomTypes: { id: roomTypes.id, hotelId: roomTypes.hotelId, name: roomTypes.name },
   }).from(availability).innerJoin(roomTypes, eq(availability.roomTypeId, roomTypes.id))
     .where(eq(roomTypes.hotelId, hotelId)).orderBy(asc(availability.date));
@@ -61,21 +57,74 @@ export async function listAvailabilityForHotel(db: D1ScopedDatabase, caller: D1C
 export async function updateAvailability(
   db: D1ScopedDatabase,
   caller: D1CallerContext,
-  input: { hotelId: string; roomTypeId: string; date: string; price: string; roomsAvailable: number },
+  input: { hotelId: string; roomTypeId: string; date: string; price: string; roomsAvailable: number; action?: "rate" | "allotment" | "stop_sell"; defaultRoomsAvailable?: number },
   now = new Date(),
 ) {
-  await authorizeRoomType(db, caller, input.hotelId, input.roomTypeId, "availability.update", now);
+  const action = input.action ?? "rate";
+  const permission = action === "stop_sell" ? "revenue.manage_stop_sell" : action === "allotment" ? "revenue.manage_allotment" : "revenue.manage_rates";
+  if (action === "allotment" && input.roomsAvailable === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Use the stop-sell action to close online sales." });
+  const roomType = await authorizeRoomType(db, caller, input.hotelId, input.roomTypeId, permission, "availability.update", now);
+  const [stored] = await db.select({ price: availability.price, roomsAvailable: availability.roomsAvailable, reopenRoomsAvailable: availability.reopenRoomsAvailable }).from(availability).where(and(
+    eq(availability.roomTypeId, input.roomTypeId), eq(availability.date, input.date),
+  )).limit(1);
+  const totalRooms = Number((await db.select({ total: sql<number>`count(*)` }).from(rooms).where(and(
+    eq(rooms.hotelId, input.hotelId), eq(rooms.roomTypeId, input.roomTypeId),
+  )))[0]?.total ?? 0);
+  const defaultRooms = input.defaultRoomsAvailable ?? totalRooms;
+  if (action !== "rate" && input.roomsAvailable > totalRooms) throw new TRPCError({ code: "BAD_REQUEST", message: `Available rooms cannot exceed the ${totalRooms} rooms configured for this room type.` });
+  const initialRooms = action === "rate" ? totalRooms : input.roomsAvailable;
+  const initialReopenRooms = action === "stop_sell" && input.roomsAvailable === 0 ? defaultRooms : null;
+  const nextPrice = action === "rate" ? canonicalMoney(input.price) : stored?.price ?? canonicalMoney(String(roomType.basePrice));
   const [row] = await db.insert(availability).values({
-    roomTypeId: input.roomTypeId, date: input.date, price: canonicalMoney(input.price), roomsAvailable: input.roomsAvailable,
+    roomTypeId: input.roomTypeId, date: input.date, price: nextPrice, roomsAvailable: initialRooms,
+    reopenRoomsAvailable: initialReopenRooms,
   }).onConflictDoUpdate({
     target: [availability.roomTypeId, availability.date],
-    set: { price: canonicalMoney(input.price), roomsAvailable: input.roomsAvailable },
+    set: {
+      price: nextPrice,
+      roomsAvailable: action === "rate" ? availability.roomsAvailable : action === "stop_sell"
+        ? input.roomsAvailable === 0 ? 0 : sql`case when ${availability.roomsAvailable} = 0 then coalesce(${availability.reopenRoomsAvailable}, ${input.roomsAvailable}) else ${availability.roomsAvailable} end`
+        : input.roomsAvailable,
+      reopenRoomsAvailable: action === "stop_sell"
+        ? input.roomsAvailable === 0
+          ? sql`case when ${availability.roomsAvailable} > 0 then ${availability.roomsAvailable} else ${availability.reopenRoomsAvailable} end`
+          : null
+        : action === "allotment" ? null : availability.reopenRoomsAvailable,
+    },
   }).returning();
   return row;
 }
 
-// D1 allows 100 bound parameters per statement; a row uses 5, so 18 rows (90) per statement.
-const AVAILABILITY_ROWS_PER_STATEMENT = 18;
+// D1 allows 100 bound parameters per statement; inventory writes use 6 per row.
+const AVAILABILITY_ROWS_PER_STATEMENT = 16;
+
+type AvailabilityWrite = { roomTypeId: string; date: string; price: string; roomsAvailable: number; defaultRoomsAvailable: number };
+
+function availabilityWriteStatements(db: D1ScopedDatabase, rows: AvailabilityWrite[], action: "allotment" | "stop_sell") {
+  const statements = [];
+  for (let start = 0; start < rows.length; start += AVAILABILITY_ROWS_PER_STATEMENT) {
+    const chunk = rows.slice(start, start + AVAILABILITY_ROWS_PER_STATEMENT);
+    const params = chunk.flatMap(row => [
+      crypto.randomUUID(), row.roomTypeId, row.date, row.price, row.roomsAvailable,
+      action === "stop_sell" && row.roomsAvailable === 0 ? row.defaultRoomsAvailable : null,
+    ]);
+    const inventoryUpdate = action === "stop_sell"
+      ? `rooms_available = case
+           when excluded.rooms_available = 0 then 0
+           when availability.rooms_available = 0 then coalesce(availability.reopen_rooms_available, excluded.rooms_available)
+           else availability.rooms_available end,
+         reopen_rooms_available = case
+           when excluded.rooms_available = 0 and availability.rooms_available > 0 then availability.rooms_available
+           when excluded.rooms_available = 0 then availability.reopen_rooms_available
+           else null end`
+      : `rooms_available = excluded.rooms_available, reopen_rooms_available = null`;
+    statements.push(db.$client.prepare(
+      `insert into availability (id, room_type_id, date, price, rooms_available, reopen_rooms_available) values ${chunk.map(() => "(?, ?, ?, ?, ?, ?)").join(", ")}
+       on conflict (room_type_id, date) do update set ${inventoryUpdate}`,
+    ).bind(...params));
+  }
+  return statements;
+}
 
 function nextDay(iso: string): string {
   const d = new Date(`${iso}T00:00:00.000Z`);
@@ -98,13 +147,16 @@ function datesBetween(startDate: string, endDate: string): string[] {
 export async function updateAvailabilityBatch(
   db: D1ScopedDatabase,
   caller: D1CallerContext,
-  input: { hotelId: string; roomTypeIds: string[]; startDate: string; endDate: string; roomsAvailable: number },
+  input: { hotelId: string; roomTypeIds: string[]; startDate: string; endDate: string; roomsAvailable: number; action?: "allotment" | "stop_sell" },
   now = new Date(),
 ) {
-  await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_rates", "availability.update_batch", now);
+  const action = input.action ?? (input.roomsAvailable === 0 ? "stop_sell" : "allotment");
+  const permission = action === "stop_sell" ? "revenue.manage_stop_sell" : "revenue.manage_allotment";
+  await authorizeHotelAction(db, caller, input.hotelId, permission, "availability.update_batch", now);
   const roomTypeIds = Array.from(new Set(input.roomTypeIds));
   if (!roomTypeIds.length || roomTypeIds.length > AVAILABILITY_BATCH_MAX_ROOM_TYPES) throw new TRPCError({ code: "BAD_REQUEST", message: `Choose between 1 and ${AVAILABILITY_BATCH_MAX_ROOM_TYPES} room types.` });
   if (!Number.isInteger(input.roomsAvailable) || input.roomsAvailable < 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Rooms available must be a whole number, 0 or more." });
+  if (action === "allotment" && input.roomsAvailable === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Use the stop-sell action to close online sales." });
   const dates = datesBetween(input.startDate, input.endDate);
   if (!dates.length || dates.length > AVAILABILITY_BATCH_MAX_DAYS) throw new TRPCError({ code: "BAD_REQUEST", message: `Choose a date range of 1 to ${AVAILABILITY_BATCH_MAX_DAYS} days.` });
 
@@ -119,16 +171,8 @@ export async function updateAvailabilityBatch(
     if (input.roomsAvailable > total) throw new TRPCError({ code: "BAD_REQUEST", message: `Available rooms cannot exceed the ${total} rooms configured for this room type.` });
   }
 
-  const rowsToWrite = types.flatMap(type => dates.map(date => ({ roomTypeId: type.id, date, price: canonicalMoney(String(type.basePrice)) })));
-  const statements = [];
-  for (let start = 0; start < rowsToWrite.length; start += AVAILABILITY_ROWS_PER_STATEMENT) {
-    const chunk = rowsToWrite.slice(start, start + AVAILABILITY_ROWS_PER_STATEMENT);
-    const params = chunk.flatMap(row => [crypto.randomUUID(), row.roomTypeId, row.date, row.price, input.roomsAvailable]);
-    statements.push(db.$client.prepare(
-      `insert into availability (id, room_type_id, date, price, rooms_available) values ${chunk.map(() => "(?, ?, ?, ?, ?)").join(", ")}
-       on conflict (room_type_id, date) do update set rooms_available = excluded.rooms_available`,
-    ).bind(...params));
-  }
+  const rowsToWrite = types.flatMap(type => dates.map(date => ({ roomTypeId: type.id, date, price: canonicalMoney(String(type.basePrice)), roomsAvailable: input.roomsAvailable, defaultRoomsAvailable: totalByType.get(type.id) ?? 0 })));
+  const statements = availabilityWriteStatements(db, rowsToWrite, action);
   await db.$client.batch(statements);
   return { rows: rowsToWrite.length, roomTypes: types.length, days: dates.length, roomsAvailable: input.roomsAvailable };
 }
@@ -140,7 +184,7 @@ export async function listRateOverridesForRoomType(
   roomTypeId: string,
   now = new Date(),
 ) {
-  await authorizeRoomType(db, caller, hotelId, roomTypeId, "rate_overrides.read", now);
+  await authorizeRoomType(db, caller, hotelId, roomTypeId, "revenue.manage_pricing_rules", "rate_overrides.read", now);
   return db.select().from(rateOverrides).where(eq(rateOverrides.roomTypeId, roomTypeId)).orderBy(asc(rateOverrides.startDate));
 }
 
@@ -162,7 +206,7 @@ export async function assertBookingMinStay(
 }
 
 export async function listRateOverrides(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, roomTypeId?: string, now = new Date()) {
-  const scope = await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "rate_overrides.list", now);
+  const scope = await authorizeHotelAction(db, caller, hotelId, "revenue.manage_pricing_rules", "rate_overrides.list", now);
   const rows = await db.select({
     id: rateOverrides.id, roomTypeId: rateOverrides.roomTypeId, startDate: rateOverrides.startDate,
     endDate: rateOverrides.endDate, overridePrice: rateOverrides.overridePrice,
@@ -179,7 +223,7 @@ export async function createRateOverride(
   input: { hotelId: string; roomTypeId: string; startDate: string; endDate: string; overridePrice: string; minStayNights: number | null },
   now = new Date(),
 ) {
-  await authorizeRoomType(db, caller, input.hotelId, input.roomTypeId, "rate_overrides.create", now);
+  await authorizeRoomType(db, caller, input.hotelId, input.roomTypeId, "revenue.manage_pricing_rules", "rate_overrides.create", now);
   const id = crypto.randomUUID();
   const rows = await db.all(sql`insert into rate_overrides (id, room_type_id, start_date, end_date, override_price, min_stay_nights)
     select ${id}, ${input.roomTypeId}, ${input.startDate}, ${input.endDate}, ${canonicalMoney(input.overridePrice)}, ${input.minStayNights}
@@ -192,7 +236,7 @@ export async function createRateOverride(
 }
 
 export async function deleteRateOverride(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, rateOverrideId: string, now = new Date()) {
-  await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "rate_overrides.delete", now);
+  await authorizeHotelAction(db, caller, hotelId, "revenue.manage_pricing_rules", "rate_overrides.delete", now);
   const [row] = await db.delete(rateOverrides).where(and(
     eq(rateOverrides.id, rateOverrideId),
     sql`${rateOverrides.roomTypeId} in (select id from room_types where hotel_id = ${hotelId})`,
@@ -209,6 +253,7 @@ export async function saveCalendarRange(
     startDate: string;
     endDate: string;
     roomsAvailable?: number | null;
+    availabilityAction?: "allotment" | "stop_sell";
     price?: string | null;
     minStayNights?: number | null;
     base?: boolean;
@@ -217,7 +262,12 @@ export async function saveCalendarRange(
 ) {
   const touchesRates = input.base === true || (input.price !== undefined && input.price !== null) || input.minStayNights !== undefined;
   if (touchesRates) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_rates", "calendar.save", now);
-  if (input.roomsAvailable !== undefined && input.roomsAvailable !== null) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_allotment", "calendar.save", now);
+  const availabilityAction = input.availabilityAction ?? (input.roomsAvailable === 0 ? "stop_sell" : "allotment");
+  if (input.roomsAvailable !== undefined && input.roomsAvailable !== null) {
+    if (!Number.isInteger(input.roomsAvailable) || input.roomsAvailable < 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Rooms available must be a whole number, 0 or more." });
+    if (availabilityAction === "allotment" && input.roomsAvailable === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Use the stop-sell action to close online sales." });
+    await authorizeHotelAction(db, caller, input.hotelId, availabilityAction === "stop_sell" ? "revenue.manage_stop_sell" : "revenue.manage_allotment", "calendar.save", now);
+  }
   if (!touchesRates && (input.roomsAvailable === undefined || input.roomsAvailable === null)) await authorizeHotelAction(db, caller, input.hotelId, "revenue.manage_allotment", "calendar.save", now);
   const roomTypeIds = Array.from(new Set(input.roomTypeIds));
   if (!roomTypeIds.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose at least one room type." });
@@ -230,15 +280,14 @@ export async function saveCalendarRange(
   if (input.roomsAvailable !== undefined && input.roomsAvailable !== null) {
     const dates = datesBetween(input.startDate, input.endDate);
     if (!dates.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid date range." });
-    const rowsToWrite = types.flatMap(type => dates.map(date => ({ roomTypeId: type.id, date })));
-    for (let start = 0; start < rowsToWrite.length; start += AVAILABILITY_ROWS_PER_STATEMENT) {
-      const chunk = rowsToWrite.slice(start, start + AVAILABILITY_ROWS_PER_STATEMENT);
-      const params = chunk.flatMap(row => [crypto.randomUUID(), row.roomTypeId, row.date, canonicalMoney(String(types.find(t => t.id === row.roomTypeId)!.basePrice)), input.roomsAvailable]);
-      statements.push(db.$client.prepare(
-        `insert into availability (id, room_type_id, date, price, rooms_available) values ${chunk.map(() => "(?, ?, ?, ?, ?)").join(", ")}
-         on conflict (room_type_id, date) do update set rooms_available = excluded.rooms_available`,
-      ).bind(...params));
-    }
+    const roomCounts = await db.select({ roomTypeId: rooms.roomTypeId, total: sql<number>`count(*)` }).from(rooms)
+      .where(and(eq(rooms.hotelId, input.hotelId), inArray(rooms.roomTypeId, roomTypeIds))).groupBy(rooms.roomTypeId);
+    const totalByType = new Map(roomCounts.map(row => [row.roomTypeId, Number(row.total)]));
+    const rowsToWrite = types.flatMap(type => dates.map(date => ({
+      roomTypeId: type.id, date, price: canonicalMoney(String(type.basePrice)), roomsAvailable: input.roomsAvailable!,
+      defaultRoomsAvailable: totalByType.get(type.id) ?? 0,
+    })));
+    statements.push(...availabilityWriteStatements(db, rowsToWrite, availabilityAction));
   }
 
   // rate overrides
@@ -293,11 +342,10 @@ export async function listCalendarForHotel(
   endDate: string,
   now = new Date(),
 ) {
-  const scope = await (async () => {
-    try { return await authorizeHotelAction(db, caller, hotelId, "operations.view_bookings", "calendar.read", now); }
-    catch (e) { return await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", "calendar.read", now); }
-  })();
+  const scope = await authorizeAvailabilityRead(db, caller, hotelId, "calendar.read", now);
   const canSeePrice = scope.permissions.includes("revenue.manage_rates");
+  const canManageAllotment = scope.permissions.includes("revenue.manage_allotment");
+  const canManageStopSell = scope.permissions.includes("revenue.manage_stop_sell");
   const types = await db.select({ id: roomTypes.id, name: roomTypes.name, basePrice: roomTypes.basePrice }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId));
   const totalByType = new Map((await db.select({ roomTypeId: rooms.roomTypeId, total: sql<number>`count(*)` }).from(rooms).where(eq(rooms.hotelId, hotelId)).groupBy(rooms.roomTypeId)).map(r => [r.roomTypeId, Number(r.total)]));
   const availRows = await db.select().from(availability).where(and(inArray(availability.roomTypeId, types.map(t => t.id)), sql`${availability.date} >= ${startDate} and ${availability.date} <= ${endDate}`));
@@ -348,17 +396,28 @@ export async function listCalendarForHotel(
       });
     }
   }
-  return { canSeePrice, rows: result };
+  return { canSeePrice, canManageAllotment, canManageStopSell, rows: result };
+}
+
+async function authorizeAvailabilityRead(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, action: string, now: Date) {
+  for (const permission of ["operations.view_bookings", "revenue.manage_rates", "revenue.manage_allotment", "revenue.manage_stop_sell"] as const) {
+    try { return await authorizeHotelAction(db, caller, hotelId, permission, action, now); }
+    catch (error) {
+      if (!(error instanceof TRPCError) || error.code !== "FORBIDDEN") throw error;
+    }
+  }
+  throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to view this calendar." });
 }
 
 function daysBetween(start: string, end: string): number {
   return Math.round((Date.parse(`${end}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / 86_400_000);
 }
 
-async function authorizeRoomType(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, roomTypeId: string, action: string, now: Date) {
-  await authorizeHotelAction(db, caller, hotelId, "revenue.manage_rates", action, now);
-  const [roomType] = await db.select({ id: roomTypes.id }).from(roomTypes).where(and(
+async function authorizeRoomType(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, roomTypeId: string, permission: Permission, action: string, now: Date) {
+  await authorizeHotelAction(db, caller, hotelId, permission, action, now);
+  const [roomType] = await db.select({ id: roomTypes.id, basePrice: roomTypes.basePrice }).from(roomTypes).where(and(
     eq(roomTypes.id, roomTypeId), eq(roomTypes.hotelId, hotelId),
   )).limit(1);
   if (!roomType) throw new TRPCError({ code: "NOT_FOUND", message: "Room type not found." });
+  return roomType;
 }

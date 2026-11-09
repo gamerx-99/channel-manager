@@ -183,6 +183,13 @@
       "when": 1794099600000,
       "tag": "20261108010000_booking_request_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1794243389735,
+      "tag": "20261109010000_restore_stop_sell_allotment",
+      "breakpoints": true
     }
   ]
 }

@@ -942,6 +942,7 @@ const th: TranslationDictionary = {
     outstandingRevenueDetail: "ยังไม่ชำระ / รอการชำระ",
     pendingRevenue: "รอตรวจสอบ",
     pendingRevenueDetail: "รอตรวจสอบสลิปโอนเงิน",
+    unavailablePaymentBalances: "ยังไม่แสดงยอดค้างชำระและยอดรอตรวจสอบ เนื่องจากระบบยังไม่มีบัญชีรายการชำระเงินที่ติดตามยอดเหล่านี้ได้",
     totalRevenue: "รายได้รวม",
     cancelledCount: "ยกเลิก {{count}} รายการ",
     avgBookingValue: "มูลค่าเฉลี่ยต่อการจอง",

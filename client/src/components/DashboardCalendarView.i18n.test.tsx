@@ -11,7 +11,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: { channelManager: {
       days: [{ date: "2026-11-01", bookings: 1, roomTypes: [{ roomTypeId: "t", available: 1, totalRooms: 2, price: null, status: "low" }], syncEvents: [] }] }],
   } }) },
   updateAvailability: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) },
-} } }));
+}, auth: { me: { useQuery: () => ({ data: { memberships: [{ hotelId: "h", permissions: [] }] } }) } } } }));
 
 import DashboardCalendarView from "./DashboardCalendarView";
 (globalThis as { React?: typeof React }).React = React;

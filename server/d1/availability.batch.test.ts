@@ -59,6 +59,27 @@ afterEach(() => sqlite.close());
 
 const owner = { userId: "owner-a" };
 
+describe("stop-sell migration", () => {
+  it("adds the saved allotment field without changing existing availability rows", () => {
+    const legacyDb = new DatabaseSync(":memory:");
+    try {
+      const migrationFiles = readdirSync(migrationFolder).filter(file => file.endsWith(".sql")).sort();
+      for (const name of migrationFiles.filter(file => file !== "20261109010000_restore_stop_sell_allotment.sql")) {
+        const source = readFileSync(resolve(migrationFolder, name), "utf8");
+        for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) legacyDb.exec(statement);
+      }
+      legacyDb.exec("PRAGMA foreign_keys = OFF");
+      legacyDb.exec("INSERT INTO availability (id, room_type_id, date, price, rooms_available) VALUES ('legacy', 'legacy-type', '2026-12-01', '1200.00', 2)");
+      legacyDb.exec(readFileSync(resolve(migrationFolder, "20261109010000_restore_stop_sell_allotment.sql"), "utf8"));
+      expect(legacyDb.prepare("SELECT id, date, price, rooms_available, reopen_rooms_available FROM availability").get()).toEqual({
+        id: "legacy", date: "2026-12-01", price: "1200.00", rooms_available: 2, reopen_rooms_available: null,
+      });
+    } finally {
+      legacyDb.close();
+    }
+  });
+});
+
 async function seedHotel(id: string, ownerId: string, types: Array<{ id: string; basePrice: string; roomCount: number }>) {
   await db.insert(hotels).values({ id, name: id, slug: id, address: "address", ownerContact: ownerId });
   await db.insert(hotelUsers).values({ id: `m-${id}`, hotelId: id, userId: ownerId, role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
@@ -74,7 +95,7 @@ describe("updateAvailabilityBatch", () => {
     const result = await updateAvailabilityBatch(db, owner, { hotelId: "a", roomTypeIds: ["rt-1", "rt-2", "rt-3"], startDate: "2026-12-01", endDate: "2026-12-30", roomsAvailable: 0 });
     expect(result).toEqual({ rows: 90, roomTypes: 3, days: 30, roomsAvailable: 0 });
     expect(batchCalls).toBe(1);
-    expect(statementsPerBatch[0]).toBeLessThanOrEqual(6); // 90 rows at 18 per statement
+    expect(statementsPerBatch[0]).toBeLessThanOrEqual(6); // 90 rows at 16 per statement
     const rows = await listAvailabilityForHotel(db, owner, "a");
     expect(rows).toHaveLength(90);
     expect(rows.every(row => row.roomsAvailable === 0)).toBe(true);
@@ -102,6 +123,30 @@ describe("updateAvailabilityBatch", () => {
     const rows = await listAvailabilityForHotel(db, owner, "a");
     expect(rows).toHaveLength(5);
     expect(rows.every(row => row.roomsAvailable === 2)).toBe(true);
+  });
+
+  it("preserves a reduced cap on single-day stop-sell reopen and enforces stop-sell-only permission", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-1", basePrice: "1000.00", roomCount: 3 }]);
+    await db.insert(hotelUsers).values({ id: "m-stop", hotelId: "a", userId: "stop-only", role: "front_desk", permissionGrants: ["revenue.manage_stop_sell"], permissionRevokes: [] });
+    const input = { hotelId: "a", roomTypeId: "rt-1", date: "2026-12-01", price: "1000.00" };
+    await updateAvailability(db, owner, { ...input, roomsAvailable: 1, action: "allotment" });
+    await updateAvailability(db, owner, { ...input, price: "2000.00", roomsAvailable: 1, action: "rate" });
+    await updateAvailability(db, { userId: "stop-only" }, { ...input, price: "0", roomsAvailable: 0, action: "stop_sell", defaultRoomsAvailable: 3 });
+    await updateAvailability(db, { userId: "stop-only" }, { ...input, price: "0", roomsAvailable: 3, action: "stop_sell", defaultRoomsAvailable: 3 });
+    await expect(updateAvailability(db, { userId: "stop-only" }, { ...input, roomsAvailable: 2, action: "allotment" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect((await db.select().from(availability))[0]).toMatchObject({ price: "2000.00", roomsAvailable: 1, reopenRoomsAvailable: null });
+  });
+
+  it("preserves different nightly caps when stop-sell-only staff close and reopen a batch", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-1", basePrice: "1000.00", roomCount: 3 }]);
+    await db.insert(hotelUsers).values({ id: "m-stop", hotelId: "a", userId: "stop-only", role: "front_desk", permissionGrants: ["revenue.manage_stop_sell"], permissionRevokes: [] });
+    await updateAvailabilityBatch(db, owner, { hotelId: "a", roomTypeIds: ["rt-1"], startDate: "2026-12-01", endDate: "2026-12-02", roomsAvailable: 1 });
+    const range = { hotelId: "a", roomTypeIds: ["rt-1"], startDate: "2026-12-01", endDate: "2026-12-02" };
+    await updateAvailabilityBatch(db, { userId: "stop-only" }, { ...range, roomsAvailable: 0, action: "stop_sell" });
+    await updateAvailabilityBatch(db, { userId: "stop-only" }, { ...range, roomsAvailable: 3, action: "stop_sell" });
+    await expect(updateAvailabilityBatch(db, { userId: "stop-only" }, { ...range, roomsAvailable: 2, action: "allotment" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const rows = await db.select().from(availability).orderBy(availability.date);
+    expect(rows.map(row => [row.roomsAvailable, row.reopenRoomsAvailable])).toEqual([[1, null], [1, null]]);
   });
 
   it("rejects another hotel's rooms and unknown room types without writing", async () => {
@@ -149,6 +194,18 @@ describe("saveCalendarRange pricing and allotment", () => {
     await saveCalendarRange(db, { userId: "allotment" }, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-01", endDate: "2026-12-02", roomsAvailable: 1 });
     expect(await db.select().from(rateOverrides)).toEqual(before);
     expect(await db.select().from(availability)).toHaveLength(2);
+  });
+
+  it("allows stop-sell-only staff to close and restore a range without changing the saved allotment", async () => {
+    await seedHotel("a", "owner-a", [{ id: "rt-a", basePrice: "1000.00", roomCount: 3 }]);
+    await db.insert(hotelUsers).values({ id: "m-stop", hotelId: "a", userId: "stop-only", role: "front_desk", permissionGrants: ["revenue.manage_stop_sell"], permissionRevokes: [] });
+    await saveCalendarRange(db, owner, { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-01", endDate: "2026-12-02", roomsAvailable: 2 });
+    const range = { hotelId: "a", roomTypeIds: ["rt-a"], startDate: "2026-12-01", endDate: "2026-12-02", availabilityAction: "stop_sell" as const };
+    await saveCalendarRange(db, { userId: "stop-only" }, { ...range, roomsAvailable: 0 });
+    await saveCalendarRange(db, { userId: "stop-only" }, { ...range, roomsAvailable: 3 });
+    await expect(saveCalendarRange(db, { userId: "stop-only" }, { ...range, availabilityAction: "allotment", roomsAvailable: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const rows = await db.select().from(availability).orderBy(availability.date);
+    expect(rows.map(row => row.roomsAvailable)).toEqual([2, 2]);
   });
 
   it("does not create overrides or delete existing ones when price is null", async () => {

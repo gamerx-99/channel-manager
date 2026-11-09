@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { hasHotelPermission, type AppRole, type Permission, type PermissionMembership } from "@shared/authorization";
 import { getMonthDates } from "./oneCalendarRules";
 
 export function useOneCalendar(hotelId: string, month: Date) {
@@ -24,14 +25,18 @@ export function useOneCalendar(hotelId: string, month: Date) {
       totalRooms: (detail?.rooms ?? []).filter((room: any) => (room.room_type_id ?? room.roomTypeId) === roomType.id).length,
     }));
   }, [hotel.data]);
+  const roles = (auth.data?.roles ?? []) as AppRole[];
+  const memberships = (auth.data?.memberships ?? []) as PermissionMembership[];
   const permissions = auth.data?.memberships?.find((membership: any) => membership.hotelId === hotelId)?.permissions ?? [];
+  const can = (permission: Permission) => hasHotelPermission(roles, memberships, hotelId, permission) || permissions.includes(permission);
   return {
     hotel,
     calendar,
     save,
     roomTypes,
     dates,
-    canManageRates: permissions.includes("revenue.manage_rates"),
-    canManageAllotment: permissions.includes("revenue.manage_allotment"),
+    canManageRates: can("revenue.manage_rates"),
+    canManageAllotment: can("revenue.manage_allotment"),
+    canManageStopSell: can("revenue.manage_stop_sell"),
   };
 }

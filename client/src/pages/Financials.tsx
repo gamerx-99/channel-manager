@@ -1,4 +1,4 @@
-import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, QrCode, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -183,10 +183,9 @@ export default function Financials() {
 
       <section className="panel financials-summary-panel">
         <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.paymentCollectionAria")}</h2></div></div>
-        <div className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
+        <div className="grid gap-4 sm:grid-cols-2" aria-label={t("financials.paymentCollectionAria")}>
         <MetricCard label={t("financials.collectedRevenue")} value={formatCurrency(data.totals.collectedRevenue ?? 0)} detail={t("financials.collectedRevenueDetail")} icon={CircleDollarSign} tone="pine" />
-        <MetricCard label={t("financials.outstandingRevenue")} value={formatCurrency(data.totals.outstandingRevenue ?? 0)} detail={t("financials.outstandingRevenueDetail")} icon={Clock3} tone="amber" />
-        <MetricCard label={t("financials.pendingRevenue")} value={formatCurrency(data.totals.pendingRevenue ?? 0)} detail={t("financials.pendingRevenueDetail")} icon={QrCode} tone="slate" />
+        <p className="field-help self-center" role="status">{t("financials.unavailablePaymentBalances")}</p>
         </div>
       </section>
 

@@ -9,7 +9,6 @@ import { bangkokDate } from '@shared/finance';
 
 type CalendarViewProps = {
   defaultDays?: number;
-  canEditAvailability?: boolean;
 };
 
 type CalendarDay = {
@@ -72,7 +71,7 @@ function statusColorName(status: CalendarDay['roomTypes'][number]['status']) {
 // (N of M) is not enforced for guests yet, so the allotment input stays hidden until then.
 const DASHBOARD_ALLOTMENT_INPUT_ENABLED = false;
 
-export default function DashboardCalendarView({ defaultDays = 14, canEditAvailability = false }: CalendarViewProps) {
+export default function DashboardCalendarView({ defaultDays = 14 }: CalendarViewProps) {
   const { t, language } = useTranslation();
   const [startDate, setStartDate] = useState(isoToday);
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
@@ -81,6 +80,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
   const [savedRoomTypeId, setSavedRoomTypeId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const calendarQuery = trpc.channelManager.dashboardCalendar.useQuery({ startDate, days: defaultDays });
+  const auth = trpc.auth.me.useQuery();
   const updateAvailability = trpc.channelManager.updateAvailability.useMutation({
     onSuccess: async () => {
       await calendarQuery.refetch();
@@ -89,6 +89,9 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
 
   const hotels = calendarQuery.data?.hotels ?? [];
   const activeHotel = hotels.find(hotel => hotel.hotel.id === selectedHotelId) ?? hotels[0];
+  const activePermissions = auth.data?.memberships?.find((membership: any) => membership.hotelId === activeHotel?.hotel.id)?.permissions ?? [];
+  const canManageAllotment = activePermissions.includes('revenue.manage_allotment');
+  const canManageStopSell = activePermissions.includes('revenue.manage_stop_sell');
   const days = activeHotel?.days ?? [];
 
   const activeDay = useMemo<CalendarDay | null>(() => {
@@ -117,7 +120,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
   const draftValue = (roomTypeId: string, fallback: number) => draftAvailability[roomTypeId] ?? fallback;
 
   const saveAvailability = async (roomType: CalendarDay['roomTypes'][number]) => {
-    if (!activeHotel || !activeDay || !canEditAvailability) return;
+    if (!activeHotel || !activeDay || !canManageAllotment) return;
     setActionError(null);
     setSavedRoomTypeId(null);
     try {
@@ -141,7 +144,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
   };
 
   const toggleStopSell = async (roomType: CalendarDay['roomTypes'][number]) => {
-    if (!activeHotel || !activeDay || !canEditAvailability) return;
+    if (!activeHotel || !activeDay || !canManageStopSell) return;
     setActionError(null);
     setSavedRoomTypeId(null);
     const nextAvailable = roomType.cap === 0 ? roomType.totalRooms : 0;
@@ -253,7 +256,7 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
         <div className="dashboard-calendar-quick-actions" aria-labelledby="dashboard-calendar-quick-actions-title">
           <div className="dashboard-calendar-quick-actions-heading">
             <div><div className="eyebrow">{t('dashboardCalendar.dailyControls')}</div><h4 id="dashboard-calendar-quick-actions-title">{t('dashboardCalendar.editSelectedDay')}</h4></div>
-            {!canEditAvailability && <span className="calendar-view-only-note">{t('dashboardCalendar.viewOnly')}</span>}
+            {!canManageAllotment && !canManageStopSell && <span className="calendar-view-only-note">{t('dashboardCalendar.viewOnly')}</span>}
           </div>
           {actionError && <p className="dashboard-calendar-action-error" role="alert">{actionError}</p>}
           {activeDay?.roomTypes.length ? <div className="dashboard-calendar-quick-action-list">{activeDay.roomTypes.map(roomType => {
@@ -266,10 +269,10 @@ export default function DashboardCalendarView({ defaultDays = 14, canEditAvailab
               <div className="dashboard-calendar-quick-action-label"><strong>{roomTypeName}</strong><small>{t('dashboardCalendar.totalRooms', { count: roomType.totalRooms, status: roomStatus })}</small></div>
               <div className="dashboard-calendar-quick-action-controls">
                 {DASHBOARD_ALLOTMENT_INPUT_ENABLED && (<>
-                  <label><span className="sr-only">{t('dashboardCalendar.availableRooms')}</span><input type="number" min="0" max={roomType.totalRooms} value={value} disabled={!canEditAvailability || updateAvailability.isPending} onChange={event => setDraftAvailability(current => ({ ...current, [roomType.roomTypeId]: Math.min(roomType.totalRooms, Math.max(0, Number(event.target.value) || 0)) }))} aria-label={t('dashboardCalendar.availableRoomsFor', { roomType: roomTypeName })} /><small>/ {roomType.totalRooms}</small></label>
-                  <button className="button button-quiet small-button" type="button" disabled={!canEditAvailability || updateAvailability.isPending || value === roomType.cap} onClick={() => void saveAvailability(roomType)}>{t('dashboardCalendar.save')}</button>
+                  <label><span className="sr-only">{t('dashboardCalendar.availableRooms')}</span><input type="number" min="1" max={roomType.totalRooms} value={value} disabled={!canManageAllotment || updateAvailability.isPending} onChange={event => setDraftAvailability(current => ({ ...current, [roomType.roomTypeId]: Math.min(roomType.totalRooms, Math.max(1, Number(event.target.value) || 1)) }))} aria-label={t('dashboardCalendar.availableRoomsFor', { roomType: roomTypeName })} /><small>/ {roomType.totalRooms}</small></label>
+                  <button className="button button-quiet small-button" type="button" disabled={!canManageAllotment || updateAvailability.isPending || value === roomType.cap} onClick={() => void saveAvailability(roomType)}>{t('dashboardCalendar.save')}</button>
                 </>)}
-                <button className={`button small-button ${isClosed ? 'button-primary' : 'button-quiet'}`} type="button" disabled={!canEditAvailability || updateAvailability.isPending} onClick={() => void toggleStopSell(roomType)} title={isClosed ? t('dashboardCalendar.resumeSellingTitle') : t('dashboardCalendar.stopSellingTitle')}>{isClosed ? t('dashboardCalendar.resumeSale') : t('dashboardCalendar.stopSale')}</button>
+                {canManageStopSell && <button className={`button small-button ${isClosed ? 'button-primary' : 'button-quiet'}`} type="button" disabled={updateAvailability.isPending} onClick={() => void toggleStopSell(roomType)} title={isClosed ? t('dashboardCalendar.resumeSellingTitle') : t('dashboardCalendar.stopSellingTitle')}>{isClosed ? t('dashboardCalendar.resumeSale') : t('dashboardCalendar.stopSale')}</button>}
                 {isSaved && <span className="dashboard-calendar-saved-state" role="status">{t('dashboardCalendar.saved')}</span>}
               </div>
             </div>;

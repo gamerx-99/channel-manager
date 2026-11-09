@@ -5,7 +5,7 @@ import { translate } from "@/lib/i18n";
 import OneCalendarSidePanel from "./OneCalendarSidePanel";
 
 const common = {
-  roomTypes: [], rowMap: new Map(), canManageRates: true, canManageAllotment: true,
+  roomTypes: [], rowMap: new Map(), canManageRates: true, canManageAllotment: true, canManageStopSell: true,
   edits: {}, saveResults: {}, saving: false, error: null,
   onEditChange: () => {}, onSave: () => {},
 };

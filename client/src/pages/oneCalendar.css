@@ -21,6 +21,12 @@
 .one-calendar-day.is-checkout { background: white; box-shadow: inset 0 0 0 2px var(--pine); }
 .one-calendar-day-number { font-weight: 700; }
 .one-calendar-day-room-count,.one-calendar-day-price { display: flex; flex-direction: column; gap: .12rem; font-size: .7rem; color: var(--ink-soft); }
+.one-calendar-day-room-count { width: 100%; }
+.one-calendar-day-status { display: flex; justify-content: space-between; gap: .2rem; width: 100%; min-width: 0; line-height: 1.25; }
+.one-calendar-day-type-name { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
+.one-calendar-day-status.is-available { color: var(--signal-green, #2f694e); }
+.one-calendar-day-status.is-full { color: var(--ink, #1b1c1c); font-weight: 650; }
+.one-calendar-day-status.is-stop-sell { color: var(--primary, #954831); font-weight: 650; }
 .one-calendar-day-price { color: var(--ink); font-weight: 650; }
 .one-calendar-timeline-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
 .one-calendar-timeline { border-collapse: separate; border-spacing: 0; min-width: max-content; }

@@ -326,6 +326,11 @@
 /* Dashboard recent bookings: same status pills as the Bookings page. */
 .dashboard-page .status-pill.pending { background: #f8f1dc; color: #8a6a20; }
 .dashboard-page .status-pill.done { background: #eceeed; color: #5d6a66; }
+.dashboard-page .data-table td .status-pill { display: inline-flex; }
+.dashboard-page .status-pill.pending i, .dashboard-page .status-pill.done i { background: currentColor; }
+/* Dashboard recent bookings: same status pills as the Bookings page. */
+.dashboard-page .status-pill.pending { background: #f8f1dc; color: #8a6a20; }
+.dashboard-page .status-pill.done { background: #eceeed; color: #5d6a66; }
 .dashboard-page .status-pill.pending i, .dashboard-page .status-pill.done i { background: currentColor; }
 
 /* Hotel page: public-booking on/off switch and equal-height lower cards. */

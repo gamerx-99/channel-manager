@@ -310,6 +310,7 @@ export const availability = sqliteTable("availability", {
   date: text("date").notNull(),
   price: money("price").notNull(),
   roomsAvailable: integer("rooms_available").notNull(),
+  reopenRoomsAvailable: integer("reopen_rooms_available"),
 }, table => [
   check("availability_price_check", nonnegativeMoney(table.price)),
   check("availability_rooms_available_check", sql`${table.roomsAvailable} >= 0`),

@@ -955,6 +955,7 @@ const en = {
     outstandingRevenueDetail: "Unpaid / pending payment",
     pendingRevenue: "Pending Verification",
     pendingRevenueDetail: "Awaiting slip verification",
+    unavailablePaymentBalances: "Outstanding and pending balances are unavailable until payment ledger tracking is implemented.",
     totalRevenue: "Total revenue",
     cancelledCount: "{{count}} cancelled",
     avgBookingValue: "Avg. booking value",

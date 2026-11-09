@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { availability, bookings, d1Schema, hotelUsers, hotels, roomTypes } from "../../drizzle/d1-schema";
+import { availability, bookings, d1Schema, hotelUsers, hotels, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { assertBookingMinStay, createRateOverride, deleteRateOverride, listAvailabilityForHotel, listBookingOccupancyForHotel, listRateOverrides, listRateOverridesForRoomType, updateAvailability } from "./availability";
 
@@ -34,6 +34,10 @@ async function seedHotel(id: string, owner: string) {
   await db.insert(hotels).values({ id, name: id, slug: id, address: "address", ownerContact: owner });
   await db.insert(hotelUsers).values({ id: `m-${id}`, hotelId: id, userId: owner, role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
   await db.insert(roomTypes).values({ id: `rt-${id}`, hotelId: id, name: "Room", capacity: 2, basePrice: 100 });
+  await db.insert(rooms).values([
+    { id: `room-${id}-1`, hotelId: id, roomTypeId: `rt-${id}`, roomNumber: "1" },
+    { id: `room-${id}-2`, hotelId: id, roomTypeId: `rt-${id}`, roomNumber: "2" },
+  ]);
 }
 
 describe("D1 availability repository", () => {
@@ -70,9 +74,10 @@ describe("D1 availability repository", () => {
     expect(await listBookingOccupancyForHotel(db, { userId: "owner-a" }, "a", "2026-11-03", "2026-11-04")).toHaveLength(0);
     await expect(listBookingOccupancyForHotel(db, { userId: "owner-a" }, "b", "2026-11-01", "2026-11-02")).rejects.toMatchObject({ code: "FORBIDDEN" });
 
-    const input = { hotelId: "a", roomTypeId: "rt-a", date: "2026-11-01", price: "123.45", roomsAvailable: 2 };
+    const input = { hotelId: "a", roomTypeId: "rt-a", date: "2026-11-01", price: "123.45", roomsAvailable: 2, action: "rate" as const };
     await updateAvailability(db, { userId: "owner-a" }, input);
     await updateAvailability(db, { userId: "owner-a" }, { ...input, price: "130.00", roomsAvailable: 1 });
+    await updateAvailability(db, { userId: "owner-a" }, { ...input, action: "allotment", price: "0", roomsAvailable: 1 });
     const rows = await listAvailabilityForHotel(db, { userId: "owner-a" }, "a");
     expect(rows).toHaveLength(1);
     expect(rows[0].roomsAvailable).toBe(1);
