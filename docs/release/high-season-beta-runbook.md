@@ -6,10 +6,17 @@ Prepared 2026-11-10 for branch `codex/high-season-release`.
 
 - Release baseline: `1049a48`.
 - P0 fix commit: `00b1ee4` (`fix: protect allotment and persist manual payment slips`).
-- The P0 commit passed `pnpm check`, `pnpm test` (278 files / 1,965 tests), `pnpm build` and Wrangler dry-run. No push, merge, migration apply or deploy was performed.
+- The P0 commit passed `pnpm check`, `pnpm test` (278 files / 1,965 tests), `pnpm build` and Wrangler dry-run. No push, merge or deploy was performed.
 - Production Wrangler settings were inspected read-only. Worker `hayhost` has bindings `DB` (D1), `MEDIA` (R2 `hayhost-media`), `PUBLIC_BOOKING_LIMITER` (rate-limit namespace `1003`) and `ASSETS`. Production secret names present: `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `LINE_CLIENT_ID`, `LINE_CLIENT_SECRET`, `PLATFORM_PROMPTPAY_ID`, `RESEND_API_KEY`, `SLIPOK_API_KEY`, `SLIPOK_BRANCH_ID`, `SLIPOK_ENCRYPTION_KEY`. Values were not retrieved. Presence does not prove that credentials are valid or that external providers accept them. The Worker settings response did not expose plain-text variable names in the `vars` object; no plain-text values were requested or returned.
-- Production migration list reports `20261109010000_restore_stop_sell_allotment.sql` pending.
+- Before execution, Production migration list reported `20261109010000_restore_stop_sell_allotment.sql` pending; the current verified status is recorded below.
 - A read-only query against Production found no `rooms_available = 0` rows dated 2026-11-10 or later (query limit 500; zero rows returned). Therefore the current future-date candidate list for lost pre-Stop-Sell allotments is empty. This is a point-in-time result; rerun immediately before migration. Older/historical rows were not queried.
+
+## Execution update — 2026-11-10
+
+- Backup completed before migration. Encrypted SQL export: `/home/gserver/.local/share/hayhost-release-backups/hayhost-production-before-20261109010000.cred` (mode 600, owner `gserver`, 124,391 bytes). Parent directory is mode 700. Export streamed through a mode-600 FIFO in `/dev/shm` into `systemd-creds --user`; decryption succeeded and yielded checksum `838ceb3e0363975f55963f3fe11d3f200201c224f47799ff74b2161287144e36` without printing SQL. A pre-migration D1 Time Travel bookmark was recorded: `00000504-00000000-0000511e-aa21ea61e87ec453a55c419abf33b58d`.
+- Migration `20261109010000_restore_stop_sell_allotment.sql` applied successfully to Production. A subsequent migration list reports no pending migrations; remote `PRAGMA table_info(availability)` confirms nullable `reopen_rooms_available`. The migration statement reported 0 data changes.
+- Production-targeted `CLOUDFLARE_ENV=production pnpm build` passed with Wrangler dry-run; it selected `hayhost-production`, `hayhost-media`, and the production rate limiter and exited before upload/deploy.
+- **Deployment halted before production deploy:** the Runbook mobile smoke test has not passed. CUA reports no available browser, and `bsk doctor` reports 0 connected browsers. No staging or Production mobile UI flow was run. Resume only after a browser is connected and the staging mobile smoke sequence passes; then verify approval/release target and perform the Production deployment. Do not describe the release as deployed.
 
 ## Before any Production change
 
@@ -28,9 +35,9 @@ Prepared 2026-11-10 for branch `codex/high-season-release`.
    These rows have no historical allotment to restore automatically. Treat each as a hotel-confirmation item; do not infer a prior positive cap. After migration, use the confirmed cap when reopening.
 4. Create a protected backup location with restricted access and enough space. D1 SQL exports contain hotel and guest data; keep plaintext off persistent storage, encrypt the export at rest, and keep it out of the repository and chat. On this host, `systemd-creds --user` encryption/decryption was tested with a disposable payload before use; it uses the current OS user's credential key.
 
-## Production backup and migration (not executed)
+## Production backup and migration procedure
 
-Run only after separate owner approval. This streams SQL through an encrypted credential file: plaintext passes through a FIFO in `/dev/shm`, while only ciphertext persists. Replace the timestamp for each backup.
+This approved procedure was executed on 2026-11-10; see the execution update below. For a future migration, obtain separate owner approval first, use a new timestamp and backup filename, and never overwrite the existing backup. This streams SQL through an encrypted credential file: plaintext passes through a FIFO in `/dev/shm`, while only ciphertext persists.
 
 ```bash
 umask 077
