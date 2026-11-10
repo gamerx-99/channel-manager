@@ -1,3 +1,36 @@
+## 2026-11-10 — Billing & Financial Document Generation (PDF/Print) (AGY)
+
+- **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
+- **Commit:** `d784af865bd5604c4777420bb5f445bcc2ff58c7` (`feat(billing): add invoices, itemized PDF export, and billing management`). No push, merge, or production deployment.
+- **Scope & Delivery:**
+  1. **Document Types Supported:**
+     - **Invoice (ใบแจ้งชำระเงิน):** Issuable on active bookings (`held`, `pending_payment`, `pending_verification`, `confirmed`, `checked_in`, `checked_out`) with prefix `INV-XXXXXX` to bill guests before or upon payment.
+     - **Receipt (ใบเสร็จรับเงิน):** Strictly gated by real payment verification contract (`isRevenueStatus(booking.status)` AND `booking.payment_status === "verified"`) with prefix `RC-XXXXXX`. Prevents issuance for unpaid/unverified bookings.
+     - **Tax Invoice (ใบกำกับภาษี):** Strictly gated by verified revenue status with prefix `TX-XXXXXX`.
+  2. **Itemized Charges & Accurate Calculations:**
+     - In `server/d1/bookingDocuments.ts`, reads room stay and extra services from `booking_services` to compute detailed breakdown (`name`, `description`, `quantity`, `unitPriceSatang`, `totalPriceSatang`).
+     - Preserves room stay balance `toSatang(booking.price) - totalServicesSatang` so total itemized charges always equal total booking price exactly without rounding discrepancy.
+     - Persists snapshot with `items`, `amountPaidSatang`, `balanceSatang`, and `paymentStatus`.
+  3. **PDF & Print Layout (`client/src/lib/bookingDocumentPrint.ts`):**
+     - Full A4 standard print layout (`@page { size: A4; margin: 18mm; }`).
+     - Thai typography with Google Fonts `Sarabun` and `Noto Sans Thai` fallback for clean Thai/English rendering.
+     - Dynamic title display based on document type (Invoice / Receipt / Tax invoice).
+     - Clean itemized table showing Description, Qty, Unit Price, and Amount THB.
+     - Prominent Payment Status pill, Amount Paid, and Balance Due.
+     - Client-side download function (`downloadDocumentFile`) with filename format `<docType>_<docNumber>_<date>.html`.
+  4. **Email Readiness (`server/email.ts`):**
+     - Extended `EmailPayload` with optional `attachments?: EmailAttachment[]` (`filename`, `content`, `path?`, `contentType?`) passed cleanly to Resend API.
+  5. **UI & Navigation Integration:**
+     - `BookingDocumentDialog`: Radio selector for document type, disabling receipts when unpaid with helpful tooltip, showing existing receipt banner to prevent duplicate issuance, plus instant print & download buttons.
+     - `Bookings`: Document generation accessible for all active bookings with permissions.
+     - `Financials`: Added comprehensive "Financial Documents & Billing" overview table (`listHotel`) with search, filter, and quick print/download actions.
+  6. **Database Migration:**
+     - `drizzle/d1/20261110020000_allow_invoice_doc_type.sql` (migration idx 27) updates check constraint on `booking_documents.docType` to allow `invoice`. Non-destructive table recreate in SQLite.
+- **Verification Evidence:**
+  - `pnpm test`: 278 passed (278 test files), 1,972 passed (1,972 tests), 0 failures.
+  - `pnpm check`: exit code 0 (`tsc --noEmit`).
+  - `pnpm build`: exit code 0 (`vite build` + Wrangler dry-run bundle verified).
+
 ## 2026-11-10 — Production migration and gated deployment (Codex)
 
 - **Local commits:** P0 fix `00b1ee4` (`fix: protect allotment and persist manual payment slips`); release runbook commits `d368e68` and `9ba2524`. No push or merge.
