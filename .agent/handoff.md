@@ -1,3 +1,31 @@
+## 2026-11-10 — Annual Document Numbering & Idempotency (AGY)
+
+- **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
+- **Commits:**
+  - `6f101d0`: `feat(billing): annual document numbering with Asia/Bangkok rollover, idempotency, and legacy migration`
+  - (No push, merge, or production deployment)
+- **Delivered Capabilities:**
+  1. **Annual Sequence Numbering (`INV-YYYY-000001` & `RC-YYYY-000001`):**
+     - Formats numbers by hotel, docType, and calendar year: `INV-2026-000001`, `RC-2026-000001`, `TX-2026-000001`.
+     - Automatic rollover strictly at 00:00:00 on January 1st Asia/Bangkok time (UTC+7) calculated via `bangkokYear(now)` from `@shared/finance`.
+     - Sequence isolation across `(hotelId, docType, year)`: different hotels have their own sequences, and different document types have separate sequences.
+  2. **Database Schema & Preflight Migration:**
+     - Added `year: integer("year").notNull()` and `idempotencyKey: text("idempotency_key")` to `booking_documents`.
+     - Replaced global unique index with `booking_documents_hotel_type_year_seq_key` on `(hotel_id, doc_type, year, seq)`.
+     - Created `booking_documents_hotel_idempotency_key` unique index on `(hotel_id, idempotency_key)` to enforce database-level idempotency.
+     - Migration `20261110030000_annual_document_numbering.sql` validates legacy rows, populates Bangkok year, enforces `CHECK(year >= 2020 and year <= 2100)`, and aborts on invalid legacy data. Tested in `server/d1/annualDocumentNumbering.migration.test.ts`.
+  3. **Concurrency & Idempotency Separation:**
+     - Separated sequence collisions from duplicate requests.
+     - Sequential retry and concurrent duplicate requests with the same `idempotencyKey` return the existing document snapshot directly without issuing duplicate rows or burning sequence numbers.
+     - Reusing an existing `idempotencyKey` with a mismatched payload (different booking or docType) is rejected with `BAD_REQUEST`.
+     - Legitimate multiple receipts per booking (e.g. deposit installment, final balance installment, replacement documents) are fully supported via distinct idempotency keys.
+  4. **Legacy Document Immutability:**
+     - Existing historical documents without `year` in snapshot (e.g. `RC-000042`) retain exact original numbers and snapshots upon re-fetching and PDF export.
+- **Verification Evidence:**
+  - `pnpm check`: exit code 0 (`tsc --noEmit`).
+  - `pnpm test`: 280 test files passed, 1,993 tests passed (0 failures).
+  - `pnpm build`: exit code 0 (`vite build` + Wrangler dry-run bundle verified).
+
 ## 2026-11-10 — Billing/PDF Acceptance Corrections (AGY)
 
 - **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
