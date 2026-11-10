@@ -28,6 +28,16 @@ describe("booking document print page", () => {
     expect(html).not.toContain(labels.vat);
   });
 
+  it("renders annual document numbers like INV-2026-000001 and RC-2026-000001 correctly", () => {
+    const annualReceipt = { ...receipt, number: "RC-2026-000001", year: 2026 };
+    const htmlReceipt = buildBookingDocumentHtml(annualReceipt, labels, "th", "พร้อมเพย์");
+    expect(htmlReceipt).toContain("RC-2026-000001");
+
+    const annualInvoice = { ...receipt, type: "invoice" as const, number: "INV-2026-000001", year: 2026 };
+    const htmlInvoice = buildBookingDocumentHtml(annualInvoice, labels, "th", null);
+    expect(htmlInvoice).toContain("INV-2026-000001");
+  });
+
   it("shows configured VAT lines only when VAT is enabled", () => {
     const html = buildBookingDocumentHtml({ ...receipt, type: "tax_invoice", vatEnabled: true, ...calculateBookingDocumentAmounts(107000, { vatEnabled: true, vatRate: 7, withholdingEnabled: false, withholdingRate: 3 }, true) }, labels, "th", null);
     expect(html).toContain("ใบกำกับภาษี/ใบเสร็จรับเงิน");

@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, max } from "drizzle-orm";
 import {
-  calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber,
+  bangkokYear, calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber,
   type BookingDocumentItem, type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
 } from "@shared/bookingDocuments";
 import { bangkokDate, toSatang } from "@shared/finance";
@@ -39,7 +39,7 @@ export async function listBookingDocuments(db: D1ScopedDatabase, caller: D1Calle
 
 export async function issueBookingDocument(
   db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string,
-  input: { bookingId: string; type: BookingDocumentType; buyer: DocumentParty }, now = new Date(),
+  input: { bookingId: string; type: BookingDocumentType; buyer: DocumentParty; idempotencyKey?: string | null }, now = new Date(),
 ) {
   await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "booking_documents.issue", now);
   const [settings] = await db.select().from(hotelInvoiceSettings).where(eq(hotelInvoiceSettings.hotelId, hotelId)).limit(1);
@@ -49,6 +49,27 @@ export async function issueBookingDocument(
   }
   if (input.type === "tax_invoice" && !input.buyer.address) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "A tax invoice needs the buyer's address." });
+  }
+
+  // Idempotency preflight check: if request provides an idempotencyKey that was already fulfilled,
+  // verify payload matches and return the existing document snapshot without creating a new sequence.
+  if (input.idempotencyKey) {
+    const [existingByKey] = await db.select({
+      bookingId: bookingDocuments.bookingId,
+      docType: bookingDocuments.docType,
+      snapshot: bookingDocuments.snapshot,
+    }).from(bookingDocuments)
+      .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.idempotencyKey, input.idempotencyKey)))
+      .limit(1);
+    if (existingByKey) {
+      if (existingByKey.bookingId !== input.bookingId || existingByKey.docType !== input.type) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Idempotency key was already used for a different document or booking.",
+        });
+      }
+      return existingByKey.snapshot;
+    }
   }
 
   const [booking] = await db.select({
@@ -97,9 +118,12 @@ export async function issueBookingDocument(
   const isPaid = booking.paymentStatus === "verified";
   const amountPaidSatang = isPaid ? amounts.totalSatang : 0;
   const balanceSatang = Math.max(0, amounts.totalSatang - amountPaidSatang);
+  const docYear = bangkokYear(now);
 
   const base: Omit<BookingDocumentSnapshot, "number"> = {
     type: input.type,
+    year: docYear,
+    idempotencyKey: input.idempotencyKey ?? null,
     issuedOn: bangkokDate(now),
     issuer: { name: settings.issuerName, address: settings.address, taxId: settings.taxId, branch: settings.branch, phone: settings.phone },
     buyer: input.buyer,
@@ -119,18 +143,56 @@ export async function issueBookingDocument(
   // second insert, so it reads again and takes the next number.
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const [last] = await db.select({ seq: max(bookingDocuments.seq) }).from(bookingDocuments)
-      .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.docType, input.type)));
+      .where(and(
+        eq(bookingDocuments.hotelId, hotelId),
+        eq(bookingDocuments.docType, input.type),
+        eq(bookingDocuments.year, docYear),
+      ));
     const seq = (last?.seq ?? 0) + 1;
-    const snapshot: BookingDocumentSnapshot = { ...base, number: documentNumber(input.type, seq) };
+    const snapshot: BookingDocumentSnapshot = { ...base, number: documentNumber(input.type, seq, docYear) };
     try {
       await db.insert(bookingDocuments).values({
-        hotelId, bookingId: booking.id, docType: input.type, seq, docNumber: snapshot.number, snapshot,
-        issuedBy: caller.userId ?? null, createdAt: now,
+        hotelId,
+        bookingId: booking.id,
+        docType: input.type,
+        year: docYear,
+        seq,
+        docNumber: snapshot.number,
+        snapshot,
+        idempotencyKey: input.idempotencyKey ?? null,
+        issuedBy: caller.userId ?? null,
+        createdAt: now,
       });
       return snapshot;
     } catch (error) {
       const failure = error as { message?: string; cause?: { message?: string } };
-      if (!`${failure?.message} ${failure?.cause?.message}`.includes("UNIQUE")) throw error;
+      const errText = `${failure?.message} ${failure?.cause?.message}`;
+
+      // Handle concurrent duplicate request with same idempotencyKey:
+      if (input.idempotencyKey && (errText.includes("booking_documents_hotel_idempotency_key") || errText.includes("idempotency"))) {
+        const [concurrentByKey] = await db.select({
+          bookingId: bookingDocuments.bookingId,
+          docType: bookingDocuments.docType,
+          snapshot: bookingDocuments.snapshot,
+        }).from(bookingDocuments)
+          .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.idempotencyKey, input.idempotencyKey)))
+          .limit(1);
+        if (concurrentByKey) {
+          if (concurrentByKey.bookingId !== input.bookingId || concurrentByKey.docType !== input.type) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Idempotency key was already used for a different document or booking.",
+            });
+          }
+          return concurrentByKey.snapshot;
+        }
+      }
+
+      // Handle sequence collision on (hotelId, docType, year, seq):
+      if (errText.includes("booking_documents_hotel_type_year_seq_key") || errText.includes("UNIQUE")) {
+        continue;
+      }
+      throw error;
     }
   }
   throw new TRPCError({ code: "CONFLICT", message: "Could not take a document number. Try again." });

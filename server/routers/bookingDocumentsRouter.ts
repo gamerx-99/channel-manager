@@ -8,8 +8,8 @@ import { generateBookingDocumentPdf, uint8ArrayToBase64 } from '../pdf/bookingDo
 import { requireHotelPermission, rethrowDomainError } from '../routerUtils';
 
 const hotelInput = z.object({ hotel_id: z.string().min(1) });
-const optionalText = (limit: number) => z.string().trim().max(limit).transform(value => value || null).nullable();
-const taxId = z.string().trim().transform(value => value.replace(/\D/g, '') || null).nullable()
+const optionalText = (limit: number) => z.string().trim().max(limit).nullable().optional().transform(value => value || null);
+const taxId = z.string().trim().nullable().optional().transform(value => (value ? value.replace(/\D/g, '') || null : null))
   .refine(value => value == null || TAX_ID_PATTERN.test(value), 'A tax ID has 13 digits.');
 
 function requireDb<T>(db: T | undefined | null): T {
@@ -79,6 +79,7 @@ export const bookingDocumentsRouter = router({
     buyer_address: optionalText(500),
     buyer_tax_id: taxId,
     buyer_branch: optionalText(100),
+    idempotency_key: optionalText(100),
   })).mutation(async ({ ctx, input }) => {
     // ASSUMPTION: staff who may manage bookings may issue documents; no separate permission yet.
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
@@ -87,6 +88,7 @@ export const bookingDocumentsRouter = router({
         bookingId: input.booking_id,
         type: input.type,
         buyer: { name: input.buyer_name, address: input.buyer_address, taxId: input.buyer_tax_id, branch: input.buyer_branch },
+        idempotencyKey: input.idempotency_key,
       });
     } catch (error) {
       return rethrowDomainError(error);

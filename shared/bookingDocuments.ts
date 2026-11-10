@@ -1,4 +1,4 @@
-import { isRevenueStatus } from "./finance";
+import { bangkokDate, isRevenueStatus } from "./finance";
 
 /**
  * Documents a hotel issues from a booking:
@@ -9,10 +9,21 @@ import { isRevenueStatus } from "./finance";
 export const BOOKING_DOCUMENT_TYPES = ["invoice", "receipt", "tax_invoice"] as const;
 export type BookingDocumentType = (typeof BOOKING_DOCUMENT_TYPES)[number];
 
-// ASSUMPTION: one running number per hotel and document type that never resets, e.g. INV-000001, RC-000001.
 const NUMBER_PREFIX: Record<BookingDocumentType, string> = { invoice: "INV", receipt: "RC", tax_invoice: "TX" };
 
-export function documentNumber(type: BookingDocumentType, seq: number): string {
+/**
+ * Current Gregorian calendar year in Bangkok timezone (UTC+7).
+ * Thailand observes UTC+7 with no daylight saving time; the sequence resets
+ * automatically at 00:00:00 on January 1st Asia/Bangkok time.
+ */
+export function bangkokYear(now: Date = new Date()): number {
+  return Number(bangkokDate(now).slice(0, 4));
+}
+
+export function documentNumber(type: BookingDocumentType, seq: number, year?: number): string {
+  if (year !== undefined) {
+    return `${NUMBER_PREFIX[type]}-${year}-${String(seq).padStart(6, "0")}`;
+  }
   return `${NUMBER_PREFIX[type]}-${String(seq).padStart(6, "0")}`;
 }
 
@@ -65,6 +76,8 @@ export type BookingDocumentItem = {
 export type BookingDocumentSnapshot = {
   type: BookingDocumentType;
   number: string;
+  year?: number;
+  idempotencyKey?: string | null;
   /** Thai calendar date, YYYY-MM-DD. */
   issuedOn: string;
   issuer: DocumentParty & { phone: string | null };

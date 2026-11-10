@@ -59,6 +59,7 @@ export function useBookingDocuments(hotelId: string, booking: { id: string; gues
     }
   };
 
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const issue = trpc.bookingDocuments.issue.useMutation();
   const hotelHasTaxId = Boolean(settings.data?.taxId);
   const problem = issueFormProblem(type, buyer, hotelHasTaxId);
@@ -69,8 +70,10 @@ export function useBookingDocuments(hotelId: string, booking: { id: string; gues
     issue.mutate({
       hotel_id: hotelId, booking_id: booking.id, type, buyer_name: buyer.name,
       buyer_address: buyer.address || null, buyer_tax_id: buyer.taxId || null, buyer_branch: buyer.branch || null,
+      idempotency_key: idempotencyKey,
     }, {
       async onSuccess(doc) {
+        setIdempotencyKey(crypto.randomUUID());
         printInto(win, doc);
         await utils.bookingDocuments.list.invalidate({ hotel_id: hotelId, booking_id: booking.id });
       },

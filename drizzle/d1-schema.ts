@@ -563,15 +563,19 @@ export const bookingDocuments = sqliteTable("booking_documents", {
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
   bookingId: text("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
   docType: text("doc_type").notNull(),
+  year: integer("year").notNull(),
   seq: integer("seq").notNull(),
   docNumber: text("doc_number").notNull(),
   snapshot: json<BookingDocumentSnapshot>("snapshot_json").notNull(),
+  idempotencyKey: text("idempotency_key"),
   issuedBy: text("issued_by"),
   createdAt: createdAt(),
 }, table => [
   check("booking_documents_doc_type_check", sql`${table.docType} in ('invoice', 'receipt', 'tax_invoice')`),
   check("booking_documents_seq_check", sql`${table.seq} > 0`),
-  uniqueIndex("booking_documents_hotel_type_seq_key").on(table.hotelId, table.docType, table.seq),
+  check("booking_documents_year_check", sql`${table.year} >= 2020 and ${table.year} <= 2100`),
+  uniqueIndex("booking_documents_hotel_type_year_seq_key").on(table.hotelId, table.docType, table.year, table.seq),
+  uniqueIndex("booking_documents_hotel_idempotency_key").on(table.hotelId, table.idempotencyKey),
   index("idx_booking_documents_booking_id").on(table.bookingId),
 ]);
 

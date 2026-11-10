@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber } from "./bookingDocuments";
+import { calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber, bangkokYear } from "./bookingDocuments";
 
 const off = { vatEnabled: false, vatRate: 7, withholdingEnabled: false, withholdingRate: 3 };
 
@@ -20,10 +20,32 @@ describe("booking document tax calculation", () => {
 });
 
 describe("document numbers", () => {
-  it("prefixes running numbers by document type", () => {
+  it("prefixes running numbers by document type without year (legacy)", () => {
     expect(documentNumber("invoice", 1)).toBe("INV-000001");
     expect(documentNumber("receipt", 42)).toBe("RC-000042");
     expect(documentNumber("tax_invoice", 999)).toBe("TX-000999");
+  });
+
+  it("formats annual document numbers with 4-digit year and 6-digit zero-padded sequence", () => {
+    expect(documentNumber("invoice", 1, 2026)).toBe("INV-2026-000001");
+    expect(documentNumber("receipt", 1, 2026)).toBe("RC-2026-000001");
+    expect(documentNumber("receipt", 42, 2027)).toBe("RC-2027-000042");
+    expect(documentNumber("tax_invoice", 1, 2026)).toBe("TX-2026-000001");
+  });
+});
+
+describe("bangkokYear", () => {
+  it("determines calendar year in Asia/Bangkok across the New Year boundary", () => {
+    // 2026-12-31 23:59:59 in Thailand (UTC+7) is 2026-12-31 16:59:59Z
+    const dec31LastSecond = new Date("2026-12-31T16:59:59.999Z");
+    expect(bangkokYear(dec31LastSecond)).toBe(2026);
+
+    // 2027-01-01 00:00:00 in Thailand (UTC+7) is 2026-12-31 17:00:00Z
+    const jan1FirstSecond = new Date("2026-12-31T17:00:00.000Z");
+    expect(bangkokYear(jan1FirstSecond)).toBe(2027);
+
+    // Mid-year 2026
+    expect(bangkokYear(new Date("2026-06-15T12:00:00.000Z"))).toBe(2026);
   });
 });
 
