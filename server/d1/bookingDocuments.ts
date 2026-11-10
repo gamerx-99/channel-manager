@@ -37,6 +37,33 @@ export async function listBookingDocuments(db: D1ScopedDatabase, caller: D1Calle
   return rows;
 }
 
+function validateIdempotencyPayloadMatch(
+  existing: { bookingId: string; docType: string; snapshot: BookingDocumentSnapshot },
+  input: { bookingId: string; type: BookingDocumentType; buyer: DocumentParty },
+): void {
+  if (existing.bookingId !== input.bookingId || existing.docType !== input.type) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Idempotency key was already used for a different document or booking.",
+    });
+  }
+
+  const norm = (v: string | null | undefined) => (v ? v.trim() : null);
+  const buyer = existing.snapshot.buyer;
+  const buyerMatch =
+    norm(buyer.name) === norm(input.buyer.name) &&
+    norm(buyer.taxId) === norm(input.buyer.taxId) &&
+    norm(buyer.address) === norm(input.buyer.address) &&
+    norm(buyer.branch) === norm(input.buyer.branch);
+
+  if (!buyerMatch) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Idempotency key was already used with different document content or buyer details.",
+    });
+  }
+}
+
 export async function issueBookingDocument(
   db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string,
   input: { bookingId: string; type: BookingDocumentType; buyer: DocumentParty; idempotencyKey?: string | null }, now = new Date(),
@@ -62,12 +89,7 @@ export async function issueBookingDocument(
       .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.idempotencyKey, input.idempotencyKey)))
       .limit(1);
     if (existingByKey) {
-      if (existingByKey.bookingId !== input.bookingId || existingByKey.docType !== input.type) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Idempotency key was already used for a different document or booking.",
-        });
-      }
+      validateIdempotencyPayloadMatch(existingByKey, input);
       return existingByKey.snapshot;
     }
   }
@@ -178,12 +200,7 @@ export async function issueBookingDocument(
           .where(and(eq(bookingDocuments.hotelId, hotelId), eq(bookingDocuments.idempotencyKey, input.idempotencyKey)))
           .limit(1);
         if (concurrentByKey) {
-          if (concurrentByKey.bookingId !== input.bookingId || concurrentByKey.docType !== input.type) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Idempotency key was already used for a different document or booking.",
-            });
-          }
+          validateIdempotencyPayloadMatch(concurrentByKey, input);
           return concurrentByKey.snapshot;
         }
       }

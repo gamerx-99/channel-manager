@@ -231,9 +231,31 @@ describe("issuing documents", () => {
     const retryRes = await issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "invoice", buyer, idempotencyKey: key }, NOW);
     expect(retryRes.number).toBe("INV-2026-000001");
 
-    // 3. Reusing the same idempotency key with a mismatched payload is rejected
+    // 3. Reusing the same idempotency key with a mismatched booking/type is rejected
     await expect(issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "invoice", buyer, idempotencyKey: key }, NOW))
       .rejects.toThrow(/Idempotency key was already used for a different document or booking/);
+
+    // 4. Reusing the same idempotency key with altered buyer details is rejected
+    await expect(issueBookingDocument(db, owner, "h1", {
+      bookingId: "unpaid",
+      type: "invoice",
+      buyer: { ...buyer, name: "Changed Guest Name" },
+      idempotencyKey: key,
+    }, NOW)).rejects.toThrow(/Idempotency key was already used with different document content or buyer details/);
+
+    await expect(issueBookingDocument(db, owner, "h1", {
+      bookingId: "unpaid",
+      type: "invoice",
+      buyer: { ...buyer, taxId: "9999999999999" },
+      idempotencyKey: key,
+    }, NOW)).rejects.toThrow(/Idempotency key was already used with different document content or buyer details/);
+
+    await expect(issueBookingDocument(db, owner, "h1", {
+      bookingId: "unpaid",
+      type: "invoice",
+      buyer: { ...buyer, address: "999 New Address Road" },
+      idempotencyKey: key,
+    }, NOW)).rejects.toThrow(/Idempotency key was already used with different document content or buyer details/);
   });
 
   it("supports multiple receipts for partial payment installments on the same booking", async () => {
