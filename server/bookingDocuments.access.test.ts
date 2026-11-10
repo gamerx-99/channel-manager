@@ -21,7 +21,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function caller(role: 'hotel_owner' | 'front_desk' | 'housekeeping') {
+function caller(role: 'hotel_owner' | 'front_desk' | 'housekeeping', candidateEnabled = true) {
   const permissions = resolveMembershipPermissions(role, { grants: [] });
   return import('./routers').then(({ appRouter }) => appRouter.createCaller({
     req: {} as Request,
@@ -32,11 +32,34 @@ function caller(role: 'hotel_owner' | 'front_desk' | 'housekeeping') {
       role, roles: [role], memberships: [{ hotelId: HOME_HOTEL, role, permissions }],
     },
     db: {} as any,
+    billingEnv: candidateEnabled ? { BILLING_CANDIDATE_ENABLED: 'true' } : undefined,
     caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: [role], access: 'authenticated' } as any,
   }));
 }
 
 describe('receipts and tax invoices follow hotel permissions', () => {
+  it('blocks every document procedure before repository access when the candidate is off', async () => {
+    const app = await caller('hotel_owner', false);
+    const calls = [
+      app.bookingDocuments.settings({ hotel_id: HOME_HOTEL }),
+      app.bookingDocuments.saveSettings(header),
+      app.bookingDocuments.list({ hotel_id: HOME_HOTEL, booking_id: 'b1' }),
+      app.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL }),
+      app.bookingDocuments.issue(issue),
+      app.bookingDocuments.getPdf({ hotel_id: HOME_HOTEL, document_id: 'doc-1' }),
+      app.bookingDocuments.emailDocument({ hotel_id: HOME_HOTEL, document_id: 'doc-1', recipient_email: 'guest@example.test' }),
+    ];
+    for (const call of calls) {
+      await expect(call).rejects.toMatchObject({ code: 'PRECONDITION_FAILED', message: 'Billing Candidate is inactive.' });
+    }
+    expect(repoMocks.getInvoiceSettings).not.toHaveBeenCalled();
+    expect(repoMocks.saveInvoiceSettings).not.toHaveBeenCalled();
+    expect(repoMocks.listBookingDocuments).not.toHaveBeenCalled();
+    expect(repoMocks.listHotelDocuments).not.toHaveBeenCalled();
+    expect(repoMocks.issueBookingDocument).not.toHaveBeenCalled();
+    expect(repoMocks.getBookingDocument).not.toHaveBeenCalled();
+  });
+
   it('lets the owner set the header and issue a document', async () => {
     const app = await caller('hotel_owner');
     await app.bookingDocuments.saveSettings(header);

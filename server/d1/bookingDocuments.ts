@@ -5,8 +5,9 @@ import {
   type BookingDocumentItem, type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
 } from "@shared/bookingDocuments";
 import { bangkokDate, toSatang } from "@shared/finance";
-import { bookingDocuments, bookings, bookingServices, hotelInvoiceSettings, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingDocuments, bookings, bookingServices, hotelInvoiceSettings, paymentSessions, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
+import { moneyToSatang } from "../db/money";
 
 export type InvoiceSettingsInput = {
   enabled: boolean; issuerName: string; address: string; taxId: string | null; branch: string | null; phone: string | null;
@@ -95,7 +96,7 @@ export async function issueBookingDocument(
   }
 
   const [booking] = await db.select({
-    id: bookings.id, status: bookings.status, paymentStatus: bookings.paymentStatus, paymentMethod: bookings.paymentMethod,
+    id: bookings.id, status: bookings.status, source: bookings.source, paymentStatus: bookings.paymentStatus, paymentMethod: bookings.paymentMethod,
     checkIn: bookings.checkIn, checkOut: bookings.checkOut, price: bookings.price, roomType: roomTypes.name,
   }).from(bookings)
     .leftJoin(rooms, eq(bookings.roomId, rooms.id))
@@ -109,6 +110,23 @@ export async function issueBookingDocument(
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a paid booking that still stands gets a document." });
   }
 
+  let verifiedPaymentSession: { id: string; verifiedTransactionRef: string | null } | null = null;
+  if (input.type === "receipt" || input.type === "tax_invoice") {
+    if (booking.paymentStatus !== "verified") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a fully paid booking gets a receipt or tax invoice." });
+    const sessions = await db.select({ id: paymentSessions.id, amount: paymentSessions.amount, status: paymentSessions.status, verifiedTransactionRef: paymentSessions.verifiedTransactionRef })
+      .from(paymentSessions).where(and(eq(paymentSessions.hotelId, hotelId), eq(paymentSessions.bookingId, booking.id)))
+      .orderBy(desc(paymentSessions.createdAt));
+    const fullVerifiedSession = sessions.find(session => session.status === "paid" && session.verifiedTransactionRef && moneyToSatang(session.amount) === moneyToSatang(booking.price));
+    if (fullVerifiedSession) {
+      verifiedPaymentSession = { id: fullVerifiedSession.id, verifiedTransactionRef: fullVerifiedSession.verifiedTransactionRef };
+    } else if (sessions.length === 0 && booking.source === "walk-in") {
+      // Walk-in bookings are synchronously recorded as fully paid without a QR session.
+      // Their payment method and verified aggregate are the available immutable receipt evidence.
+    } else {
+      // OTA reservations can have a settlement lifecycle distinct from guest payment.
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A fully verified payment matching the booking total is required." });
+    }
+  }
   // Fetch optional extra services for itemization
   const services = await db.select().from(bookingServices).where(eq(bookingServices.bookingId, booking.id));
   const totalServicesSatang = services.reduce((acc, s) => acc + toSatang(s.totalPrice), 0);
@@ -159,6 +177,7 @@ export async function issueBookingDocument(
     amountPaidSatang,
     balanceSatang,
     paymentStatus: booking.paymentStatus,
+    verifiedTransactionReference: verifiedPaymentSession?.verifiedTransactionRef ?? null,
   };
 
   // Two staff issuing at once can read the same last number; the unique index refuses the
@@ -182,6 +201,7 @@ export async function issueBookingDocument(
         docNumber: snapshot.number,
         snapshot,
         idempotencyKey: input.idempotencyKey ?? null,
+        ...(input.type === "receipt" && verifiedPaymentSession ? { paymentSessionId: verifiedPaymentSession.id } : {}),
         issuedBy: caller.userId ?? null,
         createdAt: now,
       });
@@ -207,6 +227,9 @@ export async function issueBookingDocument(
 
       // Handle sequence collision on (hotelId, docType, year, seq):
       if (errText.includes("booking_documents_hotel_type_year_seq_key") || errText.includes("UNIQUE")) {
+        if (errText.includes("booking_documents_one_receipt_per_booking") || errText.includes("booking_documents.booking_id")) {
+          throw new TRPCError({ code: "CONFLICT", message: "A receipt has already been issued for this booking." });
+        }
         continue;
       }
       throw error;

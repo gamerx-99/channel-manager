@@ -9,7 +9,7 @@ function makeDb(status: string | null) {
   const booking = status ? { id: bookingId, hotelId, status } : null;
   const sessionWrites: Array<Record<string, unknown>> = [];
   const db = {
-    $client: { prepare: () => ({ bind: () => ({}) }), batch: vi.fn(async () => []) },
+    $client: { prepare: () => ({ bind: () => ({}) }), batch: vi.fn(async () => [{ meta: { changes: 1 } }, { meta: { changes: 1 } }, { meta: { changes: 1 } }]) },
     select: (..._cols: any[]) => ({
       from: (table: any) => {
         if (table === hotelUsers) {
@@ -48,7 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function caller(role: 'hotel_owner' | 'revenue_manager', db: any) {
+function caller(role: 'hotel_owner' | 'revenue_manager', db: any, candidateEnabled = true) {
   return import('./routers').then(({ appRouter }) => appRouter.createCaller({
     req: {} as Request,
     res: {} as Response,
@@ -64,6 +64,7 @@ function caller(role: 'hotel_owner' | 'revenue_manager', db: any) {
       memberships: [{ hotelId, role }],
     },
     db,
+    billingEnv: candidateEnabled ? { BILLING_CANDIDATE_ENABLED: 'true' } : undefined,
     caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: [role], memberships: [{ hotelId, role }], access: 'authenticated' } as any,
   }));
 }
@@ -87,9 +88,23 @@ describe('payment.manualVerify permission boundary', () => {
       booking_id: bookingId,
       hotel_id: hotelId,
       approved: true,
+      amount: '120.00',
+      transaction_reference: 'BANK-REF-1',
     })).resolves.toMatchObject({ booking_id: bookingId, status: 'confirmed' });
-    expect(sessionWrites).toHaveLength(1);
-    expect(sessionWrites[0]).toMatchObject({ status: 'paid', verifiedAt: expect.any(Date) });
+    expect(db.$client.batch).toHaveBeenCalledOnce();
+  });
+
+  it('preserves the legacy approval flow when the candidate flag is absent', async () => {
+    const { db, sessionWrites } = makeDb('pending_verification');
+    const app = await caller('hotel_owner', db, false);
+
+    await expect(app.payment.manualVerify({
+      booking_id: bookingId,
+      hotel_id: hotelId,
+      approved: true,
+    })).resolves.toMatchObject({ booking_id: bookingId, status: 'confirmed' });
+    expect(sessionWrites).toEqual([{ status: 'paid', verifiedAt: expect.any(Date) }]);
+    expect(db.$client.batch).not.toHaveBeenCalled();
   });
 
   it('closes the payment session as failed when the hotel rejects the slip', async () => {

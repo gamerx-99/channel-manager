@@ -118,6 +118,8 @@ export default function PublicBookingSection({ page }: { page: Page }) {
             mode="payment"
             t={t}
             hotelName={hotel.name}
+            hotelPhone={heldBooking?.hotelId === hotel.id ? hotel.public_phone : null}
+            hotelFacebookUrl={heldBooking?.hotelId === hotel.id ? hotel.facebook_url : null}
             heldBooking={heldBooking}
             checkIn={checkIn}
             checkOut={checkOut}

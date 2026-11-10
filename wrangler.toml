@@ -65,6 +65,7 @@ routes = [{ pattern = "www.hayhostth.com", custom_domain = true }]
 
 [env.production.vars]
 NODE_ENV = "production"
+BILLING_CANDIDATE_ENABLED = "false"
 PUBLIC_APP_URL = "https://www.hayhostth.com"
 EMAIL_FROM = "no-reply@hayhostth.com"
 

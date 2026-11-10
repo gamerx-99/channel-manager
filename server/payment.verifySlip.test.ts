@@ -8,6 +8,7 @@ const payment = vi.hoisted(() => ({
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  confirmManualFullPayment: vi.fn(),
   savePaymentSessionSlip: vi.fn(),
 }));
 const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn() }));
@@ -46,8 +47,8 @@ function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, s
   return { db, writes };
 }
 
-const submit = (db: unknown, index: number) => paymentRouter
-  .createCaller({ db, media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) }, clientIp: `verify-slip-${index}`, user: null } as never)
+const submit = (db: unknown, index: number, candidateEnabled = true) => paymentRouter
+  .createCaller({ db, media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) }, clientIp: `verify-slip-${index}`, user: null, billingEnv: candidateEnabled ? { BILLING_CANDIDATE_ENABLED: "true" } : undefined } as never)
   .verifySlip({ booking_id: BOOKING, session_id: SESSION, slip_data: "c2xpcA==" });
 
 beforeEach(() => {
@@ -55,6 +56,7 @@ beforeEach(() => {
   payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   payment.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
   payment.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  payment.confirmManualFullPayment.mockResolvedValue(true);
   payment.savePaymentSessionSlip.mockResolvedValue(undefined);
   booking.expireBookingIfPast.mockResolvedValue({ status: "pending_payment" });
   booking.claimBookingNights.mockResolvedValue(true);
@@ -79,6 +81,18 @@ describe("verifySlip outcomes", () => {
     expect(payment.finalizePaymentSession).not.toHaveBeenCalled();
   });
 
+  it("uses baseline SlipOK confirmation writes when the candidate is off", async () => {
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "BANK-REF", amount: 120, raw: { matched: true } });
+    const { db, writes } = fakeDb();
+
+    await expect(submit(db, 99, false)).resolves.toMatchObject({ verified: true });
+
+    expect(payment.finalizePaymentSession).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, expect.objectContaining({ status: "paid", verifiedTransactionRef: "BANK-REF" }));
+    expect(payment.confirmManualFullPayment).not.toHaveBeenCalled();
+    expect(writes).toContainEqual({ status: "confirmed", expiresAt: null });
+    expect(payment.updateBookingPaymentStatus).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, BOOKING, "verified");
+  });
+
   it("rejects a refused slip and closes the session", async () => {
     verify.mockResolvedValueOnce({ matched: false, transactionRef: null, amount: null, raw: { code: 1014 } });
     const { db, writes } = fakeDb();
@@ -101,12 +115,12 @@ describe("verifySlip outcomes", () => {
 
   it("verifies with the hotel's own SlipOK key", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-1", amount: 120, raw: {} });
-    const { db, writes } = fakeDb();
+    const { db } = fakeDb();
 
     await expect(submit(db, 5)).resolves.toMatchObject({ verified: true });
 
     expect(verify).toHaveBeenCalledWith({ apiKey: "hotel-key", branchId: "hotel-branch" }, expect.objectContaining({ expectedAmount: 120 }));
-    expect(writes.at(-1)).toEqual({ status: "confirmed", expiresAt: null });
+    expect(payment.confirmManualFullPayment).toHaveBeenCalledWith(db, expect.objectContaining({ amountSatang: 12000, transactionReference: "TX-1", reason: "slipok_auto_verified" }));
   });
 
   it("sends the slip to manual review when the hotel has no SlipOK key", async () => {
@@ -150,13 +164,13 @@ describe("verifySlip outcomes", () => {
 
   it("keeps the booking for staff when the slip reference was already used", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-USED", amount: 120, raw: {} });
-    payment.finalizePaymentSession.mockResolvedValueOnce({ duplicateRef: true });
+    payment.confirmManualFullPayment.mockRejectedValueOnce(new TRPCError({ code: "CONFLICT", message: "duplicate transaction reference" }));
     const { db, writes } = fakeDb();
 
     await expect(submit(db, 10)).rejects.toMatchObject({ code: "CONFLICT" });
 
     expect(writes.some(write => write.status === "confirmed")).toBe(false);
-    expect(loggedReasons()).toContain("duplicate_slip_ref");
+    expect(loggedReasons()).not.toContain("duplicate_slip_ref");
   });
 
   it("refuses a second concurrent submit instead of reprocessing the booking", async () => {
@@ -170,12 +184,12 @@ describe("verifySlip outcomes", () => {
 
   it("rechecks the room before confirming a booking that was payment_rejected", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-4", amount: 120, raw: {} });
-    const { db, writes } = fakeDb(undefined, true, "payment_rejected");
+    const { db } = fakeDb(undefined, true, "payment_rejected");
 
     await expect(submit(db, 12)).resolves.toMatchObject({ verified: true });
 
     expect(booking.claimBookingNights).toHaveBeenCalledWith(db, expect.anything(), HOTEL, BOOKING);
-    expect(writes.at(-1)).toEqual({ status: "confirmed", expiresAt: null });
+    expect(payment.confirmManualFullPayment).toHaveBeenCalledOnce();
   });
 
   it("sends a payment_rejected booking to manual review when its room is taken", async () => {
@@ -200,7 +214,7 @@ describe("verifySlip outcomes", () => {
 
   it("hands the booking to staff when an unexpected error follows the claim", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-7", amount: 120, raw: {} });
-    payment.finalizePaymentSession.mockRejectedValueOnce(new Error("D1 down"));
+    payment.confirmManualFullPayment.mockRejectedValueOnce(new Error("D1 down"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { db } = fakeDb();
 

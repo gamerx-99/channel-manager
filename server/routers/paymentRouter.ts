@@ -10,6 +10,7 @@ import {
   updateBookingPaymentStatus,
   updatePaymentSessionStatus,
   finalizePaymentSession,
+  confirmManualFullPayment,
   savePaymentSessionSlip,
 } from '../d1/payment';
 import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
@@ -22,6 +23,8 @@ import { decryptSlipOkKey } from '../slipokCrypto';
 import { verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
 import { assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
+import { moneyToSatang } from '../db/money';
+import { isBillingCandidateEnabled } from '@shared/billingCandidate';
 
 /** Guests have no login; a booking on a published hotel is what lets them pay it. */
 async function guestPaymentCaller(db: D1ScopedDatabase, bookingId: string, hotelId?: string) {
@@ -74,6 +77,13 @@ export const paymentRouter = router({
           });
         }
 
+        const [booking] = await db.select({ price: bookings.price, status: bookings.status, paymentStatus: bookings.paymentStatus })
+          .from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
+        if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+        if (isBillingCandidateEnabled(ctx.billingEnv?.BILLING_CANDIDATE_ENABLED) && booking.status === 'confirmed' && booking.paymentStatus === 'verified') {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This booking is already fully paid.' });
+        }
+
         const existingSession = await getLatestPaymentSession(db, guest, input.booking_id, input.hotel_id);
         if (existingSession && existingSession.status === 'pending') {
           return {
@@ -83,11 +93,6 @@ export const paymentRouter = router({
             amount: Number(existingSession.amount),
             expiresAt: existingSession.expires_at,
           };
-        }
-
-        const [booking] = await db.select({ price: bookings.price, status: bookings.status }).from(bookings).where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id))).limit(1);
-        if (!booking) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
         }
 
         const bookingStatus = booking.status as BookingStatus;
@@ -285,30 +290,40 @@ export const paymentRouter = router({
           });
 
           if (result.matched) {
-            const { duplicateRef } = await finalizePaymentSession(db, guest, hotelId, session.id, {
-              status: 'paid',
-              verifiedAt: new Date().toISOString(),
-              rawResponse: result.raw,
-              verifiedTransactionRef: result.transactionRef,
-            });
-
-            if (duplicateRef) {
-              await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason: 'duplicate_slip_ref' });
-              throw new TRPCError({ code: 'CONFLICT', message: 'This slip has already been used to verify a different payment. Please contact the hotel.' });
+            const candidateEnabled = isBillingCandidateEnabled(ctx.billingEnv?.BILLING_CANDIDATE_ENABLED);
+            if (!candidateEnabled) {
+              const { duplicateRef } = await finalizePaymentSession(db, guest, hotelId, session.id, {
+                status: 'paid',
+                verifiedAt: new Date().toISOString(),
+                rawResponse: result.raw,
+                verifiedTransactionRef: result.transactionRef,
+              });
+              if (duplicateRef) {
+                await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason: 'duplicate_slip_ref' });
+                throw new TRPCError({ code: 'CONFLICT', message: 'This slip has already been used to verify a different payment. Please contact the hotel.' });
+              }
             }
-
             // A rejected booking lost its hold, so another guest may have the room now.
             if (bookingStatus === 'payment_rejected' && !(await claimBookingNights(db, guest, hotelId, session.booking_id))) {
               return await manualReview('room_unavailable_manual_review_required');
             }
-
-            assertValidTransition('pending_verification', 'confirmed');
-            const [confirmed] = await db.update(bookings).set({ status: 'confirmed', expiresAt: null })
-              .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')))
-              .returning({ id: bookings.id });
-            if (!confirmed) return await manualReview('booking_changed_manual_review_required');
-            await updateBookingPaymentStatus(db, guest, hotelId, session.booking_id, 'verified');
-            await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'confirmed', reason: 'slipok_auto_verified' });
+            if (candidateEnabled) {
+              const confirmed = await confirmManualFullPayment(db, {
+                hotelId, bookingId: session.booking_id, sessionId: session.id,
+                amountSatang: result.amount === null ? 0 : Number(moneyToSatang(String(result.amount))),
+                transactionReference: result.transactionRef!, userId: 'slipok', reason: 'slipok_auto_verified',
+                now: new Date(), rawResponse: result.raw,
+              });
+              if (!confirmed) return await manualReview('booking_changed_manual_review_required');
+            } else {
+              assertValidTransition('pending_verification', 'confirmed');
+              const [confirmed] = await db.update(bookings).set({ status: 'confirmed', expiresAt: null })
+                .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')))
+                .returning({ id: bookings.id });
+              if (!confirmed) return await manualReview('booking_changed_manual_review_required');
+              await updateBookingPaymentStatus(db, guest, hotelId, session.booking_id, 'verified');
+              await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'confirmed', reason: 'slipok_auto_verified' });
+            }
             return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
           }
 
@@ -365,6 +380,8 @@ export const paymentRouter = router({
       hotel_id: z.string().uuid(),
       approved: z.boolean(),
       note: z.string().trim().max(500).optional(),
+      amount: z.string().regex(/^\d+(?:\.\d{1,2})?$/).optional(),
+      transaction_reference: z.string().trim().min(1).max(200).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
@@ -383,20 +400,56 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This booking is not awaiting manual verification.' });
         }
 
-        const nextStatus: BookingStatus = input.approved ? 'confirmed' : 'payment_rejected';
+        if (!isBillingCandidateEnabled(ctx.billingEnv?.BILLING_CANDIDATE_ENABLED)) {
+          const nextStatus: BookingStatus = input.approved ? 'confirmed' : 'payment_rejected';
+          assertValidTransition('pending_verification', nextStatus);
+          const [updated] = await db.update(bookings).set({ status: nextStatus, ...(input.approved ? { expiresAt: null } : {}) })
+            .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id), eq(bookings.status, 'pending_verification')))
+            .returning({ id: bookings.id });
+          if (!updated) throw new TRPCError({ code: 'CONFLICT', message: 'This booking verification was already resolved.' });
+          if (!input.approved) await db.$client.batch([releaseNightsStatement(db, input.booking_id)]);
+          await updateBookingPaymentStatus(db, caller, input.hotel_id, input.booking_id, input.approved ? 'verified' : 'failed');
+          const baselineSession = await getLatestPaymentSession(db, caller, input.booking_id, input.hotel_id);
+          if (baselineSession?.status === 'pending') {
+            await updatePaymentSessionStatus(db, caller, input.hotel_id, baselineSession.id, input.approved ? 'paid' : 'failed', input.approved ? new Date().toISOString() : undefined);
+          }
+          await logBookingStatusChange(db, caller, { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: 'pending_verification', to_status: nextStatus, changed_by: ctx.user.id, reason: input.note?.trim() || (input.approved ? 'manual_approve' : 'manual_reject') });
+          return { booking_id: input.booking_id, status: nextStatus };
+        }
+
+        const session = await getLatestPaymentSession(db, caller, input.booking_id, input.hotel_id);
+        if (input.approved) {
+          if (!input.amount || !input.transaction_reference) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Enter the actual amount received and the bank transaction reference.' });
+          }
+          if (!session || session.status !== 'pending') throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'A pending payment session is required.' });
+          const receivedSatang = moneyToSatang(input.amount);
+          if (receivedSatang <= BigInt(0) || receivedSatang > BigInt(Number.MAX_SAFE_INTEGER)) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Enter a valid positive payment amount.' });
+          }
+          if (receivedSatang !== moneyToSatang(session.amount)) {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'The amount received must equal the full payment session amount.' });
+          }
+          const confirmed = await confirmManualFullPayment(db, {
+            hotelId: input.hotel_id, bookingId: input.booking_id, sessionId: session.id,
+            amountSatang: Number(receivedSatang), transactionReference: input.transaction_reference.trim(), userId: ctx.user.id,
+            reason: input.note?.trim() || 'manual_approve', now: new Date(),
+          });
+          if (!confirmed) throw new TRPCError({ code: 'CONFLICT', message: 'This booking or payment session was already resolved, or the amount changed.' });
+          return { booking_id: input.booking_id, status: 'confirmed' as const };
+        }
+
+        const nextStatus: BookingStatus = 'payment_rejected';
         assertValidTransition('pending_verification', nextStatus);
 
-        const [updated] = await db.update(bookings).set({ status: nextStatus, ...(input.approved ? { expiresAt: null } : {}) })
+        const [updated] = await db.update(bookings).set({ status: nextStatus })
           .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id), eq(bookings.status, 'pending_verification')))
           .returning({ id: bookings.id });
         if (!updated) throw new TRPCError({ code: 'CONFLICT', message: 'This booking verification was already resolved.' });
         if (!input.approved) await db.$client.batch([releaseNightsStatement(db, input.booking_id)]);
         await updateBookingPaymentStatus(db, caller, input.hotel_id, input.booking_id, input.approved ? 'verified' : 'failed');
-        const session = await getLatestPaymentSession(db, caller, input.booking_id, input.hotel_id);
-        if (session?.status === 'pending') {
-          await updatePaymentSessionStatus(db, caller, input.hotel_id, session.id, input.approved ? 'paid' : 'failed', input.approved ? new Date().toISOString() : undefined);
-        }
-        await logBookingStatusChange(db, caller, { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: 'pending_verification', to_status: nextStatus, changed_by: ctx.user.id, reason: input.note?.trim() || (input.approved ? 'manual_approve' : 'manual_reject') });
+        if (session?.status === 'pending') await updatePaymentSessionStatus(db, caller, input.hotel_id, session.id, 'failed');
+        await logBookingStatusChange(db, caller, { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: 'pending_verification', to_status: nextStatus, changed_by: ctx.user.id, reason: input.note?.trim() || 'manual_reject' });
 
         return { booking_id: input.booking_id, status: nextStatus };
       } catch (error) {

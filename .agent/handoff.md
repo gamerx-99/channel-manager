@@ -1,3 +1,13 @@
+## 2026-11-10 — Payment verification contact screen deployed (Codex)
+
+- Owner authorized this batch's Production deployment in chat.
+- Worktree: `/home/gserver/.codex/worktrees/auto-inventory-flow/hayhost-high-season-release`; base `881a8d8` plus preserved deployed Billing/QR fixes and client contact-screen changes. Source manifest digest `e6f4d8a7b01551131dadd8038f2ce86618c4a2d49f691ba9fd3866334ba1c1d6`.
+- Active Worker `hayhost` Production version `0cc72f5f-8b51-4fdb-8de8-a3489a66b070` at100%, tag `payment-contact-e6f4d8a7`.
+- Verified slips confirm immediately. Rejected/unavailable verification displays configured public hotel phone/Facebook and booking reference; contacts gated on matching hotel. Existing expiry policy unchanged. AutoFlow remains paused.
+- Full suite 286 files /2,034 tests, typecheck/build and independent GPT scoped review passed. Live health and Billing flag HTTP200; Billing false; Booking HTML and entry/booking bundles match local build.
+- No push/merge/migrations or transactional smoke. Rollback target for this UI-only batch: `dcf5db1f-ffb3-4b2f-93f4-5c29bc2f4ccb`.
+- Full report: `docs/release/payment-contact-flow.md`.
+
 ## 2026-11-10 — Annual Document Numbering & Idempotency (AGY)
 
 - **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.

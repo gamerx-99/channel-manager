@@ -3,10 +3,13 @@ import { trpc } from '../lib/trpc';
 import { generateQrDataUrl } from '../lib/qr';
 import { useTranslation } from '../lib/i18n';
 import { localizeServerMessage } from '../lib/serverErrors';
+import HotelContactsList from './hotel/HotelContactsList';
 
 interface PaymentQRProps {
   bookingId: string;
   hotelId: string;
+  hotelPhone?: string | null;
+  hotelFacebookUrl?: string | null;
   onSuccess: () => void;
   onExpired: () => void;
 }
@@ -28,10 +31,11 @@ function formatCountdown(ms: number): string {
  * 4. On success → calls onSuccess(); on expire → calls onExpired().
  * 5. Shows SlipUpload tab for manual slip submission.
  */
-export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQRProps) {
+export function PaymentQR({ bookingId, hotelId, hotelPhone, hotelFacebookUrl, onSuccess, onExpired }: PaymentQRProps) {
   const { t, language } = useTranslation();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrReadiness, setQrReadiness] = useState<'ready' | 'missing-payload' | 'render-failed'>('missing-payload');
   const [amount, setAmount] = useState<number>(0);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
@@ -42,14 +46,39 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   // The slip reached staff review: the QR timer no longer applies.
   const [underReview, setUnderReview] = useState(false);
   const [slipRejected, setSlipRejected] = useState(false);
+  const [verificationIssue, setVerificationIssue] = useState(false);
+  const contactRequired = underReview || slipRejected || verificationIssue;
+  const normalisedPhone = hotelPhone?.replace(/[^\d+]/g, '') ?? '';
+  const phone = /\d/.test(normalisedPhone) ? normalisedPhone : null;
+  let facebookUrl: string | null = null;
+  try {
+    const parsed = new URL(hotelFacebookUrl ?? '');
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') facebookUrl = parsed.href;
+  } catch { /* Unset/invalid public links are not displayed. */ }
+  const contactLinks = <>
+    <HotelContactsList phone={phone} facebookUrl={facebookUrl} />
+    {!phone && !facebookUrl && <p>{t('publicHotel.paymentContactUnavailable')}</p>}
+  </>;
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const createSession = trpc.payment.createSession.useMutation({
     onSuccess(data) {
       setSessionId(data.sessionId);
-      // Drawn locally from the EMVCo payload; the PromptPay ID and amount are
-      // not sent to an outside QR image service.
-      setQrImageUrl(data.qrString ? generateQrDataUrl(data.qrString) : null);
+      // Draw locally from the EMVCo payload; never send payment data to an
+      // outside QR image service. Keep failures visible instead of showing an
+      // apparently ready payment screen with a blank QR.
+      if (!data.qrString?.trim()) {
+        setQrImageUrl(null);
+        setQrReadiness('missing-payload');
+      } else {
+        try {
+          setQrImageUrl(generateQrDataUrl(data.qrString));
+          setQrReadiness('ready');
+        } catch {
+          setQrImageUrl(null);
+          setQrReadiness('render-failed');
+        }
+      }
       setAmount(data.amount);
       setExpiresAt(data.expiresAt);
     },
@@ -58,7 +87,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   const checkStatus = trpc.payment.checkStatus.useQuery(
     { booking_id: bookingId, session_id: sessionId ?? '' },
     {
-      enabled: !!sessionId && !slipRejected,
+      enabled: !!sessionId,
       refetchInterval: 10_000,
       refetchIntervalInBackground: false,
     },
@@ -72,14 +101,14 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
       } else if ('pendingManualReview' in data && data.pendingManualReview) {
         setUnderReview(true);
       } else if ('retrySlip' in data && data.retrySlip) {
-        setSlipError(data.message);
+        setVerificationIssue(true);
       } else {
         setSlipRejected(true);
       }
     },
-    onError(err) {
+    onError() {
       setVerifying(false);
-      setSlipError(localizeServerMessage(err.message, language));
+      setVerificationIssue(true);
     },
   });
 
@@ -91,7 +120,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
 
   // Countdown timer
   useEffect(() => {
-    if (!expiresAt || underReview || slipRejected) return;
+    if (!expiresAt || contactRequired) return;
     const tick = () => {
       const ms = new Date(expiresAt).getTime() - Date.now();
       setRemaining(Math.max(0, ms));
@@ -100,17 +129,16 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [expiresAt, onExpired, underReview, slipRejected]);
+  }, [expiresAt, onExpired, contactRequired]);
 
   // React to polled status
   useEffect(() => {
-    if (slipRejected) return;
     const status = checkStatus.data?.status;
     if (status === 'paid') onSuccess();
     if (status === 'under_review') setUnderReview(true);
     if (status === 'failed') setSlipRejected(true);
-    if (status === 'expired') onExpired();
-  }, [checkStatus.data, onSuccess, onExpired, slipRejected]);
+    if (status === 'expired' && !contactRequired) onExpired();
+  }, [checkStatus.data, onSuccess, onExpired, contactRequired]);
 
   // Cleanup poll on unmount
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
@@ -118,8 +146,22 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
   async function handleSlipUpload() {
     if (!slipFile || !sessionId) return;
     setSlipError(null);
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(slipFile.type)) {
+      setSlipError(t('publicHotel.paymentSlipTypeError'));
+      return;
+    }
+    if (slipFile.size === 0 || slipFile.size > 3_500_000) {
+      setSlipError(t('publicHotel.paymentSlipSizeError'));
+      return;
+    }
     setVerifying(true);
     const reader = new FileReader();
+    const readFailed = () => {
+      setVerifying(false);
+      setSlipError(t('publicHotel.paymentSlipReadError'));
+    };
+    reader.onerror = readFailed;
+    reader.onabort = readFailed;
     reader.onload = () => {
       const base64 = (reader.result as string).split(',')[1];
       verifySlipMutation.mutate({
@@ -130,25 +172,22 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
         slip_content_type: slipFile.type as 'image/jpeg' | 'image/png' | 'image/webp',
       });
     };
-    reader.readAsDataURL(slipFile);
+    try {
+      reader.readAsDataURL(slipFile);
+    } catch {
+      readFailed();
+    }
   }
 
   const isExpired = remaining <= 0 && !!expiresAt;
 
-  if (slipRejected) {
+  if (contactRequired) {
     return (
       <div className="payment-qr payment-qr--error payment-slip-result" role="status" aria-live="polite">
-        <h3 className="payment-error-msg">{t('publicHotel.paymentRejectedTitle')}</h3>
-        <p className="payment-error-sub">{t('publicHotel.paymentRejectedDesc')}</p>
-      </div>
-    );
-  }
-
-  if (underReview) {
-    return (
-      <div className="payment-qr payment-qr--review" role="status" aria-live="polite">
-        <h3 className="payment-review-title">{t('publicHotel.paymentUnderReviewTitle')}</h3>
-        <p className="payment-error-sub">{t('publicHotel.paymentUnderReviewDesc')}</p>
+        <h3 className="payment-error-msg">{t(slipRejected ? 'publicHotel.paymentRejectedTitle' : 'publicHotel.paymentUnderReviewTitle')}</h3>
+        <p className="payment-error-sub">{t(slipRejected ? 'publicHotel.paymentRejectedDesc' : 'publicHotel.paymentUnderReviewDesc')}</p>
+        <p>{t('publicHotel.paymentContactBookingReference', { reference: bookingId.slice(0, 8).toUpperCase() })}</p>
+        {contactLinks}
       </div>
     );
   }
@@ -169,6 +208,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
       <div className="payment-qr payment-qr--error" role="alert">
         <p className="payment-error-msg">{message}</p>
         {!contactIncluded && <p className="payment-error-sub">{t('bookingPayment.contactProperty')}</p>}
+        {contactLinks}
       </div>
     );
   }
@@ -224,17 +264,29 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
 
           {tab === 'qr' && (
             <div id="panel-qr" role="tabpanel" aria-labelledby="tab-qr" className="payment-qr-panel">
-              {qrImageUrl && (
+              {qrImageUrl && qrReadiness === 'ready' ? (
                 <img
                   src={qrImageUrl}
                   alt="QR Code สำหรับชำระเงินผ่าน PromptPay"
                   className="payment-qr-image"
                   width={300}
                   height={300}
+                  onError={() => {
+                    setQrImageUrl(null);
+                    setQrReadiness('render-failed');
+                  }}
                 />
+              ) : (
+                <p className="payment-error-sub" role="alert" aria-live="polite">
+                  {qrReadiness === 'missing-payload'
+                    ? t('publicHotel.paymentQrMissingPayload')
+                    : t('publicHotel.paymentQrRenderFailure')}
+                </p>
               )}
-              <p className="payment-qr-hint">สแกนด้วยแอปธนาคารเพื่อชำระเงิน</p>
-              <p className="payment-qr-hint payment-qr-hint--sub">ระบบจะตรวจสอบการชำระเงินอัตโนมัติ</p>
+              {qrReadiness === 'ready' && <>
+                <p className="payment-qr-hint">{t('publicHotel.paymentQrScanHint')}</p>
+                <p className="payment-qr-hint payment-qr-hint--sub">{t('publicHotel.paymentQrUploadHint')}</p>
+              </>}
             </div>
           )}
 
@@ -245,7 +297,7 @@ export function PaymentQR({ bookingId, hotelId, onSuccess, onExpired }: PaymentQ
                 <input
                   id="slip-file-input"
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => {
                     setSlipFile(e.target.files?.[0] ?? null);
                     setSlipError(null);

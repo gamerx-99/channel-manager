@@ -5,6 +5,8 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { beforeEach, describe, expect, it } from "vitest";
 import { authSchema } from "../../drizzle/auth-schema";
 import { d1Schema } from "../../drizzle/d1-schema";
+import { bookingDocuments } from "../../drizzle/d1-schema";
+import { eq } from "drizzle-orm";
 import type { D1ScopedDatabase } from "../db/scope";
 import { getBookingDocument, getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from "./bookingDocuments";
 
@@ -40,8 +42,8 @@ beforeEach(() => {
     exec(`insert into rooms (id, hotel_id, room_type_id, room_number) values (?, ?, ?, '1')`, `r-${id}`, id, `rt-${id}`);
   }
   exec(`insert into hotel_users (id, hotel_id, user_id, role) values ('own-h1', 'h1', 'owner', 'hotel_owner')`);
-  exec(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, status, payment_status, payment_method)
-    values ('paid', 'h1', 'r-h1', 'Guest', '2026-12-01', '2026-12-03', '1070.00', 'confirmed', 'verified', 'promptpay')`);
+  exec(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, status, source, payment_status, payment_method)
+    values ('paid', 'h1', 'r-h1', 'Guest', '2026-12-01', '2026-12-03', '1070.00', 'confirmed', 'walk-in', 'verified', 'cash')`);
   exec(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, status, payment_status)
     values ('unpaid', 'h1', 'r-h1', 'Guest', '2026-12-05', '2026-12-06', '500', 'confirmed', 'unpaid')`);
   exec(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, status, payment_status)
@@ -70,16 +72,15 @@ describe("issuing documents", () => {
 
   it("numbers receipts and tax invoices separately and keeps the issued snapshot", async () => {
     const first = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW);
-    const second = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW);
     const tax = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "tax_invoice", buyer }, NOW);
 
-    expect([first.number, second.number, tax.number]).toEqual(["RC-2026-000001", "RC-2026-000002", "TX-2026-000001"]);
-    expect(first).toMatchObject({ issuedOn: "2026-11-07", subtotalSatang: 100000, totalSatang: 107000, vatEnabled: true, vatRate: 7, vatSatang: 7000, withholdingEnabled: true, withholdingRate: 3, withholdingSatang: 3000, netToPaySatang: 104000, booking: { nights: 2, roomType: "Deluxe", paymentMethod: "promptpay" } });
+    expect([first.number, tax.number]).toEqual(["RC-2026-000001", "TX-2026-000001"]);
+    expect(first).toMatchObject({ issuedOn: "2026-11-07", subtotalSatang: 100000, totalSatang: 107000, vatEnabled: true, vatRate: 7, vatSatang: 7000, withholdingEnabled: true, withholdingRate: 3, withholdingSatang: 3000, netToPaySatang: 104000, booking: { nights: 2, roomType: "Deluxe", paymentMethod: "cash" }, verifiedTransactionReference: null });
     expect(tax).toMatchObject({ vatSatang: 7000, withholdingSatang: 3000, netToPaySatang: 104000, issuer: { taxId: header.taxId } });
 
     await saveInvoiceSettings(db, owner, "h1", { ...header, issuerName: "New name" }, NOW);
     const listed = await listBookingDocuments(db, owner, "h1", "paid");
-    expect(listed).toHaveLength(3);
+    expect(listed).toHaveLength(2);
     expect(listed.every(row => row.snapshot.issuer.name === header.issuerName)).toBe(true);
     expect(listed.every(row => row.snapshot.vatRate === 7 && row.snapshot.withholdingRate === 3)).toBe(true);
   });
@@ -87,6 +88,17 @@ describe("issuing documents", () => {
   it("refuses unpaid and cancelled bookings", async () => {
     await expect(issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "receipt", buyer }, NOW)).rejects.toThrow(/paid booking/);
     await expect(issueBookingDocument(db, owner, "h1", { bookingId: "cancelled", type: "receipt", buyer }, NOW)).rejects.toThrow(/paid booking/);
+  });
+
+  it("captures the matching verified full-payment session and reference in the receipt snapshot", async () => {
+    exec(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, status, source, payment_status, payment_method)
+      values ('paid-session', 'h1', 'r-h1', 'Session Guest', '2026-12-10', '2026-12-11', '250.00', 'confirmed', 'manual', 'verified', 'promptpay')`);
+    exec(`insert into payment_sessions (id, booking_id, hotel_id, amount, status, qr_reference, expires_at, verified_at, verified_transaction_ref)
+      values ('ps-paid', 'paid-session', 'h1', '250.00', 'paid', 'QR-1', 1794000000000, 1794000000000, 'BANK-REF-250')`);
+    const receipt = await issueBookingDocument(db, owner, "h1", { bookingId: "paid-session", type: "receipt", buyer }, NOW);
+    expect(receipt.verifiedTransactionReference).toBe("BANK-REF-250");
+    const [row] = await db.select().from(bookingDocuments).where(eq(bookingDocuments.bookingId, "paid-session"));
+    expect(row.paymentSessionId).toBe("ps-paid");
   });
 
   it("needs the switch on, the hotel tax ID and the buyer address for a tax invoice", async () => {
@@ -258,23 +270,15 @@ describe("issuing documents", () => {
     }, NOW)).rejects.toThrow(/Idempotency key was already used with different document content or buyer details/);
   });
 
-  it("supports multiple receipts for partial payment installments on the same booking", async () => {
-    // Deposit installment receipt
-    const depositReceipt = await issueBookingDocument(db, owner, "h1", {
-      bookingId: "paid", type: "receipt", buyer, idempotencyKey: "deposit-installment-key",
+  it("allows at most one full payment receipt per booking across idempotency keys", async () => {
+    const first = await issueBookingDocument(db, owner, "h1", {
+      bookingId: "paid", type: "receipt", buyer, idempotencyKey: "full-payment-receipt-key",
     }, NOW);
-    expect(depositReceipt.number).toBe("RC-2026-000001");
-
-    // Final balance installment receipt
-    const balanceReceipt = await issueBookingDocument(db, owner, "h1", {
-      bookingId: "paid", type: "receipt", buyer, idempotencyKey: "final-balance-key",
-    }, NOW);
-    expect(balanceReceipt.number).toBe("RC-2026-000002");
-
-    // Both receipts exist for the booking
-    const docs = await listBookingDocuments(db, owner, "h1", "paid");
-    expect(docs).toHaveLength(2);
-    expect(docs.map(d => d.snapshot.number).sort()).toEqual(["RC-2026-000001", "RC-2026-000002"]);
+    expect(first.number).toBe("RC-2026-000001");
+    await expect(issueBookingDocument(db, owner, "h1", {
+      bookingId: "paid", type: "receipt", buyer, idempotencyKey: "different-receipt-key",
+    }, NOW)).rejects.toThrow(/receipt has already been issued/i);
+    expect(await listBookingDocuments(db, owner, "h1", "paid")).toHaveLength(1);
   });
 
   it("retains immutable snapshot across hotel setting changes and re-downloads", async () => {

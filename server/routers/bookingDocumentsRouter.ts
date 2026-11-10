@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { BOOKING_DOCUMENT_TYPES, TAX_ID_PATTERN } from '@shared/bookingDocuments';
-import { protectedProcedure, router } from '../_core/trpc';
+import { billingCandidateProcedure, router } from '../_core/trpc';
 import { getBookingDocument, getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
 import { createEmailSender } from '../email';
 import { generateBookingDocumentPdf, uint8ArrayToBase64 } from '../pdf/bookingDocumentPdf';
@@ -18,7 +18,7 @@ function requireDb<T>(db: T | undefined | null): T {
 }
 
 export const bookingDocumentsRouter = router({
-  settings: protectedProcedure.input(hotelInput).query(async ({ ctx, input }) => {
+  settings: billingCandidateProcedure.input(hotelInput).query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'property.view');
     try {
       return await getInvoiceSettings(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
@@ -27,7 +27,7 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
-  saveSettings: protectedProcedure.input(hotelInput.extend({
+  saveSettings: billingCandidateProcedure.input(hotelInput.extend({
     enabled: z.boolean(),
     issuer_name: z.string().trim().min(1).max(200),
     address: z.string().trim().min(1).max(500),
@@ -52,7 +52,7 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
-  list: protectedProcedure.input(hotelInput.extend({ booking_id: z.string().min(1) })).query(async ({ ctx, input }) => {
+  list: billingCandidateProcedure.input(hotelInput.extend({ booking_id: z.string().min(1) })).query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
     try {
       return await listBookingDocuments(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.booking_id);
@@ -61,7 +61,7 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
-  listHotel: protectedProcedure.input(hotelInput.extend({
+  listHotel: billingCandidateProcedure.input(hotelInput.extend({
     limit: z.number().int().min(1).max(100).default(50),
   })).query(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
@@ -72,7 +72,7 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
-  issue: protectedProcedure.input(hotelInput.extend({
+  issue: billingCandidateProcedure.input(hotelInput.extend({
     booking_id: z.string().min(1),
     type: z.enum(BOOKING_DOCUMENT_TYPES),
     buyer_name: z.string().trim().min(1).max(200),
@@ -95,18 +95,13 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
-  getPdf: protectedProcedure.input(hotelInput.extend({
-    document_id: z.string().optional(),
-    snapshot: z.custom<any>().optional(),
+  getPdf: billingCandidateProcedure.input(hotelInput.extend({
+    document_id: z.string().min(1),
   })).mutation(async ({ ctx, input }) => {
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
     try {
-      let snapshot = input.snapshot;
-      if (!snapshot && input.document_id) {
-        const doc = await getBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.document_id);
-        snapshot = doc.snapshot;
-      }
-      if (!snapshot) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Document ID or snapshot required.' });
+      const doc = await getBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.document_id);
+      const snapshot = doc.snapshot;
       const pdfBytes = await generateBookingDocumentPdf(snapshot);
       const base64 = uint8ArrayToBase64(pdfBytes);
       const filename = `${snapshot.type}_${snapshot.number}_${snapshot.issuedOn}.pdf`;
@@ -116,7 +111,7 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
-  emailDocument: protectedProcedure.input(hotelInput.extend({
+  emailDocument: billingCandidateProcedure.input(hotelInput.extend({
     document_id: z.string().min(1),
     recipient_email: z.string().email(),
   })).mutation(async ({ ctx, input }) => {

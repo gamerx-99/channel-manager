@@ -7,7 +7,7 @@
  * Generates a QR string that encodes:
  * - PromptPay receiver (mobile / national ID / tax ID)
  * - Amount in THB
- * - Unique transaction reference (for idempotent slip verification)
+ * Booking references remain in payment sessions; they are not recipient IDs.
  *
  * The string is returned to the client which renders it via a QR library or
  * a QR image API — no binary output here.
@@ -41,7 +41,7 @@ export interface GenerateQROptions {
   promptPayId: string;
   /** Amount in THB (must be > 0) */
   amount: number;
-  /** Unique booking/session reference (max 25 chars) */
+  /** Internal booking/session reference (max 25 chars); not encoded as a recipient. */
   ref: string;
 }
 
@@ -56,16 +56,17 @@ export function generatePromptPayQR({ promptPayId, amount, ref }: GenerateQROpti
   if (amount <= 0) throw new Error('Amount must be greater than zero.');
   if (!ref || ref.length > 25) throw new Error('ref must be 1–25 characters.');
 
-  const ppId = normalisePromptPayId(promptPayId)?.emvValue;
-  if (!ppId) throw new Error('Invalid PromptPay ID. Expected a 06, 08 or 09 mobile or 13-digit National/Tax ID.');
+  const receiver = normalisePromptPayId(promptPayId);
+  if (!receiver) throw new Error('Invalid PromptPay ID. Expected a 06, 08 or 09 mobile or 13-digit National/Tax ID.');
 
   // Merchant Account Info (tag 29 for PromptPay)
   //   00: GUID  "A000000677010111"
-  //   01: PromptPay ID
-  //   02: Transaction ref (biller reference / invoice number)
+  // BOT Thai QR standard, section 2.3: subtag 01 is a mobile number;
+  // subtag 02 is a National/Tax ID. Never put a booking reference there.
+  // This is credit transfer (tag 29), not bill payment (tag 30).
   const merchantAccount = tlv(
     '29',
-    tlv('00', 'A000000677010111') + tlv('01', ppId) + tlv('02', ref),
+    tlv('00', 'A000000677010111') + tlv(receiver.type === 'mobile' ? '01' : '02', receiver.emvValue),
   );
 
   // Amount — always 2 decimal places

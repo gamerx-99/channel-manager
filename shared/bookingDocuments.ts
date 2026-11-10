@@ -96,6 +96,7 @@ export type BookingDocumentSnapshot = {
   amountPaidSatang?: number;
   balanceSatang?: number;
   paymentStatus?: string | null;
+  verifiedTransactionReference?: string | null;
 };
 
 export const TAX_ID_PATTERN = /^\d{13}$/;

@@ -138,6 +138,7 @@ export function buildBookingDocumentHtml(doc: BookingDocumentSnapshot, labels: B
   </table>
   <div class="foot">
     ${paymentMethodLabel ? `<div>${escapeHtml(labels.paymentMethod)} ${escapeHtml(paymentMethodLabel)}</div>` : ""}
+    ${doc.verifiedTransactionReference ? `<div>${escapeHtml(language === "th" ? "เลขอ้างอิงธุรกรรม" : "Verified transaction reference")}: ${escapeHtml(doc.verifiedTransactionReference)}</div>` : ""}
     <div>${escapeHtml(labels.bookingRef)} ${escapeHtml(doc.booking.id.slice(0, 8))}</div>
   </div>
   <div class="sign"><div>${escapeHtml(labels.signature)}</div></div>

@@ -63,7 +63,7 @@ export type TrpcContext = {
   auth?: AuthInstance;
   /** Request headers that carried the session. */
   headers?: Headers;
-  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string; SLIPOK_ENCRYPTION_KEY?: string; RESEND_API_KEY?: string; EMAIL_FROM?: string };
+  billingEnv?: { BILLING_CANDIDATE_ENABLED?: string; PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string; SLIPOK_ENCRYPTION_KEY?: string; RESEND_API_KEY?: string; EMAIL_FROM?: string };
 };
 
 export type CreateContextOptions = {
@@ -73,7 +73,7 @@ export type CreateContextOptions = {
   clientIp?: string | null;
   db?: D1ScopedDatabase;
   auth?: AuthInstance;
-  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string; SLIPOK_ENCRYPTION_KEY?: string; RESEND_API_KEY?: string; EMAIL_FROM?: string };
+  billingEnv?: { BILLING_CANDIDATE_ENABLED?: string; PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string; SLIPOK_ENCRYPTION_KEY?: string; RESEND_API_KEY?: string; EMAIL_FROM?: string };
 };
 
 function normalizeHeaders(

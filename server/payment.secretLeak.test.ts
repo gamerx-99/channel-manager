@@ -15,6 +15,7 @@ const database = vi.hoisted(() => ({
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  confirmManualFullPayment: vi.fn(),
   savePaymentSessionSlip: vi.fn(),
   logBookingStatusChange: vi.fn(),
   expireBookingIfPast: vi.fn(),
@@ -61,6 +62,7 @@ const context = (index: number) => ({
   req: {} as Request,
   res: {} as Response,
   clientIp: `secret-leak-test-${index}`,
+  billingEnv: { BILLING_CANDIDATE_ENABLED: "true" },
   user: {
     id: "user-a", email: "owner@example.test", name: "Owner",
     appMetadata: {}, userMetadata: {}, role: "hotel_owner", roles: ["hotel_owner"], memberships: [{ hotelId: HOTEL, role: "hotel_owner" }],
@@ -100,6 +102,7 @@ beforeEach(() => {
   database.createPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING_CREATE, hotel_id: HOTEL, status: "pending", amount: "120.00", qr_string: "promptpay", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   database.expireBookingIfPast.mockResolvedValue({ status: "pending_payment", expires_at: null });
   database.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  database.confirmManualFullPayment.mockResolvedValue(true);
   database.savePaymentSessionSlip.mockResolvedValue(undefined);
   crypto.encryptSlipOkKey.mockResolvedValue("SENTINEL_ENC_KEY");
   crypto.hashSlipOkKey.mockResolvedValue("SENTINEL_HASH");

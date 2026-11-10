@@ -23,6 +23,7 @@ import { dateLocale } from "@/lib/dateLocale";
 import { bangkokMonth } from "@shared/finance";
 import { buildBookingDocumentHtml, downloadDocumentFile, downloadPdfBase64, formatSatang, writePrintWindow } from "@/lib/bookingDocumentPrint";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth, type FinancialsChoice } from "./financialsPeriod";
+import { useBillingCandidateEnabled } from "@/lib/useBillingCandidateEnabled";
 import "./Financials.css";
 
 const chartConfig = {
@@ -129,6 +130,7 @@ function LoadingDashboard() {
 
 export default function Financials() {
   const { t, language } = useTranslation();
+  const billingCandidate = useBillingCandidateEnabled();
   const locale = dateLocale(language);
   const { hotels, selectedHotelId } = useHotel();
   const hotelId = selectedHotelId ?? hotels[0]?.id;
@@ -264,7 +266,7 @@ export default function Financials() {
         <p className="field-help financials-bookings-help">{data.bookings.length > 0 ? t("financials.bookingsExportDesc", { count: data.bookings.length }) : t("financials.bookingsExportEmpty")}</p>
       </section>
 
-      <section className="panel financials-documents-panel" style={{ marginTop: 24 }}>
+      {billingCandidate.enabled && <section className="panel financials-documents-panel" style={{ marginTop: 24 }}>
         <div className="panel-heading">
           <div>
             <div className="eyebrow">{t("bookingDocuments.dialogEyebrow")}</div>
@@ -273,7 +275,7 @@ export default function Financials() {
         </div>
         <p className="field-help">{t("bookingDocuments.allDocumentsDesc")}</p>
         <BillingDocumentsList hotelId={hotelId} />
-      </section>
+      </section>}
 
       {hotelId && canManagePaymentSettings && <p className="field-help"><Link href={`/hotels/${hotelId}/settings/finance`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
     </div>
@@ -302,8 +304,7 @@ function BillingDocumentsList({ hotelId }: { hotelId?: string | null }) {
     try {
       const res = await downloadPdfMutation.mutateAsync({
         hotel_id: hotelId!,
-        document_id: docId,
-        snapshot: doc,
+        document_id: docId!,
       });
       downloadPdfBase64(res.filename, res.base64);
     } catch {

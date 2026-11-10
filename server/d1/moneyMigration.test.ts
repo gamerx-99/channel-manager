@@ -13,8 +13,10 @@ describe("D1 exact-money migration", () => {
       db.exec("PRAGMA foreign_keys = ON");
       const migrations = readdirSync(migrationFolder).filter(file => file.endsWith(".sql")).sort();
       const moneyMigrations = migrations.filter(file => file.startsWith("20261028044"));
-      const laterMigrations = migrations.filter(file => file.startsWith("2026102819"));
-      for (const file of migrations.filter(file => !moneyMigrations.includes(file) && !laterMigrations.includes(file))) {
+      // Seed the pre-money schema, then run rebuilds and every later migration
+      // in deployment order. Future triggers must not precede old rebuilds.
+      const laterMigrations = migrations.filter(file => file > moneyMigrations[moneyMigrations.length - 1]);
+      for (const file of migrations.filter(file => file < moneyMigrations[0])) {
         const source = readFileSync(resolve(migrationFolder, file), "utf8");
         for (const statement of source.split("--> statement-breakpoint")) if (statement.trim()) db.exec(statement);
       }

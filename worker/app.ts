@@ -36,6 +36,8 @@ export type WorkerEnv = {
   SLIPOK_ENCRYPTION_KEY?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  /** Global feature gate; absent or anything except "true" keeps the billing candidate inactive. */
+  BILLING_CANDIDATE_ENABLED?: string;
 };
 
 type WorkerAppDependencies = {
@@ -174,7 +176,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
         )),
         publicBookingLimiter: c.env?.PUBLIC_BOOKING_LIMITER,
         media: c.env?.MEDIA,
-        billingEnv: { PLATFORM_PROMPTPAY_ID: c.env?.PLATFORM_PROMPTPAY_ID, SLIPOK_API_KEY: c.env?.SLIPOK_API_KEY, SLIPOK_BRANCH_ID: c.env?.SLIPOK_BRANCH_ID, SLIPOK_ENCRYPTION_KEY: c.env?.SLIPOK_ENCRYPTION_KEY, RESEND_API_KEY: c.env?.RESEND_API_KEY, EMAIL_FROM: c.env?.EMAIL_FROM },
+        billingEnv: { BILLING_CANDIDATE_ENABLED: c.env?.BILLING_CANDIDATE_ENABLED, PLATFORM_PROMPTPAY_ID: c.env?.PLATFORM_PROMPTPAY_ID, SLIPOK_API_KEY: c.env?.SLIPOK_API_KEY, SLIPOK_BRANCH_ID: c.env?.SLIPOK_BRANCH_ID, SLIPOK_ENCRYPTION_KEY: c.env?.SLIPOK_ENCRYPTION_KEY, RESEND_API_KEY: c.env?.RESEND_API_KEY, EMAIL_FROM: c.env?.EMAIL_FROM },
         cfConnectingIp: c.req.header("cf-connecting-ip"),
       }),
     });

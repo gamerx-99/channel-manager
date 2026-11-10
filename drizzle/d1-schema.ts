@@ -521,6 +521,8 @@ export const paymentSessions = sqliteTable("payment_sessions", {
   updatedAt: updatedAt(),
   rawResponse: json<unknown>("raw_response"),
   verifiedTransactionRef: text("verified_transaction_ref"),
+  verifiedBy: text("verified_by"),
+  verifiedReason: text("verified_reason"),
 }, table => [
   check("payment_sessions_amount_check", sql`${nonnegativeMoney(table.amount)} and cast(${table.amount} as numeric) > 0`),
   check("payment_sessions_status_check", sql`${table.status} in ('pending', 'paid', 'expired', 'failed')`),
@@ -568,6 +570,7 @@ export const bookingDocuments = sqliteTable("booking_documents", {
   docNumber: text("doc_number").notNull(),
   snapshot: json<BookingDocumentSnapshot>("snapshot_json").notNull(),
   idempotencyKey: text("idempotency_key"),
+  paymentSessionId: text("payment_session_id").references(() => paymentSessions.id, { onDelete: "restrict" }),
   issuedBy: text("issued_by"),
   createdAt: createdAt(),
 }, table => [
@@ -576,6 +579,8 @@ export const bookingDocuments = sqliteTable("booking_documents", {
   check("booking_documents_year_check", sql`${table.year} >= 2020 and ${table.year} <= 2100`),
   uniqueIndex("booking_documents_hotel_type_year_seq_key").on(table.hotelId, table.docType, table.year, table.seq),
   uniqueIndex("booking_documents_hotel_idempotency_key").on(table.hotelId, table.idempotencyKey),
+  uniqueIndex("booking_documents_one_receipt_per_booking").on(table.bookingId).where(sql`${table.docType} = 'receipt'`),
+  uniqueIndex("booking_documents_payment_session_unique").on(table.paymentSessionId),
   index("idx_booking_documents_booking_id").on(table.bookingId),
 ]);
 

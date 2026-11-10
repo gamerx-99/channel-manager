@@ -49,8 +49,7 @@ export function useBookingDocuments(hotelId: string, booking: { id: string; gues
     try {
       const res = await getPdf.mutateAsync({
         hotel_id: hotelId,
-        document_id: documentId,
-        snapshot: doc,
+        document_id: documentId!,
       });
       downloadPdfBase64(res.filename, res.base64);
     } catch {

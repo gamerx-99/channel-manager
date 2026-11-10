@@ -386,9 +386,9 @@ export async function generateBookingDocumentPdf(snapshot: BookingDocumentSnapsh
   // Draw Status Card
   page.drawRectangle({
     x: statusBoxX,
-    y: statusBoxTop - 65,
+    y: statusBoxTop - (snapshot.verifiedTransactionReference ? 80 : 65),
     width: statusBoxWidth,
-    height: 70,
+    height: snapshot.verifiedTransactionReference ? 85 : 70,
     color: rgb(0.98, 0.98, 0.98),
     borderColor: borderGray,
     borderWidth: 1,
@@ -417,6 +417,15 @@ export async function generateBookingDocumentPdf(snapshot: BookingDocumentSnapsh
       x: statusBoxX + 12,
       y: statusBoxTop - 52,
       size: 8,
+      font: regularFont,
+      color: mutedInk,
+    });
+  }
+  if (snapshot.verifiedTransactionReference) {
+    page.drawText(`เลขอ้างอิงธุรกรรม: ${snapshot.verifiedTransactionReference}`, {
+      x: statusBoxX + 12,
+      y: statusBoxTop - 68,
+      size: 7,
       font: regularFont,
       color: mutedInk,
     });
@@ -456,8 +465,8 @@ export async function generateBookingDocumentPdf(snapshot: BookingDocumentSnapsh
 
   // Divider above Grand Total
   page.drawLine({
-    start: { x: summaryBoxX, y: currentY + 4 },
-    end: { x: A4_WIDTH - marginX, y: currentY + 4 },
+    start: { x: summaryBoxX, y: currentY + 10 },
+    end: { x: A4_WIDTH - marginX, y: currentY + 10 },
     thickness: 1,
     color: borderGray,
   });

@@ -204,6 +204,13 @@
       "when": 1794303600000,
       "tag": "20261110030000_annual_document_numbering",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1794304800000,
+      "tag": "20261110040000_verified_receipt_link",
+      "breakpoints": true
     }
   ]
 }

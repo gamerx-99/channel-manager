@@ -10,6 +10,8 @@ describe("receipts and tax invoices contract", () => {
   const finance = read("client/src/pages/HotelFinanceSettings.tsx");
   const dialog = read("client/src/components/booking/BookingDocumentDialog.tsx");
   const settings = read("client/src/components/hotel/HotelInvoiceSettings.tsx");
+  const financials = read("client/src/pages/Financials.tsx");
+  const candidateHook = read("client/src/lib/useBillingCandidateEnabled.ts");
 
   it("registers the router", () => {
     expect(router).toContain("bookingDocuments: bookingDocumentsRouter");
@@ -28,5 +30,15 @@ describe("receipts and tax invoices contract", () => {
     expect(bookings).toContain("<BookingDocumentDialog");
     expect(dialog).toContain('id="document-issue"');
     expect(dialog).toContain("bookingDocuments.printAgain");
+  });
+
+  it("keeps Billing Documents hidden unless the server explicitly enables the candidate", () => {
+    expect(candidateHook).toContain("query.data === true");
+    expect(bookings).toContain("billingCandidate.enabled && canIssueDocuments && canIssueBookingDocument(booking)");
+    expect(bookings).toContain("billingCandidate.enabled && documentBooking && <BookingDocumentDialog");
+    expect(financials).toContain("billingCandidate.enabled && <section className=\"panel financials-documents-panel\"");
+    expect(finance).toContain("billingCandidate.enabled && <HotelInvoiceSettings");
+    expect(bookings).toContain("billingCandidate.ready ? <button");
+    expect(bookings).toContain("manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: true })");
   });
 });

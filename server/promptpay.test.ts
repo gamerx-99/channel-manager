@@ -18,6 +18,19 @@
 import { describe, it, expect } from 'vitest';
 import { generatePromptPayQR, buildQrImageUrl } from './promptpay';
 
+function parseTlv(payload: string) {
+  const fields = new Map<string, string>();
+  for (let offset = 0; offset < payload.length;) {
+    const tag = payload.slice(offset, offset + 2);
+    const length = Number(payload.slice(offset + 2, offset + 4));
+    if (!Number.isInteger(length) || length < 1 || offset + 4 + length > payload.length) throw new Error('Invalid TLV');
+    if (fields.has(tag)) throw new Error('Duplicate TLV tag');
+    fields.set(tag, payload.slice(offset + 4, offset + 4 + length));
+    offset += 4 + length;
+  }
+  return fields;
+}
+
 describe('generatePromptPayQR', () => {
   it('produces a string starting with EMVCo payload format indicator', () => {
     const qr = generatePromptPayQR({ promptPayId: '0812345678', amount: 100, ref: 'TEST-01' });
@@ -56,9 +69,21 @@ describe('generatePromptPayQR', () => {
     expect(qr).toContain('1234567890123');
   });
 
-  it('includes the transaction reference', () => {
+  it('encodes only the mobile receiver in tag 29, never a booking reference as a National ID', () => {
     const qr = generatePromptPayQR({ promptPayId: '0812345678', amount: 500, ref: 'BK-ABCD1234' });
-    expect(qr).toContain('BK-ABCD1234');
+    const fields = parseTlv(qr);
+    expect(parseTlv(fields.get('29')!)).toEqual(new Map([
+      ['00', 'A000000677010111'], ['01', '0066812345678'],
+    ]));
+    expect(fields.get('54')).toBe('500.00');
+    expect(qr).not.toContain('BK-ABCD1234');
+  });
+
+  it('encodes a National/Tax ID in subtag 02 instead of the mobile-number subtag', () => {
+    const qr = generatePromptPayQR({ promptPayId: '1234567890123', amount: 500, ref: 'BK-ABCD1234' });
+    expect(parseTlv(parseTlv(qr).get('29')!)).toEqual(new Map([
+      ['00', 'A000000677010111'], ['02', '1234567890123'],
+    ]));
   });
 
   it('includes THB currency code 764', () => {

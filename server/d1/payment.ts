@@ -139,6 +139,35 @@ export async function finalizePaymentSession(db: D1ScopedDatabase, caller: D1Cal
   }
 }
 
+/** Atomically stores verified full-payment evidence; a database trigger confirms the booking and logs the transition. */
+export async function confirmManualFullPayment(db: D1ScopedDatabase, input: {
+  hotelId: string; bookingId: string; sessionId: string; amountSatang: number; transactionReference: string; userId: string; reason: string; now: Date; rawResponse?: Record<string, unknown>;
+}) {
+  const toSatangSql = (column: string) => `CASE WHEN instr(${column}, '.') = 0 THEN CAST(${column} AS INTEGER) * 100 ELSE CAST(substr(${column}, 1, instr(${column}, '.') - 1) AS INTEGER) * 100 + CAST(substr(substr(${column}, instr(${column}, '.') + 1) || '00', 1, 2) AS INTEGER) END`;
+  const sessionAmount = toSatangSql("s.amount");
+  try {
+    const result = await db.$client.batch([
+      db.$client.prepare(`UPDATE payment_sessions AS s SET status = 'paid', verified_at = ?, verified_transaction_ref = ?, raw_response = ?, verified_by = ?, verified_reason = ?
+        WHERE s.id = ? AND s.hotel_id = ? AND s.booking_id = ? AND s.status = 'pending'
+          AND ${sessionAmount} = ?
+          AND ${sessionAmount} = (SELECT CASE WHEN instr(b.price, '.') = 0 THEN CAST(b.price AS INTEGER) * 100 ELSE CAST(substr(b.price, 1, instr(b.price, '.') - 1) AS INTEGER) * 100 + CAST(substr(substr(b.price, instr(b.price, '.') + 1) || '00', 1, 2) AS INTEGER) END FROM bookings b WHERE b.id = s.booking_id AND b.hotel_id = s.hotel_id AND b.status = 'pending_verification')`)
+        .bind(input.now.getTime(), input.transactionReference, input.rawResponse ? JSON.stringify(input.rawResponse) : null, input.userId, input.reason,
+          input.sessionId, input.hotelId, input.bookingId, input.amountSatang),
+    ]);
+    return (result[0]?.meta.changes ?? 0) === 1;
+  } catch (error) {
+    const value = error as { message?: string; cause?: { message?: string } };
+    const message = `${value?.message ?? ""} ${value?.cause?.message ?? ""}`;
+    if (message.includes("idx_payment_sessions_verified_ref_unique")) {
+      throw new TRPCError({ code: "CONFLICT", message: "This transaction reference has already been used." });
+    }
+    if (message.includes("verified payment must match a pending full booking")) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export async function updateBookingPaymentStatus(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, bookingId: string, paymentStatus: PaymentStatus, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "booking.payment_status.update", now);
   const [row] = await db.update(bookings).set({ paymentStatus }).where(and(eq(bookings.id, bookingId), eq(bookings.hotelId, hotelId))).returning({ id: bookings.id });
