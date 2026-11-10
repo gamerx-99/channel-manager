@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmailSender, ResendEmailSender } from "./email";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 async function sentBody(send: (sender: ResendEmailSender) => Promise<void>) {
   const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "1" }), { status: 200 }));
@@ -28,6 +31,8 @@ describe("ResendEmailSender", () => {
   });
 
   it("does not report a mock delivery when a Worker requires a real mail provider", async () => {
+    // createEmailSender falls back to process.env, so a key on the host must not leak in.
+    vi.stubEnv("RESEND_API_KEY", "");
     const sender = createEmailSender({}, { required: true });
     await expect(sender.sendEmail({ to: "guest@example.test", subject: "x", html: "x" })).rejects.toThrow("RESEND_API_KEY is required");
   });

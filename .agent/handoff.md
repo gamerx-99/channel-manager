@@ -5082,3 +5082,10 @@ Not tested in a browser or with a real email.
 
 - Failed booking email events are now retryable (failed row is removed before re-claim); sent events remain permanently blocked to prevent duplicates. Crash during 'sending' leaves a stale row that is not auto-retried (avoids duplicate sends); a reaper/manual reset can clear it.
 - Staff invite list/resend/cancel APIs already exist in staffRouter; the HotelStaff page UI is deferred as a separate ticket (out of scope for booking-email work). No Website Builder changes.
+
+## 2026-11-11 — Two test defects on f79f5d5 fixed (not committed)
+
+- `server/d1/bookingEmail.delivery.test.ts`: one call still used `realSlipBase64`, a name that no longer exists after the fixture was renamed to the synthetic `testSlipBase64` (ReferenceError). Pointed it at `testSlipBase64` and corrected the title/comment that claimed a real user slip. No assertion changed.
+- `server/email.test.ts`: the "Worker requires a real mail provider" test failed on a host with `RESEND_API_KEY` set, because `createEmailSender` falls back to `process.env`. The test now stubs that variable empty (`vi.stubEnv`) and unstubs after each test. No assertion changed.
+- Evidence: `pnpm check` exit 0; `pnpm test` 229 files, 1,617 tests passed; `RESEND_API_KEY=re_fake pnpm exec vitest run server/email.test.ts` 3 passed.
+- Not done: no commit, no merge, no deploy. Migration `20261110000000_staff_invite_booking_email_schema.sql` is still not applied anywhere.

@@ -160,7 +160,7 @@ describe("Booking Email Notifications & Slip Verification Delivery Tests", () =>
     expect(hotelEmail?.html).toContain("https://app.test/hotels/11111111-1111-4111-8111-111111111111/bookings");
   });
 
-  it("อัปโหลดสลิปแล้วรอตรวจ: แจ้งโรงแรม แต่ลูกค้ายังไม่ได้อีเมลยืนยัน (ทดสอบกับสลิปจริงของผู้ใช้)", async () => {
+  it("อัปโหลดสลิปแล้วรอตรวจ: แจ้งโรงแรม แต่ลูกค้ายังไม่ได้อีเมลยืนยัน (สลิปจำลอง)", async () => {
     // Hotel A has no SlipOK credentials configured, so any slip upload requires manual review
     const caller = paymentRouter.createCaller({
       db,
@@ -169,11 +169,11 @@ describe("Booking Email Notifications & Slip Verification Delivery Tests", () =>
       emailSender: emails,
     } as any);
 
-    // Guest submits the actual uploaded KBank slip image
+    // Guest submits a slip image (synthetic fixture)
     const result = await caller.verifySlip({
       booking_id: BOOKING_ID,
       session_id: SESSION_ID,
-      slip_data: realSlipBase64,
+      slip_data: testSlipBase64,
     });
 
     expect(result).toMatchObject({
