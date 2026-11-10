@@ -213,7 +213,7 @@ export default function BookingDocumentDialog({
                       className="button button-quiet"
                       title={t("bookingDocuments.downloadPdf")}
                       aria-label={t("bookingDocuments.downloadPdf")}
-                      onClick={() => state.download(row.snapshot)}
+                      onClick={() => state.download(row.snapshot, row.id)}
                     >
                       <Download size={15} />
                     </button>

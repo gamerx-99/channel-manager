@@ -39,5 +39,70 @@ describe("ResendEmailSender", () => {
 
     expect(body.attachments).toEqual([{ filename: "INV-000001.html", content: "<html>Invoice</html>" }]);
   });
+
+  it("attaches real PDF bytes to booking document email payload", async () => {
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37]); // %PDF-1.7
+    const expectedBase64 = Buffer.from(pdfBytes).toString("base64");
+
+    const body = await sentBody(async sender => {
+      await sender.sendBookingDocumentEmail({
+        to: "guest@example.test",
+        guestName: "สมชาย รักสงบ",
+        hotelName: "โรงแรม ล้านนา บูทีค",
+        documentType: "invoice",
+        documentNumber: "INV-000001",
+        pdfBytes,
+      });
+    });
+
+    expect(body.to).toBe("guest@example.test");
+    expect(body.subject).toContain("โรงแรม ล้านนา บูทีค");
+    expect(body.subject).toContain("ใบแจ้งชำระเงิน / Invoice - INV-000001");
+    expect(body.html).toContain("INV-000001");
+    expect(body.html).toContain("สมชาย รักสงบ");
+    expect(body.attachments).toEqual([
+      {
+        filename: "invoice_INV-000001.pdf",
+        content: expectedBase64,
+        contentType: "application/pdf",
+      },
+    ]);
+  });
+
+  it("handles missing recipient and empty pdfBytes with clear errors", async () => {
+    const sender = new ResendEmailSender("key", "from@example.test");
+    await expect(sender.sendBookingDocumentEmail({
+      to: "",
+      guestName: "Guest",
+      hotelName: "Hotel",
+      documentType: "invoice",
+      documentNumber: "INV-000001",
+      pdfBytes: new Uint8Array([1, 2, 3]),
+    })).rejects.toThrow(/Recipient email address is required/);
+
+    await expect(sender.sendBookingDocumentEmail({
+      to: "guest@example.test",
+      guestName: "Guest",
+      hotelName: "Hotel",
+      documentType: "invoice",
+      documentNumber: "INV-000001",
+      pdfBytes: new Uint8Array([]),
+    })).rejects.toThrow(/PDF attachment content is required/);
+  });
+
+  it("propagates Resend API failure status and error body", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ message: "Invalid API key" }), { status: 401 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const sender = new ResendEmailSender("invalid_key", "from@example.test");
+
+    await expect(sender.sendBookingDocumentEmail({
+      to: "guest@example.test",
+      guestName: "Guest",
+      hotelName: "Hotel",
+      documentType: "receipt",
+      documentNumber: "RC-000001",
+      pdfBytes: new Uint8Array([1, 2, 3]),
+    })).rejects.toThrow(/Resend email delivery failed \(401\)/);
+  });
 });
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TAX_ID_PATTERN, type BookingDocumentSnapshot, type BookingDocumentType } from "@shared/bookingDocuments";
-import { buildBookingDocumentHtml, downloadDocumentFile, writePrintWindow, type BookingDocumentLabels } from "@/lib/bookingDocumentPrint";
+import { buildBookingDocumentHtml, downloadDocumentFile, downloadPdfBase64, writePrintWindow, type BookingDocumentLabels } from "@/lib/bookingDocumentPrint";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 
@@ -44,9 +44,19 @@ export function useBookingDocuments(hotelId: string, booking: { id: string; gues
   };
   const print = (doc: BookingDocumentSnapshot) => printInto(window.open("", "_blank"), doc);
 
-  const download = (doc: BookingDocumentSnapshot) => {
-    const html = buildHtml(doc);
-    downloadDocumentFile(`${doc.number}_${doc.type}.html`, html);
+  const getPdf = trpc.bookingDocuments.getPdf.useMutation();
+  const download = async (doc: BookingDocumentSnapshot, documentId?: string) => {
+    try {
+      const res = await getPdf.mutateAsync({
+        hotel_id: hotelId,
+        document_id: documentId,
+        snapshot: doc,
+      });
+      downloadPdfBase64(res.filename, res.base64);
+    } catch {
+      const html = buildHtml(doc);
+      downloadDocumentFile(`${doc.number}_${doc.type}.html`, html);
+    }
   };
 
   const issue = trpc.bookingDocuments.issue.useMutation();

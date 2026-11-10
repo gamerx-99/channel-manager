@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { BOOKING_DOCUMENT_TYPES, TAX_ID_PATTERN } from '@shared/bookingDocuments';
 import { protectedProcedure, router } from '../_core/trpc';
-import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
+import { getBookingDocument, getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
+import { createEmailSender } from '../email';
+import { generateBookingDocumentPdf, uint8ArrayToBase64 } from '../pdf/bookingDocumentPdf';
 import { requireHotelPermission, rethrowDomainError } from '../routerUtils';
 
 const hotelInput = z.object({ hotel_id: z.string().min(1) });
@@ -86,6 +88,51 @@ export const bookingDocumentsRouter = router({
         type: input.type,
         buyer: { name: input.buyer_name, address: input.buyer_address, taxId: input.buyer_tax_id, branch: input.buyer_branch },
       });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  getPdf: protectedProcedure.input(hotelInput.extend({
+    document_id: z.string().optional(),
+    snapshot: z.custom<any>().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
+    try {
+      let snapshot = input.snapshot;
+      if (!snapshot && input.document_id) {
+        const doc = await getBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.document_id);
+        snapshot = doc.snapshot;
+      }
+      if (!snapshot) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Document ID or snapshot required.' });
+      const pdfBytes = await generateBookingDocumentPdf(snapshot);
+      const base64 = uint8ArrayToBase64(pdfBytes);
+      const filename = `${snapshot.type}_${snapshot.number}_${snapshot.issuedOn}.pdf`;
+      return { base64, filename, contentType: 'application/pdf' };
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  emailDocument: protectedProcedure.input(hotelInput.extend({
+    document_id: z.string().min(1),
+    recipient_email: z.string().email(),
+  })).mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
+    try {
+      const doc = await getBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.document_id);
+      const snapshot = doc.snapshot;
+      const pdfBytes = await generateBookingDocumentPdf(snapshot);
+      const emailSender = createEmailSender(ctx.billingEnv);
+      const result = await emailSender.sendBookingDocumentEmail({
+        to: input.recipient_email,
+        guestName: snapshot.buyer.name,
+        hotelName: snapshot.issuer.name,
+        documentType: snapshot.type,
+        documentNumber: snapshot.number,
+        pdfBytes,
+      });
+      return { success: true, messageId: result.id };
     } catch (error) {
       return rethrowDomainError(error);
     }

@@ -172,3 +172,23 @@ export function downloadDocumentFile(filename: string, content: string, mimeType
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Direct PDF download helper that converts base64 PDF bytes into an application/pdf Blob download.
+ */
+export function downloadPdfBase64(filename: string, base64: string): void {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

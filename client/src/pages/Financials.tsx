@@ -21,7 +21,7 @@ import { Link } from "wouter";
 import { useTranslation } from "@/lib/i18n";
 import { dateLocale } from "@/lib/dateLocale";
 import { bangkokMonth } from "@shared/finance";
-import { buildBookingDocumentHtml, downloadDocumentFile, formatSatang, writePrintWindow } from "@/lib/bookingDocumentPrint";
+import { buildBookingDocumentHtml, downloadDocumentFile, downloadPdfBase64, formatSatang, writePrintWindow } from "@/lib/bookingDocumentPrint";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth, type FinancialsChoice } from "./financialsPeriod";
 import "./Financials.css";
 
@@ -297,14 +297,24 @@ function BillingDocumentsList({ hotelId }: { hotelId?: string | null }) {
     writePrintWindow(window.open("", "_blank"), html);
   };
 
-  const download = (doc: any) => {
-    const labels = Object.fromEntries([
-      "invoiceTitle", "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
-      "qty", "unitPrice", "amount", "stay", "nights", "subtotal", "net", "vat", "total", "amountPaid", "balanceDue", "paymentStatus",
-      "statusPaid", "statusUnpaid", "statusPending", "withholding", "paymentMethod", "bookingRef", "signature",
-    ].map(key => [key, t(`bookingDocuments.print.${key}`)])) as any;
-    const html = buildBookingDocumentHtml(doc, labels, language === "th" ? "th" : "en", null);
-    downloadDocumentFile(`${doc.number}_${doc.type}.html`, html);
+  const downloadPdfMutation = trpc.bookingDocuments.getPdf.useMutation();
+  const download = async (doc: any, docId?: string) => {
+    try {
+      const res = await downloadPdfMutation.mutateAsync({
+        hotel_id: hotelId!,
+        document_id: docId,
+        snapshot: doc,
+      });
+      downloadPdfBase64(res.filename, res.base64);
+    } catch {
+      const labels = Object.fromEntries([
+        "invoiceTitle", "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
+        "qty", "unitPrice", "amount", "stay", "nights", "subtotal", "net", "vat", "total", "amountPaid", "balanceDue", "paymentStatus",
+        "statusPaid", "statusUnpaid", "statusPending", "withholding", "paymentMethod", "bookingRef", "signature",
+      ].map(key => [key, t(`bookingDocuments.print.${key}`)])) as any;
+      const html = buildBookingDocumentHtml(doc, labels, language === "th" ? "th" : "en", null);
+      downloadDocumentFile(`${doc.number}_${doc.type}.html`, html);
+    }
   };
 
   if (!hotelId) return null;
@@ -345,7 +355,7 @@ function BillingDocumentsList({ hotelId }: { hotelId?: string | null }) {
                   <button type="button" className="button button-quiet" onClick={() => print(row.snapshot)} title={t("bookingDocuments.printAgain")}>
                     <Printer size={14} />
                   </button>
-                  <button type="button" className="button button-quiet" onClick={() => download(row.snapshot)} title={t("bookingDocuments.downloadPdf")}>
+                  <button type="button" className="button button-quiet" onClick={() => download(row.snapshot, row.id)} title={t("bookingDocuments.downloadPdf")}>
                     <Download size={14} />
                   </button>
                 </div>

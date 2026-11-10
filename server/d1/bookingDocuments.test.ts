@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { authSchema } from "../../drizzle/auth-schema";
 import { d1Schema } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from "./bookingDocuments";
+import { getBookingDocument, getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from "./bookingDocuments";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -127,6 +127,66 @@ describe("issuing documents", () => {
     expect(hotelDocs.length).toBeGreaterThanOrEqual(1);
     expect(hotelDocs[0]?.docNumber).toBe("INV-000001");
     expect(hotelDocs[0]?.guestName).toBe("Guest");
+  });
+
+  it("fetches a document by id and enforces tenant isolation", async () => {
+    const inv = await issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "invoice", buyer }, NOW);
+    const [listed] = await listBookingDocuments(db, owner, "h1", "unpaid");
+    expect(listed).toBeDefined();
+
+    const fetched = await getBookingDocument(db, owner, "h1", listed!.id);
+    expect(fetched.snapshot.number).toBe(inv.number);
+
+    // Cannot fetch across hotels
+    await expect(getBookingDocument(db, owner, "h2", listed!.id)).rejects.toThrow();
+
+    // Throws NOT_FOUND for unknown document
+    await expect(getBookingDocument(db, owner, "h1", "non-existent")).rejects.toThrow(/not found/i);
+  });
+
+  it("prevents duplicate document numbers and enforces unique constraint at database level", async () => {
+    // 1. Issuing two invoices increments seq collision-free
+    const first = await issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "invoice", buyer }, NOW);
+    const second = await issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "invoice", buyer }, NOW);
+    expect(first.number).toBe("INV-000001");
+    expect(second.number).toBe("INV-000002");
+
+    // 2. Direct database insert with duplicate seq is blocked by unique constraint
+    expect(() => {
+      exec(`insert into booking_documents (id, hotel_id, booking_id, doc_type, seq, doc_number, snapshot_json, created_at)
+        values ('dup', 'h1', 'unpaid', 'invoice', 1, 'INV-000001', '{}', 1700000000000)`);
+    }).toThrow(/UNIQUE constraint failed/);
+  });
+
+  it("retains immutable snapshot across hotel setting changes and re-downloads", async () => {
+    // Issue initial receipt
+    const initial = await issueBookingDocument(db, owner, "h1", { bookingId: "paid", type: "receipt", buyer }, NOW);
+    expect(initial.number).toBe("RC-000001");
+    expect(initial.issuer.name).toBe("บริษัท ลานนา จำกัด");
+    expect(initial.totalSatang).toBe(107000);
+
+    // Mutate hotel invoice settings (change name, address, tax ID, VAT rate)
+    await saveInvoiceSettings(db, owner, "h1", {
+      ...header,
+      issuerName: "New Renamed Hotel Co Ltd",
+      address: "999 New Address",
+      vatRate: 10,
+    }, NOW);
+
+    // Mutate the original booking price in the database
+    exec(`update bookings set price = '9999.00' where id = 'paid'`);
+
+    // Fetch the issued document again
+    const [listed] = await listBookingDocuments(db, owner, "h1", "paid");
+    expect(listed).toBeDefined();
+    const fetched = await getBookingDocument(db, owner, "h1", listed!.id);
+
+    // Snapshot is strictly immutable: original issuer name, VAT rate, and total are unchanged!
+    expect(fetched.snapshot.number).toBe("RC-000001");
+    expect(fetched.snapshot.issuer.name).toBe("บริษัท ลานนา จำกัด");
+    expect(fetched.snapshot.issuer.address).toBe("1 Road");
+    expect(fetched.snapshot.vatRate).toBe(7);
+    expect(fetched.snapshot.totalSatang).toBe(107000);
   });
 });
 

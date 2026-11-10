@@ -157,3 +157,13 @@ export async function listHotelDocuments(
     .limit(limit);
   return rows;
 }
+
+export async function getBookingDocument(
+  db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, documentId: string, now = new Date(),
+) {
+  await authorizeHotelAction(db, caller, hotelId, "operations.view_bookings", "booking_documents.read", now);
+  const [row] = await db.select().from(bookingDocuments)
+    .where(and(eq(bookingDocuments.id, documentId), eq(bookingDocuments.hotelId, hotelId))).limit(1);
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found." });
+  return row;
+}
