@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 const mutateAsync = vi.fn();
+const fixture = vi.hoisted(() => ({ memberships: [{ hotelId: "h", permissions: ["revenue.manage_stop_sell"] }] as Array<{ hotelId: string; permissions: string[] }> }));
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: "en", setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
 vi.mock("@/lib/trpc", () => ({ trpc: { channelManager: {
   dashboardCalendar: { useQuery: () => ({ isLoading: false, isFetching: false, error: null, refetch: vi.fn(), data: {
@@ -12,25 +13,32 @@ vi.mock("@/lib/trpc", () => ({ trpc: { channelManager: {
       days: [{ date: "2026-11-01", bookings: 0, roomTypes: [{ roomTypeId: "t", available: 2, totalRooms: 2, price: 100, status: "healthy", cap: 2 }], syncEvents: [] }] }],
   } }) },
   updateAvailability: { useMutation: () => ({ mutateAsync, isPending: false }) },
-} } }));
+}, auth: { me: { useQuery: () => ({ data: { memberships: fixture.memberships } }) } } } }));
 
 import DashboardCalendarView from "./DashboardCalendarView";
 (globalThis as { React?: typeof React }).React = React;
 afterEach(() => { cleanup(); mutateAsync.mockClear(); });
+beforeEach(() => { fixture.memberships = [{ hotelId: "h", permissions: ["revenue.manage_stop_sell"] }]; });
 
 describe("DashboardCalendarView stop sell (phase 1)", () => {
   it("does not render the rooms-available input or Save button in the overview", () => {
-    render(<DashboardCalendarView canEditAvailability={true} />);
+    render(<DashboardCalendarView />);
     expect(screen.queryByRole("spinbutton")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     expect(screen.getByRole("button", { name: "Stop sales" })).toBeTruthy();
   });
 
   it("sends 0 when stopping sales", () => {
-    render(<DashboardCalendarView canEditAvailability={true} />);
+    render(<DashboardCalendarView />);
     fireEvent.click(screen.getByRole("button", { name: "Stop sales" }));
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     expect(mutateAsync.mock.calls[0][0].rooms_available).toBe(0);
     expect(mutateAsync.mock.calls[0][0].action).toBe("stop_sell");
+  });
+
+  it("does not use a different hotel's permission for the active hotel", () => {
+    fixture.memberships = [{ hotelId: "another-hotel", permissions: ["revenue.manage_stop_sell"] }];
+    render(<DashboardCalendarView />);
+    expect(screen.queryByRole("button", { name: "Stop sales" })).toBeNull();
   });
 });

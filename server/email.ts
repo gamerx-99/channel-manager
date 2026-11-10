@@ -1,4 +1,12 @@
 import { escapeHtml } from "@shared/escapeHtml";
+import { uint8ArrayToBase64 } from "./pdf/bookingDocumentPdf";
+
+export interface EmailAttachment {
+  filename: string;
+  content: string;
+  path?: string;
+  contentType?: string;
+}
 
 export interface EmailPayload {
   to: string;
@@ -6,6 +14,7 @@ export interface EmailPayload {
   html: string;
   text?: string;
   from?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface SendInviteEmailParams {
@@ -27,11 +36,21 @@ export interface SendVerificationEmailParams {
   verifyUrl: string;
 }
 
+export interface SendBookingDocumentEmailParams {
+  to: string;
+  guestName: string;
+  hotelName: string;
+  documentType: "invoice" | "receipt" | "tax_invoice";
+  documentNumber: string;
+  pdfBytes: Uint8Array;
+}
+
 export interface EmailSender {
   sendEmail(payload: EmailPayload): Promise<{ id: string; success: boolean }>;
   sendInviteEmail(params: SendInviteEmailParams): Promise<void>;
   sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<void>;
   sendVerificationEmail(params: SendVerificationEmailParams): Promise<void>;
+  sendBookingDocumentEmail(params: SendBookingDocumentEmailParams): Promise<{ id: string; success: boolean }>;
 }
 
 export class ResendEmailSender implements EmailSender {
@@ -60,6 +79,7 @@ export class ResendEmailSender implements EmailSender {
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
+        ...(payload.attachments && payload.attachments.length > 0 ? { attachments: payload.attachments } : {}),
       }),
     });
 
@@ -170,6 +190,61 @@ export class ResendEmailSender implements EmailSender {
 
     await this.sendEmail({ to: params.to, subject, html, text });
   }
+
+  async sendBookingDocumentEmail(params: SendBookingDocumentEmailParams): Promise<{ id: string; success: boolean }> {
+    if (!params.to || !params.to.trim()) {
+      throw new Error("Recipient email address is required.");
+    }
+    if (!params.pdfBytes || params.pdfBytes.length === 0) {
+      throw new Error("PDF attachment content is required.");
+    }
+    const typeNames: Record<string, { th: string; en: string }> = {
+      invoice: { th: "ใบแจ้งชำระเงิน", en: "Invoice" },
+      receipt: { th: "ใบเสร็จรับเงิน", en: "Receipt" },
+      tax_invoice: { th: "ใบกำกับภาษี", en: "Tax Invoice" },
+    };
+    const typeLabel = typeNames[params.documentType] ?? typeNames.invoice;
+    const subject = `[${params.hotelName}] ${typeLabel.th} / ${typeLabel.en} - ${params.documentNumber}`;
+    const hotelNameHtml = escapeHtml(params.hotelName);
+    const guestNameHtml = escapeHtml(params.guestName);
+    const docNumberHtml = escapeHtml(params.documentNumber);
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b;">
+        <h2 style="color: #0f172a; margin-bottom: 16px;">${typeLabel.th} (${typeLabel.en})</h2>
+        <p style="font-size: 16px; line-height: 24px;">เรียน คุณ ${guestNameHtml},</p>
+        <p style="font-size: 14px; line-height: 22px; color: #334155;">
+          เอกสารหมายเลข <strong>${docNumberHtml}</strong> จาก <strong>${hotelNameHtml}</strong> ได้รับการจัดทำเรียบร้อยแล้ว รายละเอียดเอกสารแนบมาพร้อมกับอีเมลฉบับนี้ในรูปแบบไฟล์ PDF
+        </p>
+        <p style="font-size: 14px; line-height: 22px; color: #64748b;">
+          Please find attached your ${typeLabel.en} (No. ${docNumberHtml}) from ${hotelNameHtml} as a PDF document.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #94a3b8;">
+          เอกสารนี้สร้างขึ้นโดยระบบ Hayhost Channel Manager
+        </p>
+      </div>
+    `;
+    const text = `เรียน คุณ ${params.guestName},\n\nเอกสาร ${typeLabel.th} (${typeLabel.en}) เลขที่ ${params.documentNumber} จาก ${params.hotelName} แนบมาพร้อมกับอีเมลนี้ในรูปแบบไฟล์ PDF\n\nHayhost Channel Manager`;
+
+    const base64Content = uint8ArrayToBase64(params.pdfBytes);
+
+    const filename = `${params.documentType}_${params.documentNumber}.pdf`;
+
+    return await this.sendEmail({
+      to: params.to,
+      subject,
+      html,
+      text,
+      attachments: [
+        {
+          filename,
+          content: base64Content,
+          contentType: "application/pdf",
+        },
+      ],
+    });
+  }
 }
 
 export class MockEmailSender implements EmailSender {
@@ -178,6 +253,31 @@ export class MockEmailSender implements EmailSender {
   async sendEmail(payload: EmailPayload): Promise<{ id: string; success: boolean }> {
     this.sentEmails.push(payload);
     return { id: `mock-${this.sentEmails.length}`, success: true };
+  }
+
+  async sendBookingDocumentEmail(params: SendBookingDocumentEmailParams): Promise<{ id: string; success: boolean }> {
+    if (!params.to || !params.to.trim()) {
+      throw new Error("Recipient email address is required.");
+    }
+    if (!params.pdfBytes || params.pdfBytes.length === 0) {
+      throw new Error("PDF attachment content is required.");
+    }
+    const base64Content = uint8ArrayToBase64(params.pdfBytes);
+    const filename = `${params.documentType}_${params.documentNumber}.pdf`;
+
+    return await this.sendEmail({
+      to: params.to,
+      subject: `[${params.hotelName}] Document - ${params.documentNumber}`,
+      html: `<p>Attached: ${filename}</p>`,
+      text: `Attached: ${filename}`,
+      attachments: [
+        {
+          filename,
+          content: base64Content,
+          contentType: "application/pdf",
+        },
+      ],
+    });
   }
 
   async sendInviteEmail(params: SendInviteEmailParams): Promise<void> {

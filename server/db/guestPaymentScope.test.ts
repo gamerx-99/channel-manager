@@ -8,6 +8,8 @@ describe("guest payment caller", () => {
   it("reaches payment actions on its own hotel with only the requested permission", async () => {
     await expect(authorizeHotelAction(db, guest, "hotel-a", "operations.manage_bookings", "payment_session.create"))
       .resolves.toMatchObject({ permissions: ["operations.manage_bookings"] });
+    await expect(authorizeHotelAction(db, guest, "hotel-a", "operations.manage_bookings", "payment_session.save_slip"))
+      .resolves.toMatchObject({ permissions: ["operations.manage_bookings"] });
   });
 
   it("reads the SlipOK credentials to verify a slip, but cannot manage them", async () => {

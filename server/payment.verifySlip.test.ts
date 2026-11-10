@@ -8,6 +8,7 @@ const payment = vi.hoisted(() => ({
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  savePaymentSessionSlip: vi.fn(),
 }));
 const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn() }));
 const verify = vi.hoisted(() => vi.fn());
@@ -27,11 +28,12 @@ const BOOKING = "22222222-2222-4222-8222-222222222222";
 const SESSION = "33333333-3333-4333-8333-333333333333";
 const HOLD_EXPIRES = new Date("2099-01-01T00:00:00.000Z");
 
-function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, status = "pending_payment", claimRows: unknown[] = [{ id: BOOKING }]) {
+function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, status = "pending_payment", claimRows: unknown[] = [{ id: BOOKING }], paymentStatus = "pending") {
   const writes: Array<Record<string, unknown>> = [];
-  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, expiresAt: HOLD_EXPIRES, createdAt: new Date() }] };
+  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, paymentStatus, expiresAt: HOLD_EXPIRES, createdAt: new Date() }] };
   const db = {
     select: () => selectChain,
+    $client: { prepare: () => ({ bind: () => ({}) }), batch: vi.fn(async () => []) },
     update: () => ({
       set(values: Record<string, unknown>) {
         writes.push(values);
@@ -45,7 +47,7 @@ function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, s
 }
 
 const submit = (db: unknown, index: number) => paymentRouter
-  .createCaller({ db, clientIp: `verify-slip-${index}`, user: null } as never)
+  .createCaller({ db, media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) }, clientIp: `verify-slip-${index}`, user: null } as never)
   .verifySlip({ booking_id: BOOKING, session_id: SESSION, slip_data: "c2xpcA==" });
 
 beforeEach(() => {
@@ -53,6 +55,7 @@ beforeEach(() => {
   payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   payment.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
   payment.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  payment.savePaymentSessionSlip.mockResolvedValue(undefined);
   booking.expireBookingIfPast.mockResolvedValue({ status: "pending_payment" });
   booking.claimBookingNights.mockResolvedValue(true);
   payment.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "encrypted", slipok_branch_id: "hotel-branch" });
@@ -115,6 +118,7 @@ describe("verifySlip outcomes", () => {
     expect(verify).not.toHaveBeenCalled();
     expect(writes.at(-1)).toMatchObject({ status: "pending_verification" });
     expect(loggedReasons()).toContain("slipok_not_configured_manual_review_required");
+    expect(payment.savePaymentSessionSlip).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, `payment-slips/${HOTEL}/${SESSION}`);
   });
 
   it("sends the slip to manual review when SlipOK refuses the hotel key", async () => {
@@ -221,5 +225,15 @@ describe("checkStatus while a slip waits for staff", () => {
     payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2000-01-01T00:00:00.000Z" });
     await expect(check(fakeDb(undefined, true, "pending_payment").db, 2)).resolves.toEqual({ status: "expired", verifiedAt: null });
     expect(payment.updatePaymentSessionStatus).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, "expired");
+  });
+
+  it("reports staff approval as paid even if the session had not been finalized", async () => {
+    payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2099-01-01T00:00:00.000Z", verified_at: "2026-11-09T00:00:00.000Z" });
+    await expect(check(fakeDb(undefined, true, "confirmed", [], "verified").db, 3)).resolves.toEqual({ status: "paid", verifiedAt: "2026-11-09T00:00:00.000Z" });
+  });
+
+  it("reports staff rejection as failed", async () => {
+    payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2099-01-01T00:00:00.000Z" });
+    await expect(check(fakeDb(undefined, true, "payment_rejected", [], "failed").db, 4)).resolves.toEqual({ status: "failed", verifiedAt: null });
   });
 });

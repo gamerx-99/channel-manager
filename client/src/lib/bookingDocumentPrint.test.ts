@@ -28,6 +28,16 @@ describe("booking document print page", () => {
     expect(html).not.toContain(labels.vat);
   });
 
+  it("renders annual document numbers like INV-2026-000001 and RC-2026-000001 correctly", () => {
+    const annualReceipt = { ...receipt, number: "RC-2026-000001", year: 2026 };
+    const htmlReceipt = buildBookingDocumentHtml(annualReceipt, labels, "th", "พร้อมเพย์");
+    expect(htmlReceipt).toContain("RC-2026-000001");
+
+    const annualInvoice = { ...receipt, type: "invoice" as const, number: "INV-2026-000001", year: 2026 };
+    const htmlInvoice = buildBookingDocumentHtml(annualInvoice, labels, "th", null);
+    expect(htmlInvoice).toContain("INV-2026-000001");
+  });
+
   it("shows configured VAT lines only when VAT is enabled", () => {
     const html = buildBookingDocumentHtml({ ...receipt, type: "tax_invoice", vatEnabled: true, ...calculateBookingDocumentAmounts(107000, { vatEnabled: true, vatRate: 7, withholdingEnabled: false, withholdingRate: 3 }, true) }, labels, "th", null);
     expect(html).toContain("ใบกำกับภาษี/ใบเสร็จรับเงิน");
@@ -61,16 +71,61 @@ describe("booking document print page", () => {
     expect(formatDocumentDate("2026-11-07", "th")).toContain("2569");
     expect(formatDocumentDate("2026-11-07", "en")).toContain("2026");
   });
+
+  it("renders an itemized invoice with room, services, and balance due", () => {
+    const invoiceDoc: BookingDocumentSnapshot = {
+      type: "invoice",
+      number: "INV-000001",
+      issuedOn: "2026-11-07",
+      issuer: { name: "Lanna Resort", address: "123 Chiang Mai", taxId: "0105555555555", branch: "Main", phone: "053123456" },
+      buyer: { name: "Somchai Jaidee", address: null, taxId: null, branch: null },
+      booking: { id: "bk-9999-0000", checkIn: "2026-12-01", checkOut: "2026-12-03", nights: 2, roomType: "Deluxe Suite", paymentMethod: null },
+      items: [
+        { name: "Room: Deluxe Suite", description: "2026-12-01 – 2026-12-03 (2 nights)", quantity: 2, unitPriceSatang: 100000, totalPriceSatang: 200000 },
+        { name: "Airport Transfer", description: "ONE_TIME", quantity: 1, unitPriceSatang: 50000, totalPriceSatang: 50000 },
+      ],
+      subtotalSatang: 250000,
+      vatEnabled: false,
+      vatRate: 7,
+      vatSatang: 0,
+      totalSatang: 250000,
+      withholdingEnabled: false,
+      withholdingRate: 3,
+      withholdingSatang: 0,
+      netToPaySatang: 250000,
+      amountPaidSatang: 0,
+      balanceSatang: 250000,
+      paymentStatus: "unpaid",
+    };
+
+    const htmlTh = buildBookingDocumentHtml(invoiceDoc, labels, "th", null);
+    expect(htmlTh).toContain("ใบแจ้งชำระเงิน");
+    expect(htmlTh).toContain("INV-000001");
+    expect(htmlTh).toContain("Room: Deluxe Suite");
+    expect(htmlTh).toContain("Airport Transfer");
+    expect(htmlTh).toContain("2,000.00");
+    expect(htmlTh).toContain("500.00");
+    expect(htmlTh).toContain("ยอดค้างชำระ");
+    expect(htmlTh).toContain("2,500.00");
+
+    const htmlEn = buildBookingDocumentHtml(invoiceDoc, englishLabels, "en", null);
+    expect(htmlEn).toContain("Invoice");
+    expect(htmlEn).toContain("INV-000001");
+    expect(htmlEn).toContain("Balance due");
+  });
 });
 
 describe("issue form rules", () => {
   const form = { name: "Guest", address: "", taxId: "" };
-  it("allows a receipt with only a name", () => {
+  it("allows a receipt and invoice with only a name", () => {
     expect(issueFormProblem("receipt", form, false)).toBeNull();
+    expect(issueFormProblem("invoice", form, false)).toBeNull();
   });
   it("needs a name, a 13-digit tax ID if typed, the hotel tax ID and an address for a tax invoice", () => {
     expect(issueFormProblem("receipt", { ...form, name: " " }, true)).toBe("name");
+    expect(issueFormProblem("invoice", { ...form, name: " " }, true)).toBe("name");
     expect(issueFormProblem("receipt", { ...form, taxId: "123" }, true)).toBe("taxId");
+    expect(issueFormProblem("invoice", { ...form, taxId: "123" }, true)).toBe("taxId");
     expect(issueFormProblem("tax_invoice", form, false)).toBe("hotelTaxId");
     expect(issueFormProblem("tax_invoice", form, true)).toBe("address");
     expect(issueFormProblem("tax_invoice", { ...form, address: "2 Road" }, true)).toBeNull();

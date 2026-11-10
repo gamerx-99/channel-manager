@@ -139,6 +139,8 @@ describe("HotelStaff", () => {
     expect(screen.getByRole("heading", { name: /Hotel staff/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Little Bro team" })).toBeTruthy();
     expect(screen.getByText("frontdesk@example.com")).toBeTruthy();
+    expect(document.querySelector(".hotel-staff-summary")?.textContent).toContain("Hotel staff");
+    expect(document.querySelector(".hotel-staff-summary")?.textContent).toContain("Active accounts");
     expect(screen.getByRole("combobox", { name: "Role for frontdesk@example.com" })).toBeTruthy();
     expect(screen.queryByRole("option", { name: /Super Admin/ })).toBeNull();
     expect(screen.getByText(/limited to this hotel/)).toBeTruthy();

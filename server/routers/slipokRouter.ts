@@ -84,7 +84,7 @@ export const slipokRouter = router({
       requireStepUpIfEnabled(ctx.user);
       if (!ctx.db) throw new Error('D1 database required.');
       try {
-        const [encryptedKey, keyHash] = await Promise.all([encryptSlipOkKey(input.api_key), hashSlipOkKey(input.api_key)]).catch(error => {
+        const [encryptedKey, keyHash] = await Promise.all([encryptSlipOkKey(input.api_key, ctx.billingEnv?.SLIPOK_ENCRYPTION_KEY), hashSlipOkKey(input.api_key)]).catch(error => {
           // A missing SLIPOK_ENCRYPTION_KEY is ours to fix; its message stays out of the response.
           console.error('[slipok.saveKey] could not encrypt the key:', error instanceof Error ? error.message : error);
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not save the SlipOK key.' });

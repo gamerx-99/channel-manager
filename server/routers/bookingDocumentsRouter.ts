@@ -2,12 +2,14 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { BOOKING_DOCUMENT_TYPES, TAX_ID_PATTERN } from '@shared/bookingDocuments';
 import { protectedProcedure, router } from '../_core/trpc';
-import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
+import { getBookingDocument, getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
+import { createEmailSender } from '../email';
+import { generateBookingDocumentPdf, uint8ArrayToBase64 } from '../pdf/bookingDocumentPdf';
 import { requireHotelPermission, rethrowDomainError } from '../routerUtils';
 
 const hotelInput = z.object({ hotel_id: z.string().min(1) });
-const optionalText = (limit: number) => z.string().trim().max(limit).transform(value => value || null).nullable();
-const taxId = z.string().trim().transform(value => value.replace(/\D/g, '') || null).nullable()
+const optionalText = (limit: number) => z.string().trim().max(limit).nullable().optional().transform(value => value || null);
+const taxId = z.string().trim().nullable().optional().transform(value => (value ? value.replace(/\D/g, '') || null : null))
   .refine(value => value == null || TAX_ID_PATTERN.test(value), 'A tax ID has 13 digits.');
 
 function requireDb<T>(db: T | undefined | null): T {
@@ -59,6 +61,17 @@ export const bookingDocumentsRouter = router({
     }
   }),
 
+  listHotel: protectedProcedure.input(hotelInput.extend({
+    limit: z.number().int().min(1).max(100).default(50),
+  })).query(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
+    try {
+      return await listHotelDocuments(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.limit);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
   issue: protectedProcedure.input(hotelInput.extend({
     booking_id: z.string().min(1),
     type: z.enum(BOOKING_DOCUMENT_TYPES),
@@ -66,6 +79,7 @@ export const bookingDocumentsRouter = router({
     buyer_address: optionalText(500),
     buyer_tax_id: taxId,
     buyer_branch: optionalText(100),
+    idempotency_key: optionalText(100),
   })).mutation(async ({ ctx, input }) => {
     // ASSUMPTION: staff who may manage bookings may issue documents; no separate permission yet.
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
@@ -74,7 +88,53 @@ export const bookingDocumentsRouter = router({
         bookingId: input.booking_id,
         type: input.type,
         buyer: { name: input.buyer_name, address: input.buyer_address, taxId: input.buyer_tax_id, branch: input.buyer_branch },
+        idempotencyKey: input.idempotency_key,
       });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  getPdf: protectedProcedure.input(hotelInput.extend({
+    document_id: z.string().optional(),
+    snapshot: z.custom<any>().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
+    try {
+      let snapshot = input.snapshot;
+      if (!snapshot && input.document_id) {
+        const doc = await getBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.document_id);
+        snapshot = doc.snapshot;
+      }
+      if (!snapshot) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Document ID or snapshot required.' });
+      const pdfBytes = await generateBookingDocumentPdf(snapshot);
+      const base64 = uint8ArrayToBase64(pdfBytes);
+      const filename = `${snapshot.type}_${snapshot.number}_${snapshot.issuedOn}.pdf`;
+      return { base64, filename, contentType: 'application/pdf' };
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  emailDocument: protectedProcedure.input(hotelInput.extend({
+    document_id: z.string().min(1),
+    recipient_email: z.string().email(),
+  })).mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.manage_bookings');
+    try {
+      const doc = await getBookingDocument(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.document_id);
+      const snapshot = doc.snapshot;
+      const pdfBytes = await generateBookingDocumentPdf(snapshot);
+      const emailSender = createEmailSender(ctx.billingEnv);
+      const result = await emailSender.sendBookingDocumentEmail({
+        to: input.recipient_email,
+        guestName: snapshot.buyer.name,
+        hotelName: snapshot.issuer.name,
+        documentType: snapshot.type,
+        documentNumber: snapshot.number,
+        pdfBytes,
+      });
+      return { success: true, messageId: result.id };
     } catch (error) {
       return rethrowDomainError(error);
     }

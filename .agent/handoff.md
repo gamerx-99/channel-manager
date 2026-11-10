@@ -1,4 +1,178 @@
+## 2026-11-10 — Annual Document Numbering & Idempotency (AGY)
+
+- **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
+- **Commits:**
+  - `6f101d0`: `feat(billing): annual document numbering with Asia/Bangkok rollover, idempotency, and legacy migration`
+  - (No push, merge, or production deployment)
+- **Delivered Capabilities:**
+  1. **Annual Sequence Numbering (`INV-YYYY-000001` & `RC-YYYY-000001`):**
+     - Formats numbers by hotel, docType, and calendar year: `INV-2026-000001`, `RC-2026-000001`, `TX-2026-000001`.
+     - Automatic rollover strictly at 00:00:00 on January 1st Asia/Bangkok time (UTC+7) calculated via `bangkokYear(now)` from `@shared/finance`.
+     - Sequence isolation across `(hotelId, docType, year)`: different hotels have their own sequences, and different document types have separate sequences.
+  2. **Database Schema & Preflight Migration:**
+     - Added `year: integer("year").notNull()` and `idempotencyKey: text("idempotency_key")` to `booking_documents`.
+     - Replaced global unique index with `booking_documents_hotel_type_year_seq_key` on `(hotel_id, doc_type, year, seq)`.
+     - Created `booking_documents_hotel_idempotency_key` unique index on `(hotel_id, idempotency_key)` to enforce database-level idempotency.
+     - Migration `20261110030000_annual_document_numbering.sql` validates legacy rows, populates Bangkok year, enforces `CHECK(year >= 2020 and year <= 2100)`, and aborts on invalid legacy data. Tested in `server/d1/annualDocumentNumbering.migration.test.ts`.
+  3. **Concurrency & Idempotency Separation:**
+     - Separated sequence collisions from duplicate requests.
+     - Sequential retry and concurrent duplicate requests with the same `idempotencyKey` return the existing document snapshot directly without issuing duplicate rows or burning sequence numbers.
+     - Reusing an existing `idempotencyKey` with a mismatched payload (different booking or docType) is rejected with `BAD_REQUEST`.
+     - Legitimate multiple receipts per booking (e.g. deposit installment, final balance installment, replacement documents) are fully supported via distinct idempotency keys.
+  4. **Legacy Document Immutability:**
+     - Existing historical documents without `year` in snapshot (e.g. `RC-000042`) retain exact original numbers and snapshots upon re-fetching and PDF export.
+- **Verification Evidence:**
+  - `pnpm check`: exit code 0 (`tsc --noEmit`).
+  - `pnpm test`: 280 test files passed, 1,993 tests passed (0 failures).
+  - `pnpm build`: exit code 0 (`vite build` + Wrangler dry-run bundle verified).
+
+## 2026-11-10 — Billing/PDF Acceptance Corrections (AGY)
+
+- **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
+- **Commit:** `9ca11b3` (`fix(billing): export real A4 PDF with Thai typography, email attachments, and immutable re-download`). No push, merge, or production deployment.
+- **Accepted Criteria Delivered & Verified:**
+  1. **Real PDF Export (`.pdf`):**
+     - Built `server/pdf/bookingDocumentPdf.ts` using `pdf-lib` + `@pdf-lib/fontkit` with embedded Waree Thai and Latin TrueType fonts (`shared/fonts/thaiFonts.ts`).
+     - Emits valid binary PDF version 1.7 in exact A4 dimensions (`595.28 x 841.89 pts`).
+     - Real `.pdf` files generated and visually verified:
+       - Evidence: `/home/gserver/.gemini/antigravity/brain/f082739c-e372-4146-a763-2a74b0caf554/evidence/sample_invoice.pdf`
+       - Evidence: `/home/gserver/.gemini/antigravity/brain/f082739c-e372-4146-a763-2a74b0caf554/evidence/sample_receipt.pdf`
+     - Browser direct download via `trpc.bookingDocuments.getPdf` converts base64 to `application/pdf` Blob, downloading actual `.pdf` files.
+  2. **Email Attachment Integration:**
+     - Added `sendBookingDocumentEmail` to `EmailSender`, `ResendEmailSender`, and `MockEmailSender` in `server/email.ts`.
+     - Connects `generateBookingDocumentPdf` to attach real base64-encoded PDF files (`application/pdf`) to the email payload.
+     - Fully tested payload, attachment structure, validation, and error propagation (Resend API 401/500) without sending any real emails.
+  3. **Duplicate Prevention & Concurrency Verification:**
+     - Database level: `uniqueIndex("booking_documents_hotel_type_seq_key").on(table.hotelId, table.docType, table.seq)` guarantees that duplicate document numbers can never be inserted.
+     - Backend level: `issueBookingDocument` uses a 3-attempt retry loop on SQLite UNIQUE constraint failure to gracefully resolve concurrent staff issuing collisions sequentially.
+     - UI level: `BookingDocumentDialog.tsx` detects `existingReceipt` and prompts for reprint instead of duplicate creation.
+     - Added unit tests in `server/d1/bookingDocuments.test.ts` verifying unique constraint enforcement and sequential non-colliding increments.
+  4. **Immutable Snapshot Retention:**
+     - Verified that already-issued documents store complete, immutable snapshots (`snapshot_json`) including items, room stays, extra services, and amounts.
+     - Unit test in `server/d1/bookingDocuments.test.ts` mutates hotel invoice settings (name, address, tax ID, VAT rate) and mutates original booking price, confirming that re-reading and re-downloading the document returns the exact original snapshot and totals.
+- **Verification Evidence:**
+  - `pnpm test`: 279 passed (279 test files), 1,982 passed (1,982 tests), 0 failures.
+  - `pnpm check`: exit code 0 (`tsc --noEmit`).
+  - `pnpm build`: exit code 0 (`vite build` + Wrangler dry-run bundle verified).
+
+## 2026-11-10 — Billing & Financial Document Generation (PDF/Print) (AGY)
+
+- **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
+- **Commit:** `d784af865bd5604c4777420bb5f445bcc2ff58c7` (`feat(billing): add invoices, itemized PDF export, and billing management`). No push, merge, or production deployment.
+- **Scope & Delivery:**
+  1. **Document Types Supported:**
+     - **Invoice (ใบแจ้งชำระเงิน):** Issuable on active bookings (`held`, `pending_payment`, `pending_verification`, `confirmed`, `checked_in`, `checked_out`) with prefix `INV-XXXXXX` to bill guests before or upon payment.
+     - **Receipt (ใบเสร็จรับเงิน):** Strictly gated by real payment verification contract (`isRevenueStatus(booking.status)` AND `booking.payment_status === "verified"`) with prefix `RC-XXXXXX`. Prevents issuance for unpaid/unverified bookings.
+     - **Tax Invoice (ใบกำกับภาษี):** Strictly gated by verified revenue status with prefix `TX-XXXXXX`.
+  2. **Itemized Charges & Accurate Calculations:**
+     - In `server/d1/bookingDocuments.ts`, reads room stay and extra services from `booking_services` to compute detailed breakdown (`name`, `description`, `quantity`, `unitPriceSatang`, `totalPriceSatang`).
+     - Preserves room stay balance `toSatang(booking.price) - totalServicesSatang` so total itemized charges always equal total booking price exactly without rounding discrepancy.
+     - Persists snapshot with `items`, `amountPaidSatang`, `balanceSatang`, and `paymentStatus`.
+  3. **PDF & Print Layout (`client/src/lib/bookingDocumentPrint.ts`):**
+     - Full A4 standard print layout (`@page { size: A4; margin: 18mm; }`).
+     - Thai typography with Google Fonts `Sarabun` and `Noto Sans Thai` fallback for clean Thai/English rendering.
+     - Dynamic title display based on document type (Invoice / Receipt / Tax invoice).
+     - Clean itemized table showing Description, Qty, Unit Price, and Amount THB.
+     - Prominent Payment Status pill, Amount Paid, and Balance Due.
+     - Client-side download function (`downloadDocumentFile`) with filename format `<docType>_<docNumber>_<date>.html`.
+  4. **Email Readiness (`server/email.ts`):**
+     - Extended `EmailPayload` with optional `attachments?: EmailAttachment[]` (`filename`, `content`, `path?`, `contentType?`) passed cleanly to Resend API.
+  5. **UI & Navigation Integration:**
+     - `BookingDocumentDialog`: Radio selector for document type, disabling receipts when unpaid with helpful tooltip, showing existing receipt banner to prevent duplicate issuance, plus instant print & download buttons.
+     - `Bookings`: Document generation accessible for all active bookings with permissions.
+     - `Financials`: Added comprehensive "Financial Documents & Billing" overview table (`listHotel`) with search, filter, and quick print/download actions.
+  6. **Database Migration:**
+     - `drizzle/d1/20261110020000_allow_invoice_doc_type.sql` (migration idx 27) updates check constraint on `booking_documents.docType` to allow `invoice`. Non-destructive table recreate in SQLite.
+- **Verification Evidence:**
+  - `pnpm test`: 278 passed (278 test files), 1,972 passed (1,972 tests), 0 failures.
+  - `pnpm check`: exit code 0 (`tsc --noEmit`).
+  - `pnpm build`: exit code 0 (`vite build` + Wrangler dry-run bundle verified).
+
+## 2026-11-10 — Production migration and gated deployment (Codex)
+
+- **Local commits:** P0 fix `00b1ee4` (`fix: protect allotment and persist manual payment slips`); release runbook commits `d368e68` and `9ba2524`. No push or merge.
+- **Backup:** before migration, exported Production D1 through a FIFO in `/dev/shm` into `systemd-creds --user` ciphertext at `/home/gserver/.local/share/hayhost-release-backups/hayhost-production-before-20261109010000.cred`. The file is mode 600, 124,391 bytes; parent directory mode 700. Decryption was verified by checksum without printing SQL (`838ceb3e0363975f55963f3fe11d3f200201c224f47799ff74b2161287144e36`). Captured pre-migration D1 Time Travel bookmark `00000504-00000000-0000511e-aa21ea61e87ec453a55c419abf33b58d`.
+- **Production migration:** applied `drizzle/d1/20261109010000_restore_stop_sell_allotment.sql` to `hayhost-production` on 2026-11-10 after owner approval. Verification reports no pending migrations and confirms nullable `availability.reopen_rooms_available`. Migration completed without reported row writes. Before apply, a read-only query found 0 future rows (`date >= 2026-11-10`) with `rooms_available = 0`; rerun this hotel review before any future migration/restore workflow.
+- **Production configuration:** read-only check confirmed the `hayhost` Worker has D1, R2, rate-limit and asset bindings; configured secret names were present. Secret values were not read. `CLOUDFLARE_ENV=production pnpm build` and Wrangler dry-run passed, bound to `hayhost-production` and `hayhost-media` and exited before upload/deploy.
+- **Deployment halted:** no production deploy was performed because the required mobile smoke test did not pass its availability gate. CUA showed no browser surfaces and `bsk doctor` reported 0 connected browsers. No staging or Production mobile UI flow was executed. Connect BrowserSkill/Chrome and pass the staging mobile smoke test before resuming; then verify the approved source commit and deploy. Do not claim this release is live.
+
+## 2026-11-10 — Final release gate execution (Codex)
+
+- **Decision:** NO-GO for Guided Hotel Onboarding and real guest booking/payment until the production migration and legacy availability audit are completed, then the exact release commit is deployed under separate owner approval. Public demo/marketing can run without payment setup; real guest holds are blocked server-side until PromptPay is configured.
+- **Migration verification:** `drizzle/d1/20261109010000_restore_stop_sell_allotment.sql` follows migration journal index 25 with index 26 and adds nullable `availability.reopen_rooms_available`. Applied only to disposable local D1 at `/tmp/hayhost-final-gate-d1`; Wrangler identified the resource as local. The apply succeeded and a second migration-list check reported no pending migrations. Existing rows were preserved; there is no backfill. Rows already saved with `rooms_available = 0` cannot recover a prior allotment that was overwritten before this migration; they remain stopped with a null saved allotment and require the hotel to confirm/re-enter the intended cap. Recovery is an app rollback while retaining the additive column; do not drop it after values have been saved. No staging or production migration/data was accessed.
+- **Migration behavior:** local API exercised setting a cap, Stop Sell, and reopening; batch endpoint calls succeeded, and service regressions cover single-day, batch, and range restoration. Local D1 verifies reopening restores the saved positive allotment and clears the saved value. Cross-hotel writes return 403. Existing bookings are not cancelled by Stop Sell.
+- **Real local Worker E2E:** against the isolated D1/R2 Worker, PromptPay unset rejected the hold (412); configured PromptPay allowed availability → hold → booking details → payment session. SlipOK-unconfigured upload entered manual review; staff approval produced `paid`, rejection produced `failed`, and forced local expiry produced `expired`. Duplicate slip upload returned 412. Staff could retrieve the uploaded slip; cross-hotel retrieval returned 403. No real payment or paid SlipOK verification API call was made. SlipOK's external provider success/failure remains mock/unit covered only.
+- **P0 fixes:** (1) manual-review slip uploads previously had no persisted evidence for staff. Added private R2 storage, a hotel-scoped permission-protected slip retrieval query, and a staff preview; upload failure restores the booking state for retry. (2) public hold availability ignored positive online allotment, allowing two concurrent holds against cap 1. Availability now counts active booking nights against each night’s cap, while the atomic booking write and booking-night reclaim both enforce the cap. A two-request local Worker race returned one success and one rejection. Added regression tests for race safety, existing bookings under Stop Sell, and reclaim protection.
+- **Verification:** `pnpm check` passed. `pnpm test` passed (278 files, 1,965 tests). `pnpm build` passed: 3,626 Vite modules; largest JavaScript chunks 457.38 KB and 436.26 KB. Wrangler dry-run exited before uploads/deploy and bound to `hayhost-dev` / `hayhost-media-dev`; it emitted a warning because the package script does not select an environment explicitly. Focused booking/allotment tests passed (3 files, 64 tests); focused payment scope/secret/slip tests passed (4 files, 33 tests). Local D1 confirms the reopened cap is 1 with `reopen_rooms_available = NULL`; migration list reports no pending migrations. `git diff --check` passed after the handoff/spec edits.
+- **Not exercised:** browser-based mobile viewport E2E could not run because no browser surface was available in this session. A deployed real-hotel onboarding, real payment, and live SlipOK provider verification were not performed.
+- **Production prerequisites:** review future availability rows with each hotel, especially legacy `rooms_available = 0` rows; approve and apply migration `20261109010000_restore_stop_sell_allotment.sql` to production using the approved production procedure; verify the migration status; verify production Worker bindings `DB=hayhost-production`, `MEDIA=hayhost-media`, and `PUBLIC_BOOKING_LIMITER`; configure each hotel's PromptPay under Hotel Payment Settings before accepting holds. For booking email delivery, verify the `RESEND_API_KEY` secret and configured `EMAIL_FROM` sender/domain. SlipOK is optional: if a hotel enables it, set the 64-hex-character `SLIPOK_ENCRYPTION_KEY`, and save that hotel's SlipOK API key and branch ID in settings; otherwise staff manual verification is the supported path. Confirm staff can review uploaded slips, deploy this exact reviewed commit only after owner approval, then run a mobile guest booking and staff slip review smoke test. No push, merge, deploy, production migration, or production data change was performed.
+
+## 2026-11-10 — High season release recovery integration (Codex)
+
+- **Integration checkout:** `/home/gserver/hayhost-high-season-release`, branch `codex/high-season-release`, based on fetched `origin/main` `5d6fdf0`. Agy and Claude worktrees were preserved; their completed local commits were cherry-picked into this branch. The finished monthly-calendar WIP from `/home/gserver/hayhost-owner-dashboard-calendar` was integrated by copying only its uncommitted calendar UI/test changes; that source worktree was not edited. No push, merge to main, deploy, remote migration, or production data access occurred.
+- **Integrated commits:** `9121809` navigation copy, `5c270ae` dashboard status/labels, `2c5a20c` booking/dashboard baseline, `d0149c0` booking date selection, `4465659` website builder, `3b868b5` Agy booking/payment recovery, and `e9e7c3e` Claude owner-dashboard UI. Codex's integration fixes are in the current branch's pending local commit.
+- **Stop Sell integrity:** added nullable `availability.reopen_rooms_available`; closing stores the positive online cap, and reopening through single-day, batch, or range restores it. Added action-specific D1 authorization, Stop Sell-only calendar controls, and per-selected-hotel permission checks. Added preservation tests for all three write paths, denial tests for allotment-only actions, and a legacy-row migration test. Existing bookings are untouched. The migration only adds the column and preserves existing availability values.
+- **Migration:** `drizzle/d1/20261109010000_restore_stop_sell_allotment.sql` is not applied. `drizzle-kit generate` initially proposed an unrelated `hotel_payment_settings` table rebuild because the prior snapshot is stale; the retained migration was narrowed to the one additive `ALTER TABLE`. Snapshot and journal metadata are included. Test fixtures apply migrations to in-memory SQLite only.
+- **Calendar UI:** integrated the completed monthly-only view, per-room-type availability/price/status display, accessible status descriptions, and render tests. Stop Sell (0) is shown separately from full (0 remaining due to bookings); no Timeline was added back.
+- **Booking/payment:** Agy's changes check PromptPay configuration before creating a public room hold, retain manual hotel slip review when SlipOK is not configured, keep rejection/unreadable-slip/transport-error states distinct, and bound expiry/release. Existing payment setup and SlipOK BYO-key features were retained. Publication of a hotel site remains possible without payment setup; the guest cannot create a hold until PromptPay is configured.
+- **Owner dashboard:** integrated Claude's Payment Settings, General Settings, Staff, Financials and Booking Reports layout/i18n changes. Corrected the Financials report's unsupported outstanding/pending values: its calculation filters to verified payments first, so those balances always showed zero. The UI now shows collected payments and states that pending/outstanding balances are unavailable until payment ledger tracking exists; formulas were left unchanged.
+- Thai/English wording change, before → after:
+
+  | Key | Before (th / en) | After (th) | After (en) |
+  |---|---|---|---|
+  | `financials.unavailablePaymentBalances` | The page showed `0` for outstanding and pending balances even though the query only included verified payments. | ยังไม่แสดงยอดค้างชำระและยอดรอตรวจสอบ เนื่องจากระบบยังไม่มีบัญชีรายการชำระเงินที่ติดตามยอดเหล่านี้ได้ | Outstanding and pending balances are unavailable until payment ledger tracking is implemented. |
+
+- **Verification:** `pnpm check` passed; final `pnpm test` passed (278 files, 1,961 tests); `pnpm build` passed (Vite: 3,626 modules; largest JS chunks 457.01 KB and 436.26 KB). Wrangler `--dry-run` passed and bound to `hayhost-dev` / `hayhost-media-dev`; Wrangler warned that no environment was explicitly specified, and the package script defaults to the dev binding. Dry-run exited before upload/deploy. `git diff --check` passed. The focused Stop Sell/calendar/financials regression run passed earlier (9 files, 145 tests). UI render tests are mocked. No real browser journey against a working test backend or live payment was run. No browser/E2E runner or non-production backend was configured for this checkout. UI render tests are mocked. No real browser journey against a working test backend or live payment was run. No browser/E2E runner or non-production backend was configured for this checkout.
+- **Release gates:** apply the additive migration to the chosen environment before deploying this code; review existing future availability rows with each hotel before production enforcement; run a real non-production booking-to-staff-verification E2E. The payment ledger and refund tracking (B13–B15) remain pending, so outstanding/pending balances are intentionally not reported. No production data was queried or mutated.
+
+## 2026-11-09 — High season booking and payment recovery (Agy)
+
+- Continued the existing uncommitted booking/payment work on `fix/page-titles-booking-flow`; did not reset, switch, or move its prior edits. Added a server-side PromptPay readiness check before a public room hold is created, so an unconfigured hotel cannot hold inventory or collect guest details before the payment dead end. This follows the current owner decision that PromptPay is the only online payment method; SlipOK remains optional, with hotel staff review as the fallback.
+- Kept rejected-slip status separate from unreadable slips and transport errors: a rejected result asks the guest to contact the hotel, an unreadable slip can be uploaded again, and staff approval/rejection is reflected by the status poll. Manual review expiry remains bounded by the hotel's existing booking-request timeout; rejected room-night rows are released and the cron also cleans stale rows.
+- Added a responsive, theme-token based stylesheet for the previously unstyled Terms / Privacy / DPA pages. Added render coverage for the public hotel API retry and not-found states (the UI already had the error state; this adds regression coverage).
+- Thai and English payment wording, before → after:
+
+  | Key | Before | After (th) | After (en) |
+  |---|---|---|---|
+  | `publicHotel.paymentSuccessTitle` (replaces `bookingConfirmedTitle` on the post-payment screen) | การจองได้รับการยืนยันแล้ว! / Booking Confirmed! | ชำระเงินสำเร็จ | Payment successful |
+  | `publicHotel.paymentUnderReviewTitle` | ได้รับสลิปของคุณแล้ว / (not localized) | ได้รับสลิปแล้ว | Slip received |
+  | `publicHotel.paymentUnderReviewDesc` | ที่พักกำลังตรวจสอบการชำระเงิน การจองของคุณจะได้รับการยืนยันเมื่อเจ้าหน้าที่ตรวจสอบเสร็จ ไม่ต้องชำระเงินซ้ำ / (not localized) | ที่พักกำลังตรวจสอบการชำระเงิน จะแจ้งยืนยันการจองเมื่อการตรวจสอบเสร็จ ไม่ต้องชำระเงินซ้ำ | The property is checking your payment. Your booking will be confirmed after the review. Please do not pay again. |
+  | `publicHotel.paymentRejectedTitle` | — | ตรวจสอบสลิปไม่ผ่าน | Slip verification failed |
+  | `publicHotel.paymentRejectedDesc` | — | กรุณาติดต่อโรงแรมโดยตรงเพื่อสอบถามสถานะการชำระเงิน | Please contact the hotel directly to ask about your payment status. |
+
+- Tests: complete `pnpm test` passed (275 files, 1,856 tests); focused booking/payment/public hotel regression tests passed (8 files, 121 tests); `pnpm check` passed; `pnpm build` passed with Wrangler dry-run using `hayhost-dev`; `git diff --check` passed. No migration, remote database access, real payment, push, or deploy was run.
+
+## 2026-11-09 — Migration check, commit and push
+
+- Checked remote D1 migration status for `hayhost-staging` and `hayhost-production`; both Wrangler commands reported `No migrations to apply!`, so no migration was run.
+- Committed the completed booking flow, SlipOK Worker key handling, page title/navigation and platform color/bundle changes on `fix/page-titles-booking-flow`; pushed only that branch to `origin`.
+- Commit details are in the Git history for this branch.
+- Verification already completed before commit: `pnpm check`, `pnpm test` (274 files, 1,842 tests), `CLOUDFLARE_ENV=production pnpm build` including production Wrangler dry-run, and `git diff --check` all passed. Production deployment was recorded in the entry below.
+
 # Handoff log
+
+## 2026-11-09 — Brand palette consistency and production deployment
+
+- Aligned the dashboard's shared brand tokens to brick (`#954831`), dark brick (`#77311c`), soft brick and near-black ink. Sidebar active/hover states, shared buttons, fields and calendar selection now use the brand colors. Calendar prices use black; green remains on availability/success statuses and hotel-owned public themes.
+- Reduced the largest client JavaScript chunk from 1,416.55 KB to 453.72 KB by lazy-loading route pages and splitting React DOM, shared UI utilities and common vendor code. No client chunk exceeds Vite's 500 KB warning threshold.
+- Verification: `pnpm check` passed; `pnpm test` passed (274 files, 1,842 tests); `CLOUDFLARE_ENV=production pnpm build` passed with a production-targeted Wrangler dry-run and no missing-environment warning. `git diff --check` passed.
+- Deployed with `wrangler deploy --env production` to Worker `hayhost`, using D1 `hayhost-production`; no migration was run. Wrangler reported version `82338ef7-ef18-4775-88aa-999796230408`, and `https://www.hayhostth.com/` returned HTTP 200 after deployment.
+- Not committed or pushed.
+
+## 2026-11-09 — Page title, duplicated navigation, booking email and SlipOK Worker key
+
+- Changed the room-types H1 to match the sidebar action label in Thai and English, and removed the duplicated horizontal hotel navigation from the room-types page. The sidebar remains the page navigation; the title-mark and eyebrow remain intact.
+- Public booking detail confirmation now sends a bilingual booking email when a guest email was provided. It includes a link to reopen the payment step. Opening that link restores the booking and hotel IDs into the payment step; the payment API validates that they belong together.
+- SlipOK encryption and decryption now accept `SLIPOK_ENCRYPTION_KEY` from Worker bindings. The Worker passes that binding through tRPC context to the save and verify procedures. This addresses the Cloudflare Worker runtime path where relying on `process.env` alone can make stored SlipOK keys unusable at verification time. The secret must be configured for each Cloudflare environment where SlipOK is used; I did not inspect or change remote secrets.
+- Thai/English wording changes:
+
+  | Before | After |
+  |---|---|
+  | ประเภทห้องพัก / Room types (room-types H1) | จัดการประเภทห้องพัก / Manage room types |
+  | ไม่มีอีเมลรายการจอง | รายการจอง / Booking details; ผู้เข้าพัก / Guest; ยอดชำระ / Amount; กลับไปชำระเงิน / Return to payment |
+
+- Verification: focused tests passed (5 files, 34 tests). `pnpm check` passed. `pnpm test -- --maxWorkers=3 --minWorkers=1` passed (274 files, 1,842 tests). `pnpm build` passed including Wrangler `--dry-run` (dev bindings only). The first test run exposed one outdated SlipOK mock assertion and it was updated to verify the new binding argument. No real booking, email, SlipOK request, migration, push, or deploy was run.
+- No commit, push, or deploy.
 
 ## 2026-11-07 — Staff task manager inset and title label
 

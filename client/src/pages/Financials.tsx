@@ -1,4 +1,4 @@
-import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, QrCode, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, Printer, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -21,7 +21,9 @@ import { Link } from "wouter";
 import { useTranslation } from "@/lib/i18n";
 import { dateLocale } from "@/lib/dateLocale";
 import { bangkokMonth } from "@shared/finance";
+import { buildBookingDocumentHtml, downloadDocumentFile, downloadPdfBase64, formatSatang, writePrintWindow } from "@/lib/bookingDocumentPrint";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth, type FinancialsChoice } from "./financialsPeriod";
+import "./Financials.css";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -182,10 +184,9 @@ export default function Financials() {
 
       <section className="panel financials-summary-panel">
         <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.paymentCollectionAria")}</h2></div></div>
-        <div className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
+        <div className="grid gap-4 sm:grid-cols-2" aria-label={t("financials.paymentCollectionAria")}>
         <MetricCard label={t("financials.collectedRevenue")} value={formatCurrency(data.totals.collectedRevenue ?? 0)} detail={t("financials.collectedRevenueDetail")} icon={CircleDollarSign} tone="pine" />
-        <MetricCard label={t("financials.outstandingRevenue")} value={formatCurrency(data.totals.outstandingRevenue ?? 0)} detail={t("financials.outstandingRevenueDetail")} icon={Clock3} tone="amber" />
-        <MetricCard label={t("financials.pendingRevenue")} value={formatCurrency(data.totals.pendingRevenue ?? 0)} detail={t("financials.pendingRevenueDetail")} icon={QrCode} tone="slate" />
+        <p className="field-help self-center" role="status">{t("financials.unavailablePaymentBalances")}</p>
         </div>
       </section>
 
@@ -262,7 +263,107 @@ export default function Financials() {
         </div>
         <p className="field-help financials-bookings-help">{data.bookings.length > 0 ? t("financials.bookingsExportDesc", { count: data.bookings.length }) : t("financials.bookingsExportEmpty")}</p>
       </section>
+
+      <section className="panel financials-documents-panel" style={{ marginTop: 24 }}>
+        <div className="panel-heading">
+          <div>
+            <div className="eyebrow">{t("bookingDocuments.dialogEyebrow")}</div>
+            <h2>{t("bookingDocuments.allDocumentsTitle")}</h2>
+          </div>
+        </div>
+        <p className="field-help">{t("bookingDocuments.allDocumentsDesc")}</p>
+        <BillingDocumentsList hotelId={hotelId} />
+      </section>
+
       {hotelId && canManagePaymentSettings && <p className="field-help"><Link href={`/hotels/${hotelId}/settings/finance`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
+    </div>
+  );
+}
+
+function BillingDocumentsList({ hotelId }: { hotelId?: string | null }) {
+  const { t, language } = useTranslation();
+  const hotelDocsQuery = trpc.bookingDocuments.listHotel.useQuery(
+    { hotel_id: hotelId ?? "" },
+    { enabled: Boolean(hotelId) },
+  );
+
+  const print = (doc: any) => {
+    const labels = Object.fromEntries([
+      "invoiceTitle", "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
+      "qty", "unitPrice", "amount", "stay", "nights", "subtotal", "net", "vat", "total", "amountPaid", "balanceDue", "paymentStatus",
+      "statusPaid", "statusUnpaid", "statusPending", "withholding", "paymentMethod", "bookingRef", "signature",
+    ].map(key => [key, t(`bookingDocuments.print.${key}`)])) as any;
+    const html = buildBookingDocumentHtml(doc, labels, language === "th" ? "th" : "en", null);
+    writePrintWindow(window.open("", "_blank"), html);
+  };
+
+  const downloadPdfMutation = trpc.bookingDocuments.getPdf.useMutation();
+  const download = async (doc: any, docId?: string) => {
+    try {
+      const res = await downloadPdfMutation.mutateAsync({
+        hotel_id: hotelId!,
+        document_id: docId,
+        snapshot: doc,
+      });
+      downloadPdfBase64(res.filename, res.base64);
+    } catch {
+      const labels = Object.fromEntries([
+        "invoiceTitle", "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
+        "qty", "unitPrice", "amount", "stay", "nights", "subtotal", "net", "vat", "total", "amountPaid", "balanceDue", "paymentStatus",
+        "statusPaid", "statusUnpaid", "statusPending", "withholding", "paymentMethod", "bookingRef", "signature",
+      ].map(key => [key, t(`bookingDocuments.print.${key}`)])) as any;
+      const html = buildBookingDocumentHtml(doc, labels, language === "th" ? "th" : "en", null);
+      downloadDocumentFile(`${doc.number}_${doc.type}.html`, html);
+    }
+  };
+
+  if (!hotelId) return null;
+  if (hotelDocsQuery.isLoading) return <p className="field-help">{t("financials.loadingData")}</p>;
+  const docs = hotelDocsQuery.data ?? [];
+  if (docs.length === 0) return <p className="field-help">{t("bookingDocuments.noneIssued")}</p>;
+
+  return (
+    <div className="table-wrap" style={{ marginTop: 12 }}>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>{t("bookingDocuments.print.number")}</th>
+            <th>{t("bookingDocuments.typeLabel")}</th>
+            <th>{t("bookingDocuments.print.issuedOn")}</th>
+            <th>{t("bookings.guestCol")}</th>
+            <th className="align-right">{t("bookingDocuments.print.total")}</th>
+            <th className="align-right">{t("bookingDocuments.print.balanceDue")}</th>
+            <th className="align-right" />
+          </tr>
+        </thead>
+        <tbody>
+          {docs.map(row => (
+            <tr key={row.id}>
+              <td><strong>{row.docNumber}</strong></td>
+              <td>
+                <span className={`status-pill ${row.docType === "receipt" ? "done" : "pending"}`}>
+                  <i />
+                  {t(row.docType === "invoice" ? "bookingDocuments.typeInvoice" : row.docType === "receipt" ? "bookingDocuments.typeReceipt" : "bookingDocuments.typeTaxInvoice")}
+                </span>
+              </td>
+              <td>{formatDateLabel(row.snapshot.issuedOn, language === "th" ? "th-TH" : "en-GB")}</td>
+              <td>{row.guestName} <small style={{ color: "#666" }}>({row.bookingId.slice(0, 8)})</small></td>
+              <td className="align-right"><strong>{formatSatang(row.snapshot.totalSatang)}</strong></td>
+              <td className="align-right">{row.snapshot.balanceSatang != null ? formatSatang(row.snapshot.balanceSatang) : "—"}</td>
+              <td className="align-right">
+                <div style={{ display: "inline-flex", gap: "6px" }}>
+                  <button type="button" className="button button-quiet" onClick={() => print(row.snapshot)} title={t("bookingDocuments.printAgain")}>
+                    <Printer size={14} />
+                  </button>
+                  <button type="button" className="button button-quiet" onClick={() => download(row.snapshot, row.id)} title={t("bookingDocuments.downloadPdf")}>
+                    <Download size={14} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

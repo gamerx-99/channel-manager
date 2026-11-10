@@ -1,0 +1,15 @@
+.hotel-staff-summary { grid-template-columns: minmax(120px, .65fr) minmax(150px, .75fr) minmax(220px, 1fr) auto; align-items: stretch; }
+.hotel-staff-summary > div { min-width: 0; }
+.hotel-staff-summary .strip-caption { padding: 17px 19px; }
+.hotel-staff-summary > .button { align-self: center; justify-self: end; margin: 10px 14px; white-space: nowrap; }
+@media (max-width: 900px) {
+  .hotel-staff-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hotel-staff-summary .strip-caption { grid-column: 1 / -1; }
+  .hotel-staff-summary > .button { justify-self: stretch; margin: 10px; }
+}
+@media (max-width: 375px) {
+  .hotel-staff-summary { grid-template-columns: minmax(0, 1fr); }
+  .hotel-staff-summary .strip-caption { grid-column: auto; }
+  .hotel-staff-summary > div, .hotel-staff-summary .strip-caption { padding: 13px 14px; }
+  .hotel-staff-summary > .button { margin: 8px; }
+}

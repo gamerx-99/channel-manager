@@ -5,7 +5,9 @@ const repoMocks = vi.hoisted(() => ({
   getInvoiceSettings: vi.fn(),
   saveInvoiceSettings: vi.fn(),
   listBookingDocuments: vi.fn(),
+  listHotelDocuments: vi.fn(),
   issueBookingDocument: vi.fn(),
+  getBookingDocument: vi.fn(),
 }));
 
 vi.mock('./d1/bookingDocuments', () => repoMocks);
@@ -54,14 +56,77 @@ describe('receipts and tax invoices follow hotel permissions', () => {
     const app = await caller('housekeeping');
     await expect(app.bookingDocuments.issue(issue)).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(app.bookingDocuments.list({ hotel_id: HOME_HOTEL, booking_id: 'b1' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(repoMocks.issueBookingDocument).not.toHaveBeenCalled();
+    expect(repoMocks.listHotelDocuments).not.toHaveBeenCalled();
   });
 
   it('denies another hotel and a bad tax ID before touching data', async () => {
     const app = await caller('hotel_owner');
     await expect(app.bookingDocuments.issue({ ...issue, hotel_id: OTHER_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.bookingDocuments.listHotel({ hotel_id: OTHER_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(app.bookingDocuments.saveSettings({ ...header, tax_id: '12345' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(repoMocks.issueBookingDocument).not.toHaveBeenCalled();
+    expect(repoMocks.listHotelDocuments).not.toHaveBeenCalled();
     expect(repoMocks.saveInvoiceSettings).not.toHaveBeenCalled();
+  });
+
+  it('allows owner and front desk to view hotel documents', async () => {
+    const appOwner = await caller('hotel_owner');
+    await appOwner.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL });
+    expect(repoMocks.listHotelDocuments).toHaveBeenCalledTimes(1);
+
+    const appFrontDesk = await caller('front_desk');
+    await appFrontDesk.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL });
+    expect(repoMocks.listHotelDocuments).toHaveBeenCalledTimes(2);
+  });
+
+  it('allows owner to get PDF and email document, but denies housekeeping', async () => {
+    repoMocks.getBookingDocument.mockResolvedValue({
+      id: 'doc-1',
+      hotelId: HOME_HOTEL,
+      snapshot: {
+        type: 'invoice',
+        number: 'INV-000001',
+        issuedOn: '2026-11-10',
+        issuer: { name: 'Hotel', address: 'Addr', taxId: null, branch: null, phone: null },
+        buyer: { name: 'Guest', address: null, taxId: null, branch: null },
+        booking: { id: 'b1', checkIn: '2026-12-01', checkOut: '2026-12-02', nights: 1, roomType: 'Deluxe' },
+        items: [],
+        subtotalSatang: 10000,
+        vatEnabled: false,
+        vatRate: 7,
+        vatSatang: 0,
+        withholdingEnabled: false,
+        withholdingRate: 3,
+        withholdingSatang: 0,
+        totalSatang: 10000,
+        netToPaySatang: 10000,
+        amountPaidSatang: 0,
+        balanceSatang: 10000,
+        paymentStatus: 'unpaid',
+      },
+    });
+
+    const appOwner = await caller('hotel_owner');
+    const pdfRes = await appOwner.bookingDocuments.getPdf({ hotel_id: HOME_HOTEL, document_id: 'doc-1' });
+    expect(pdfRes.filename).toContain('INV-000001');
+    expect(pdfRes.contentType).toBe('application/pdf');
+
+    const emailRes = await appOwner.bookingDocuments.emailDocument({
+      hotel_id: HOME_HOTEL,
+      document_id: 'doc-1',
+      recipient_email: 'guest@example.test',
+    });
+    expect(emailRes.success).toBe(true);
+
+    const appHousekeeping = await caller('housekeeping');
+    await expect(appHousekeeping.bookingDocuments.getPdf({ hotel_id: HOME_HOTEL, document_id: 'doc-1' }))
+      .rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(appHousekeeping.bookingDocuments.emailDocument({
+      hotel_id: HOME_HOTEL,
+      document_id: 'doc-1',
+      recipient_email: 'guest@example.test',
+    })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 });

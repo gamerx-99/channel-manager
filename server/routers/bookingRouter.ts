@@ -3,7 +3,7 @@ import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
 import { eq } from 'drizzle-orm';
-import { rooms } from '../../drizzle/d1-schema';
+import { hotels, rooms } from '../../drizzle/d1-schema';
 import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/pricingModels';
 import { TM30_HEADERS, buildTm30Rows, createTm30Workbook } from '../tm30';
 import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
@@ -17,6 +17,8 @@ import { getManagedHotel } from '../d1/hotel';
 import { assertBookingMinStay } from '../d1/availability';
 import { transitionBookingStatus as dbTransitionBookingStatus } from '../d1/bookingService';
 import { createBookingWithGuests } from '../d1/booking';
+import { createEmailSender } from '../email';
+import { escapeHtml } from '@shared/escapeHtml';
 import {
   requireHotelPermission,
   rethrowDomainError,
@@ -270,7 +272,7 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
   await enforcePublicBookingRateLimit(ctx);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbConfirmBookingDetails(ctx.db, createD1PublicCallerContext(), {
+    const result = await dbConfirmBookingDetails(ctx.db, createD1PublicCallerContext(), {
       booking_id: input.booking_id,
       hotel_id: input.hotel_id,
       guest_name: input.guest_name,
@@ -279,6 +281,28 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
       special_requests: input.special_requests || null,
       services: input.services,
     });
+    if (input.guest_email) {
+      try {
+        const [hotel] = await ctx.db.select({ slug: hotels.slug, name: hotels.name }).from(hotels).where(eq(hotels.id, input.hotel_id)).limit(1);
+        if (hotel) {
+          const origin = ctx.req?.url ? new URL(ctx.req.url).origin : 'https://www.hayhostth.com';
+          const paymentUrl = new URL(`/${encodeURIComponent(hotel.slug)}/book`, origin);
+          paymentUrl.searchParams.set('booking_id', result.booking_id);
+          paymentUrl.searchParams.set('hotel_id', result.hotel_id);
+          const hotelName = escapeHtml(hotel.name);
+          const escapedUrl = escapeHtml(paymentUrl.toString());
+          await createEmailSender(ctx.billingEnv).sendEmail({
+            to: input.guest_email,
+            subject: `รายการจอง ${hotel.name} / Booking details`,
+            html: `<div><h2>รายการจอง / Booking details</h2><p>${hotelName}</p><p>ผู้เข้าพัก / Guest: ${escapeHtml(input.guest_name)}</p><p>ยอดชำระ / Amount: ฿${escapeHtml(String(result.amount))}</p><p><a href="${escapedUrl}">กลับไปชำระเงิน / Return to payment</a></p><p>${escapedUrl}</p></div>`,
+            text: `รายการจอง / Booking details\n${hotel.name}\nผู้เข้าพัก / Guest: ${input.guest_name}\nยอดชำระ / Amount: ฿${result.amount}\nกลับไปชำระเงิน / Return to payment: ${paymentUrl.toString()}`,
+          });
+        }
+      } catch (error) {
+        console.error('[booking.confirmBookingDetails] booking email delivery failed:', error instanceof Error ? error.message : error);
+      }
+    }
+    return result;
   } catch (error) {
     return rethrowDomainError(error);
   }

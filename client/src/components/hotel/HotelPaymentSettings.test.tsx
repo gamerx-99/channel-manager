@@ -82,6 +82,8 @@ describe("HotelPaymentSettings", () => {
   it("renders PromptPay and SlipOK settings with an empty password field", () => {
     render(<HotelPaymentSettings hotelId="hotel-1" />);
     expect(screen.getByLabelText("hotelPaymentSettings.title")).toBeTruthy();
+    expect(document.querySelector(".hotel-payment-card")).toBeTruthy();
+    expect(document.querySelector(".hotel-payment-card-content .form-grid")).toBeTruthy();
     expect(screen.getByLabelText("financials.promptPayIdLabel")).toBeTruthy();
     expect(screen.getByLabelText("financials.timeoutLabel")).toBeTruthy();
     const key = screen.getByLabelText("slipOk.keyLabel") as HTMLInputElement;

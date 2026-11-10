@@ -9,7 +9,6 @@ describe("one calendar page contract", () => {
   const app = read("client/src/App.tsx");
   const page = read("client/src/pages/OneCalendar.tsx");
   const hook = read("client/src/pages/useOneCalendar.ts");
-  const timeline = read("client/src/pages/OneCalendarTimeline.tsx");
   const panel = read("client/src/pages/OneCalendarSidePanel.tsx");
   const css = read("client/src/pages/oneCalendar.css");
 
@@ -22,9 +21,9 @@ describe("one calendar page contract", () => {
     expect(getRequiredRoutePermission("/dashboard/pricing")).toBeNull();
   });
 
-  it("offers month and timeline modes with range selection and a per-type save panel", () => {
-    expect(page).toContain('setMode("month")');
-    expect(page).toContain('setMode("timeline")');
+  it("uses one monthly calendar with range selection and a per-type save panel", () => {
+    expect(page).not.toContain("OneCalendarTimeline");
+    expect(page).not.toContain('setMode("timeline")');
     expect(page).toContain("selectCalendarDate(range[0], range[1], date)");
     expect(page).toContain("<OneCalendarSidePanel");
     expect(panel).toContain("one-calendar-panel panel");
@@ -33,6 +32,20 @@ describe("one calendar page contract", () => {
     expect(panel).toContain('t("oneCalendar.editOneNight"');
     expect(panel).toContain('t("oneCalendar.editNights"');
     expect(page).toContain("data.save.mutateAsync(input)");
+  });
+
+  it("keeps month cells responsive and leaves range selection controls intact", () => {
+    expect(css).toContain("@media (max-width: 600px)");
+    expect(css).toContain(".one-calendar-day,.one-calendar-blank { min-height: 5rem;");
+    expect(page).toContain("onClick={() => chooseDay(date)}");
+    expect(page).toContain('className="one-calendar-day-room-count"');
+    expect(page).toContain('className="one-calendar-day-price"');
+  });
+
+  it("derives editable actions from permissions for the selected hotel", () => {
+    expect(hook).toContain("hasHotelPermission(roles, memberships, hotelId, permission)");
+    expect(hook).toContain('canManageAllotment: can("revenue.manage_allotment")');
+    expect(hook).toContain('canManageStopSell: can("revenue.manage_stop_sell")');
   });
 
   it("shows room controls per selected type, hides rate fields without rate access, and surfaces localized save errors", () => {
@@ -45,14 +58,11 @@ describe("one calendar page contract", () => {
     expect(page).toContain('setError(t("oneCalendar.saveError"))');
   });
 
-  it("keeps prices in month cells only and gates price controls by permission", () => {
-    expect(timeline).not.toContain("price");
-    expect(timeline).toContain("one-calendar-timeline-scroll");
-    expect(css).toContain(".one-calendar-timeline-scroll { width: 100%; max-width: 100%; overflow-x: auto;");
+  it("keeps prices in month cells only and gates rate controls by permission", () => {
+    expect(page).not.toContain("OneCalendarTimeline");
     expect(css).toContain(".one-calendar-page { min-width: 0;");
-    expect(css).toContain(".one-calendar-timeline { border-collapse: separate; border-spacing: 0; min-width: max-content;");
     expect(page).toContain("data.calendar.data?.canSeePrice &&");
     expect(panel).toContain("{canManageRates && <div className=\"one-calendar-control-grid\">");
-    expect(hook).toContain('permissions.includes("revenue.manage_rates")');
+    expect(hook).toContain('canManageRates: can("revenue.manage_rates")');
   });
 });

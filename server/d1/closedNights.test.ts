@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { availability, bookingNights, bookings, bookingStatusLog, d1Schema, hotels, hotelUsers, otaConnections, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { availability, bookingNights, bookings, bookingStatusLog, d1Schema, hotelPaymentSettings, hotels, hotelUsers, otaConnections, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createD1SystemCallerContext } from "../db/scope";
-import { confirmBookingDetails, createBookingWithGuests, createPublicBooking, expireBookingIfPast, getPublicHotelAvailability, holdRoomType } from "./booking";
+import { createD1GuestPaymentCallerContext, createD1SystemCallerContext } from "../db/scope";
+import { claimBookingNights, confirmBookingDetails, createBookingWithGuests, createPublicBooking, expireBookingIfPast, getPublicHotelAvailability, holdRoomType } from "./booking";
 import { getPublicRoomTypeAvailability } from "./bookingService";
 import { syncOtaIcalBlocks } from "./ota";
 
@@ -54,6 +54,7 @@ const slug = "a-slug";
 
 async function seed(quantity = 2) {
   await db.insert(hotels).values({ id: "a", name: "Hotel a", slug, address: "Address", ownerContact: "a@example.test", publicEnabled: true });
+  await db.insert(hotelPaymentSettings).values({ hotelId: "a", promptpayId: "0812345678" });
   await db.insert(hotelUsers).values({ id: "membership-a", hotelId: "a", userId: "owner-a", role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
   await db.insert(roomTypes).values({ id: "type-a", hotelId: "a", name: "Standard", capacity: 2, basePrice: "100.00", baseOccupancy: 2, maxOccupancy: 2, occupancyPricing: { "1": { enabled: false, mode: "percent", value: -10 }, "2": { enabled: true, mode: "percent", value: 0 } }, childRates: { infant: { mode: "free", value: 0 }, age_groups: [], height: { mode: "free", value: 0 } } });
   for (let i = 1; i <= quantity; i++) await db.insert(rooms).values({ id: `room-a-${i}`, hotelId: "a", roomTypeId: "type-a", roomNumber: String(i).padStart(3, "0") });
@@ -70,6 +71,44 @@ const staffInput = (checkIn: string, checkOut: string) => ({
 });
 
 describe("closed nights for guests", () => {
+  it("counts positive allotment against active booking nights and prevents concurrent overbooking", async () => {
+    await seed(2);
+    await setNight("2026-11-02", 1);
+    const results = await Promise.allSettled([
+      holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW),
+      holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW),
+    ]);
+
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter(result => result.status === "rejected")).toHaveLength(1);
+    expect(await db.select().from(bookings)).toHaveLength(1);
+    expect(await db.select().from(bookingNights)).toHaveLength(1);
+    expect(await offered("2026-11-02", "2026-11-03")).toEqual([]);
+  });
+
+  it("keeps existing booking nights when online allotment is closed afterward", async () => {
+    await seed(2);
+    await setNight("2026-11-02", 2);
+    const created = await createPublicBooking(db, publicCaller, publicInput("2026-11-02", "2026-11-03"), NOW);
+    await db.$client.batch([db.$client.prepare("update availability set rooms_available = 0 where room_type_id = ? and date = ?").bind("type-a", "2026-11-02")]);
+
+    expect(await db.select({ status: bookings.status }).from(bookings)).toEqual([{ status: "confirmed" }]);
+    expect(await db.select().from(bookingNights)).toHaveLength(1);
+    await expect(holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(created.success).toBe(true);
+  });
+
+  it("does not reclaim a rejected guest payment after another booking consumes the online cap", async () => {
+    await seed(2);
+    await setNight("2026-11-02", 1);
+    const rejected = await createPublicBooking(db, publicCaller, publicInput("2026-11-02", "2026-11-03"), NOW);
+    await db.update(bookings).set({ status: "payment_rejected" }).where(eq(bookings.id, rejected.booking_id));
+    await db.$client.batch([db.$client.prepare("delete from booking_nights where booking_id = ?").bind(rejected.booking_id)]);
+    await holdRoomType(db, publicCaller, holdInput("2026-11-02", "2026-11-03"), NOW);
+
+    expect(await claimBookingNights(db, createD1GuestPaymentCallerContext("a"), "a", rejected.booking_id, NOW)).toBe(false);
+  });
+
   it("does not offer a stay with one closed night and refuses to insert it", async () => {
     await seed();
     await close("2026-11-02");

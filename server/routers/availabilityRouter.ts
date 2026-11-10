@@ -38,6 +38,7 @@ export const availabilityBatchSchema = z.object({
   start_date: z.string().date(),
   end_date: z.string().date(),
   rooms_available: z.number().int().nonnegative(),
+  action: z.enum(['allotment', 'stop_sell']).optional(),
 }).refine(data => data.end_date >= data.start_date, {
   message: 'End date must be on or after start date.',
   path: ['end_date'],
@@ -74,6 +75,7 @@ export const saveCalendarRangeSchema = z.object({
   start_date: z.string().date(),
   end_date: z.string().date(),
   rooms_available: z.number().int().nonnegative().optional(),
+  availability_action: z.enum(['allotment', 'stop_sell']).optional(),
   price: z.number().nonnegative().nullable().optional(),
   min_stay_nights: z.number().int().positive().nullable().optional(),
   base: z.boolean().optional(),
@@ -143,6 +145,8 @@ export const updateAvailabilityProcedure = protectedProcedure
         date: input.date,
         price: String(input.price),
         roomsAvailable: input.rooms_available,
+        action: input.action,
+        defaultRoomsAvailable: totalRooms,
       });
     } catch (error) {
       return rethrowDomainError(error);
@@ -156,7 +160,8 @@ export const updateAvailabilityProcedure = protectedProcedure
 export const updateAvailabilityBatchProcedure = protectedProcedure
   .input(availabilityBatchSchema)
   .mutation(async ({ ctx, input }) => {
-    const permission: Permission = input.rooms_available === 0 ? 'revenue.manage_stop_sell' : 'revenue.manage_allotment';
+    const action = input.action ?? (input.rooms_available === 0 ? 'stop_sell' : 'allotment');
+    const permission: Permission = action === 'stop_sell' ? 'revenue.manage_stop_sell' : 'revenue.manage_allotment';
     requireHotelPermission(ctx.user, input.hotel_id, permission);
     if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
@@ -166,6 +171,7 @@ export const updateAvailabilityBatchProcedure = protectedProcedure
         startDate: input.start_date,
         endDate: input.end_date,
         roomsAvailable: input.rooms_available,
+        action,
       });
     } catch (error) {
       return rethrowDomainError(error);
@@ -218,7 +224,8 @@ export const deleteRateOverrideProcedure = protectedProcedure.input(deleteRateOv
 export const saveCalendarRangeProcedure = protectedProcedure.input(saveCalendarRangeSchema).mutation(async ({ ctx, input }) => {
   const touchesPrice = (input.price !== undefined && input.price !== null) || input.base === true || input.min_stay_nights !== undefined;
   if (touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_rates');
-  if (input.rooms_available !== undefined) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
+  const availabilityAction = input.availability_action ?? (input.rooms_available === 0 ? 'stop_sell' : 'allotment');
+  if (input.rooms_available !== undefined) requireHotelPermission(ctx.user, input.hotel_id, availabilityAction === 'stop_sell' ? 'revenue.manage_stop_sell' : 'revenue.manage_allotment');
   if (input.rooms_available === undefined && !touchesPrice) requireHotelPermission(ctx.user, input.hotel_id, 'revenue.manage_allotment');
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
@@ -228,6 +235,7 @@ export const saveCalendarRangeProcedure = protectedProcedure.input(saveCalendarR
       startDate: input.start_date,
       endDate: input.end_date,
       roomsAvailable: input.rooms_available ?? null,
+      availabilityAction,
       price: input.price === undefined ? undefined : (input.price === null ? null : String(input.price)),
       minStayNights: input.min_stay_nights,
       base: input.base,

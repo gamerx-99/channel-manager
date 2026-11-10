@@ -105,6 +105,14 @@ export async function updatePaymentSessionStatus(db: D1ScopedDatabase, caller: D
   return row ? sessionRecord(row) : null;
 }
 
+export async function savePaymentSessionSlip(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, sessionId: string, slipUrl: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "payment_session.save_slip", now);
+  const [row] = await db.update(paymentSessions).set({ slipUrl })
+    .where(and(eq(paymentSessions.id, sessionId), eq(paymentSessions.hotelId, hotelId)))
+    .returning({ id: paymentSessions.id });
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Payment session not found." });
+}
+
 /** Another session already verified with this bank transaction reference. */
 async function transactionRefUsedElsewhere(db: D1ScopedDatabase, sessionId: string, ref: string) {
   const [row] = await db.select({ id: paymentSessions.id }).from(paymentSessions)

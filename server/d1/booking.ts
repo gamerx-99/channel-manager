@@ -8,7 +8,8 @@ import { moneyToSatang, satangToMoney } from "../db/money";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { calculateServiceTotalSatang, getPublicHotelBySlug, getPublicRoomTypeAvailabilityForGuests, priceBaseStaySatang, priceStayForRoomType, roundAverageNightlySatang, transitionBookingStatus } from "./bookingService";
 import { getRequiredMinStayNights } from "../pricing";
-import { CLOSED_NIGHT_ERROR_PREFIX, closedNightsForRoomType, NO_CLOSED_NIGHT_SQL, noClosedNightParams } from "./closedNights";
+import { normalisePromptPayId } from "../../shared/promptPayId";
+import { CLOSED_NIGHT_ERROR_PREFIX, closedNightsForRoomType, NO_CLOSED_NIGHT_SQL, noClosedNightParams, NO_ALLOTMENT_EXCEEDED_SQL, noAllotmentExceededParams } from "./closedNights";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const noAvailability = () => new TRPCError({ code: "BAD_REQUEST", message: "The selected room type is no longer available for the requested dates. Please choose another date or room type." });
@@ -193,7 +194,7 @@ export async function claimBookingNights(db: D1ScopedDatabase, caller: D1CallerC
   try {
     await db.$client.batch([
       releaseExpiredHoldNightsStatement(db, { roomId: row.roomId }, now),
-      addNightsStatement(db, bookingId, nights, now),
+      addNightsStatement(db, bookingId, nights, now, true),
     ]);
   } catch (error) {
     if (isBookingNightsUniqueConflict(error)) return false;
@@ -218,6 +219,17 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   const dates = getStayDates(input.check_in, input.check_out);
   if (!dates.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Check-out date must be after check-in date." });
   const hotel = await getPublicHotelBySlug(db, caller, input.slug);
+  // Do not create a room hold or collect guest details when this hotel cannot
+  // complete the only online payment flow currently supported (PromptPay).
+  // SlipOK remains optional: a staff review is the existing fallback.
+  const [paymentSettings] = await db.select({ promptpayId: hotelPaymentSettings.promptpayId })
+    .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotel.id)).limit(1);
+  if (!paymentSettings?.promptpayId || !normalisePromptPayId(paymentSettings.promptpayId)) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "This property cannot take PromptPay payments right now. Please contact the property directly.",
+    });
+  }
   if (input.createdIpHash) {
     const activeHolds = await countActiveHoldsForIp(db, hotel.id, input.createdIpHash, now);
     if (activeHolds >= 3) {
@@ -357,8 +369,9 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
               and not exists (select 1 from bookings b where b.room_id = r.id and b.check_in < ? and b.check_out > ?
                 and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?))))
               and ${NO_CLOSED_NIGHT_SQL}
+              and ${NO_ALLOTMENT_EXCEEDED_SQL}
             order by r.room_number limit 1`)
-          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime(), ...noClosedNightParams(input.checkIn, input.checkOut, now))
+          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime(), ...noClosedNightParams(input.checkIn, input.checkOut, now), ...noAllotmentExceededParams(input.checkIn, input.checkOut, now))
     : db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by, payment_method, payment_status)
         select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from hotels h
         where h.id = ? and (? is null or exists (select 1 from rooms r where r.id = ? and r.hotel_id = ? and r.status <> 'maintenance'))

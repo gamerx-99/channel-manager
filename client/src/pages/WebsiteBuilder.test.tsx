@@ -151,6 +151,7 @@ describe("WebsiteBuilder editing", () => {
   it("saves the adjusted point only after opening the editor and choosing Save", () => {
     mediaData.current = [{ id: "photo-1", url: "/photo.jpg", isHero: true, displayOrder: 0 }];
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("tab", { name: "Photos" })); // the photo tools live on their own tab
     const photo = screen.getByAltText("Hotel media preview");
     fireEvent.pointerDown(photo, { clientX: 50, clientY: 75 });
     expect(setObjectPosition).not.toHaveBeenCalled();
@@ -170,9 +171,59 @@ describe("WebsiteBuilder editing", () => {
       { id: "gallery", url: "/gallery.jpg", isHero: false, displayOrder: 1, isPublished: true },
     ] as typeof mediaData.current;
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("tab", { name: "Photos" })); // the photo tools live on their own tab
     const select = screen.getByRole("combobox", { name: "Order of photo 2" }) as HTMLSelectElement;
     expect(Array.from(select.options, option => option.textContent)).toEqual(["1 (Hero image)", "2"]);
     fireEvent.change(select, { target: { value: "1" } });
     expect(reorderMedia).toHaveBeenCalledWith({ hotel_id: "hotel-1", ids: ["gallery", "cover"] });
+  });
+});
+
+describe("WebsiteBuilder tabs", () => {
+  const renderBuilder = () => render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+
+  it("offers the four sections as free-order tabs and opens on the theme", () => {
+    renderBuilder();
+    const tabs = screen.getAllByRole("tab").map(tab => tab.textContent);
+    expect(tabs).toEqual(["Choose theme", "Website details", "Photos", "Preview and publish"]);
+    expect(screen.getByRole("tab", { name: "Choose theme" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tabpanel", { name: "Choose theme" })).toBeTruthy();
+    expect(screen.queryByRole("tabpanel", { name: "Photos" })).toBeNull();
+  });
+
+  it("lets the owner open any tab first, and keeps what was typed when switching", () => {
+    renderBuilder();
+    fireEvent.click(screen.getByRole("tab", { name: "Website details" }));
+    const hero = document.getElementById("wb-hero-copy") as HTMLTextAreaElement;
+    fireEvent.change(hero, { target: { value: "Typed but not saved" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Preview and publish" }));
+    expect(screen.getByRole("tab", { name: "Preview and publish" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Website details" }));
+    expect((document.getElementById("wb-hero-copy") as HTMLTextAreaElement).value).toBe("Typed but not saved");
+  });
+
+  it("moves between tabs with the arrow keys", () => {
+    renderBuilder();
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Choose theme" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Website details" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Website details" }), { key: "End" });
+    expect(screen.getByRole("tab", { name: "Preview and publish" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("shows whether the page is open to guests and what the draft state is, on the publish tab", () => {
+    renderBuilder();
+    fireEvent.click(screen.getByRole("tab", { name: "Preview and publish" }));
+    expect(screen.getByText("Private")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Publish page/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /View hotel page/ })).toBeTruthy();
+  });
+
+  it("keeps save draft and publish reachable from every tab", () => {
+    renderBuilder();
+    for (const name of ["Choose theme", "Photos"]) {
+      fireEvent.click(screen.getByRole("tab", { name }));
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
+    }
   });
 });

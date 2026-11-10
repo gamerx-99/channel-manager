@@ -76,8 +76,8 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
     }
   }
   return (
-    <div className="group min-w-0 overflow-hidden rounded-xl border border-[#e6eee9] bg-white" data-photo-id={item.id}>
-      <div className="relative aspect-[16/10] overflow-hidden bg-[#f6faf7]">
+    <div className="group min-w-0 overflow-hidden rounded-xl border border-[var(--rule)] bg-white" data-photo-id={item.id}>
+      <div className="relative aspect-[16/10] overflow-hidden bg-[var(--paper)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.url}
@@ -86,13 +86,13 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
           style={item.objectPosition ? { "--wb-object-position": item.objectPosition } as CSSProperties : undefined}
         />
         {item.isHero && (
-          <span className="absolute left-2 top-2 rounded-full bg-[#1d6b56] px-2 py-0.5 text-[11px] font-semibold text-white">
+          <span className="absolute left-2 top-2 rounded-full bg-[var(--pine)] px-2 py-0.5 text-[11px] font-semibold text-white">
             {t("websiteBuilder.heroBadge")}
           </span>
         )}
       </div>
       {isEditing && (
-        <div className="space-y-2 border-t border-[#e6eee9] p-3">
+        <div className="space-y-2 border-t border-[var(--rule)] p-3">
           <p className="text-xs font-medium">{t("websiteBuilder.chooseFocalPoint")}</p>
           <div className="text-center">
             <div className="wb-focal-editor relative inline-block max-w-full overflow-hidden rounded" style={editorStyle} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
@@ -140,20 +140,20 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
       )}
       <div className="wb-photo-footer p-3">
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-[#2a4035]">{placeLabel}</p>
+          <p className="truncate text-xs font-medium text-[var(--ink)]">{placeLabel}</p>
         </div>
-        {position !== null && <label className="wb-order-label text-xs text-[#52655b]">{t("websiteBuilder.orderLabel")}
-          <select className="wb-order-select rounded-md border border-[#dce4df] bg-white px-2 text-sm" value={position} disabled={!canManage || orderCount < 2} aria-label={t("websiteBuilder.orderNamedAria", { name })} onChange={event => onMove(item.id, Number(event.currentTarget.value) - 1)}>
+        {position !== null && <label className="wb-order-label text-xs text-[var(--ink-soft)]">{t("websiteBuilder.orderLabel")}
+          <select className="wb-order-select rounded-md border border-[var(--rule)] bg-white px-2 text-sm" value={position} disabled={!canManage || orderCount < 2} aria-label={t("websiteBuilder.orderNamedAria", { name })} onChange={event => onMove(item.id, Number(event.currentTarget.value) - 1)}>
             {Array.from({ length: orderCount }, (_, index) => <option key={index} value={index + 1}>{index === 0 && hasCover ? t("websiteBuilder.orderCoverOption") : index + 1}</option>)}
           </select>
         </label>}
         <div className="wb-photo-actions">
-          <Button type="button" variant="outline" size="sm" className="wb-photo-action border-[#dce4df] px-2 text-xs" onClick={() => { setDraftPosition(item.objectPosition); setFocalMediaId(item.id); }} disabled={!canManage} aria-expanded={isEditing} aria-label={t("websiteBuilder.adjustPositionNamedAria", { name })}>{t("websiteBuilder.adjustPosition")}</Button>
+          <Button type="button" variant="outline" size="sm" className="wb-photo-action border-[var(--rule)] px-2 text-xs" onClick={() => { setDraftPosition(item.objectPosition); setFocalMediaId(item.id); }} disabled={!canManage} aria-expanded={isEditing} aria-label={t("websiteBuilder.adjustPositionNamedAria", { name })}>{t("websiteBuilder.adjustPosition")}</Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className={`wb-photo-action border-[#dce4df] px-2 text-xs ${item.isHero ? "bg-[#edf7f1] text-[#1d6b56]" : "bg-white"}`}
+            className={`wb-photo-action border-[var(--rule)] px-2 text-xs ${item.isHero ? "bg-[var(--pine-soft)] text-[var(--pine)]" : "bg-white"}`}
             onClick={() => handleSetHero(item.id)}
             disabled={!canManage || item.isHero}
             aria-label={t("websiteBuilder.setHeroNamedAria", { name })}
@@ -164,7 +164,7 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
             type="button"
             variant="ghost"
             size="icon"
-            className="wb-photo-action text-[#8a9a93] hover:text-red-600"
+            className="wb-photo-action text-[var(--ink-muted)] hover:text-red-600"
             onClick={() => handleDeleteMedia(item.id)}
             disabled={!canManage || item.isHero}
             aria-label={t("websiteBuilder.deleteNamedMediaAria", { name })}
@@ -174,13 +174,13 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
         </div>
       </div>
       <div className="space-y-2 px-3 pb-3">
-        <label className="block text-xs font-medium text-[#52655b]">
+        <label className="block text-xs font-medium text-[var(--ink-soft)]">
           {t("websiteBuilder.photoCaptionLabel")}
           <input
             // key: remount when the saved caption changes (for example after discarding the draft),
             // otherwise defaultValue keeps showing the old text.
             key={`${item.id}:${item.caption ?? ""}`}
-            className="website-builder-photo-caption mt-1 w-full rounded-md border border-[#dce4df] px-2 py-1.5 text-sm"
+            className="website-builder-photo-caption mt-1 w-full rounded-md border border-[var(--rule)] px-2 py-1.5 text-sm"
             maxLength={120}
             defaultValue={item.caption ?? ""}
             disabled={!canManage}
@@ -188,7 +188,7 @@ function PhotoCard({ item, position, orderCount, hasCover, onMove, canManage, fo
           />
         </label>
         {!item.isHero && (
-          <label className="flex items-center gap-2 text-xs text-[#52655b]">
+          <label className="flex items-center gap-2 text-xs text-[var(--ink-soft)]">
             <input
               type="checkbox"
               checked={Boolean(item.isGallerySelected)}
@@ -232,9 +232,9 @@ export function PhotosSection({
   }
 
   return (
-    <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-      <CardHeader className="border-b border-[#edf2ee] pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
+    <Card className="overflow-hidden border-[var(--rule)] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+      <CardHeader className="border-b border-[var(--rule)] pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg text-[var(--ink)]">
           <ImageIcon size={18} aria-hidden="true" /> {t("websiteBuilder.mediaSectionTitle")}
         </CardTitle>
         <CardDescription>{t("websiteBuilder.mediaSectionDesc")}</CardDescription>
@@ -267,11 +267,11 @@ export function PhotosSection({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={!canManage}
-            className="bg-[#1d6b56] hover:bg-[#155442] disabled:opacity-50"
+            className="bg-[var(--pine)] hover:bg-[var(--pine-dark)] disabled:opacity-50"
           >
             <Upload size={15} /> {t("websiteBuilder.uploadImage")}
           </Button>
-          <span className="text-xs text-[#778a80]">{t("websiteBuilder.uploadHint")}</span>
+          <span className="text-xs text-[var(--ink-muted)]">{t("websiteBuilder.uploadHint")}</span>
         </div>
         <p className="field-help">{t("websiteBuilder.galleryCounter", { count: selectedGalleryIds.length })}</p>
 
@@ -287,7 +287,7 @@ export function PhotosSection({
             )}
             {otherPhotos.length > 0 && (
               <section className="space-y-2" aria-labelledby="wb-other-photos-title">
-                <h3 id="wb-other-photos-title" className="text-sm font-semibold text-[#2a4035]">{t("websiteBuilder.otherPhotosTitle")}</h3>
+                <h3 id="wb-other-photos-title" className="text-sm font-semibold text-[var(--ink)]">{t("websiteBuilder.otherPhotosTitle")}</h3>
                 <p className="field-help">{t("websiteBuilder.otherPhotosHint")}</p>
                 <div className="grid gap-3 sm:grid-cols-2" data-testid="other-photos">
                   {otherPhotos.map(item => (
@@ -303,7 +303,7 @@ export function PhotosSection({
             <span>{t("websiteBuilder.noMediaDesc")}</span>
           </div>
         )}
-        <p className="text-xs leading-5 text-[#778a80]">
+        <p className="text-xs leading-5 text-[var(--ink-muted)]">
           {t("websiteBuilder.mediaFooterHint")}
         </p>
       </CardContent>

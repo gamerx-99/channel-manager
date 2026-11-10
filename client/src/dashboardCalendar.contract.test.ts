@@ -36,7 +36,10 @@ describe('Dashboard Calendar View contract', () => {
   });
 
   it('renders the calendar inside the Dashboard and supports property/date selection', () => {
-    expect(home).toContain('<DashboardCalendarView canEditAvailability={canEditCalendar} />');
+    expect(home).toContain('<DashboardCalendarView />');
+    expect(component).toContain("membership.hotelId === activeHotel?.hotel.id");
+    expect(component).toContain("activePermissions.includes('revenue.manage_stop_sell')");
+    expect(component).toContain("activePermissions.includes('revenue.manage_allotment')");
     expect(component).toContain('trpc.channelManager.dashboardCalendar.useQuery');
     expect(component).toContain('setSelectedHotelId');
     expect(component).toContain('setSelectedDate');

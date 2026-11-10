@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { bookingNights, bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelServices, hotelUsers, hotels, otaConnections, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingNights, bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelPaymentSettings, hotelServices, hotelUsers, hotels, otaConnections, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { cancelHotelBooking, createD1SystemCallerContext } from "../db/scope";
 import { getStayDates, createBookingWithGuests, createPublicBooking, confirmBookingDetails, expireBookingIfPast, getPublicHotelAvailability, holdRoomType, listBookingsForHotel, logBookingStatusChange } from "./booking";
@@ -60,6 +60,7 @@ const bookingInput = (hotelId: string, roomId: string | null, status: "confirmed
 
 async function seedHotel(id: string, owner: string, options: { published?: boolean; quantity?: number } = {}) {
   await db.insert(hotels).values({ id, name: `Hotel ${id}`, slug: `${id}-slug`, address: "Address", ownerContact: `${owner}@example.test`, publicEnabled: options.published ?? true });
+  await db.insert(hotelPaymentSettings).values({ hotelId: id, promptpayId: "0812345678" });
   await db.insert(hotelUsers).values({ id: `membership-${id}`, hotelId: id, userId: owner, role: "hotel_owner", permissionGrants: [], permissionRevokes: [] });
   await db.insert(roomTypes).values({ id: `type-${id}`, hotelId: id, name: "Standard", capacity: 2, basePrice: "100.00", baseOccupancy: 2, maxOccupancy: 2, occupancyPricing: { "1": { enabled: false, mode: "percent", value: -10 }, "2": { enabled: true, mode: "percent", value: 0 } }, childRates: { infant: { mode: "free", value: 0 }, age_groups: [], height: { mode: "free", value: 0 } } });
   for (let i = 1; i <= (options.quantity ?? 1); i++) await db.insert(rooms).values({ id: `room-${id}-${i}`, hotelId: id, roomTypeId: `type-${id}`, roomNumber: String(i).padStart(3, "0") });
@@ -121,6 +122,16 @@ describe("D1 booking repositories", () => {
     expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, checkedOut.id))).toEqual([]);
     const noRoom = await createBookingWithGuests(db, ownerA, bookingInput("a", null, "confirmed", "2026-11-01", "2026-11-04"), []);
     expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, noRoom.id))).toEqual([]);
+  });
+
+  it("refuses to create a public room hold when PromptPay is not configured", async () => {
+    await seedHotel("a", "owner-a");
+    await db.delete(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, "a"));
+
+    await expect(holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] }))
+      .rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("cannot take PromptPay") });
+    expect(await db.select().from(bookings)).toEqual([]);
+    expect(await db.select().from(bookingNights)).toEqual([]);
   });
 
   it("calculates all prices exactly in satang, including occupancy, child and service rules", async () => {
@@ -213,6 +224,18 @@ describe("D1 booking repositories", () => {
     expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, hold.booking_id))).toEqual([]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, hold.booking_id))).at(-1)?.reason).toBe("timer_expired");
     await expect(holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] }, afterExpiry)).resolves.toHaveProperty("booking_id");
+  });
+
+  it("cleans room-night rows left by a rejected payment without expiring that booking", async () => {
+    await seedHotel("a", "owner-a");
+    const now = new Date("2026-10-28T00:00:00Z");
+    const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-01", check_out: "2026-11-02", adults: 2, children: [] }, now);
+    await db.update(bookings).set({ status: "payment_rejected" }).where(eq(bookings.id, hold.booking_id));
+
+    await expect(expireOutstandingBookingRequests(db, new Date(now.getTime() + 60_000))).resolves.toEqual({ expired: 0 });
+    expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]?.status).toBe("payment_rejected");
+    expect(await db.select().from(bookingNights).where(eq(bookingNights.bookingId, hold.booking_id))).toEqual([]);
+    await expect(createPublicBooking(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", guest_name: "Available Guest", check_in: "2026-11-01", check_out: "2026-11-02" }, now)).resolves.toMatchObject({ success: true });
   });
 
   it("cleans an expired-but-still-held row before a new hold without waiting for lazy expiry", async () => {

@@ -1,23 +1,23 @@
 # 20 — Stop sell and allotment that guests respect
 
-Status: decisions made by the owner on 2026-11-05 (see the last section); implementation waits for the data audit. Not yet built for guests.
+Status (2026-11-10): guest stop-sell and allotment enforcement, staff override notice, and the owner calendar controls are implemented and covered by tests. The integration branch adds saved-allotment restoration when reopening Stop Sell. Its D1 migration is prepared but not applied. Before release, the owner must review legacy future availability rows with each hotel; no production data was queried or changed during this work.
 
 ## Problem (verified in the code on 2026-11-05)
 
-Two tables describe what a guest may buy, and they are not connected:
+Two tables describe what a guest may buy. The current guest flow reads both:
 
 | Table | Written by | Read by the guest booking flow? |
 |---|---|---|
-| `availability` (room type, date, `price`, `rooms_available`) | Calendar page and dashboard calendar "stop sale" / "rooms available" | **No.** Only the staff calendar, the dashboard router and hotel closure read it. |
+| `availability` (room type, date, `price`, `rooms_available`, optional `reopen_rooms_available`) | Owner calendar and dashboard Stop Sell controls | **Yes.** Guest listing and booking writes enforce the per-night cap. |
 | `rate_overrides` (room type, date range, `override_price`, `min_stay_nights`) | `/dashboard/pricing` | **Yes.** `server/d1/bookingService.ts` (`resolveRateSatang`, `priceStayForRoomType`) and `server/d1/booking.ts` use it for price and minimum stay. |
 
-Guest availability is `rooms of the type` minus `rooms with an overlapping active booking` (`roomAvailabilityCounts` in `server/d1/bookingService.ts`), and the insert is guarded by an overlap check in `atomicInsert` (`server/d1/booking.ts`). Neither looks at `availability`.
+Guest availability applies the per-night `availability.rooms_available` cap and subtracts rooms already booked. Booking insertion repeats the cap check atomically so two guests cannot claim the last allowed room.
 
-So pressing "stop sale" or lowering "rooms available" has no effect on guests. As a stop-gap the owner-facing controls are hidden (`CALENDAR_EDITING_ENABLED`, `DASHBOARD_CALENDAR_EDITING_ENABLED`, both `false`).
+Stop Sell closes online bookings only; existing bookings remain unchanged. Staff can confirm an override under the existing booking permission.
 
-## Proposed behaviour (ASSUMPTION: needs the owner's yes)
+## Behaviour
 
-Keep `availability` as the source for how many rooms of a type may be sold on a night, and keep `rate_overrides` as the source for price and minimum stay. No schema change and no migration.
+Keep `availability` as the source for how many rooms of a type may be sold on a night, and keep `rate_overrides` as the source for price and minimum stay. A nullable `reopen_rooms_available` field remembers the last positive cap while a night is stopped, so reopening restores the hotel's prior online allotment. Existing rows start with this field null and remain readable.
 
 For room type `T` and night `n`:
 
@@ -57,13 +57,12 @@ LIMIT 200;
 
 Every row the second query returns must be confirmed by the hotel ("yes, that night is closed") or deleted before enforcement ships. Rows in the past are ignored.
 
-## Rollout
+## Rollout status
 
-1. Merge the batch write (`updateAvailabilityBatch`, already on branch `work/overnight-2026-11-05`): one atomic D1 batch for many room types and days; limits 20 room types, 62 days, 18 rows per statement (D1 allows 100 bound parameters).
-2. Run the audit above and settle the result with the hotels.
-3. Ship enforcement points 1 and 2 with tests (listing, race on the last room, stop-sell night inside a stay, cap of N, reopening). Deploy only with the owner's approval; rollback is `wrangler rollback`.
-4. Re-enable the staff controls for stop sell and allotment only (flags above), wired to the batch procedure, plus the side-panel bulk editor. Price edits stay on `/dashboard/pricing`.
-5. Hide nothing again without telling the owner; remove the two flags when done.
+1. The batch write and per-night guest enforcement are integrated; regression tests cover closed nights, capacity, booking lifecycle and reopen behavior.
+2. Owner UI controls are enabled. Rate, allotment and Stop Sell permissions are checked independently in the UI and D1 service.
+3. Apply `drizzle/d1/20261109010000_restore_stop_sell_allotment.sql` to the intended environment before deploying this branch. It adds only the nullable restore field; it does not update existing rows.
+4. Before enforcing legacy future rows for any production hotel, run the read-only audit above and have each hotel confirm rows that limit sales. No production audit or migration was run as part of this integration.
 
 ## Tests to write with step 3
 
@@ -75,13 +74,12 @@ Every row the second query returns must be confirmed by the hotel ("yes, that ni
 
 ## Scope in phases (owner principle, 2026-11-05)
 
-hayhost is a website and direct-booking service with a simple back office, not a channel manager (`DECISIONS.md`). So this work is cut to what the four tests need, and the rest waits until a real hotel asks.
+hayhost is a website and direct-booking service with a simple back office, not a channel manager (`DECISIONS.md`). The implemented scope covers closing nights and per-night online caps; additional channel-management behavior remains out of scope unless a real hotel asks.
 
-- **Phase 1 (do first): close nights.** A night with `rooms_available = 0` cannot be booked by a guest, in the offered rooms and in the booking write. Staff bookings are not restricted; the screen shows a notice and a confirm step. No per-hotel setting, no walk-in-only rule, no reason field.
-- **Phase 2 (only when a hotel asks): a cap per night** ("sell at most N rooms"), counted including rooms already booked. The table already supports it; the enforcement check just uses the number instead of 0.
+- **Implemented: close nights and per-night caps.** A night with `rooms_available = 0` cannot be booked by a guest, and a positive value limits total rooms sold on that night, including existing bookings. Both the guest availability calculation and the atomic public booking write enforce the cap. Staff bookings are not restricted; the screen shows a notice and a confirm step. No per-hotel setting, no walk-in-only rule, no reason field.
 - **Dropped for now:** a per-hotel choice of how staff may book a closed night (options A, B, C discussed on 2026-11-05). The hotel already controls who may enter bookings through staff permissions.
 
-Everything above about data audit, race safety and `booking_nights` applies to phase 1 as written.
+Everything above about data audit, race safety and `booking_nights` applies to both stop sell and positive caps.
 ## Consistency check of the owner's choices (2026-11-05)
 
 Checked against the code. Findings that change how the work is written:
@@ -97,14 +95,13 @@ Checked against the code. Findings that change how the work is written:
 
 ## Decisions (owner, 2026-11-05)
 
-1. **Storage**: the existing `availability` table, no migration. Price stays on `rate_overrides`.
+1. **Storage**: the existing `availability` table remains the source of inventory caps; `reopen_rooms_available` is an additive field required to restore a saved cap after Stop Sell. Price stays on `rate_overrides`.
 2. **Cap**: set how many rooms may be sold on a night (for example 5 rooms, 2 offered). Stop sell is a cap of 0. Meaning as in finding 1.
 3. **Staff bookings**: hayhost does not restrict them (finding 3). Stop sell closes the online channel; staff see a notice and confirm. The hotel controls who may enter bookings through its own staff permissions.
 4. **Old rows**: check them with each hotel before enforcement is switched on (finding 8).
 
-## Next steps in order
+## Remaining release gates
 
-1. Someone with production access runs the two audit queries; review the rows with each hotel (delete or confirm).
-2. Write enforcement for guests: listing minimum over nights, and the cap clause in `atomicInsert` using `booking_nights`; tests listed above plus the staff override and iCal cases.
-3. Staff booking screen: the `STOP_SELL` warning and the confirm step.
-4. Re-enable the Calendar and dashboard controls for stop sell and cap only, sending the cap (finding 2), then the side-panel bulk editor on `updateAvailabilityBatch`.
+1. Apply the prepared migration to the chosen environment and confirm schema parity; do not deploy the new Worker before the column exists.
+2. Run the read-only legacy-row audit above and review limiting future rows with each affected hotel before production release.
+3. Complete a real guest-to-staff verification journey against a working non-production backend; current checks are automated tests and mocked UI renders, not a live end-to-end booking.

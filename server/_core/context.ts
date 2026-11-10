@@ -16,6 +16,7 @@ import { createAuth, type AuthInstance } from "../auth";
 import { createEmailSender } from "../email";
 import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
+import type { R2Bucket } from "@cloudflare/workers-types/index.ts";
 
 export type SupabaseMembership = {
   hotelId: string;
@@ -54,13 +55,15 @@ export type TrpcContext = {
   session?: unknown;
   /** PUBLIC_BOOKING_LIMITER binding; set by the Worker only. */
   publicBookingLimiter?: PublicBookingLimiter;
+  /** Private object storage used for guest payment evidence. */
+  media?: R2Bucket;
   /** CF-Connecting-IP header, the PUBLIC_BOOKING_LIMITER key; set by the Worker only. */
   cfConnectingIp?: string;
   /** Better Auth instance that resolved the session, for server-side auth calls. */
   auth?: AuthInstance;
   /** Request headers that carried the session. */
   headers?: Headers;
-  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string };
+  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string; SLIPOK_ENCRYPTION_KEY?: string; RESEND_API_KEY?: string; EMAIL_FROM?: string };
 };
 
 export type CreateContextOptions = {
@@ -70,7 +73,7 @@ export type CreateContextOptions = {
   clientIp?: string | null;
   db?: D1ScopedDatabase;
   auth?: AuthInstance;
-  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string };
+  billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string; SLIPOK_ENCRYPTION_KEY?: string; RESEND_API_KEY?: string; EMAIL_FROM?: string };
 };
 
 function normalizeHeaders(

@@ -15,6 +15,7 @@ type Props = {
   rowMap: Map<string, CalendarRow>;
   canManageRates: boolean;
   canManageAllotment: boolean;
+  canManageStopSell: boolean;
   edits: RoomTypeEdits;
   saveResults: Record<string, "saved" | "failed">;
   saving: boolean;
@@ -25,7 +26,7 @@ type Props = {
 };
 
 export default function OneCalendarSidePanel(props: Props) {
-  const { startDate, checkoutDate, lastNight, nightCount, language, roomTypes, rowMap, canManageRates, canManageAllotment, edits, saveResults, saving, error, t } = props;
+  const { startDate, checkoutDate, lastNight, nightCount, language, roomTypes, rowMap, canManageRates, canManageAllotment, canManageStopSell, edits, saveResults, saving, error, t } = props;
   const formatDate = (date: string) => formatBuddhistDate(date, language === "th" ? "th-TH" : "en-US-u-ca-gregory");
   return <aside className="one-calendar-panel panel" aria-label={t("oneCalendar.selectedRange")}>
     <div className="panel-heading"><div><div className="eyebrow">{t("oneCalendar.selectedRange")}</div><h2>{nightCount === 1
@@ -39,9 +40,9 @@ export default function OneCalendarSidePanel(props: Props) {
         <h3>{roomType.name}</h3>
         {saveResults[roomType.id] === "saved" && <p role="status">{t("oneCalendar.saved")}</p>}
         {saveResults[roomType.id] === "failed" && <p className="form-error">{t("oneCalendar.saveError")}</p>}
-        {canManageAllotment && <div className="one-calendar-control-grid">
-          <label>{t("oneCalendar.rooms")}<input type="number" min="0" max={roomType.totalRooms} value={rooms} placeholder={String(current?.roomsAvailable ?? roomType.totalRooms)} onChange={event => props.onEditChange(roomType.id, { rooms: event.target.value })} /></label>
-          <div className="one-calendar-sale-actions"><button type="button" className="button button-quiet button-small" onClick={() => props.onEditChange(roomType.id, { rooms: String(roomType.totalRooms) })}>{t("oneCalendar.openSales")}</button><button type="button" className="button button-quiet button-small" onClick={() => props.onEditChange(roomType.id, { rooms: "0" })}>{t("oneCalendar.closeSales")}</button></div>
+        {(canManageAllotment || canManageStopSell) && <div className="one-calendar-control-grid">
+          {canManageAllotment && <label>{t("oneCalendar.rooms")}<input type="number" min="1" max={roomType.totalRooms} value={rooms} placeholder={String(current?.roomsAvailable ?? roomType.totalRooms)} onChange={event => props.onEditChange(roomType.id, { rooms: event.target.value, roomsAction: "allotment" })} /></label>}
+          {canManageStopSell && <div className="one-calendar-sale-actions"><button type="button" className="button button-quiet button-small" onClick={() => props.onEditChange(roomType.id, { rooms: String(roomType.totalRooms), roomsAction: "stop_sell" })}>{t("oneCalendar.openSales")}</button><button type="button" className="button button-quiet button-small" onClick={() => props.onEditChange(roomType.id, { rooms: "0", roomsAction: "stop_sell" })}>{t("oneCalendar.closeSales")}</button></div>}
         </div>}
         {canManageRates && <div className="one-calendar-control-grid">
           <label>{t("oneCalendar.price")}<input type="number" min="0" step="0.01" value={price} placeholder={current?.price ?? ""} onChange={event => props.onEditChange(roomType.id, { price: event.target.value, useBase: false })} /></label>

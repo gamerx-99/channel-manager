@@ -1,6 +1,5 @@
 import { useTranslation } from "@/lib/i18n";
-import { Palette, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Palette } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,13 +13,6 @@ interface ContentSectionProps {
   formError: string | null;
   saveNote: string | null;
   sectionLabels: Record<keyof SiteConfig["visibleSections"], { label: string; hint: string }>;
-  isSavePending: boolean;
-  isPublishPending: boolean;
-  isDiscardPending: boolean;
-  hasStoredDraft: boolean;
-  onSave: () => void;
-  onPublish: () => void;
-  onDiscard: () => void;
 }
 
 export function ContentSection({
@@ -30,20 +22,13 @@ export function ContentSection({
   formError,
   saveNote,
   sectionLabels,
-  isSavePending,
-  isPublishPending,
-  isDiscardPending,
-  hasStoredDraft,
-  onSave,
-  onPublish,
-  onDiscard,
 }: ContentSectionProps) {
   const { t } = useTranslation();
 
   return (
-    <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-      <CardHeader className="border-b border-[#edf2ee] pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
+    <Card className="border-[var(--rule)] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+      <CardHeader className="border-b border-[var(--rule)] pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg text-[var(--ink)]">
           <Palette size={18} aria-hidden="true" /> {t("websiteBuilder.siteConfigTitle")}
         </CardTitle>
         <CardDescription>{t("websiteBuilder.siteConfigDesc")}</CardDescription>
@@ -55,7 +40,7 @@ export function ContentSection({
           </div>
         )}
         {saveNote && (
-          <div className="rounded-lg border border-[#cfe3d8] bg-[#edf7f1] px-3 py-2 text-xs text-[#1d6b56]" role="status">
+          <div className="rounded-lg border border-[var(--rule-strong)] bg-[var(--pine-soft)] px-3 py-2 text-xs text-[var(--pine)]" role="status">
             {saveNote}
           </div>
         )}
@@ -66,7 +51,7 @@ export function ContentSection({
         )}
 
         <div className="space-y-1.5">
-          <Label htmlFor="wb-hero-copy" className="text-xs text-[#52655b]">
+          <Label htmlFor="wb-hero-copy" className="text-xs text-[var(--ink-soft)]">
             {t("websiteBuilder.heroCopyLabel")}
           </Label>
           <Textarea
@@ -74,56 +59,25 @@ export function ContentSection({
             value={draft.heroCopy}
             onChange={e => setDraft(p => ({ ...p, heroCopy: e.target.value }))}
             disabled={!canManage}
-            className="min-h-[96px] border-[#dce4df]"
+            className="min-h-[96px] border-[var(--rule)]"
             placeholder={t("websiteBuilder.heroCopyPlaceholder")}
             maxLength={500}
             aria-label="hero_copy"
           />
-          <p className="text-[11px] text-[#778a80]">{draft.heroCopy.length} / 500</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">{draft.heroCopy.length} / 500</p>
         </div>
 
         <div className="space-y-3">
-          <Label className="text-xs text-[#52655b]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
+          <Label className="text-xs text-[var(--ink-soft)]">{t("websiteBuilder.visibleSectionsLabel")}</Label>
           <SectionsToggleSection
             visibleSections={draft.visibleSections}
             sectionLabels={sectionLabels}
             canManage={canManage}
             onToggle={(key, v) => setDraft(p => ({ ...p, visibleSections: { ...p.visibleSections, [key]: v } }))}
           />
-          <p className="text-[11px] text-[#778a80]">{t("websiteBuilder.visibleSectionsHint")}</p>
+          <p className="text-[11px] text-[var(--ink-muted)]">{t("websiteBuilder.visibleSectionsHint")}</p>
         </div>
 
-        <Button
-          type="button"
-          onClick={onSave}
-          disabled={!canManage || isSavePending}
-          className="form-submit button button-primary w-full"
-        >
-          <Save size={15} /> {isSavePending ? t("websiteBuilder.savingDraft") : t("websiteBuilder.saveDraft")}
-        </Button>
-        <Button
-          type="button"
-          onClick={onPublish}
-          disabled={!canManage || !hasStoredDraft || isPublishPending}
-          className="button button-primary w-full"
-        >
-          {isPublishPending ? t("websiteBuilder.publishing") : t("websiteBuilder.publishChanges")}
-        </Button>
-        {/* ASSUMPTION: explicit confirmation is sufficient protection for discarding the saved draft. */}
-        {hasStoredDraft && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!canManage || isDiscardPending}
-            onClick={onDiscard}
-            className="w-full"
-          >
-            {t("websiteBuilder.discardDraft")}
-          </Button>
-        )}
-        <p className="text-xs leading-5 text-[#778a80]">
-          {t("websiteBuilder.publishNote")}
-        </p>
       </CardContent>
     </Card>
   );

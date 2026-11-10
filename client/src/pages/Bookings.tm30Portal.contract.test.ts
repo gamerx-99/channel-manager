@@ -18,4 +18,13 @@ describe("TM.30 portal link contract", () => {
     expect(th.bookings.openTm30Portal).toBeTruthy();
     expect(en.bookings.openTm30Portal).toBeTruthy();
   });
+
+  it("lets staff inspect a private slip before resolving payment verification", () => {
+    expect(bookings).toContain("trpc.payment.getSlip.useQuery");
+    expect(bookings).toContain("t('bookings.viewSlip')");
+    expect(bookings).toContain("t('bookings.approveVerification')");
+    expect(bookings).toContain("t('bookings.rejectVerification')");
+    expect(th.bookings.viewSlip).toBeTruthy();
+    expect(en.bookings.viewSlip).toBeTruthy();
+  });
 });

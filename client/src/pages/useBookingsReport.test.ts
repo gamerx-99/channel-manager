@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reportBookingsCsv } from './useBookingsReport';
+import { bookingSourceTranslationKey, reportBookingsCsv } from './useBookingsReport';
 
 describe('bookings report CSV', () => {
   it('exports the requested columns and neutralizes spreadsheet formulas in guest fields', () => {
@@ -13,5 +13,12 @@ describe('bookings report CSV', () => {
     expect(csv.split('\n').map(line => line.split(',').length)).toEqual([7, 7]);
     expect(csv).not.toContain('Amount');
     expect(csv).not.toContain('1500');
+  });
+});
+
+describe('bookings report source translations', () => {
+  it('normalizes a walk-in source to the existing translation key', () => {
+    expect(bookingSourceTranslationKey('walk-in')).toBe('bookingsReport.source_walk_in');
+    expect(bookingSourceTranslationKey('walk_in')).toBe('bookingsReport.source_walk_in');
   });
 });

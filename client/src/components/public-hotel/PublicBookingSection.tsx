@@ -150,11 +150,14 @@ export default function PublicBookingSection({ page }: { page: Page }) {
     >
       <div>
         <div className="eyebrow">{t("publicHotel.bookingEyebrow")}</div>
-        <h2>{t("publicHotel.bookingTitle")}<br /><i>{t("publicHotel.bookingTitleHighlight")}</i></h2>
+        <h2>{t("publicHotel.bookingTitle")}</h2>
         <p>{t("publicHotel.bookingDesc")}</p>
       </div>
       <div className="booking-box">
-        <div className="booking-step-indicator">{t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}</div>
+        <div className="booking-step-indicator" role="progressbar" aria-label={t("publicHotel.bookingProgress")} aria-valuemin={1} aria-valuemax={6} aria-valuenow={wizardStep} aria-valuetext={t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}>
+          <span>{t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}</span>
+          <span className="booking-progress-track" aria-hidden="true"><span style={{ "--progress": `${wizardStep / 6 * 100}%` } as React.CSSProperties} /></span>
+        </div>
         {wizardError && <div className="booking-error-banner">{wizardError}</div>}
         {renderStepContent()}
       </div>

@@ -21,6 +21,21 @@ export function noClosedNightParams(checkIn: string, checkOut: string, now: Date
   return [checkIn, checkOut, thaiToday(now)];
 }
 
+/** True when any positive per-night online cap is already consumed by active room-nights. */
+export const NO_ALLOTMENT_EXCEEDED_SQL = `not exists (select 1 from availability a where a.room_type_id = r.room_type_id
+                and a.date >= ? and a.date < ? and a.date >= ? and a.rooms_available > 0
+                and (select count(*) from booking_nights n
+                  join rooms booked_room on booked_room.id = n.room_id
+                  join bookings booked on booked.id = n.booking_id
+                  where booked_room.room_type_id = r.room_type_id and n.night = a.date
+                    and (booked.status in ('confirmed', 'checked_in')
+                      or (booked.status in ('held', 'pending_payment', 'pending_verification')
+                        and (booked.expires_at is null or booked.expires_at >= ?)))) >= a.rooms_available)`;
+
+export function noAllotmentExceededParams(checkIn: string, checkOut: string, now: Date) {
+  return [checkIn, checkOut, thaiToday(now), now.getTime()];
+}
+
 function firstNight(checkIn: string, now: Date) {
   const today = thaiToday(now);
   return checkIn > today ? checkIn : today;

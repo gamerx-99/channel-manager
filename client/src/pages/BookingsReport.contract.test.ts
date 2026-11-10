@@ -19,6 +19,8 @@ describe('bookings report page contract', () => {
     expect(page).toContain('className="sr-only" aria-label={t(\'bookingsReport.daily\')}');
     expect(page).not.toContain('bookings-report-daily"><table');
     expect(page).toContain('bookingsReport.exportCsv');
+    expect(page).toContain('bookingSourceTranslationKey(row.name)');
+    expect(read('client/src/pages/BookingsReport.css')).toContain('.bookings-report-filter-row');
     expect(page).not.toContain('<main');
     expect(read('client/src/pages/BookingsReport.css')).toContain('overflow-x: auto');
   });

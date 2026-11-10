@@ -23,6 +23,12 @@ describe("Financials dashboard contract", () => {
     expect(router).toContain("protectedProcedure.input(financialsInputSchema).query");
   });
 
+  it("does not present unsupported outstanding or pending balances as zero", () => {
+    expect(component).toContain('t("financials.unavailablePaymentBalances")');
+    expect(component).not.toContain('label={t("financials.outstandingRevenue")}');
+    expect(component).not.toContain('label={t("financials.pendingRevenue")}');
+  });
+
   it("registers the page and gates it with the financials-only permission", () => {
     expect(app).toContain('path="/dashboard/financials"');
     expect(appShell).toContain('can("property.view_financials")');
@@ -45,11 +51,12 @@ describe("Financials dashboard contract", () => {
     expect(component).toContain('actionLabel={t("financials.tryAgain")}');
   });
 
-  it("includes collected, outstanding, and pending payment collection breakdown", () => {
+  it("shows collected payments and explains when outstanding and pending totals are unavailable", () => {
     expect(component).toContain('t("financials.paymentCollectionAria")');
     expect(component).toContain('t("financials.collectedRevenue")');
-    expect(component).toContain('t("financials.outstandingRevenue")');
-    expect(component).toContain('t("financials.pendingRevenue")');
+    expect(component).toContain('t("financials.unavailablePaymentBalances")');
+    expect(component).not.toContain('label={t("financials.outstandingRevenue")}');
+    expect(component).not.toContain('label={t("financials.pendingRevenue")}');
   });
 
   it("removes payment forms and links editors to hotel settings", () => {
