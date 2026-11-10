@@ -1,3 +1,32 @@
+## 2026-11-10 — Billing/PDF Acceptance Corrections (AGY)
+
+- **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
+- **Commit:** `9ca11b3` (`fix(billing): export real A4 PDF with Thai typography, email attachments, and immutable re-download`). No push, merge, or production deployment.
+- **Accepted Criteria Delivered & Verified:**
+  1. **Real PDF Export (`.pdf`):**
+     - Built `server/pdf/bookingDocumentPdf.ts` using `pdf-lib` + `@pdf-lib/fontkit` with embedded Waree Thai and Latin TrueType fonts (`shared/fonts/thaiFonts.ts`).
+     - Emits valid binary PDF version 1.7 in exact A4 dimensions (`595.28 x 841.89 pts`).
+     - Real `.pdf` files generated and visually verified:
+       - Evidence: `/home/gserver/.gemini/antigravity/brain/f082739c-e372-4146-a763-2a74b0caf554/evidence/sample_invoice.pdf`
+       - Evidence: `/home/gserver/.gemini/antigravity/brain/f082739c-e372-4146-a763-2a74b0caf554/evidence/sample_receipt.pdf`
+     - Browser direct download via `trpc.bookingDocuments.getPdf` converts base64 to `application/pdf` Blob, downloading actual `.pdf` files.
+  2. **Email Attachment Integration:**
+     - Added `sendBookingDocumentEmail` to `EmailSender`, `ResendEmailSender`, and `MockEmailSender` in `server/email.ts`.
+     - Connects `generateBookingDocumentPdf` to attach real base64-encoded PDF files (`application/pdf`) to the email payload.
+     - Fully tested payload, attachment structure, validation, and error propagation (Resend API 401/500) without sending any real emails.
+  3. **Duplicate Prevention & Concurrency Verification:**
+     - Database level: `uniqueIndex("booking_documents_hotel_type_seq_key").on(table.hotelId, table.docType, table.seq)` guarantees that duplicate document numbers can never be inserted.
+     - Backend level: `issueBookingDocument` uses a 3-attempt retry loop on SQLite UNIQUE constraint failure to gracefully resolve concurrent staff issuing collisions sequentially.
+     - UI level: `BookingDocumentDialog.tsx` detects `existingReceipt` and prompts for reprint instead of duplicate creation.
+     - Added unit tests in `server/d1/bookingDocuments.test.ts` verifying unique constraint enforcement and sequential non-colliding increments.
+  4. **Immutable Snapshot Retention:**
+     - Verified that already-issued documents store complete, immutable snapshots (`snapshot_json`) including items, room stays, extra services, and amounts.
+     - Unit test in `server/d1/bookingDocuments.test.ts` mutates hotel invoice settings (name, address, tax ID, VAT rate) and mutates original booking price, confirming that re-reading and re-downloading the document returns the exact original snapshot and totals.
+- **Verification Evidence:**
+  - `pnpm test`: 279 passed (279 test files), 1,982 passed (1,982 tests), 0 failures.
+  - `pnpm check`: exit code 0 (`tsc --noEmit`).
+  - `pnpm build`: exit code 0 (`vite build` + Wrangler dry-run bundle verified).
+
 ## 2026-11-10 — Billing & Financial Document Generation (PDF/Print) (AGY)
 
 - **Branch / Worktree:** `feat/billing-documents-pdf` in `/home/gserver/hayhost-billing-documents`, based on release commit `4adbb409948b1b8eea597bb6f8a145020f5e100b`.
