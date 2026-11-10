@@ -19,6 +19,9 @@ import {
 import {
   inviteStaffUser as d1InviteStaffUser,
   acceptStaffInvite as d1AcceptStaffInvite,
+  resendHotelStaffInvite as d1ResendHotelStaffInvite,
+  cancelHotelStaffInvite as d1CancelHotelStaffInvite,
+  listHotelStaffInvites as d1ListHotelStaffInvites,
 } from '../d1/invites';
 import {
   createSignupLink as d1CreateSignupLink,
@@ -130,6 +133,59 @@ export const inviteHotelStaff = protectedProcedure.input(hotelStaffInviteSchema)
       ctx.caller ?? { userId: ctx.user.id },
       emailSender,
       input,
+    );
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const hotelStaffInviteCancelSchema = z.object({
+  hotel_id: hotelIdSchema,
+  email: adminUserEmailSchema,
+  role: hotelStaffRoleValueSchema.optional(),
+});
+
+export const resendHotelStaffInvite = protectedProcedure.input(hotelStaffInviteSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    const emailSender = createEmailSender();
+    return await d1ResendHotelStaffInvite(
+      ctx.db,
+      ctx.caller ?? { userId: ctx.user.id },
+      emailSender,
+      input,
+    );
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const cancelHotelStaffInvite = protectedProcedure.input(hotelStaffInviteCancelSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    return await d1CancelHotelStaffInvite(
+      ctx.db,
+      ctx.caller ?? { userId: ctx.user.id },
+      input,
+    );
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+export const listHotelStaffInvites = protectedProcedure.input(hotelStaffListSchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_staff');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    return await d1ListHotelStaffInvites(
+      ctx.db,
+      ctx.caller ?? { userId: ctx.user.id },
+      input.hotel_id,
     );
   } catch (error) {
     if (error instanceof TRPCError) throw error;
@@ -314,6 +370,9 @@ export const staffRouter = router({
   hotelStaff,
   listHotelAdminAuditLogs,
   inviteHotelStaff,
+  resendHotelStaffInvite,
+  cancelHotelStaffInvite,
+  listHotelStaffInvites,
   createSignupLink,
   listSignupLinks,
   validateSignupLink,

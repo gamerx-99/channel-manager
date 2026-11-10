@@ -16,6 +16,7 @@ const database = vi.hoisted(() => ({
   logBookingStatusChange: vi.fn(),
   expireBookingIfPast: vi.fn(),
   claimBookingNights: vi.fn(),
+  sendBookingNotice: vi.fn(),
 }));
 const crypto = vi.hoisted(() => ({ encryptSlipOkKey: vi.fn(), hashSlipOkKey: vi.fn(), decryptSlipOkKey: vi.fn() }));
 const slip = vi.hoisted(() => {

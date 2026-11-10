@@ -50,6 +50,7 @@ partner API access), not sequencing within this repo.
 || `08-cross-cutting-hardening.md` | H | DONE (2026-08-31) | worker-bulk / worker-code (mixed, see spec) | — |
 || `12-saas-plans-billing.md` | SaaS | TODO — blocked on pricing/collection/tax decisions (2026-10-26) | worker-code | 09, 01 |
 || `13-cloudflare-migration.md` | Infra | TODO — approved 2026-10-26; do before launch (Workers + D1 + R2 + Better Auth) | worker-code | — |
+|| `21-booking-email-notifications.md` | Booking operations | IN PROGRESS — waiting on human migration apply (2026-11-10) | worker-code | 01, 05 |
 
 Note (2026-09-01): Phases 10 (production security closure), 11A/11B (hotel-context
 refactor), and 12A/12B (booking flow + payments) all landed via `.agent/handoff.md`

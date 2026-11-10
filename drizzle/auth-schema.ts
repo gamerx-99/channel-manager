@@ -96,6 +96,8 @@ export const verification = sqliteTable(
       .notNull()
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .$onUpdate(() => new Date()),
+    /** Set when a hotel staff invite is cancelled; the token then stops working. */
+    cancelledAt: integer("cancelled_at", { mode: "timestamp_ms" }),
   },
   table => [index("verification_identifier_idx").on(table.identifier)]
 );

@@ -148,6 +148,13 @@
       "when": 1793921811664,
       "tag": "20261106000000_hotel_line_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1794322944510,
+      "tag": "20261110000000_staff_invite_booking_email_schema",
+      "breakpoints": true
     }
   ]
 }

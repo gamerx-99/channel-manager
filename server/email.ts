@@ -101,11 +101,11 @@ export class ResendEmailSender implements EmailSender {
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
         <p style="font-size: 12px; color: #94a3b8;">
-          This invitation link will expire in 7 days. If you did not expect this invitation, you can ignore this email.
+          This invitation link will expire in 24 hours. If you did not expect this invitation, you can ignore this email.
         </p>
       </div>
     `;
-    const text = `Welcome to ${params.hotelName}!\n\nYou have been invited${roleLabel} to manage property operations on hayhost.\n\nAccept your invitation and set your password here:\n${params.inviteUrl}\n\nThis invitation link expires in 7 days.`;
+    const text = `Welcome to ${params.hotelName}!\n\nYou have been invited${roleLabel} to manage property operations on hayhost.\n\nAccept your invitation and set your password here:\n${params.inviteUrl}\n\nThis invitation link expires in 24 hours.`;
 
     await this.sendEmail({ to: params.to, subject, html, text });
   }
@@ -220,12 +220,22 @@ export class MockEmailSender implements EmailSender {
   }
 }
 
-export function createEmailSender(env?: { RESEND_API_KEY?: string; EMAIL_FROM?: string }): EmailSender {
+export class UnavailableEmailSender implements EmailSender {
+  constructor(private reason = "Email delivery is not configured.") {}
+
+  async sendEmail(): Promise<{ id: string; success: boolean }> { throw new Error(this.reason); }
+  async sendInviteEmail(): Promise<void> { throw new Error(this.reason); }
+  async sendPasswordResetEmail(): Promise<void> { throw new Error(this.reason); }
+  async sendVerificationEmail(): Promise<void> { throw new Error(this.reason); }
+}
+
+export function createEmailSender(env?: { RESEND_API_KEY?: string; EMAIL_FROM?: string }, options: { required?: boolean } = {}): EmailSender {
   const apiKey = env?.RESEND_API_KEY || (typeof process !== "undefined" ? process.env?.RESEND_API_KEY : undefined);
   const defaultFrom = env?.EMAIL_FROM || (typeof process !== "undefined" ? process.env?.EMAIL_FROM : undefined);
 
   if (apiKey) {
     return new ResendEmailSender(apiKey, defaultFrom);
   }
+  if (options.required) return new UnavailableEmailSender("RESEND_API_KEY is required to send booking and authentication emails.");
   return new MockEmailSender();
 }

@@ -9,7 +9,7 @@ const payment = vi.hoisted(() => ({
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
 }));
-const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn() }));
+const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn(), sendBookingNotice: vi.fn() }));
 const verify = vi.hoisted(() => vi.fn());
 const decrypt = vi.hoisted(() => vi.fn());
 
@@ -74,6 +74,7 @@ describe("verifySlip outcomes", () => {
 
     expect(writes.at(-1)).toEqual({ status: "pending_payment", expiresAt: HOLD_EXPIRES });
     expect(payment.finalizePaymentSession).not.toHaveBeenCalled();
+    expect(booking.sendBookingNotice).not.toHaveBeenCalled();
   });
 
   it("rejects a refused slip and closes the session", async () => {
@@ -84,6 +85,7 @@ describe("verifySlip outcomes", () => {
 
     expect(writes.at(-1)).toEqual({ status: "payment_rejected" });
     expect(payment.finalizePaymentSession).toHaveBeenCalledOnce();
+    expect(booking.sendBookingNotice).not.toHaveBeenCalled();
   });
 
   it("does not fail the session when a concurrent submit already moved the booking", async () => {
@@ -103,7 +105,8 @@ describe("verifySlip outcomes", () => {
     await expect(submit(db, 5)).resolves.toMatchObject({ verified: true });
 
     expect(verify).toHaveBeenCalledWith({ apiKey: "hotel-key", branchId: "hotel-branch" }, expect.objectContaining({ expectedAmount: 120 }));
-    expect(writes.at(-1)).toEqual({ status: "confirmed" });
+    expect(writes.at(-1)).toEqual({ status: "confirmed", paymentStatus: "verified" });
+    expect(booking.sendBookingNotice).toHaveBeenCalledWith(expect.anything(), expect.anything(), BOOKING, HOTEL, "booking_confirmed", ["guest", "hotel"], "https://www.hayhostth.com");
   });
 
   it("sends the slip to manual review when the hotel has no SlipOK key", async () => {
@@ -115,6 +118,7 @@ describe("verifySlip outcomes", () => {
     expect(verify).not.toHaveBeenCalled();
     expect(writes.at(-1)).toMatchObject({ status: "pending_verification" });
     expect(loggedReasons()).toContain("slipok_not_configured_manual_review_required");
+    expect(booking.sendBookingNotice).toHaveBeenCalledWith(expect.anything(), expect.anything(), BOOKING, HOTEL, "booking_awaiting_check", ["hotel"], "https://www.hayhostth.com", SESSION);
   });
 
   it("sends the slip to manual review when SlipOK refuses the hotel key", async () => {
@@ -171,7 +175,7 @@ describe("verifySlip outcomes", () => {
     await expect(submit(db, 12)).resolves.toMatchObject({ verified: true });
 
     expect(booking.claimBookingNights).toHaveBeenCalledWith(db, expect.anything(), HOTEL, BOOKING);
-    expect(writes.at(-1)).toEqual({ status: "confirmed" });
+    expect(writes.at(-1)).toEqual({ status: "confirmed", paymentStatus: "verified" });
   });
 
   it("sends a payment_rejected booking to manual review when its room is taken", async () => {

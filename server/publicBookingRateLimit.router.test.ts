@@ -16,6 +16,7 @@ const confirmInput = {
   booking_id: "88ed76e4-cc93-4aa7-9c4d-30999d35ada4",
   hotel_id: "11111111-1111-4111-8111-111111111111",
   guest_name: "Test Guest",
+  guest_email: "guest@example.test",
 };
 
 function callerWith(success: boolean) {

@@ -13,7 +13,7 @@ import { getSupportMemberships, isActiveSupportAccount } from "../d1/supportAcce
 import { hotelUsers } from "../../drizzle/d1-schema";
 import type { D1CallerContext, D1ScopedDatabase } from "../db/scope";
 import { createAuth, type AuthInstance } from "../auth";
-import { createEmailSender } from "../email";
+import { createEmailSender, type EmailSender } from "../email";
 import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
 
@@ -58,6 +58,10 @@ export type TrpcContext = {
   cfConnectingIp?: string;
   /** Better Auth instance that resolved the session, for server-side auth calls. */
   auth?: AuthInstance;
+  /** Email transport used by booking and staff notification emails. */
+  emailSender?: EmailSender;
+  /** Canonical public application origin supplied by Worker configuration. */
+  publicAppUrl?: string;
   /** Request headers that carried the session. */
   headers?: Headers;
   billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string };
@@ -70,6 +74,8 @@ export type CreateContextOptions = {
   clientIp?: string | null;
   db?: D1ScopedDatabase;
   auth?: AuthInstance;
+  emailSender?: EmailSender;
+  publicAppUrl?: string;
   billingEnv?: { PLATFORM_PROMPTPAY_ID?: string; SLIPOK_API_KEY?: string; SLIPOK_BRANCH_ID?: string };
 };
 
@@ -106,6 +112,8 @@ export async function createContextFromRequest(
   let db = dbArg ?? undefined;
   let authOverride: AuthInstance | undefined;
   let billingEnv: CreateContextOptions["billingEnv"];
+  let emailSenderOverride: EmailSender | undefined;
+  let publicAppUrl: string | undefined;
   const isObjectCall = !!(
     requestOrAuth &&
     typeof requestOrAuth === "object" &&
@@ -120,6 +128,8 @@ export async function createContextFromRequest(
     db = opts.db ?? db;
     authOverride = opts.auth;
     billingEnv = opts.billingEnv;
+    emailSenderOverride = opts.emailSender;
+    publicAppUrl = opts.publicAppUrl;
   } else if (typeof Request !== "undefined" && requestOrAuth instanceof Request) {
     req = requestOrAuth;
     headers = requestOrAuth.headers;
@@ -136,6 +146,8 @@ export async function createContextFromRequest(
         user: null,
         clientIp: clientIp || "unknown",
         billingEnv,
+        ...(emailSenderOverride ? { emailSender: emailSenderOverride } : {}),
+        ...(publicAppUrl ? { publicAppUrl } : {}),
       };
     }
     return {
@@ -146,6 +158,8 @@ export async function createContextFromRequest(
       db,
       session: null,
       billingEnv,
+      ...(emailSenderOverride ? { emailSender: emailSenderOverride } : {}),
+      ...(publicAppUrl ? { publicAppUrl } : {}),
     };
   }
 
@@ -244,6 +258,8 @@ export async function createContextFromRequest(
           auth,
           headers,
           billingEnv,
+          ...(emailSenderOverride ? { emailSender: emailSenderOverride } : {}),
+          ...(publicAppUrl ? { publicAppUrl } : {}),
         };
       }
     } catch (error) {
@@ -258,6 +274,8 @@ export async function createContextFromRequest(
       db,
       session: null,
       billingEnv,
+      ...(emailSenderOverride ? { emailSender: emailSenderOverride } : {}),
+      ...(publicAppUrl ? { publicAppUrl } : {}),
     };
   }
 
@@ -265,5 +283,7 @@ export async function createContextFromRequest(
   return {
     user: null,
     clientIp: clientIp || "unknown",
+    ...(emailSenderOverride ? { emailSender: emailSenderOverride } : {}),
+    ...(publicAppUrl ? { publicAppUrl } : {}),
   };
 }

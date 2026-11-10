@@ -38,6 +38,8 @@ describe('Hotel Detail calendar navigation', () => {
     expect(hotelDetail).toContain("t('hotelDetail.hotelNameLabel')");
     expect(hotelDetail).toContain("t('hotelDetail.addressLabel')");
     expect(hotelDetail).toContain("t('hotelDetail.contactLabel')");
+    expect(hotelDetail).toContain("t('hotelDetail.notificationEmailLabel')");
+    expect(hotelDetail).toContain('notification_email: hotelProfileForm.notification_email.trim() || null');
     expect(hotelDetail).not.toContain('hotelDetail.comingSoon');
   });
 
@@ -65,4 +67,3 @@ describe('Hotel Detail calendar navigation', () => {
     expect(hotelDetail).not.toContain('amenitiesHelp');
   });
 });
-

@@ -33,6 +33,11 @@ export type WorkerEnv = {
   PLATFORM_PROMPTPAY_ID?: string;
   SLIPOK_API_KEY?: string;
   SLIPOK_BRANCH_ID?: string;
+  /** Worker secrets used by booking and authentication email delivery. */
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
+  /** Optional canonical site origin; defaults to the request origin. */
+  PUBLIC_APP_URL?: string;
 };
 
 type WorkerAppDependencies = {
@@ -146,6 +151,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
     clientIp?: string,
     db?: D1ScopedDatabase,
     dbRaw?: D1Database,
+    env?: WorkerEnv,
   ) => {
     const origin = req.url && req.url.startsWith("http") ? new URL(req.url).origin : undefined;
     return createContext({
@@ -153,6 +159,8 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       clientIp,
       db,
       auth: dbRaw && origin ? getAuth(dbRaw, origin) : undefined,
+      emailSender: env ? createEmailSender({ RESEND_API_KEY: env.RESEND_API_KEY, EMAIL_FROM: env.EMAIL_FROM }, { required: true }) : undefined,
+      publicAppUrl: env?.PUBLIC_APP_URL,
     });
   };
 
@@ -168,6 +176,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
           c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
           db,
           c.env?.DB,
+          c.env,
         )),
         publicBookingLimiter: c.env?.PUBLIC_BOOKING_LIMITER,
         billingEnv: { PLATFORM_PROMPTPAY_ID: c.env?.PLATFORM_PROMPTPAY_ID, SLIPOK_API_KEY: c.env?.SLIPOK_API_KEY, SLIPOK_BRANCH_ID: c.env?.SLIPOK_BRANCH_ID },
@@ -183,6 +192,7 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
       c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
       db,
       c.env?.DB,
+      c.env,
     );
     if (!context.user) return c.json({ error: "Authentication required." }, 401);
     if (!db) return c.json({ error: "Database unavailable." }, 500);

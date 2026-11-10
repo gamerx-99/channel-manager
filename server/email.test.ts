@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ResendEmailSender } from "./email";
+import { createEmailSender, ResendEmailSender } from "./email";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -25,5 +25,10 @@ describe("ResendEmailSender", () => {
     const body = await sentBody(sender => sender.sendPasswordResetEmail({ to: "a@example.test", resetUrl: `https://app.example.test/"><img src=x>` }));
 
     expect(body.html).not.toContain("<img");
+  });
+
+  it("does not report a mock delivery when a Worker requires a real mail provider", async () => {
+    const sender = createEmailSender({}, { required: true });
+    await expect(sender.sendEmail({ to: "guest@example.test", subject: "x", html: "x" })).rejects.toThrow("RESEND_API_KEY is required");
   });
 });

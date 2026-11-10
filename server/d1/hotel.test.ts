@@ -239,7 +239,7 @@ describe("D1 hotel repository", () => {
   it("updates hotel profile fields only within the caller's property scope", async () => {
     await seedHotel("a", "owner-a");
     await seedHotel("b", "owner-b");
-    await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "a", name: "  New Name  ", address: "  New address  ", owner_contact: "  12345  " })).resolves.toMatchObject({ name: "New Name", address: "New address", owner_contact: "12345" });
+    await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "a", name: "  New Name  ", address: "  New address  ", owner_contact: "  12345  ", notification_email: "  desk@example.test  " })).resolves.toMatchObject({ name: "New Name", address: "New address", owner_contact: "12345", notification_email: "desk@example.test" });
     await expect(updateManagedHotelProfile(db, { userId: "owner-a" }, { hotel_id: "b", name: "X", address: "Y", owner_contact: "Z" })).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     // Set location and contacts
@@ -252,6 +252,7 @@ describe("D1 hotel repository", () => {
     });
     let hotelA = await getManagedHotel(db, { userId: "owner-a" }, "a");
     expect(hotelA).toMatchObject({
+      notification_email: "desk@example.test",
       latitude: 18.7883,
       longitude: 98.9853,
       public_phone: "0812345678",

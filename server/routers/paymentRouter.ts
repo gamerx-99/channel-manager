@@ -11,8 +11,10 @@ import {
   updatePaymentSessionStatus,
   finalizePaymentSession,
 } from '../d1/payment';
-import { claimBookingNights, expireBookingIfPast, logBookingStatusChange } from '../d1/booking';
-import { bookings, hotels } from '../../drizzle/d1-schema';
+import { claimBookingNights, expireBookingIfPast, logBookingStatusChange, sendBookingNotice } from '../d1/booking';
+import { createEmailSender } from '../email';
+import { resolveAppUrl } from '../appUrl';
+import { bookings, hotels, rooms, roomTypes } from '../../drizzle/d1-schema';
 import { eq, and } from 'drizzle-orm';
 import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
 import { decryptSlipOkKey } from '../slipokCrypto';
@@ -29,6 +31,10 @@ async function guestPaymentCaller(db: D1ScopedDatabase, bookingId: string, hotel
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
   }
   return createD1GuestPaymentCallerContext(row.hotelId);
+}
+
+function publicAppUrl(ctx: { publicAppUrl?: string; req?: { url?: string } }) {
+  return resolveAppUrl(ctx.publicAppUrl ?? (ctx.req?.url ? new URL(ctx.req.url).origin : undefined));
 }
 
 export const paymentRouter = router({
@@ -116,6 +122,58 @@ export const paymentRouter = router({
       }
     }),
 
+  // ASSUMPTION: a booking UUID is the bearer link for the guest's own booking summary,
+  // matching the existing public payment procedures; only a published hotel is readable.
+  getGuestBooking: rateLimitedProcedure
+    .input(z.object({ booking_id: z.string().uuid(), hotel_id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+      try {
+        const guest = await guestPaymentCaller(ctx.db, input.booking_id, input.hotel_id);
+        const [row] = await ctx.db.select({
+          id: bookings.id,
+          hotelId: bookings.hotelId,
+          hotelSlug: hotels.slug,
+          guestName: bookings.guestName,
+          checkIn: bookings.checkIn,
+          checkOut: bookings.checkOut,
+          price: bookings.price,
+          status: bookings.status,
+          paymentStatus: bookings.paymentStatus,
+          roomId: bookings.roomId,
+          hotelName: hotels.name,
+          hotelAddress: hotels.address,
+          hotelEmail: hotels.notificationEmail,
+          hotelPhone: hotels.publicPhone,
+          ownerContact: hotels.ownerContact,
+        }).from(bookings).innerJoin(hotels, eq(hotels.id, bookings.hotelId))
+          .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, guest.guestPaymentHotelId))).limit(1);
+        if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
+        const [type] = row.roomId
+          ? await ctx.db.select({ name: roomTypes.name }).from(rooms).innerJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id)).where(eq(rooms.id, row.roomId)).limit(1)
+          : [];
+        return {
+          booking_id: row.id,
+          hotel_id: row.hotelId,
+          hotel_slug: row.hotelSlug,
+          hotel_name: row.hotelName,
+          hotel_address: row.hotelAddress,
+          hotel_email: row.hotelEmail,
+          hotel_phone: row.hotelPhone || row.ownerContact,
+          guest_name: row.guestName,
+          check_in: row.checkIn,
+          check_out: row.checkOut,
+          room_type: type?.name ?? 'Not assigned',
+          amount: Number(row.price),
+          status: row.status,
+          payment_status: row.paymentStatus,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        return rethrowDomainError(error);
+      }
+    }),
+
   checkStatus: rateLimitedProcedure
     .input(z.object({
       booking_id: z.string().uuid(),
@@ -189,7 +247,7 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Payment session has expired.' });
         }
 
-        const [booking] = await db.select({ id: bookings.id, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(eq(bookings.id, session.booking_id)).limit(1);
+        const [booking] = await db.select({ id: bookings.id, status: bookings.status, expiresAt: bookings.expiresAt, guestName: bookings.guestName, price: bookings.price, roomId: bookings.roomId, guestEmail: bookings.guestEmail }).from(bookings).where(eq(bookings.id, session.booking_id)).limit(1);
         if (!booking) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found.' });
         const bookingStatus = booking.status as BookingStatus;
 
@@ -209,6 +267,7 @@ export const paymentRouter = router({
 
         const manualReview = async (reason: string) => {
           await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'pending_verification', reason });
+          await sendBookingNotice(db, ctx.emailSender ?? createEmailSender(), session.booking_id, hotelId, 'booking_awaiting_check', ['hotel'], publicAppUrl(ctx), session.id);
           return { verified: false as const, pendingManualReview: true as const, message: 'ระบบกำลังตรวจสอบสลิปของคุณ กรุณารอการยืนยันจากเจ้าหน้าที่' };
         };
 
@@ -244,11 +303,11 @@ export const paymentRouter = router({
             }
 
             assertValidTransition('pending_verification', 'confirmed');
-            const [confirmed] = await db.update(bookings).set({ status: 'confirmed' })
+            const [confirmed] = await db.update(bookings).set({ status: 'confirmed', paymentStatus: 'verified' })
               .where(and(eq(bookings.id, session.booking_id), eq(bookings.status, 'pending_verification')))
               .returning({ id: bookings.id });
             if (!confirmed) return await manualReview('booking_changed_manual_review_required');
-            await updateBookingPaymentStatus(db, guest, hotelId, session.booking_id, 'verified');
+            await sendBookingNotice(db, ctx.emailSender ?? createEmailSender(), session.booking_id, hotelId, 'booking_confirmed', ['guest', 'hotel'], publicAppUrl(ctx));
             await logBookingStatusChange(db, guest, { booking_id: session.booking_id, hotel_id: hotelId, from_status: 'pending_verification', to_status: 'confirmed', reason: 'slipok_auto_verified' });
             return { verified: true as const, message: 'ชำระเงินสำเร็จ' };
           }
@@ -324,8 +383,13 @@ export const paymentRouter = router({
         const nextStatus: BookingStatus = input.approved ? 'confirmed' : 'payment_rejected';
         assertValidTransition('pending_verification', nextStatus);
 
-        await db.update(bookings).set({ status: nextStatus }).where(eq(bookings.id, input.booking_id));
-        await updateBookingPaymentStatus(db, caller, input.hotel_id, input.booking_id, input.approved ? 'verified' : 'failed');
+        const [updated] = await db.update(bookings).set({ status: nextStatus, paymentStatus: input.approved ? 'verified' : 'failed' })
+          .where(and(eq(bookings.id, input.booking_id), eq(bookings.hotelId, input.hotel_id), eq(bookings.status, 'pending_verification')))
+          .returning({ id: bookings.id });
+        if (!updated) throw new TRPCError({ code: 'CONFLICT', message: 'This booking has already been processed.' });
+        if (input.approved) {
+          await sendBookingNotice(db, ctx.emailSender ?? createEmailSender(), input.booking_id, input.hotel_id, 'booking_confirmed', ['guest', 'hotel'], publicAppUrl(ctx));
+        }
         await logBookingStatusChange(db, caller, { booking_id: input.booking_id, hotel_id: input.hotel_id, from_status: 'pending_verification', to_status: nextStatus, changed_by: ctx.user.id, reason: input.note?.trim() || (input.approved ? 'manual_approve' : 'manual_reject') });
 
         return { booking_id: input.booking_id, status: nextStatus };

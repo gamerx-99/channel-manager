@@ -10,6 +10,9 @@ import { calculateServiceTotalSatang, getPublicHotelBySlug, getPublicRoomTypeAva
 import { getRequiredMinStayNights } from "../pricing";
 import { CLOSED_NIGHT_ERROR_PREFIX, closedNightsForRoomType, NO_CLOSED_NIGHT_SQL, noClosedNightParams } from "./closedNights";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
+import { sendBookingEmail, bookingEmailEventKey, type BookingEmailData, type BookingEmailRecipient, type BookingEmailType } from "./bookingEmails";
+import type { EmailSender } from "../email";
+import { resolveAppUrl } from "../appUrl";
 
 const noAvailability = () => new TRPCError({ code: "BAD_REQUEST", message: "The selected room type is no longer available for the requested dates. Please choose another date or room type." });
 async function runBookingBatch(db: D1ScopedDatabase, statements: Parameters<D1ScopedDatabase["$client"]["batch"]>[0]) {
@@ -241,7 +244,7 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   return { booking_id: bookingId, hotel_id: hotel.id, room_id: created!.roomId!, expires_at: expiresAt.toISOString(), room_type_name: roomType.name, room_number: room.roomNumber, total_price: satangToMoney(result.pricing.totalPrice), nights: dates.length };
 }
 
-export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1CallerContext, input: { booking_id: string; hotel_id: string; guest_name: string; guest_email?: string | null; guest_phone?: string | null; special_requests?: string | null; services?: Array<{ hotel_service_id: string; quantity: number }> }, now = new Date()) {
+export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1CallerContext, input: { booking_id: string; hotel_id: string; guest_name: string; guest_email?: string | null; guest_phone?: string | null; special_requests?: string | null; services?: Array<{ hotel_service_id: string; quantity: number }> }, now = new Date(), emailSender?: EmailSender, appUrl = resolveAppUrl()) {
   publicContext(caller);
   const [hotel] = await db.select({ id: hotels.id, slug: hotels.slug, publicEnabled: hotels.publicEnabled }).from(hotels).where(and(eq(hotels.id, input.hotel_id), eq(hotels.publicEnabled, true))).limit(1);
   if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
@@ -271,9 +274,9 @@ export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1Call
   const total = moneyToSatang(booking.price) + serviceTotal;
   const [settings] = await db.select({ paymentTimeoutMinutes: hotelPaymentSettings.paymentTimeoutMinutes }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, input.hotel_id)).limit(1);
   const expiresAt = new Date(now.getTime() + (settings?.paymentTimeoutMinutes ?? 15) * 60_000);
-  const statements = [releaseExpiredHoldNightsStatement(db, { roomId: booking.roomId ?? "" }, now), db.$client.prepare(`update bookings set guest_name = ?, status = 'pending_payment', expires_at = ?, price = ?
+  const statements = [releaseExpiredHoldNightsStatement(db, { roomId: booking.roomId ?? "" }, now), db.$client.prepare(`update bookings set guest_name = ?, guest_email = ?, status = 'pending_payment', expires_at = ?, price = ?
       where id = ? and hotel_id = ? and status = 'held' and (expires_at is null or expires_at >= ?)`)
-    .bind(input.guest_name.trim(), expiresAt.getTime(), satangToMoney(total), input.booking_id, input.hotel_id, now.getTime())];
+    .bind(input.guest_name.trim(), input.guest_email?.trim() || null, expiresAt.getTime(), satangToMoney(total), input.booking_id, input.hotel_id, now.getTime())];
   services.forEach((service, index) => statements.push(db.$client.prepare(`insert into booking_services
       (id, booking_id, service_name, pricing_model, unit_price, quantity, total_price)
       select ?, ?, ?, ?, ?, ?, ? where changes() = 1`)
@@ -292,7 +295,75 @@ export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1Call
   const audit = results.at(-3)!;
   if (update.meta.changes !== 1) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This room hold has expired or is no longer available. Please start again." });
   if (audit.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking confirmation audit was not written." });
+  // Booking-received notice to the guest and the hotel, with the real booking data at send time.
+  // A delivery failure never rolls the already-saved booking back.
+  await sendBookingNotice(db, emailSender, booking.id, booking.hotelId, "booking_received", ["guest", "hotel"], appUrl);
   return { booking_id: input.booking_id, hotel_id: input.hotel_id, status: "pending_payment" as const, expires_at: expiresAt.toISOString(), amount: satangToMoney(total) };
+}
+
+/** Reload current persisted values so notifications describe the state at send time. */
+export async function loadBookingEmailData(db: D1ScopedDatabase, bookingId: string, hotelId: string, appUrl = resolveAppUrl()): Promise<BookingEmailData | null> {
+  const [booking] = await db.select().from(bookings).where(and(eq(bookings.id, bookingId), eq(bookings.hotelId, hotelId))).limit(1);
+  if (!booking) return null;
+  const [hotel] = await db.select({ id: hotels.id, name: hotels.name, address: hotels.address, notificationEmail: hotels.notificationEmail, publicPhone: hotels.publicPhone, ownerContact: hotels.ownerContact }).from(hotels).where(eq(hotels.id, hotelId)).limit(1);
+  if (!hotel) return null;
+  const roomType = booking.roomId
+    ? await db.select({ name: roomTypes.name }).from(rooms).innerJoin(roomTypes, eq(roomTypes.id, rooms.roomTypeId)).where(and(eq(rooms.id, booking.roomId), eq(rooms.hotelId, hotelId))).limit(1)
+    : [];
+  const statusLabels: Record<string, string> = {
+    pending_payment: "Awaiting payment",
+    pending_verification: "Awaiting payment verification",
+    confirmed: "Confirmed",
+  };
+  const legacyContactLooksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hotel.ownerContact);
+  return {
+    bookingId: booking.id,
+    hotelId,
+    hotelName: hotel.name,
+    hotelContactEmail: hotel.notificationEmail || (legacyContactLooksLikeEmail ? hotel.ownerContact : null),
+    hotelContactPhone: hotel.publicPhone || (!legacyContactLooksLikeEmail ? hotel.ownerContact : null),
+    hotelAddress: hotel.address,
+    bookingRef: `BK-${booking.id.slice(0, 8).toUpperCase()}`,
+    guestName: booking.guestName,
+    checkIn: booking.checkIn,
+    checkOut: booking.checkOut,
+    roomTypeName: roomType[0]?.name ?? "Not assigned",
+    amount: satangToMoney(moneyToSatang(booking.price)),
+    status: statusLabels[booking.status] ?? booking.status.replaceAll("_", " "),
+    guestEmail: booking.guestEmail,
+    bookingUrl: `${appUrl}/booking/${booking.id}?hotel=${encodeURIComponent(hotelId)}`,
+    hotelBookingUrl: `${appUrl}/hotels/${hotelId}/bookings`,
+  };
+}
+
+export async function sendBookingNotice(
+  db: D1ScopedDatabase,
+  emailSender: EmailSender | undefined,
+  bookingId: string,
+  hotelId: string,
+  emailType: BookingEmailType,
+  recipients: BookingEmailRecipient[],
+  appUrl = resolveAppUrl(),
+  eventId?: string,
+) {
+  if (!emailSender) return;
+  try {
+    for (const recipient of recipients) {
+      const data = await loadBookingEmailData(db, bookingId, hotelId, appUrl);
+      if (!data) return;
+      if (emailType === "booking_received" && data.status !== "Awaiting payment") return;
+      if (emailType === "booking_awaiting_check" && data.status !== "Awaiting payment verification") return;
+      if (emailType === "booking_confirmed") {
+        const [booking] = await db.select({ status: bookings.status, paymentStatus: bookings.paymentStatus }).from(bookings)
+          .where(and(eq(bookings.id, bookingId), eq(bookings.hotelId, hotelId))).limit(1);
+        if (booking?.status !== "confirmed" || booking.paymentStatus !== "verified") return;
+      }
+      const result = await sendBookingEmail(db, emailSender, data, emailType, recipient, bookingEmailEventKey(bookingId, emailType, recipient, hotelId, eventId));
+      if (result.error) console.error(`[bookingEmails] ${emailType} delivery failed:`, result.error);
+    }
+  } catch (emailError) {
+    console.error(`[bookingEmails] ${emailType} preparation failed:`, emailError instanceof Error ? emailError.message : emailError);
+  }
 }
 
 export async function createBookingWithGuests(
@@ -381,4 +452,3 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
   );
   return runBookingBatch(db, statements);
 }
-

@@ -1,6 +1,6 @@
 import { assertStaffPermissionChange } from "./staffAuthorization";
 import { TRPCError } from "@trpc/server";
-import { and, eq, gt, like, or } from "drizzle-orm";
+import { and, eq, gt, isNull, like, or } from "drizzle-orm";
 import { hotelUsers, hotels, platformAdmins, supportAccounts } from "../../drizzle/d1-schema";
 import { user, verification, account, session, twoFactor } from "../../drizzle/auth-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
@@ -10,22 +10,20 @@ import { createHotelUserAssignment } from "./staff";
 import type { EmailSender } from "../email";
 import { generateSignupToken } from "../signupLinks";
 import { hashPassword } from "better-auth/crypto";
+import { resolveAppUrl } from "../appUrl";
+
+/**
+ * Staff invitation links are valid for 24 hours from being sent; the previous
+ * 7-day window was too long for a property team invite.
+ */
+export const STAFF_INVITE_TTL_MS = 24 * 60 * 60 * 1000;
+
+export { resolveAppUrl } from "../appUrl";
 
 export interface InviteStaffUserInput {
   hotel_id: string;
   email: string;
   role: HumanRole;
-}
-
-export function resolveAppUrl(overrideUrl?: string): string {
-  if (overrideUrl) return overrideUrl;
-  if (typeof process !== "undefined" && process.env?.PUBLIC_APP_URL) {
-    return process.env.PUBLIC_APP_URL;
-  }
-  if (typeof process !== "undefined" && process.env?.NODE_ENV === "development") {
-    return "http://localhost:3000";
-  }
-  return "https://channel-manager-seven-blue.vercel.app";
 }
 
 export async function inviteStaffUser(
@@ -103,7 +101,7 @@ export async function inviteStaffUser(
         id: verificationId,
         identifier,
         value: token,
-        expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(now.getTime() + STAFF_INVITE_TTL_MS),
         createdAt: now,
         updatedAt: now,
       });
@@ -173,7 +171,7 @@ export async function inviteStaffUser(
   // Create new user & invite token with rollback protection
   const newUserId = crypto.randomUUID();
   const inviteToken = generateSignupToken();
-  const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(now.getTime() + STAFF_INVITE_TTL_MS); // 24 hours
   const verificationId = crypto.randomUUID();
 
   await db.insert(user).values({
@@ -245,6 +243,173 @@ export async function inviteStaffUser(
   }
 }
 
+export type HotelStaffInviteStatus = "pending" | "expired" | "cancelled";
+
+export interface HotelStaffInviteRecord {
+  id: string;
+  email: string;
+  role: string;
+  status: HotelStaffInviteStatus;
+  expires_at: string;
+  created_at: string;
+  cancelled_at: string | null;
+}
+
+const HOTEL_INVITE_IDENTIFIER = /^hotel-invite:([^:]+):([^:]+):([^:]+):(.+)$/;
+
+function parseHotelInviteIdentifier(identifier: string) {
+  const match = HOTEL_INVITE_IDENTIFIER.exec(identifier);
+  if (!match) return null;
+  return { hotelId: match[1]!, role: match[2]!, inviterId: match[3]!, email: match[4]! };
+}
+
+/**
+ * Invalidate every still-pending invite token for one hotel and email address so
+ * the previous link stops working immediately; a new link gets a fresh 24h window.
+ */
+async function invalidatePendingHotelInvites(db: D1ScopedDatabase, hotelId: string, email: string, now: Date) {
+  const rows = await db
+    .select({ id: verification.id, identifier: verification.identifier, cancelledAt: verification.cancelledAt })
+    .from(verification)
+    .where(or(
+      like(verification.identifier, `hotel-invite:${hotelId}:%`),
+      eq(verification.identifier, `invite:${email}`),
+    ));
+  for (const row of rows) {
+    const invite = parseHotelInviteIdentifier(row.identifier);
+    if (invite && invite.email !== email) continue;
+    if (row.cancelledAt) continue;
+    await db.update(verification).set({ cancelledAt: now, updatedAt: now }).where(eq(verification.id, row.id));
+  }
+}
+
+/** Every staff invite for one hotel, with the derived status awaiting acceptance. */
+export async function listHotelStaffInvites(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()): Promise<HotelStaffInviteRecord[]> {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_staff", "staff.invite.list", now);
+  const rows = await db.select().from(verification).where(or(
+    like(verification.identifier, `hotel-invite:${hotelId}:%`),
+    like(verification.identifier, "invite:%"),
+  ));
+  const invites: HotelStaffInviteRecord[] = [];
+  for (const row of rows) {
+    let email: string;
+    let role: string;
+    const hotelInvite = parseHotelInviteIdentifier(row.identifier);
+    if (hotelInvite) {
+      if (hotelInvite.hotelId !== hotelId) continue;
+      email = hotelInvite.email;
+      role = hotelInvite.role;
+    } else if (row.identifier.startsWith("invite:")) {
+      email = row.identifier.replace(/^invite:/, "");
+      const [u] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
+      if (!u) continue;
+      const [mem] = await db.select({ role: hotelUsers.role }).from(hotelUsers).where(and(eq(hotelUsers.hotelId, hotelId), eq(hotelUsers.userId, u.id))).limit(1);
+      if (!mem && !row.cancelledAt) continue;
+      role = mem?.role ?? "front_desk";
+    } else {
+      continue;
+    }
+    const cancelledAt = row.cancelledAt ? new Date(row.cancelledAt).toISOString() : null;
+    const expired = new Date(row.expiresAt).getTime() <= now.getTime();
+    invites.push({
+      id: row.id,
+      email,
+      role,
+      status: (cancelledAt ? "cancelled" : expired ? "expired" : "pending") as HotelStaffInviteStatus,
+      expires_at: new Date(row.expiresAt).toISOString(),
+      created_at: new Date(row.createdAt).toISOString(),
+      cancelled_at: cancelledAt,
+    });
+  }
+  return invites.sort((left, right) => right.created_at.localeCompare(left.created_at));
+}
+
+/** Cancel a pending staff invite; the link is refused from that moment on. */
+export async function cancelHotelStaffInvite(db: D1ScopedDatabase, caller: D1CallerContext, input: { hotel_id: string; email: string; role?: string }, now = new Date()) {
+  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.invite.cancel", now);
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const rows = await db
+    .select({ id: verification.id, identifier: verification.identifier, cancelledAt: verification.cancelledAt })
+    .from(verification)
+    .where(or(
+      like(verification.identifier, `hotel-invite:${input.hotel_id}:%`),
+      eq(verification.identifier, `invite:${normalizedEmail}`),
+    ));
+  let cancelled = 0;
+  for (const row of rows) {
+    const invite = parseHotelInviteIdentifier(row.identifier);
+    if (invite && invite.email !== normalizedEmail) continue;
+    if (row.cancelledAt) continue;
+    await db.update(verification).set({ cancelledAt: now, updatedAt: now }).where(eq(verification.id, row.id));
+    cancelled += 1;
+  }
+  const [targetUser] = await db.select({ id: user.id, emailVerified: user.emailVerified }).from(user).where(eq(user.email, normalizedEmail)).limit(1);
+  if (targetUser && !targetUser.emailVerified) {
+    await db.delete(hotelUsers).where(and(eq(hotelUsers.hotelId, input.hotel_id), eq(hotelUsers.userId, targetUser.id)));
+  }
+  return { cancelled };
+}
+
+/**
+ * Re-issue a hotel staff invite: the previous pending link is invalidated at once
+ * and the fresh link is valid for 24 hours. Only pending (unverified) invites are
+ * re-sent; an address that already holds the membership is refused.
+ */
+export async function resendHotelStaffInvite(db: D1ScopedDatabase, caller: D1CallerContext, emailSender: EmailSender, input: { hotel_id: string; email: string; role: HumanRole }, appUrl?: string, now = new Date()) {
+  const actor = await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_staff", "staff.invite.resend", now);
+  if (!ASSIGNABLE_STAFF_ROLES.includes(input.role as typeof ASSIGNABLE_STAFF_ROLES[number])) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Role cannot be assigned to hotel staff." });
+  }
+  assertStaffPermissionChange(actor, "staff.invite.resend", input.role);
+
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const [existingUser] = await db.select({ id: user.id, email: user.email, emailVerified: user.emailVerified }).from(user).where(eq(user.email, normalizedEmail)).limit(1);
+  if (existingUser) {
+    const [existingMembership] = await db.select({ id: hotelUsers.id }).from(hotelUsers).where(and(eq(hotelUsers.hotelId, input.hotel_id), eq(hotelUsers.userId, existingUser.id))).limit(1);
+    if (existingMembership && existingUser.emailVerified) {
+      throw new TRPCError({ code: "CONFLICT", message: "This user is already assigned to the selected hotel." });
+    }
+    if (existingUser.emailVerified) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "This address already verified, so a staff invitation is not needed." });
+    }
+    if (existingMembership && !existingUser.emailVerified) {
+      await db.delete(hotelUsers).where(eq(hotelUsers.id, existingMembership.id));
+    }
+  }
+  const [hotel] = await db.select({ id: hotels.id, name: hotels.name }).from(hotels).where(eq(hotels.id, input.hotel_id)).limit(1);
+  if (!hotel) throw new TRPCError({ code: "NOT_FOUND", message: "Hotel not found." });
+
+  const newUserId = existingUser?.id ?? crypto.randomUUID();
+  if (!existingUser) {
+    await db.insert(user).values({ id: newUserId, name: normalizedEmail.split("@")[0] || "Staff Member", email: normalizedEmail, emailVerified: false, createdAt: now, updatedAt: now });
+  }
+
+  await invalidatePendingHotelInvites(db, input.hotel_id, normalizedEmail, now);
+  const inviteToken = generateSignupToken();
+  const expiresAt = new Date(now.getTime() + STAFF_INVITE_TTL_MS);
+  const verificationId = crypto.randomUUID();
+  await db.insert(verification).values({
+    id: verificationId,
+    identifier: `hotel-invite:${input.hotel_id}:${input.role}:${actor.userId}:${normalizedEmail}`,
+    value: inviteToken,
+    expiresAt,
+    createdAt: now,
+    updatedAt: now,
+  });
+  try {
+    await emailSender.sendInviteEmail({
+      to: normalizedEmail,
+      hotelName: hotel!.name,
+      inviteUrl: `${resolveAppUrl(appUrl)}/accept-invite?token=${inviteToken}`,
+      roleName: input.role,
+    });
+  } catch (emailError) {
+    try { await db.delete(verification).where(eq(verification.id, verificationId)); } catch { /* preserve original email error */ }
+    throw emailError;
+  }
+  return { user: { id: newUserId, email: normalizedEmail }, invitationSent: true, inviteUrl: `${resolveAppUrl(appUrl)}/accept-invite?token=${inviteToken}` };
+}
+
 export async function acceptStaffInvite(
   db: D1ScopedDatabase,
   input: { token: string; password: string; name?: string },
@@ -256,12 +421,14 @@ export async function acceptStaffInvite(
   }
 
   // Atomically claim and invalidate single-use token BEFORE account creation
-  // to prevent race conditions on concurrent acceptance requests.
+  // to prevent race conditions on concurrent acceptance requests. A cancelled
+  // invite stops working immediately, so it is not claimable any more.
   const [record] = await db
     .delete(verification)
     .where(and(
       eq(verification.value, input.token),
       gt(verification.expiresAt, now),
+      isNull(verification.cancelledAt),
       or(
         like(verification.identifier, "invite:%"),
         like(verification.identifier, "support-invite:%"),
@@ -373,7 +540,7 @@ export async function acceptStaffInvite(
   };
 }
 
-/** Re-checks at accept time, because the invite may be up to seven days old. */
+/** Re-checks at accept time, because the invite may be up to 24 hours old. */
 async function assertPendingHotelInviteValid(
   db: D1ScopedDatabase,
   invite: { hotelId: string; role: string; inviterId: string; userId: string },

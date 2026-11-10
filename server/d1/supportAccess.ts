@@ -6,7 +6,7 @@ import { SUPPORT_GRANT_DURATION_HOURS, resolveSupportGrantPermissions } from "@s
 import { authorizeHotelAction, authorizePlatformAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import type { EmailSender } from "../email";
 import { generateSignupToken } from "../signupLinks";
-import { resolveAppUrl } from "./invites";
+import { resolveAppUrl } from "../appUrl";
 
 const INVITE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 

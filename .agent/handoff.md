@@ -5021,3 +5021,64 @@ Not tested in a browser or with a real email.
 
 - `pnpm build` completed the Wrangler dry run; no deployment or migration was run. The build emitted a large-chunk advisory for the 1,291.21 kB main JS bundle.
 - No remaining PART 3–7 work. All commits were staged by explicitly naming files; the two existing untracked items `.agents/` and `shared/roomAmenities.adversarial.test.ts` were left untouched.
+
+## 2026-11-10 — Booking email notifications wired to durable events
+
+- Fixed `server/d1/bookingEmails.ts` import (`../email`), enabling the booking email module to compile.
+- Threaded `emailSender` through `server/_core/context.ts` (optional injection) and `worker/app.ts`.
+- Wired `confirmBookingDetails` router call to pass `ctx.emailSender` and app URL.
+- `paymentRouter` calls `sendBookingNotice` for `booking_awaiting_check` to the hotel only when SlipOK leaves the booking for manual review; a fast SlipOK pass does not generate a stale review notice. `booking_confirmed` goes to guest + hotel only after the confirmed status and verified payment are persisted (SlipOK pass or staff approval).
+- Added the public `/booking/:id?hotel=...` detail/payment page and scoped `payment.getGuestBooking` query so email links can show the current state and resume payment.
+- Guest email is now required at direct-booking details submission (ASSUMPTION pending owner confirmation in `.agent/OPEN_QUESTIONS.md`) and is persisted on the booking.
+- Fixed migration ordering: removed out-of-order `0021_careless_robin_chapel.sql`, registered the timestamped migration in `_journal.json`.
+- Updated affected tests (booking exports, wiring assertion, payment mocks) to match the new durable-event API.
+- The timestamped migration is **not applied**. A human must apply and verify it before the ticket/spec can be marked DONE. No deploy or remote migration was run.
+- Latest local evidence (2026-11-11): `pnpm check` passed; full `pnpm test` passed (227 files, 1,601 tests); `pnpm build` passed (Vite and Wrangler dry-run; existing large-chunk warning). Final review/report is in `docs/report/booking-email-notifications-2026-11-11.md`.
+- Continuation fixes: status + verified payment now change in one conditional D1 write before notification; missing provider credentials cannot send via the mock transport in Worker; notification failures/missing destinations are logged; `PUBLIC_APP_URL` wins over request origin and the retired Vercel fallback is removed. The manual-review notice is sent only when SlipOK leaves the booking pending review, not on the transient pre-check transition.
+- Independent read-only review: APPROVE. Remaining release blockers are explicit owner review/application/verification of the migration and the two assumptions recorded in `.agent/OPEN_QUESTIONS.md`; no deploy or remote migration was run.
+
+## 2026-11-10 — Sections C/D/E hardening notes
+
+- Hotel notification email is persisted separately from `owner_contact` and editable via the hotel profile form with server-side email validation (`property.manage_profile`).
+- Booking email text and HTML include the requested booking details; hotel name/contact/address/phone are escaped in HTML. No branding/footer was added because it was not part of the request.
+- Logo limitation: only hayhost static logos exist in `client/public` (`logo-mark.png`, `logo-wide.png`); there is no hotel-specific email-logo field yet. Proposed minimal settings point: add an optional `logo_url` to the hotel profile (or reuse hotel media hero) and thread it into `BookingEmailData` — Website Builder was not modified.
+- Idempotency: durable DB keys in `booking_email_events` prevent duplicate sends for sent events across retries/restarts. Failed event claims can be cleared and retried; a crash that leaves an event in `sending` is not auto-retried because provider acceptance may be ambiguous. Email failures never revert booking status.
+
+## 2026-11-11 — Phase F Verification & Delivery Results (คำเชิญพนักงาน & อีเมลการจอง)
+
+- **Comprehensive Delivery Tests Implemented**:
+  1. `server/d1/staffInvite.delivery.test.ts` (7 passed):
+     - Invitation link is valid before 24h (`STAFF_INVITE_TTL_MS = 24 * 60 * 60 * 1000`) and rejected after expiration.
+     - Resend invalidates previous link immediately (`cancelled_at` set) and the new link works for fresh 24h.
+     - Cancel invalidates link immediately (`cancelled_at` set; token rejected).
+     - All 4 invite statuses render correctly (`pending`, `expired`, `cancelled`, and active/confirmed member).
+     - Users who have not verified email cannot access hotel operations/data.
+     - Email verification grants roles strictly scoped to the invited hotel and role.
+     - Users without `property.manage_staff` cannot perform resend or cancel operations.
+  2. `server/d1/bookingEmail.delivery.test.ts` (9 passed):
+     - Direct booking creation sends booking-received notice to guest and hotel with non-confirmation wording.
+     - Attaching/uploading slip awaiting review notifies hotel only; guest does NOT receive confirmation email. Slip verification in tests is mocked with synthetic fixture data; no real transaction is verified.
+     - SlipOK auto-verified with slip data transitions booking to `confirmed` + `payment_status = verified` and sends confirmation email to both guest and hotel.
+     - Staff manual verification transitions booking to `confirmed` and sends confirmation email.
+     - Slip rejection or awaiting review does NOT send confirmation email.
+     - Deduplication & idempotency: duplicate event keys or concurrent retries do not send duplicate emails (`booking_email_events`).
+     - Tenant isolation: notices and hotel details do not leak across hotels/tenants.
+     - Email failures do not corrupt/rollback booking status; event marked as `failed` in `booking_email_events`.
+     - Thai wording, HTML escaping, link URLs, and fallback to `owner_contact` when `notification_email` is unset.
+
+- **Verification Evidence**:
+  - `pnpm vitest run server/d1/staffInvite.delivery.test.ts server/d1/bookingEmail.delivery.test.ts`: 16 passed (100%)
+  - `pnpm check` (`tsc --noEmit`): exit code 0
+  - `pnpm test` (Full Test Suite): 229 test files passed, 1,617 tests passed (100%)
+  - `pnpm build` (`vite build && wrangler deploy --dry-run --outdir dist-worker`): exit code 0
+
+- **Strict Adherence to Guardrails**:
+  - No `git push`, merge, or production deployment.
+  - No migrations applied to remote/production.
+  - Website Builder was NOT touched.
+  - No billing candidates or unrelated business rules modified.
+
+## 2026-11-11 — Retry + staff invite decision
+
+- Failed booking email events are now retryable (failed row is removed before re-claim); sent events remain permanently blocked to prevent duplicates. Crash during 'sending' leaves a stale row that is not auto-retried (avoids duplicate sends); a reaper/manual reset can clear it.
+- Staff invite list/resend/cancel APIs already exist in staffRouter; the HotelStaff page UI is deferred as a separate ticket (out of scope for booking-email work). No Website Builder changes.

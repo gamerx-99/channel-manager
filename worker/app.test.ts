@@ -54,6 +54,17 @@ describe("worker app", () => {
 });
 
 describe("createContextFromRequest", () => {
+  it("carries the configured email sender and canonical public app origin", async () => {
+    const emailSender = { sendEmail: async () => ({ id: "test", success: true }) } as any;
+    const ctx = await createContextFromRequest({
+      req: new Request("https://request.example.test/api/trpc"),
+      emailSender,
+      publicAppUrl: "https://www.hayhostth.com",
+    });
+    expect(ctx.emailSender).toBe(emailSender);
+    expect(ctx.publicAppUrl).toBe("https://www.hayhostth.com");
+  });
+
   it("keeps the client IP for rate limiting when no user is signed in", async () => {
     await expect(createContextFromRequest(undefined, "203.0.113.7")).resolves.toEqual({
       user: null,

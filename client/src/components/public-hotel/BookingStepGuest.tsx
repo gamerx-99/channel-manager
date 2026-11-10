@@ -75,6 +75,7 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
             placeholder={t("publicHotel.emailPlaceholder")}
             value={guestEmail}
             onChange={(e) => setGuestEmail(e.target.value)}
+            required
             className="booking-form-input"
           />
         </div>

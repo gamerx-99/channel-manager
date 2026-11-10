@@ -15,7 +15,7 @@ describe('public booking router wiring', () => {
     await expect(app.channelManager.holdRoomType({ slug: 'demo-hotel', room_type_id: roomTypeId, check_in: '2026-12-01', check_out: '2026-12-02', adults: 2, children: [] })).resolves.toEqual({ booking_id: bookingId });
     expect(mocks.holdRoomType).toHaveBeenCalledWith(db, publicCaller, expect.objectContaining({ slug: 'demo-hotel', room_type_id: roomTypeId }));
     mocks.confirmBookingDetails.mockResolvedValueOnce({ status: 'pending_payment' });
-    await expect(app.channelManager.confirmBookingDetails({ booking_id: bookingId, hotel_id: hotelId, guest_name: 'Test Guest' })).resolves.toEqual({ status: 'pending_payment' });
-    expect(mocks.confirmBookingDetails).toHaveBeenCalledWith(db, publicCaller, expect.objectContaining({ booking_id: bookingId, hotel_id: hotelId, guest_name: 'Test Guest' }));
+    await expect(app.channelManager.confirmBookingDetails({ booking_id: bookingId, hotel_id: hotelId, guest_name: 'Test Guest', guest_email: 'guest@example.test' })).resolves.toEqual({ status: 'pending_payment' });
+    expect(mocks.confirmBookingDetails).toHaveBeenCalledWith(db, publicCaller, expect.objectContaining({ booking_id: bookingId, hotel_id: hotelId, guest_name: 'Test Guest', guest_email: 'guest@example.test' }), expect.any(Date), undefined, 'https://www.hayhostth.com');
   });
 });

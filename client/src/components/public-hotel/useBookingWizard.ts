@@ -157,7 +157,7 @@ export function useBookingWizard(args: {
       booking_id: heldBooking.bookingId,
       hotel_id: heldBooking.hotelId,
       guest_name: guestName.trim(),
-      guest_email: guestEmail.trim() || undefined,
+      guest_email: guestEmail.trim(),
       guest_phone: guestPhone.trim() || undefined,
       special_requests: specialRequests.trim() || undefined,
       services,

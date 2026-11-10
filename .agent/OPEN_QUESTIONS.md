@@ -1,6 +1,8 @@
 # Open questions
 
 Format: `- [ ] <question> — ASSUMPTION used in the meantime: <default>, raised <date>`
+- [ ] Should a guest email be mandatory for every direct booking? — ASSUMPTION used in the meantime: required, so the requested customer booking notices have a delivery address, raised 2026-11-10.
+- [ ] Should guest booking links use a separate expiring access token rather than the booking UUID as a bearer link? — ASSUMPTION used in the meantime: the existing high-entropy UUID payment-link model is sufficient; the public summary is limited to a published hotel and matching booking/hotel IDs, raised 2026-11-10.
 Move to a `## - [2026-11-01] Owner's decisions now in the legal text, for a lawyer to confirm: Computer-Related Crime Act s.26 applies to Hayhost and overrides erasure for 90 days; 5-year tax retention for a natural person (Revenue Code not in local data); forum clause by the Provider's domicile; EU/UK clauses meet clause 10(2) of the s.29 notification; a liability cap that is zero while no fee is charged; whether SlipOK with the hotel's own key is the hotel's processor or a Hayhost sub-processor.
 - [2026-11-01] Retention still undecided: booking IP hash, sales agents, support email. See the ROPA sheet.
 

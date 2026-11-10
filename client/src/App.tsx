@@ -47,6 +47,7 @@ import { communicationsEnabled, otaSyncEnabled } from "./lib/featureFlags";
 import { useTranslation } from "./lib/i18n";
 import LegalPage from "./pages/LegalPage";
 import GettingStarted from "./pages/GettingStarted";
+import GuestBooking from "./pages/GuestBooking";
 
 function PricingRedirect() {
   const { selectedHotelId } = useHotel();
@@ -129,6 +130,7 @@ function Router() {
       <Route path="/website-builder">
         <PrivateRoute><WebsiteBuilder /></PrivateRoute>
       </Route>
+      <Route path="/booking/:id" component={GuestBooking} />
       <Route path="/:slug">
         {(params) => <PublicHotel slug={params.slug} />}
       </Route>

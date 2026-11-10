@@ -56,6 +56,7 @@ export default function HotelDetail({ id }: { id: string }) {
     name: '',
     address: '',
     owner_contact: '',
+    notification_email: '',
     latitude: null as number | null,
     longitude: null as number | null,
     public_phone: '',
@@ -102,6 +103,7 @@ export default function HotelDetail({ id }: { id: string }) {
       name: hotel?.name ?? '',
       address: hotel?.address ?? '',
       owner_contact: hotel?.owner_contact ?? '',
+      notification_email: hotel?.notification_email ?? '',
       latitude: hotel?.latitude ?? null,
       longitude: hotel?.longitude ?? null,
       public_phone: hotel?.public_phone ?? '',
@@ -142,6 +144,7 @@ export default function HotelDetail({ id }: { id: string }) {
       name: hotelProfileForm.name,
       address: hotelProfileForm.address,
       owner_contact: hotelProfileForm.owner_contact,
+      notification_email: hotelProfileForm.notification_email.trim() || null,
       latitude: hotelProfileForm.latitude,
       longitude: hotelProfileForm.longitude,
       public_phone: hotelProfileForm.public_phone || null,
@@ -422,6 +425,7 @@ export default function HotelDetail({ id }: { id: string }) {
             <label className="form-span-two">{t('hotelDetail.hotelNameLabel')}<input autoFocus required maxLength={160} value={hotelProfileForm.name} onChange={event => setHotelProfileForm({ ...hotelProfileForm, name: event.target.value })} /></label>
             <label className="form-span-two">{t('hotelDetail.addressLabel')}<input required maxLength={500} autoComplete="street-address" value={hotelProfileForm.address} onChange={event => setHotelProfileForm({ ...hotelProfileForm, address: event.target.value })} /></label>
             <label className="form-span-two">{t('hotelDetail.contactLabel')}<input required maxLength={180} autoComplete="tel" value={hotelProfileForm.owner_contact} onChange={event => setHotelProfileForm({ ...hotelProfileForm, owner_contact: event.target.value })} /></label>
+            <label className="form-span-two">{t('hotelDetail.notificationEmailLabel')}<input type="email" maxLength={254} autoComplete="email" value={hotelProfileForm.notification_email} onChange={event => setHotelProfileForm({ ...hotelProfileForm, notification_email: event.target.value })} /><small>{t('hotelDetail.notificationEmailHint')}</small></label>
 
             <Suspense fallback={<div style={{ gridColumn: '1 / -1', height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717a' }}>กำลังโหลดแผนที่...</div>}>
               <HotelMapPicker

@@ -7,6 +7,7 @@ import { rooms } from '../../drizzle/d1-schema';
 import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/pricingModels';
 import { TM30_HEADERS, buildTm30Rows, createTm30Workbook } from '../tm30';
 import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
+import { resolveAppUrl } from '../appUrl';
 import {
   listBookingsForHotel,
   holdRoomType as dbHoldRoomType,
@@ -59,7 +60,8 @@ export const confirmBookingDetailsSchema = z.object({
   booking_id: z.string().uuid(),
   hotel_id: z.string().uuid(),
   guest_name: z.string().trim().min(1, 'Guest name is required.').max(180),
-  guest_email: z.string().trim().email('Invalid email address.').max(320).optional().or(z.literal('')),
+  // ASSUMPTION: require a guest email so the requested booking notices have a delivery address.
+  guest_email: z.string().trim().email('Invalid email address.').max(320),
   guest_phone: z.string().trim().max(50).optional().or(z.literal('')),
   special_requests: z.string().trim().max(500).optional().or(z.literal('')),
   services: z.array(z.object({
@@ -278,7 +280,7 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
       guest_phone: input.guest_phone || null,
       special_requests: input.special_requests || null,
       services: input.services,
-    });
+    }, new Date(), ctx.emailSender, resolveAppUrl(ctx.publicAppUrl ?? (ctx.req?.url ? new URL(ctx.req.url).origin : undefined)));
   } catch (error) {
     return rethrowDomainError(error);
   }

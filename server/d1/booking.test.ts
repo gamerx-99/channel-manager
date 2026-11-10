@@ -7,11 +7,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bookingNights, bookings, bookingServices, bookingStatusLog, d1Schema, guests, hotelServices, hotelUsers, hotels, otaConnections, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { cancelHotelBooking, createD1SystemCallerContext } from "../db/scope";
-import { getStayDates, createBookingWithGuests, createPublicBooking, confirmBookingDetails, expireBookingIfPast, getPublicHotelAvailability, holdRoomType, listBookingsForHotel, logBookingStatusChange } from "./booking";
+import { getStayDates, createBookingWithGuests, createPublicBooking, confirmBookingDetails, expireBookingIfPast, getPublicHotelAvailability, holdRoomType, listBookingsForHotel, logBookingStatusChange, sendBookingNotice } from "./booking";
 import * as bookingRepository from "./booking";
 import { transitionBookingStatus, updateRoomTypeWithOccupancyConfig, calculateNightPriceSatang, calculateServiceTotalSatang, priceStayForRoomType } from "./bookingService";
 import { addNightsStatement } from "./bookingNights";
 import { syncOtaIcalBlocks } from "./ota";
+import { MockEmailSender } from "../email";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -82,7 +83,7 @@ describe("D1 booking repositories", () => {
     expect(Object.keys(bookingRepository).sort()).toEqual([
       "claimBookingNights", "confirmBookingDetails", "countActiveHoldsForIp", "createBookingWithGuests", "createPublicBooking", "expireBookingIfPast",
       "getPublicHotelAvailability", "getStayDates", "holdRoomType", "listBookingsForHotel",
-      "logBookingStatusChange", "transitionBookingStatus",
+      "loadBookingEmailData", "logBookingStatusChange", "sendBookingNotice", "transitionBookingStatus",
     ].sort());
   });
 
@@ -297,6 +298,43 @@ describe("D1 booking repositories", () => {
       { serviceName: "Transfer", pricingModel: "ONE_TIME", unitPrice: "25.50", totalPrice: "25.50" },
     ]);
     expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, hold.booking_id))).at(-1)?.toStatus).toBe("pending_payment");
+  });
+
+  it("sends accurate received, awaiting-check, and confirmed notices only to their intended recipients", async () => {
+    await seedHotel("a", "owner-a");
+    await db.update(hotels).set({ notificationEmail: "desk@example.test" }).where(eq(hotels.id, "a"));
+    const sender = new MockEmailSender();
+    const now = new Date("2026-11-01T00:00:00Z");
+    const hold = await holdRoomType(db, publicCaller, { slug: "a-slug", room_type_id: "type-a", check_in: "2026-11-10", check_out: "2026-11-12", adults: 2, children: [] }, now);
+
+    await confirmBookingDetails(db, publicCaller, {
+      booking_id: hold.booking_id, hotel_id: "a", guest_name: "Guest Example", guest_email: "guest@example.test",
+    }, now, sender, "https://hayhostth.com");
+    expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]).toMatchObject({ guestEmail: "guest@example.test", status: "pending_payment" });
+    expect(sender.sentEmails.map(email => email.to)).toEqual(["guest@example.test", "desk@example.test"]);
+    expect(sender.sentEmails[0]?.text).toContain("Amount due: 200.00");
+    expect(sender.sentEmails[0]?.text).toContain("Status: Awaiting payment");
+    expect(sender.sentEmails[0]?.text).toContain(`/booking/${hold.booking_id}?hotel=a`);
+    expect(sender.sentEmails[1]?.text).toContain("/hotels/a/bookings");
+    expect(sender.sentEmails.every(email => email.subject.includes("received"))).toBe(true);
+
+    await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_received", ["guest", "hotel"], "https://hayhostth.com");
+    expect(sender.sentEmails).toHaveLength(2);
+
+    await db.update(bookings).set({ status: "pending_verification" }).where(eq(bookings.id, hold.booking_id));
+    await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_awaiting_check", ["hotel"], "https://hayhostth.com", "session-check-1");
+    expect(sender.sentEmails).toHaveLength(3);
+    expect(sender.sentEmails[2]).toMatchObject({ to: "desk@example.test" });
+    expect(sender.sentEmails[2]?.text).toContain("Status: Awaiting payment verification");
+    expect(sender.sentEmails[2]?.text).toContain("Check-in: 2026-11-10 / Check-out: 2026-11-12");
+
+    await db.update(bookings).set({ status: "confirmed", paymentStatus: "verified" }).where(eq(bookings.id, hold.booking_id));
+    await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_confirmed", ["guest", "hotel"], "https://hayhostth.com");
+    expect(sender.sentEmails).toHaveLength(5);
+    expect(sender.sentEmails[3]?.text).toContain("Hotel address: Address");
+    expect(sender.sentEmails[3]?.text).toContain("Amount confirmed paid: 200.00");
+    expect(sender.sentEmails[3]?.text).toContain("Status: Confirmed");
+    expect(sender.sentEmails[4]?.to).toBe("desk@example.test");
   });
 
   it("rejects add-on service IDs belonging to another hotel", async () => {

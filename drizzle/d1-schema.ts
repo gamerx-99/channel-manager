@@ -47,6 +47,8 @@ export const hotels = sqliteTable("hotels", {
   slug: text("slug").notNull(),
   address: text("address").notNull(),
   ownerContact: text("owner_contact").notNull(),
+  /** Separate from owner_contact: where booking and notification emails go. */
+  notificationEmail: text("notification_email"),
   publicEnabled: integer("public_enabled", { mode: "boolean" }).notNull().default(true),
   createdAt: createdAt(),
   acquisitionSource: text("acquisition_source").notNull().default("direct"),
@@ -260,6 +262,8 @@ export const bookings = sqliteTable("bookings", {
   childrenCount: integer("children_count"),
   marketingConsent: integer("marketing_consent", { mode: "boolean" }).notNull().default(false),
   marketingConsentAt: text("marketing_consent_at"),
+  /** Email the booking confirmation emails are sent to; guests have no account. */
+  guestEmail: text("guest_email"),
 }, table => [
   check("bookings_valid_dates_check", sql`${table.checkOut} > ${table.checkIn}`),
   check("bookings_price_check", nonnegativeMoney(table.price)),
@@ -272,6 +276,17 @@ export const bookings = sqliteTable("bookings", {
   index("idx_bookings_room_dates").on(table.roomId, table.checkIn, table.checkOut),
   index("idx_bookings_expires_at").on(table.expiresAt).where(sql`${table.expiresAt} is not null`),
   uniqueIndex("idx_bookings_ota_external_uid").on(table.otaConnectionId, table.externalUid).where(sql`${table.otaConnectionId} is not null`),
+]);
+
+/** Durable idempotency keys for booking notification events. */
+export const bookingEmailEvents = sqliteTable("booking_email_events", {
+  id: id(),
+  eventKey: text("event_key").notNull().unique(),
+  status: text("status").notNull(),
+  createdAt: createdAt(),
+  sentAt: integer("sent_at", { mode: "timestamp_ms" }),
+}, table => [
+  check("booking_email_events_status_check", sql`${table.status} in ('sending', 'sent', 'failed')`),
 ]);
 
 export const bookingNights = sqliteTable("booking_nights", {

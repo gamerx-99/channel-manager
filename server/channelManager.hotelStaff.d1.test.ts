@@ -17,6 +17,9 @@ const staffMocks = vi.hoisted(() => ({
 const inviteMocks = vi.hoisted(() => ({
   inviteStaffUser: vi.fn(),
   acceptStaffInvite: vi.fn(),
+  resendHotelStaffInvite: vi.fn(),
+  cancelHotelStaffInvite: vi.fn(),
+  listHotelStaffInvites: vi.fn(),
 }));
 
 const signupLinkMocks = vi.hoisted(() => ({
