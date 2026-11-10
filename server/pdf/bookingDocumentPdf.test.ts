@@ -1,5 +1,3 @@
-import { writeFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { BookingDocumentSnapshot } from "../../shared/bookingDocuments";
 import { A4_HEIGHT, A4_WIDTH, generateBookingDocumentPdf } from "./bookingDocumentPdf";
@@ -84,20 +82,11 @@ describe("generateBookingDocumentPdf", () => {
     // PDF Magic bytes: %PDF-
     const header = String.fromCharCode(...pdfBytes.slice(0, 5));
     expect(header).toBe("%PDF-");
-
-    // Write artifact to evidence folder
-    const evidenceDir = "/home/gserver/.gemini/antigravity/brain/f082739c-e372-4146-a763-2a74b0caf554/evidence";
-    const invoicePath = resolve(evidenceDir, "sample_invoice.pdf");
-    writeFileSync(invoicePath, pdfBytes);
   });
 
   it("generates a valid A4 PDF for receipt with paid status", async () => {
     const pdfBytes = await generateBookingDocumentPdf(sampleReceiptSnapshot);
     expect(pdfBytes).toBeInstanceOf(Uint8Array);
-
-    const evidenceDir = "/home/gserver/.gemini/antigravity/brain/f082739c-e372-4146-a763-2a74b0caf554/evidence";
-    const receiptPath = resolve(evidenceDir, "sample_receipt.pdf");
-    writeFileSync(receiptPath, pdfBytes);
   });
 
   it("exports standard A4 dimensions", () => {
