@@ -6135,3 +6135,12 @@ Exit 0
 - `bookingEmail.delivery.test.ts` harness gained a slip-storage stand-in and a `$client.batch` shim, both required by the production payment code. No assertion changed.
 - Evidence: `pnpm check` exit 0; `pnpm test` 293 files, 2,084 tests passed; `pnpm build` passed (dry-run).
 - Not done: no push, no deploy, no remote migration. The `/booking/:id` guest page has not been exercised in a browser against the merged payment flow.
+
+## 2026-11-11 — Production: booking-email migration applied and `main` deployed
+
+- Source: `origin/main` 42caeb1, deployed from a clean worktree. `pnpm check` exit 0; `pnpm test` 292 files, 2,066 tests passed; `pnpm build` passed.
+- Staging first: migrations `20261110000000` and `20261110040000` applied, pending list empty, Worker `8f515a0f-eccf-469d-823a-fc41c568ae47`.
+- Production D1 `hayhost-production` (97f19e0b-d3f1-4b08-9abf-7992600a6bd3): only `20261110000000_staff_invite_booking_email_schema` was pending; applied; pending list now empty; `booking_email_events` table, `bookings.guest_email` and `hotels.notification_email` verified present.
+- Production Worker `hayhost`: Version ID `32d83329-5cee-47b7-b4da-190813a46d35`, 100%. Homepage returns 200. `RESEND_API_KEY` secret is set.
+- Not verified: a real booking end to end on production or staging (guest email, hotel email, `/booking/:id` page).
+- Open: guest email link format (OPEN_QUESTIONS.md).
