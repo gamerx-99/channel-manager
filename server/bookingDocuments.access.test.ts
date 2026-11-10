@@ -5,6 +5,7 @@ const repoMocks = vi.hoisted(() => ({
   getInvoiceSettings: vi.fn(),
   saveInvoiceSettings: vi.fn(),
   listBookingDocuments: vi.fn(),
+  listHotelDocuments: vi.fn(),
   issueBookingDocument: vi.fn(),
 }));
 
@@ -54,14 +55,28 @@ describe('receipts and tax invoices follow hotel permissions', () => {
     const app = await caller('housekeeping');
     await expect(app.bookingDocuments.issue(issue)).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(app.bookingDocuments.list({ hotel_id: HOME_HOTEL, booking_id: 'b1' })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(repoMocks.issueBookingDocument).not.toHaveBeenCalled();
+    expect(repoMocks.listHotelDocuments).not.toHaveBeenCalled();
   });
 
   it('denies another hotel and a bad tax ID before touching data', async () => {
     const app = await caller('hotel_owner');
     await expect(app.bookingDocuments.issue({ ...issue, hotel_id: OTHER_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(app.bookingDocuments.listHotel({ hotel_id: OTHER_HOTEL })).rejects.toMatchObject({ code: 'FORBIDDEN' });
     await expect(app.bookingDocuments.saveSettings({ ...header, tax_id: '12345' })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(repoMocks.issueBookingDocument).not.toHaveBeenCalled();
+    expect(repoMocks.listHotelDocuments).not.toHaveBeenCalled();
     expect(repoMocks.saveInvoiceSettings).not.toHaveBeenCalled();
+  });
+
+  it('allows owner and front desk to view hotel documents', async () => {
+    const appOwner = await caller('hotel_owner');
+    await appOwner.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL });
+    expect(repoMocks.listHotelDocuments).toHaveBeenCalledTimes(1);
+
+    const appFrontDesk = await caller('front_desk');
+    await appFrontDesk.bookingDocuments.listHotel({ hotel_id: HOME_HOTEL });
+    expect(repoMocks.listHotelDocuments).toHaveBeenCalledTimes(2);
   });
 });

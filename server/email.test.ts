@@ -26,4 +26,18 @@ describe("ResendEmailSender", () => {
 
     expect(body.html).not.toContain("<img");
   });
+
+  it("passes attachments to the Resend API payload", async () => {
+    const body = await sentBody(async sender => {
+      await sender.sendEmail({
+        to: "guest@example.test",
+        subject: "Your Invoice",
+        html: "<p>Please find your invoice attached.</p>",
+        attachments: [{ filename: "INV-000001.html", content: "<html>Invoice</html>" }],
+      });
+    });
+
+    expect(body.attachments).toEqual([{ filename: "INV-000001.html", content: "<html>Invoice</html>" }]);
+  });
 });
+

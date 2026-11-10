@@ -1,14 +1,16 @@
 import { isRevenueStatus } from "./finance";
 
 /**
- * Receipts and tax invoices a hotel issues from a booking (DECISIONS 2026-11-06: the hotel is the
- * issuer, printed or saved as PDF at the hotel; no e-Tax Invoice).
+ * Documents a hotel issues from a booking:
+ * - invoice (ใบแจ้งชำระเงิน): for pending or active bookings needing payment
+ * - receipt (ใบเสร็จรับเงิน): issued only after payment is verified
+ * - tax_invoice (ใบกำกับภาษี): issued on request with full tax ID and address
  */
-export const BOOKING_DOCUMENT_TYPES = ["receipt", "tax_invoice"] as const;
+export const BOOKING_DOCUMENT_TYPES = ["invoice", "receipt", "tax_invoice"] as const;
 export type BookingDocumentType = (typeof BOOKING_DOCUMENT_TYPES)[number];
 
-// ASSUMPTION: one running number per hotel and document type that never resets, e.g. RC-000001.
-const NUMBER_PREFIX: Record<BookingDocumentType, string> = { receipt: "RC", tax_invoice: "TX" };
+// ASSUMPTION: one running number per hotel and document type that never resets, e.g. INV-000001, RC-000001.
+const NUMBER_PREFIX: Record<BookingDocumentType, string> = { invoice: "INV", receipt: "RC", tax_invoice: "TX" };
 
 export function documentNumber(type: BookingDocumentType, seq: number): string {
   return `${NUMBER_PREFIX[type]}-${String(seq).padStart(6, "0")}`;
@@ -30,12 +32,34 @@ export function calculateBookingDocumentAmounts(priceSatang: number, settings: B
   return { subtotalSatang, vatSatang, totalSatang, withholdingSatang, netToPaySatang: totalSatang - withholdingSatang };
 }
 
-/** Money must have been received: a receipt records a payment, and a cancelled booking is not revenue. */
-export function canIssueBookingDocument(booking: { status: string; payment_status?: string | null }): boolean {
-  return isRevenueStatus(booking.status) && booking.payment_status === "verified";
+/**
+ * Money must have been received for receipts and tax invoices.
+ * Invoices can be issued for any active booking that is not cancelled or expired.
+ * When type is omitted, checks whether any document can be issued for the booking.
+ */
+export function canIssueBookingDocument(
+  booking: { status: string; payment_status?: string | null; paymentStatus?: string | null },
+  type?: BookingDocumentType,
+): boolean {
+  const paymentStatus = booking.payment_status ?? booking.paymentStatus;
+  if (type === "receipt" || type === "tax_invoice") {
+    return isRevenueStatus(booking.status) && paymentStatus === "verified";
+  }
+  if (type === "invoice") {
+    return !["cancelled", "expired", "payment_rejected"].includes(booking.status);
+  }
+  return !["cancelled", "expired", "payment_rejected"].includes(booking.status);
 }
 
 export type DocumentParty = { name: string; address: string | null; taxId: string | null; branch: string | null };
+
+export type BookingDocumentItem = {
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPriceSatang: number;
+  totalPriceSatang: number;
+};
 
 /** What was printed, kept as issued so later edits to the hotel or booking never change it. */
 export type BookingDocumentSnapshot = {
@@ -46,6 +70,7 @@ export type BookingDocumentSnapshot = {
   issuer: DocumentParty & { phone: string | null };
   buyer: DocumentParty;
   booking: { id: string; checkIn: string; checkOut: string; nights: number; roomType: string | null; paymentMethod: string | null };
+  items?: BookingDocumentItem[];
   subtotalSatang: number;
   vatEnabled: boolean;
   vatRate: number;
@@ -55,6 +80,9 @@ export type BookingDocumentSnapshot = {
   withholdingRate: number;
   withholdingSatang: number;
   netToPaySatang: number;
+  amountPaidSatang?: number;
+  balanceSatang?: number;
+  paymentStatus?: string | null;
 };
 
 export const TAX_ID_PATTERN = /^\d{13}$/;

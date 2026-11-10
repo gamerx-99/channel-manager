@@ -569,7 +569,7 @@ export const bookingDocuments = sqliteTable("booking_documents", {
   issuedBy: text("issued_by"),
   createdAt: createdAt(),
 }, table => [
-  check("booking_documents_doc_type_check", sql`${table.docType} in ('receipt', 'tax_invoice')`),
+  check("booking_documents_doc_type_check", sql`${table.docType} in ('invoice', 'receipt', 'tax_invoice')`),
   check("booking_documents_seq_check", sql`${table.seq} > 0`),
   uniqueIndex("booking_documents_hotel_type_seq_key").on(table.hotelId, table.docType, table.seq),
   index("idx_booking_documents_booking_id").on(table.bookingId),

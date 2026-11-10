@@ -2,10 +2,10 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, max } from "drizzle-orm";
 import {
   calculateBookingDocumentAmounts, canIssueBookingDocument, documentNumber,
-  type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
+  type BookingDocumentItem, type BookingDocumentSnapshot, type BookingDocumentType, type DocumentParty,
 } from "@shared/bookingDocuments";
 import { bangkokDate, toSatang } from "@shared/finance";
-import { bookingDocuments, bookings, hotelInvoiceSettings, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { bookingDocuments, bookings, bookingServices, hotelInvoiceSettings, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 
 export type InvoiceSettingsInput = {
@@ -59,26 +59,60 @@ export async function issueBookingDocument(
     .leftJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
     .where(and(eq(bookings.id, input.bookingId), eq(bookings.hotelId, hotelId))).limit(1);
   if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
-  if (!canIssueBookingDocument({ status: booking.status, payment_status: booking.paymentStatus })) {
+  if (!canIssueBookingDocument({ status: booking.status, payment_status: booking.paymentStatus }, input.type)) {
+    if (input.type === "invoice") {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Cannot issue an invoice for a cancelled or expired booking." });
+    }
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a paid booking that still stands gets a document." });
   }
+
+  // Fetch optional extra services for itemization
+  const services = await db.select().from(bookingServices).where(eq(bookingServices.bookingId, booking.id));
+  const totalServicesSatang = services.reduce((acc, s) => acc + toSatang(s.totalPrice), 0);
+  const roomStaySatang = Math.max(0, toSatang(booking.price) - totalServicesSatang);
+  const nights = Math.max(1, Math.round((Date.parse(booking.checkOut) - Date.parse(booking.checkIn)) / 86_400_000));
+
+  const items: BookingDocumentItem[] = [
+    {
+      name: booking.roomType ? `Room: ${booking.roomType}` : "Room stay",
+      description: `${booking.checkIn} – ${booking.checkOut} (${nights} ${nights === 1 ? "night" : "nights"})`,
+      quantity: nights,
+      unitPriceSatang: Math.round(roomStaySatang / nights),
+      totalPriceSatang: roomStaySatang,
+    },
+    ...services.map(s => ({
+      name: s.serviceName,
+      description: s.pricingModel,
+      quantity: s.quantity,
+      unitPriceSatang: toSatang(s.unitPrice),
+      totalPriceSatang: toSatang(s.totalPrice),
+    })),
+  ];
 
   const amounts = calculateBookingDocumentAmounts(toSatang(booking.price), {
     vatEnabled: settings.vatEnabled, vatRate: settings.vatRate,
     withholdingEnabled: settings.withholdingEnabled, withholdingRate: settings.withholdingRate,
   }, true);
-  const nights = Math.round((Date.parse(booking.checkOut) - Date.parse(booking.checkIn)) / 86_400_000);
+
+  const isPaid = booking.paymentStatus === "verified";
+  const amountPaidSatang = isPaid ? amounts.totalSatang : 0;
+  const balanceSatang = Math.max(0, amounts.totalSatang - amountPaidSatang);
+
   const base: Omit<BookingDocumentSnapshot, "number"> = {
     type: input.type,
     issuedOn: bangkokDate(now),
     issuer: { name: settings.issuerName, address: settings.address, taxId: settings.taxId, branch: settings.branch, phone: settings.phone },
     buyer: input.buyer,
     booking: { id: booking.id, checkIn: booking.checkIn, checkOut: booking.checkOut, nights, roomType: booking.roomType, paymentMethod: booking.paymentMethod },
+    items,
     ...amounts,
     vatEnabled: settings.vatEnabled,
     vatRate: settings.vatRate,
     withholdingEnabled: settings.withholdingEnabled,
     withholdingRate: settings.withholdingRate,
+    amountPaidSatang,
+    balanceSatang,
+    paymentStatus: booking.paymentStatus,
   };
 
   // Two staff issuing at once can read the same last number; the unique index refuses the
@@ -100,4 +134,26 @@ export async function issueBookingDocument(
     }
   }
   throw new TRPCError({ code: "CONFLICT", message: "Could not take a document number. Try again." });
+}
+
+export async function listHotelDocuments(
+  db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, limit = 50, now = new Date(),
+) {
+  await authorizeHotelAction(db, caller, hotelId, "operations.view_bookings", "booking_documents.list_hotel", now);
+  const rows = await db.select({
+    id: bookingDocuments.id,
+    bookingId: bookingDocuments.bookingId,
+    docType: bookingDocuments.docType,
+    seq: bookingDocuments.seq,
+    docNumber: bookingDocuments.docNumber,
+    snapshot: bookingDocuments.snapshot,
+    createdAt: bookingDocuments.createdAt,
+    guestName: bookings.guestName,
+  })
+    .from(bookingDocuments)
+    .innerJoin(bookings, eq(bookingDocuments.bookingId, bookings.id))
+    .where(eq(bookingDocuments.hotelId, hotelId))
+    .orderBy(desc(bookingDocuments.createdAt))
+    .limit(limit);
+  return rows;
 }

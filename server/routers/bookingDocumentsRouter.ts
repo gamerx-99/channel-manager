@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { BOOKING_DOCUMENT_TYPES, TAX_ID_PATTERN } from '@shared/bookingDocuments';
 import { protectedProcedure, router } from '../_core/trpc';
-import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
+import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from '../d1/bookingDocuments';
 import { requireHotelPermission, rethrowDomainError } from '../routerUtils';
 
 const hotelInput = z.object({ hotel_id: z.string().min(1) });
@@ -54,6 +54,17 @@ export const bookingDocumentsRouter = router({
     requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
     try {
       return await listBookingDocuments(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.booking_id);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  listHotel: protectedProcedure.input(hotelInput.extend({
+    limit: z.number().int().min(1).max(100).default(50),
+  })).query(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.view_bookings');
+    try {
+      return await listHotelDocuments(requireDb(ctx.db), ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.limit);
     } catch (error) {
       return rethrowDomainError(error);
     }

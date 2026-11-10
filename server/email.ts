@@ -1,11 +1,19 @@
 import { escapeHtml } from "@shared/escapeHtml";
 
+export interface EmailAttachment {
+  filename: string;
+  content: string;
+  path?: string;
+  contentType?: string;
+}
+
 export interface EmailPayload {
   to: string;
   subject: string;
   html: string;
   text?: string;
   from?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface SendInviteEmailParams {
@@ -60,6 +68,7 @@ export class ResendEmailSender implements EmailSender {
         subject: payload.subject,
         html: payload.html,
         text: payload.text,
+        ...(payload.attachments && payload.attachments.length > 0 ? { attachments: payload.attachments } : {}),
       }),
     });
 

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { authSchema } from "../../drizzle/auth-schema";
 import { d1Schema } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, saveInvoiceSettings } from "./bookingDocuments";
+import { getInvoiceSettings, issueBookingDocument, listBookingDocuments, listHotelDocuments, saveInvoiceSettings } from "./bookingDocuments";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
@@ -100,5 +100,33 @@ describe("issuing documents", () => {
   it("refuses a booking or hotel the caller does not hold", async () => {
     await expect(issueBookingDocument(db, owner, "h2", { bookingId: "paid", type: "receipt", buyer }, NOW)).rejects.toThrow();
     await expect(listBookingDocuments(db, owner, "h2", "paid")).rejects.toThrow();
+    await expect(listHotelDocuments(db, owner, "h2")).rejects.toThrow();
+  });
+
+  it("issues invoices for unpaid bookings with itemized room charges and extra services", async () => {
+    exec(`insert into booking_services (id, booking_id, service_name, pricing_model, unit_price, quantity, total_price)
+      values ('svc-1', 'unpaid', 'Airport Transfer', 'ONE_TIME', '200.00', 1, '200.00')`);
+
+    const inv = await issueBookingDocument(db, owner, "h1", { bookingId: "unpaid", type: "invoice", buyer }, NOW);
+    expect(inv.number).toBe("INV-000001");
+    expect(inv.type).toBe("invoice");
+    expect(inv.amountPaidSatang).toBe(0);
+    expect(inv.balanceSatang).toBe(inv.totalSatang);
+    expect(inv.paymentStatus).toBe("unpaid");
+
+    expect(inv.items).toHaveLength(2);
+    expect(inv.items?.[0]).toMatchObject({ name: "Room: Deluxe", quantity: 1 });
+    expect(inv.items?.[1]).toMatchObject({ name: "Airport Transfer", quantity: 1, unitPriceSatang: 20000, totalPriceSatang: 20000 });
+
+    // Cancelled bookings cannot get invoices
+    await expect(issueBookingDocument(db, owner, "h1", { bookingId: "cancelled", type: "invoice", buyer }, NOW))
+      .rejects.toThrow(/cancelled or expired/);
+
+    // listHotelDocuments returns all issued documents for the hotel
+    const hotelDocs = await listHotelDocuments(db, owner, "h1");
+    expect(hotelDocs.length).toBeGreaterThanOrEqual(1);
+    expect(hotelDocs[0]?.docNumber).toBe("INV-000001");
+    expect(hotelDocs[0]?.guestName).toBe("Guest");
   });
 });
+
