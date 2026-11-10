@@ -493,7 +493,7 @@ const th: TranslationDictionary = {
     errorTitle: "โหลดภาพรวมโรงแรมไม่สำเร็จ",
     errorDescFallback: "ไม่พบข้อมูลโรงแรมหรือไม่มีสิทธิ์เข้าถึงข้อมูลนี้",
     retryButton: "ลองใหม่",
-    eyebrowPerformance: "ประสิทธิภาพระบบ",
+    eyebrowPerformance: "ภาพรวมโรงแรม",
     portfolioProperties: "พอร์ตโฟลิโอ / โรงแรมของคุณ",
     propertyPrefix: "โรงแรม / {{name}}",
     yourProperty: "โรงแรมของคุณ",
