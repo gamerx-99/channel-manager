@@ -6144,3 +6144,11 @@ Exit 0
 - Production Worker `hayhost`: Version ID `32d83329-5cee-47b7-b4da-190813a46d35`, 100%. Homepage returns 200. `RESEND_API_KEY` secret is set.
 - Not verified: a real booking end to end on production or staging (guest email, hotel email, `/booking/:id` page).
 - Open: guest email link format (OPEN_QUESTIONS.md).
+
+## 2026-11-11 — Old-branch review closed (nothing deployed)
+
+- Compared the seven old branches with `origin/main` line by line. Contained or superseded: `claude/high-season-dashboard`, `claude/website-builder-ux`, `fix/page-titles-booking-flow`, `codex/integration-readiness-review`, `feat/financial-documents` (annual documents were redone on main by migrations 20261110020000/30000), `claude/owner-dashboard-ui` except `2ce55ff`.
+- Ported `2ce55ff` (English sidebar heading "Main menu", dashboard eyebrow "Property overview" / "ภาพรวมโรงแรม", decorative bar chart removed) as commit 6bac830 on branch `worktree-finish-old-branch-work`. The status-pill CSS rule from that commit was already on main.
+- `refactor/hotel-name-once` (`6e142e5`) is superseded and was NOT ported: its sidebar status pill and "ดูหน้าเว็บที่พัก" link were removed on purpose by the owner on 2026-11-06 (DECISIONS.md, commit 554b246), and main already moved the profile editor to `/hotels/:id/settings/general`.
+- Evidence: `pnpm check` exit 0; `pnpm test` full suite passed on the ported change.
+- Staging drift: staging has two applied migrations whose files are gone from the repo (`20261108000000_booking_documents_annual_types`, `20261108000000_room_type_amenities_limit_12`); production has neither.
