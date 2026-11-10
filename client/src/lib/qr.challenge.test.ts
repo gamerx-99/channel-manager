@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { encodeQrByteMode, generateTotpQrDataUrl } from "./qr";
+import { generatePromptPayQR } from "../../../server/promptpay";
 
 // --- Reverse Decoding Oracle for ISO/IEC 18004 Byte Mode ---
 
@@ -216,6 +217,10 @@ function decodeQrOracle(matrix: boolean[][]): string {
 
 describe("Empirical Challenge: ISO/IEC 18004 QR Matrix Generator", () => {
   describe("1. Mathematical Oracle: Full Roundtrip Decode Verification", () => {
+    it.each(['0812345678', '1234567890123'])('roundtrips a full-payment PromptPay payload for receiver %s', promptPayId => {
+      const payload = generatePromptPayQR({ promptPayId, amount: 1234.56, ref: 'BK-TEST1234' });
+      expect(decodeQrOracle(encodeQrByteMode(payload).modules)).toBe(payload);
+    });
     it("successfully decodes minimal 3-character ASCII payload in Version 1", () => {
       const payload = "ABC";
       const { size, modules } = encodeQrByteMode(payload);

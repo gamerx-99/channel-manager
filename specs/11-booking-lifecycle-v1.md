@@ -4,6 +4,7 @@ and verify script still require human application and confirmation. All sub-phas
 (`20260910_booking_lifecycle_v1.sql`, `20260911_add_hotel_services_catalog.sql`) applied to
 production — human confirmed 2026-09-03, every row of both verify scripts (20 checks total)
 returned PASS. The public booking wizard is fully operational end to end.
+2026-11-08 update: configurable 1–168 hour expiry for public booking requests is implemented in code; `20261108010000_booking_request_expiry.sql` still requires remote D1 application before this addition is live.
 Depends on: 05-direct-booking-engine, 01-payments-slipok
 
 ## Goal

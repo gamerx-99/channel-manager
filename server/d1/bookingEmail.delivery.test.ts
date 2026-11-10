@@ -29,6 +29,9 @@ const ROOM_ID = "66666666-6666-4666-8666-666666666666";
 // user-uploaded slip or contacts the external verification service.
 const testSlipBase64 = "dGVzdC1zbGlwLWJhc2U2NA==";
 
+// Slips are stored privately before verification; an in-memory stand-in for the R2 bucket.
+const slipStorage = { put: async () => undefined, delete: async () => undefined };
+
 beforeEach(async () => {
   sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys = ON");
@@ -45,6 +48,16 @@ beforeEach(async () => {
     if (method === "get") { const row = statement.get(...params); return { rows: row ? [row] : [] }; }
     return { rows: statement.all(...params) };
   }, { schema: { ...d1Schema, user } }) as unknown as D1ScopedDatabase;
+  // The payment router batches raw statements through the D1 client (room release);
+  // back that with the same in-memory database.
+  (db as unknown as { $client: unknown }).$client = {
+    prepare(query: string) {
+      return { bind: (...values: unknown[]) => ({ query, values }) };
+    },
+    async batch(statements: Array<{ query: string; values: unknown[] }>) {
+      return statements.map(({ query, values }) => ({ meta: { changes: Number(sqlite.prepare(query).run(...values as never[]).changes) } }));
+    },
+  };
 
   emails = new MockEmailSender();
 
@@ -167,6 +180,7 @@ describe("Booking Email Notifications & Slip Verification Delivery Tests", () =>
       clientIp: "127.0.0.1",
       user: null,
       emailSender: emails,
+      media: slipStorage,
     } as any);
 
     // Guest submits a slip image (synthetic fixture)
@@ -221,6 +235,7 @@ describe("Booking Email Notifications & Slip Verification Delivery Tests", () =>
       clientIp: "127.0.0.1",
       user: null,
       emailSender: emails,
+      media: slipStorage,
     } as any);
 
     const result = await caller.verifySlip({

@@ -32,10 +32,14 @@ export function getRequiredRoutePermission(pathname: string): Permission | null 
   if (pathname === "/platform") return "platform.view_system_logs";
   if (pathname.startsWith("/platform/crm") || pathname.startsWith("/platform/coupons")) return "platform.manage_billing";
   if (pathname.includes("/support-access")) return "property.manage_support_access";
+  if (/^\/hotels\/[^/]+\/(?:profile|settings\/(?:general|finance))$/.test(pathname)) return "property.manage_profile";
   if (pathname === "/hotels") return "platform.view_all_hotels";
   if (pathname.startsWith("/dashboard/financials")) return "property.view_financials";
+  if (pathname.startsWith("/reports/bookings")) return "reports.view_bookings";
   if (pathname.startsWith("/communications")) return "operations.view_bookings";
   if (pathname.startsWith("/housekeeping") || pathname.startsWith("/dashboard/housekeeping")) return "housekeeping.view_room_status";
+  if (pathname.startsWith("/staff-shifts")) return "staff.view_shifts";
+  if (pathname.startsWith("/staff-tasks")) return "staff.view_own_tasks";
   if (pathname.includes("/ota")) return "ota.view_status";
   if (pathname.includes("/staff")) return "property.manage_staff";
   if (pathname.includes("/bookings")) return "operations.view_bookings";

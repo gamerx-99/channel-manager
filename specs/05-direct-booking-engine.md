@@ -1,5 +1,5 @@
 # 05 Direct Booking Engine — guest-facing checkout
-Status: IN PROGRESS (occupancy/pricing extension; waiting on migration apply + verify)
+Status: IN PROGRESS (occupancy/pricing extension; waiting on migration apply + verify; themed public booking page and logo footer implemented 2026-11-07; theme button contrast fix verified locally 2026-11-07; PromptPay ID validation, guest error fix, and settings prefill verified locally 2026-11-07)
 Depends on: 01-payments-slipok, 02-advanced-pricing
 
 ## Public room-type RLS follow-up

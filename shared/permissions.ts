@@ -36,6 +36,10 @@ export const PERMISSION_TOGGLES = [
   { key: "bookings_cancel", permissions: ["operations.cancel_bookings"], requires: ["bookings_view"] },
   { key: "tm30", permissions: ["operations.export_tm30"], requires: ["bookings_view"] },
   { key: "housekeeping_view", permissions: ["housekeeping.view_room_status"] },
+  { key: "staff_shifts_view", permissions: ["staff.view_shifts"] },
+  { key: "staff_shifts_manage", permissions: ["staff.manage_shifts"] },
+  { key: "staff_tasks_manage", permissions: ["staff.manage_tasks"] },
+  { key: "staff_tasks_view", permissions: ["staff.view_own_tasks"] },
   { key: "housekeeping_update", permissions: ["housekeeping.update_room_status"], requires: ["housekeeping_view"] },
   {
     key: "rates",
@@ -50,6 +54,7 @@ export const PERMISSION_TOGGLES = [
   { key: "ota_manage", permissions: ["ota.manage_ical_connection", "ota.trigger_ical_sync"], requires: ["ota_view"] },
   { key: "property_setup", permissions: ["property.manage_profile", "property.manage_room_structure"] },
   { key: "reports", permissions: ["property.view_reports"] },
+  { key: "bookings_report", permissions: ["reports.view_bookings"], requires: ["bookings_view"] },
   { key: "financials", permissions: ["property.view_financials"], ownerGrantOnly: true },
   { key: "staff", permissions: ["property.manage_staff"], ownerGrantOnly: true },
 ] as const satisfies readonly PermissionToggle[];

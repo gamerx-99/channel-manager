@@ -2,10 +2,9 @@
  * One definition of "revenue", "today" and the dashboard money and arrival figures, shared by the
  * server (financial report) and the client (dashboard), so the two can never disagree.
  *
- * Revenue is the value of bookings the hotel can count on: confirmed, checked in or checked out.
- * It is booked by the check-in date, in Thailand time (the hotel's day, not the server's UTC day).
- * Held, awaiting payment, awaiting verification, expired, rejected, cancelled and refunded bookings
- * are not revenue.
+ * Revenue includes paid bookings that still stand, on their Thai payment day. Cancelled,
+ * refund-pending, refunded, rejected and expired bookings contribute nothing.
+ * Confirmed, checked-in and checked-out bookings with no paid timestamp are not collected revenue.
  */
 export const REVENUE_STATUSES = ["confirmed", "checked_in", "checked_out"] as const;
 /** A booking that was cancelled, including one whose money is being or has been given back. */
@@ -37,11 +36,28 @@ export function toSatang(value: string | number | null | undefined): number {
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
 }
 
+export type RevenueEvent = { status: string; amount: string | number | null | undefined; paidAt?: string | Date | null };
+
+/** Revenue from bookings that still stand, on each Thai calendar day they were paid. */
+export function revenueByThaiDay(events: readonly RevenueEvent[]): Map<string, number> {
+  const satangByDay = new Map<string, number>();
+  const add = (instant: string | Date | null | undefined, amount: number) => {
+    if (!instant) return;
+    const date = bangkokDate(instant instanceof Date ? instant : new Date(instant));
+    satangByDay.set(date, (satangByDay.get(date) ?? 0) + amount);
+  };
+  for (const event of events) {
+    if (!isRevenueStatus(event.status)) continue;
+    add(event.paidAt, toSatang(event.amount));
+  }
+  return new Map(Array.from(satangByDay.entries(), ([date, satang]) => [date, fromSatang(satang)]));
+}
+
 export function fromSatang(satang: number): number {
   return satang / 100;
 }
 
-export type FigureBooking = { status: string; check_in: string; check_out: string; price?: string | number | null };
+export type FigureBooking = { status: string; payment_status?: string | null; check_in: string; check_out: string; paid_at?: string | null; refunded_at?: string | null; price?: string | number | null };
 
 export type DashboardFigures = {
   /** Guests due today, including those already checked in. */
@@ -55,12 +71,13 @@ export type DashboardFigures = {
 export function dashboardFigures(bookings: readonly FigureBooking[], now: Date = new Date()): DashboardFigures {
   const today = bangkokDate(now);
   const month = bangkokMonth(now);
-  const counted = bookings.filter(booking => isRevenueStatus(booking.status));
-  const sum = (rows: readonly FigureBooking[]) => fromSatang(rows.reduce((total, booking) => total + toSatang(booking.price), 0));
+  const active = bookings.filter(booking => isRevenueStatus(booking.status));
+  const counted = bookings.filter(booking => booking.payment_status === "verified" && booking.paid_at);
+  const dayRevenue = revenueByThaiDay(counted.map(booking => ({ status: booking.status, amount: booking.price, paidAt: booking.paid_at })));
   return {
-    arrivalsToday: counted.filter(booking => booking.check_in === today).length,
-    departuresToday: counted.filter(booking => booking.check_out === today).length,
-    revenueToday: sum(counted.filter(booking => booking.check_in === today)),
-    revenueThisMonth: sum(counted.filter(booking => booking.check_in.startsWith(month))),
+    arrivalsToday: active.filter(booking => booking.check_in === today).length,
+    departuresToday: active.filter(booking => booking.check_out === today).length,
+    revenueToday: dayRevenue.get(today) ?? 0,
+    revenueThisMonth: Array.from(dayRevenue.entries()).filter(([date]) => date.startsWith(month)).reduce((sum, [, amount]) => sum + amount, 0),
   };
 }

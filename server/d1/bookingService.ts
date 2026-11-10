@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, gt, inArray, lt, ne } from "drizzle-orm";
-import { bookings, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
+import { and, eq, gt, gte, inArray, lt, ne } from "drizzle-orm";
+import { availability, bookingNights, bookings, hotels, rateOverrides, roomTypes, rooms } from "../../drizzle/d1-schema";
 import { classifyGuests, type ChildMeasurement, type OccupancyPricingRules, type ChildRate } from "@shared/occupancyPricing";
 import { assertValidTransition, type BookingStatus } from "@shared/bookingLifecycle";
 import { authorizeHotelAction, requirePublicHotel, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
@@ -159,11 +159,28 @@ async function roomAvailabilityCounts(db: D1ScopedDatabase, hotelId: string, che
       ))
     : [];
   const activeRoomIds = new Set(statusRows.filter(row => !HOLD_STATUSES.includes(row.status as typeof HOLD_STATUSES[number]) || row.expiresAt === null || row.expiresAt.getTime() >= now.getTime()).map(row => row.roomId));
-  // Phase 1 stop sell: one closed night in the stay closes the whole stay for guests.
+  const today = new Date(now.getTime() + 7 * 3_600_000).toISOString().slice(0, 10);
+  const firstNight = checkIn > today ? checkIn : today;
+  const stayNights = getStayDates(checkIn, checkOut).filter(night => night >= today);
+  const capRows = stayNights.length ? await db.select({ roomTypeId: availability.roomTypeId, date: availability.date, cap: availability.roomsAvailable })
+    .from(availability).where(and(inArray(availability.roomTypeId, roomTypesInHotel.map(row => row.id)), gte(availability.date, firstNight), lt(availability.date, checkOut))) : [];
+  const capOccupancy = stayNights.length ? await db.select({ roomTypeId: rooms.roomTypeId, night: bookingNights.night, status: bookings.status, expiresAt: bookings.expiresAt })
+    .from(bookingNights).innerJoin(rooms, eq(rooms.id, bookingNights.roomId)).innerJoin(bookings, eq(bookings.id, bookingNights.bookingId))
+    .where(and(eq(rooms.hotelId, hotelId), inArray(bookingNights.night, stayNights), inArray(bookings.status, INVENTORY_STATUSES))) : [];
+  const occupiedByRoomTypeNight = new Map<string, number>();
+  for (const row of capOccupancy) {
+    if (HOLD_STATUSES.includes(row.status as typeof HOLD_STATUSES[number]) && row.expiresAt && row.expiresAt.getTime() < now.getTime()) continue;
+    const key = `${row.roomTypeId}:${row.night}`;
+    occupiedByRoomTypeNight.set(key, (occupiedByRoomTypeNight.get(key) ?? 0) + 1);
+  }
+  // Stop sell is zero; positive values cap online room-nights, including bookings and holds.
   const closed = await closedNightsByRoomType(db, hotelId, checkIn, checkOut, now);
   return roomTypesInHotel.map(roomType => {
     const roomIdsOfType = roomRows.filter(room => room.roomTypeId === roomType.id).map(room => room.id);
-    const available = closed.has(roomType.id) ? 0 : Math.max(0, roomIdsOfType.length - roomIdsOfType.filter(id => activeRoomIds.has(id)).length);
+    const physicalAvailable = Math.max(0, roomIdsOfType.length - roomIdsOfType.filter(id => activeRoomIds.has(id)).length);
+    const caps = capRows.filter(row => row.roomTypeId === roomType.id);
+    const capAvailable = caps.reduce((remaining, row) => Math.min(remaining, Math.max(0, row.cap - (occupiedByRoomTypeNight.get(`${roomType.id}:${row.date}`) ?? 0))), roomIdsOfType.length);
+    const available = closed.has(roomType.id) ? 0 : Math.min(physicalAvailable, capAvailable);
     return { room_type_id: roomType.id, rooms_available: available };
   });
 }

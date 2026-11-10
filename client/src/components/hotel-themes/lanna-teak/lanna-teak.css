@@ -1,0 +1,122 @@
+@import url("../themes.css");
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: max(490px, min(660px, 70vw));
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-placeholder {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #e8d7cd 0%, #d4c3b9 62%, #c4aa98 100%);
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 248, 245, .48), transparent 85%);
+  pointer-events: none;
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  padding: 190px 9% 55px;
+  color: var(--t-primary);
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-text > * {
+  max-width: min(100%, 600px);
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-kicker {
+  color: var(--t-primary);
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder h1 {
+  color: var(--t-primary);
+  overflow-wrap: break-word;
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-text p {
+  color: var(--t-primary);
+  font-size: 16px;
+  line-height: 1.75;
+  margin: 0 0 28px;
+  overflow-wrap: break-word;
+}
+
+.theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-cta {
+  background: var(--t-primary);
+  color: var(--t-on-primary);
+}
+
+@media (max-width: 760px) {
+  .theme-lanna-teak .lanna-page .lanna-header {
+    height: auto;
+    padding: 12px 18px 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+  }
+
+  .theme-lanna-teak .lanna-header .lanna-mark {
+    display: -webkit-box;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: break-word;
+    color: var(--t-primary);
+    font: 600 16px/1.35 var(--t-font-heading);
+    text-decoration: none;
+  }
+
+  .theme-lanna-teak .lanna-header .lanna-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .theme-lanna-teak .lanna-page .lanna-header nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+    width: 100%;
+    overflow-x: auto;
+    padding: 10px 0;
+  }
+
+  .theme-lanna-teak .lanna-header nav a {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .theme-lanna-teak .lanna-page .lanna-header nav a:nth-child(2) {
+    display: inline;
+  }
+
+  .theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder {
+    min-height: 590px;
+  }
+
+  .theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-text {
+    padding: 150px 8% 50px;
+  }
+
+  .theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder h1 {
+    font-size: clamp(30px, 8vw, 42px);
+  }
+
+  .theme-lanna-teak .lanna-hero .lanna-hero-frame--placeholder .lanna-hero-text p {
+    font-size: 14px;
+  }
+}

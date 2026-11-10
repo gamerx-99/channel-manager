@@ -3,13 +3,14 @@ import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
 import { hasAnyPermission, hasHotelPermission, type AppRole } from "@shared/authorization";
-import { HOTEL_THEMES, MAX_WEBSITE_GALLERY_PHOTOS, type HotelThemeId } from "@shared/hotelThemes";
+import { HOTEL_THEMES, MAX_WEBSITE_GALLERY_PHOTOS, getHotelThemeColors, type HotelThemeId } from "@shared/hotelThemes";
 import { uploadHotelMediaFile } from "@/lib/hotelMedia";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
-import { defaultConfig, isValidHexColor, type SiteConfig } from "./websiteBuilderRules";
+import { defaultConfig, themeSaveErrorMessage, type SiteConfig } from "./websiteBuilderRules";
 import { displayPhotoCaption } from "@shared/websitePhotos";
+import { splitWebsitePhotos } from "./photoReorder";
 
 export type HotelMediaItem = inferRouterOutputs<AppRouter>["channelManager"]["listHotelMedia"][number];
 
@@ -50,13 +51,14 @@ export function useWebsiteBuilder() {
   const setObjectPositionMut = trpc.channelManager.setHotelMediaObjectPosition.useMutation({ onSuccess: () => refetchMedia(), onError: e => setPhotoError(e.message) });
   const setCaptionMut = trpc.channelManager.setHotelMediaCaption.useMutation({ onSuccess: () => refetchConfig(), onError: e => setPhotoError(e.message) });
   const setGalleryMut = trpc.channelManager.setHotelMediaGallerySelection.useMutation({ onSuccess: () => refetchConfig(), onError: e => setPhotoError(e.message.includes("six gallery") ? t("websiteBuilder.galleryLimitReached") : e.message) });
+  const reorderMediaMut = trpc.channelManager.reorderHotelMedia.useMutation({ onSuccess: () => { void refetchConfig(); }, onError: e => setPhotoError(e.message) });
   const saveConfigMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: () => { toast.success(t("websiteBuilder.toastConfigSaved")); refetchConfig(); setSaveNote(t("websiteBuilder.savedViaNote")); }, onError: e => setFormError(e.message) });
-  const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); }, onError: e => setFormError(e.message) });
+  const saveThemeMut = trpc.channelManager.saveHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.themeSaved")); await refetchConfig(); }, onError: e => setFormError(themeSaveErrorMessage(e.message, t("websiteBuilder.themeMediaPositionError"))) });
   const publishConfigMut = trpc.channelManager.publishHotelSiteConfig.useMutation({ onSuccess: async () => { toast.success(t("websiteBuilder.publishSuccess")); await refetchConfig(); }, onError: e => setFormError(e.message) });
   const [draft, setDraft] = useState<SiteConfig>(() => ({ ...defaultConfig(effectiveHotelId), heroCopy: t("publicHotel.defaultHeroCopy") }));
   const publishedConfig = useMemo(() => {
     const base = defaultConfig(effectiveHotelId);
-    return { ...base, ...(serverConfig ?? {}), heroCopy: serverConfig?.heroCopy ?? t("publicHotel.defaultHeroCopy"), accentColor: serverConfig?.accentColor ?? base.accentColor, visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) } } as SiteConfig;
+    return { ...base, ...(serverConfig ?? {}), heroCopy: serverConfig?.heroCopy ?? t("publicHotel.defaultHeroCopy"), visibleSections: { ...base.visibleSections, ...(serverConfig?.visibleSections ?? {}) } } as SiteConfig;
   }, [serverConfig, effectiveHotelId, language]);
   const storedDraft = useMemo(() => {
     if (!serverConfig?.draftJson) return null;
@@ -65,7 +67,7 @@ export function useWebsiteBuilder() {
   const discardDraftMut = trpc.channelManager.discardHotelSiteConfigDraft.useMutation({ onSuccess: async () => { await refetchConfig(); setDraft(publishedConfig); toast.success(t("websiteBuilder.draftDiscarded")); }, onError: e => setFormError(e.message) });
   const config = storedDraft ?? publishedConfig;
   const [initializedFor, setInitializedFor] = useState("");
-  const previewAccentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "#1d6b56";
+  const previewAccentColor = getHotelThemeColors(draft.theme).buttonBackground;
   useEffect(() => {
     if (!effectiveHotelId || isFetchingConfig) return;
     // Load the draft once per hotel. Re-running on every refetch (caption, gallery and focal
@@ -77,6 +79,9 @@ export function useWebsiteBuilder() {
   const media = serverMedia;
   const selectedGalleryIds: string[] = storedDraft?.galleryMediaIds ?? media.filter(item => item.isPublished && !item.isHero).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(item => item.id);
   const draftMedia = media.map(item => ({ ...item, caption: storedDraft?.mediaCaptions?.[item.id] ?? displayPhotoCaption(item.caption), isHero: storedDraft?.heroMediaId ? item.id === storedDraft.heroMediaId : item.isHero, isGallerySelected: selectedGalleryIds.includes(item.id), objectPosition: Object.prototype.hasOwnProperty.call(storedDraft?.mediaPositions ?? {}, item.id) ? storedDraft?.mediaPositions?.[item.id] ?? null : item.objectPosition }));
+  // Cover first, then the gallery in draft order: the only photos the owner can reorder.
+  const draftCoverId = storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null;
+  const { hasCover, ordered: orderedPhotos, others: otherPhotos } = splitWebsitePhotos(draftMedia, draftCoverId, selectedGalleryIds);
   const heroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? draftMedia[0]?.url ?? null, [draftMedia]);
   const selectedHotelHeroImage = useMemo(() => draftMedia.find(m => m.isHero)?.url ?? null, [draftMedia]);
   const previewHotelName = selectedHotel?.name?.trim() || t("websiteBuilder.yourHotelName");
@@ -108,22 +113,23 @@ export function useWebsiteBuilder() {
     setPhotoError(null);
     deleteMediaMut.mutate({ hotel_id: effectiveHotelId, media_id: id });
   }
-  function handleResetFocalPoint(mediaId: string) {
-    if (!canManage) return;
-    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: mediaId, object_position: null }, { onSuccess: () => { void refetchConfig(); } });
-  }
   function handleSetHero(id: string) { if (!canManage) return; setHeroMut.mutate({ hotel_id: effectiveHotelId, media_id: id }, { onSuccess: () => { void refetchConfig(); } }); }
-  function handleFocalPoint(event: React.PointerEvent<HTMLImageElement>, item: HotelMediaItem) {
-    if (!canManage) return; setFocalMediaId(item.id); const rect = event.currentTarget.getBoundingClientRect(); if (!rect.width || !rect.height) return;
-    const x = Math.round(Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100)));
-    const y = Math.round(Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100)));
-    setObjectPositionMut.mutate({ hotel_id: effectiveHotelId, media_id: item.id, object_position: `${x}% ${y}%` }, { onSuccess: () => { void refetchConfig(); } });
+  function handleReorderPhotos(ids: string[]) { if (!canManage) return; setPhotoError(null); reorderMediaMut.mutate({ hotel_id: effectiveHotelId, ids }); }
+  async function handleFocalPoint(mediaId: string, objectPosition: string | null): Promise<boolean> {
+    if (!canManage) return false;
+    setPhotoError(null);
+    try {
+      await setObjectPositionMut.mutateAsync({ hotel_id: effectiveHotelId, media_id: mediaId, object_position: objectPosition });
+      void refetchConfig();
+      return true;
+    } catch {
+      return false;
+    }
   }
-  // Shared by "save draft" and "choose a design": both send the headline and colour to the server.
+  // Shared by "save draft" and "choose a design": both send the headline to the server.
   function draftProblem(): string | null {
     if (!canManage) return t("websiteBuilder.errorNoPermissionSave");
     if (!effectiveHotelId) return t("websiteBuilder.errorSelectHotelFirst");
-    if (!isValidHexColor(draft.accentColor)) return t("websiteBuilder.errorInvalidHex");
     if (draft.heroCopy.trim().length === 0) return t("websiteBuilder.errorHeroCopyEmpty");
     if (draft.heroCopy.length > 500) return t("websiteBuilder.errorHeroCopyTooLong");
     return null;
@@ -132,13 +138,13 @@ export function useWebsiteBuilder() {
     setFormError(null); setSaveNote(null);
     const problem = draftProblem();
     if (problem) { setFormError(problem); return; }
-    saveConfigMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections });
+    saveConfigMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, visible_sections: draft.visibleSections });
   }
   function handleSaveTheme(theme: HotelThemeId) {
     setFormError(null);
     const problem = draftProblem();
     if (problem) { setFormError(problem); return; }
-    saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, accent_color: draft.accentColor, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
+    saveThemeMut.mutate({ hotel_id: effectiveHotelId, hero_copy: draft.heroCopy, visible_sections: draft.visibleSections, theme, hero_media_id: storedDraft?.heroMediaId ?? media.find(item => item.isHero)?.id ?? null, media_positions: storedDraft?.mediaPositions ?? {} });
   }
-  return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, photoError, saveNote, handleResetFocalPoint, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleFocalPoint, handleSave, handleSaveTheme };
+  return { t, hotels, isLoading, isError, refetch, isFetching, canManage, canView, selectedHotelId, setSelectedHotelId, effectiveHotelId, selectedHotel, serverMedia, serverConfig, isFetchingMedia, isFetchingConfig, setPublished, uploadMediaMut, deleteMediaMut, setHeroMut, setObjectPositionMut, setCaptionMut, setGalleryMut, reorderMediaMut, saveConfigMut, saveThemeMut, publishConfigMut, discardDraftMut, storedDraft, selectedGalleryIds, draft, setDraft, publishedConfig, config, previewAccentColor, focalMediaId, setFocalMediaId, fileInputRef, media, draftMedia, hasCover, orderedPhotos, otherPhotos, heroImage, selectedHotelHeroImage, previewHotelName, sectionLabels, formError, photoError, saveNote, handleUploadFile, handleUploadFiles, handleSetCaption, handleToggleGallery, handleDeleteMedia, handleSetHero, handleReorderPhotos, handleFocalPoint, handleSave, handleSaveTheme };
 }

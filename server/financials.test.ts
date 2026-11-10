@@ -14,7 +14,7 @@ describe('financials summary', () => {
             status: 'confirmed',
             check_in: '2026-08-20',
             check_out: '2026-08-22',
-            price: '1200',
+            price: '1200', payment_status: 'verified', paid_at: '2026-08-20T05:00:00.000Z',
             rooms: { room_types: { name: 'Deluxe' } },
           },
           {
@@ -54,9 +54,9 @@ describe('financials summary', () => {
       {
         id: 'hotel-1',
         bookings: [
-          { id: 'b1', status: 'confirmed', check_in: '2026-08-20', check_out: '2026-08-21', price: 1000, rooms: { room_types: { name: 'Deluxe' } } },
-          { id: 'b2', status: 'checked_out', check_in: '2026-08-19', check_out: '2026-08-20', price: 500, rooms: { room_types: { name: 'Deluxe' } } },
-          { id: 'b3', status: 'confirmed', check_in: '2026-08-18', check_out: '2026-08-19', price: 300, rooms: null },
+          { id: 'b1', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-20T05:00:00Z', check_in: '2026-08-20', check_out: '2026-08-21', price: 1000, rooms: { room_types: { name: 'Deluxe' } } },
+          { id: 'b2', status: 'checked_out', payment_status: 'verified', paid_at: '2026-08-19T05:00:00Z', check_in: '2026-08-19', check_out: '2026-08-20', price: 500, rooms: { room_types: { name: 'Deluxe' } } },
+          { id: 'b3', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-18T05:00:00Z', check_in: '2026-08-18', check_out: '2026-08-19', price: 300, rooms: null },
         ],
       },
     ], now);
@@ -73,7 +73,7 @@ describe('financials summary', () => {
       {
         id: 'hotel-1',
         bookings: [
-          { id: 'b1', status: 'confirmed', payment_status: 'verified', check_in: '2026-08-20', check_out: '2026-08-21', price: 1000, rooms: null },
+          { id: 'b1', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-20T05:00:00Z', check_in: '2026-08-20', check_out: '2026-08-21', price: 1000, rooms: null },
           { id: 'b2', status: 'confirmed', payment_status: 'pending', check_in: '2026-08-19', check_out: '2026-08-20', price: 500, rooms: null },
           { id: 'b3', status: 'confirmed', payment_status: 'unpaid', check_in: '2026-08-18', check_out: '2026-08-19', price: 300, rooms: null },
           { id: 'b4', status: 'confirmed', check_in: '2026-08-17', check_out: '2026-08-18', price: 200, rooms: null },
@@ -82,14 +82,14 @@ describe('financials summary', () => {
       },
     ], now);
 
-    expect(result.totals.revenue).toBe(2000);
+    expect(result.totals.revenue).toBe(1000);
     expect(result.totals.collectedRevenue).toBe(1000);
-    expect(result.totals.pendingRevenue).toBe(500);
-    expect(result.totals.outstandingRevenue).toBe(500); // 300 unpaid + 200 undefined
+    expect(result.totals.pendingRevenue).toBe(0);
+    expect(result.totals.outstandingRevenue).toBe(0); // unpaid and pending bookings are not received revenue
   });
 
   it('does not count held, unpaid, expired, rejected or refunded bookings as revenue (regression: everything except cancelled was revenue)', () => {
-    const booking = (id: string, status: string, price: number) => ({ id, status, payment_status: 'unpaid', check_in: '2026-08-20', check_out: '2026-08-21', price, rooms: null });
+    const booking = (id: string, status: string, price: number) => ({ id, status, payment_status: ['confirmed', 'checked_in', 'checked_out'].includes(status) ? 'verified' : 'unpaid', paid_at: ['confirmed', 'checked_in', 'checked_out'].includes(status) ? '2026-08-20T05:00:00Z' : null, check_in: '2026-08-20', check_out: '2026-08-21', price, rooms: null });
     const result = buildFinancialsSummary([{
       id: 'hotel-1',
       bookings: [
@@ -109,7 +109,7 @@ describe('financials summary', () => {
     expect(result.totals.revenue).toBe(6000);
     expect(result.totals.bookings).toBe(3);
     expect(result.totals.cancelledBookings).toBe(3); // cancelled + refund pending + refunded
-    expect(result.totals.outstandingRevenue).toBe(6000);
+    expect(result.totals.outstandingRevenue).toBe(0);
     expect(result.trend.find(point => point.date === '2026-08-20')).toEqual({ date: '2026-08-20', bookings: 3, revenue: 6000 });
   });
 
@@ -117,7 +117,7 @@ describe('financials summary', () => {
     const justAfterThaiMidnight = new Date('2026-08-20T17:30:00.000Z'); // 00:30 on 2026-08-21 in Thailand
     const result = buildFinancialsSummary([{
       id: 'hotel-1',
-      bookings: [{ id: 'today', status: 'confirmed', check_in: '2026-08-21', check_out: '2026-08-22', price: 700, rooms: null }],
+      bookings: [{ id: 'today', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-21T05:00:00Z', check_in: '2026-08-21', check_out: '2026-08-22', price: 700, rooms: null }],
     }], justAfterThaiMidnight);
     expect(result.periodEnd).toBe('2026-08-21');
     expect(result.totals.revenue).toBe(700);
@@ -127,11 +127,20 @@ describe('financials summary', () => {
     const result = buildFinancialsSummary([{
       id: 'hotel-1',
       bookings: [
-        { id: 'a', status: 'confirmed', check_in: '2026-08-20', check_out: '2026-08-21', price: '0.10', rooms: null },
-        { id: 'b', status: 'confirmed', check_in: '2026-08-20', check_out: '2026-08-21', price: '0.20', rooms: null },
+        { id: 'a', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-20T05:00:00Z', check_in: '2026-08-20', check_out: '2026-08-21', price: '0.10', rooms: null },
+        { id: 'b', status: 'confirmed', payment_status: 'verified', paid_at: '2026-08-20T05:00:00Z', check_in: '2026-08-20', check_out: '2026-08-21', price: '0.20', rooms: null },
       ],
     }], now);
     expect(result.totals.revenue).toBe(0.3);
+  });
+
+  it('removes a refunded payment from its paid day without subtracting on the refund day', () => {
+    const result = buildFinancialsSummary([{ id: 'hotel-1', bookings: [
+      { id: 'paid', status: 'refunded', payment_status: 'verified', paid_at: '2026-08-19T17:00:00Z', refunded_at: '2026-08-20T17:00:00Z', check_in: '2026-08-21', check_out: '2026-08-22', price: 700, rooms: null },
+    ] }], now, { from: '2026-08-20', to: '2026-08-21' });
+    expect(result.totals.revenue).toBe(0);
+    expect(result.trend.map(point => point.revenue)).toEqual([0, 0]);
+    expect(result.roomTypeBreakdown).toEqual([]);
   });
 
   it('creates one daily trend point for every day in the period', () => {
@@ -140,6 +149,7 @@ describe('financials summary', () => {
       bookings: [{
         id: 'booking-1',
         status: 'checked_out',
+        payment_status: 'verified', paid_at: '2026-08-01T05:00:00Z',
         check_in: '2026-08-01',
         check_out: '2026-08-03',
         price: 600,
@@ -153,7 +163,7 @@ describe('financials summary', () => {
 
   describe('chosen period', () => {
     const booking = (id: string, check_in: string, price: number, extra: Record<string, unknown> = {}) => ({
-      id, status: 'confirmed', check_in, check_out: '2027-01-01', price, rooms: { room_types: { name: 'Deluxe' } }, ...extra,
+      id, status: 'confirmed', payment_status: 'verified', paid_at: `${check_in}T05:00:00Z`, check_in, check_out: '2027-01-01', price, rooms: { room_types: { name: 'Deluxe' } }, ...extra,
     });
     const hotel = (...bookings: ReturnType<typeof booking>[]) => [{ id: 'hotel-1', bookings }];
 
@@ -200,7 +210,7 @@ describe('financials summary', () => {
     });
 
     it('uses the same revenue definition: cancelled bookings only add to the cancelled count', () => {
-      const result = buildFinancialsSummary(hotel(booking('a', '2026-05-10', 100), booking('x', '2026-05-11', 900, { status: 'cancelled' }), booking('h', '2026-05-12', 900, { status: 'held' })), now, { month: '2026-05' });
+      const result = buildFinancialsSummary(hotel(booking('a', '2026-05-10', 100), booking('x', '2026-05-11', 900, { status: 'cancelled', payment_status: 'unpaid', paid_at: null }), booking('h', '2026-05-12', 900, { status: 'held', payment_status: 'unpaid', paid_at: null })), now, { month: '2026-05' });
       expect(result.totals).toMatchObject({ revenue: 100, bookings: 1, cancelledBookings: 1 });
       expect(result.bookings.map(row => row.status)).toEqual(['confirmed']);
     });
@@ -212,8 +222,8 @@ describe('financials summary', () => {
         booking('fedcba9876543210', '2026-08-19', 800, { source: 'manual', ...guest }),
       ), now);
       expect(result.bookings).toEqual([
-        { id: 'fedcba98', check_in: '2026-08-19', check_out: '2027-01-01', room_type: 'Deluxe', source: 'manual', status: 'confirmed', payment_status: null, payment_method: null, price: 800 },
-        { id: '01234567', check_in: '2026-08-20', check_out: '2027-01-01', room_type: 'Deluxe', source: 'direct', status: 'confirmed', payment_status: 'verified', payment_method: 'promptpay', price: 1200.5 },
+        { id: 'fedcba98', paid_at: '2026-08-19', check_in: '2026-08-19', check_out: '2027-01-01', room_type: 'Deluxe', source: 'manual', status: 'confirmed', payment_status: 'verified', payment_method: null, price: 800 },
+        { id: '01234567', paid_at: '2026-08-20', check_in: '2026-08-20', check_out: '2027-01-01', room_type: 'Deluxe', source: 'direct', status: 'confirmed', payment_status: 'verified', payment_method: 'promptpay', price: 1200.5 },
       ]);
       const text = JSON.stringify(result);
       for (const secret of ['Somchai', 'somchai@example.test', '0812345678', '1234567890123', '0123456789abcdef']) expect(text).not.toContain(secret);

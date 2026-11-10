@@ -1,5 +1,5 @@
 # 06 Website Builder
-Status: IN PROGRESS (photo captions and gallery selection implemented; automated checks run (one unrelated failure), browser verification pending, 2026-11-04)
+Status: IMPLEMENTED (photo captions, gallery selection, full-photo focal point editor, numbered photo order, theme-owned colours, eight registered themes with bilingual brand names, descriptions and suitable-stay copy, property-neutral fixed copy, and a real vintage-theme screenshot on the marketing landing page; rendered landing-width verification pending; 2026-11-07)
 Depends on: —
 Owner-tier: worker-code
 

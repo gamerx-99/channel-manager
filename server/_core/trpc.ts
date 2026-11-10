@@ -3,6 +3,7 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { isBillingCandidateEnabled } from "@shared/billingCandidate";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -67,6 +68,16 @@ const requireUser = t.middleware(async opts => {
 });
 
 export const protectedProcedure = t.procedure.use(requireUser);
+
+const requireBillingCandidate = t.middleware(async ({ ctx, next }) => {
+  if (!isBillingCandidateEnabled(ctx.billingEnv?.BILLING_CANDIDATE_ENABLED)) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Billing Candidate is inactive." });
+  }
+  return next();
+});
+
+/** Authenticated procedure for APIs that only exist while the global candidate is explicitly enabled. */
+export const billingCandidateProcedure = protectedProcedure.use(requireBillingCandidate);
 
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {

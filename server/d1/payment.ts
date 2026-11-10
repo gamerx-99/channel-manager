@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { normalisePromptPayId } from "../../shared/promptPayId";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { bookings, hotelPaymentSettings, paymentSessions } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
@@ -46,9 +47,11 @@ export async function getSlipOkCredentialsForVerification(db: D1ScopedDatabase, 
 
 export async function savePromptPaySettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, promptPayId: string, timeoutMinutes: number, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.promptpay.save", now);
+  const normalised = normalisePromptPayId(promptPayId);
+  if (!normalised) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid PromptPay ID." });
   if (!Number.isInteger(timeoutMinutes) || timeoutMinutes < 5 || timeoutMinutes > 60) throw new TRPCError({ code: "BAD_REQUEST", message: "Payment timeout must be between 5 and 60 minutes." });
-  await db.insert(hotelPaymentSettings).values({ hotelId, promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now })
-    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { promptpayId: promptPayId, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now } });
+  await db.insert(hotelPaymentSettings).values({ hotelId, promptpayId: normalised.value, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { promptpayId: normalised.value, paymentTimeoutMinutes: timeoutMinutes, updatedAt: now } });
 }
 
 export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
@@ -59,6 +62,20 @@ export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1Call
   }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
   if (!row) return null;
   return { promptpay_id: row.promptpayId, payment_timeout_minutes: row.paymentTimeoutMinutes };
+}
+
+export async function getBookingRequestTimeout(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "booking_request.timeout.read", now);
+  const [row] = await db.select({ hours: hotelPaymentSettings.bookingRequestTimeoutHours })
+    .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  return { booking_request_timeout_hours: row?.hours ?? 24 };
+}
+
+export async function saveBookingRequestTimeout(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, hours: number, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "booking_request.timeout.save", now);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 168) throw new TRPCError({ code: "BAD_REQUEST", message: "Booking request timeout must be between 1 and 168 hours." });
+  await db.insert(hotelPaymentSettings).values({ hotelId, bookingRequestTimeoutHours: hours, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelPaymentSettings.hotelId, set: { bookingRequestTimeoutHours: hours, updatedAt: now } });
 }
 
 export async function createPaymentSession(db: D1ScopedDatabase, caller: D1CallerContext, input: CreatePaymentSessionInput, now = new Date()) {
@@ -88,6 +105,14 @@ export async function updatePaymentSessionStatus(db: D1ScopedDatabase, caller: D
   return row ? sessionRecord(row) : null;
 }
 
+export async function savePaymentSessionSlip(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, sessionId: string, slipUrl: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "operations.manage_bookings", "payment_session.save_slip", now);
+  const [row] = await db.update(paymentSessions).set({ slipUrl })
+    .where(and(eq(paymentSessions.id, sessionId), eq(paymentSessions.hotelId, hotelId)))
+    .returning({ id: paymentSessions.id });
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Payment session not found." });
+}
+
 /** Another session already verified with this bank transaction reference. */
 async function transactionRefUsedElsewhere(db: D1ScopedDatabase, sessionId: string, ref: string) {
   const [row] = await db.select({ id: paymentSessions.id }).from(paymentSessions)
@@ -110,6 +135,35 @@ export async function finalizePaymentSession(db: D1ScopedDatabase, caller: D1Cal
     // write; the unique index then refuses ours. Drizzle wraps that error, so
     // look the reference up again instead of matching its message.
     if (ref && !(error instanceof TRPCError) && await transactionRefUsedElsewhere(db, sessionId, ref)) return { duplicateRef: true };
+    throw error;
+  }
+}
+
+/** Atomically stores verified full-payment evidence; a database trigger confirms the booking and logs the transition. */
+export async function confirmManualFullPayment(db: D1ScopedDatabase, input: {
+  hotelId: string; bookingId: string; sessionId: string; amountSatang: number; transactionReference: string; userId: string; reason: string; now: Date; rawResponse?: Record<string, unknown>;
+}) {
+  const toSatangSql = (column: string) => `CASE WHEN instr(${column}, '.') = 0 THEN CAST(${column} AS INTEGER) * 100 ELSE CAST(substr(${column}, 1, instr(${column}, '.') - 1) AS INTEGER) * 100 + CAST(substr(substr(${column}, instr(${column}, '.') + 1) || '00', 1, 2) AS INTEGER) END`;
+  const sessionAmount = toSatangSql("s.amount");
+  try {
+    const result = await db.$client.batch([
+      db.$client.prepare(`UPDATE payment_sessions AS s SET status = 'paid', verified_at = ?, verified_transaction_ref = ?, raw_response = ?, verified_by = ?, verified_reason = ?
+        WHERE s.id = ? AND s.hotel_id = ? AND s.booking_id = ? AND s.status = 'pending'
+          AND ${sessionAmount} = ?
+          AND ${sessionAmount} = (SELECT CASE WHEN instr(b.price, '.') = 0 THEN CAST(b.price AS INTEGER) * 100 ELSE CAST(substr(b.price, 1, instr(b.price, '.') - 1) AS INTEGER) * 100 + CAST(substr(substr(b.price, instr(b.price, '.') + 1) || '00', 1, 2) AS INTEGER) END FROM bookings b WHERE b.id = s.booking_id AND b.hotel_id = s.hotel_id AND b.status = 'pending_verification')`)
+        .bind(input.now.getTime(), input.transactionReference, input.rawResponse ? JSON.stringify(input.rawResponse) : null, input.userId, input.reason,
+          input.sessionId, input.hotelId, input.bookingId, input.amountSatang),
+    ]);
+    return (result[0]?.meta.changes ?? 0) === 1;
+  } catch (error) {
+    const value = error as { message?: string; cause?: { message?: string } };
+    const message = `${value?.message ?? ""} ${value?.cause?.message ?? ""}`;
+    if (message.includes("idx_payment_sessions_verified_ref_unique")) {
+      throw new TRPCError({ code: "CONFLICT", message: "This transaction reference has already been used." });
+    }
+    if (message.includes("verified payment must match a pending full booking")) {
+      return false;
+    }
     throw error;
   }
 }

@@ -2,17 +2,18 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-describe("Housekeeping board contract", () => {
+describe("housekeeping route retirement contract", () => {
   const component = readFileSync(resolve(process.cwd(), "client/src/pages/Housekeeping.tsx"), "utf8");
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const appShell = readFileSync(resolve(process.cwd(), "client/src/components/layout/Sidebar.tsx"), "utf8");
   const routeScope = readFileSync(resolve(process.cwd(), "client/src/lib/routeScope.ts"), "utf8");
 
-  it("registers the page route and gates sidebar link with housekeeping.view_room_status", () => {
-    expect(app).toContain('path="/housekeeping"');
-    expect(app).toContain("Housekeeping");
-    expect(appShell).toContain('can("housekeeping.view_room_status")');
-    expect(appShell).toContain('href="/housekeeping"');
+  it("redirects the retired page and replaces its sidebar link with staff shifts", () => {
+    expect(app).toContain('<Route path="/housekeeping">');
+    expect(app).toContain('<Redirect to="/staff-shifts" />');
+    expect(appShell).toContain('can("staff.view_shifts")');
+    expect(appShell).toContain('href="/staff-shifts"');
+    expect(appShell).not.toContain('href="/housekeeping"');
     expect(routeScope).toContain('pathname.startsWith("/housekeeping")');
     expect(routeScope).toContain('return "housekeeping.view_room_status"');
   });

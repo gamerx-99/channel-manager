@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { legalContent, type LegalKind } from "@/lib/legalContent";
+import "./legal-page.css";
 
 /** /terms, /privacy and /dpa pages for sign-in providers and visitors. */
 export default function LegalPage({ kind }: { kind: LegalKind }) {

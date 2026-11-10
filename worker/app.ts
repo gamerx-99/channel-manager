@@ -33,9 +33,11 @@ export type WorkerEnv = {
   PLATFORM_PROMPTPAY_ID?: string;
   SLIPOK_API_KEY?: string;
   SLIPOK_BRANCH_ID?: string;
-  /** Worker secrets used by booking and authentication email delivery. */
+  SLIPOK_ENCRYPTION_KEY?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  /** Global feature gate; absent or anything except "true" keeps the billing candidate inactive. */
+  BILLING_CANDIDATE_ENABLED?: string;
   /** Optional canonical site origin; defaults to the request origin. */
   PUBLIC_APP_URL?: string;
 };
@@ -179,7 +181,8 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
           c.env,
         )),
         publicBookingLimiter: c.env?.PUBLIC_BOOKING_LIMITER,
-        billingEnv: { PLATFORM_PROMPTPAY_ID: c.env?.PLATFORM_PROMPTPAY_ID, SLIPOK_API_KEY: c.env?.SLIPOK_API_KEY, SLIPOK_BRANCH_ID: c.env?.SLIPOK_BRANCH_ID },
+        media: c.env?.MEDIA,
+        billingEnv: { BILLING_CANDIDATE_ENABLED: c.env?.BILLING_CANDIDATE_ENABLED, PLATFORM_PROMPTPAY_ID: c.env?.PLATFORM_PROMPTPAY_ID, SLIPOK_API_KEY: c.env?.SLIPOK_API_KEY, SLIPOK_BRANCH_ID: c.env?.SLIPOK_BRANCH_ID, SLIPOK_ENCRYPTION_KEY: c.env?.SLIPOK_ENCRYPTION_KEY, RESEND_API_KEY: c.env?.RESEND_API_KEY, EMAIL_FROM: c.env?.EMAIL_FROM },
         cfConnectingIp: c.req.header("cf-connecting-ip"),
       }),
     });

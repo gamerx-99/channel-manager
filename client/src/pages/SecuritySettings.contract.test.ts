@@ -66,9 +66,11 @@ describe("Account deletion contract", () => {
 });
 
 describe("Security settings page contract", () => {
-  it("shows the SlipOK panel only to holders of property.manage_profile", () => {
+  it("removes the SlipOK form and links editors to hotel payment settings", () => {
     const page = readFileSync(resolve(process.cwd(), "client/src/pages/SecuritySettings.tsx"), "utf8");
     expect(page).toContain('"property.manage_profile"');
-    expect(page).toContain("canManageSlipOk && <SlipOkSettings");
+    expect(page).not.toContain("SlipOkSettings");
+    expect(page).toContain("canManageSlipOk && <p");
+    expect(page).toContain("/hotels/${hotelId}/settings/finance");
   });
 });

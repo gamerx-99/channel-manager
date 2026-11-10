@@ -1,6 +1,5 @@
 import React from "react";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
-import { getContrastText } from "@/lib/contrastText";
 import "./public-booking.css";
 import BookingStepDates from "./BookingStepDates";
 import BookingStepRooms from "./BookingStepRooms";
@@ -13,8 +12,7 @@ type Page = ReturnType<typeof usePublicHotelPage>;
 type Booking = NonNullable<Page["booking"]>;
 
 export default function PublicBookingSection({ page }: { page: Page }) {
-  const { hotel, accentColor, t, booking } = page;
-  const accentTextColor = getContrastText(accentColor);
+  const { hotel, accentColor, accentTextColor, t, booking } = page;
   if (!booking) return null;
   const { wizardStep, setWizardStep, checkIn, setCheckIn, checkOut, setCheckOut, adults, setAdults, children, setChildren, preferredRoomTypeId, heldBooking, selectedServiceQty, setSelectedServiceQty, guestName, setGuestName, guestPhone, setGuestPhone, guestEmail, setGuestEmail, specialRequests, setSpecialRequests, confirmedBookingId, wizardError, setWizardError, paymentSuccess, setPaymentSuccess, remainingMs, isDatesValid, propertyChildRule, childRulesConfigured, childMeasurements, guestsValid, availabilityQuery, availableRoomTypes, holdRoomTypeMutation, servicesQuery, confirmDetailsMutation, handleResetBooking, handleHoldRoom, handleConfirmDetails, serviceLineTotal, selectedServicesTotal } = booking;
   const renderStepContent = () => {
@@ -120,6 +118,8 @@ export default function PublicBookingSection({ page }: { page: Page }) {
             mode="payment"
             t={t}
             hotelName={hotel.name}
+            hotelPhone={heldBooking?.hotelId === hotel.id ? hotel.public_phone : null}
+            hotelFacebookUrl={heldBooking?.hotelId === hotel.id ? hotel.facebook_url : null}
             heldBooking={heldBooking}
             checkIn={checkIn}
             checkOut={checkOut}
@@ -152,11 +152,14 @@ export default function PublicBookingSection({ page }: { page: Page }) {
     >
       <div>
         <div className="eyebrow">{t("publicHotel.bookingEyebrow")}</div>
-        <h2>{t("publicHotel.bookingTitle")}<br /><i>{t("publicHotel.bookingTitleHighlight")}</i></h2>
+        <h2>{t("publicHotel.bookingTitle")}</h2>
         <p>{t("publicHotel.bookingDesc")}</p>
       </div>
       <div className="booking-box">
-        <div className="booking-step-indicator">{t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}</div>
+        <div className="booking-step-indicator" role="progressbar" aria-label={t("publicHotel.bookingProgress")} aria-valuemin={1} aria-valuemax={6} aria-valuenow={wizardStep} aria-valuetext={t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}>
+          <span>{t("publicHotel.wizardStepOf", { step: wizardStep, total: 6 })}</span>
+          <span className="booking-progress-track" aria-hidden="true"><span style={{ "--progress": `${wizardStep / 6 * 100}%` } as React.CSSProperties} /></span>
+        </div>
         {wizardError && <div className="booking-error-banner">{wizardError}</div>}
         {renderStepContent()}
       </div>

@@ -1,0 +1,1301 @@
+/* ==========================================================================
+   HOSTEL POP THEME STYLESHEET
+   Archetype: Neo-Brutalist Pop
+   Palette: Electric Yellow (#ffd23f), Hot Pink (#fd5c8e), Sky Cyan (#62edc9),
+            Stark White (#ffffff), Ink Black (#000000 / #1b1b1b)
+   Borders: 3px solid #000000
+   Shadows: Hard unblurred 6px/4px offset drops
+   All selectors scoped strictly under .theme-hostel-pop
+   ========================================================================== */
+
+.theme-hostel-pop {
+  /* Mandatory Hayhost Theme Variables */
+  --theme-button-bg: var(--owner-accent);
+  --theme-button-text: var(--owner-accent-text);
+  --theme-highlight: var(--owner-highlight);
+
+  /* Theme Palette Tokens */
+  --hp-yellow: #ffd23f;
+  --hp-pink: #fd5c8e;
+  --hp-pink-hover: #b32057;
+  --hp-cyan: #62edc9;
+  --hp-cyan-hover: #3bceac;
+  --hp-white: #ffffff;
+  --hp-black: #000000;
+  --hp-ink: #1b1b1b;
+  --hp-ink-muted: #4d4634;
+  --hp-bg: #f9f9f9;
+  --hp-surface-card: #ffffff;
+  --hp-surface-low: #f3f3f3;
+  --hp-surface-container: #eeeeee;
+
+  /* Typography Stacks */
+  --hp-font-head: "Epilogue", "Kanit", sans-serif;
+  --hp-font-body: "Epilogue", "Kanit", sans-serif;
+  --hp-font-label: "Space Grotesk", "Kanit", sans-serif;
+
+  /* Geometry & Shadows */
+  --hp-radius: 4px;
+  --hp-shadow-lg: 6px 6px 0px #000000;
+  --hp-shadow-md: 4px 4px 0px #000000;
+  --hp-shadow-sm: 2px 2px 0px #000000;
+
+  background-color: var(--hp-bg);
+  color: var(--hp-ink);
+  font-family: var(--hp-font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+.theme-hostel-pop:lang(th) .hero-title-main,
+.theme-hostel-pop:lang(th) .section-title,
+.theme-hostel-pop:lang(th) .room-name {
+  line-height: 1.3;
+}
+
+/* Scoped box-sizing reset */
+.theme-hostel-pop *,
+.theme-hostel-pop *::before,
+.theme-hostel-pop *::after {
+  box-sizing: border-box;
+}
+
+/* Reset typography & lists within theme */
+.theme-hostel-pop h1,
+.theme-hostel-pop h2,
+.theme-hostel-pop h3,
+.theme-hostel-pop h4,
+.theme-hostel-pop p,
+.theme-hostel-pop ul,
+.theme-hostel-pop li {
+  margin: 0;
+  padding: 0;
+}
+
+.theme-hostel-pop ul {
+  list-style: none;
+}
+
+.theme-hostel-pop a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.theme-hostel-pop button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.theme-hostel-pop img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Page padding when sticky bottom bar is present */
+.theme-hostel-pop.has-sticky-bar {
+  padding-bottom: 76px;
+}
+
+/* Layout Container */
+.theme-hostel-pop .container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+/* Section Wrapper */
+.theme-hostel-pop .section {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+  border-bottom: 4px solid var(--hp-black);
+}
+
+.theme-hostel-pop .text-center {
+  text-align: center;
+}
+
+/* Section Header Typography */
+.theme-hostel-pop .section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 3rem;
+}
+
+.theme-hostel-pop .section-head.text-center {
+  align-items: center;
+}
+
+.theme-hostel-pop .section-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.theme-hostel-pop .section-title {
+  font-family: var(--hp-font-head);
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--hp-ink);
+}
+
+.theme-hostel-pop .section-subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--hp-ink-muted);
+  max-width: 600px;
+}
+
+/* ==========================================================================
+   BUTTONS (Tactile Neo-Brutalist Mechanics)
+   ========================================================================== */
+
+.theme-hostel-pop .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--hp-font-label);
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.65rem 1.25rem;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-md);
+  transition: transform 100ms ease-out, box-shadow 100ms ease-out, background-color 100ms ease-out;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.theme-hostel-pop .btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.theme-hostel-pop .btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px var(--hp-black);
+}
+
+.theme-hostel-pop .btn-primary {
+  background-color: var(--theme-button-bg);
+  color: var(--theme-button-text);
+}
+
+.theme-hostel-pop .btn-pink {
+  background-color: var(--theme-button-bg);
+  color: var(--theme-button-text);
+}
+
+.theme-hostel-pop .btn-pink:hover {
+  background-color: var(--theme-button-bg);
+}
+
+.theme-hostel-pop .btn-hero {
+  background-color: var(--theme-button-bg);
+  color: var(--theme-button-text);
+  font-size: 16px;
+  padding: 0.9rem 2rem;
+  box-shadow: var(--hp-shadow-lg);
+}
+
+.theme-hostel-pop .btn-hero:hover {
+  transform: translate(2px, 2px);
+  box-shadow: var(--hp-shadow-md);
+  background-color: var(--theme-button-bg);
+}
+
+.theme-hostel-pop .btn-hero:active {
+  transform: translate(6px, 6px);
+  box-shadow: 0px 0px 0px var(--hp-black);
+}
+
+.theme-hostel-pop .btn-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--theme-button-bg);
+  color: var(--theme-button-text);
+  box-shadow: var(--hp-shadow-md);
+}
+
+.theme-hostel-pop .btn-select:hover {
+  background-color: var(--theme-button-bg);
+}
+
+.theme-hostel-pop .btn-block {
+  width: 100%;
+}
+
+.theme-hostel-pop .btn-sticky {
+  background-color: var(--theme-button-bg);
+  color: var(--theme-button-text);
+  padding: 0.55rem 1.15rem;
+  font-size: 13px;
+  box-shadow: var(--hp-shadow-sm);
+}
+
+/* ==========================================================================
+   STICKER BADGES & ROTATION UTILITIES
+   ========================================================================== */
+
+.theme-hostel-pop .sticker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-family: var(--hp-font-label);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-md);
+  line-height: 1.2;
+}
+
+.theme-hostel-pop .sticker-yellow {
+  background-color: var(--hp-yellow);
+  color: #000000;
+}
+
+.theme-hostel-pop .sticker-pink {
+  background-color: var(--hp-pink);
+  color: #ffffff;
+}
+
+.theme-hostel-pop .sticker-cyan {
+  background-color: var(--hp-cyan);
+  color: #000000;
+}
+
+.theme-hostel-pop .sticker-white {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Hardware-accelerated rotations simulating vinyl stickers */
+.theme-hostel-pop .rotate-neg-4 {
+  transform: rotate(-4deg);
+}
+
+.theme-hostel-pop .rotate-neg-3 {
+  transform: rotate(-3deg);
+}
+
+.theme-hostel-pop .rotate-neg-2 {
+  transform: rotate(-2deg);
+}
+
+.theme-hostel-pop .rotate-neg-1 {
+  transform: rotate(-1deg);
+}
+
+.theme-hostel-pop .rotate-1 {
+  transform: rotate(1deg);
+}
+
+.theme-hostel-pop .rotate-2 {
+  transform: rotate(2deg);
+}
+
+.theme-hostel-pop .rotate-3 {
+  transform: rotate(3deg);
+}
+
+.theme-hostel-pop .rotate-4 {
+  transform: rotate(4deg);
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+
+.theme-hostel-pop .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--hp-yellow);
+  border-bottom: 4px solid var(--hp-black);
+  box-shadow: 0 4px 0 0 #000000;
+}
+
+.theme-hostel-pop .header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  gap: 1rem;
+}
+
+.theme-hostel-pop .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.theme-hostel-pop .brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  background-color: #ffffff;
+  border: 2px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: 2px 2px 0px #000000;
+  color: #000000;
+}
+
+.theme-hostel-pop .brand-name {
+  font-family: var(--hp-font-head);
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--hp-ink);
+  line-height: 1.1;
+}
+
+.theme-hostel-pop .main-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.theme-hostel-pop .nav-link {
+  font-family: var(--hp-font-label);
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hp-ink);
+  position: relative;
+  transition: transform 100ms ease-out;
+}
+
+.theme-hostel-pop .nav-link:hover {
+  transform: translate(2px, 2px);
+}
+
+.theme-hostel-pop .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.theme-hostel-pop .lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #ffffff;
+  border: 2px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  padding: 0.2rem 0.5rem;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.theme-hostel-pop .lang-btn {
+  font-family: var(--hp-font-label);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--hp-ink-muted);
+  padding: 0.1rem 0.25rem;
+  transition: color 100ms ease-out;
+}
+
+.theme-hostel-pop .lang-btn.is-active {
+  color: #000000;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 2px;
+}
+
+.theme-hostel-pop .lang-divider {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--hp-ink-muted);
+  user-select: none;
+}
+
+.theme-hostel-pop .header-book {
+  box-shadow: var(--hp-shadow-md);
+}
+
+/* ==========================================================================
+   HERO SECTION
+   ========================================================================== */
+
+.theme-hostel-pop .hero {
+  position: relative;
+  background-color: var(--hp-yellow);
+  border-bottom: 4px solid var(--hp-black);
+  padding-top: 3.5rem;
+  padding-bottom: 5rem;
+  overflow: hidden;
+}
+
+.theme-hostel-pop .hero-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#000000 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.theme-hostel-pop .hero-container {
+  position: relative;
+  z-index: 10;
+}
+
+.theme-hostel-pop .hero-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+.theme-hostel-pop .hero-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.theme-hostel-pop .hero-text-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.theme-hostel-pop .hero-title {
+  margin-bottom: 1.5rem;
+}
+
+.theme-hostel-pop .hero-title-main {
+  font-family: var(--hp-font-head);
+  font-size: 60px;
+  font-weight: 900;
+  line-height: 0.98;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  color: #000000;
+  text-shadow: 4px 4px 0px #ffffff;
+  display: block;
+  word-break: break-word;
+}
+
+.theme-hostel-pop .hero-copy-card {
+  background-color: #ffffff;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 540px;
+}
+
+.theme-hostel-pop .hero-copy {
+  font-family: var(--hp-font-body);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--hp-ink);
+}
+
+.theme-hostel-pop .hero-visual-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.theme-hostel-pop .hero-photo-frame {
+  position: relative;
+  background-color: #ffffff;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  padding: 0.6rem;
+  max-width: 460px;
+  width: 100%;
+}
+
+.theme-hostel-pop .hero-photo-sticker {
+  position: absolute;
+  top: -14px;
+  right: -10px;
+  z-index: 20;
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  font-family: var(--hp-font-label);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-md);
+}
+
+.theme-hostel-pop .hero-photo {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  object-position: var(--hero-position, center);
+  border: 2px solid var(--hp-black);
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   STORY SECTION
+   ========================================================================== */
+
+.theme-hostel-pop .story {
+  background-color: var(--hp-cyan);
+}
+
+.theme-hostel-pop .story-card {
+  position: relative;
+  background-color: #ffffff;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  padding: 3rem;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.theme-hostel-pop .story-sticker {
+  position: absolute;
+  top: -16px;
+  right: 2rem;
+  padding: 0.35rem 0.9rem;
+  font-family: var(--hp-font-label);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-md);
+}
+
+.theme-hostel-pop .story-kicker {
+  margin-bottom: 1.25rem;
+}
+
+.theme-hostel-pop .story-lead {
+  font-family: var(--hp-font-head);
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--hp-ink);
+  margin-bottom: 1.5rem;
+}
+
+.theme-hostel-pop .story-divider {
+  width: 100%;
+  height: 3px;
+  background-color: var(--hp-black);
+  margin-bottom: 1.5rem;
+}
+
+.theme-hostel-pop .story-body {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--hp-ink);
+  font-weight: 500;
+}
+
+.theme-hostel-pop .story-address-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  padding: 0.3rem 0.75rem;
+  background-color: var(--hp-surface-container);
+  border: 2px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  font-family: var(--hp-font-label);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+/* ==========================================================================
+   ROOMS SECTION
+   ========================================================================== */
+
+.theme-hostel-pop .rooms {
+  background-color: var(--hp-surface-low);
+}
+
+.theme-hostel-pop .room-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.theme-hostel-pop .room-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  overflow: hidden;
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.theme-hostel-pop .room-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000000;
+}
+
+/* Color cycling variants */
+.theme-hostel-pop .room-card.card-yellow {
+  background-color: var(--hp-yellow);
+  color: #000000;
+}
+
+.theme-hostel-pop .room-card.card-pink {
+  background-color: var(--hp-pink);
+  color: #ffffff;
+}
+
+.theme-hostel-pop .room-card.card-cyan {
+  background-color: var(--hp-cyan);
+  color: #000000;
+}
+
+.theme-hostel-pop .room-card.card-white {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.theme-hostel-pop .room-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  background-color: #ffffff;
+  border-bottom: 3px solid var(--hp-black);
+  color: #000000;
+}
+
+.theme-hostel-pop .room-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.theme-hostel-pop .room-name {
+  font-family: var(--hp-font-head);
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.theme-hostel-pop .room-capacity {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--hp-font-label);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  opacity: 0.85;
+}
+
+.theme-hostel-pop .room-desc {
+  font-size: 14px;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+.theme-hostel-pop .chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+}
+
+.theme-hostel-pop .chip {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-family: var(--hp-font-label);
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid var(--hp-black);
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.theme-hostel-pop .room-foot {
+  margin-top: auto;
+  border-top: 2px solid currentColor;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.theme-hostel-pop .room-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.theme-hostel-pop .room-price-label {
+  font-family: var(--hp-font-label);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.theme-hostel-pop .room-price-value {
+  font-family: var(--hp-font-head);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.theme-hostel-pop .room-price-unit {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   GALLERY SECTION (Neo-Brutalist Bento Grid)
+   ========================================================================== */
+
+.theme-hostel-pop .gallery {
+  background-color: var(--hp-surface-container);
+}
+
+.theme-hostel-pop .gallery-bento {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  auto-rows: 220px;
+  gap: 1.5rem;
+}
+
+.theme-hostel-pop .gallery-tile {
+  position: relative;
+  background-color: #ffffff;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  padding: 0.45rem;
+  overflow: hidden;
+  transition: transform 120ms ease-out;
+}
+
+.theme-hostel-pop .gallery-tile:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000000;
+}
+
+.theme-hostel-pop .gallery-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--photo-position, center);
+  border: 2px solid var(--hp-black);
+  border-radius: 2px;
+}
+
+/* Bento tile grid spans */
+.theme-hostel-pop .gallery-tile-1 {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.theme-hostel-pop .gallery-tile-4 {
+  grid-column: span 2;
+}
+
+.theme-hostel-pop .gallery-sticker {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 10;
+  padding: 0.25rem 0.65rem;
+  font-family: var(--hp-font-label);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 2px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-sm);
+  max-width: calc(100% - 28px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-hostel-pop .sticker-tile-1 {
+  background-color: var(--hp-pink);
+  color: #ffffff;
+  transform: rotate(-2deg);
+}
+
+.theme-hostel-pop .sticker-tile-2 {
+  background-color: var(--hp-yellow);
+  color: #000000;
+  transform: rotate(2deg);
+}
+
+.theme-hostel-pop .sticker-tile-3 {
+  background-color: var(--hp-cyan);
+  color: #000000;
+  transform: rotate(-1deg);
+}
+
+/* ==========================================================================
+   LOCATION SECTION
+   ========================================================================== */
+
+.theme-hostel-pop .location {
+  background-color: #ffffff;
+}
+
+.theme-hostel-pop .location-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 2.5rem;
+  align-items: stretch;
+}
+
+.theme-hostel-pop .location-map-wrap {
+  position: relative;
+  background-color: var(--hp-surface-container);
+  border: 4px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  padding: 0.65rem;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-hostel-pop .location-pin-sticker {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: var(--hp-pink);
+  color: #ffffff;
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  padding: 0.45rem 1rem;
+  font-family: var(--hp-font-label);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transform: rotate(-3deg);
+  box-shadow: var(--hp-shadow-md);
+}
+
+.theme-hostel-pop .location-map-inner {
+  width: 100%;
+  flex: 1;
+  min-height: 380px;
+  border: 2px solid var(--hp-black);
+  overflow: hidden;
+}
+
+.theme-hostel-pop .location-map-placeholder {
+  width: 100%;
+  flex: 1;
+  min-height: 380px;
+  border: 2px solid var(--hp-black);
+  background-color: var(--hp-cyan);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: #000000;
+}
+
+.theme-hostel-pop .map-placeholder-address {
+  font-family: var(--hp-font-label);
+  font-size: 15px;
+  font-weight: 800;
+  max-width: 320px;
+}
+
+.theme-hostel-pop .location-info-card {
+  background-color: var(--hp-yellow);
+  border: 3px solid var(--hp-black);
+  border-radius: var(--hp-radius);
+  box-shadow: var(--hp-shadow-lg);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.theme-hostel-pop .location-hotel-name {
+  font-family: var(--hp-font-head);
+  font-size: 26px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--hp-ink);
+  line-height: 1.15;
+}
+
+.theme-hostel-pop .location-address {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--hp-ink);
+}
+
+.theme-hostel-pop .location-contacts {
+  width: 100%;
+  border-top: 3px solid var(--hp-black);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+
+.theme-hostel-pop .site-footer {
+  background-color: #ffffff;
+  border-top: 4px solid var(--hp-black);
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.theme-hostel-pop .footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.theme-hostel-pop .footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.theme-hostel-pop .footer-name {
+  font-family: var(--hp-font-head);
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--hp-ink);
+}
+
+.theme-hostel-pop .footer-address {
+  font-size: 13px;
+  color: var(--hp-ink-muted);
+}
+
+.theme-hostel-pop .footer-powered {
+  font-family: var(--hp-font-label);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hp-pink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   MOBILE STICKY BAR
+   ========================================================================== */
+
+.theme-hostel-pop .sticky-bar {
+  display: none;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (max-width: 768px & 375px Viewport)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .theme-hostel-pop .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .theme-hostel-pop .section {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .theme-hostel-pop .main-nav {
+    display: none;
+  }
+
+  .theme-hostel-pop .site-header .header-inner {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .theme-hostel-pop .brand {
+    min-width: 0;
+  }
+
+  .theme-hostel-pop .brand-name {
+    min-width: 0;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+
+  .theme-hostel-pop .header-actions {
+    flex-shrink: 0;
+    gap: 0.5rem;
+  }
+
+  .theme-hostel-pop .header-book {
+    padding: 0.45rem 0.85rem;
+    font-size: 12px;
+  }
+
+  .theme-hostel-pop .hero {
+    padding-top: 2.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .theme-hostel-pop .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .theme-hostel-pop .hero-title-main {
+    font-size: 38px;
+    line-height: 1.05;
+  }
+
+  .theme-hostel-pop .hero-copy-card {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .theme-hostel-pop .hero-copy {
+    font-size: 16px;
+  }
+
+  .theme-hostel-pop .hero-photo {
+    height: 240px;
+  }
+
+  .theme-hostel-pop .story-card {
+    padding: 2rem 1.25rem;
+  }
+
+  .theme-hostel-pop .story-lead {
+    font-size: 22px;
+  }
+
+  .theme-hostel-pop .story-body {
+    font-size: 16px;
+  }
+
+  .theme-hostel-pop .section-title {
+    font-size: 30px;
+  }
+
+  .theme-hostel-pop .room-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .theme-hostel-pop .gallery-bento {
+    grid-template-columns: 1fr;
+    auto-rows: 220px;
+    gap: 1rem;
+  }
+
+  .theme-hostel-pop .gallery-tile-1,
+  .theme-hostel-pop .gallery-tile-4 {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+
+  .theme-hostel-pop .location-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .theme-hostel-pop .location-map-wrap {
+    min-height: 300px;
+  }
+
+  .theme-hostel-pop .location-map-inner,
+  .theme-hostel-pop .location-map-placeholder {
+    min-height: 280px;
+  }
+
+  .theme-hostel-pop .footer-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  /* Responsive shadow reductions */
+  .theme-hostel-pop .hero-copy-card,
+  .theme-hostel-pop .hero-photo-frame,
+  .theme-hostel-pop .story-card,
+  .theme-hostel-pop .room-card,
+  .theme-hostel-pop .gallery-tile,
+  .theme-hostel-pop .location-map-wrap,
+  .theme-hostel-pop .location-info-card,
+  .theme-hostel-pop .btn-hero {
+    box-shadow: var(--hp-shadow-md);
+  }
+
+  .theme-hostel-pop .sticker-badge,
+  .theme-hostel-pop .btn,
+  .theme-hostel-pop .hero-photo-sticker,
+  .theme-hostel-pop .story-sticker,
+  .theme-hostel-pop .location-pin-sticker {
+    box-shadow: 3px 3px 0px #000000;
+  }
+
+  /* Mobile Sticky Bottom Bar Display */
+  .theme-hostel-pop .sticky-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: var(--hp-yellow);
+    border-top: 3px solid var(--hp-black);
+    box-shadow: 0 -4px 0 0 #000000;
+    padding: 0.65rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .theme-hostel-pop .sticky-price {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .theme-hostel-pop .sticky-label {
+    font-family: var(--hp-font-label);
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--hp-ink);
+  }
+
+  .theme-hostel-pop .sticky-value {
+    font-family: var(--hp-font-head);
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--hp-ink);
+  }
+
+  .theme-hostel-pop .sticky-value small {
+    font-family: var(--hp-font-body);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-hostel-pop .header-inner {
+    flex-wrap: wrap;
+  }
+
+  .theme-hostel-pop .brand {
+    flex: 1 1 160px;
+  }
+
+  .theme-hostel-pop .header-actions {
+    margin-left: auto;
+  }
+
+  .theme-hostel-pop.has-sticky-bar .header-book {
+    display: none;
+  }
+
+  .theme-hostel-pop .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-hostel-pop .hero-text-col,
+  .theme-hostel-pop .hero-title {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .theme-hostel-pop .hero-title-main {
+    overflow-wrap: anywhere;
+  }
+
+  .theme-hostel-pop .hero-stickers .sticker-badge {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .theme-hostel-pop .sticky-price {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .theme-hostel-pop .sticky-value {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .theme-hostel-pop .btn-sticky {
+    flex-shrink: 0;
+    padding: 0.5rem 0.7rem;
+    font-size: 11px;
+  }
+}

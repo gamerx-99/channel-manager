@@ -9,6 +9,23 @@ import { exceedsWebsitePhotoLimit, trimPhotoCaption } from "../../shared/website
 export const DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY = "Explore room types, rates, and availability directly from this hotel.";
 export const DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR = "#954831";
 
+export function buildHotelSiteConfigDraft(
+  current: { draftJson?: string | null; heroCopy?: string | null; accentColor?: string | null; visibleSections?: unknown; theme?: string | null } | null | undefined,
+  input: { hero_copy?: string | null; accent_color?: string | null; visible_sections?: Record<string, boolean> | null; theme?: string | null },
+) {
+  const previousDraft = current?.draftJson ? JSON.parse(current.draftJson) : {};
+  return {
+    heroCopy: input.hero_copy !== undefined ? input.hero_copy : previousDraft.heroCopy ?? current?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY,
+    accentColor: input.accent_color !== undefined ? input.accent_color : previousDraft.accentColor ?? current?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR,
+    visibleSections: input.visible_sections !== undefined ? input.visible_sections : previousDraft.visibleSections ?? current?.visibleSections ?? { hero: true, story: true, rooms: true, booking: true, location: true },
+    theme: input.theme !== undefined ? input.theme : previousDraft.theme ?? current?.theme ?? null,
+    heroMediaId: previousDraft.heroMediaId ?? null,
+    mediaPositions: previousDraft.mediaPositions ?? {},
+    mediaCaptions: previousDraft.mediaCaptions ?? {},
+    galleryMediaIds: previousDraft.galleryMediaIds,
+  };
+}
+
 export async function getHotelSiteConfig(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "site_config.read", now);
   const [row] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
@@ -31,17 +48,9 @@ export async function saveHotelSiteConfig(
   if (input.theme != null && !isHotelThemeId(input.theme)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown hotel theme." });
   if (input.accent_color != null && !/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(input.accent_color)) throw new TRPCError({ code: "BAD_REQUEST", message: "Use a valid hex color." });
   const [current] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, input.hotel_id)).limit(1);
-  const previousDraft = current?.draftJson ? JSON.parse(current.draftJson) : {};
-  const draft = {
-    heroCopy: input.hero_copy !== undefined ? input.hero_copy : previousDraft.heroCopy ?? current?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY,
-    accentColor: input.accent_color !== undefined ? input.accent_color : previousDraft.accentColor ?? current?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR,
-    visibleSections: input.visible_sections !== undefined ? input.visible_sections : previousDraft.visibleSections ?? current?.visibleSections ?? { hero: true, story: true, rooms: true, booking: true, location: true },
-    theme: input.theme !== undefined ? input.theme : previousDraft.theme ?? current?.theme ?? null,
-    heroMediaId: input.hero_media_id !== undefined ? input.hero_media_id : previousDraft.heroMediaId ?? null,
-    mediaPositions: input.media_positions ?? previousDraft.mediaPositions ?? {},
-    mediaCaptions: previousDraft.mediaCaptions ?? {},
-    galleryMediaIds: previousDraft.galleryMediaIds,
-  };
+  const draft = buildHotelSiteConfigDraft(current, input);
+  draft.heroMediaId = input.hero_media_id !== undefined ? input.hero_media_id : draft.heroMediaId;
+  draft.mediaPositions = input.media_positions ?? draft.mediaPositions;
   const [row] = await db.insert(hotelSiteConfig).values({ hotelId: input.hotel_id, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now })
     .onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } }).returning();
   if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Site config save returned no record." });
@@ -55,7 +64,8 @@ export async function publishHotelSiteConfig(db: D1ScopedDatabase, caller: D1Cal
   const draft = JSON.parse(row.draftJson) as { heroCopy: string; accentColor: string; visibleSections: Record<string, boolean>; theme: string | null; heroMediaId: string | null; mediaPositions: Record<string, string | null>; mediaCaptions?: Record<string, string>; galleryMediaIds?: string[] };
   const liveHeroMediaId = draft.heroMediaId ?? (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isHero, true))).limit(1))[0]?.id ?? null;
   const galleryCandidate: string[] = draft.galleryMediaIds ?? (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(and(eq(hotelMedia.hotelId, hotelId), eq(hotelMedia.isPublished, true), eq(hotelMedia.isHero, false))).orderBy(asc(hotelMedia.displayOrder))).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(row => row.id);
-  const existingMediaIds = new Set((await db.select({ id: hotelMedia.id }).from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId))).map(item => item.id));
+  const orderedMediaIds = (await db.select({ id: hotelMedia.id }).from(hotelMedia).where(eq(hotelMedia.hotelId, hotelId)).orderBy(asc(hotelMedia.displayOrder))).map(item => item.id);
+  const existingMediaIds = new Set(orderedMediaIds);
   const galleryIds = galleryCandidate.filter(id => existingMediaIds.has(id) && id !== liveHeroMediaId);
   if (galleryIds.length > MAX_WEBSITE_GALLERY_PHOTOS) throw new TRPCError({ code: "BAD_REQUEST", message: "A maximum of six gallery photos can be shown." });
   if (draft.heroMediaId) {
@@ -70,6 +80,13 @@ export async function publishHotelSiteConfig(db: D1ScopedDatabase, caller: D1Cal
   statements.push(db.$client.prepare("UPDATE hotel_media SET is_hero = 0 WHERE hotel_id = ? AND is_hero = 1 AND id != ?").bind(hotelId, liveHeroMediaId ?? ""));
   // is_published remains the public visibility flag: only the cover and staged gallery go live.
   statements.push(db.$client.prepare(`UPDATE hotel_media SET is_published = CASE WHEN id = ? OR id IN (${galleryIds.length ? galleryIds.map(() => "?").join(",") : "NULL"}) THEN 1 ELSE 0 END WHERE hotel_id = ?`).bind(liveHeroMediaId ?? "", ...galleryIds, hotelId));
+  // Guests see photos in display_order, so the staged order (cover, then gallery) becomes display_order;
+  // photos not on the website keep their relative order after them.
+  if (Array.isArray(draft.galleryMediaIds)) {
+    const front = liveHeroMediaId !== null && existingMediaIds.has(liveHeroMediaId) ? [liveHeroMediaId, ...galleryIds] : galleryIds;
+    const newOrder = [...front, ...orderedMediaIds.filter(id => !front.includes(id))];
+    newOrder.forEach((id, index) => statements.push(db.$client.prepare("UPDATE hotel_media SET display_order = ? WHERE hotel_id = ? AND id = ?").bind(index, hotelId, id)));
+  }
   for (const [id, position] of Object.entries(draft.mediaPositions)) statements.push(db.$client.prepare("UPDATE hotel_media SET object_position = ? WHERE hotel_id = ? AND id = ?").bind(position, hotelId, id));
   for (const [id, caption] of Object.entries(draft.mediaCaptions ?? {})) statements.push(db.$client.prepare("UPDATE hotel_media SET caption = ? WHERE hotel_id = ? AND id = ?").bind(caption, hotelId, id));
   await db.$client.batch(statements);
@@ -186,6 +203,60 @@ export async function setHotelMediaGallerySelection(db: D1ScopedDatabase, caller
   draft.galleryMediaIds = selected;
   await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now }).onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
   return { selected };
+}
+
+export async function reorderHotelMedia(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  input: { hotel_id: string; ids: string[] },
+  now = new Date(),
+) {
+  await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_profile", "site_config.reorder_media", now);
+  const hotelId = input.hotel_id;
+  const ids = input.ids;
+  const [config] = await db.select().from(hotelSiteConfig).where(eq(hotelSiteConfig.hotelId, hotelId)).limit(1);
+  const previousDraft = config?.draftJson ? JSON.parse(config.draftJson) : null;
+  const rows = await db.select({ id: hotelMedia.id, isHero: hotelMedia.isHero, isPublished: hotelMedia.isPublished }).from(hotelMedia)
+    .where(eq(hotelMedia.hotelId, hotelId)).orderBy(asc(hotelMedia.displayOrder));
+  const current = currentDraftPhotoOrder(rows, previousDraft);
+  // Order change only: the ids must be exactly the current draft cover and gallery, nothing added or removed.
+  const expected = new Set(current.ids);
+  if (ids.length !== current.ids.length || new Set(ids).size !== ids.length || ids.some(id => !expected.has(id))) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The photo order must contain exactly the cover and the gallery photos." });
+  }
+  // ASSUMPTION: with no cover in the draft, every id is a gallery photo and the cover stays unset.
+  const heroMediaId = current.hasCover ? ids[0]! : previousDraft?.heroMediaId ?? null;
+  const galleryMediaIds = current.hasCover ? ids.slice(1) : [...ids];
+  const draft = {
+    heroCopy: config?.heroCopy ?? DEFAULT_HOTEL_SITE_CONFIG_HERO_COPY,
+    accentColor: config?.accentColor ?? DEFAULT_HOTEL_SITE_CONFIG_ACCENT_COLOR,
+    visibleSections: config?.visibleSections ?? { hero: true, story: true, rooms: true, booking: true, location: true },
+    theme: config?.theme ?? null,
+    mediaPositions: {},
+    mediaCaptions: {},
+    ...(previousDraft ?? {}),
+    heroMediaId,
+    galleryMediaIds,
+  };
+  await db.insert(hotelSiteConfig).values({ hotelId, draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now })
+    .onConflictDoUpdate({ target: hotelSiteConfig.hotelId, set: { draftJson: JSON.stringify(draft), draftUpdatedAt: now, updatedAt: now } });
+  return { heroMediaId, galleryMediaIds };
+}
+
+// The cover and gallery the owner currently sees in the builder. Mirrors the client fallback in
+// useWebsiteBuilder.ts: without a staged gallery, the first six published non-cover photos.
+function currentDraftPhotoOrder(
+  rows: { id: string; isHero: boolean; isPublished: boolean }[],
+  draft: { heroMediaId?: string | null; galleryMediaIds?: unknown } | null,
+) {
+  const existing = new Set(rows.map(row => row.id));
+  const heroId = draft?.heroMediaId ?? rows.find(row => row.isHero)?.id ?? null;
+  const hasCover = heroId !== null && existing.has(heroId);
+  const staged = Array.isArray(draft?.galleryMediaIds)
+    ? (draft.galleryMediaIds as string[])
+    : rows.filter(row => row.isPublished && !row.isHero).slice(0, MAX_WEBSITE_GALLERY_PHOTOS).map(row => row.id);
+  const gallery = staged.filter(id => existing.has(id) && id !== heroId);
+  return { hasCover, ids: hasCover ? [heroId!, ...gallery] : gallery };
 }
 
 async function setHeroWithinHotel(db: D1ScopedDatabase, hotelId: string, mediaId: string | null) {

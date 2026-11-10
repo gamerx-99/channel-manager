@@ -36,12 +36,16 @@ const postgresPublicTables = [
   "support_access_log",
 ].sort();
 const d1OnlyTables = [
+  "booking_documents",
   "booking_nights",
   "coupon_redemptions",
   "coupons",
+  "hotel_invoice_settings",
   "hotel_purge_log",
   "hotel_subscriptions",
   "platform_admins",
+  "staff_shifts",
+  "staff_tasks",
   "subscription_admin_log",
   "subscription_payments",
   "support_accounts",

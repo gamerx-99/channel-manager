@@ -15,7 +15,7 @@ describe("Account (personal information) page contract", () => {
   it("is registered at /settings/account behind sign-in", () => {
     expect(app).toContain('<Route path="/settings/account">');
     expect(app).toContain("<PrivateRoute><Account /></PrivateRoute>");
-    expect(app).toContain('import Account from "./pages/Account";');
+    expect(app).toContain('const Account = React.lazy(() => import("./pages/Account"));');
   });
 
   it("is open to every signed-in account, including one with no hotel and any staff role", () => {

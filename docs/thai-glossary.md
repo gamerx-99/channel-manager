@@ -12,6 +12,21 @@ The reasoning behind it is in `docs/research/thai-language-study-2026-11-03.md`.
 5. When a Thai string is added or changed, write a "before → after" table in the handoff entry. Do not wait for the owner to confirm it (owner, 2026-11-05); the owner corrects wording afterwards.
 6. `client/src/lib/i18n/thaiGlossary.test.ts` fails the build on any banned term below. Add a new banned term there when you add it here.
 
+## Approved website theme brand names
+
+Use these brand names for themes in the Thai UI. The old theme names beginning with "สไตล์…" are no longer used as theme display names.
+
+| Theme ID | Thai UI | English UI |
+|---|---|---|
+| minimal-white | Pure - เพียว | Pure |
+| lanna-teak | Warm Wood - วอร์ม วู้ด | Warm Wood |
+| cafe-homestay | Café Slow - คาเฟ่ สโลว์ | Café Slow |
+| mountain-mist | Terra - เทอร์ร่า | Terra |
+| boutique-noir | Noir Luxe - นัวร์ ลักซ์ | Noir Luxe |
+| hostel-pop | Vivid Pop - วิวิด ป๊อป | Vivid Pop |
+| riverside-calm | Serene - เซรีน (ASSUMPTION) | Serene |
+| vintage-old-town | Postcard - โพสต์การ์ด (ASSUMPTION) | Postcard |
+
 ## Terms by context
 
 | English | Context | Use | Do not use |
@@ -28,3 +43,4 @@ The reasoning behind it is in `docs/research/thai-language-study-2026-11-03.md`.
 | Support team | hayhost staff who help the owner | ทีม hayhost | ทีมช่วยเหลือ (sounds generic) |
 | Dashboard | Back-office home | ภาพรวม | แผงควบคุม |
 | API | Anything the owner sees | Describe the result, e.g. รับจองจาก OTA โดยตรง | API |
+| Revenue date | Financial report / dashboard | วันที่ชำระเงิน | วันที่เช็คอิน (when describing revenue) |

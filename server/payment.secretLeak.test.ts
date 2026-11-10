@@ -8,11 +8,15 @@ const database = vi.hoisted(() => ({
   saveSlipOkSettings: vi.fn(),
   removeSlipOkKey: vi.fn(),
   savePromptPaySettings: vi.fn(),
+  getBookingRequestTimeout: vi.fn(),
+  saveBookingRequestTimeout: vi.fn(),
   getLatestPaymentSession: vi.fn(),
   createPaymentSession: vi.fn(),
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  confirmManualFullPayment: vi.fn(),
+  savePaymentSessionSlip: vi.fn(),
   logBookingStatusChange: vi.fn(),
   expireBookingIfPast: vi.fn(),
   claimBookingNights: vi.fn(),
@@ -45,7 +49,7 @@ const BOOKING_MANUAL = "55555555-5555-4555-8555-555555555555";
 const SESSION = "66666666-6666-4666-8666-666666666666";
 
 function fakeDb() {
-  const row = { id: BOOKING_VERIFY, hotelId: HOTEL, publicEnabled: true, status: "pending_payment", expiresAt: null, price: "120.00" };
+  const row = { id: BOOKING_VERIFY, hotelId: HOTEL, publicEnabled: true, status: "pending_payment", expiresAt: null, createdAt: new Date(), price: "120.00" };
   const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [row] };
   return {
     select: () => selectChain,
@@ -55,9 +59,11 @@ function fakeDb() {
 
 const context = (index: number) => ({
   db: fakeDb(),
+  media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) },
   req: {} as Request,
   res: {} as Response,
   clientIp: `secret-leak-test-${index}`,
+  billingEnv: { BILLING_CANDIDATE_ENABLED: "true" },
   user: {
     id: "user-a", email: "owner@example.test", name: "Owner",
     appMetadata: {}, userMetadata: {}, role: "hotel_owner", roles: ["hotel_owner"], memberships: [{ hotelId: HOTEL, role: "hotel_owner" }],
@@ -86,6 +92,8 @@ function assertNoSecrets(outcome: Awaited<ReturnType<typeof capture>>) {
 beforeEach(() => {
   vi.clearAllMocks();
   database.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
+  database.getBookingRequestTimeout.mockResolvedValue({ booking_request_timeout_hours: 24 });
+  database.saveBookingRequestTimeout.mockResolvedValue(undefined);
   database.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "SENTINEL_ENC_KEY", slipok_branch_id: "SENTINEL_BRANCH" });
   database.getSlipOkSettings.mockResolvedValue({ configured: true, enabled: true, branchId: "visible-branch-id" });
   database.getLatestPaymentSession.mockImplementation(async (_client: unknown, _caller: unknown, bookingId: string) => {
@@ -95,6 +103,8 @@ beforeEach(() => {
   database.createPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING_CREATE, hotel_id: HOTEL, status: "pending", amount: "120.00", qr_string: "promptpay", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   database.expireBookingIfPast.mockResolvedValue({ status: "pending_payment", expires_at: null });
   database.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  database.confirmManualFullPayment.mockResolvedValue(true);
+  database.savePaymentSessionSlip.mockResolvedValue(undefined);
   crypto.encryptSlipOkKey.mockResolvedValue("SENTINEL_ENC_KEY");
   crypto.hashSlipOkKey.mockResolvedValue("SENTINEL_HASH");
   crypto.decryptSlipOkKey.mockResolvedValue("SENTINEL_DECRYPTED_KEY");
@@ -111,6 +121,9 @@ describe("payment router secret response boundary", () => {
       manualVerify: { booking_id: BOOKING_MANUAL, hotel_id: HOTEL, approved: true, note: "reviewed" },
     };
     const slipokInputs: Record<string, unknown> = {
+      getBookingRequestTimeout: { hotel_id: HOTEL },
+      saveBookingRequestTimeout: { hotel_id: HOTEL, booking_request_timeout_hours: 24 },
+      getPromptPaySettings: { hotel_id: HOTEL },
       getSettings: { hotel_id: HOTEL },
       saveKey: { hotel_id: HOTEL, api_key: "SENTINEL_API_KEY", branch_id: "SENTINEL_BRANCH" },
       removeKey: { hotel_id: HOTEL },
@@ -138,6 +151,36 @@ describe("payment router secret response boundary", () => {
     expect(slip.verifySlipWithSlipOk).toHaveBeenCalled();
     expect(database.saveSlipOkSettings).toHaveBeenCalled();
     expect(database.getSlipOkSettings).toHaveBeenCalled();
+  });
+
+  it("returns a friendly domain error for an invalid stored ID without exposing it", async () => {
+    const { paymentRouter } = await import("./routers/paymentRouter");
+    database.getHotelPaymentConfig.mockResolvedValueOnce({ promptpay_id: "06151256579", payment_timeout_minutes: 15 });
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const caller = paymentRouter.createCaller(context(101) as never);
+      const outcome = await capture(() => caller.createSession({ booking_id: BOOKING_CREATE, hotel_id: HOTEL }));
+      expect(outcome).toHaveProperty("error");
+      expect(serialized(outcome)).toContain("This property cannot take PromptPay payments right now.");
+      expect(serialized(outcome)).not.toContain("06151256579");
+      expect(warning).toHaveBeenCalledWith("[payment.createSession] PromptPay unavailable for hotel", HOTEL);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it("uses the same friendly error when PromptPay has not been configured", async () => {
+    const { paymentRouter } = await import("./routers/paymentRouter");
+    database.getHotelPaymentConfig.mockResolvedValueOnce(null);
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const caller = paymentRouter.createCaller(context(102) as never);
+      await expect(caller.createSession({ booking_id: BOOKING_CREATE, hotel_id: HOTEL }))
+        .rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: "This property cannot take PromptPay payments right now. Please contact the property directly." });
+      expect(warning).toHaveBeenCalledWith("[payment.createSession] PromptPay unavailable for hotel", HOTEL);
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   it("does not expose decrypted credentials when SlipOK refuses the key", async () => {

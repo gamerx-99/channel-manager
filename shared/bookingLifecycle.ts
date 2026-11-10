@@ -14,7 +14,7 @@ export type BookingStatus =
 export const ALLOWED_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   held: ['pending_payment', 'expired', 'cancelled'],
   pending_payment: ['pending_verification', 'expired', 'cancelled'],
-  pending_verification: ['confirmed', 'payment_rejected'],
+  pending_verification: ['confirmed', 'payment_rejected', 'expired'],
   payment_rejected: ['pending_verification', 'expired'],
   confirmed: ['cancelled', 'checked_in'],
   checked_in: ['checked_out'],

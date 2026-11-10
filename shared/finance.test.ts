@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bangkokDate, bangkokMonth, dashboardFigures, isCancelledStatus, isRevenueStatus, toSatang } from "./finance";
+import { bangkokDate, bangkokMonth, dashboardFigures, isCancelledStatus, isRevenueStatus, revenueByThaiDay, toSatang } from "./finance";
 
 describe("revenue statuses", () => {
   it("counts confirmed, checked-in and checked-out bookings as revenue and nothing else", () => {
@@ -35,9 +35,34 @@ describe("money", () => {
   });
 });
 
+describe("revenueByThaiDay", () => {
+  it("uses the paid day, supports counter payments and skips unpaid bookings", () => {
+    expect([...revenueByThaiDay([
+      { status: "confirmed", amount: 1000, paidAt: "2026-11-05T04:00:00.000Z" }, // PromptPay, check-in day is irrelevant
+      { status: "checked_in", amount: 250, paidAt: "2026-11-05T08:00:00.000Z" }, // paid at counter
+      { status: "confirmed", amount: 900 }, // unpaid
+    ])]).toEqual([["2026-11-05", 1250]]);
+  });
+  it("removes a cancelled payment from its paid day and adds nothing on the refund day", () => {
+    expect([...revenueByThaiDay([{ status: "refunded", amount: 1000, paidAt: "2026-11-04T12:00:00.000Z" }])]).toEqual([]);
+  });
+  it("excludes every non-standing paid booking and keeps standing paid bookings", () => {
+    expect([...revenueByThaiDay([
+      ...["cancelled", "refund_pending", "refunded", "payment_rejected", "expired"].map(status => ({ status, amount: 1000, paidAt: "2026-11-04T12:00:00.000Z" })),
+      { status: "confirmed", amount: 250, paidAt: "2026-11-04T12:00:00.000Z" },
+    ])]).toEqual([["2026-11-04", 250]]);
+  });
+  it("uses Bangkok midnight for the day boundary", () => {
+    expect([...revenueByThaiDay([
+      { status: "confirmed", amount: 100, paidAt: "2026-11-04T16:59:59.000Z" },
+      { status: "confirmed", amount: 200, paidAt: "2026-11-04T17:00:00.000Z" },
+    ])]).toEqual([["2026-11-04", 100], ["2026-11-05", 200]]);
+  });
+});
+
 describe("dashboardFigures", () => {
   const now = new Date("2026-11-05T05:00:00.000Z"); // 12:00 on 2026-11-05 in Thailand
-  const booking = (status: string, check_in: string, check_out: string, price: string | number | null) => ({ status, check_in, check_out, price });
+  const booking = (status: string, check_in: string, check_out: string, price: string | number | null) => ({ status, check_in, check_out, price, payment_status: isRevenueStatus(status) ? "verified" : "unpaid", paid_at: isRevenueStatus(status) ? `${check_in}T05:00:00.000Z` : null });
 
   it("keeps a guest in today's figures after check-in and after check-out (regression: they vanished once the status moved on)", () => {
     const figures = dashboardFigures([

@@ -41,17 +41,17 @@ export function PreviewSection({
   const currentHeroCopy = draft.heroCopy || config.heroCopy;
 
   return (
-    <Card className="overflow-hidden border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-      <CardHeader className="border-b border-[#edf2ee] pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg text-[#263b31]">
+    <Card className="overflow-hidden border-[var(--rule)] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
+      <CardHeader className="border-b border-[var(--rule)] pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg text-[var(--ink)]">
           <Eye size={18} aria-hidden="true" /> {t("websiteBuilder.publicPreviewTitle")}
         </CardTitle>
         <CardDescription>{t("websiteBuilder.publicPreviewDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="pt-5">
-        <div className="overflow-hidden rounded-xl border border-[#e6eee9] bg-white">
+        <div className="overflow-hidden rounded-xl border border-[var(--rule)] bg-white">
           {sections.hero ? (
-            <div className="relative h-[220px] overflow-hidden bg-[#f6faf7]">
+            <div className="relative h-[220px] overflow-hidden bg-[var(--paper)]">
               {heroImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -61,7 +61,7 @@ export function PreviewSection({
                   style={heroObjectPosition ? ({ "--wb-object-position": heroObjectPosition } as CSSProperties) : undefined}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-[#7a8c83]">
+                <div className="flex h-full w-full items-center justify-center text-xs text-[var(--ink-muted)]">
                   {t("websiteBuilder.noHeroImagePreview")}
                 </div>
               )}
@@ -81,30 +81,30 @@ export function PreviewSection({
               </div>
             </div>
           ) : (
-            <div className="px-4 py-3 text-xs text-[#7a8c83]">{t("websiteBuilder.heroSectionHidden")}</div>
+            <div className="px-4 py-3 text-xs text-[var(--ink-muted)]">{t("websiteBuilder.heroSectionHidden")}</div>
           )}
 
           <div className="grid gap-3 p-4 sm:grid-cols-2">
             {sections.story ? (
-              <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.theHotel")}</p>
-                <p className="mt-1 text-xs leading-5 text-[#6c7e75]">
+              <div className="rounded-lg border border-[var(--rule)] bg-[var(--white)] p-3">
+                <p className="text-xs font-semibold text-[var(--ink)]">{t("websiteBuilder.theHotel")}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">
                   {t("websiteBuilder.stayAt", { hotelName: name })}
                 </p>
               </div>
             ) : null}
             {sections.rooms ? (
-              <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.rooms")}</p>
-                <p className="mt-1 text-xs leading-5 text-[#6c7e75]">
+              <div className="rounded-lg border border-[var(--rule)] bg-[var(--white)] p-3">
+                <p className="text-xs font-semibold text-[var(--ink)]">{t("websiteBuilder.rooms")}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">
                   {t("websiteBuilder.roomsPreviewHint", { count: roomTypesCount })}
                 </p>
               </div>
             ) : null}
             {sections.booking ? (
-              <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.yourStay")}</p>
-                <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
+              <div className="rounded-lg border border-[var(--rule)] bg-[var(--white)] p-3">
+                <p className="text-xs font-semibold text-[var(--ink)]">{t("websiteBuilder.yourStay")}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">{t("websiteBuilder.bookingCardPreviewHint")}</p>
                 <span
                   className="mt-2 inline-flex rounded-md px-2.5 py-1 text-xs font-semibold wb-preview-accent"
                   style={{
@@ -117,9 +117,9 @@ export function PreviewSection({
               </div>
             ) : null}
             {sections.location ? (
-              <div className="rounded-lg border border-[#e6eee9] bg-[#fbfdfb] p-3">
-                <p className="text-xs font-semibold text-[#263b31]">{t("websiteBuilder.location")}</p>
-                <p className="mt-1 text-xs leading-5 text-[#6c7e75]">{hotelAddress ?? t("websiteBuilder.addressFallback")}</p>
+              <div className="rounded-lg border border-[var(--rule)] bg-[var(--white)] p-3">
+                <p className="text-xs font-semibold text-[var(--ink)]">{t("websiteBuilder.location")}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--ink-muted)]">{hotelAddress ?? t("websiteBuilder.addressFallback")}</p>
               </div>
             ) : null}
             {!Object.values(sections).some(Boolean) && (
@@ -129,7 +129,7 @@ export function PreviewSection({
             )}
           </div>
         </div>
-        <p className="mt-3 text-xs leading-5 text-[#667a70]">
+        <p className="mt-3 text-xs leading-5 text-[var(--ink-soft)]">
           {t("websiteBuilder.publicHotelFallbackNote")}
         </p>
       </CardContent>

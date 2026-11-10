@@ -11,6 +11,8 @@ export type BookingStepPaymentProps = {
   mode: "summary" | "payment";
   t: Page["t"];
   hotelName: string;
+  hotelPhone?: string | null;
+  hotelFacebookUrl?: string | null;
   heldBooking: Booking["heldBooking"];
   checkIn: Booking["checkIn"];
   checkOut: Booking["checkOut"];
@@ -108,6 +110,8 @@ export default function BookingStepPayment(props: BookingStepPaymentProps) {
         <PaymentQR
           bookingId={heldBooking.bookingId}
           hotelId={heldBooking.hotelId}
+          hotelPhone={props.hotelPhone}
+          hotelFacebookUrl={props.hotelFacebookUrl}
           onSuccess={() => setPaymentSuccess(true)}
           onExpired={() => {
             setWizardError(t("publicHotel.holdExpiredRestart"));

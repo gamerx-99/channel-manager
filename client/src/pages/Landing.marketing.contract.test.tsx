@@ -33,6 +33,17 @@ describe("landing marketing contract", () => {
     expect(pricing).not.toContain("ไม่จำกัดจำนวนห้อง");
     expect(html).not.toMatch(/\b\d+\s*(?:นาที|minutes?)\b/i);
   });
+  it("shows the real theme screenshot inside the browser frame", () => {
+    const landing = readFileSync(resolve(process.cwd(), "client/src/pages/Landing.tsx"), "utf8");
+    const staticHtml = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
+    for (const source of [landing, staticHtml]) {
+      expect(source).toContain("/landing/hero-theme-preview.jpg");
+      expect(source).not.toContain("hero-lanna-roof");
+      expect(source).not.toContain("landing-booking-card");
+    }
+    expect(html).toMatch(/class="landing-site-preview"><img[^>]*src="\/landing\/hero-theme-preview\.jpg"[^>]*width="1600"[^>]*height="800"/);
+    expect(html).toContain('class="landing-admin-preview"');
+  });
   it("computes the displayed footer year from the current date", () => {
     expect(html).toContain(`© ${new Date().getFullYear()} hayhost`);
     expect(readFileSync(resolve(process.cwd(), "client/src/pages/Landing.tsx"), "utf8")).toContain("new Date().getFullYear()");

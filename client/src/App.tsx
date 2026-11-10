@@ -8,46 +8,57 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Dashboard from "./pages/Home";
-import Financials from "./pages/Financials";
-import Housekeeping from "./pages/Housekeeping";
-import Communications from "./pages/Communications";
-import Login from "./pages/Login";
-import MfaEnroll from "./pages/MfaEnroll";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import HotelOwnerSignup from "./pages/HotelOwnerSignup";
-import Landing from "./pages/Landing";
-import Signup from "./pages/Signup";
-import AccountOnboarding from "./pages/AccountOnboarding";
-import AcceptInvite from "./pages/AcceptInvite";
-import Hotels from "./pages/Hotels";
-import HotelDetail from "./pages/HotelDetail";
-import Bookings from "./pages/Bookings";
-import OneCalendar from "./pages/OneCalendar";
+const Dashboard = React.lazy(() => import("./pages/Home"));
+const Financials = React.lazy(() => import("./pages/Financials"));
+const BookingsReport = React.lazy(() => import("./pages/BookingsReport"));
+const Housekeeping = React.lazy(() => import("./pages/Housekeeping"));
+const StaffShifts = React.lazy(() => import("./pages/StaffShifts"));
+const StaffTasks = React.lazy(() => import("./pages/StaffTasks"));
+const Communications = React.lazy(() => import("./pages/Communications"));
+const Login = React.lazy(() => import("./pages/Login"));
+const MfaEnroll = React.lazy(() => import("./pages/MfaEnroll"));
+const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
+const HotelOwnerSignup = React.lazy(() => import("./pages/HotelOwnerSignup"));
+const Landing = React.lazy(() => import("./pages/Landing"));
+const Signup = React.lazy(() => import("./pages/Signup"));
+const AccountOnboarding = React.lazy(() => import("./pages/AccountOnboarding"));
+const AcceptInvite = React.lazy(() => import("./pages/AcceptInvite"));
+const Hotels = React.lazy(() => import("./pages/Hotels"));
+const HotelDetail = React.lazy(() => import("./pages/HotelDetail"));
+const HotelFinanceSettings = React.lazy(() => import("./pages/HotelFinanceSettings"));
+const Bookings = React.lazy(() => import("./pages/Bookings"));
+const OneCalendar = React.lazy(() => import("./pages/OneCalendar"));
 import { useHotel } from "./contexts/HotelContext";
-import PublicHotel from "./pages/PublicHotel";
-import AdminUsers from "./pages/AdminUsers";
-import SecuritySettings from "./pages/SecuritySettings";
-import Account from "./pages/Account";
+const PublicHotel = React.lazy(() => import("./pages/PublicHotel"));
+const PublicBooking = React.lazy(() => import("./pages/PublicBooking"));
+const AdminUsers = React.lazy(() => import("./pages/AdminUsers"));
+const SecuritySettings = React.lazy(() => import("./pages/SecuritySettings"));
+const Account = React.lazy(() => import("./pages/Account"));
 import HotelClosure from "./pages/HotelClosure";
-import SupportAccess from "./pages/SupportAccess";
-import PlatformOverview from "./pages/PlatformOverview";
-import PlatformCrm from "./pages/PlatformCrm";
-import PlatformCoupons from "./pages/PlatformCoupons";
-import SubscriptionPlan from "./pages/SubscriptionPlan";
-import HotelStaff from "./pages/HotelStaff";
-import HotelServices from "./pages/HotelServices";
-import OtaSync from "./pages/OtaSync";
+const SupportAccess = React.lazy(() => import("./pages/SupportAccess"));
+const PlatformOverview = React.lazy(() => import("./pages/PlatformOverview"));
+const PlatformCrm = React.lazy(() => import("./pages/PlatformCrm"));
+const PlatformCoupons = React.lazy(() => import("./pages/PlatformCoupons"));
+const SubscriptionPlan = React.lazy(() => import("./pages/SubscriptionPlan"));
+const HotelStaff = React.lazy(() => import("./pages/HotelStaff"));
+const HotelProfile = React.lazy(() => import("./pages/HotelProfile"));
+const HotelServices = React.lazy(() => import("./pages/HotelServices"));
+const OtaSync = React.lazy(() => import("./pages/OtaSync"));
 import { otaConnectivityEnabled } from "@shared/otaAvailability";
-import WebsiteBuilder from "./pages/WebsiteBuilder";
-import NotFound from "./pages/NotFound";
+const WebsiteBuilder = React.lazy(() => import("./pages/WebsiteBuilder"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 import { LanguageProvider, pickInitialLanguage } from "./contexts/LanguageContext";
 import { communicationsEnabled, otaSyncEnabled } from "./lib/featureFlags";
 import { useTranslation } from "./lib/i18n";
-import LegalPage from "./pages/LegalPage";
-import GettingStarted from "./pages/GettingStarted";
-import GuestBooking from "./pages/GuestBooking";
+const LegalPage = React.lazy(() => import("./pages/LegalPage"));
+const GettingStarted = React.lazy(() => import("./pages/GettingStarted"));
+const GuestBooking = React.lazy(() => import("./pages/GuestBooking"));
+
+function RouteLoading() {
+  const { t } = useTranslation();
+  return <main className="auth-loading" role="status" aria-live="polite">{t("common.loading")}</main>;
+}
 
 function PricingRedirect() {
   const { selectedHotelId } = useHotel();
@@ -57,6 +68,7 @@ function PricingRedirect() {
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
+    <React.Suspense fallback={<RouteLoading />}>
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/mfa/enroll" component={MfaEnroll} />
@@ -74,13 +86,16 @@ function Router() {
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>
       </Route>
+      <Route path="/reports/bookings"><PrivateRoute><BookingsReport /></PrivateRoute></Route>
       <Route path="/hotels/:id/billing"><PrivateRoute><SubscriptionPlan /></PrivateRoute></Route>
       <Route path="/dashboard/pricing">
         <PrivateRoute><PricingRedirect /></PrivateRoute>
       </Route>
       <Route path="/housekeeping">
-        <PrivateRoute><Housekeeping /></PrivateRoute>
+        <Redirect to="/staff-shifts" />
       </Route>
+      <Route path="/staff-shifts"><PrivateRoute><StaffShifts /></PrivateRoute></Route>
+      <Route path="/staff-tasks"><PrivateRoute><StaffTasks /></PrivateRoute></Route>
       {communicationsEnabled && <Route path="/communications">
         <PrivateRoute><Communications /></PrivateRoute>
       </Route>}
@@ -124,6 +139,15 @@ function Router() {
       <Route path="/hotels/:id/services">
         {(params) => <PrivateRoute><HotelServices id={params.id} /></PrivateRoute>}
       </Route>
+      <Route path="/hotels/:id/profile">
+        {(params) => <PrivateRoute><HotelProfile id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/hotels/:id/settings/general">
+        {(params) => <PrivateRoute><HotelProfile id={params.id} /></PrivateRoute>}
+      </Route>
+      <Route path="/hotels/:id/settings/finance">
+        {(params) => <PrivateRoute><HotelFinanceSettings id={params.id} /></PrivateRoute>}
+      </Route>
       <Route path="/hotels/:id">
         {(params) => <PrivateRoute><HotelDetail id={params.id} /></PrivateRoute>}
       </Route>
@@ -131,12 +155,16 @@ function Router() {
         <PrivateRoute><WebsiteBuilder /></PrivateRoute>
       </Route>
       <Route path="/booking/:id" component={GuestBooking} />
+      <Route path="/:slug/book">
+        {(params) => <PublicBooking slug={params.slug} />}
+      </Route>
       <Route path="/:slug">
         {(params) => <PublicHotel slug={params.slug} />}
       </Route>
       <Route path="/" component={Landing} />
       <Route component={NotFound} />
     </Switch>
+    </React.Suspense>
   );
 }
 

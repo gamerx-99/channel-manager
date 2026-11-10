@@ -12,16 +12,21 @@ Resolved` section (don't delete) once the human answers, with the
 answer noted.
 
 ## Open
+## Reports (2026-11-07)
+- [ ] In created-date mode, should nights sold and occupancy use the full stay of bookings created in the period? `ASSUMPTION:` yes; the daily table places those nights on the booking's Thai creation day. Raised 2026-11-07.
+- [ ] Should maintenance rooms reduce historical occupancy capacity by each affected night? `ASSUMPTION:` current maintenance status applies across the selected period because no dated maintenance history exists. Raised 2026-11-07.
+- [ ] Should the bookings table amount show the whole booking or only the nights in the period, and what should cancelled rows show? `ASSUMPTION:` the whole booking amount for standing rows and zero for cancelled rows; room revenue breakdowns allocate revenue across stay nights. These money fields appear only when the caller passes the financial report's `property.view_financials` check for the selected hotel. Raised 2026-11-07; access clarification 2026-11-07.
+## Staff daily tasks (2026-11-06)
+- [ ] `ASSUMPTION:` undone tasks from earlier Thai dates remain visible to the assignee until completed. Raised 2026-11-06; implemented in `shared/staffTaskVisibility.ts`.
 ## Spec 15 — invoicing and tax (2026-11-05)
 - [ ] Which legal entity issues each document: the hotel, hayhost, or both for different charges? Who is responsible for numbering and record retention?
 - [ ] Is each hotel VAT-registered, and what evidence or admin approval is required before enabling tax invoices? Which tax invoice format and issue timing apply?
 - [ ] What hotel and buyer fields, branch information, language, signature and logo must appear on each document? Can staff override prefilled buyer data before issue?
 - [ ] Does the owner want invoice and quotation numbering per hotel and per year? What correction, cancellation, credit/debit note and partial-payment flow is required?
-- [ ] For VAT-inclusive and VAT-exclusive prices, which rate, rounding method, effective-date behaviour, discounts and service-charge treatment does the accountant approve?
-- [ ] For company guests, when does withholding tax apply, which rate/category and certificate details are needed, and how are deposits or partial payments handled?
 - [ ] Should a generated A4 PDF be a printable document only, or should the hotel enrol in a Revenue Department electronic tax invoice service? If electronic, which approved method and provider?
 - [ ] What monthly CSV/Excel columns and date basis (issue date, stay date or payment date) does the accountant need? How should voids, refunds and adjustments appear?
 - [ ] Which hotel roles may draft, issue, void, view and export documents containing guest/company tax details? What retention and deletion periods apply?
+- [ ] Built 2026-11-06 on `feat/invoicing` (owner: "ทำตามพื้นฐานของระบบ"; the hotel is the issuer). `ASSUMPTION:` one running number per hotel and type (RC-000001, TX-000001), never reset each year; an issued document cannot be voided or corrected yet; one line per booking (room stay, booking total); only paid bookings that still stand get a document.
 
 - [ ] Website builder (2026-11-04): confirm the safeguards chosen for draft/publish. `ASSUMPTION:` users with `property.manage_profile` may discard a saved draft after confirmation; uploads are stored immediately but hidden from public output until selected as hero and published; hero selection and image focal points are staged until publish; deleting the currently published hero is blocked; the protected builder's local preview is visible only to users with `property.manage_profile` and is never public. Draft preview uses the existing in-page renderer and does not emulate every theme exactly. Raised 2026-11-04.
 - [ ] ASSUMPTION (2026-11-04): only the hotel's `hotel_owner` may manage or pay its subscription; super admins use CRM billing tools and cannot purchase on behalf of a hotel. Confirm if platform staff should be able to make a payment for a customer.
@@ -227,3 +232,12 @@ answer noted.
 - [x] (answered 2026-11-05: yes, a cap per night, counted including rooms already booked) Partial caps (sell at most N rooms of a type) as well as open/closed? ASSUMPTION: both.
 - [x] (answered 2026-11-05: hayhost sets no staff rule; notice and confirm only, the hotel controls staff permissions) Do staff bookings respect stop sell? ASSUMPTION: warn and allow; guests cannot book a stopped night.
 - [ ] Old `availability` rows on production: confirm each with its hotel or delete them before enforcement. Needs the two read-only audit queries in `specs/20-stop-sell-and-allotment.md` run by someone with production access (agents were blocked from reading production on 2026-11-05).
+
+## PromptPay ID validation (2026-11-07)
+
+- [ ] ASSUMPTION: accept any 13-digit National/Tax ID without a checksum, preserving the existing QR generator behaviour. There is no shared Thai ID checksum helper. Confirm whether a checksum should be required before changing this rule.
+- [ ] ASSUMPTION: reject `066615125657` as a mixed local/international prefix; accept `0066615125657` as the international form of `0615125657`.
+
+## Guest mail after "confirm details" (2026-11-11)
+
+- [ ] ASSUMPTION: the durable `booking_received` mail (link `/booking/<id>?hotel=<hotel>`) replaces production's ad hoc "return to payment" mail (link `/<slug>/book?booking_id=...&hotel_id=...`), so the guest gets one mail. Confirm which link the guest should receive.

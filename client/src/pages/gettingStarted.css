@@ -1,1 +1,5 @@
 .getting-started>.panel{margin-bottom:18px}.getting-started-shot{display:grid;place-items:center;width:100%;max-width:1000px;min-height:220px;background:#eee8df;border:1px dashed #9c8d7d;border-radius:12px;padding:20px;text-align:center;color:#62574d}.getting-started li{margin:.5rem 0}.getting-started a{color:#75402d}
+.getting-started > .panel { padding-bottom: 24px; }
+.getting-started > .panel > p { margin: 0 24px 12px; }
+.getting-started > .panel > ul { margin: 0 24px; padding-left: 24px; }
+@media (max-width: 640px) { .getting-started > .panel { padding-bottom: 16px; } .getting-started > .panel > p, .getting-started > .panel > ul { margin-left: 16px; margin-right: 16px; } }

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+
+<html class="light" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=390, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Rim Ping Riverside (ริมปิง ริเวอร์ไซด์)</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&amp;family=Noto+Serif:wght@500;600;700&amp;family=Pridi:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-primary-container": "#b0f0f4",
+            "surface-dim": "#cadde6",
+            "on-surface": "#0c1e24",
+            "surface-tint": "#26676b",
+            "on-error": "#ffffff",
+            "background": "#f3faff",
+            "on-surface-variant": "#3f4849",
+            "on-secondary-fixed-variant": "#224e4b",
+            "on-tertiary-fixed-variant": "#4b463c",
+            "inverse-surface": "#22333a",
+            "primary-container": "#2f6f73",
+            "on-secondary-fixed": "#00201e",
+            "tertiary-container": "#6b655a",
+            "surface-container-low": "#e5f6ff",
+            "on-primary-fixed-variant": "#004f53",
+            "primary": "#0d575a",
+            "surface-container-high": "#d8ebf4",
+            "inverse-primary": "#93d1d5",
+            "tertiary": "#524d43",
+            "surface-variant": "#d3e5ef",
+            "tertiary-fixed-dim": "#cec5b8",
+            "surface": "#f3faff",
+            "tertiary-fixed": "#eae1d3",
+            "surface-container-highest": "#d3e5ef",
+            "secondary-fixed-dim": "#a2cfcb",
+            "inverse-on-surface": "#e1f4fd",
+            "outline": "#6f7979",
+            "error": "#ba1a1a",
+            "secondary": "#3b6663",
+            "on-tertiary-container": "#ece3d5",
+            "surface-bright": "#f3faff",
+            "error-container": "#ffdad6",
+            "outline-variant": "#bfc8c9",
+            "on-background": "#0c1e24",
+            "on-tertiary-fixed": "#1f1b13",
+            "on-primary-fixed": "#002022",
+            "secondary-container": "#bbe8e4",
+            "surface-container": "#def1fa",
+            "on-secondary-container": "#3f6a67",
+            "on-tertiary": "#ffffff",
+            "primary-fixed": "#aeeef2",
+            "on-secondary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-primary": "#ffffff",
+            "secondary-fixed": "#beebe7",
+            "on-error-container": "#93000a",
+            "primary-fixed-dim": "#93d1d5"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2.5rem",
+            "space-md": "1rem",
+            "margin-mobile": "1rem",
+            "gutter-mobile": "0.75rem",
+            "margin": "2rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem"
+          },
+          fontFamily: {
+            "numeric-table": ["Noto Sans"],
+            "headline-lg-mobile": ["Noto Serif"],
+            "display-lg-mobile": ["Noto Serif"],
+            "body-sm": ["Noto Sans"],
+            "label-sm": ["Noto Sans"],
+            "body-md": ["Noto Sans"],
+            "title-sm": ["Noto Sans"],
+            "body-lg": ["Noto Sans"],
+            "display-lg": ["Noto Serif"],
+            "title-md": ["Noto Sans"],
+            "headline-lg": ["Noto Serif"],
+            "headline-sm": ["Noto Serif"],
+            "headline-md": ["Noto Serif"],
+            "label-md": ["Noto Sans"]
+          },
+          fontSize: {
+            "numeric-table": ["13px", { lineHeight: "18px", fontWeight: "500" }],
+            "headline-lg-mobile": ["26px", { lineHeight: "34px", fontWeight: "600" }],
+            "display-lg-mobile": ["34px", { lineHeight: "42px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "body-sm": ["12px", { lineHeight: "18px", fontWeight: "400" }],
+            "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.03em", fontWeight: "500" }],
+            "body-md": ["14px", { lineHeight: "22px", fontWeight: "400" }],
+            "title-sm": ["14px", { lineHeight: "20px", fontWeight: "600" }],
+            "body-lg": ["16px", { lineHeight: "26px", fontWeight: "400" }],
+            "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "title-md": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+            "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+            "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }],
+            "headline-md": ["24px", { lineHeight: "32px", fontWeight: "500" }],
+            "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      max-width: 390px;
+      margin: 0 auto;
+      background-color: #f3faff;
+      color: #0c1e24;
+      font-family: 'Noto Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .water-reflection-mask {
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+    }
+    .horizontal-scroll-touch {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .horizontal-scroll-touch::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="relative min-h-screen bg-surface pb-28">
+<!-- Shared TopNavBar Execution -->
+<header class="sticky top-0 w-full z-40 bg-surface/90 backdrop-blur-md shadow-[0_4px_20px_-4px_rgba(47,111,115,0.08)]">
+<div class="flex justify-between items-center px-4 h-16 max-w-7xl mx-auto">
+<!-- Text Logo -->
+<a class="text-title-md font-headline-sm font-semibold text-primary tracking-tight" href="#hero">
+        Rim Ping Riverside
+      </a>
+<!-- Actions -->
+<div class="flex items-center gap-2">
+<button class="text-label-md font-label-md px-2 py-1 text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" type="button">
+          TH | EN
+        </button>
+<a class="bg-primary text-on-primary text-label-md font-label-md font-medium px-3.5 py-1.5 rounded-xl shadow-sm hover:text-primary transition-colors duration-200 active:scale-[0.98]" href="#booking-card">
+          Book now
+        </a>
+</div>
+</div>
+</header>
+<!-- Mobile Hero Section -->
+<section class="relative w-full" id="hero">
+<!-- Hero Photo with Water Reflection Aesthetic -->
+<div class="relative w-full h-[290px] overflow-hidden">
+<img class="w-full h-full object-cover water-reflection-mask" data-alt="A tranquil morning scenic view of the Ping River in Pa Sang Lamphun Thailand. The smooth water surface reflects calm morning mist, lush green riparian foliage, and river stones in soft aquatic teal tones of deep teal and pale aqua. The atmosphere evokes artisanal tranquility, riparian serenity, and crisp dawn light with organic minimalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4rCk4BLqLxWj4cA8rqZyBUgdNKK5YBrecq_Jr-C3boTEyVbbENSlWsBxV-jiv64umHxgc6ZU6zX5BiMI2XRDMi1C4gsSO1IoI8pBZQP8VZpT9kBLFFR4whypojVmczYmXoCJ3iYDtKx7fRFQ9aYlYBon_mOejuHuKA0NteB3NYznL5Grm1p0_hwHw-Bd2yCXNivan--zYYsEISCyqTA2W5z6NtXiKNXr-VbvhONs"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-black/25 pointer-events-none"></div>
+<!-- Ambient Title Banner inside Hero -->
+<div class="absolute top-4 left-4 right-4 text-surface-container-lowest drop-shadow-sm">
+<span class="inline-block px-2.5 py-0.5 rounded-full bg-primary/80 backdrop-blur-sm text-surface-bright text-label-sm font-label-sm mb-1.5">
+          Pa Sang, Lamphun
+        </span>
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile leading-tight text-white drop-shadow">
+          Rim Ping Riverside
+        </h1>
+<p class="text-body-sm font-body-sm text-surface-container-low font-medium tracking-wide">
+          ริมปิง ริเวอร์ไซด์
+        </p>
+</div>
+</div>
+<!-- Overlapping Floating Booking Widget -->
+<div class="px-4 -mt-14 relative z-10" id="booking-card">
+<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-[0px_8px_24px_-4px_rgba(35,52,59,0.06),0px_4px_8px_-2px_rgba(47,111,115,0.04)] border border-secondary-container/40">
+<!-- Header with Thai PromptPay Direct Badge -->
+<div class="flex items-center justify-between pb-3.5 border-b border-surface-variant/40">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+<span class="text-title-sm font-title-sm text-primary">Direct Reservation</span>
+</div>
+<!-- Thai PromptPay QR badge -->
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container/30 border border-secondary-container text-primary text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[13px] text-primary">qr_code_2</span>
+<span>PromptPay Direct</span>
+</div>
+</div>
+<form class="space-y-3 mt-3.5" onsubmit="event.preventDefault();">
+<!-- Date Fields Grid -->
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-low/60 p-2.5 rounded-lg border border-outline-variant/60 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-0.5">Check-in</label>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary">login</span>
+<input class="w-full bg-transparent p-0 border-0 text-title-sm font-title-sm text-on-surface focus:ring-0 cursor-pointer" readonly="" type="text" value="18 Oct 2024"/>
+</div>
+</div>
+<div class="bg-surface-container-low/60 p-2.5 rounded-lg border border-outline-variant/60 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-0.5">Check-out</label>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary">logout</span>
+<input class="w-full bg-transparent p-0 border-0 text-title-sm font-title-sm text-on-surface focus:ring-0 cursor-pointer" readonly="" type="text" value="20 Oct 2024"/>
+</div>
+</div>
+</div>
+<!-- Guests Grid -->
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-low/60 p-2.5 rounded-lg border border-outline-variant/60 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-0.5">Adults</label>
+<div class="flex items-center justify-between">
+<span class="text-body-md font-body-md text-on-surface">2 Adults</span>
+<span class="material-symbols-outlined text-[16px] text-outline">unfold_more</span>
+</div>
+</div>
+<div class="bg-surface-container-low/60 p-2.5 rounded-lg border border-outline-variant/60 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-0.5">Children</label>
+<div class="flex items-center justify-between">
+<span class="text-body-md font-body-md text-on-surface">0 Children</span>
+<span class="material-symbols-outlined text-[16px] text-outline">unfold_more</span>
+</div>
+</div>
+</div>
+<!-- Check Availability Button -->
+<button class="w-full mt-2 bg-primary-container hover:bg-primary text-surface-container-lowest font-medium text-title-sm font-title-sm py-3 px-4 rounded-xl shadow-[0_2px_6px_rgba(47,111,115,0.20)] active:scale-[0.99] transition-all flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+<span>Check availability</span>
+</button>
+</form>
+</div>
+</div>
+</section>
+<!-- About Section: Sand-coloured band with subtle wave dividers -->
+<section class="mt-8 relative overflow-hidden">
+<!-- Top Wave Divider SVG -->
+<div class="w-full h-[18px] text-tertiary-fixed overflow-hidden leading-none">
+<svg class="w-full h-full block" fill="currentColor" preserveaspectratio="none" viewbox="0 0 390 18">
+<path d="M0,6 C78,14 156,0 234,8 C312,16 351,4 390,6 L390,18 L0,18 Z"></path>
+</svg>
+</div>
+<!-- Centered Sand Band -->
+<div class="bg-tertiary-fixed px-6 py-6 text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest/80 text-primary mb-3">
+<span class="material-symbols-outlined text-[14px]">water</span>
+<span class="text-label-sm font-label-sm font-semibold tracking-wider">LAMPHUN SANCTUARY</span>
+</div>
+<p class="text-headline-sm font-headline-sm text-on-tertiary-fixed leading-relaxed">
+        “Seven rooms with balconies right on the Ping River. Breakfast on the deck, kayaks at sunset.”
+      </p>
+<div class="flex items-center justify-center gap-2 mt-4 text-tertiary text-body-sm font-body-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">pin_drop</span>
+<span>Pa Sang, Lamphun, Thailand</span>
+</div>
+</div>
+<!-- Bottom Wave Divider SVG -->
+<div class="w-full h-[18px] text-tertiary-fixed overflow-hidden leading-none rotate-180">
+<svg class="w-full h-full block" fill="currentColor" preserveaspectratio="none" viewbox="0 0 390 18">
+<path d="M0,6 C78,14 156,0 234,8 C312,16 351,4 390,6 L390,18 L0,18 Z"></path>
+</svg>
+</div>
+</section>
+<!-- Rooms Section -->
+<section class="px-4 mt-8 space-y-4" id="rooms">
+<div class="flex items-center justify-between mb-2">
+<div>
+<h2 class="text-headline-sm font-headline-sm text-primary">Rooms &amp; Suites</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Intimate riverside sanctuary accommodation</p>
+</div>
+<span class="text-label-sm font-label-sm px-2.5 py-1 rounded-full bg-surface-container text-primary font-medium">
+        7 Keys
+      </span>
+</div>
+<!-- Room Card 1: Ping Riverfront Balcony Suite -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high shadow-sm relative">
+<!-- 3px Left Teal Ribbon Accent -->
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-primary-container z-10"></div>
+<!-- Photo with reflection fade -->
+<div class="relative h-44 w-full overflow-hidden">
+<img class="w-full h-full object-cover water-reflection-mask" data-alt="A tranquil riverfront hotel suite bedroom at Rim Ping Riverside in Pa Sang Lamphun. Featuring a private wooden balcony overlooking the serene Ping river, natural teak wood furniture, soft white linen bedding, and morning sun filtration in aqua and teal undertones with minimalist Northern Thai artisanal styling." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW17uDaq6wqNzbOx-JuK0_VoQ43_B3rygegiLRTe5RMJzUNaE0idW2xUhbxeP43t1eWExuQo5iTHYjM6rOy4lX-XmNGYm8IgvOd1jEEhbCufz7h23NpjrgWtfLa9eAoSjRlB7US9XCOYB3RCBMrhHBAhrej3QI2zkVo0TxDSZwckOnfDt5VBpoYycjDdzRZm5h26KbLKd08aJvqAaSbixY-lzlfcgrfwzSejEH5Iw"/>
+<div class="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full text-primary text-label-sm font-label-sm font-semibold flex items-center gap-1 border border-secondary-fixed">
+<span class="material-symbols-outlined text-[13px] text-primary">waves</span>
+<span>River view</span>
+</div>
+</div>
+<!-- Room Content -->
+<div class="p-4 pl-5">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-title-md font-headline-sm text-on-surface font-semibold">Ping Riverfront Balcony Suite</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">group</span>
+<span>Max 2 Guests · 1 King Bed · Private Deck</span>
+</p>
+</div>
+</div>
+<div class="my-3 border-t border-surface-variant/40"></div>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline block">Direct Rate</span>
+<span class="text-headline-sm font-numeric-table font-semibold text-primary">฿2,200</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/ night</span>
+</div>
+<button class="bg-primary hover:bg-primary-container text-surface-container-lowest px-4 py-2 rounded-xl text-label-md font-label-md font-medium shadow-sm transition-all active:scale-[0.98]" type="button">
+            Select
+          </button>
+</div>
+</div>
+</div>
+<!-- Room Card 2: Riverside Deluxe King -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high shadow-sm relative">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-primary-container z-10"></div>
+<div class="relative h-44 w-full overflow-hidden">
+<img class="w-full h-full object-cover water-reflection-mask" data-alt="A modern minimalist king bedroom with natural clay textured walls and wide glass sliding doors leading to a Ping riverside terrace. The setting includes warm sand wood accents, river-smoothed stone decorative elements, soft teal cushions, and gentle daylight reflected from water ripples in Pa Sang Lamphun." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp1PS1qg60FX-e0UD8Sh8cJa1UKy3NWWO7W7kfUG9ED-EYQdhwF7MiYBJ6U5WGOS8eZOGegcKL7w9aY5nlOOUW3X3g71h5tYf-TvA7U-8SYMb0CtqnSB1V3xtzn-E4KaeY-ZEoC2VljLrAyAf1apCNfhi794z2l9YFYrkE8HihNnbfyg6c4fu-EvmpTpp86XjOVze1WOe3Tv9X82nTATDTp6lspZIq5N_j4PyS7ck"/>
+<div class="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full text-primary text-label-sm font-label-sm font-semibold flex items-center gap-1 border border-secondary-fixed">
+<span class="material-symbols-outlined text-[13px] text-primary">waves</span>
+<span>River view</span>
+</div>
+</div>
+<div class="p-4 pl-5">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-title-md font-headline-sm text-on-surface font-semibold">Riverside Deluxe King</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">group</span>
+<span>Max 2 Guests · 1 King Bed</span>
+</p>
+</div>
+</div>
+<div class="my-3 border-t border-surface-variant/40"></div>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline block">Direct Rate</span>
+<span class="text-headline-sm font-numeric-table font-semibold text-primary">฿1,800</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/ night</span>
+</div>
+<button class="bg-primary hover:bg-primary-container text-surface-container-lowest px-4 py-2 rounded-xl text-label-md font-label-md font-medium shadow-sm transition-all active:scale-[0.98]" type="button">
+            Select
+          </button>
+</div>
+</div>
+</div>
+<!-- Room Card 3: Serene River Twin -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high shadow-sm relative">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-primary-container z-10"></div>
+<div class="relative h-44 w-full overflow-hidden">
+<img class="w-full h-full object-cover water-reflection-mask" data-alt="Two twin beds placed beside a river-facing floor-to-ceiling window overlooking bamboo trees and the calm Ping river current. The room presents calm woven bamboo light shades, light cotton textiles, and an earthy sand palette with subtle aqua highlights suited for Northern Thai hospitality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvMmZXH6VlS3cOsxRfIklcb_7Zd32fctinCDZWZDCw89p20GVo0APOQxWnX2Ipt3szMFavXBqg2Qzce_Mx9x2zAq7hkpV55J4I_RF4AXO6b_406JzDFiSNYUfYZbnx6MGQaUGQTORAzTLBriZzJdtk9IRgTqSv1gdA9l6ruGMgUC--ejhTtDqyLmAhCgsIKm2UDiHV97CIixRLQquCTc1EPwJE5HpaUGOqRptyZDY"/>
+<div class="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full text-primary text-label-sm font-label-sm font-semibold flex items-center gap-1 border border-secondary-fixed">
+<span class="material-symbols-outlined text-[13px] text-primary">waves</span>
+<span>River view</span>
+</div>
+</div>
+<div class="p-4 pl-5">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-title-md font-headline-sm text-on-surface font-semibold">Serene River Twin</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">group</span>
+<span>Max 2 Guests · 2 Twin Beds</span>
+</p>
+</div>
+</div>
+<div class="my-3 border-t border-surface-variant/40"></div>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline block">Direct Rate</span>
+<span class="text-headline-sm font-numeric-table font-semibold text-primary">฿1,600</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/ night</span>
+</div>
+<button class="bg-primary hover:bg-primary-container text-surface-container-lowest px-4 py-2 rounded-xl text-label-md font-label-md font-medium shadow-sm transition-all active:scale-[0.98]" type="button">
+            Select
+          </button>
+</div>
+</div>
+</div>
+<!-- Room Card 4: Standard Riverside Haven -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high shadow-sm relative">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-primary-container z-10"></div>
+<div class="relative h-44 w-full overflow-hidden">
+<img class="w-full h-full object-cover water-reflection-mask" data-alt="An intimate boutique standard hotel room with a balcony opening onto peaceful Ping river waters in Pa Sang Lamphun. Featuring a comfortable queen bed, warm beige wooden interior, soft river-teal accents, and quiet morning atmosphere bathed in soft diffuse natural light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwgiS2YNwjQgPlfwpzj6TxGitBHdnrqzN-wS04zJ8WNLvfq3b4UXbAGGas_fkeWucNvHyEmGoL1rXsfcm6c5Al1qvc6PWZodo0YEDHkRkfytBynT05S79aDlK1echAbwpXSZ0RApTiqbcyLYsUX0-8wS43g3t71y5m69EoFSR3efMFuMUwhDFvx6usTivZArt3cJWBNLZRHMm00Lt_tYs9ivlydpmv8PZ-b8Zy1lg"/>
+<div class="absolute top-3 right-3 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full text-primary text-label-sm font-label-sm font-semibold flex items-center gap-1 border border-secondary-fixed">
+<span class="material-symbols-outlined text-[13px] text-primary">waves</span>
+<span>River view</span>
+</div>
+</div>
+<div class="p-4 pl-5">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-title-md font-headline-sm text-on-surface font-semibold">Standard Riverside Haven</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">group</span>
+<span>Max 2 Guests · 1 Queen Bed</span>
+</p>
+</div>
+</div>
+<div class="my-3 border-t border-surface-variant/40"></div>
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline block">Direct Rate</span>
+<span class="text-headline-sm font-numeric-table font-semibold text-primary">฿1,400</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/ night</span>
+</div>
+<button class="bg-primary hover:bg-primary-container text-surface-container-lowest px-4 py-2 rounded-xl text-label-md font-label-md font-medium shadow-sm transition-all active:scale-[0.98]" type="button">
+            Select
+          </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Gallery Showcase Section (Horizontal Swipe Strip, 8 photos with tags & captions) -->
+<section class="mt-10" id="gallery">
+<div class="px-4 flex items-center justify-between mb-3">
+<div>
+<h2 class="text-headline-sm font-headline-sm text-primary">River Gallery</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Moments along the slow drift of Ping River</p>
+</div>
+<div class="flex items-center gap-1 text-primary text-label-sm font-label-sm">
+<span>8 Photos</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+<!-- Horizontal Swipe Strip -->
+<div class="flex gap-3 overflow-x-auto horizontal-scroll-touch px-4 pb-2 snap-x snap-mandatory">
+<!-- Photo 1: Breakfast Deck -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Fresh tropical morning breakfast arrangement on a wooden riverside deck directly hovering over the slow Ping river in Lamphun. Featuring local artisanal ceramic bowls, Northern Thai fresh fruits, aromatic drip coffee, and soft morning sunlight on teal ripples." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcVvs0jAmRPifd_k0gE9oUwu4GYkIJLX2ny8pGRKENrTwTNLJ-EMbIEzz99wJJgmX2GlN-0HI8n9O1GmsALvkMKGU7619fiyTpzD7NOZAZtjr_jgV6ZwHYSeKOtLGp0UJLS_3sAdH7eZFpvvmsm9XolS5SfRe3vz947CcmF9MmHi9y8SdDn1WxUL929Eiu_m1VFW9oEYQ3DrwHDeFnGXBgUwpXwE6v8GlXJwTJylI"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Breakfast</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Breakfast on the Deck</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Fresh local flavors at river's edge</p>
+</div>
+</div>
+<!-- Photo 2: Sunset Kayak -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Kayaks floating gently along the calm golden Ping river during sunset in Pa Sang Lamphun. Warm amber and soft aquatic teal light reflects across the calm current with peaceful silhouette of teak trees lining the riverbanks." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-kTrVLxmgnmhWasPAlXU-ZS-ouIwtNEQt3vhwRDZIB11YD0Uxh5WEwZPFTcWUZ_u6ewyoJPAzij6vpEIAFXVzg8GrUgM0STUXME1_9_nKUicbVY473xaj5B29aO-zblBYM9pyo4DImfWovpZBWXhrwX1EOIfqBAX1Ca1nMynIISVKGYYDOc7qgp54MD6RuM6Qka5meI8u52jdeBUPU3hMEUi8EgbJKb_joxR0p9w"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Kayaks</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Kayaks at Sunset</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Slow paddling into the dusk</p>
+</div>
+</div>
+<!-- Photo 3: Balcony View -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Private bedroom balcony overlooking the misty morning Ping river with comfortable woven wicker lounge chairs. The calm surface of the water mirrors bamboo groves, and soft ambient daylight creates a deeply tranquil retreat ambiance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVfnbwmOSbNG0KlgrLCgNf9bVGSJKvGE91QF2gJaUN91tOyC9l2V5K7HvLeMDtdqKCwSfXnYXvym4xy6OU4Bu6In6USRl4XfeeUITP2D3-HE0mDXVSZj1jz-pSikl3Ts-CxTE6UQBh2wOGfPvxYk2duG8rr6FKwz_OrN6LjUFU1hGjdKxIKpA4n2WFjciKk49b1T_29XFG81xTojPaCNxOatZrMq08WVVCIMkUpDc"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Room Balcony</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Riverside Balcony</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Balcony right on the Ping river</p>
+</div>
+</div>
+<!-- Photo 4: River Terrace -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Wide wooden riparian terrace with comfortable natural fabric loungers shaded by leafy rain trees along the Ping River in Pa Sang. Sand-colored decking and clean teal river reflections create a peaceful sanctuary vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALePxG3opCZSSuHSJ1jaPlWpLs2Aqstu4Z-JA0rsg9hYCwC73t_QuTT-1Bt15_NqzZbCqs3njwdhV8li3zbpxTKDdnOmEL6LzIK0xh7ZcIQ8MvV_7jYXLDs3Y0dTYWR1yGGj9McDtkf4Py8IgqgwduuEYyH-mpfyvkeyYKlZD8X2iCmaMRVSIQasqkV-bmCKyd7a-wX0DBV2FTlDqZFVXuKrjg1HXITPgSbCMmVoc"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Terrace</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Riparian Terrace</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Unwind under dappled tree shade</p>
+</div>
+</div>
+<!-- Photo 5: River Morning Mist -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Ethereal morning mist rising from the Ping River in Lamphun Thailand. The pale emerald teal water gently drifts by native reeds and river sandbanks under the peaceful cool dawn atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDv8Zcsgsg29f3-xDyDw46S6dnt2JHSf3EaLjTmupy02q_AGtz3KNbbzfG9Ulj2Pe8A3yvcdBJTT87pqdoH3AaRXedAZY2w2oO37uvkQoWOwHM9MdqgQY_G0RhhUqG_reON2RugemlEv-gripDpYqSKR_H4LZBg4kMfdzvKTAxVe4RVVolvRXwU4Aoy4862FF5YefpnFXWDhyHovFg42jjiOekdqjZDRN-RnV1auYU"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">River Nature</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Dawn River Mist</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">The serene cadence of Lamphun dawn</p>
+</div>
+</div>
+<!-- Photo 6: Teak Architecture -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Artisanal contemporary Thai architectural facade with light honey teak timbers, traditional lanna roof contours, and clean minimalist lines set against lush riparian bamboo along Rim Ping Riverside." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCblzpJZlnhSMSX5Pwwc2nzCpmx648YMSFuEBk0cE-VncqhELaPDL3MiJQ4Rju-WQN6oCesyIkQPI7bS03iYHU5OC3n-AM3X1oHzyZGfrO2Y8jdQ3GSJ6cdV12Z8df8vDcVU52gZ9Onf1mH-LJ0ZTPctaJmuJxCq7okniQh4p2SB0Hwtjsgkiki9xSccSrZzbU1DTQKzYgtiqNGH_4cLvRX-Q61bygyGMovYRFfoyM"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Architecture</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Northern Thai Craft</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Warm timber and natural river stone</p>
+</div>
+</div>
+<!-- Photo 7: Evening Lanterns -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Dusk falling over Rim Ping Riverside with warm hanging paper lanterns illuminating the open-air wooden pier. The quiet Ping river ripples reflect golden light in tranquil blue-teal nocturnal stillness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXz2MEuHW-u8Se8XGRdsHlRoi-kB7yqD-tzHHarR6Jd8-cXka0AJnKXRacmB3oYUYNJk_BI4s66DjQ2vDDDJ0_EIhUpz2753gSjeXLSy3_r5wr8vrddZahGYq5005Gm6xl_lOC6R_YGReExl-YXrna31zzUvNR-ruULUFS_dfcQjDNYpuTe5VjJvWSfKo9XeJP-TldMq3F3tPeeWvNpOgY8Jo3SI7BJ2TcN-ppIbc"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Evening</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">Evening Lanterns</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Gentle glow over evening waters</p>
+</div>
+</div>
+<!-- Photo 8: Riparian Garden -->
+<div class="min-w-[260px] max-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden border border-surface-container-high snap-start shadow-sm flex-shrink-0">
+<div class="h-40 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Lush green tropical riverside garden path with smooth river pebbles, ferns, and fragrant jasmine bushes leading straight down to the Ping river landing in Lamphun Thailand. Soft diffused lighting and natural calm serenity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC81H71Y0JSgCjy3kpk1F0J0LUD4R-F5dPNXQ9SjtXjoesFrv4x4IBTZ81F0cdRimB0x67iEoYT9xSaDyY6lidDJOnzWgraS2p2oOAESXUDW8t8SfhDSKGTW_BCaROdG_v1x8dnwOXNvipouo3S0HfYvTVMRAAt8PjxKiVci1bqG2VQL55MVNmqRUOvnzfaYdEhW_KsBb585r-y4XH89ao8BRWXlAamLq1fcIkX6Pg"/>
+<span class="absolute top-2.5 left-2.5 bg-inverse-surface/80 text-inverse-on-surface text-label-sm font-label-sm px-2 py-0.5 rounded-md backdrop-blur-sm">Gardens</span>
+</div>
+<div class="p-3">
+<p class="text-title-sm font-title-sm text-on-surface">River Walkways</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Pathways along the riverbank</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Location Section -->
+<section class="px-4 mt-10" id="location">
+<div class="mb-3">
+<h2 class="text-headline-sm font-headline-sm text-primary">Location</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Nestled along the Ping River in Lamphun province</p>
+</div>
+<!-- Map Placeholder with Highlighted River in Teal -->
+<div class="relative w-full h-52 rounded-2xl overflow-hidden border border-surface-container-high shadow-sm bg-surface-container-high">
+<!-- Stylized Vector Map representation highlighting the river in River Teal (#2F6F73) -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 360 210" xmlns="http://www.w3.org/2000/svg">
+<!-- Land Mass -->
+<rect fill="#EFE6D8" height="210" opacity="0.65" width="360"></rect>
+<!-- Local road contours -->
+<path d="M-10,40 Q100,50 200,30 T370,55" fill="none" opacity="0.9" stroke="#FFFFFF" stroke-width="4"></path>
+<path d="M50,220 Q90,140 120,0" fill="none" opacity="0.9" stroke="#FFFFFF" stroke-width="3"></path>
+<path d="M220,220 Q240,110 320,0" fill="none" opacity="0.9" stroke="#FFFFFF" stroke-width="2.5"></path>
+<!-- Ping River Highlighted in Teal (#2F6F73) & Soft Aqua (#A8D5D1) -->
+<path d="M-10,130 C80,120 110,175 190,115 C260,65 310,95 370,75" fill="none" opacity="0.45" stroke="#A8D5D1" stroke-linecap="round" stroke-width="32"></path>
+<path d="M-10,130 C80,120 110,175 190,115 C260,65 310,95 370,75" fill="none" stroke="#2F6F73" stroke-linecap="round" stroke-width="22"></path>
+<!-- River Ripples Overlay -->
+<path d="M10,128 C90,118 120,172 195,114 C265,64 315,94 365,74" fill="none" opacity="0.6" stroke="#FCFCFA" stroke-dasharray="8 12" stroke-width="1.5"></path>
+<!-- Ping River Label -->
+<text fill="#FCFCFA" font-family="'Noto Sans', sans-serif" font-size="11" font-weight="600" letter-spacing="1" x="75" y="165">แม่น้ำปิง · PING RIVER</text>
+<!-- Location Pin for Hotel -->
+<g transform="translate(195, 88)">
+<circle cx="0" cy="0" fill="#0d575a" opacity="0.25" r="14"></circle>
+<circle cx="0" cy="0" fill="#0d575a" r="9"></circle>
+<circle cx="0" cy="0" fill="#FCFCFA" r="4"></circle>
+</g>
+</svg>
+<!-- Pin Floating Label -->
+<div class="absolute top-12 right-6 bg-surface-container-lowest/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-secondary-container shadow-md flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-label-md font-label-md font-semibold text-primary">Rim Ping Riverside</span>
+</div>
+</div>
+<!-- Address Card -->
+<div class="mt-3 bg-surface-container-lowest rounded-2xl p-4 border border-surface-container-high shadow-sm">
+<div class="flex items-start gap-3">
+<div class="p-2.5 rounded-xl bg-surface-container text-primary">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+</div>
+<div class="flex-1">
+<h3 class="text-title-sm font-title-sm text-on-surface">Rim Ping Riverside (ริมปิง ริเวอร์ไซด์)</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mt-0.5">
+            Pa Sang, Lamphun, Thailand
+          </p>
+<div class="mt-2.5 flex items-center gap-2 text-label-sm font-label-sm text-secondary">
+<span class="material-symbols-outlined text-[15px]">directions_car</span>
+<span>Approx. 40 minutes from Chiang Mai International Airport</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Shared Footer Execution -->
+<footer class="mt-12 bg-surface-container w-full border-t border-surface-container-high">
+<div class="max-w-7xl mx-auto px-6 py-10 flex flex-col justify-between items-center gap-4 text-center">
+<!-- Footer Brand -->
+<div class="text-headline-sm font-headline-sm font-semibold text-primary">
+        Rim Ping Riverside
+      </div>
+<!-- Links / Location specified in JSON -->
+<div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-label-sm font-label-sm text-on-surface-variant">
+<span>Pa Sang, Lamphun, Thailand</span>
+<span>·</span>
+<a class="hover:text-primary transition-colors duration-200" href="#rooms">Rooms</a>
+<span>·</span>
+<a class="hover:text-primary transition-colors duration-200" href="#gallery">Gallery</a>
+<span>·</span>
+<a class="hover:text-primary transition-colors duration-200" href="#location">Location</a>
+<span>·</span>
+<span class="text-outline">Contact</span>
+</div>
+<!-- Required Powered By hayhost -->
+<div class="text-body-sm font-body-sm text-outline mt-2">
+        © Rim Ping Riverside. Booking powered by hayhost.
+      </div>
+</div>
+</footer>
+<!-- Sticky Bottom Bar -->
+<aside class="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto bg-surface-container-lowest/95 backdrop-blur-lg border-t border-surface-container-high px-4 py-3 z-50 flex items-center justify-between shadow-[0_-4px_16px_rgba(35,52,59,0.08)]">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block leading-none">Starting from</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-title-md font-numeric-table font-semibold text-primary">฿1,400</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/ night</span>
+</div>
+</div>
+<!-- River Teal "Check availability" Button -->
+<a class="bg-primary hover:bg-primary-container text-surface-container-lowest px-5 py-2.5 rounded-xl text-title-sm font-title-sm font-medium shadow-[0_2px_6px_rgba(47,111,115,0.20)] active:scale-[0.98] transition-all flex items-center gap-1.5" href="#booking-card">
+<span class="material-symbols-outlined text-[17px]">calendar_month</span>
+<span>Check availability</span>
+</a>
+</aside>
+<script>
+    // Lightweight smooth-scroll support
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href');
+        if (targetId && targetId !== '#') {
+          const target = document.querySelector(targetId);
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+    });
+  </script>
+</body></html>

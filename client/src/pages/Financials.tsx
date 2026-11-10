@@ -1,4 +1,4 @@
-import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, QrCode, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, Download, Percent, Printer, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -16,11 +16,15 @@ import { cn } from "@/lib/utils";
 import type { FinancialsBookingRow, FinancialsRoomTypeBreakdown } from "@/../../server/financials";
 import { useState } from "react";
 import { useHotel } from "@/contexts/HotelContext";
+import { hasHotelPermission } from "@shared/authorization";
+import { Link } from "wouter";
 import { useTranslation } from "@/lib/i18n";
-import { useMfaStepUp } from "@/lib/mfa";
 import { dateLocale } from "@/lib/dateLocale";
 import { bangkokMonth } from "@shared/finance";
+import { buildBookingDocumentHtml, downloadDocumentFile, downloadPdfBase64, formatSatang, writePrintWindow } from "@/lib/bookingDocumentPrint";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth, type FinancialsChoice } from "./financialsPeriod";
+import { useBillingCandidateEnabled } from "@/lib/useBillingCandidateEnabled";
+import "./Financials.css";
 
 const chartConfig = {
   bookings: { label: "Bookings", color: "#1d6b56" },
@@ -126,14 +130,16 @@ function LoadingDashboard() {
 
 export default function Financials() {
   const { t, language } = useTranslation();
+  const billingCandidate = useBillingCandidateEnabled();
   const locale = dateLocale(language);
   const { hotels, selectedHotelId } = useHotel();
   const hotelId = selectedHotelId ?? hotels[0]?.id;
+  const authMeQuery = trpc.auth.me.useQuery();
+  const canManagePaymentSettings = Boolean(hotelId) && hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], hotelId!, "property.manage_profile");
   const currentMonth = bangkokMonth();
   const [choice, setChoice] = useState<FinancialsChoice>({ kind: "last30" });
   // Keep the previous figures on screen while the next period loads, so the page does not flash.
   const { data, isLoading, isError, refetch, isFetching } = trpc.channelManager.financials.useQuery(financialsQueryInput(choice), { placeholderData: previous => previous });
-
   if (isLoading) return <LoadingDashboard />;
 
   if (isError || !data) {
@@ -180,10 +186,9 @@ export default function Financials() {
 
       <section className="panel financials-summary-panel">
         <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.paymentCollectionAria")}</h2></div></div>
-        <div className="grid gap-4 sm:grid-cols-3" aria-label={t("financials.paymentCollectionAria")}>
+        <div className="grid gap-4 sm:grid-cols-2" aria-label={t("financials.paymentCollectionAria")}>
         <MetricCard label={t("financials.collectedRevenue")} value={formatCurrency(data.totals.collectedRevenue ?? 0)} detail={t("financials.collectedRevenueDetail")} icon={CircleDollarSign} tone="pine" />
-        <MetricCard label={t("financials.outstandingRevenue")} value={formatCurrency(data.totals.outstandingRevenue ?? 0)} detail={t("financials.outstandingRevenueDetail")} icon={Clock3} tone="amber" />
-        <MetricCard label={t("financials.pendingRevenue")} value={formatCurrency(data.totals.pendingRevenue ?? 0)} detail={t("financials.pendingRevenueDetail")} icon={QrCode} tone="slate" />
+        <p className="field-help self-center" role="status">{t("financials.unavailablePaymentBalances")}</p>
         </div>
       </section>
 
@@ -261,7 +266,105 @@ export default function Financials() {
         <p className="field-help financials-bookings-help">{data.bookings.length > 0 ? t("financials.bookingsExportDesc", { count: data.bookings.length }) : t("financials.bookingsExportEmpty")}</p>
       </section>
 
-      {hotelId && <PromptPaySettings hotelId={hotelId} />}
+      {billingCandidate.enabled && <section className="panel financials-documents-panel" style={{ marginTop: 24 }}>
+        <div className="panel-heading">
+          <div>
+            <div className="eyebrow">{t("bookingDocuments.dialogEyebrow")}</div>
+            <h2>{t("bookingDocuments.allDocumentsTitle")}</h2>
+          </div>
+        </div>
+        <p className="field-help">{t("bookingDocuments.allDocumentsDesc")}</p>
+        <BillingDocumentsList hotelId={hotelId} />
+      </section>}
+
+      {hotelId && canManagePaymentSettings && <p className="field-help"><Link href={`/hotels/${hotelId}/settings/finance`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
+    </div>
+  );
+}
+
+function BillingDocumentsList({ hotelId }: { hotelId?: string | null }) {
+  const { t, language } = useTranslation();
+  const hotelDocsQuery = trpc.bookingDocuments.listHotel.useQuery(
+    { hotel_id: hotelId ?? "" },
+    { enabled: Boolean(hotelId) },
+  );
+
+  const print = (doc: any) => {
+    const labels = Object.fromEntries([
+      "invoiceTitle", "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
+      "qty", "unitPrice", "amount", "stay", "nights", "subtotal", "net", "vat", "total", "amountPaid", "balanceDue", "paymentStatus",
+      "statusPaid", "statusUnpaid", "statusPending", "withholding", "paymentMethod", "bookingRef", "signature",
+    ].map(key => [key, t(`bookingDocuments.print.${key}`)])) as any;
+    const html = buildBookingDocumentHtml(doc, labels, language === "th" ? "th" : "en", null);
+    writePrintWindow(window.open("", "_blank"), html);
+  };
+
+  const downloadPdfMutation = trpc.bookingDocuments.getPdf.useMutation();
+  const download = async (doc: any, docId?: string) => {
+    try {
+      const res = await downloadPdfMutation.mutateAsync({
+        hotel_id: hotelId!,
+        document_id: docId!,
+      });
+      downloadPdfBase64(res.filename, res.base64);
+    } catch {
+      const labels = Object.fromEntries([
+        "invoiceTitle", "receiptTitle", "taxInvoiceTitle", "number", "issuedOn", "issuer", "buyer", "taxId", "branch", "phone", "description",
+        "qty", "unitPrice", "amount", "stay", "nights", "subtotal", "net", "vat", "total", "amountPaid", "balanceDue", "paymentStatus",
+        "statusPaid", "statusUnpaid", "statusPending", "withholding", "paymentMethod", "bookingRef", "signature",
+      ].map(key => [key, t(`bookingDocuments.print.${key}`)])) as any;
+      const html = buildBookingDocumentHtml(doc, labels, language === "th" ? "th" : "en", null);
+      downloadDocumentFile(`${doc.number}_${doc.type}.html`, html);
+    }
+  };
+
+  if (!hotelId) return null;
+  if (hotelDocsQuery.isLoading) return <p className="field-help">{t("financials.loadingData")}</p>;
+  const docs = hotelDocsQuery.data ?? [];
+  if (docs.length === 0) return <p className="field-help">{t("bookingDocuments.noneIssued")}</p>;
+
+  return (
+    <div className="table-wrap" style={{ marginTop: 12 }}>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>{t("bookingDocuments.print.number")}</th>
+            <th>{t("bookingDocuments.typeLabel")}</th>
+            <th>{t("bookingDocuments.print.issuedOn")}</th>
+            <th>{t("bookings.guestCol")}</th>
+            <th className="align-right">{t("bookingDocuments.print.total")}</th>
+            <th className="align-right">{t("bookingDocuments.print.balanceDue")}</th>
+            <th className="align-right" />
+          </tr>
+        </thead>
+        <tbody>
+          {docs.map(row => (
+            <tr key={row.id}>
+              <td><strong>{row.docNumber}</strong></td>
+              <td>
+                <span className={`status-pill ${row.docType === "receipt" ? "done" : "pending"}`}>
+                  <i />
+                  {t(row.docType === "invoice" ? "bookingDocuments.typeInvoice" : row.docType === "receipt" ? "bookingDocuments.typeReceipt" : "bookingDocuments.typeTaxInvoice")}
+                </span>
+              </td>
+              <td>{formatDateLabel(row.snapshot.issuedOn, language === "th" ? "th-TH" : "en-GB")}</td>
+              <td>{row.guestName} <small style={{ color: "#666" }}>({row.bookingId.slice(0, 8)})</small></td>
+              <td className="align-right"><strong>{formatSatang(row.snapshot.totalSatang)}</strong></td>
+              <td className="align-right">{row.snapshot.balanceSatang != null ? formatSatang(row.snapshot.balanceSatang) : "—"}</td>
+              <td className="align-right">
+                <div style={{ display: "inline-flex", gap: "6px" }}>
+                  <button type="button" className="button button-quiet" onClick={() => print(row.snapshot)} title={t("bookingDocuments.printAgain")}>
+                    <Printer size={14} />
+                  </button>
+                  <button type="button" className="button button-quiet" onClick={() => download(row.snapshot, row.id)} title={t("bookingDocuments.downloadPdf")}>
+                    <Download size={14} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -283,165 +386,5 @@ function MetricCard({ label, value, detail, icon: Icon, tone }: { label: string;
         <p className="mt-1 text-xs text-[#778a80]">{detail}</p>
       </CardContent>
     </Card>
-  );
-}
-
-// ─── Phase 12B: PromptPay QR Settings (per-hotel) ────────────────────────────
-
-function PromptPaySettings({ hotelId }: { hotelId: string }) {
-  const { t } = useTranslation();
-  const [promptPayId, setPromptPayId] = useState("");
-  const [timeoutMin, setTimeoutMin] = useState(15);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [totpCode, setTotpCode] = useState("");
-  // With 2FA on, changing where guests pay needs a recent authenticator code (server/mfa.ts).
-  const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
-
-  const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
-    onSuccess() {
-      setSaved(true);
-      setSaveError(null);
-      setPromptPayId("");
-      reset();
-      setTimeout(() => setSaved(false), 3000);
-    },
-    onError(err) {
-      // The step-up window closed between the check and the save: ask again.
-      if (err.data?.code === "PRECONDITION_FAILED") {
-        void triggerStepUp();
-        return;
-      }
-      setSaveError(err.message);
-    },
-  });
-
-  function save() {
-    savePromptPay.mutate({
-      hotel_id: hotelId,
-      promptpay_id: promptPayId.replace(/\D/g, ""),
-      payment_timeout_minutes: timeoutMin,
-    });
-  }
-
-  async function handleSave() {
-    setSaveError(null);
-    setSaved(false);
-    if ((await triggerStepUp()) === "verified") save();
-  }
-
-  async function handleVerify() {
-    if (await submitTotp(totpCode)) {
-      setTotpCode("");
-      save();
-    }
-  }
-
-  function handleCancel() {
-    setTotpCode("");
-    reset();
-  }
-
-  return (
-    <section className="panel" aria-labelledby="promptpay-settings-heading">
-      <div className="panel-heading"><div><div className="eyebrow">{t("financials.eyebrow")}</div><h2>{t("financials.promptPayTitle")}</h2></div></div>
-      <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-[#edf7f1] p-2 text-[#1d6b56]">
-              <QrCode size={18} aria-hidden="true" />
-            </span>
-            <div>
-              <CardTitle id="promptpay-settings-heading" className="text-base font-semibold text-[#1b2c25]">
-                {t("financials.promptPayTitle")}
-              </CardTitle>
-              <CardDescription className="text-xs text-[#6c7e75]">
-                {t("financials.promptPayDesc")}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div className="form-grid">
-              <label className="form-span-two">{t("financials.promptPayIdLabel")}
-              <input
-                id="promptpay-id-input"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={promptPayId}
-                onChange={(e) => setPromptPayId(e.target.value.replace(/\D/g, ""))}
-                placeholder="0812345678"
-                maxLength={13}
-                className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
-              />
-              </label>
-              <label>{t("financials.timeoutLabel")}
-              <select
-                id="promptpay-timeout"
-                value={timeoutMin}
-                onChange={(e) => setTimeoutMin(Number(e.target.value))}
-                className="w-full rounded-lg border border-[#dce4df] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
-              >
-                {[5, 10, 15, 20, 30, 60].map((m) => (
-                  <option key={m} value={m}>{t("financials.minutes", { count: m })}</option>
-                ))}
-              </select>
-              </label>
-          </div>
-
-          {mfaState.status === "needs_challenge" && (
-            <div className="flex flex-col gap-2 rounded-lg border border-[#dce4df] bg-[#f6faf7] p-4">
-              <label htmlFor="promptpay-totp-input" className="text-sm font-medium text-[#263b31]">{t("financials.mfaPrompt")}</label>
-              <div className="flex flex-wrap gap-2">
-                <label className="form-grid">{t("financials.mfaCodeLabel")}<input
-                  id="promptpay-totp-input"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="000000"
-                  aria-label={t("financials.mfaCodeLabel")}
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-32 rounded-lg border border-[#dce4df] px-3 py-2 text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1d6b56]"
-                /></label>
-                <button
-                  id="promptpay-totp-submit"
-                  type="button"
-                  disabled={totpCode.length !== 6}
-                  onClick={() => void handleVerify()}
-                  className="button button-primary min-h-11 rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
-                >
-                  {t("financials.mfaVerify")}
-                </button>
-                <button type="button" onClick={handleCancel} className="button button-quiet min-h-11 rounded-lg border border-[#dce4df] px-3 py-2 text-sm text-[#6c7e75] hover:bg-white">
-                  {t("financials.mfaCancel")}
-                </button>
-              </div>
-              {mfaState.error && <p className="text-xs text-red-600" role="alert">{mfaState.error}</p>}
-            </div>
-          )}
-          {mfaState.status === "pending" && <p className="text-xs text-[#6c7e75]" role="status">{t("financials.mfaChecking")}</p>}
-          {mfaState.status === "error" && <p className="text-xs text-red-600" role="alert">{mfaState.message}</p>}
-          {saveError && <p className="text-xs text-red-600" role="alert">{saveError}</p>}
-          {saved && <p className="text-xs text-[#1d6b56]" role="status">{t("financials.savedSuccess")}</p>}
-
-          <button
-            id="promptpay-save-btn"
-            type="button"
-            disabled={promptPayId.replace(/\D/g, "").length < 10 || savePromptPay.isPending || mfaState.status === "pending"}
-            onClick={() => void handleSave()}
-            className="button button-primary min-h-11 w-max rounded-lg border border-[#1d6b56] bg-[#1d6b56] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a5e4c] disabled:opacity-50 transition-colors"
-          >
-            {savePromptPay.isPending ? t("financials.saving") : t("financials.savePromptPayId")}
-          </button>
-
-          <p className="text-xs text-[#789087]">
-            {t("financials.promptPayDisclaimer")}
-          </p>
-        </CardContent>
-      </Card>
-    </section>
   );
 }

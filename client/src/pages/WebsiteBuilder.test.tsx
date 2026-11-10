@@ -4,16 +4,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { saveConfig, setObjectPosition, deleteMedia, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
+const { saveConfig, setObjectPosition, reorderMedia, deleteMedia, query, mutation, language, hotelsData, mediaData, configData } = vi.hoisted(() => ({
   deleteMedia: vi.fn(),
-  configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
+  configData: { current: { hotelId: "hotel-1", theme: null, heroCopy: "Old headline", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } } as Record<string, unknown> },
   saveConfig: vi.fn(),
   setObjectPosition: vi.fn(),
+  reorderMedia: vi.fn(),
   language: { current: "en" as "en" | "th" },
   hotelsData: { current: [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }] as Array<{ id: string; name?: string; slug: string; room_types: unknown[]; rooms: unknown[] }> },
   mediaData: { current: [] as Array<{ id: string; url: string; isHero: boolean; displayOrder: number; objectPosition?: string | null }> },
   query: (data: unknown) => ({ useQuery: () => ({ data, isLoading: false, isError: false, refetch: () => undefined, isFetching: false }) }),
-  mutation: (mutate: (...args: unknown[]) => void = () => undefined) => ({ useMutation: () => ({ mutate, isPending: false }) }),
+  mutation: (mutate: (...args: unknown[]) => void = () => undefined) => ({ useMutation: () => ({ mutate, mutateAsync: async (...args: unknown[]) => { mutate(...args); }, isPending: false }) }),
 }));
 
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ language: language.current, setLanguage: vi.fn(), toggleLanguage: vi.fn() }) }));
@@ -28,6 +29,7 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
     setHotelMediaObjectPosition: mutation(setObjectPosition),
     setHotelMediaCaption: mutation(),
     setHotelMediaGallerySelection: mutation(),
+    reorderHotelMedia: mutation(reorderMedia),
     saveHotelSiteConfig: mutation(saveConfig),
     publishHotelSiteConfig: mutation(),
     discardHotelSiteConfigDraft: mutation(),
@@ -50,25 +52,23 @@ vi.mock("@/lib/trpc", () => ({ trpc: {
 
 import WebsiteBuilder from "./WebsiteBuilder";
 (globalThis as { React?: typeof React }).React = React;
-const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", accentColor: "#1d6b56", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); deleteMedia.mockReset(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
+const defaultConfigData = () => ({ hotelId: "hotel-1", theme: null, heroCopy: "Old headline", visibleSections: { hero: true, story: true, rooms: true, booking: true, location: true } });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); deleteMedia.mockReset(); configData.current = defaultConfigData(); saveConfig.mockReset(); setObjectPosition.mockReset(); reorderMedia.mockReset(); language.current = "en"; hotelsData.current = [{ id: "hotel-1", name: "Baan", slug: "baan", room_types: [], rooms: [] }]; mediaData.current = []; });
 
 describe("WebsiteBuilder editing", () => {
-  it("saves the headline and accent colour the owner typed (regression: edits were dropped)", () => {
+  it("saves the headline without sending an accent colour", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
     const hero = document.getElementById("wb-hero-copy") as HTMLTextAreaElement;
     fireEvent.change(hero, { target: { value: "New headline" } });
     expect(hero.value).toBe("New headline");
-    fireEvent.change(screen.getByLabelText("accent_color"), { target: { value: "#aa3300" } });
     fireEvent.click(screen.getAllByRole("button").find(button => /save draft/i.test(button.textContent ?? ""))!);
-    expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline", accent_color: "#aa3300" }));
+    expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", hero_copy: "New headline" }));
   });
 
-  it("keeps the page up while the owner types a half-finished colour code (regression: white screen)", () => {
+  it("does not render an accent colour field", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    const accent = screen.getByLabelText("accent_color") as HTMLInputElement;
-    for (const partial of ["#", "#1", "#1d6", "#1d6b5", "red"]) fireEvent.change(accent, { target: { value: partial } });
-    expect(accent.value).toBe("red");
+    expect(screen.queryByLabelText("accent_color")).toBeNull();
+    expect(screen.queryByLabelText("accent_color picker")).toBeNull();
     expect(document.getElementById("wb-hero-copy")).toBeTruthy();
   });
 
@@ -108,14 +108,17 @@ describe("WebsiteBuilder editing", () => {
     fireEvent.change(document.getElementById("wb-hero-copy") as HTMLTextAreaElement, { target: { value: "" } });
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
     expect(saveConfig).not.toHaveBeenCalled();
-    expect(screen.getByText("Hero copy cannot be empty.")).toBeTruthy();
+    expect(document.querySelector('section[aria-label="Choose a website design"] [role="alert"]')?.textContent).toBe("Hero copy cannot be empty.");
   });
 
-  it("renders all three theme cards and saves a selected theme through the site config mutation", () => {
+  it("renders the published theme cards and saves a selected theme through the site config mutation", () => {
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(3);
-    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Baan", "Baan", "Baan"]);
-    expect(document.querySelectorAll(".template-card-preview")).toHaveLength(3);
+    expect(document.querySelectorAll("button[data-theme-id]")).toHaveLength(8);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(Array(8).fill("Baan"));
+    expect(document.querySelectorAll(".template-card-preview")).toHaveLength(8);
+    expect(document.querySelector('button[data-theme-id="hostel-pop"] .template-card-preview')).not.toBeNull();
+    expect(document.querySelector('button[data-theme-id="riverside-calm"] .template-card-preview')).not.toBeNull();
+    expect(document.querySelector('button[data-theme-id="vintage-old-town"] .template-card-preview')).not.toBeNull();
     fireEvent.click(document.querySelector('button[data-theme-id="lanna-teak"]')!);
     expect(saveConfig).toHaveBeenCalledWith(expect.objectContaining({ hotel_id: "hotel-1", theme: "lanna-teak", hero_copy: "Old headline" }));
   });
@@ -123,11 +126,11 @@ describe("WebsiteBuilder editing", () => {
   it("shows the localized fallback when the selected hotel has no name", () => {
     hotelsData.current = [{ id: "hotel-1", name: "", slug: "baan", room_types: [], rooms: [] }];
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["Your hotel", "Your hotel", "Your hotel"]);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(Array(8).fill("Your hotel"));
     cleanup();
     language.current = "th";
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
-    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(["โรงแรมของคุณ", "โรงแรมของคุณ", "โรงแรมของคุณ"]);
+    expect(Array.from(document.querySelectorAll(".template-card-preview h3"), node => node.textContent)).toEqual(Array(8).fill("โรงแรมของคุณ"));
   });
 
   it("uses the selected hotel's uploaded hero photo in each card preview", () => {
@@ -137,16 +140,90 @@ describe("WebsiteBuilder editing", () => {
       'url("https://media.example/hotel-hero.jpg")',
       'url("https://media.example/hotel-hero.jpg")',
       'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
+      'url("https://media.example/hotel-hero.jpg")',
     ]);
   });
 
-  it("saves the tapped point on a photo as its focal point", () => {
+  it("saves the adjusted point only after opening the editor and choosing Save", () => {
     mediaData.current = [{ id: "photo-1", url: "/photo.jpg", isHero: true, displayOrder: 0 }];
     render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("tab", { name: "Photos" })); // the photo tools live on their own tab
     const photo = screen.getByAltText("Hotel media preview");
-    vi.spyOn(photo, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, toJSON: () => ({}) });
     fireEvent.pointerDown(photo, { clientX: 50, clientY: 75 });
-    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" }, expect.objectContaining({ onSuccess: expect.any(Function) }));
+    expect(setObjectPosition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Adjust position of photo 1" }));
     expect(screen.getByText("Choose the part of the photo to keep in view")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Horizontal"), { target: { value: "25" } });
+    fireEvent.change(screen.getByLabelText("Vertical"), { target: { value: "75" } });
+    expect(setObjectPosition).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(setObjectPosition).toHaveBeenCalledTimes(1);
+    expect(setObjectPosition).toHaveBeenCalledWith({ hotel_id: "hotel-1", media_id: "photo-1", object_position: "25% 75%" });
+  });
+
+  it("moves a gallery photo into the cover position from its order select", () => {
+    mediaData.current = [
+      { id: "cover", url: "/cover.jpg", isHero: true, displayOrder: 0 },
+      { id: "gallery", url: "/gallery.jpg", isHero: false, displayOrder: 1, isPublished: true },
+    ] as typeof mediaData.current;
+    render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+    fireEvent.click(screen.getByRole("tab", { name: "Photos" })); // the photo tools live on their own tab
+    const select = screen.getByRole("combobox", { name: "Order of photo 2" }) as HTMLSelectElement;
+    expect(Array.from(select.options, option => option.textContent)).toEqual(["1 (Hero image)", "2"]);
+    fireEvent.change(select, { target: { value: "1" } });
+    expect(reorderMedia).toHaveBeenCalledWith({ hotel_id: "hotel-1", ids: ["gallery", "cover"] });
+  });
+});
+
+describe("WebsiteBuilder tabs", () => {
+  const renderBuilder = () => render(<QueryClientProvider client={new QueryClient()}><WebsiteBuilder /></QueryClientProvider>);
+
+  it("offers the four sections as free-order tabs and opens on the theme", () => {
+    renderBuilder();
+    const tabs = screen.getAllByRole("tab").map(tab => tab.textContent);
+    expect(tabs).toEqual(["Choose theme", "Website details", "Photos", "Preview and publish"]);
+    expect(screen.getByRole("tab", { name: "Choose theme" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tabpanel", { name: "Choose theme" })).toBeTruthy();
+    expect(screen.queryByRole("tabpanel", { name: "Photos" })).toBeNull();
+  });
+
+  it("lets the owner open any tab first, and keeps what was typed when switching", () => {
+    renderBuilder();
+    fireEvent.click(screen.getByRole("tab", { name: "Website details" }));
+    const hero = document.getElementById("wb-hero-copy") as HTMLTextAreaElement;
+    fireEvent.change(hero, { target: { value: "Typed but not saved" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Preview and publish" }));
+    expect(screen.getByRole("tab", { name: "Preview and publish" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Website details" }));
+    expect((document.getElementById("wb-hero-copy") as HTMLTextAreaElement).value).toBe("Typed but not saved");
+  });
+
+  it("moves between tabs with the arrow keys", () => {
+    renderBuilder();
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Choose theme" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Website details" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Website details" }), { key: "End" });
+    expect(screen.getByRole("tab", { name: "Preview and publish" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("shows whether the page is open to guests and what the draft state is, on the publish tab", () => {
+    renderBuilder();
+    fireEvent.click(screen.getByRole("tab", { name: "Preview and publish" }));
+    expect(screen.getByText("Private")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Publish page/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /View hotel page/ })).toBeTruthy();
+  });
+
+  it("keeps save draft and publish reachable from every tab", () => {
+    renderBuilder();
+    for (const name of ["Choose theme", "Photos"]) {
+      fireEvent.click(screen.getByRole("tab", { name }));
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
+    }
   });
 });

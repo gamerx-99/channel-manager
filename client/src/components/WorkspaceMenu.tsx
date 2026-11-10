@@ -7,6 +7,7 @@ type VisibleHotel = {
   id: string;
   name: string;
   slug: string;
+  public_enabled?: boolean;
   [key: string]: any;
 };
 

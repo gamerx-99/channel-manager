@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BarChart3,
+  CreditCard,
   BedDouble,
   Bell,
   CalendarDays,
@@ -47,9 +48,11 @@ export function getHotelSettingsItems(
   selectedHotelId: string | null | undefined,
   can: (permission: Permission) => boolean,
   t: (key: string) => string,
-) {
+): Array<{ href: string; label: string; icon: typeof Hotel; tourTarget?: string }> {
   if (!selectedHotelId) return [];
   return [
+    ...(can("property.manage_profile") ? [{ href: `/hotels/${selectedHotelId}/settings/general`, label: t("sidebar.generalSettings"), icon: Hotel, tourTarget: "hotel-settings" }] : []),
+    ...(can("property.manage_profile") ? [{ href: `/hotels/${selectedHotelId}/settings/finance`, label: t("sidebar.financeSettings"), icon: CreditCard }] : []),
     ...(can("property.manage_staff") ? [{ href: `/hotels/${selectedHotelId}/staff`, label: t("sidebar.hotelStaff"), icon: Users }] : []),
     ...(can("property.manage_support_access") ? [{ href: `/hotels/${selectedHotelId}/support-access`, label: t("supportAccess.navLabel"), icon: ShieldCheck }] : []),
   ];
@@ -71,7 +74,7 @@ export function getRoomsAndPricingItems(
 
 function getActivePath(location: string, selectedHotelId?: string | null) {
   if (!selectedHotelId) return location;
-  const hotelSubPaths = ["bookings", "calendar", "services", "ota", "staff", "support-access"];
+  const hotelSubPaths = ["settings/general", "settings/finance", "bookings", "calendar", "services", "ota", "staff", "support-access", "profile"];
   for (const subPath of hotelSubPaths) {
     const prefix = `/hotels/${selectedHotelId}/${subPath}`;
     if (location.startsWith(prefix)) return prefix;
@@ -212,17 +215,7 @@ export function Sidebar({
             )}
           </>
         )}
-        <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>
-        {can("property.view_financials") && (
-          <Link
-            href="/dashboard/financials"
-            className={`nav-link ${location === "/dashboard/financials" ? "active" : ""}`}
-            onClick={() => onClose()}
-          >
-            <BarChart3 size={17} strokeWidth={location === "/dashboard/financials" ? 2.3 : 1.8} />
-            <span>{t("sidebar.financials")}</span>
-          </Link>
-        )}
+        {communicationsEnabled && can("operations.view_bookings") && <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>}
         {communicationsEnabled && can("operations.view_bookings") && (
           <Link
             href="/communications"
@@ -233,15 +226,18 @@ export function Sidebar({
             <span>{t("sidebar.communications")}</span>
           </Link>
         )}
-        {can("housekeeping.view_room_status") && (
-          <Link
-            href="/housekeeping"
-            className={`nav-link ${location === "/housekeeping" || location.startsWith("/housekeeping/") ? "active" : ""}`}
-            onClick={() => onClose()}
-          >
-            <Users size={17} strokeWidth={location === "/housekeeping" ? 2.3 : 1.8} />
-            <span>{t("sidebar.housekeeping")}</span>
-          </Link>
+        {can("staff.view_shifts") && (
+          <>
+            <p className="nav-label nav-label-spaced">{t("sidebar.staff")}</p>
+            <Link href="/staff-shifts" className={`nav-link ${location === "/staff-shifts" ? "active" : ""}`} onClick={() => onClose()}>
+              <Users size={17} strokeWidth={location === "/staff-shifts" ? 2.3 : 1.8} />
+              <span>{t("sidebar.staffShifts")}</span>
+            </Link>
+            {can("staff.view_own_tasks") && <Link href="/staff-tasks" className={`nav-link ${location === "/staff-tasks" ? "active" : ""}`} onClick={() => onClose()}>
+              <Users size={17} strokeWidth={location === "/staff-tasks" ? 2.3 : 1.8} />
+              <span>{t("sidebar.staffTasks")}</span>
+            </Link>}
+          </>
         )}
         {/* Only people who can edit the hotel's site see the builder: not super admin or support (owner, 2026-11-04). */}
         {can("property.manage_profile") && (
@@ -254,7 +250,9 @@ export function Sidebar({
             <span>{t("sidebar.websiteBuilder")}</span>
           </Link>
         )}
-        {(settingsItems.length > 0 || can("platform.manage_users")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}
+        {(settingsItems.length > 0 || can("platform.manage_users") || can("reports.view_bookings") || can("property.view_financials")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}
+        {can("reports.view_bookings") && <Link href="/reports/bookings" className={`nav-link ${location === "/reports/bookings" ? "active" : ""}`} onClick={() => onClose()}><BarChart3 size={17} /><span>{t("sidebar.bookingsReport")}</span></Link>}
+        {can("property.view_financials") && <Link href="/dashboard/financials" className={`nav-link ${location === "/dashboard/financials" ? "active" : ""}`} onClick={() => onClose()}><BarChart3 size={17} /><span>{t("sidebar.financials")}</span></Link>}
         {settingsItems.length > 0 && (
           <>
             <button
@@ -274,7 +272,7 @@ export function Sidebar({
                   const Icon = item.icon;
                   const isActive = location.startsWith(item.href);
                   return (
-                    <Link key={item.href} href={item.href} className={`nav-link nav-sublink ${isActive ? "active" : ""}`} onClick={() => onClose()}>
+                    <Link key={item.href} href={item.href} data-tour={item.tourTarget} className={`nav-link nav-sublink ${isActive ? "active" : ""}`} onClick={() => onClose()}>
                       <Icon size={16} strokeWidth={isActive ? 2.3 : 1.8} />
                       <span>{item.label}</span>
                     </Link>

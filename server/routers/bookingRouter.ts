@@ -272,7 +272,7 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
   await enforcePublicBookingRateLimit(ctx);
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
   try {
-    return await dbConfirmBookingDetails(ctx.db, createD1PublicCallerContext(), {
+    const result = await dbConfirmBookingDetails(ctx.db, createD1PublicCallerContext(), {
       booking_id: input.booking_id,
       hotel_id: input.hotel_id,
       guest_name: input.guest_name,
@@ -281,6 +281,7 @@ export const confirmBookingDetails = rateLimitedProcedure.input(confirmBookingDe
       special_requests: input.special_requests || null,
       services: input.services,
     }, new Date(), ctx.emailSender, resolveAppUrl(ctx.publicAppUrl ?? (ctx.req?.url ? new URL(ctx.req.url).origin : undefined)));
+    return result;
   } catch (error) {
     return rethrowDomainError(error);
   }

@@ -1,6 +1,6 @@
 # 15 — Invoicing and tax documents
 
-Status: draft, not approved (2026-11-05). Owner and accountant review required before implementation.
+Status: in progress (2026-11-06). The owner approved a basic tool: bill header, configurable VAT and withholding switches, and receipt or tax invoice from a paid booking, printed or saved as PDF. Quotations, invoices before payment, voids and the monthly export are not built.
 
 ## Scope
 
@@ -17,8 +17,8 @@ This is a proposed workflow for hotel-issued documents connected to a booking. I
 
 - Prefill the hotel name, address and other confirmed issuer details from hotel settings. Prefill guest name and booking details from the booking. The user reviews and can correct document-specific buyer details before issue; retain the issued snapshot so later profile edits do not alter it.
 - Generate a print-ready A4 PDF with a clear document type, unique number, issue date, issuer/buyer details, itemized amounts and payment status where relevant. A PDF download alone is **not** an approved electronic tax invoice workflow. The Revenue Department describes separate enrolment, PDF/A-3, email and timestamp steps for its e-Tax Invoice by Email service ([official overview](https://etax.rd.go.th/etax_staticpage/app/emag/flipbook/01_Overview.pdf)); any electronic tax invoice implementation needs separate review.
-- Support a hotel setting for VAT-inclusive or VAT-exclusive displayed prices, with an effective date and a calculation preview. Keep rate, rounding, tax point and eligibility configurable only after accountant approval. Do not infer VAT registration from the hotel having a tax ID.
-- Support company guests with company name, registered address, tax ID and branch details when needed. Track withholding tax as a separate recorded amount and supporting certificate/reference; do not assume a fixed rate or that every company booking requires it.
+- Booking prices paid by guests include VAT when the hotel VAT switch is on; withholding is calculated from the pre-VAT subtotal and each displayed line rounds to satang.
+- Support company guests with company name, registered address, tax ID and branch details when needed. The hotel configures whether withholding applies and its rate; the payer issues the 50 bis certificate.
 - Export a monthly CSV or Excel workbook of issued documents and payment/tax fields, with a date range, stable columns, totals and correction/cancellation markers. This is an accounting export, not an automatic filing to the Revenue Department.
 
 ## Controls and acceptance criteria

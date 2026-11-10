@@ -6,6 +6,9 @@ import {
   saveSlipOkSettings,
   removeSlipOkKey,
   savePromptPaySettings,
+  getHotelPaymentConfig,
+  getBookingRequestTimeout,
+  saveBookingRequestTimeout,
 } from '../d1/payment';
 import { encryptSlipOkKey, hashSlipOkKey } from '../slipokCrypto';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
@@ -19,6 +22,42 @@ function requireStepUpIfEnabled(user: Parameters<typeof requireRecentMfaVerifica
 }
 
 export const slipokRouter = router({
+  getPromptPaySettings: protectedProcedure
+    .input(z.object({ hotel_id: hotelIdSchema }))
+    .query(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+      if (!ctx.db) throw new Error('D1 database required.');
+      try {
+        return await getHotelPaymentConfig(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+
+  getBookingRequestTimeout: protectedProcedure
+    .input(z.object({ hotel_id: hotelIdSchema }))
+    .query(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+      if (!ctx.db) throw new Error('D1 database required.');
+      try {
+        return await getBookingRequestTimeout(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+
+  saveBookingRequestTimeout: protectedProcedure
+    .input(z.object({ hotel_id: hotelIdSchema, booking_request_timeout_hours: z.number().int().min(1).max(168) }))
+    .mutation(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+      if (!ctx.db) throw new Error('D1 database required.');
+      try {
+        await saveBookingRequestTimeout(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.booking_request_timeout_hours);
+        return { success: true as const };
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
   getSettings: protectedProcedure
     .input(z.object({ hotel_id: hotelIdSchema }))
     .query(async ({ ctx, input }) => {
@@ -45,7 +84,7 @@ export const slipokRouter = router({
       requireStepUpIfEnabled(ctx.user);
       if (!ctx.db) throw new Error('D1 database required.');
       try {
-        const [encryptedKey, keyHash] = await Promise.all([encryptSlipOkKey(input.api_key), hashSlipOkKey(input.api_key)]).catch(error => {
+        const [encryptedKey, keyHash] = await Promise.all([encryptSlipOkKey(input.api_key, ctx.billingEnv?.SLIPOK_ENCRYPTION_KEY), hashSlipOkKey(input.api_key)]).catch(error => {
           // A missing SLIPOK_ENCRYPTION_KEY is ours to fix; its message stays out of the response.
           console.error('[slipok.saveKey] could not encrypt the key:', error instanceof Error ? error.message : error);
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not save the SlipOK key.' });
@@ -74,7 +113,7 @@ export const slipokRouter = router({
   savePromptPayId: protectedProcedure
     .input(z.object({
       hotel_id: z.string().uuid(),
-      promptpay_id: z.string().trim().min(10).max(13).regex(/^\d+$/, 'PromptPay ID must be digits only'),
+      promptpay_id: z.string().trim().min(1).max(32),
       payment_timeout_minutes: z.number().int().min(5).max(60).default(15),
     }))
     .mutation(async ({ ctx, input }) => {

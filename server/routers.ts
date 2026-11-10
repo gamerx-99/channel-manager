@@ -1,9 +1,13 @@
 import { accessRouter } from "./routers/accessRouter";
+import { staffShiftsRouter } from "./routers/staffShiftsRouter";
+import { staffTasksRouter } from "./routers/staffTasksRouter";
 import { router } from './_core/trpc';
 import { systemRouter } from './_core/systemRouter';
 import { notificationsRouter } from './routers/notificationsRouter';
 import { authRouter } from './routers/authRouter';
 import { hotelClosureRouter } from './routers/hotelClosureRouter';
+import { bookingDocumentsRouter } from './routers/bookingDocumentsRouter';
+import { bookingsReport } from './routers/bookingsReportRouter';
 import { paymentRouter } from './routers/paymentRouter';
 import { slipokRouter } from './routers/slipokRouter';
 import { subscriptionBillingRouter } from './subscriptionBillingRouter';
@@ -83,6 +87,10 @@ import {
   setHotelMediaObjectPosition,
   setHotelMediaCaption,
   setHotelMediaGallerySelection,
+  reorderHotelMedia,
+  exportHotelData,
+  previewHotelImport,
+  applyHotelImport,
 } from './routers/hotelRouter';
 import {
   bookings,
@@ -101,10 +109,14 @@ export const appRouter = router({
   notifications: notificationsRouter,
   auth: authRouter,
   hotelClosure: hotelClosureRouter,
+  bookingDocuments: bookingDocumentsRouter,
   staff: staffRouter,
+  staffShifts: staffShiftsRouter,
+  staffTasks: staffTasksRouter,
   channelManager: router({
     dashboard,
       financials,
+    bookingsReport,
     dashboardCalendar,
     hotels,
     canCreateHotel,
@@ -174,6 +186,10 @@ export const appRouter = router({
     setHotelMediaObjectPosition,
     setHotelMediaCaption,
     setHotelMediaGallerySelection,
+    reorderHotelMedia,
+    exportHotelData,
+    previewHotelImport,
+    applyHotelImport,
     ota: otaRouter,
   }),
 

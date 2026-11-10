@@ -7,7 +7,7 @@ import { en, th } from "./i18n";
 describe("localizeServerMessage", () => {
   it("shows known server errors in Thai", () => {
     expect(localizeServerMessage("Hotel access denied.", "th")).toBe("คุณไม่มีสิทธิ์ทำรายการนี้ในที่พักนี้");
-    expect(localizeServerMessage("This hotel has not configured PromptPay. Please contact the hotel directly.", "th")).toBe(th.serverErrors.promptPayMissing);
+    expect(localizeServerMessage("This property cannot take PromptPay payments right now. Please contact the property directly.", "th")).toBe(th.serverErrors.promptPayUnavailable);
   });
 
   it("leaves English and unknown messages as they are", () => {

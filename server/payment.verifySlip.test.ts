@@ -8,6 +8,8 @@ const payment = vi.hoisted(() => ({
   updateBookingPaymentStatus: vi.fn(),
   updatePaymentSessionStatus: vi.fn(),
   finalizePaymentSession: vi.fn(),
+  confirmManualFullPayment: vi.fn(),
+  savePaymentSessionSlip: vi.fn(),
 }));
 const booking = vi.hoisted(() => ({ expireBookingIfPast: vi.fn(), logBookingStatusChange: vi.fn(), claimBookingNights: vi.fn(), sendBookingNotice: vi.fn() }));
 const verify = vi.hoisted(() => vi.fn());
@@ -27,11 +29,12 @@ const BOOKING = "22222222-2222-4222-8222-222222222222";
 const SESSION = "33333333-3333-4333-8333-333333333333";
 const HOLD_EXPIRES = new Date("2099-01-01T00:00:00.000Z");
 
-function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, status = "pending_payment", claimRows: unknown[] = [{ id: BOOKING }]) {
+function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, status = "pending_payment", claimRows: unknown[] = [{ id: BOOKING }], paymentStatus = "pending") {
   const writes: Array<Record<string, unknown>> = [];
-  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, expiresAt: HOLD_EXPIRES }] };
+  const selectChain: any = { from: () => selectChain, innerJoin: () => selectChain, where: () => selectChain, limit: async () => [{ id: BOOKING, hotelId: HOTEL, publicEnabled: published, status, paymentStatus, expiresAt: HOLD_EXPIRES, createdAt: new Date() }] };
   const db = {
     select: () => selectChain,
+    $client: { prepare: () => ({ bind: () => ({}) }), batch: vi.fn(async () => []) },
     update: () => ({
       set(values: Record<string, unknown>) {
         writes.push(values);
@@ -44,8 +47,8 @@ function fakeDb(rejectedRows: unknown[] = [{ id: BOOKING }], published = true, s
   return { db, writes };
 }
 
-const submit = (db: unknown, index: number) => paymentRouter
-  .createCaller({ db, clientIp: `verify-slip-${index}`, user: null } as never)
+const submit = (db: unknown, index: number, candidateEnabled = true) => paymentRouter
+  .createCaller({ db, media: { put: vi.fn(async () => ({})), delete: vi.fn(async () => {}) }, clientIp: `verify-slip-${index}`, user: null, billingEnv: candidateEnabled ? { BILLING_CANDIDATE_ENABLED: "true" } : undefined } as never)
   .verifySlip({ booking_id: BOOKING, session_id: SESSION, slip_data: "c2xpcA==" });
 
 beforeEach(() => {
@@ -53,6 +56,8 @@ beforeEach(() => {
   payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", qr_reference: "ref", expires_at: "2099-01-01T00:00:00.000Z" });
   payment.getHotelPaymentConfig.mockResolvedValue({ promptpay_id: "0812345678", payment_timeout_minutes: 15 });
   payment.finalizePaymentSession.mockResolvedValue({ duplicateRef: false });
+  payment.confirmManualFullPayment.mockResolvedValue(true);
+  payment.savePaymentSessionSlip.mockResolvedValue(undefined);
   booking.expireBookingIfPast.mockResolvedValue({ status: "pending_payment" });
   booking.claimBookingNights.mockResolvedValue(true);
   payment.getSlipOkCredentialsForVerification.mockResolvedValue({ slipok_key_enc: "encrypted", slipok_branch_id: "hotel-branch" });
@@ -75,6 +80,18 @@ describe("verifySlip outcomes", () => {
     expect(writes.at(-1)).toEqual({ status: "pending_payment", expiresAt: HOLD_EXPIRES });
     expect(payment.finalizePaymentSession).not.toHaveBeenCalled();
     expect(booking.sendBookingNotice).not.toHaveBeenCalled();
+  });
+
+  it("uses baseline SlipOK confirmation writes when the candidate is off", async () => {
+    verify.mockResolvedValueOnce({ matched: true, transactionRef: "BANK-REF", amount: 120, raw: { matched: true } });
+    const { db, writes } = fakeDb();
+
+    await expect(submit(db, 99, false)).resolves.toMatchObject({ verified: true });
+
+    expect(payment.finalizePaymentSession).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, expect.objectContaining({ status: "paid", verifiedTransactionRef: "BANK-REF" }));
+    expect(payment.confirmManualFullPayment).not.toHaveBeenCalled();
+    expect(writes).toContainEqual({ status: "confirmed", expiresAt: null });
+    expect(payment.updateBookingPaymentStatus).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, BOOKING, "verified");
   });
 
   it("rejects a refused slip and closes the session", async () => {
@@ -100,12 +117,12 @@ describe("verifySlip outcomes", () => {
 
   it("verifies with the hotel's own SlipOK key", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-1", amount: 120, raw: {} });
-    const { db, writes } = fakeDb();
+    const { db } = fakeDb();
 
     await expect(submit(db, 5)).resolves.toMatchObject({ verified: true });
 
     expect(verify).toHaveBeenCalledWith({ apiKey: "hotel-key", branchId: "hotel-branch" }, expect.objectContaining({ expectedAmount: 120 }));
-    expect(writes.at(-1)).toEqual({ status: "confirmed", paymentStatus: "verified" });
+    expect(payment.confirmManualFullPayment).toHaveBeenCalledWith(db, expect.objectContaining({ amountSatang: 12000, transactionReference: "TX-1", reason: "slipok_auto_verified" }));
     expect(booking.sendBookingNotice).toHaveBeenCalledWith(expect.anything(), expect.anything(), BOOKING, HOTEL, "booking_confirmed", ["guest", "hotel"], "https://www.hayhostth.com");
   });
 
@@ -119,6 +136,7 @@ describe("verifySlip outcomes", () => {
     expect(writes.at(-1)).toMatchObject({ status: "pending_verification" });
     expect(loggedReasons()).toContain("slipok_not_configured_manual_review_required");
     expect(booking.sendBookingNotice).toHaveBeenCalledWith(expect.anything(), expect.anything(), BOOKING, HOTEL, "booking_awaiting_check", ["hotel"], "https://www.hayhostth.com", SESSION);
+    expect(payment.savePaymentSessionSlip).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, `payment-slips/${HOTEL}/${SESSION}`);
   });
 
   it("sends the slip to manual review when SlipOK refuses the hotel key", async () => {
@@ -150,13 +168,13 @@ describe("verifySlip outcomes", () => {
 
   it("keeps the booking for staff when the slip reference was already used", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-USED", amount: 120, raw: {} });
-    payment.finalizePaymentSession.mockResolvedValueOnce({ duplicateRef: true });
+    payment.confirmManualFullPayment.mockRejectedValueOnce(new TRPCError({ code: "CONFLICT", message: "duplicate transaction reference" }));
     const { db, writes } = fakeDb();
 
     await expect(submit(db, 10)).rejects.toMatchObject({ code: "CONFLICT" });
 
     expect(writes.some(write => write.status === "confirmed")).toBe(false);
-    expect(loggedReasons()).toContain("duplicate_slip_ref");
+    expect(loggedReasons()).not.toContain("duplicate_slip_ref");
   });
 
   it("refuses a second concurrent submit instead of reprocessing the booking", async () => {
@@ -170,12 +188,12 @@ describe("verifySlip outcomes", () => {
 
   it("rechecks the room before confirming a booking that was payment_rejected", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-4", amount: 120, raw: {} });
-    const { db, writes } = fakeDb(undefined, true, "payment_rejected");
+    const { db } = fakeDb(undefined, true, "payment_rejected");
 
     await expect(submit(db, 12)).resolves.toMatchObject({ verified: true });
 
     expect(booking.claimBookingNights).toHaveBeenCalledWith(db, expect.anything(), HOTEL, BOOKING);
-    expect(writes.at(-1)).toEqual({ status: "confirmed", paymentStatus: "verified" });
+    expect(payment.confirmManualFullPayment).toHaveBeenCalledOnce();
   });
 
   it("sends a payment_rejected booking to manual review when its room is taken", async () => {
@@ -200,7 +218,7 @@ describe("verifySlip outcomes", () => {
 
   it("hands the booking to staff when an unexpected error follows the claim", async () => {
     verify.mockResolvedValueOnce({ matched: true, transactionRef: "TX-7", amount: 120, raw: {} });
-    payment.finalizePaymentSession.mockRejectedValueOnce(new Error("D1 down"));
+    payment.confirmManualFullPayment.mockRejectedValueOnce(new Error("D1 down"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { db } = fakeDb();
 
@@ -225,5 +243,15 @@ describe("checkStatus while a slip waits for staff", () => {
     payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2000-01-01T00:00:00.000Z" });
     await expect(check(fakeDb(undefined, true, "pending_payment").db, 2)).resolves.toEqual({ status: "expired", verifiedAt: null });
     expect(payment.updatePaymentSessionStatus).toHaveBeenCalledWith(expect.anything(), expect.anything(), HOTEL, SESSION, "expired");
+  });
+
+  it("reports staff approval as paid even if the session had not been finalized", async () => {
+    payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2099-01-01T00:00:00.000Z", verified_at: "2026-11-09T00:00:00.000Z" });
+    await expect(check(fakeDb(undefined, true, "confirmed", [], "verified").db, 3)).resolves.toEqual({ status: "paid", verifiedAt: "2026-11-09T00:00:00.000Z" });
+  });
+
+  it("reports staff rejection as failed", async () => {
+    payment.getLatestPaymentSession.mockResolvedValue({ id: SESSION, booking_id: BOOKING, hotel_id: HOTEL, amount: "120.00", status: "pending", expires_at: "2099-01-01T00:00:00.000Z" });
+    await expect(check(fakeDb(undefined, true, "payment_rejected", [], "failed").db, 4)).resolves.toEqual({ status: "failed", verifiedAt: null });
   });
 });

@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync(new URL("./themes.css", import.meta.url), "utf8");
 
 describe("theme booking text colors", () => {
-  it.each(["minimal-white", "lanna-teak", "cafe-homestay"]) ("defines booking heading and highlight colors for %s", theme => {
+  it.each(["minimal-white", "lanna-teak", "cafe-homestay", "mountain-mist", "boutique-noir", "hostel-pop", "riverside-calm", "vintage-old-town"]) ("defines booking heading and highlight colors for %s", theme => {
     expect(css).toMatch(new RegExp(`\\.theme-${theme} \\.public-booking h2[^\\{]*\\{[^}]*color:`));
     expect(css).toMatch(new RegExp(`\\.theme-${theme} \\.public-booking h2 i[^\\{]*\\{[^}]*color:`));
   });
   it("keeps hotel accent and computed text on calls to action in every theme", () => {
-    for (const theme of ["minimal-white", "lanna-teak", "cafe-homestay"]) {
+    for (const theme of ["minimal-white", "lanna-teak", "cafe-homestay", "mountain-mist", "boutique-noir", "hostel-pop", "riverside-calm", "vintage-old-town"]) {
       expect(css).toContain(`.theme-${theme} .public-button`);
       expect(css).toContain(`.theme-${theme} .public-booking .booking-next`);
     }

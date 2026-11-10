@@ -1,0 +1,18 @@
+.financials-page { max-width: 1320px; }
+.financials-page .financials-period-panel { margin-bottom: 16px; }
+.financials-page .financials-period-panel .panel-heading { padding-bottom: 12px; }
+.financials-page .financials-period-picker { align-items: center; }
+.financials-page .financials-period-picker .button { min-height: 40px; }
+.financials-page .financials-period-picker .button.is-active { background: #954831; border-color: #954831; color: #fff; }
+.financials-page .financials-period-label { flex: 1 1 150px; }
+.financials-page .financials-summary-panel { margin-bottom: 16px; }
+.financials-page .financials-charts-panel { margin-bottom: 16px; }
+.financials-page .financials-summary-panel > .grid,
+.financials-page .financials-charts-panel > .grid { gap: 14px; }
+.financials-page .financials-summary-panel .grid > *,
+.financials-page .financials-charts-panel .grid > * { min-width: 0; }
+@media (max-width: 640px) {
+  .financials-page .financials-period-picker { gap: 6px; }
+  .financials-page .financials-period-picker .button { min-height: 40px; }
+  .financials-page .financials-period-label { order: -1; flex-basis: 100%; padding: 4px 0; }
+}

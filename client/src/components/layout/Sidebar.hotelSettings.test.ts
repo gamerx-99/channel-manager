@@ -9,10 +9,10 @@ const t = (key: string) => key;
 const canFor = (permissions: readonly Permission[]) => (permission: Permission) => permissions.includes(permission);
 
 describe("sidebar hotel settings group", () => {
-  it("gives the owner both links: hotel staff and hayhost support access", () => {
+  it("gives the owner general, finance, staff and support links", () => {
     const items = getHotelSettingsItems("h1", canFor(resolveMembershipPermissions("hotel_owner")), t);
-    expect(items.map(item => item.href)).toEqual(["/hotels/h1/staff", "/hotels/h1/support-access"]);
-    expect(items.map(item => item.label)).toEqual(["sidebar.hotelStaff", "supportAccess.navLabel"]);
+    expect(items.map(item => item.href)).toEqual(["/hotels/h1/settings/general", "/hotels/h1/settings/finance", "/hotels/h1/staff", "/hotels/h1/support-access"]);
+    expect(items.map(item => item.label)).toEqual(["sidebar.generalSettings", "sidebar.financeSettings", "sidebar.hotelStaff", "supportAccess.navLabel"]);
   });
 
   it("is empty for staff roles without those permissions, so the button never shows", () => {

@@ -3,9 +3,9 @@ import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
 import { usePageMeta } from "@/lib/pageMeta";
 import { useBookingWizard } from "./useBookingWizard";
+import { getHotelThemeColors } from "@shared/hotelThemes";
 
 export const DEFAULT_HERO_COPY = "เลือกห้องพัก ดูราคา และตรวจสอบวันว่างได้ที่นี่";
-export const DEFAULT_ACCENT_COLOR = "#954831";
 
 export function usePublicHotelPage(slug: string) {
   const { t, language, setLanguage, toggleLanguage } = useTranslation();
@@ -46,7 +46,10 @@ export function usePublicHotelPage(slug: string) {
       }
     : notFound ? { title: t("publicHotel.hotelUnavailableTitle"), description: t("publicHotel.hotelUnavailableDesc"), noindex: true } : null);
 
-  if (!publicHotel.data) return { hotel: null, roomTypes: [], media: [], heroImage: undefined, siteConfig: null, accentColor: DEFAULT_ACCENT_COLOR, visibleSections: null, heroCopy: t("publicHotel.defaultHeroCopy"), language: undefined, t, loading, error, notFound, refetch: publicHotel.refetch, booking: null };
+  if (!publicHotel.data) {
+    const defaultColors = getHotelThemeColors(null);
+    return { hotel: null, roomTypes: [], media: [], heroImage: undefined, siteConfig: null, accentColor: defaultColors.buttonBackground, accentTextColor: defaultColors.buttonText, highlightColor: defaultColors.highlight, visibleSections: null, heroCopy: t("publicHotel.defaultHeroCopy"), language: undefined, t, loading, error, notFound, refetch: publicHotel.refetch, booking: null };
+  }
   const { hotel, roomTypes, media } = publicHotel.data;
   const heroImage = media.find(item => item.is_hero)?.url ?? media[0]?.url;
 
@@ -54,12 +57,13 @@ export function usePublicHotelPage(slug: string) {
   const siteConfig = siteConfigQuery.data ?? null;
   const heroCopy = siteConfig?.heroCopy ?? DEFAULT_HERO_COPY;
   const displayHeroCopy = siteConfig?.heroCopy?.trim() ? heroCopy : t("publicHotel.defaultHeroCopy");
-  const accentColor = siteConfig?.accentColor ?? DEFAULT_ACCENT_COLOR;
+  const themeColors = getHotelThemeColors(siteConfig?.theme);
+  const accentColor = themeColors.buttonBackground;
   const visibleSections = (siteConfig?.visibleSections as Record<string, boolean> | null) ?? null;
   const isVisible = (key: string) => visibleSections?.[key] !== false;
 
   return {
-    hotel, roomTypes, media, heroImage, siteConfig, accentColor, visibleSections, heroCopy: displayHeroCopy,
+    hotel, roomTypes, media, heroImage, siteConfig, accentColor, accentTextColor: themeColors.buttonText, highlightColor: themeColors.highlight, visibleSections, heroCopy: displayHeroCopy,
     language, setLanguage, toggleLanguage, t, loading, error, notFound, refetch: publicHotel.refetch,
     isVisible,
     booking,

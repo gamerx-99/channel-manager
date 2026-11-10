@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LAZY GECKO HOSTEL - Chiang Mai Backpackers</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,400;0,500;0,700;0,800;0,900;1,800&amp;family=Kanit:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&amp;family=Space+Grotesk:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-container": "#ffd23f",
+            "surface-container": "#eeeeee",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-container": "#62edc9",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#e2e2e2",
+            "outline-variant": "#d1c5ad",
+            "on-secondary-fixed": "#3f0018",
+            "surface-dim": "#dadada",
+            "on-tertiary-container": "#006955",
+            "on-surface-variant": "#4d4634",
+            "inverse-primary": "#edc22e",
+            "surface": "#f9f9f9",
+            "on-secondary-container": "#62002a",
+            "on-primary-fixed-variant": "#574500",
+            "on-tertiary-fixed": "#002019",
+            "secondary-container": "#fd5c8e",
+            "secondary-fixed-dim": "#ffb1c2",
+            "error-container": "#ffdad6",
+            "tertiary": "#006b57",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "on-primary-fixed": "#241a00",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed-variant": "#8f0040",
+            "surface-tint": "#745c00",
+            "on-background": "#1b1b1b",
+            "secondary": "#b32057",
+            "outline": "#7f7661",
+            "error": "#ba1a1a",
+            "surface-bright": "#f9f9f9",
+            "tertiary-fixed-dim": "#4eddba",
+            "surface-container-low": "#f3f3f3",
+            "secondary-fixed": "#ffd9e0",
+            "on-tertiary-fixed-variant": "#005141",
+            "primary-fixed": "#ffe089",
+            "on-primary-container": "#725a00",
+            "primary-fixed-dim": "#edc22e",
+            "tertiary-fixed": "#6ffad5",
+            "on-surface": "#1b1b1b",
+            "inverse-surface": "#303030",
+            "inverse-on-surface": "#f1f1f1",
+            "background": "#f9f9f9",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#e8e8e8",
+            "primary": "#745c00",
+            "surface-container-highest": "#e2e2e2"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "margin": "2rem",
+            "gutter-mobile": "1rem",
+            "margin-mobile": "1rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2.5rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Epilogue", "Kanit", "sans-serif"],
+            "label-md": ["Space Grotesk", "Kanit", "sans-serif"],
+            "body-md": ["Epilogue", "Kanit", "sans-serif"],
+            "label-lg": ["Space Grotesk", "Kanit", "sans-serif"],
+            "headline-md": ["Epilogue", "Kanit", "sans-serif"],
+            "headline-sm": ["Epilogue", "Kanit", "sans-serif"],
+            "headline-lg": ["Epilogue", "Kanit", "sans-serif"],
+            "label-sticker": ["Space Grotesk", "Kanit", "sans-serif"],
+            "body-lg": ["Epilogue", "Kanit", "sans-serif"],
+            "display-hero-mobile": ["Epilogue", "Kanit", "sans-serif"],
+            "display-hero": ["Epilogue", "Kanit", "sans-serif"],
+            "body-sm": ["Epilogue", "Kanit", "sans-serif"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-md": ["13px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "700" }],
+            "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+            "label-lg": ["16px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "800" }],
+            "headline-sm": ["22px", { "lineHeight": "28px", "fontWeight": "700" }],
+            "headline-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+            "label-sticker": ["12px", { "lineHeight": "14px", "letterSpacing": "0.1em", "fontWeight": "700" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "500" }],
+            "display-hero-mobile": ["40px", { "lineHeight": "46px", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+            "display-hero": ["64px", { "lineHeight": "72px", "letterSpacing": "-0.03em", "fontWeight": "900" }],
+            "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .brutal-shadow-6 {
+      box-shadow: 6px 6px 0px #000000;
+    }
+    .brutal-shadow-4 {
+      box-shadow: 4px 4px 0px #000000;
+    }
+    .brutal-btn-primary {
+      background-color: #ffd23f;
+      border: 3px solid #000000;
+      box-shadow: 6px 6px 0px #000000;
+      transition: transform 100ms ease-out, box-shadow 100ms ease-out;
+    }
+    .brutal-btn-primary:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 4px 4px 0px #000000;
+    }
+    .brutal-btn-primary:active {
+      transform: translate(6px, 6px);
+      box-shadow: 0px 0px 0px #000000;
+    }
+    .brutal-btn-pink {
+      background-color: #fd5c8e;
+      border: 3px solid #000000;
+      box-shadow: 6px 6px 0px #000000;
+      transition: transform 100ms ease-out, box-shadow 100ms ease-out;
+    }
+    .brutal-btn-pink:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 4px 4px 0px #000000;
+    }
+    .brutal-btn-pink:active {
+      transform: translate(6px, 6px);
+      box-shadow: 0px 0px 0px #000000;
+    }
+    .grid-dots {
+      background-image: radial-gradient(#000000 1.5px, transparent 1.5px);
+      background-size: 20px 20px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-md text-body-md selection:bg-secondary-container selection:text-surface-container-lowest">
+<!-- ================= TOP APP BAR (Shared Component Exact Implementation) ================= -->
+<header class="w-full sticky top-0 z-50 bg-primary-container border-b-4 border-on-surface shadow-[0_4px_0_0_#1b1b1b]">
+<div class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex justify-between items-center">
+<!-- Brand Logo / Product Name with Thai Subtitle & Icon Sticker -->
+<a class="flex items-center gap-3 group" href="#">
+<div class="bg-surface-container-lowest border-2 border-on-surface p-1.5 rotate-[-4deg] shadow-[2px_2px_0px_#000000] flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface" data-icon="pets" data-weight="fill" style="font-variation-settings: 'FILL' 1;">pets</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-sm font-headline-sm font-black tracking-tight text-on-surface uppercase">LAZY GECKO HOSTEL</span>
+<span class="text-[12px] font-bold text-on-surface-variant leading-none -mt-1 font-body-sm">(เลซี่ เก็คโค่ โฮสเทล)</span>
+</div>
+</a>
+<!-- Desktop Nav Links -->
+<nav class="hidden md:flex items-center space-x-6">
+<a class="border-b-2 border-on-surface text-on-surface font-label-lg text-label-lg font-bold hover:translate-x-[1px] hover:translate-y-[1px] transition-transform duration-100" href="#rooms">Rooms</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg font-bold hover:translate-x-[1px] hover:translate-y-[1px] transition-transform duration-100" href="#gallery">Gallery</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg font-bold hover:translate-x-[1px] hover:translate-y-[1px] transition-transform duration-100" href="#location">Location</a>
+<!-- Language Switch Badge -->
+<span class="bg-surface-container-lowest border-2 border-on-surface px-2.5 py-0.5 text-label-md font-label-md rotate-[2deg] shadow-[2px_2px_0px_#000000] font-bold cursor-pointer">
+          TH | EN
+        </span>
+</nav>
+<!-- Trailing Primary Action -->
+<div class="flex items-center gap-3">
+<a class="brutal-btn-pink px-5 py-2 text-surface-container-lowest font-label-lg text-label-lg uppercase tracking-wider font-extrabold flex items-center gap-1.5" href="#booking">
+<span>Book now</span>
+</a>
+</div>
+</div>
+</header>
+<!-- ================= HERO SECTION ================= -->
+<section class="w-full bg-primary-container border-b-4 border-on-surface pt-10 pb-16 md:py-16 relative overflow-hidden grid-dots">
+<div class="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+<!-- Top Stickers Cluster -->
+<div class="flex flex-wrap items-center gap-3 mb-6">
+<div class="bg-tertiary-fixed border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-2deg] brutal-shadow-4 text-on-tertiary-container uppercase tracking-wider font-extrabold">
+          CHIANG MAI BACKPACKERS!
+        </div>
+<div class="bg-secondary-container border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[3deg] brutal-shadow-4 text-surface-container-lowest uppercase tracking-wider font-extrabold">
+          BEST VIBES!
+        </div>
+<div class="bg-surface-container-lowest border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-1deg] brutal-shadow-4 text-on-surface uppercase tracking-wider font-extrabold">
+          5 MIN TO THA PHAE GATE!
+        </div>
+</div>
+<!-- Hero Main Flex Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+<!-- Left: Huge Typography & Tilted Photo -->
+<div class="lg:col-span-7 flex flex-col relative">
+<h1 class="font-display-hero text-display-hero uppercase text-on-surface tracking-tighter leading-[0.95] mb-6">
+            LAZY GECKO<br/>
+<span class="text-surface-container-lowest drop-shadow-[4px_4px_0_#000000]">HOSTEL</span>
+</h1>
+<div class="bg-surface-container-lowest border-[3px] border-on-surface p-4 brutal-shadow-6 mb-8 max-w-xl">
+<p class="font-body-lg text-body-lg font-bold text-on-surface leading-snug">
+              Dorm beds from ฿250, private rooms for two, rooftop for sunsets. Five minutes' walk to Tha Phae Gate.
+            </p>
+</div>
+<!-- Tilted Visual Accent Card -->
+<div class="relative w-full max-w-lg mt-2 mb-4">
+<div class="absolute -top-4 -right-3 z-20 bg-secondary-container text-surface-container-lowest border-[3px] border-on-surface px-4 py-1.5 font-label-sticker text-label-sticker rotate-[4deg] brutal-shadow-4 uppercase font-black">
+              ROOFTOP SUNSETS!
+            </div>
+<div class="border-[3px] border-on-surface bg-surface-container-lowest p-2 rotate-[-2deg] brutal-shadow-6">
+<img class="w-full h-64 object-cover border-[2px] border-on-surface block" data-alt="Young social backpackers enjoying a golden sunset on a colorful open-air hostel rooftop terrace in Chiang Mai Thailand. The scene is bathed in warm solar ambient light, with vibrant string lights, bamboo furniture, and lush tropical potted plants. Guests laugh and converse casually against the scenic mountain backdrop of Doi Suthep under an orange and violet dusk sky." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE1iWhoNXR7UOam7F92wqy15cUHr6yHkegN7_A8v2AYQ4W2ggsX3q3ZQSV6Odm-Kef-TwsomLz87BzK-_RLUf4MbJv2wYn0hoiXq8NOLtZEUIp89fjBPhKki9E3LB3J89m_0oX027xLyKTtfSne3qmTpd7IPTYxz_v1m6EwoLXFfAK8MA5rGcIH6f2Avy6YvxmUw-BlB_wQxeuygu3nA_EOYPN8j-SdkJypDPHm0U"/>
+</div>
+</div>
+</div>
+<!-- Right: Chunky Neo-Brutalist Booking Box -->
+<div class="lg:col-span-5" id="booking">
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 p-6 md:p-8 relative">
+<!-- Sticky header ribbon on card -->
+<div class="absolute -top-4 -left-4 bg-tertiary-container border-[3px] border-on-surface px-4 py-1.5 font-label-sticker text-label-sticker rotate-[-3deg] brutal-shadow-4 text-on-tertiary-container font-black uppercase tracking-wider">
+              DIRECT BOOKING GUARANTEE
+            </div>
+<div class="border-b-[3px] border-on-surface pb-4 mb-6 mt-2 flex justify-between items-center">
+<h2 class="font-headline-sm text-headline-sm uppercase font-black text-on-surface">RESERVE A BED</h2>
+<span class="bg-primary-container border-2 border-on-surface px-2 py-0.5 text-label-md font-label-md font-black">BEST RATE</span>
+</div>
+<form class="space-y-4" onsubmit="event.preventDefault();">
+<!-- Check-In -->
+<div>
+<label class="block font-label-md text-label-md uppercase font-bold text-on-surface mb-1.5">Check-In</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border-[3px] border-on-surface p-3 font-label-lg text-label-lg font-bold brutal-shadow-4 focus:ring-0 focus:border-on-surface focus:outline-none" type="date" value="2024-11-20"/>
+</div>
+</div>
+<!-- Check-Out -->
+<div>
+<label class="block font-label-md text-label-md uppercase font-bold text-on-surface mb-1.5">Check-Out</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border-[3px] border-on-surface p-3 font-label-lg text-label-lg font-bold brutal-shadow-4 focus:ring-0 focus:border-on-surface focus:outline-none" type="date" value="2024-11-24"/>
+</div>
+</div>
+<!-- Guests Row -->
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block font-label-md text-label-md uppercase font-bold text-on-surface mb-1.5">Adults</label>
+<select class="w-full bg-surface-container-lowest border-[3px] border-on-surface p-3 font-label-lg text-label-lg font-bold brutal-shadow-4 focus:ring-0 focus:border-on-surface focus:outline-none">
+<option>1 Adult</option>
+<option selected="">2 Adults</option>
+<option>3 Adults</option>
+<option>4 Adults</option>
+</select>
+</div>
+<div>
+<label class="block font-label-md text-label-md uppercase font-bold text-on-surface mb-1.5">Children</label>
+<select class="w-full bg-surface-container-lowest border-[3px] border-on-surface p-3 font-label-lg text-label-lg font-bold brutal-shadow-4 focus:ring-0 focus:border-on-surface focus:outline-none">
+<option selected="">0 Children</option>
+<option>1 Child</option>
+</select>
+</div>
+</div>
+<!-- Thai PromptPay QR Badge -->
+<div class="bg-surface-container border-[3px] border-on-surface p-3 flex items-center justify-between mt-4">
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-lowest border-2 border-on-surface p-1 shadow-[2px_2px_0px_#000000]">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="qr_code_2">qr_code_2</span>
+</div>
+<div>
+<span class="font-label-md text-label-md font-black uppercase block leading-none">PromptPay QR</span>
+<span class="text-[11px] font-body-sm text-on-surface-variant">Instant Thai QR confirmation</span>
+</div>
+</div>
+<span class="bg-tertiary-container border border-on-surface px-2 py-0.5 text-[11px] font-bold uppercase text-on-tertiary-container">Accepted</span>
+</div>
+<!-- Submit Button -->
+<button class="w-full brutal-btn-primary py-4 text-center font-label-lg text-label-lg uppercase tracking-wider font-black text-on-surface mt-6 block" type="submit">
+                Check availability
+              </button>
+</form>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= ABOUT / INTRO SECTION ================= -->
+<section class="w-full bg-tertiary-fixed border-b-4 border-on-surface py-16 px-4 md:px-8">
+<div class="max-w-7xl mx-auto">
+<!-- Big Quote Banner -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 p-8 md:p-12 relative overflow-hidden">
+<div class="absolute -top-3 right-6 bg-secondary-container text-surface-container-lowest border-[3px] border-on-surface px-4 py-1 font-label-sticker text-label-sticker rotate-[3deg] brutal-shadow-4 uppercase font-black">
+          HOSTEL POP EXPERIENCE
+        </div>
+<div class="max-w-4xl">
+<span class="inline-block bg-primary-container border-2 border-on-surface px-3 py-1 font-label-md text-label-md font-black mb-4 uppercase">
+            Sawasdee backpackers!
+          </span>
+<h2 class="font-headline-lg text-headline-lg font-black text-on-surface tracking-tight uppercase leading-tight mb-8">
+            "Dorm beds from ฿250, private rooms for two, rooftop for sunsets. Five minutes' walk to Tha Phae Gate."
+          </h2>
+</div>
+<!-- Playful Stickers Bar -->
+<div class="border-t-[3px] border-on-surface pt-6 flex flex-wrap gap-4 items-center">
+<div class="bg-primary-container border-[3px] border-on-surface px-4 py-2 font-label-sticker text-label-sticker rotate-[-2deg] brutal-shadow-4 text-on-surface uppercase font-extrabold flex items-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="deck">deck</span>
+            ROOFTOP HAMMOCKS
+          </div>
+<div class="bg-secondary-container border-[3px] border-on-surface px-4 py-2 font-label-sticker text-label-sticker rotate-[2deg] brutal-shadow-4 text-surface-container-lowest uppercase font-extrabold flex items-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="soup_kitchen">soup_kitchen</span>
+            COMMUNITY KITCHEN
+          </div>
+<div class="bg-tertiary-fixed-dim border-[3px] border-on-surface px-4 py-2 font-label-sticker text-label-sticker rotate-[-1deg] brutal-shadow-4 text-on-surface uppercase font-extrabold flex items-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="wifi">wifi</span>
+            FREE FAST WIFI
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= ROOMS SECTION ================= -->
+<section class="w-full bg-surface-container-low border-b-4 border-on-surface py-20 px-4 md:px-8" id="rooms">
+<div class="max-w-7xl mx-auto">
+<!-- Section Title Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+<div>
+<div class="inline-block bg-secondary-container border-2 border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-2deg] text-surface-container-lowest font-black uppercase mb-2">
+            CLEAN &amp; COZY CRASH PADS
+          </div>
+<h2 class="font-headline-lg text-headline-lg font-black text-on-surface uppercase tracking-tight">
+            OUR ROOMS &amp; PODS
+          </h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md font-bold">
+          High-grade air conditioned spaces with lock boxes, plush mattresses, and custom black-out curtains.
+        </p>
+</div>
+<!-- Horizontal Row of 4 Room Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1: Electric Yellow #FFD23F -->
+<div class="bg-primary-container border-[3px] border-on-surface brutal-shadow-6 flex flex-col justify-between relative group">
+<div class="absolute -top-3.5 right-4 z-20 bg-surface-container-lowest border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[3deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            SOLO FAVORITE
+          </div>
+<div>
+<div class="p-3 border-b-[3px] border-on-surface bg-surface-container-lowest">
+<img class="w-full h-48 object-cover border-[2px] border-on-surface" data-alt="Interior view of a modern wooden 8-bed hostel mixed bunk dormitory pod in Chiang Mai. Each pod features crisp clean white bedding, warm individual LED reading lights, black-out privacy curtains, and solid timber frames. The room is modern, pristine, and sunlit by morning daylight reflecting on light polished concrete floors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM8p1i5ndu2dI1UhUrBV3u88_RtcRlOMUx3_SLXDSx-8yP7CiqaRtJ7yMzrSuJBhZ4UwE2k4KRTsXghmr7Mazma7LzEEN0xXKEfk0u9ILOif0GyhJe7ERKV5mqW-eYkS3CTdMK8qYeu_bK1MODSsfnf2zU7lf4zflWY8MwqdjIQY4mbHpwq4AC1BrBgoAcvoNc2BfmYHT1RRp8wCKX0mgCXzYLvhrj8Yjlfv-i6f8"/>
+</div>
+<div class="p-5">
+<h3 class="font-headline-sm text-headline-sm font-black text-on-surface uppercase mb-1">
+                8-Bed Mixed Pod Dorm
+              </h3>
+<div class="font-label-md text-label-md text-on-surface font-bold uppercase mb-4 opacity-80">
+                Up to 1 guest
+              </div>
+<div class="border-t-2 border-on-surface pt-4">
+<span class="font-display-hero-mobile text-display-hero-mobile font-black text-on-surface leading-none block">฿250</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface block mt-1">per bed / night</span>
+</div>
+</div>
+</div>
+<div class="p-5 pt-0">
+<button class="w-full bg-surface-container-lowest border-[3px] border-on-surface py-3 font-label-lg text-label-lg uppercase font-black text-on-surface brutal-shadow-4 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all">
+              Select
+            </button>
+</div>
+</div>
+<!-- Card 2: Hot Pink #FF5D8F -->
+<div class="bg-secondary-container border-[3px] border-on-surface brutal-shadow-6 flex flex-col justify-between relative group">
+<div class="absolute -top-3.5 right-4 z-20 bg-primary-container border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-3deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            GIRLS ONLY
+          </div>
+<div>
+<div class="p-3 border-b-[3px] border-on-surface bg-surface-container-lowest">
+<img class="w-full h-48 object-cover border-[2px] border-on-surface" data-alt="Clean and cozy 4-bed female sanctuary dorm in a tropical boutique hostel in Chiang Mai. Soft pink and warm pastel accents adorn the spacious bunk beds, with individual luggage lockers, plush pillows, and full-length mirrors. The room is safe, tranquil, and illuminated by soft morning window light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGFv2nzOIJt7ZXliwhvRzERsi0xHY83s0RFjlskHVAkJx-0lta3hcNF_7gnBYR3dvFkHW4QIiTulSAPM8fWL0GLNWe2wCQdMlJtUYkr7-pYBKcGbopoS_YQVPNqg2vR5IPr6AXvURcZSkvz8VTdU46LZJTe2WoY47SqsKszPfHNYs3wp5-UDQA-VEycNqN3kHBxHDj7Gy53GnSNAHcFWsVGWPYqSOOP-SixDtGi_g"/>
+</div>
+<div class="p-5 text-surface-container-lowest">
+<h3 class="font-headline-sm text-headline-sm font-black text-surface-container-lowest uppercase mb-1">
+                4-Bed Female Sanctuary Dorm
+              </h3>
+<div class="font-label-md text-label-md text-surface-container-lowest font-bold uppercase mb-4 opacity-90">
+                Up to 1 guest
+              </div>
+<div class="border-t-2 border-surface-container-lowest pt-4">
+<span class="font-display-hero-mobile text-display-hero-mobile font-black text-surface-container-lowest leading-none block">฿320</span>
+<span class="font-body-sm text-body-sm font-bold text-surface-container-lowest block mt-1">per bed / night</span>
+</div>
+</div>
+</div>
+<div class="p-5 pt-0">
+<button class="w-full bg-surface-container-lowest border-[3px] border-on-surface py-3 font-label-lg text-label-lg uppercase font-black text-on-surface brutal-shadow-4 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all">
+              Select
+            </button>
+</div>
+</div>
+<!-- Card 3: Sky Cyan #3BCEAC -->
+<div class="bg-tertiary-fixed border-[3px] border-on-surface brutal-shadow-6 flex flex-col justify-between relative group">
+<div class="absolute -top-3.5 right-4 z-20 bg-surface-container-lowest border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[2deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            COUPLES &amp; PRIVACY
+          </div>
+<div>
+<div class="p-3 border-b-[3px] border-on-surface bg-surface-container-lowest">
+<img class="w-full h-48 object-cover border-[2px] border-on-surface" data-alt="Stylish neo-brutalist private ensuite double bedroom inside a Chiang Mai hostel. Features a queen-size bed dressed in crisp white linens with mustard yellow cushions, a minimalist clothes rack, private ensuite bathroom door, and quirky graphic art prints on bright clean walls." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcrO4wicDp9BvJYVTTDl64xtpN41wr7s6VNSg-ZNZrgF5bVplRGNZ780KMgYqZbpnaqPKVy-hosA5TIqS1kB30CrCLAr4pt58fcDYrGXuwfvoWlRAV21MvEsdy5a6pzb06GJrYEKwsRqld39laeJBEmPsATWN4qeNkWu_CTLEJl7uKrr0QWvkEI2bCP1zwpXUO7iLYvqXkAIHlvRU33e4LuQ5XPSCUxzaMX_grIpk"/>
+</div>
+<div class="p-5">
+<h3 class="font-headline-sm text-headline-sm font-black text-on-surface uppercase mb-1">
+                Private Double Ensuite
+              </h3>
+<div class="font-label-md text-label-md text-on-surface font-bold uppercase mb-4 opacity-80">
+                Up to 2 guests
+              </div>
+<div class="border-t-2 border-on-surface pt-4">
+<span class="font-display-hero-mobile text-display-hero-mobile font-black text-on-surface leading-none block">฿750</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface block mt-1">per room / night</span>
+</div>
+</div>
+</div>
+<div class="p-5 pt-0">
+<button class="w-full bg-surface-container-lowest border-[3px] border-on-surface py-3 font-label-lg text-label-lg uppercase font-black text-on-surface brutal-shadow-4 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all">
+              Select
+            </button>
+</div>
+</div>
+<!-- Card 4: White / Lavender #F5F5F5 -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 flex flex-col justify-between relative group">
+<div class="absolute -top-3.5 right-4 z-20 bg-secondary-container border-[3px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-2deg] brutal-shadow-4 font-black uppercase text-surface-container-lowest">
+            BALCONY VIEW
+          </div>
+<div>
+<div class="p-3 border-b-[3px] border-on-surface bg-surface-container">
+<img class="w-full h-48 object-cover border-[2px] border-on-surface" data-alt="Sun-drenched deluxe twin bedroom with open balcony in Chiang Mai overlooking the old town rooftops. Features two twin single beds with colorful geometric throws, large sliding glass doors opening to a green potted plant balcony, and airy bright atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdr0JKGLMy6uaFlpTlZkJVAN_9AaNRjgxJUQuFKdE3Y4h8YbP7iS04yiimglMQciHuGTHVLPYSCr8fVS_Jpcs2lxzT7kHZ_dtlBygFvnw50sxic7VP4BWoGDOuuEwyBs6k8N-ooFmF2m7YivwUuE-_Qe5G66-gk4Y_zjv52kcOFQ0wHTv2DSQMJdPcVBGaWehnC8JbFSTLu--Ytw8_zRv6oaBhhFWoZgXrhGqU5n0"/>
+</div>
+<div class="p-5">
+<h3 class="font-headline-sm text-headline-sm font-black text-on-surface uppercase mb-1">
+                Deluxe Twin Balcony Room
+              </h3>
+<div class="font-label-md text-label-md text-on-surface font-bold uppercase mb-4 opacity-80">
+                Up to 2 guests
+              </div>
+<div class="border-t-2 border-on-surface pt-4">
+<span class="font-display-hero-mobile text-display-hero-mobile font-black text-on-surface leading-none block">฿850</span>
+<span class="font-body-sm text-body-sm font-bold text-on-surface block mt-1">per room / night</span>
+</div>
+</div>
+</div>
+<div class="p-5 pt-0">
+<button class="w-full bg-primary-container border-[3px] border-on-surface py-3 font-label-lg text-label-lg uppercase font-black text-on-surface brutal-shadow-4 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all">
+              Select
+            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= GALLERY BENTO GRID SECTION ================= -->
+<section class="w-full bg-surface-container border-b-4 border-on-surface py-20 px-4 md:px-8" id="gallery">
+<div class="max-w-7xl mx-auto">
+<div class="mb-10 text-center">
+<div class="inline-block bg-primary-container border-[3px] border-on-surface px-4 py-1.5 font-label-sticker text-label-sticker rotate-[-1deg] brutal-shadow-4 uppercase font-black mb-3">
+          VISUAL TOUR
+        </div>
+<h2 class="font-headline-lg text-headline-lg font-black text-on-surface uppercase tracking-tight">
+          LIFE AT THE GECKO
+        </h2>
+</div>
+<!-- Bento Grid (8 mixed size realistic photo tiles) -->
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[220px]">
+<!-- Tile 1: Exterior Facade (Span 2 cols, 2 rows) -->
+<div class="md:col-span-2 md:row-span-2 bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden group">
+<div class="absolute top-4 left-4 z-20 bg-secondary-container text-surface-container-lowest border-[2px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-2deg] brutal-shadow-4 font-black uppercase">
+            EXTERIOR: Neon entrance
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Vibrant tropical street front facade of Lazy Gecko Hostel in Chang Moi Chiang Mai at twilight. A warm neon sign in electric yellow and hot pink illuminates the rustic wooden entrance surrounded by potted tropical palms, vintage bicycles, and a cheerful welcoming entryway for backpackers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpfCYeGRuGBLMZaLWb_Vc4gT8lpMP1asVG5SCOLshnun4NM3AbtxKOdZe42VOaC17rU6fEBdkkGZO6CY3ryLzeBtYy2wNWkPh538IsuuTxa7OW27q_Wb8kHZ2u4I8R9R4myOMEduXFQAdE-lZXKm-PQB5KMHlTIodEfRX1iNLn2-zC_Gc82E8EPctJ3rhblyL_FSbp4fFQgjEjzLYVzmUB_D7tBqu3yU7nLMsvjnU"/>
+</div>
+<!-- Tile 2: Common Lounge -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-primary-container border-[2px] border-on-surface px-2.5 py-0.5 font-label-sticker text-label-sticker rotate-[2deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            LOUNGE: Beanbag zone
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Eclectic hostel common lounge room featuring bright turquoise beanbags, graphic poster art walls, board games, and young travelers relaxing on low tables under warm ambient hanging pendant lights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfMG5ymK_NRFDA1RcUm6yu8szIbFj82DTKLgvoKBkUJIE2UTmosRjoRyRCyaXGFdKdi_quA_pdAEayzHM6tFmTIzN4hgPNPWXjZduimO1i55eWg2gwbOTkngpRaDPzU3muMnwGzmbBP7X835mm3k-KGX93lBls9Y0x_ODS58TWi7WTT59OGaW6u5BWpqURRApKZ7YnryCRYmxNkUYe9clqRunSja30GYDCRWAh7Z0"/>
+</div>
+<!-- Tile 3: Dorm Pod Privacy -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-tertiary-fixed border-[2px] border-on-surface px-2.5 py-0.5 font-label-sticker text-label-sticker rotate-[-3deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            ROOM: Private pod privacy
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Close up view inside a cozy wooden hostel sleeping pod with thick drawn blackout curtains, clean white folded linen, a brass reading light, integrated charging socket, and backpack cubby." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaJE_58luGgvzEQGBCsv1sKVDs2SJTrzoHZmQWpUredEZC3Y1UxuRsEk9N4aO6lmafQRaOSrrTDQ5Xl_QePqtrBVBd7aIKvfB6fWPGfynFm5Ad-kk4ZN9PzIU8qMmTymlYYnWNqqh7Hpqm0mmAP_rWqdM_8cgZ5FCJJFpjxyA1aeVGe6DMmm-PiFgEbCyBUUt1QgxBE0Oms_o5C0OIvLQPHfuFNKc47wdG_6u0yfc"/>
+</div>
+<!-- Tile 4: Rooftop Sunset Gathering (Span 2 cols) -->
+<div class="md:col-span-2 bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-primary-container border-[2px] border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[-1deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            COMMON: Rooftop sunset session
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Panoramic perspective of the open-air hostel rooftop bar during golden hour. Friendly young travelers chat with cold craft drinks while gazing at the Chiang Mai skyline and mountain silhouettes bathed in radiant orange sunlight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuDojCCNc-syRvpGWvYsBgs6l9oYZ0r38sxEBQfVhV9uWsuZzU1HBiCBaupC1hpEU4LX-Y7Q1QF5caD0oK-55KjghUtNP9RGQP9TLY48eMJltYVJXVtvFHH4HR5mj7dX_HVSOA17m3V62SnrEbyGPFyxmw40yqnikWD0LXsqNZRWFyBrnPFMkBXR8P7p4YyEY7xrB0YjL5FUh3GEF8u1KU51WTkrSBwbsFA08IAFo"/>
+</div>
+<!-- Tile 5: Chiang Mai Street Food -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-secondary-container text-surface-container-lowest border-[2px] border-on-surface px-2.5 py-0.5 font-label-sticker text-label-sticker rotate-[2deg] brutal-shadow-4 font-black uppercase">
+            LOCAL: Street food night
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Steaming night market street food stall in Chang Moi Chiang Mai with colorful noodle bowls, spicy satay skewers sizzling on charcoal, and energetic lively night vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaxPCnwsqulNDQYdRF45FRpA4C-8hbxsbh7BgK_WRj1I9Y7HwSgODW9-il45dEtjDQU_00vfB6QqP0npF6KsMCSranfA1yFXj846ur31sJWVau8T7qYWFNeABs6XIt6Gb6lSfmVNfcQysYeVxa64KA645zQzhiwdK8Ht1CVEkz3WL0_LIQuBbLmpiuy1datX_zCa0W8toje5nHwYEA73FGn9U9Z8mrb9DOsYkDiKQ"/>
+</div>
+<!-- Tile 6: Rooftop Hammocks -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-tertiary-fixed border-[2px] border-on-surface px-2.5 py-0.5 font-label-sticker text-label-sticker rotate-[-2deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            CHILL: Rooftop hammock
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Colorful striped hammocks tied between wooden beams on a lush covered rooftop terrace with panoramic views of Northern Thai temples and sunny skies." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRdOLCkjRNAMoRK4R5DiCeR3MCzk8F0wEB5n5qYFiOdaHZHBv6ShCQcmvvyyKzBlJjl4048EfEoCg6ELAonijmB2F0kHAVwCz5BVrjSIylnfxWtI7N3hKCimjUA4XAXYEvaJTbC4FE02gWVOqHituc4XHtlrC9PZu0vokeNwQKLR-Mb_BANESoBX3xvW5rzoH_bqZfN9KUfUXHAjA9tH8lOnxgnrlb5bM-drPrF3s"/>
+</div>
+<!-- Tile 7: Reading Nook -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-primary-container border-[2px] border-on-surface px-2.5 py-0.5 font-label-sticker text-label-sticker rotate-[1deg] brutal-shadow-4 font-black uppercase text-on-surface">
+            NOOK: Quiet book corner
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Quiet sun-filled reading corner inside the hostel with a book-swap wooden shelf, potted monstera plant, comfortable rattan armchair, and natural morning light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4ynFI6pz3Itl1FVVy2qI6nlfAIyVROxinviDVMVEkre1XBcoU92Bc0WQ9r2y52cAqzYcvW1pwdFr1BgWZ_VjT_mrjS2nfM2wNoFx0G7LB4NnI8U2ch9LYtoTB358-7SepmfcO_YZR9TxqqgqMNUi2h3v-NdwmYaL4E2iKbCF2GA6uITb7z8M7XD5laSLI_Sc2CtkPkUAg587UYmctnSVyCyBYsjgKmOFbvRsRyPg"/>
+</div>
+<!-- Tile 8: Thai Iced Tea Breakfast -->
+<div class="bg-surface-container-lowest border-[3px] border-on-surface brutal-shadow-6 relative p-2 overflow-hidden">
+<div class="absolute top-4 left-4 z-20 bg-secondary-container text-surface-container-lowest border-[2px] border-on-surface px-2.5 py-0.5 font-label-sticker text-label-sticker rotate-[-3deg] brutal-shadow-4 font-black uppercase">
+            CAFE: Thai iced tea morning
+          </div>
+<img class="w-full h-full object-cover border-[2px] border-on-surface" data-alt="Traditional orange Thai iced tea in tall glasses with condensed milk layers, fresh tropical fruit plate with mango and dragonfruit on a rustic timber communal dining bench." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZZwixDH8l_8YwnBEs7ZFlMdIEBzjxvSjRVDUW1AFuAA_RlWD3SdnmEcSSwzUm13VKXFApeRB-DF_IeDLzTn06Q1gG9a33EpFFyMXoFc_VrRPZ3mCajIjexmtTws_aU7I1megVjUtQb7YTz8oyTF5LEcXZSK4RXelHGf-Ka9ZTF5TguDBCugZKVJKdUDJVcPnbounhVF_OptKuMbd6W3bPo7qtwxU74a1SL1uvXV0"/>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= LOCATION SECTION ================= -->
+<section class="w-full bg-surface-container-lowest border-b-4 border-on-surface py-20 px-4 md:px-8" id="location">
+<div class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+<!-- Left: Map Container with Brutal Border & Big Pink Pin -->
+<div class="lg:col-span-7">
+<div class="border-[4px] border-on-surface bg-surface-container brutal-shadow-6 p-3 relative">
+<!-- Big Hot Pink Pin Sticker -->
+<div class="absolute top-8 left-8 z-20 bg-secondary-container text-surface-container-lowest border-[3px] border-on-surface px-4 py-2 font-label-sticker text-label-sticker rotate-[-3deg] brutal-shadow-4 font-black uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="location_on" data-weight="fill" style="font-variation-settings: 'FILL' 1;">location_on</span>
+              YOU ARE HERE! (5 min to Tha Phae Gate)
+            </div>
+<!-- Map View Placeholder with data-location -->
+<div class="relative w-full h-[380px] bg-tertiary-fixed border-[2px] border-on-surface overflow-hidden flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="Clean graphic minimalist cartographic map rendering of Chiang Mai Old City and Chang Moi district highlighting Tha Phae Gate moat canals and street networks in high contrast bold styling." data-location="Chiang Mai" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH2b2TVrS9EDJC_l6bGKkK2o-ruj4XEb_wrqYqhTowAFvH7_A3Fz8Ih301gjBjklwbHSEY2B8d0yitBfGs4o6L89A8GYj-euov9_Kr9-rWw56AqbP8KIf4QwEGjCFW10vUQ7-6hYLKZeaCXCRMhV_jRqLiG7JZjlaw1fArFurjkBAABytstjzMzigo840L6Jlika-_ZBvd8twp7QoVGnQrXakXT3Q3Z7SaaWY4jOg"/>
+</div>
+</div>
+</div>
+<!-- Right: Address & Walking Distances Card -->
+<div class="lg:col-span-5">
+<div class="bg-primary-container border-[3px] border-on-surface brutal-shadow-6 p-8">
+<span class="bg-surface-container-lowest border-2 border-on-surface px-3 py-1 font-label-sticker text-label-sticker rotate-[2deg] inline-block font-black uppercase mb-4 text-on-surface">
+              CENTRAL LOCATION
+            </span>
+<h2 class="font-headline-md text-headline-md font-black text-on-surface uppercase mb-3">
+              CHANG MOI, CHIANG MAI
+            </h2>
+<p class="font-body-md text-body-md font-bold text-on-surface mb-6">
+              Chang Moi, Mueang Chiang Mai, Thailand
+            </p>
+<div class="border-t-[3px] border-on-surface pt-6 space-y-4">
+<div class="flex items-center justify-between bg-surface-container-lowest border-2 border-on-surface p-3 shadow-[2px_2px_0px_#000000]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface" data-icon="directions_walk">directions_walk</span>
+<span class="font-label-md text-label-md font-black uppercase">Tha Phae Gate</span>
+</div>
+<span class="font-label-md text-label-md font-black bg-tertiary-fixed px-2 py-0.5 border border-on-surface">5 mins</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-lowest border-2 border-on-surface p-3 shadow-[2px_2px_0px_#000000]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface" data-icon="storefront">storefront</span>
+<span class="font-label-md text-label-md font-black uppercase">Warorot Night Market</span>
+</div>
+<span class="font-label-md text-label-md font-black bg-tertiary-fixed px-2 py-0.5 border border-on-surface">7 mins</span>
+</div>
+<div class="flex items-center justify-between bg-surface-container-lowest border-2 border-on-surface p-3 shadow-[2px_2px_0px_#000000]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface" data-icon="local_cafe">local_cafe</span>
+<span class="font-label-md text-label-md font-black uppercase">Old City Cafe Strip</span>
+</div>
+<span class="font-label-md text-label-md font-black bg-tertiary-fixed px-2 py-0.5 border border-on-surface">3 mins</span>
+</div>
+</div>
+<a class="w-full mt-6 brutal-btn-pink py-3 text-center font-label-lg text-label-lg uppercase tracking-wider font-black text-surface-container-lowest block" href="#booking">
+              Lock in your dates
+            </a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= FOOTER (Shared Component Exact Implementation) ================= -->
+<footer class="w-full bg-surface-container-lowest border-t-4 border-on-surface">
+<div class="max-w-7xl mx-auto py-8 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<!-- Brand & Thai subtitle & Address info -->
+<div class="flex flex-col items-center md:items-start text-center md:text-left">
+<span class="text-headline-sm font-headline-sm font-black text-on-surface uppercase">LAZY GECKO HOSTEL</span>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+          © 2024 Lazy Gecko Hostel (เลซี่ เก็คโค่ โฮสเทล) Chang Moi, Mueang Chiang Mai, Thailand. Booking powered by hayhost
+        </p>
+</div>
+<!-- Links defined in Shared JSON -->
+<div class="flex items-center space-x-6">
+<a class="text-on-surface-variant font-label-md text-label-md hover:text-secondary hover:underline transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant font-label-md text-label-md hover:text-secondary hover:underline transition-colors" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-label-md text-label-md hover:text-secondary hover:underline transition-colors" href="#">House Rules</a>
+</div>
+</div>
+</footer>
+</body></html>

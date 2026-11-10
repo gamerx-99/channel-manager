@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 describe('Hotel Detail calendar navigation', () => {
   const hotelDetail = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelDetail.tsx'), 'utf8');
+  const general = readFileSync(resolve(process.cwd(), 'client/src/components/hotel/HotelGeneralOperations.tsx'), 'utf8');
+  const finance = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelFinanceSettings.tsx'), 'utf8');
   const app = readFileSync(resolve(process.cwd(), 'client/src/App.tsx'), 'utf8');
 
   it('links availability to the registered calendar route', () => {
@@ -25,32 +27,34 @@ describe('Hotel Detail calendar navigation', () => {
   });
 
   it('lets a holder of property.manage_profile publish or unpublish the hotel page', () => {
-    expect(hotelDetail).toContain("hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], id, 'property.manage_profile')");
-    expect(hotelDetail).toContain('trpc.channelManager.setHotelPublished.useMutation');
-    expect(hotelDetail).toContain('{canPublish && <div className="publish-control">');
-    expect(hotelDetail).toContain('id="hotel-publish-toggle"');
-    expect(hotelDetail).toContain("t('hotelDetail.confirmUnpublish')");
+    expect(app).toContain('path="/hotels/:id/settings/general"');
+    expect(general).toContain('trpc.channelManager.setHotelPublished.useMutation');
+    expect(general).toContain('id="hotel-publish-toggle"');
+    expect(general).toContain("t('hotelDetail.confirmUnpublish')");
   });
 
-  it('opens the hotel profile form and saves name, address and owner contact', () => {
-    expect(hotelDetail).toContain('trpc.channelManager.updateHotelProfile.useMutation');
-    expect(hotelDetail).toContain('onClick={openHotelEditor}');
-    expect(hotelDetail).toContain("t('hotelDetail.hotelNameLabel')");
-    expect(hotelDetail).toContain("t('hotelDetail.addressLabel')");
-    expect(hotelDetail).toContain("t('hotelDetail.contactLabel')");
-    expect(hotelDetail).toContain("t('hotelDetail.notificationEmailLabel')");
-    expect(hotelDetail).toContain('notification_email: hotelProfileForm.notification_email.trim() || null');
+  it('moves payment and invoice settings to the finance page', () => {
+    expect(finance).toContain("'property.manage_profile'");
+    expect(finance).toContain('<HotelPaymentSettings hotelId={id} />');
+    expect(finance).toContain('<HotelInvoiceSettings');
+    expect(hotelDetail).not.toContain('HotelPaymentSettings');
+    expect(hotelDetail).not.toContain('<Dialog open={showEditHotel}');
+  });
+
+  it('redirects the former profile query to the dedicated page', () => {
+    expect(hotelDetail).toContain("get('edit') === 'profile'");
+    expect(hotelDetail).toContain('return <Redirect to={`/hotels/${id}/profile`} />');
+    expect(hotelDetail).not.toContain('openHotelEditor');
     expect(hotelDetail).not.toContain('hotelDetail.comingSoon');
   });
 
-  it('has no dead href="#" tabs: Photos opens the website builder for this hotel, Domains is gone', () => {
+  it('keeps hotel navigation in the sidebar without duplicating page tabs', () => {
     const services = readFileSync(resolve(process.cwd(), 'client/src/pages/HotelServices.tsx'), 'utf8');
     const builder = readFileSync(resolve(process.cwd(), 'client/src/components/website-builder/useWebsiteBuilder.ts'), 'utf8');
 
-    // AGENTS.md Rule 6 rationale: HotelDetail retains the full sub-navigation bar including the website builder link.
     expect(hotelDetail).not.toContain('href="#"');
     expect(hotelDetail).not.toContain('tabDomains');
-    expect(hotelDetail).toContain("<Link href={`/website-builder?hotel=${hotel.id}`}>{t('hotelDetail.tabImages')}</Link>");
+    expect(hotelDetail).not.toContain('detail-tabs');
 
     // AGENTS.md Rule 6 rationale: Commit b3f8b3f removed duplicate nav tabs from HotelServices;
     // assert no dead links, no tabDomains, and no detail-tabs.
@@ -59,6 +63,15 @@ describe('Hotel Detail calendar navigation', () => {
     expect(services).not.toContain('detail-tabs');
 
     expect(builder).toContain('new URLSearchParams(window.location.search).get("hotel")');
+  });
+
+  it('matches the room management heading to its sidebar label in both languages', () => {
+    const th = readFileSync(resolve(process.cwd(), 'client/src/lib/i18n/th.ts'), 'utf8');
+    const en = readFileSync(resolve(process.cwd(), 'client/src/lib/i18n/en.ts'), 'utf8');
+    expect(th).toContain('roomTypesManage: "จัดการประเภทห้องพัก"');
+    expect(th).toContain('headingRoomTypes: "จัดการประเภทห้องพัก"');
+    expect(en).toContain('roomTypesManage: "Manage room types"');
+    expect(en).toContain('headingRoomTypes: "Manage room types"');
   });
 
   it('manages room type amenities with RoomAmenitiesPicker instead of freeform textarea', () => {

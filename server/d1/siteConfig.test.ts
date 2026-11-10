@@ -6,7 +6,7 @@ import { drizzle as sqliteProxy } from "drizzle-orm/sqlite-proxy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { d1Schema, hotelMedia, hotelSiteConfig, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
-import { createHotelMedia, deleteHotelMedia, discardHotelSiteConfigDraft, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, publishHotelSiteConfig, saveHotelSiteConfig, setHotelMediaCaption, setHotelMediaGallerySelection, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
+import { createHotelMedia, deleteHotelMedia, discardHotelSiteConfigDraft, getHotelSiteConfig, getHotelSiteConfigBySlug, listHotelMedia, publishHotelSiteConfig, reorderHotelMedia, saveHotelSiteConfig, setHotelMediaCaption, setHotelMediaGallerySelection, setHotelMediaHero, setHotelMediaObjectPosition } from "./siteConfig";
 import { getPublicHotel } from "./hotel";
 
 const migrationFolder = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle/d1");
@@ -172,6 +172,17 @@ describe("D1 site config and media repository", () => {
       .rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("saves a theme with an existing two-digit focal point", async () => {
+    await seedHotel("a", "owner-a");
+    const photo = await createHotelMedia(db, { userId: "owner-a" }, { hotel_id: "a", url: "/focal.jpg" });
+
+    const saved = await saveHotelSiteConfig(db, { userId: "owner-a" }, {
+      hotel_id: "a", theme: "lanna-teak", media_positions: { [photo.id]: "50% 40%" },
+    });
+    expect(JSON.parse(saved.draftJson!).theme).toBe("lanna-teak");
+    expect(JSON.parse(saved.draftJson!).mediaPositions).toEqual({ [photo.id]: "50% 40%" });
+  });
+
   it("validates theme ids at the router boundary and refuses users without website edit permission", async () => {
     const { appRouter } = await import("../routers");
     const hotelId = "88ed76e4-cc93-4aa7-9c4d-30999d35ada4";
@@ -196,6 +207,67 @@ describe("D1 site config and media repository", () => {
       createHotelMedia(db, { userId: "owner-a" }, { hotel_id: "a", url: "hero-2", is_hero: true }),
     ]);
     expect((await db.select().from(hotelMedia).where(eq(hotelMedia.hotelId, "a"))).filter(media => media.isHero)).toHaveLength(1);
+  });
+});
+
+describe("reorderHotelMedia", () => {
+  const owner = { userId: "owner-a" };
+  const publicCaller = { userId: "", access: "public" as const };
+
+  // Cover, three gallery photos and one photo the owner turned off "show on website", all published once.
+  async function seedPublishedSite() {
+    await seedHotel("a", "owner-a");
+    await seedHotel("b", "owner-b");
+    const cover = await createHotelMedia(db, owner, { hotel_id: "a", url: "/cover.jpg", is_hero: true, display_order: 0 });
+    const [g1, g2, g3, hidden] = await Promise.all([1, 2, 3, 4].map(order => createHotelMedia(db, owner, { hotel_id: "a", url: `/p${order}.jpg`, display_order: order })));
+    await saveHotelSiteConfig(db, owner, { hotel_id: "a", hero_copy: "Published", hero_media_id: cover.id });
+    await setHotelMediaGallerySelection(db, owner, "a", hidden!.id, false);
+    await publishHotelSiteConfig(db, owner, "a");
+    await db.insert(hotelMedia).values({ id: "media-b", hotelId: "b", url: "/b.jpg" });
+    return { cover: cover.id, g1: g1!.id, g2: g2!.id, g3: g3!.id, hidden: hidden!.id };
+  }
+
+  it("changes only the draft until publish, then guests see the new cover and order", async () => {
+    const p = await seedPublishedSite();
+    await expect(reorderHotelMedia(db, owner, { hotel_id: "a", ids: [p.g3, p.cover, p.g1, p.g2] }))
+      .resolves.toEqual({ heroMediaId: p.g3, galleryMediaIds: [p.cover, p.g1, p.g2] });
+
+    const config = await getHotelSiteConfig(db, owner, "a");
+    expect(JSON.parse(config!.draftJson!)).toMatchObject({ heroCopy: "Published", heroMediaId: p.g3, galleryMediaIds: [p.cover, p.g1, p.g2] });
+    expect(config).toMatchObject({ heroCopy: "Published" });
+    expect((await listHotelMedia(db, owner, "a")).filter(item => item.isHero).map(item => item.id)).toEqual([p.cover]);
+    expect((await getPublicHotel(db, publicCaller, "a-slug")).media.map(item => item.id)).toEqual([p.cover, p.g1, p.g2, p.g3]);
+
+    await publishHotelSiteConfig(db, owner, "a");
+    expect((await listHotelMedia(db, owner, "a")).filter(item => item.isHero).map(item => item.id)).toEqual([p.g3]);
+    expect((await getPublicHotel(db, publicCaller, "a-slug")).media.map(item => item.id)).toEqual([p.g3, p.cover, p.g1, p.g2]);
+  });
+
+  it("rejects another hotel's photo, a photo not in the gallery, an incomplete set and duplicates", async () => {
+    const p = await seedPublishedSite();
+    const before = (await getHotelSiteConfig(db, owner, "a"))?.draftJson ?? null;
+    for (const ids of [
+      [p.g3, p.cover, p.g1, "media-b"],
+      [p.g3, p.cover, p.g1, p.g2, p.hidden],
+      [p.g3, p.cover, p.g1],
+      [p.g3, p.g3, p.g1, p.g2],
+    ]) {
+      await expect(reorderHotelMedia(db, owner, { hotel_id: "a", ids })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    await expect(reorderHotelMedia(db, { userId: "owner-b" }, { hotel_id: "a", ids: [p.g3, p.cover, p.g1, p.g2] })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect((await getHotelSiteConfig(db, owner, "a"))?.draftJson ?? null).toBe(before);
+  });
+
+  it("works for a hotel with more than seven photos and never brings back a photo turned off", async () => {
+    await seedHotel("a", "owner-a");
+    const cover = await createHotelMedia(db, owner, { hotel_id: "a", url: "/cover.jpg", is_hero: true, display_order: 0 });
+    const photos = await Promise.all(Array.from({ length: 8 }, (_, i) => createHotelMedia(db, owner, { hotel_id: "a", url: `/p${i}.jpg`, display_order: i + 1 })));
+    await setHotelMediaGallerySelection(db, owner, "a", photos[1]!.id, false);
+    const gallery = JSON.parse((await getHotelSiteConfig(db, owner, "a"))!.draftJson!).galleryMediaIds as string[];
+    expect(gallery).toHaveLength(5);
+    const ids = [gallery[4]!, ...gallery.slice(0, 4), cover.id];
+    await expect(reorderHotelMedia(db, owner, { hotel_id: "a", ids })).resolves.toEqual({ heroMediaId: gallery[4], galleryMediaIds: [...gallery.slice(0, 4), cover.id] });
+    expect(JSON.parse((await getHotelSiteConfig(db, owner, "a"))!.draftJson!).galleryMediaIds).not.toContain(photos[1]!.id);
   });
 });
 

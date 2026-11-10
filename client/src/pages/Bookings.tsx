@@ -1,4 +1,6 @@
-import { Download, ExternalLink, FileSpreadsheet, MessageCircle, Plus, Search, UserRoundPlus, X } from 'lucide-react';
+import { Download, ExternalLink, FileSpreadsheet, MessageCircle, Plus, Receipt, Search, UserRoundPlus, X } from 'lucide-react';
+import { canIssueBookingDocument } from '@shared/bookingDocuments';
+import BookingDocumentDialog from '@/components/booking/BookingDocumentDialog';
 import { FormEvent, useMemo, useState } from 'react';
 import { formatIsoToDisplayDate, parseDisplayDateToIso } from '@shared/dateUtils';
 import { Link } from 'wouter';
@@ -9,6 +11,7 @@ import { useTranslation } from '@/lib/i18n';
 import { communicationsEnabled } from '@/lib/featureFlags';
 import { buildTm30PrintHtml } from '@/lib/tm30Print';
 import { hasHotelPermission } from '@shared/authorization';
+import { useBillingCandidateEnabled } from '@/lib/useBillingCandidateEnabled';
 
 // The Immigration Bureau's own TM.30 site, where the hotel uploads the exported file.
 const TM30_PORTAL_URL = 'https://tm30.immigration.go.th/tm30api/loginExternal.jsp';
@@ -42,6 +45,7 @@ function downloadBase64Xlsx(base64: string, filename: string, contentType: strin
 
 export default function Bookings({ id }: { id: string }) {
   const { t } = useTranslation();
+  const billingCandidate = useBillingCandidateEnabled();
   const utils = trpc.useUtils();
   const hotelQuery = trpc.channelManager.hotel.useQuery(id, { enabled: Boolean(id) });
   const bookingsQuery = trpc.channelManager.bookings.useQuery(id, { enabled: Boolean(id) });
@@ -51,6 +55,16 @@ export default function Bookings({ id }: { id: string }) {
     authMeQuery.data?.memberships ?? [],
     id,
     'operations.manage_checkin_checkout',
+  );
+  const canIssueDocuments = hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], id, 'operations.manage_bookings');
+  const [documentBooking, setDocumentBooking] = useState<{ id: string; guest_name: string; status?: string; payment_status?: string | null } | null>(null);
+  const [slipBooking, setSlipBooking] = useState<{ id: string; guest_name: string } | null>(null);
+  const [manualPayment, setManualPayment] = useState<{ id: string; guest_name: string; price: string | number } | null>(null);
+  const [receivedAmount, setReceivedAmount] = useState('');
+  const [transactionReference, setTransactionReference] = useState('');
+  const slipQuery = trpc.payment.getSlip.useQuery(
+    { booking_id: slipBooking?.id ?? '', hotel_id: id },
+    { enabled: Boolean(slipBooking) },
   );
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | BookingStatus>('all');
@@ -86,10 +100,11 @@ export default function Bookings({ id }: { id: string }) {
 
   const manualVerify = trpc.payment.manualVerify.useMutation({
     onSuccess: async () => {
+      setManualPayment(null);
       await utils.channelManager.bookings.invalidate(id);
       await utils.channelManager.dashboard.invalidate();
     },
-    onError: error => console.error(error.message),
+    onError: error => setFormError(error.message),
   });
 
   const transitionBooking = trpc.channelManager.transitionBookingStatus.useMutation({
@@ -167,7 +182,6 @@ export default function Bookings({ id }: { id: string }) {
 
   return (
     <div className="page-content bookings-page">
-      <div className="detail-back"><Link href={`/hotels/${hotel.id}`}>{hotel.name}</Link><span>/</span><strong>{t('bookings.title')}</strong></div>
       <section className="page-intro intro-split">
         <div><div className="eyebrow">{t('bookings.eyebrow')}</div><h1>{t('bookings.title')}<span className="title-mark">.</span></h1><p className="lede">{t('bookings.lede')}</p></div>
         <div className="intro-actions">
@@ -182,10 +196,13 @@ export default function Bookings({ id }: { id: string }) {
         <p className="mobile-scroll-hint" role="note">{t('bookings.mobileScrollHint')}</p>
         <div className="table-wrap"><table className="data-table bookings-table"><thead><tr><th>{t('bookings.bookingCol')}</th><th>{t('bookings.guestCol')}</th><th>{t('bookings.stayDatesCol')}</th><th>{t('bookings.roomCol')}</th><th>{t('bookings.sourceCol')}</th><th>{t('bookings.statusCol')}</th><th className="align-right">{t('bookings.valueCol')}</th><th /></tr></thead><tbody>{filtered.length ? filtered.map(booking => {
           const tm30Ready = booking.guests.length > 0 && booking.guests.every(guest => Boolean(guest.passport_no && guest.nationality_code && guest.birth_date));
-          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-pill ${booking.status === 'confirmed' || booking.status === 'checked_in' ? 'live' : booking.status === 'cancelled' || booking.status === 'expired' || booking.status === 'payment_rejected' ? 'setup' : booking.status === 'checked_out' || booking.status === 'refunded' ? 'done' : 'pending'}`}><i />{statusLabel[booking.status as keyof typeof statusLabel]}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1">{communicationsEnabled && <Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link>}{booking.status === 'pending_verification' ? (<><button className="button button-primary" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: true })}>{t('bookings.approveVerification')}</button><button className="button button-quiet" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: false })}>{t('bookings.rejectVerification')}</button></>) : booking.status === 'confirmed' && canManageCheckInOut ? (<button className="button button-primary" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_in' }); }}>{t('bookings.checkInAction')}</button>) : booking.status === 'checked_in' && canManageCheckInOut ? (<button className="button button-quiet" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_out' }); }}>{t('bookings.checkOutAction')}</button>) : null}</div></td></tr>;
+          return <tr key={booking.id}><td><span className="booking-id">{booking.id.slice(0, 8)}</span><small>{t('bookings.created', { date: formatIsoToDisplayDate(booking.created_at?.slice(0, 10)) })}</small></td><td><strong>{booking.guest_name}</strong><small><span className={tm30Ready ? 'guest-complete' : 'guest-incomplete'}><i /> {tm30Ready ? t('bookings.tm30DataComplete') : t('bookings.tm30DataNeeded')}</span></small></td><td><span>{formatIsoToDisplayDate(booking.check_in)}</span><small>{t('bookings.to')} {formatIsoToDisplayDate(booking.check_out)}</small></td><td><strong>{booking.rooms?.room_number ?? '—'}</strong><small>{booking.rooms?.room_types?.name ?? t('bookings.unassigned')}</small></td><td><span className="source-tag">{booking.source}</span></td><td><span className={`status-pill ${booking.status === 'confirmed' || booking.status === 'checked_in' ? 'live' : booking.status === 'cancelled' || booking.status === 'expired' || booking.status === 'payment_rejected' ? 'setup' : booking.status === 'checked_out' || booking.status === 'refunded' ? 'done' : 'pending'}`}><i />{statusLabel[booking.status as keyof typeof statusLabel]}</span></td><td className="align-right"><strong>{booking.price == null ? '—' : formatCurrency(booking.price)}</strong></td><td><div className="flex items-center justify-end gap-1">{billingCandidate.enabled && canIssueDocuments && canIssueBookingDocument(booking) && <button className="button button-quiet" type="button" aria-label={t('bookingDocuments.openAria',{ id: booking.id.slice(0, 8) })} onClick={() => setDocumentBooking({ id: booking.id, guest_name: booking.guest_name, status: booking.status, payment_status: booking.payment_status })}><Receipt size={15} /> {t('bookingDocuments.openButton')}</button>}{communicationsEnabled && <Link href={`/communications?bookingId=${booking.id}`} className="icon-button" aria-label={t('bookings.messagesAria', { id: booking.id })} title={t('bookings.messagesTooltip')}><MessageCircle size={16} /></Link>}{booking.status === 'pending_verification' ? (<><button className="button button-quiet" type="button" onClick={() => setSlipBooking({ id: booking.id, guest_name: booking.guest_name })}>{t('bookings.viewSlip')}</button>{billingCandidate.enabled ? <button className="button button-primary" type="button" disabled={manualVerify.isPending} onClick={() => { setFormError(null); setReceivedAmount(''); setTransactionReference(''); setManualPayment({ id: booking.id, guest_name: booking.guest_name, price: booking.price ?? '' }); }}>{t('bookings.approveVerification')}</button> : billingCandidate.ready ? <button className="button button-primary" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: true })}>{t('bookings.approveVerification')}</button> : <button className="button button-primary" type="button" disabled>{t('common.loading')}</button>}<button className="button button-quiet" type="button" disabled={manualVerify.isPending} onClick={() => manualVerify.mutate({ booking_id: booking.id, hotel_id: id, approved: false })}>{t('bookings.rejectVerification')}</button></>) : booking.status === 'confirmed' && canManageCheckInOut ? (<button className="button button-primary" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_in' }); }}>{t('bookings.checkInAction')}</button>) : booking.status === 'checked_in' && canManageCheckInOut ? (<button className="button button-quiet" type="button" disabled={transitionBooking.isPending} onClick={() => { setFormError(null); transitionBooking.mutate({ booking_id: booking.id, hotel_id: id, to_status: 'checked_out' }); }}>{t('bookings.checkOutAction')}</button>) : null}</div></td></tr>;
         }) : <tr><td colSpan={8} className="empty-cell">{bookings.length ? t('bookings.noMatch') : t('bookings.emptyBookings')}</td></tr>}</tbody></table></div>
         <div className="table-footer"><span>{t('bookings.showingCount', { filtered: filtered.length, total: bookings.length })}</span></div>
       </section>
+      {billingCandidate.enabled && documentBooking && <BookingDocumentDialog hotelId={id} booking={documentBooking} onClose={() => setDocumentBooking(null)} />}
+      {billingCandidate.enabled && manualPayment && <div className="modal-backdrop" role="presentation" onMouseDown={() => setManualPayment(null)}><form className="modal-card" role="dialog" aria-modal="true" onSubmit={event => { event.preventDefault(); setFormError(null); manualVerify.mutate({ booking_id: manualPayment.id, hotel_id: id, approved: true, amount: receivedAmount, transaction_reference: transactionReference }); }} onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">{t('bookings.eyebrow')}</div><h2>{t('bookings.approveVerification')}: {manualPayment.guest_name}</h2></div><button className="icon-button" type="button" aria-label={t('bookings.close')} onClick={() => setManualPayment(null)}><X size={17} /></button></div><p className="modal-lede">{t('bookings.manualPaymentInstruction', { expected: formatCurrency(manualPayment.price) })}</p><label>{t('bookings.actualReceivedAmount')}<input required inputMode="decimal" min="0.01" step="0.01" value={receivedAmount} onChange={event => setReceivedAmount(event.target.value)} /></label><label>{t('bookings.transactionReference')}<input required maxLength={200} value={transactionReference} onChange={event => setTransactionReference(event.target.value)} /></label>{formError && <p className="form-error" role="alert">{formError}</p>}<div className="modal-actions"><button className="button button-quiet" type="button" onClick={() => setManualPayment(null)}>{t('bookings.close')}</button><button className="button button-primary" type="submit" disabled={manualVerify.isPending}>{t('bookings.approveVerification')}</button></div></form></div>}
+      {slipBooking && <div className="modal-backdrop" role="presentation" onMouseDown={() => setSlipBooking(null)}><div className="modal-card payment-slip-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-slip-title" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><div className="eyebrow">{t('bookings.eyebrow')}</div><h2 id="payment-slip-title">{t('bookings.slipTitle', { guest: slipBooking.guest_name })}</h2></div><button className="icon-button" type="button" aria-label={t('bookings.close')} onClick={() => setSlipBooking(null)}><X size={17} /></button></div>{slipQuery.isLoading ? <p>{t('bookings.slipLoading')}</p> : slipQuery.error ? <p className="form-error" role="alert">{slipQuery.error.message}</p> : slipQuery.data?.dataUrl ? <img className="payment-slip-preview" src={slipQuery.data.dataUrl} alt={t('bookings.slipTitle', { guest: slipBooking.guest_name })} /> : <p>{t('bookings.slipUnavailable')}</p>}<div className="modal-actions"><button className="button button-quiet" type="button" onClick={() => setSlipBooking(null)}>{t('bookings.close')}</button></div></div></div>}
       {showAdd && <BookingWizard hotel={{ ...hotel, bookings }} onClose={() => setShowAdd(false)} onSuccess={() => {
         utils.channelManager.bookings.invalidate(id);
         utils.channelManager.dashboard.invalidate();

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { isRoomAmenityKey } from '../../shared/roomAmenities';
-import { HOTEL_THEMES, isHotelThemeId } from '@shared/hotelThemes';
+import { HOTEL_THEMES, isHotelThemeId, MAX_WEBSITE_GALLERY_PHOTOS } from '@shared/hotelThemes';
 import { isValidCoordinates, validateHotelContacts } from '@shared/hotelLocationRules';
+import { hasHotelPermission } from '@shared/authorization';
 import { createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
@@ -37,7 +38,9 @@ import {
   setHotelMediaObjectPosition as d1SetHotelMediaObjectPosition,
   setHotelMediaCaption as d1SetHotelMediaCaption,
   setHotelMediaGallerySelection as d1SetHotelMediaGallerySelection,
+  reorderHotelMedia as d1ReorderHotelMedia,
 } from '../d1/siteConfig';
+import { exportHotelSetup, previewHotelSetupImport, applyHotelSetupImport } from '../d1/hotelDataTransfer';
 import { getRoomTypePricingValidationError, type ChildRateConfig, type OccupancyPriceLevel } from '@shared/occupancyPricing';
 import {
   requirePermission,
@@ -46,6 +49,32 @@ import {
 } from '../routerUtils';
 
 const hotelIdSchema = z.string().uuid();
+const hotelDataInputSchema = z.object({ hotel_id: hotelIdSchema, file: z.unknown() });
+
+export const exportHotelData = protectedProcedure.input(z.object({ hotel_id: hotelIdSchema })).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await exportHotelSetup(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
+export const previewHotelImport = protectedProcedure.input(hotelDataInputSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+  const canManageRates = hasHotelPermission(roles, ctx.user.memberships ?? [], input.hotel_id, 'revenue.manage_rates');
+  try { return await previewHotelSetupImport(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.file, canManageRates); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
+export const applyHotelImport = protectedProcedure.input(hotelDataInputSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  const roles = ctx.user.roles ?? (ctx.user.role ? [ctx.user.role] : []);
+  const canManageRates = hasHotelPermission(roles, ctx.user.memberships ?? [], input.hotel_id, 'revenue.manage_rates');
+  try { return await applyHotelSetupImport(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.file, canManageRates); }
+  catch (error) { return rethrowDomainError(error); }
+});
 const priceAdjustmentSchema = z.object({
   enabled: z.boolean(),
   mode: z.enum(['percent', 'fixed']),
@@ -180,6 +209,8 @@ export const listPublicHotelServicesSchema = z.object({
   slug: z.string().trim().min(1).max(100),
 });
 
+const hotelMediaPositionPattern = /^(?:0|[1-9]\d?|100)% (?:0|[1-9]\d?|100)%$/;
+
 export const hotelSiteConfigSaveSchema = z.object({
   hotel_id: hotelIdSchema,
   hero_copy: z.string().trim().max(500).nullable().optional(),
@@ -187,7 +218,7 @@ export const hotelSiteConfigSaveSchema = z.object({
   visible_sections: z.record(z.string(), z.boolean()).nullable().optional(),
   theme: z.string().nullable().optional().refine(value => value == null || isHotelThemeId(value), 'Unknown hotel theme.'),
   hero_media_id: z.string().uuid().nullable().optional(),
-  media_positions: z.record(z.string().uuid(), z.string().regex(/^(?:0|[1-9]\\d?|100)% (?:0|[1-9]\\d?|100)%$/).nullable()).optional(),
+  media_positions: z.record(z.string().uuid(), z.string().regex(hotelMediaPositionPattern).nullable()).optional(),
 });
 
 export const uploadHotelMediaSchema = z.object({
@@ -209,10 +240,11 @@ export const setHotelMediaHeroSchema = z.object({
 export const setHotelMediaObjectPositionSchema = z.object({
   hotel_id: hotelIdSchema,
   media_id: z.string().uuid(),
-  object_position: z.string().regex(/^(?:0|[1-9]\d?|100)% (?:0|[1-9]\d?|100)%$/).nullable(),
+  object_position: z.string().regex(hotelMediaPositionPattern).nullable(),
 });
 export const setHotelMediaCaptionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), caption: z.string().max(120) });
 export const setHotelMediaGallerySelectionSchema = z.object({ hotel_id: hotelIdSchema, media_id: z.string().uuid(), shown: z.boolean() });
+export const reorderHotelMediaSchema = z.object({ hotel_id: hotelIdSchema, ids: z.array(z.string().uuid()).max(MAX_WEBSITE_GALLERY_PHOTOS + 1) });
 
 export const hotels = protectedProcedure.query(async ({ ctx }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
@@ -646,7 +678,17 @@ export const setHotelMediaGallerySelection = protectedProcedure.input(setHotelMe
   catch (error) { return rethrowDomainError(error); }
 });
 
+export const reorderHotelMedia = protectedProcedure.input(reorderHotelMediaSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try { return await d1ReorderHotelMedia(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input); }
+  catch (error) { return rethrowDomainError(error); }
+});
+
 export const hotelRouter = router({
+  exportHotelData,
+  previewHotelImport,
+  applyHotelImport,
   hotels,
   canCreateHotel,
   adminHotels,
@@ -670,5 +712,6 @@ export const hotelRouter = router({
   deleteHotelMedia,
   setHotelMediaHero,
   setHotelMediaObjectPosition,
+  reorderHotelMedia,
   updateHotelProfile,
 });

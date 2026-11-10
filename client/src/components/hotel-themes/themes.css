@@ -97,3 +97,43 @@
 .theme-minimal-white .public-booking .booking-next,.theme-lanna-teak .public-booking .booking-next,.theme-cafe-homestay .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
 @media (max-width:640px){.public-booking .booking-next-row{display:block}.public-booking .booking-next{width:100%}}
 .theme-cover-caption{position:absolute;z-index:2;right:18px;bottom:16px;padding:6px 10px;background:rgba(20,24,21,.68);color:#fff;font-size:12px;line-height:1.4}
+
+/* Book buttons and room cards: every theme sends guests to the hayhost booking page (/:slug/book). */
+.theme-book-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 18px;border-radius:999px;background:var(--owner-accent);color:var(--owner-accent-text);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+.theme-book-button:hover{filter:brightness(1.08)}
+.theme-book-button:focus-visible{outline:2px solid var(--owner-accent);outline-offset:3px}
+.theme-minimal-white .minimal-actions{justify-self:end;display:flex;align-items:center;gap:18px}
+.theme-lanna-teak .lanna-actions,.theme-cafe-homestay .cafe-actions{display:flex;align-items:center;gap:16px}
+.theme-lanna-teak .lanna-hero-cta{margin-top:8px}
+.theme-minimal-white .minimal-room,.theme-lanna-teak .lanna-room,.theme-cafe-homestay .cafe-room{position:relative}
+.theme-room-link{color:inherit;text-decoration:none}
+.theme-room-link::after{content:"";position:absolute;inset:0}
+.theme-room-link:focus-visible{outline:2px solid var(--owner-accent);outline-offset:2px}
+@media(max-width:760px){.theme-book-button{min-height:36px;padding:0 12px;font-size:12px}.theme-minimal-white .minimal-actions{grid-column:2;grid-row:1;gap:10px}.theme-lanna-teak .lanna-actions,.theme-cafe-homestay .cafe-actions{gap:8px}}
+/* Each theme supplies its fixed palette at the landing wrapper. */
+.theme-minimal-white .minimal-section-heading h2 i,.theme-minimal-white .minimal-location h2 i{color:var(--owner-highlight)}
+.theme-lanna-teak .lanna-intro h2 i,.theme-lanna-teak .lanna-section-title h2 i,.theme-lanna-teak .lanna-location h2 i{color:var(--owner-highlight)}
+.theme-cafe-homestay .cafe-section-heading h2 i,.theme-cafe-homestay .cafe-location h2 i{color:var(--owner-highlight)}
+.theme-mountain-mist .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-mountain-mist .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-mountain-mist .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-mountain-mist .public-button,.theme-mountain-mist .public-nav-cta,.theme-mountain-mist .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-boutique-noir .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-boutique-noir .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-boutique-noir .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-boutique-noir .public-button,.theme-boutique-noir .public-nav-cta,.theme-boutique-noir .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+
+.theme-hostel-pop .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-hostel-pop .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-hostel-pop .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-hostel-pop .public-button,.theme-hostel-pop .public-nav-cta,.theme-hostel-pop .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+
+.theme-riverside-calm .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-riverside-calm .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-riverside-calm .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-riverside-calm .public-button,.theme-riverside-calm .public-nav-cta,.theme-riverside-calm .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+
+.theme-vintage-old-town .public-booking{background:var(--owner-accent)!important;color:var(--owner-accent-text)!important}
+.theme-vintage-old-town .public-booking h2{color:var(--owner-accent-text)!important}
+.theme-vintage-old-town .public-booking h2 i{color:var(--owner-highlight)!important}
+.theme-vintage-old-town .public-button,.theme-vintage-old-town .public-nav-cta,.theme-vintage-old-town .public-booking .booking-next{background:var(--owner-accent)!important;border-color:var(--owner-accent)!important;color:var(--owner-accent-text)!important}

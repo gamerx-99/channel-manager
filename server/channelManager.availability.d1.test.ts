@@ -95,6 +95,8 @@ describe('channelManager.updateAvailability (D1 router)', () => {
         date: '2026-08-20',
         price: '2500',
         roomsAvailable: 1,
+        action: 'allotment',
+        defaultRoomsAvailable: 1,
       },
     );
   });
@@ -114,9 +116,9 @@ describe('channelManager.updateAvailability (D1 router)', () => {
     ).resolves.toMatchObject({ id: 'availability-1' });
 
     expect(availabilityMocks.updateAvailability).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      expect.objectContaining({ roomsAvailable: 0 }),
+      {},
+      { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: ['hotel_owner'], access: 'authenticated' },
+      expect.objectContaining({ roomsAvailable: 0, action: 'stop_sell', defaultRoomsAvailable: 1 }),
     );
   });
 
@@ -240,7 +242,7 @@ describe('channelManager.updateAvailabilityBatch (D1 router)', () => {
     expect(availabilityMocks.updateAvailabilityBatch).toHaveBeenCalledWith(
       {},
       expect.anything(),
-      { hotelId: HOME_HOTEL, roomTypeIds: [ROOM_TYPE_ID], startDate: '2026-12-20', endDate: '2026-12-31', roomsAvailable: 0 },
+      { hotelId: HOME_HOTEL, roomTypeIds: [ROOM_TYPE_ID], startDate: '2026-12-20', endDate: '2026-12-31', roomsAvailable: 0, action: 'stop_sell' },
     );
   });
 

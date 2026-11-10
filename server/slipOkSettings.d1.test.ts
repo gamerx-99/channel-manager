@@ -5,6 +5,9 @@ const dbMocks = vi.hoisted(() => ({
   getSlipOkSettings: vi.fn(),
   saveSlipOkSettings: vi.fn(),
   removeSlipOkKey: vi.fn(),
+  getHotelPaymentConfig: vi.fn(),
+  getBookingRequestTimeout: vi.fn(),
+  saveBookingRequestTimeout: vi.fn(),
 }));
 const cryptoMocks = vi.hoisted(() => ({
   encryptSlipOkKey: vi.fn((key: string) => `encrypted:${key}`),
@@ -43,6 +46,7 @@ function caller(role: 'hotel_owner' | 'super_admin' | 'front_desk' = 'hotel_owne
     },
     db: {} as any,
     caller: { userId: 'd93900a0-e7fe-45d6-9364-80ea8a035322', roles: [role], access: 'authenticated' } as any,
+    billingEnv: { SLIPOK_ENCRYPTION_KEY: '1'.repeat(64) },
   }));
 }
 
@@ -66,7 +70,7 @@ describe('slipok.saveKey (D1 router)', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(cryptoMocks.encryptSlipOkKey).toHaveBeenCalledWith('a-real-looking-key');
+    expect(cryptoMocks.encryptSlipOkKey).toHaveBeenCalledWith('a-real-looking-key', '1'.repeat(64));
     expect(cryptoMocks.hashSlipOkKey).toHaveBeenCalledWith('a-real-looking-key');
     expect(dbMocks.saveSlipOkSettings).toHaveBeenCalledWith(
       {},
@@ -81,8 +85,9 @@ describe('slipok.saveKey (D1 router)', () => {
 });
 
 describe('SlipOK settings access boundaries', () => {
-  const operations = ['getSettings', 'saveKey', 'removeKey'] as const;
-  const input = { hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'branch-42' };
+  const operations = ['getSettings', 'getPromptPaySettings', 'getBookingRequestTimeout', 'saveBookingRequestTimeout', 'saveKey', 'removeKey'] as const;
+  const mfaOperations = ['getSettings', 'saveKey', 'removeKey'] as const;
+  const input = { hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'branch-42', booking_request_timeout_hours: 24 };
 
   it.each(operations)('rejects %s without property.manage_profile before accessing credentials', async operation => {
     const app = await caller('front_desk');
@@ -100,7 +105,7 @@ describe('SlipOK settings access boundaries', () => {
     expect(cryptoMocks.encryptSlipOkKey).not.toHaveBeenCalled();
   });
 
-  it.each(operations)('rejects %s when recent MFA verification fails before accessing credentials', async operation => {
+  it.each(mfaOperations)('rejects %s when recent MFA verification fails before accessing credentials', async operation => {
     mfaMocks.requireRecentMfaVerification.mockImplementationOnce(() => {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Recent MFA verification required.' });
     });

@@ -13,8 +13,8 @@ const ALGORITHM = "AES-GCM";
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 
-function getEncryptionKeyBytes(): Uint8Array {
-  const raw = (typeof process !== "undefined" ? process.env?.SLIPOK_ENCRYPTION_KEY : "") ?? "";
+function getEncryptionKeyBytes(envKey?: string): Uint8Array {
+  const raw = envKey ?? ((typeof process !== "undefined" ? process.env?.SLIPOK_ENCRYPTION_KEY : "") ?? "");
   if (!/^[0-9a-f]{64}$/i.test(raw)) {
     throw new Error(
       "SLIPOK_ENCRYPTION_KEY must be a 64-character hex string (32 bytes). " +
@@ -26,8 +26,8 @@ function getEncryptionKeyBytes(): Uint8Array {
   return bytes;
 }
 
-async function importKey(): Promise<CryptoKey> {
-  return crypto.subtle.importKey("raw", getEncryptionKeyBytes() as unknown as ArrayBuffer, { name: ALGORITHM }, false, ["encrypt", "decrypt"]);
+async function importKey(envKey?: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey("raw", getEncryptionKeyBytes(envKey) as unknown as ArrayBuffer, { name: ALGORITHM }, false, ["encrypt", "decrypt"]);
 }
 
 function toHex(bytes: Uint8Array): string {
@@ -40,8 +40,8 @@ function fromHex(hex: string): Uint8Array {
   return out;
 }
 
-export async function encryptSlipOkKey(plaintext: string): Promise<string> {
-  const key = await importKey();
+export async function encryptSlipOkKey(plaintext: string, envKey?: string): Promise<string> {
+  const key = await importKey(envKey);
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
   const ciphertext = await crypto.subtle.encrypt({ name: ALGORITHM, iv: iv as unknown as ArrayBuffer, tagLength: TAG_LENGTH * 8 }, key, new TextEncoder().encode(plaintext) as unknown as ArrayBuffer);
   const buf = new Uint8Array(ciphertext);
@@ -50,11 +50,11 @@ export async function encryptSlipOkKey(plaintext: string): Promise<string> {
   return `${toHex(iv)}:${toHex(ct)}:${toHex(tag)}`;
 }
 
-export async function decryptSlipOkKey(stored: string): Promise<string> {
+export async function decryptSlipOkKey(stored: string, envKey?: string): Promise<string> {
   const parts = stored.split(":");
   if (parts.length !== 3) throw new Error("Invalid encrypted key format.");
   const [ivHex, ctHex, tagHex] = parts;
-  const key = await importKey();
+  const key = await importKey(envKey);
   const iv = fromHex(ivHex);
   const ct = fromHex(ctHex);
   const tag = fromHex(tagHex);

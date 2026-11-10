@@ -1,0 +1,828 @@
+/* Mountain Mist theme — every selector is scoped under .theme-mountain-mist */
+
+.theme-mountain-mist {
+  --theme-button-bg: var(--owner-accent);
+  --theme-button-text: var(--owner-accent-text);
+  --theme-highlight: var(--owner-highlight);
+
+  --mm-bg: #f5fbf8;
+  --mm-surface-low: #eff5f2;
+  --mm-surface: #e9efec;
+  --mm-ink: #171d1b;
+  --mm-ink-soft: #424844;
+  --mm-forest: #1f3b2d;
+  --mm-forest-deep: #082519;
+  --mm-border: #c2c8c2;
+  --mm-radius-card: 20px;
+  --mm-font-head: "Prompt", "Epilogue", sans-serif;
+  --mm-font-body: "Noto Sans Thai", "Noto Sans", sans-serif;
+
+  background: var(--mm-bg);
+  color: var(--mm-ink);
+  font-family: var(--mm-font-body);
+  font-size: 16px;
+  line-height: 24px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.theme-mountain-mist *,
+.theme-mountain-mist *::before,
+.theme-mountain-mist *::after {
+  box-sizing: border-box;
+}
+
+.theme-mountain-mist ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-mountain-mist h1,
+.theme-mountain-mist h2,
+.theme-mountain-mist h3,
+.theme-mountain-mist p {
+  margin: 0;
+}
+
+.theme-mountain-mist img {
+  display: block;
+  max-width: 100%;
+}
+
+.theme-mountain-mist a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.theme-mountain-mist .container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+/* ---------- Glass surface ---------- */
+.theme-mountain-mist .glass {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(221, 227, 224, 0.8);
+  box-shadow: 0 4px 24px -2px rgba(31, 59, 45, 0.06);
+}
+
+/* ---------- Buttons ---------- */
+.theme-mountain-mist .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 9999px;
+  font-family: var(--mm-font-body);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease-out, transform 0.2s ease-out, filter 0.2s ease-out;
+}
+
+.theme-mountain-mist .btn-primary {
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
+}
+
+.theme-mountain-mist .btn-primary:hover {
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--theme-button-bg) 45%, transparent);
+  filter: brightness(1.03);
+}
+
+.theme-mountain-mist .btn:active {
+  transform: scale(0.97);
+}
+
+.theme-mountain-mist .btn:focus-visible,
+.theme-mountain-mist .lang-switch button:focus-visible,
+.theme-mountain-mist .main-nav a:focus-visible {
+  outline: 3px solid var(--theme-highlight);
+  outline-offset: 2px;
+}
+
+.theme-mountain-mist .btn-lg {
+  padding: 14px 32px;
+  font-size: 16px;
+}
+
+.theme-mountain-mist .btn-sm {
+  padding: 8px 18px;
+  font-size: 13px;
+}
+
+/* ---------- Header ---------- */
+.theme-mountain-mist .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(245, 251, 248, 0.85);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 rgba(31, 59, 45, 0.06);
+}
+
+.theme-mountain-mist .header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.theme-mountain-mist .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.theme-mountain-mist .brand-mark {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: var(--mm-forest);
+  color: #cbebc2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-mountain-mist .brand-name {
+  font-family: var(--mm-font-head);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  color: var(--mm-forest-deep);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-mountain-mist .main-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.theme-mountain-mist .main-nav a {
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mm-ink-soft);
+  transition: color 0.2s;
+}
+
+.theme-mountain-mist .main-nav a:hover {
+  color: var(--mm-forest-deep);
+}
+
+.theme-mountain-mist .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+}
+
+.theme-mountain-mist .lang-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid rgba(66, 72, 68, 0.3);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.theme-mountain-mist .lang-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--mm-ink-soft);
+  font-family: var(--mm-font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+.theme-mountain-mist .lang-switch button.is-active {
+  background: var(--mm-forest);
+  color: #ffffff;
+}
+
+/* ---------- Hero ---------- */
+.theme-mountain-mist .hero {
+  position: relative;
+  min-height: 640px;
+  height: calc(100vh - 80px);
+  max-height: 860px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: var(--mm-forest);
+  background-image: var(--hero-image, linear-gradient(160deg, #1f3b2d 0%, #4f6b4a 100%));
+  background-size: cover;
+  background-position: center;
+}
+
+.theme-mountain-mist .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 37, 25, 0.55) 0%,
+    rgba(8, 37, 25, 0.35) 45%,
+    rgba(8, 37, 25, 0.8) 100%
+  );
+}
+
+.theme-mountain-mist .hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.theme-mountain-mist .hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.theme-mountain-mist .hero-chip svg {
+  flex: none;
+  color: #fabb6c;
+}
+
+.theme-mountain-mist .hero-title {
+  font-family: var(--mm-font-head);
+  font-size: 56px;
+  line-height: 64px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 16px rgba(8, 37, 25, 0.45);
+  overflow-wrap: anywhere;
+}
+
+.theme-mountain-mist .hero-copy {
+  max-width: 600px;
+  font-size: 18px;
+  line-height: 28px;
+  color: #f5fbf8;
+  text-shadow: 0 1px 8px rgba(8, 37, 25, 0.5);
+}
+
+/* ---------- Sections ---------- */
+.theme-mountain-mist .section {
+  padding: 112px 0;
+}
+
+.theme-mountain-mist .section-tint {
+  background: var(--mm-surface-low);
+  border-top: 1px solid var(--mm-surface);
+  border-bottom: 1px solid var(--mm-surface);
+}
+
+.theme-mountain-mist .section-head {
+  margin-bottom: 48px;
+}
+
+.theme-mountain-mist .eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-highlight);
+}
+
+.theme-mountain-mist .section-title {
+  font-family: var(--mm-font-head);
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--mm-forest-deep);
+}
+
+.theme-mountain-mist .accent-rule {
+  width: 64px;
+  height: 2px;
+  margin: 24px 0;
+  background: var(--theme-button-bg);
+}
+
+.theme-mountain-mist .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(79, 107, 74, 0.14);
+  color: var(--mm-forest);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
+.theme-mountain-mist .chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- Story ---------- */
+.theme-mountain-mist .story-card {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 56px;
+  border-radius: 24px;
+}
+
+.theme-mountain-mist .story-lead {
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--mm-forest);
+  font-weight: 500;
+}
+
+.theme-mountain-mist .story-body {
+  margin: 16px 0 24px;
+  color: var(--mm-ink-soft);
+}
+
+/* ---------- Rooms ---------- */
+.theme-mountain-mist .room-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.theme-mountain-mist .room-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--mm-radius-card);
+  overflow: hidden;
+  transition: box-shadow 0.3s;
+}
+
+.theme-mountain-mist .room-card:hover {
+  box-shadow: 0 12px 36px -4px rgba(31, 59, 45, 0.14);
+}
+
+.theme-mountain-mist .room-top {
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbebc2;
+  background: linear-gradient(135deg, #1f3b2d 0%, #4f6b4a 100%);
+}
+
+.theme-mountain-mist .room-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+}
+
+.theme-mountain-mist .room-name {
+  font-family: var(--mm-font-head);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--mm-forest-deep);
+  overflow-wrap: anywhere;
+}
+
+.theme-mountain-mist .room-capacity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--mm-ink-soft);
+}
+
+.theme-mountain-mist .room-capacity svg {
+  color: var(--theme-highlight);
+}
+
+.theme-mountain-mist .room-desc {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--mm-ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.theme-mountain-mist .room-foot {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--mm-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.theme-mountain-mist .room-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.theme-mountain-mist .room-price-label {
+  flex-basis: 100%;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--mm-ink-soft);
+}
+
+.theme-mountain-mist .room-price-value {
+  font-family: var(--mm-font-head);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  color: var(--mm-forest-deep);
+}
+
+.theme-mountain-mist .room-price-unit {
+  font-size: 14px;
+  color: var(--mm-ink-soft);
+}
+
+/* ---------- Gallery ---------- */
+.theme-mountain-mist .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.theme-mountain-mist .gallery-item {
+  position: relative;
+  grid-column: span 2;
+  height: 280px;
+  border-radius: var(--mm-radius-card);
+  overflow: hidden;
+  background: var(--mm-surface);
+}
+
+.theme-mountain-mist .gallery-item-1,
+.theme-mountain-mist .gallery-item-4 {
+  grid-column: span 4;
+  height: 360px;
+}
+
+.theme-mountain-mist .gallery-item-2,
+.theme-mountain-mist .gallery-item-3 {
+  height: 360px;
+}
+
+.theme-mountain-mist .gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s;
+}
+
+.theme-mountain-mist .gallery-item:hover img {
+  transform: scale(1.04);
+}
+
+.theme-mountain-mist .gallery-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 40px 20px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(180deg, rgba(8, 37, 25, 0) 0%, rgba(8, 37, 25, 0.8) 100%);
+}
+
+/* ---------- Location ---------- */
+.theme-mountain-mist .location-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.theme-mountain-mist .location-grid > :only-child {
+  grid-column: 1 / -1;
+  max-width: 560px;
+}
+
+.theme-mountain-mist .location-card {
+  padding: 32px;
+  border-radius: var(--mm-radius-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.theme-mountain-mist .location-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--mm-forest);
+  color: #cbebc2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-mountain-mist .location-name {
+  font-family: var(--mm-font-head);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  color: var(--mm-forest-deep);
+}
+
+.theme-mountain-mist .location-address {
+  color: var(--mm-ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.theme-mountain-mist .location-contacts {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mm-surface);
+  font-size: 14px;
+  color: var(--mm-ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.theme-mountain-mist .location-contacts a {
+  color: var(--mm-forest);
+  text-decoration: underline;
+}
+
+.theme-mountain-mist .location-map {
+  min-height: 360px;
+  border-radius: var(--mm-radius-card);
+  overflow: hidden;
+  border: 1px solid var(--mm-border);
+}
+
+.theme-mountain-mist .location-map iframe,
+.theme-mountain-mist .location-map > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.theme-mountain-mist .location-map iframe {
+  min-height: 360px;
+  height: 100%;
+  border: 0;
+}
+
+/* ---------- Footer ---------- */
+.theme-mountain-mist .site-footer {
+  background: var(--mm-surface-low);
+  border-top: 1px solid #e4e9e6;
+  padding: 32px 0;
+}
+
+.theme-mountain-mist .footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--mm-ink-soft);
+}
+
+.theme-mountain-mist .footer-name {
+  font-family: var(--mm-font-head);
+  font-weight: 600;
+  color: var(--mm-forest-deep);
+}
+
+/* ---------- Sticky booking bar (mobile only) ---------- */
+.theme-mountain-mist .sticky-bar {
+  display: none;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 768px) {
+  .theme-mountain-mist .container {
+    padding: 0 20px;
+  }
+
+  .theme-mountain-mist.has-sticky-bar {
+    padding-bottom: 80px;
+  }
+
+  .theme-mountain-mist .header-inner {
+    height: 64px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .theme-mountain-mist .brand-mark,
+  .theme-mountain-mist .main-nav,
+  .theme-mountain-mist .header-book {
+    display: none;
+  }
+
+  .theme-mountain-mist .brand-name {
+    font-size: 18px;
+  }
+
+  .theme-mountain-mist .hero {
+    min-height: 480px;
+    height: 70vh;
+    max-height: 560px;
+    margin: 12px;
+    border-radius: var(--mm-radius-card);
+  }
+
+  .theme-mountain-mist .hero-content {
+    padding: 32px 20px;
+    gap: 14px;
+  }
+
+  .theme-mountain-mist .hero-title {
+    font-size: 32px;
+    line-height: 40px;
+    letter-spacing: -0.01em;
+  }
+
+  .theme-mountain-mist .hero-copy {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .theme-mountain-mist .section {
+    padding: 56px 0;
+  }
+
+  .theme-mountain-mist .section-head {
+    margin-bottom: 24px;
+  }
+
+  .theme-mountain-mist .section-title {
+    font-size: 26px;
+    line-height: 34px;
+    letter-spacing: 0;
+  }
+
+  .theme-mountain-mist .story-card {
+    padding: 28px 24px;
+    border-radius: var(--mm-radius-card);
+  }
+
+  .theme-mountain-mist .room-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .theme-mountain-mist .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .theme-mountain-mist .gallery-item,
+  .theme-mountain-mist .gallery-item-2,
+  .theme-mountain-mist .gallery-item-3 {
+    grid-column: span 1;
+    height: 176px;
+  }
+
+  .theme-mountain-mist .gallery-item-1,
+  .theme-mountain-mist .gallery-item-4 {
+    grid-column: span 2;
+    height: 208px;
+  }
+
+  .theme-mountain-mist .gallery-caption {
+    padding: 28px 12px 10px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .theme-mountain-mist .location-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-mountain-mist .location-card {
+    padding: 24px 20px;
+  }
+
+  .theme-mountain-mist .location-map,
+  .theme-mountain-mist .location-map iframe {
+    min-height: 280px;
+  }
+
+  .theme-mountain-mist .footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .theme-mountain-mist .sticky-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 20px;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    background: rgba(245, 251, 248, 0.92);
+  }
+
+  .theme-mountain-mist .sticky-price {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .theme-mountain-mist .sticky-label {
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
+    color: var(--mm-ink-soft);
+  }
+
+  .theme-mountain-mist .sticky-value {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 700;
+    color: var(--mm-forest-deep);
+  }
+
+  .theme-mountain-mist .sticky-value small {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--mm-ink-soft);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .theme-mountain-mist .room-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-mountain-mist .container,
+  .theme-mountain-mist .header-inner {
+    padding: 0 28px;
+  }
+
+  .theme-mountain-mist .location-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-mountain-mist * {
+    transition: none !important;
+  }
+}

@@ -10,6 +10,7 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { BookingDocumentSnapshot } from "../shared/bookingDocuments";
 import { SUPPORT_GRANT_DURATION_HOURS } from "../shared/permissions";
 
 const id = (name = "id") => text(name).primaryKey().$defaultFn(() => crypto.randomUUID());
@@ -151,6 +152,8 @@ export const hotelUsers = sqliteTable("hotel_users", {
   hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
   // Supabase auth.users is internal and will be replaced by Better Auth in 13-05.
   userId: text("user_id").notNull(),
+  fullName: text("full_name"),
+  position: text("position"),
   role: text("role").notNull(),
   permissionGrants: json<string[]>("permission_grants").notNull().default(sql`'[]'`),
   permissionRevokes: json<string[]>("permission_revokes").notNull().default(sql`'[]'`),
@@ -322,6 +325,7 @@ export const availability = sqliteTable("availability", {
   date: text("date").notNull(),
   price: money("price").notNull(),
   roomsAvailable: integer("rooms_available").notNull(),
+  reopenRoomsAvailable: integer("reopen_rooms_available"),
 }, table => [
   check("availability_price_check", nonnegativeMoney(table.price)),
   check("availability_rooms_available_check", sql`${table.roomsAvailable} >= 0`),
@@ -483,9 +487,11 @@ export const hotelPaymentSettings = sqliteTable("hotel_payment_settings", {
   paymentTimeoutMinutes: integer("payment_timeout_minutes").notNull().default(15),
   slipokBranchId: text("slipok_branch_id"),
   holdTimeoutMinutes: integer("hold_timeout_minutes").notNull().default(15),
+  bookingRequestTimeoutHours: integer("booking_request_timeout_hours").notNull().default(24),
 }, table => [
   check("hotel_payment_settings_payment_timeout_check", sql`${table.paymentTimeoutMinutes} between 5 and 60`),
   check("hotel_payment_settings_hold_timeout_check", sql`${table.holdTimeoutMinutes} between 5 and 60`),
+  check("hotel_payment_settings_booking_request_timeout_check", sql`${table.bookingRequestTimeoutHours} between 1 and 168`),
   uniqueIndex("hotel_payment_settings_hotel_id_unique").on(table.hotelId),
 ]);
 
@@ -530,6 +536,8 @@ export const paymentSessions = sqliteTable("payment_sessions", {
   updatedAt: updatedAt(),
   rawResponse: json<unknown>("raw_response"),
   verifiedTransactionRef: text("verified_transaction_ref"),
+  verifiedBy: text("verified_by"),
+  verifiedReason: text("verified_reason"),
 }, table => [
   check("payment_sessions_amount_check", sql`${nonnegativeMoney(table.amount)} and cast(${table.amount} as numeric) > 0`),
   check("payment_sessions_status_check", sql`${table.status} in ('pending', 'paid', 'expired', 'failed')`),
@@ -547,6 +555,49 @@ export const bookingStatusLog = sqliteTable("booking_status_log", {
   reason: text("reason"),
   createdAt: createdAt(),
 }, table => [index("idx_booking_status_log_booking_id").on(table.bookingId)]);
+
+/** The header the hotel prints on its receipts and tax invoices. */
+export const hotelInvoiceSettings = sqliteTable("hotel_invoice_settings", {
+  hotelId: text("hotel_id").primaryKey().references(() => hotels.id, { onDelete: "cascade" }),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(false),
+  issuerName: text("issuer_name").notNull(),
+  address: text("address").notNull(),
+  taxId: text("tax_id"),
+  branch: text("branch"),
+  phone: text("phone"),
+  vatEnabled: integer("vat_enabled", { mode: "boolean" }).notNull().default(false),
+  vatRate: real("vat_rate").notNull().default(7),
+  withholdingEnabled: integer("withholding_enabled", { mode: "boolean" }).notNull().default(false),
+  withholdingRate: real("withholding_rate").notNull().default(3),
+  updatedAt: updatedAt(),
+}, table => [
+  check("hotel_invoice_settings_tax_id_check", sql`${table.taxId} is null or (length(${table.taxId}) = 13 and ${table.taxId} not glob '*[^0-9]*')`),
+]);
+
+/** Issued documents never change; the snapshot holds exactly what was printed. */
+export const bookingDocuments = sqliteTable("booking_documents", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  bookingId: text("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
+  docType: text("doc_type").notNull(),
+  year: integer("year").notNull(),
+  seq: integer("seq").notNull(),
+  docNumber: text("doc_number").notNull(),
+  snapshot: json<BookingDocumentSnapshot>("snapshot_json").notNull(),
+  idempotencyKey: text("idempotency_key"),
+  paymentSessionId: text("payment_session_id").references(() => paymentSessions.id, { onDelete: "restrict" }),
+  issuedBy: text("issued_by"),
+  createdAt: createdAt(),
+}, table => [
+  check("booking_documents_doc_type_check", sql`${table.docType} in ('invoice', 'receipt', 'tax_invoice')`),
+  check("booking_documents_seq_check", sql`${table.seq} > 0`),
+  check("booking_documents_year_check", sql`${table.year} >= 2020 and ${table.year} <= 2100`),
+  uniqueIndex("booking_documents_hotel_type_year_seq_key").on(table.hotelId, table.docType, table.year, table.seq),
+  uniqueIndex("booking_documents_hotel_idempotency_key").on(table.hotelId, table.idempotencyKey),
+  uniqueIndex("booking_documents_one_receipt_per_booking").on(table.bookingId).where(sql`${table.docType} = 'receipt'`),
+  uniqueIndex("booking_documents_payment_session_unique").on(table.paymentSessionId),
+  index("idx_booking_documents_booking_id").on(table.bookingId),
+]);
 
 export const hotelServices = sqliteTable("hotel_services", {
   id: id(),
@@ -629,6 +680,46 @@ export const hotelPurgeLog = sqliteTable("hotel_purge_log", {
   purgedAt: integer("purged_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const staffShifts = sqliteTable("staff_shifts", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  hotelUserId: text("hotel_user_id").notNull().references(() => hotelUsers.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  breakMinutes: integer("break_minutes").notNull().default(0),
+  createdBy: text("created_by").notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, table => [
+  check("staff_shifts_date_check", sql`${table.date} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'`),
+  check("staff_shifts_start_time_check", sql`${table.startTime} glob '[0-2][0-9]:[0-5][0-9]' and substr(${table.startTime}, 1, 2) < '24'`),
+  check("staff_shifts_end_time_check", sql`${table.endTime} glob '[0-2][0-9]:[0-5][0-9]' and substr(${table.endTime}, 1, 2) < '24'`),
+  check("staff_shifts_break_check", sql`${table.breakMinutes} >= 0`),
+  index("staff_shifts_hotel_date_idx").on(table.hotelId, table.date),
+]);
+
+export const staffTasks = sqliteTable("staff_tasks", {
+  id: id(),
+  hotelId: text("hotel_id").notNull().references(() => hotels.id, { onDelete: "cascade" }),
+  assignedTo: text("assigned_to").notNull().references(() => hotelUsers.id, { onDelete: "cascade" }),
+  taskDate: text("task_date").notNull(),
+  title: text("title").notNull(),
+  details: text("details"),
+  roomId: text("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("pending"),
+  createdBy: text("created_by").notNull(),
+  createdAt: createdAt(),
+  completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+  completedBy: text("completed_by"),
+}, table => [
+  check("staff_tasks_date_check", sql`${table.taskDate} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'`),
+  check("staff_tasks_title_check", sql`length(trim(${table.title})) between 1 and 160`),
+  check("staff_tasks_status_check", sql`${table.status} in ('pending', 'done')`),
+  index("staff_tasks_hotel_date_idx").on(table.hotelId, table.taskDate),
+  index("staff_tasks_assigned_date_idx").on(table.assignedTo, table.taskDate),
+]);
+
 export const userOnboarding = sqliteTable("user_onboarding", {
   userId: text("user_id").primaryKey(),
   tourCompletedAt: integer("tour_completed_at", { mode: "timestamp_ms" }),
@@ -645,6 +736,8 @@ export const d1Schema = {
   couponRedemptions,
   subscriptionAdminLog,
   hotelUsers,
+  staffShifts,
+  staffTasks,
   hotelMedia,
   roomTypes,
   rooms,
@@ -669,6 +762,8 @@ export const d1Schema = {
   bookingServices,
   paymentSessions,
   bookingStatusLog,
+  hotelInvoiceSettings,
+  bookingDocuments,
   hotelServices,
   supportAccessGrants,
   supportAccessLog,

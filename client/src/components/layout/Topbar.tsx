@@ -14,12 +14,15 @@ import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
 const BREADCRUMB_EXACT_KEYS: Record<string, TranslationKey> = {
   "/dashboard": "breadcrumb.overview",
+  "/staff-shifts": "breadcrumb.staffShifts",
+  "/staff-tasks": "breadcrumb.staffTasks",
 };
 
 const BREADCRUMB_PREFIX_KEYS: Array<[string, TranslationKey]> = [
   ["/settings/account", "breadcrumb.account"],
   ["/dashboard/pricing", "breadcrumb.availability"],
   ["/dashboard/financials", "breadcrumb.financials"],
+  ["/reports/bookings", "breadcrumb.bookingsReport"],
   ["/housekeeping", "breadcrumb.housekeeping"],
   ["/communications", "breadcrumb.communications"],
 ];

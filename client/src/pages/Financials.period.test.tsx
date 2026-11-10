@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PeriodPicker } from "./Financials";
 import { CSV_BOM, bookingsCsv, financialsQueryInput, shiftMonth } from "./financialsPeriod";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 vi.mock("@/lib/trpc", () => ({ trpc: {} }));
 vi.mock("@/contexts/HotelContext", () => ({ useHotel: () => ({ hotels: [], selectedHotelId: null }) }));
@@ -54,13 +56,13 @@ describe("period helpers", () => {
 });
 
 describe("bookings CSV", () => {
-  const row = { id: "01234567", check_in: "2026-08-20", check_out: "2026-08-22", room_type: "ห้องดีลักซ์", source: "direct", status: "confirmed", payment_status: "verified", payment_method: "promptpay", price: 1200.5 };
+  const row = { id: "01234567", paid_at: "2026-08-19", check_in: "2026-08-20", check_out: "2026-08-22", room_type: "ห้องดีลักซ์", source: "direct", status: "confirmed", payment_status: "verified", payment_method: "promptpay", price: 1200.5 };
 
   it("has a header row, plain numbers with 2 decimals, and keeps Thai text", () => {
     const lines = bookingsCsv([row, { ...row, id: "89abcdef", payment_status: null, payment_method: null, price: 800 }]).split("\n");
-    expect(lines[0]).toBe('"Booking ID","Check-in","Check-out","Room type","Source","Status","Payment status","Payment method","Price"');
-    expect(lines[1]).toBe('"01234567","2026-08-20","2026-08-22","ห้องดีลักซ์","direct","confirmed","verified","promptpay",1200.50');
-    expect(lines[2]).toBe('"89abcdef","2026-08-20","2026-08-22","ห้องดีลักซ์","direct","confirmed","","",800.00');
+    expect(lines[0]).toBe('"Booking ID","Paid date","Check-in","Check-out","Room type","Source","Status","Payment status","Payment method","Price"');
+    expect(lines[1]).toBe('"01234567","2026-08-19","2026-08-20","2026-08-22","ห้องดีลักซ์","direct","confirmed","verified","promptpay",1200.50');
+    expect(lines[2]).toBe('"89abcdef","2026-08-19","2026-08-20","2026-08-22","ห้องดีลักซ์","direct","confirmed","","",800.00');
   });
 
   it("is only a header when there are no bookings, and the download adds a UTF-8 byte order mark", () => {
@@ -71,5 +73,15 @@ describe("bookings CSV", () => {
   it("neutralises cells a spreadsheet would run as a formula and doubles quotes", () => {
     const line = bookingsCsv([{ ...row, room_type: '=HYPERLINK("x")' }]).split("\n")[1];
     expect(line).toContain(`"'=HYPERLINK(""x"")"`);
+  });
+});
+
+describe("Financials payment settings move", () => {
+  it("removes the old form and shows the edit-only hotel settings link", () => {
+    const page = readFileSync(resolve(process.cwd(), "client/src/pages/Financials.tsx"), "utf8");
+    expect(page).not.toContain("promptpay-id-input");
+    expect(page).not.toContain("promptpay-timeout");
+    expect(page).toContain("canManagePaymentSettings");
+    expect(page).toContain("/hotels/${hotelId}");
   });
 });

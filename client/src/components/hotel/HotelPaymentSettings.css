@@ -1,0 +1,22 @@
+.hotel-payment-settings { display: grid; gap: 1rem; padding-bottom: 24px; }
+.hotel-payment-settings > .panel-heading { margin-bottom: 0; }
+.hotel-payment-settings > :not(.panel-heading) { margin: 0 24px; min-width: 0; }
+.hotel-promptpay-settings { min-width: 0; }
+.hotel-payment-settings .hotel-payment-card { border: 1px solid var(--rule); border-radius: 5px; box-shadow: none; }
+.hotel-payment-card-header { padding: 18px 20px 12px; }
+.hotel-payment-card-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.hotel-payment-card-title > div { min-width: 0; }
+.hotel-payment-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 5px; background: #f5e9e5; color: #954831; }
+.hotel-payment-card-header h3 { margin: 0; color: var(--ink); font-size: 1rem; font-weight: 700; }
+.hotel-payment-card-header p { margin: 4px 0 0; color: var(--ink-muted); font-size: .8rem; }
+.hotel-payment-card-content { display: grid; gap: 16px; padding: 4px 20px 20px; }
+.hotel-payment-card-content .form-grid { align-items: start; }
+.hotel-payment-card-content input, .hotel-payment-card-content select { box-sizing: border-box; width: 100%; min-height: 42px; }
+.hotel-payment-card-content .field-help { margin: 6px 0 0; }
+.hotel-payment-settings > .panel { border-radius: 5px; }
+@media (max-width: 640px) {
+  .hotel-payment-settings { padding-bottom: 16px; }
+  .hotel-payment-settings > :not(.panel-heading) { margin-right: 16px; margin-left: 16px; }
+  .hotel-payment-card-header { padding: 16px 16px 10px; }
+  .hotel-payment-card-content { padding: 4px 16px 16px; }
+}
