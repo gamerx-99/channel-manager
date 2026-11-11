@@ -5,6 +5,7 @@ import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
 import { PageState } from "@/components/PageState";
 import { useTranslation } from "@/lib/i18n";
+import { AuthLogo } from "@/components/AuthLogo";
 
 export default function AcceptInvite() {
   const [, navigate] = useLocation();
@@ -108,10 +109,7 @@ export default function AcceptInvite() {
   return (
     <div className="login-page">
       <div className="login-aside">
-        <div className="login-brand">
-          <span className="brand-mark"><span /></span>
-          <strong>hay<em>host</em></strong>
-        </div>
+        <AuthLogo />
         <div className="login-aside-copy">
           <div className="eyebrow">{t("acceptInvite.eyebrowAside")}</div>
           <h1>{t("acceptInvite.headlineAside1")}<br /><i>{t("acceptInvite.headlineAside2")}</i></h1>

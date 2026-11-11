@@ -7,6 +7,7 @@ import { mfaReturnPath, shouldEnforceMfaForRoles } from "@/lib/mfa";
 import { generateTotpQrDataUrl } from "@/lib/qr";
 import { useTranslation } from "@/lib/i18n";
 import type { AppRole } from "@shared/authorization";
+import { AuthLogo } from "@/components/AuthLogo";
 
 export default function MfaEnroll() {
   const { t } = useTranslation();
@@ -124,9 +125,7 @@ export default function MfaEnroll() {
   return (
     <div className="login-page">
       <div className="login-aside">
-        <div className="login-brand">
-          <span className="brand-mark"><span /></span><strong>hay<em>host</em></strong>
-        </div>
+        <AuthLogo />
         <div className="login-aside-copy">
           <div className="eyebrow">{t("mfaEnroll.asideEyebrow")}</div>
           <h1>{t("mfaEnroll.asideTitle")}<br /><i>{t("mfaEnroll.asideTitleHighlight")}</i></h1>

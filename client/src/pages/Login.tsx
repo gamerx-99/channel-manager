@@ -9,6 +9,7 @@ import { useTranslation } from '@/lib/i18n';
 import { readSocialError, SocialSignIn } from '@/components/auth/SocialSignIn';
 import { CheckEmail } from '@/components/auth/CheckEmail';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { AuthLogo } from "@/components/AuthLogo";
 
 /** Only an owner signup link may be resumed here, so 
 ext cannot send anyone off the site. */
@@ -149,10 +150,7 @@ export default function Login() {
   return (
     <div className="login-page auth-login-page">
       <div className="login-aside">
-        <div className="login-header"><div className="login-brand">
-          <span className="brand-mark"><span /></span>
-          <strong>hay<em>host</em></strong>
-        </div><LanguageSwitcher /></div>
+        <div className="login-header"><AuthLogo /><LanguageSwitcher /></div>
         <div className="login-aside-copy">
           <div className="eyebrow">{t("login.eyebrowAside")}</div>
           <h1>{t("login.headlineAside1")}<br /><i>{t("login.headlineAside2")}</i></h1>

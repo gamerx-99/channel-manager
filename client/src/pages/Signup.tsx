@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useTranslation } from "@/lib/i18n";
 import { CheckEmail } from "@/components/auth/CheckEmail";
 import { readSocialError, SocialSignIn } from "@/components/auth/SocialSignIn";
+import { AuthLogo } from "@/components/AuthLogo";
 
 export default function Signup() {
   const [, navigate] = useLocation();
@@ -70,7 +71,7 @@ export default function Signup() {
   return (
     <div className="login-page signup-page">
       <div className="login-aside">
-        <Link href="/" className="login-brand"><span className="brand-mark"><span /></span><strong>hay<em>host</em></strong></Link>
+        <AuthLogo href="/" />
         <div className="login-aside-copy">
           <div className="eyebrow">{t("signup.eyebrow")}</div>
           <h1>{t("signup.asideTitle")}</h1>

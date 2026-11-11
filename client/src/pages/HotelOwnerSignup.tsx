@@ -7,6 +7,7 @@ import { PageState } from "@/components/PageState";
 import { CheckEmail } from "@/components/auth/CheckEmail";
 import { readSocialError, SocialSignIn } from "@/components/auth/SocialSignIn";
 import { useTranslation } from "@/lib/i18n";
+import { AuthLogo } from "@/components/AuthLogo";
 
 type HotelOwnerSignupProps = { token: string };
 
@@ -118,7 +119,7 @@ export default function HotelOwnerSignup({ token }: HotelOwnerSignupProps) {
   return (
     <div className="login-page">
       <div className="login-aside">
-        <div className="login-brand"><span className="brand-mark"><span /></span><strong>hay<em>host</em></strong></div>
+        <AuthLogo />
         <div className="login-aside-copy">
           <div className="eyebrow">{t("ownerSignup.eyebrowAside")}</div>
           <h1>{t("ownerSignup.headlineAside")}<br /><i>{hotelName}.</i></h1>
