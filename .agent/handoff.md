@@ -6231,7 +6231,7 @@ Exit 0
 
 ## 2026-11-11 — SlipOK guide wired in (not deployed)
 
-- The owner supplied the SlipOK sign-up guide as an image. It is `client/public/guides/slipok-guide.webp` (served at `/guides/slipok-guide.webp`) and `SLIPOK_GUIDE_URL` in `client/src/lib/paymentSetup.ts` points at it.
+- The owner supplied the SlipOK sign-up guide as an image, then a corrected version ("แพ็กเกจ" spelling fixed). It is `client/public/guides/slipok-guide.jpg` (served at `/guides/slipok-guide.jpg`; the first `.webp` copy was removed) and `SLIPOK_GUIDE_URL` in `client/src/lib/paymentSetup.ts` points at it.
 - Links: the payment reminder popup (only when SlipOK is what is missing) and the SlipOK card on the finance settings page. Setting the constant to `null` removes both.
-- Copy note for the owner: the image says "แพ็คเก็จ"; the glossary spelling is "แพ็กเกจ". Image left as supplied.
+- Note: the phone screens inside the image show unreadable placeholder text, so it works as an outline of the steps, not as a screenshot of the real SlipOK screens.
 - Evidence: `pnpm check` exit 0; `pnpm test` 303 files, 2,147 tests passed; `pnpm build` passed and `dist/public/guides/slipok-guide.webp` is in the build.

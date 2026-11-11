@@ -2,7 +2,7 @@ export type PaymentSetupStatus = { promptpay_configured: boolean; slipok_configu
 export type MissingPaymentSetup = "promptpay" | "slipok";
 
 /** The owner's SlipOK sign-up guide (an image in client/public/guides); set to null to hide every link to it. */
-export const SLIPOK_GUIDE_URL: string | null = "/guides/slipok-guide.webp";
+export const SLIPOK_GUIDE_URL: string | null = "/guides/slipok-guide.jpg";
 
 export function financeSettingsPath(hotelId: string) {
   return `/hotels/${hotelId}/settings/finance`;

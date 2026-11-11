@@ -43,7 +43,7 @@ describe("PaymentSetupReminder", () => {
 
   it("links to the SlipOK guide only when SlipOK is what is missing", () => {
     render(<PaymentSetupReminder hotelId={HOTEL} enabled />);
-    expect(screen.getByRole("link", { name: "How to sign up for SlipOK" }).getAttribute("href")).toBe("/guides/slipok-guide.webp");
+    expect(screen.getByRole("link", { name: "How to sign up for SlipOK" }).getAttribute("href")).toBe("/guides/slipok-guide.jpg");
     cleanup();
     mocks.status = { data: { promptpay_configured: false, slipok_configured: true }, refetch: vi.fn() };
     render(<PaymentSetupReminder hotelId={HOTEL} enabled />);
