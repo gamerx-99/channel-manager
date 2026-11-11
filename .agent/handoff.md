@@ -6180,3 +6180,11 @@ Exit 0
 - Evidence: `pnpm check` exit 0; `pnpm test` 299 files, 2,123 tests passed; `pnpm build` passed. The login button was looked at in a browser with passkey support faked (the preview was served over plain http, where browsers hide WebAuthn).
 - NOT verified: a real passkey registration and sign-in on a real device. That needs an https origin with the migration applied (staging).
 - Before deploying: apply `20261111060000_add_passkey` to the target database first (`wrangler d1 migrations list hayhost-<env> --env <env> --remote`, only that file pending, apply, then deploy). Without the table the button shows an error and the security page cannot list passkeys. Nothing was pushed, deployed or migrated.
+
+## 2026-11-11 — Passkey on staging
+
+- Pushed to main: 1ff4a44 (server) and 8933a68 (app).
+- Staging D1 `hayhost-staging` (f7fb735d-59a0-4a56-a8b4-bacb654d53d7): `20261111060000_add_passkey` applied, pending list empty, `passkey` table plus `passkey_user_id_idx` and `passkey_credential_id_unique` present.
+- Staging Worker `hayhost-stage`: Version ID 919cdd02-f467-42fc-b08f-ca28d04c22b0. `/login` returns 200; `GET /api/auth/passkey/generate-authenticate-options` answers with rpId `hayhost-stage.lannatc.workers.dev`.
+- Production: NOT touched. Pending there: `20261111060000_add_passkey` (apply before deploying main).
+- Still to verify by hand on a real device at https://hayhost-stage.lannatc.workers.dev: register a passkey on the security page, sign out, sign in with it, delete it.
