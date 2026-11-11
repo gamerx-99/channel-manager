@@ -6188,3 +6188,11 @@ Exit 0
 - Staging Worker `hayhost-stage`: Version ID 919cdd02-f467-42fc-b08f-ca28d04c22b0. `/login` returns 200; `GET /api/auth/passkey/generate-authenticate-options` answers with rpId `hayhost-stage.lannatc.workers.dev`.
 - Production: NOT touched. Pending there: `20261111060000_add_passkey` (apply before deploying main).
 - Still to verify by hand on a real device at https://hayhost-stage.lannatc.workers.dev: register a passkey on the security page, sign out, sign in with it, delete it.
+
+## 2026-11-11 — Passkey on production
+
+- Owner tested on staging (add a passkey, sign out, sign in with it): worked.
+- Production D1 `hayhost-production` (97f19e0b-d3f1-4b08-9abf-7992600a6bd3): `20261111060000_add_passkey` applied first, pending list empty, `passkey` table and both indexes present, 0 rows.
+- Production Worker `hayhost`: Version ID e42ce7a8-e614-4dd1-add9-8c0ca5e8827b (100%), built from main 6e68817 after `pnpm check` exit 0 and `pnpm build`; the full suite had passed on the same code (299 files, 2,123 tests). `/login` and `/` return 200; the passkey options endpoint answers with rpId `hayhostth.com`; Google and LINE buttons still show next to the new Passkey button.
+- Staging has no Google secrets, so the Google button never shows there. Not a bug.
+- Not yet checked on production: a real passkey registration and sign-in with a production account.
