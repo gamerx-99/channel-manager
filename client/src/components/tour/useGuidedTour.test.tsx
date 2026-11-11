@@ -25,6 +25,26 @@ describe('tour route transition', () => {
     expect(renderHook(() => useGuidedTour(threeSteps, true, vi.fn())).result.current.stepIndex).toBe(0);
   });
 
+  it('opens at the step the progress points to when nothing is remembered', () => {
+    expect(renderHook(() => useGuidedTour(threeSteps, true, vi.fn(), 0)).result.current.stepIndex).toBe(0);
+    expect(renderHook(() => useGuidedTour(threeSteps, true, vi.fn(), 1)).result.current.stepIndex).toBe(1);
+    expect(renderHook(() => useGuidedTour(threeSteps, true, vi.fn(), 2)).result.current.stepIndex).toBe(2);
+  });
+
+  it('lets a remembered step win over the progress-based one', () => {
+    window.sessionStorage.setItem(TOUR_STEP_KEY, 'finance');
+    expect(renderHook(() => useGuidedTour(threeSteps, true, vi.fn(), 0)).result.current.stepIndex).toBe(2);
+    window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms');
+    expect(renderHook(() => useGuidedTour(threeSteps, true, vi.fn(), 2)).result.current.stepIndex).toBe(1);
+  });
+
+  it('does not jump to another step when the progress changes while the tour is running', () => {
+    const { result, rerender } = renderHook(({ start }) => useGuidedTour(threeSteps, true, vi.fn(), start), { initialProps: { start: 0 } });
+    expect(result.current.stepIndex).toBe(0);
+    rerender({ start: 1 });
+    expect(result.current.stepIndex).toBe(0);
+  });
+
   it('resumes the rooms step after the profile route remounts the tour', () => {
     window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms');
     const { result } = renderHook(() => useGuidedTour([

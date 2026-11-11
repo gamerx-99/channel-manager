@@ -3,26 +3,17 @@ import { useTranslation } from "@/lib/i18n";
 import { useGuidedTour, type TourStep } from "./useGuidedTour";
 import "./guidedTour.css";
 
-export function GuidedTour({ steps, active, onFinish, onRestart, onRoomStep, onFinanceStep }: { steps: TourStep[]; active: boolean; onFinish: (skipped: boolean) => void; onRestart: () => void; onRoomStep: () => void; onFinanceStep: () => void }) {
+export function GuidedTour({ steps, active, onFinish, onRestart, onRoomStep, onFinanceStep, startStep = 0 }: { steps: TourStep[]; active: boolean; onFinish: (skipped: boolean) => void; onRestart: () => void; onRoomStep: () => void; onFinanceStep: () => void; startStep?: number }) {
   const { t } = useTranslation();
-  const { step, stepIndex, rect, next, skip } = useGuidedTour(steps, active, onFinish);
+  const { step, stepIndex, rect, next, skip } = useGuidedTour(steps, active, onFinish, startStep);
   const panel = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!active || step?.target !== "hotel-settings") return;
-    const activateTarget = () => {
-      const target = document.querySelector<HTMLElement>('[data-tour="hotel-settings"]');
-      if (!target) return false;
-      if (!document.querySelector('[data-tour="hotel-settings-fields"]')) target.click();
-      return true;
-    };
-    if (!activateTarget()) {
+    // The tour never navigates for the person: it only opens the sidebar group so the spotlight can point
+    // at the "General settings" link, and the person clicks it themselves.
+    if (!document.querySelector('[data-tour="hotel-settings"]')) {
       document.querySelector<HTMLElement>('[aria-controls="sidebar-hotel-settings"]')?.click();
-      const timer = window.setInterval(() => {
-        if (activateTarget()) window.clearInterval(timer);
-      }, 50);
-      window.setTimeout(() => window.clearInterval(timer), 3000);
     }
-    // Navigate once when entering the hotel step; the sidebar link opens the profile page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, stepIndex, step?.target]);
   // Bring each step's target into view; the tooltip then follows it via the scroll listener.

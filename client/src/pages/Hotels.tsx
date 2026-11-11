@@ -48,8 +48,6 @@ export default function Hotels() {
     onError: mutationError => setFormError(mutationError.message),
   });
   const filtered = useMemo(() => hotels.filter(hotel => hotel.name.toLowerCase().includes(query.toLowerCase()) && (filter === 'All properties' || (filter === 'Live' ? hotel.public_enabled : !hotel.public_enabled))), [hotels, query, filter]);
-  const totalRooms = hotels.reduce((total, hotel) => total + hotel.rooms.length, 0);
-  const liveCount = hotels.filter(hotel => hotel.public_enabled).length;
 
   function closeCreateDialog(open: boolean) {
     if (createHotel.isPending) return;
@@ -80,7 +78,6 @@ export default function Hotels() {
   if (showPlatformHotelEmptyState) return <div className="page-content"><section className="page-intro intro-split"><div><div className="eyebrow">{t('hotels.eyebrow')}</div><h1>{t('hotels.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotels.lede')}</p></div></section><section className="panel empty-state"><HotelIcon size={20} /><strong>{t('hotels.platformMembershipTitle')}</strong><span>{t('hotels.platformMembershipDescription')}</span>{canOpenPlatformSummary && <Link className="button button-primary" href="/platform">{t('hotels.platformDirectoryLink')}</Link>}</section></div>;
 
   return <div className="page-content"><section className="page-intro intro-split"><div><div className="eyebrow">{t('hotels.eyebrow')}</div><h1>{t('hotels.title')}<span className="title-mark">.</span></h1><p className="lede">{t('hotels.lede')}</p></div>{canCreateHotel.data && <button className="button button-primary" type="button" onClick={() => { setFormError(null); setShowCreate(true); }}><Plus size={16} /> {t('hotels.addHotel')}</button>}</section>
-    <section className="summary-strip"><div><span className="strip-label">{t('hotels.totalProperties')}</span><strong>{hotels.length}</strong></div><div><span className="strip-label">{t('hotels.roomsUnderManagement')}</span><strong>{totalRooms}</strong></div><div><span className="strip-label">{t('hotels.publiclyLive')}</span><strong>{liveCount}</strong></div><div className="strip-caption"><HotelIcon size={16} /> {t('hotels.stripCaption')}</div></section>
     <section className="panel list-panel">
       <div className="panel-heading"><div><div className="eyebrow">{t('hotels.eyebrow')}</div><h2>{t('hotels.title')}</h2></div><span className="status-pill live"><i />{t('hotels.recordsPill', { count: filtered.length })}</span></div>
       <div className="list-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('hotels.searchPlaceholder')} aria-label={t('hotels.searchAriaLabel')} /></div><div className="toolbar-actions"><button className={`filter-button ${filter === 'All properties' ? 'selected' : ''}`} onClick={() => setFilter('All properties')}><SlidersHorizontal size={15} /> {t('hotels.allProperties')}</button><button className={`filter-button ${filter === 'Live' ? 'selected' : ''}`} onClick={() => setFilter('Live')}><span className="dot pine" /> {t('hotels.liveFilter')}</button><button className={`filter-button ${filter === 'Private' ? 'selected' : ''}`} onClick={() => setFilter('Private')}><Filter size={14} /> {t('hotels.privateFilter')}</button></div></div>

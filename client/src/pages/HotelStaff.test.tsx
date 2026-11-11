@@ -139,11 +139,29 @@ describe("HotelStaff", () => {
     expect(screen.getByRole("heading", { name: /Hotel staff/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Little Bro team" })).toBeTruthy();
     expect(screen.getByText("frontdesk@example.com")).toBeTruthy();
-    expect(document.querySelector(".hotel-staff-summary")?.textContent).toContain("Hotel staff");
-    expect(document.querySelector(".hotel-staff-summary")?.textContent).toContain("Active accounts");
+    // Owner decision 2026-11-11: no summary strip on any page; the transfer action now sits in the page header.
+    expect(document.querySelector(".hotel-staff-summary")).toBeNull();
     expect(screen.getByRole("combobox", { name: "Role for frontdesk@example.com" })).toBeTruthy();
     expect(screen.queryByRole("option", { name: /Super Admin/ })).toBeNull();
-    expect(screen.getByText(/limited to this hotel/)).toBeTruthy();
+    // The "limited to this hotel" caption lived in the summary strip, which is gone on every page (owner, 2026-11-11).
+  });
+
+  it("offers the Hotel Admin transfer in the page header when there is an admin and someone to hand over to", () => {
+    mocks.query.data.staff = [
+      {
+        id: "membership-owner",
+        hotel_id: "hotel-1",
+        user_id: "owner-1",
+        role: "hotel_owner",
+        email: "owner@example.com",
+        created_at: "2026-08-18T04:00:00.000Z",
+        confirmed_at: "2026-08-18T04:10:00.000Z",
+        last_sign_in_at: null,
+      },
+      ...mocks.query.data.staff,
+    ];
+    render(<HotelStaff id="hotel-1" />);
+    expect(document.querySelector(".page-intro-actions")?.textContent).toContain("Transfer Hotel Admin");
   });
 
   it("disables the Hotel Admin option and explains the one-admin rule when an admin already exists", async () => {

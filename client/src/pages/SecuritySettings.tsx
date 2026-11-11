@@ -16,7 +16,7 @@ export default function SecuritySettings() {
   const canManageSlipOk = Boolean(hotelId) && hasHotelPermission(authMeQuery.data?.roles ?? [], authMeQuery.data?.memberships ?? [], hotelId!, "property.manage_profile");
 
   return (
-    <div className="page-content">
+    <div className="page-content security-page">
       <section className="page-intro intro-split">
         <div>
           <div className="eyebrow">{t("securitySettings.eyebrow")}</div>

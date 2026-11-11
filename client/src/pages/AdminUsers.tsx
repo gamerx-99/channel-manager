@@ -42,13 +42,6 @@ export default function AdminUsers() {
       {!adminQuery.error && hotelsQuery.error && <section className="panel empty-state"><ShieldCheck size={20} /><strong>{t('adminUsers.hotelOptionsUnavailable')}</strong><span>{hotelsQuery.error.message}</span></section>}
       {!adminQuery.error && (
         <>
-          <section className="summary-strip">
-            <div><span className="strip-label">{t('adminUsers.summaryAuthUsers')}</span><strong>{users.length}</strong></div>
-            <div><span className="strip-label">{t('adminUsers.summaryHotelMemberships')}</span><strong>{users.reduce((total: number, user: any) => total + (user.roles ?? []).filter((role: any) => role.hotel_id).length, 0)}</strong></div>
-            <div><span className="strip-label">{t('adminUsers.summaryHotelsAvailable')}</span><strong>{hotels.length}</strong></div>
-            <div className="strip-caption"><ShieldCheck size={16} /> {t('adminUsers.summaryCaption')}</div>
-          </section>
-
           <div className="content-grid lower-grid">
             <section className="panel">
               <div className="panel-heading"><div><div className="eyebrow">{t('adminUsers.identityDirectoryEyebrow')}</div><h2>{t('adminUsers.existingUsersTitle')}</h2></div><span className="status-pill live"><i /> {t('adminUsers.recordsPill', { count: users.length })}</span></div>

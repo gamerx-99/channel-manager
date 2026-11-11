@@ -145,10 +145,6 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
 
   const staff = staffQuery.data?.staff ?? [];
   const isPending = inviteStaff.isPending || updateRole.isPending || removeStaff.isPending || transferAdmin.isPending;
-  const activeStaffCount = useMemo(
-    () => staff.filter(member => Boolean(member.confirmed_at || member.last_sign_in_at)).length,
-    [staff],
-  );
   const currentHotelAdmin = staff.find(member => member.role === "hotel_owner");
   const hotelAdminAlreadyAssigned = Boolean(currentHotelAdmin);
   const auditUserLabel = (userId: string) => userId === DELETED_USER_ID ? t("accountDeletion.deletedUser") : staff.find(member => member.user_id === userId)?.email ?? userId;
@@ -267,6 +263,16 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
               <Link2 size={16} /> {t("hotelStaff.generateSignupLink")}
             </button>
           )}
+          {!staffQuery.isLoading && !staffQuery.error && canTransferOwnership && currentHotelAdmin && transferCandidates.length > 0 && (
+            <button
+              className="button button-quiet"
+              type="button"
+              onClick={() => { setFormError(null); setTransferTargetId(transferCandidates[0]?.id ?? ""); setTransferOpen(true); }}
+              disabled={isPending}
+            >
+              <ArrowRightLeft size={15} /> {t("hotelStaff.transferHotelAdmin")}
+            </button>
+          )}
           <button className="button button-primary" type="button" onClick={() => { setFormError(null); setInviteOpen(true); }}>
             <UserPlus size={16} /> {t("hotelStaff.inviteStaff")}
           </button>
@@ -285,22 +291,6 @@ export default function HotelStaff({ id: hotelId }: HotelStaffProps) {
 
       {!staffQuery.isLoading && !staffQuery.error && (
         <>
-          <section className="summary-strip hotel-staff-summary">
-            <div><span className="strip-label">{t("hotelStaff.summaryHotelStaff")}</span><strong>{staff.length}</strong></div>
-            <div><span className="strip-label">{t("hotelStaff.summaryActiveAccounts")}</span><strong>{activeStaffCount}</strong></div>
-            <div className="strip-caption"><ShieldCheck size={16} /> {t("hotelStaff.summaryCaption")}</div>
-            {canTransferOwnership && currentHotelAdmin && transferCandidates.length > 0 && (
-              <button
-                className="button button-quiet button-small"
-                type="button"
-                onClick={() => { setFormError(null); setTransferTargetId(transferCandidates[0]?.id ?? ""); setTransferOpen(true); }}
-                disabled={isPending}
-              >
-                <ArrowRightLeft size={15} /> {t("hotelStaff.transferHotelAdmin")}
-              </button>
-            )}
-          </section>
-
           <section className="panel list-panel">
             <div className="panel-heading">
               <div><div className="eyebrow">{t("hotelStaff.membershipLedgerEyebrow")}</div><h2>{t("hotelStaff.teamTitle", { hotelName: staffQuery.data?.hotel.name ?? "Hotel" })}</h2></div>

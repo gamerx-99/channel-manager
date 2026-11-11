@@ -8,7 +8,7 @@ import { Topbar } from "./Topbar";
 import { useTranslation } from "@/lib/i18n";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { getTourProgress } from "@/lib/tour/tourProgress";
+import { getTourProgress, tourStartStep } from "@/lib/tour/tourProgress";
 import { GuidedTour } from "@/components/tour/GuidedTour";
 import { PaymentSetupReminder } from "@/components/PaymentSetupReminder";
 import { TOUR_STEP_KEY } from "@/components/tour/useGuidedTour";
@@ -35,13 +35,20 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
   const financeStatus = trpc.slipok.paymentSetupStatus.useQuery({ hotel_id: selectedHotelId ?? "" }, { enabled: canSetUpHotel });
   const progress = getTourProgress({ hotel: hotelQuery.data ? { name: hotelQuery.data.name, address: hotelQuery.data.address, ownerContact: hotelQuery.data.owner_contact } : null, roomTypes: hotelQuery.data?.room_types ?? [], rooms: (hotelQuery.data?.rooms ?? []).map((room: any) => ({ roomTypeId: room.room_type_id })), skippedAt: onboarding.data?.tourSkippedAt ? new Date(onboarding.data.tourSkippedAt).getTime() : null, completedAt: onboarding.data?.tourCompletedAt ? new Date(onboarding.data.tourCompletedAt).getTime() : null, financeDone: financeStatus.data ? financeStatus.data.promptpay_configured && financeStatus.data.slipok_configured : undefined });
   const autoStart = canSetUpHotel && !onboarding.isLoading && !hotelQuery.isLoading && progress.shouldAutoStart;
-  // The tour starts by itself only on the hotel pages; the finance page shows it only when the tour is resumed from there.
-  const onAutoStartRoute = location === `/hotels/${selectedHotelId}` || location === `/hotels/${selectedHotelId}/profile`;
-  const onTourRoute = onAutoStartRoute || location === `/hotels/${selectedHotelId}/settings/finance`;
+  // The tour opens at the first step still to do (hotel details, then rooms, then finance) and starts by itself only
+  // on the page of that step; the finance page shows it only when the tour is resumed from there. The tour never
+  // navigates for the person after it has started.
+  const startStep = tourStartStep(progress);
+  const onHotelDetailsPage = location === `/hotels/${selectedHotelId}/profile` || location === `/hotels/${selectedHotelId}/settings/general`;
+  const onAutoStartRoute = progress.hotelSettingsDone
+    ? location === `/hotels/${selectedHotelId}`
+    : location === `/hotels/${selectedHotelId}` || onHotelDetailsPage;
+  const onTourRoute = location === `/hotels/${selectedHotelId}` || onHotelDetailsPage || location === `/hotels/${selectedHotelId}/settings/finance`;
   const tourActive = onAutoStartRoute && autoStart;
   useEffect(() => {
-    if (location === "/dashboard" && autoStart) navigate(`/hotels/${selectedHotelId}`);
-  }, [location, selectedHotelId, autoStart, navigate]);
+    // Send a new owner to the page of the step the tour opens at.
+    if (location === "/dashboard" && autoStart) navigate(progress.hotelSettingsDone ? `/hotels/${selectedHotelId}` : `/hotels/${selectedHotelId}/settings/general`);
+  }, [location, selectedHotelId, autoStart, progress.hotelSettingsDone, navigate]);
   const tourSteps = [
     { target: "hotel-settings", title: t("guidedTour.hotelTitle"), body: t("guidedTour.hotelBody"), action: t("guidedTour.hotelAction") },
     { target: "room-settings", title: t("guidedTour.roomTitle"), body: t("guidedTour.roomBody"), action: t("guidedTour.roomAction") },
@@ -103,7 +110,7 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
         <SupportAccessBanner memberships={memberships} />
         <div className="page-wrap">{children}</div>
         <PaymentSetupReminder hotelId={selectedHotelId ?? null} enabled={isHotelOwner && !tourShowing} />
-        {onTourRoute && <GuidedTour steps={tourSteps} active={tourActive || tourRequested} onRoomStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms'); navigate(`/hotels/${selectedHotelId}`); }} onFinanceStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'finance'); navigate(`/hotels/${selectedHotelId}/settings/finance`); }} onFinish={skipped => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(false); setTourState.mutate({ state: skipped ? "skipped" : "completed" }); }} onRestart={() => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(true); setTourState.mutate({ state: "reset" }); }} />}
+        {onTourRoute && <GuidedTour steps={tourSteps} startStep={startStep} active={tourActive || tourRequested} onRoomStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms'); navigate(`/hotels/${selectedHotelId}`); }} onFinanceStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'finance'); navigate(`/hotels/${selectedHotelId}/settings/finance`); }} onFinish={skipped => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(false); setTourState.mutate({ state: skipped ? "skipped" : "completed" }); }} onRestart={() => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(true); setTourState.mutate({ state: "reset" }); }} />}
       </main>
     </div>
   );

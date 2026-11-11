@@ -6,7 +6,9 @@ import {
   BedDouble,
   Bell,
   CalendarDays,
+  ArrowUpRight,
   ChevronDown,
+  ExternalLink,
   Globe,
   Hotel,
   LayoutDashboard,
@@ -104,11 +106,11 @@ export function Sidebar({
   const selectedHotelName = selectedHotel?.name;
   const hotelNavItems = selectedHotelId
     ? [
-      ...(can("property.manage_room_structure") ? [{ href: `/hotels/${selectedHotelId}/services`, label: t("sidebar.services"), icon: Sparkles }] : []),
       ...(can("operations.view_bookings") ? [{ href: `/hotels/${selectedHotelId}/bookings`, label: t("sidebar.bookings"), icon: Users }] : []),
       ...(otaSyncEnabled && otaConnectivityEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
     ]
     : [];
+  const servicesHref = selectedHotelId && can("property.manage_room_structure") ? `/hotels/${selectedHotelId}/services` : null;
   const settingsItems = getHotelSettingsItems(selectedHotelId, can, t);
   const onSettingsPage = settingsItems.some(item => location.startsWith(item.href));
   const [settingsOpen, setSettingsOpen] = useState(onSettingsPage);
@@ -160,6 +162,24 @@ export function Sidebar({
         activeHotelName={selectedHotelName}
         onSelectHotelId={setSelectedHotelId}
       />
+
+      {selectedHotel?.slug && (
+        <a
+          href={`/${selectedHotel.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sidebar-site-card"
+          data-testid="sidebar-public-site-link"
+          onClick={() => onClose()}
+        >
+          <ExternalLink size={16} aria-hidden="true" />
+          <span className="sidebar-site-card-text">
+            <strong>{t("sidebar.viewPublicSite")}</strong>
+            <small>{selectedHotel.public_enabled ? t("sidebar.viewPublicSiteHint") : t("sidebar.viewPublicSiteDraft")}</small>
+          </span>
+          <ArrowUpRight size={14} aria-hidden="true" />
+        </a>
+      )}
 
       <nav className="nav-list" aria-label={t("common.mainNavigation")}>
         <p className="nav-label">{t("sidebar.workspace")}</p>
@@ -215,6 +235,23 @@ export function Sidebar({
             )}
           </>
         )}
+        {servicesHref && (
+          <Link href={servicesHref} className={`nav-link ${activePath === servicesHref ? "active" : ""}`} onClick={() => onClose()}>
+            <Sparkles size={17} strokeWidth={activePath === servicesHref ? 2.3 : 1.8} />
+            <span>{t("sidebar.services")}</span>
+          </Link>
+        )}
+        {/* Only people who can edit the hotel's site see the builder: not super admin or support (owner, 2026-11-04). */}
+        {can("property.manage_profile") && (
+          <Link
+            href={selectedHotelId ? "/website-builder" : "/dashboard"}
+            className={`nav-link ${location === "/website-builder" ? "active" : ""}`}
+            onClick={() => onClose()}
+          >
+            <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
+            <span>{t("sidebar.websiteBuilder")}</span>
+          </Link>
+        )}
         {communicationsEnabled && can("operations.view_bookings") && <p className="nav-label nav-label-spaced">{t("sidebar.operationsModules")}</p>}
         {communicationsEnabled && can("operations.view_bookings") && (
           <Link
@@ -238,17 +275,6 @@ export function Sidebar({
               <span>{t("sidebar.staffTasks")}</span>
             </Link>}
           </>
-        )}
-        {/* Only people who can edit the hotel's site see the builder: not super admin or support (owner, 2026-11-04). */}
-        {can("property.manage_profile") && (
-          <Link
-            href={selectedHotelId ? "/website-builder" : "/dashboard"}
-            className={`nav-link ${location === "/website-builder" ? "active" : ""}`}
-            onClick={() => onClose()}
-          >
-            <Globe size={17} strokeWidth={location === "/website-builder" ? 2.3 : 1.8} />
-            <span>{t("sidebar.websiteBuilder")}</span>
-          </Link>
         )}
         {(settingsItems.length > 0 || can("platform.manage_users") || can("reports.view_bookings") || can("property.view_financials")) && <p className="nav-label nav-label-spaced">{t("sidebar.system")}</p>}
         {can("reports.view_bookings") && <Link href="/reports/bookings" className={`nav-link ${location === "/reports/bookings" ? "active" : ""}`} onClick={() => onClose()}><BarChart3 size={17} /><span>{t("sidebar.bookingsReport")}</span></Link>}

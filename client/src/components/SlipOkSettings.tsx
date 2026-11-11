@@ -115,7 +115,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
   }
 
   return (
-    <section aria-label={t("slipOk.title")} className="panel">
+    <section aria-label={t("slipOk.title")} className="panel slipok-panel">
       <div className="panel-heading">
         <div>
           <div className="eyebrow">{t("slipOk.eyebrow")}</div>
@@ -126,8 +126,8 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
         </div>
       </div>
 
-      <Card className="border-[#dce4df] shadow-[0_12px_35px_rgba(30,65,49,0.05)]">
-        <CardContent className="p-6">
+      <Card className="hotel-payment-card slipok-card">
+        <CardContent className="slipok-card-content">
           {/* Idle / prompt to unlock */}
           {(mfaState.status === "idle" || mfaState.status === "error") && (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

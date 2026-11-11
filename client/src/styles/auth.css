@@ -94,3 +94,9 @@
   .signup-slug>span{max-width:none;min-height:34px;border-right:1px solid var(--rule-strong);border-bottom:0;border-radius:8px 8px 0 0}
   .signup-slug input{border-radius:0 0 8px 8px}
 }
+/* Security page: passkey, 2FA, linked accounts and account deletion are one stack with an even 16px gap. */
+.security-page { display: grid; gap: 16px; align-content: start; }
+.security-page > .page-intro { margin-bottom: 8px; }
+.security-page > .panel { margin: 0; min-width: 0; }
+.security-page > .field-help { margin: 0; }
+

@@ -33,4 +33,10 @@ describe("passkey contract", () => {
     expect(read("drizzle/d1/20261111060000_add_passkey.sql")).toContain("CREATE TABLE `passkey`");
     expect(read("drizzle/d1/meta/_journal.json")).toContain("20261111060000_add_passkey");
   });
+
+  it("stacks the security page panels with one even gap and no leftover inline margins", () => {
+    expect(read("client/src/pages/SecuritySettings.tsx")).toContain('className="page-content security-page"');
+    expect(read("client/src/styles/auth.css")).toContain(".security-page { display: grid; gap: 16px;");
+    expect(read("client/src/components/DeleteAccountSettings.tsx")).not.toContain("marginTop: 18");
+  });
 });

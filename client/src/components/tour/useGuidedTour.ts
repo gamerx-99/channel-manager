@@ -3,12 +3,15 @@ import { useCallback, useEffect, useState } from "react";
 export type TourStep = { target?: string; title: string; body: string; action?: string };
 export const TOUR_STEP_KEY = 'hayhost-guided-tour-step';
 const RESUME_STEP: Record<string, number> = { rooms: 1, finance: 2 };
-const initialStep = () => RESUME_STEP[window.sessionStorage.getItem(TOUR_STEP_KEY) ?? ''] ?? 0;
-export function useGuidedTour(steps: TourStep[], active: boolean, onFinish: (skipped: boolean) => void) {
-  const [stepIndex, setStepIndex] = useState(initialStep);
+// A step remembered across a page change wins; otherwise the tour opens at the step the progress points to.
+const initialStep = (startStep: number) => RESUME_STEP[window.sessionStorage.getItem(TOUR_STEP_KEY) ?? ''] ?? startStep;
+export function useGuidedTour(steps: TourStep[], active: boolean, onFinish: (skipped: boolean) => void, startStep = 0) {
+  const [stepIndex, setStepIndex] = useState(() => initialStep(startStep));
   const [rect, setRect] = useState<DOMRect | null>(null);
   const step = steps[stepIndex];
-  useEffect(() => { if (active) setStepIndex(initialStep()); }, [active]);
+  // Only when the tour switches on: saving a step's work mid-tour must not move the person to another step.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (active) setStepIndex(initialStep(startStep)); }, [active]);
   const recalculate = useCallback(() => {
     if (!active || !step?.target) { setRect(null); return; }
     const target = step.target === "hotel-settings" && document.querySelector('[data-tour="hotel-settings-fields"]')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getTourProgress } from "./tourProgress";
+import { getTourProgress, tourStartStep } from "./tourProgress";
 
 const base = { hotel: { name: "Stay", address: "Road", ownerContact: "0812345678" }, roomTypes: [{ id: "type-1" }], rooms: [{ roomTypeId: "type-1" }], skippedAt: null, completedAt: null };
 describe("getTourProgress", () => {
@@ -14,6 +14,12 @@ describe("getTourProgress", () => {
     expect(getTourProgress({ ...base, financeDone: false })).toMatchObject({ financeDone: false, shouldAutoStart: false });
     expect(getTourProgress({ ...base, financeDone: true })).toMatchObject({ financeDone: true, shouldAutoStart: false });
     expect(getTourProgress({ ...base, rooms: [], financeDone: false })).toMatchObject({ roomsDone: false, financeDone: false, shouldAutoStart: true });
+  });
+  it("opens the tour at the first step still to do", () => {
+    expect(tourStartStep(getTourProgress({ ...base, hotel: { ...base.hotel, address: "" }, rooms: [] }))).toBe(0);
+    expect(tourStartStep(getTourProgress({ ...base, hotel: { ...base.hotel, address: "" } }))).toBe(0);
+    expect(tourStartStep(getTourProgress({ ...base, rooms: [] }))).toBe(1);
+    expect(tourStartStep(getTourProgress(base))).toBe(2);
   });
   it("does not auto-start after skip or completion", () => {
     expect(getTourProgress({ ...base, skippedAt: 1 }).shouldAutoStart).toBe(false);

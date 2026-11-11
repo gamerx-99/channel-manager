@@ -86,7 +86,7 @@ export default function DeleteAccountSettings() {
   const blocked = ownedHotels.length > 0 || Boolean(status.data?.lastPlatformAdmin);
 
   return (
-    <section className="panel" aria-labelledby="delete-account-heading" data-testid="delete-account" style={{ marginTop: 18 }}>
+    <section className="panel" aria-labelledby="delete-account-heading" data-testid="delete-account">
       <div className="panel-heading">
         <div>
           <div className="eyebrow">{t("accountDeletion.eyebrow")}</div>
