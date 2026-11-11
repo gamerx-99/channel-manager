@@ -6312,3 +6312,13 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Evidence: `pnpm check` exit 0; `pnpm test` 314 files, 2,227 tests passed; `pnpm build` passed.
 - Deploy order when ordered: apply 20261111090000 to staging then production BEFORE deploying the code, or `auth.me` fails on the missing column. Existing owners (production: the owner's own account) will see the terms screen once after the deploy.
 
+## 2026-11-11 — 2.3 Social accounts add a real email (not deployed, no migration)
+
+- Owner decision sheet 2.3: a LINE / Facebook account (placeholder email) adds and confirms a real email before using the app.
+- Not built on Better Auth's change-email: its confirmation link (`/verify-email`, `change-email-verification`) creates a session for whoever opens it, with no 2FA, so a mistyped address would hand the account to a stranger. Its `/change-email` endpoint stays disabled (test checks it).
+- Server: `server/socialEmail.ts` `requestRealEmail` (placeholder accounts only; a single-use 24 h token in Better Auth's `verification` table, identifier `add-real-email:<token>`; link `<app>/confirm-email?token=…` sent through the existing verification email; an address that already has an account gets the same answer and no email) and `confirmRealEmail` (only the account that asked, signed in; consumed once; re-checks the address is still free; sets email + emailVerified). tRPC `auth.addRealEmail`, `auth.confirmRealEmail` on the new `rateLimitedProtectedProcedure` (`server/_core/trpc.ts`).
+- Client: `mustAddRealEmail` (`client/src/lib/realEmailGate.ts`) checked in `PrivateRoute` before the owner-terms gate; `AddRealEmail.tsx` + `useAddRealEmail.ts` + `.css` (email form, send again, use another email, sign out); public route `/confirm-email` (`ConfirmEmailLink.tsx`) keeps the token in localStorage and goes to `/dashboard`, so a link opened while signed out is used after sign-in. i18n block `addRealEmail`.
+- Tests: `server/auth.socialEmail.test.ts` (11: link sets the email only for the same account, a stranger's click changes nothing and creates no session, single use, expiry, address taken after sending, no enumeration, real-email accounts refused, router needs a session), `client/src/pages/AddRealEmail.test.tsx` (8).
+- Like 3.1, the gate is in the client; the server does not refuse other procedures for a placeholder account.
+- Evidence: `pnpm check` exit 0; `pnpm test` 316 files, 2,246 tests passed; `pnpm build` passed.
+

@@ -1,0 +1,16 @@
+.add-email-page { min-height: 100vh; display: grid; place-items: center; padding: 32px 16px; background: var(--paper); }
+.add-email-card { width: min(480px, 100%); display: grid; gap: 14px; padding: 28px; border-radius: 17px; background: var(--white); box-shadow: var(--shadow); }
+.add-email-card h1 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
+.add-email-lede { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-muted); }
+.add-email-hint { margin: 0; font-size: 12px; line-height: 1.55; color: var(--ink-muted); }
+.add-email-form { display: grid; gap: 14px; }
+.add-email-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.add-email-form input { min-height: 44px; padding: 0 12px; border: 1px solid var(--rule); border-radius: 10px; font: inherit; font-weight: 400; background: var(--white); color: var(--ink); }
+.add-email-form .button-primary { justify-content: center; }
+.add-email-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.add-email-sign-out { justify-self: start; }
+@media (max-width: 600px) {
+  .add-email-card { padding: 20px 16px; }
+  .add-email-actions { flex-direction: column-reverse; }
+  .add-email-actions .button { width: 100%; justify-content: center; }
+}

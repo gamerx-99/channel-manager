@@ -12,6 +12,8 @@ import { useTranslation } from "@/lib/i18n";
 import { HotelClosureRedirect } from "@/pages/HotelClosure";
 import OwnerTerms from "@/pages/OwnerTerms";
 import { mustAcceptOwnerTerms } from "@/lib/ownerTermsGate";
+import AddRealEmail from "@/pages/AddRealEmail";
+import { mustAddRealEmail } from "@/lib/realEmailGate";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -30,7 +32,11 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
   if (roleError || hotelsError) {
     return <main className="auth-loading">{t("privateRoute.verifyAccess")}</main>;
   }
-  // Owner decision 2026-11-11: a hotel owner must accept the platform terms before using the app.
+  // Owner decision 2026-11-11: a LINE / Facebook account adds and confirms a real email first,
+  // then a hotel owner accepts the platform terms, before using the app.
+  if (mustAddRealEmail(authMe)) {
+    return <AddRealEmail />;
+  }
   if (mustAcceptOwnerTerms(authMe)) {
     return <OwnerTerms />;
   }

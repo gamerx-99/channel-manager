@@ -69,6 +69,9 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
+/** Signed in and limited per IP, for actions that send email to an address the person typed. */
+export const rateLimitedProtectedProcedure = t.procedure.use(rateLimitMiddleware).use(requireUser);
+
 const requireBillingCandidate = t.middleware(async ({ ctx, next }) => {
   if (!isBillingCandidateEnabled(ctx.billingEnv?.BILLING_CANDIDATE_ENABLED)) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Billing Candidate is inactive." });

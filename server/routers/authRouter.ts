@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { protectedProcedure, publicProcedure, router } from '../_core/trpc';
+import { protectedProcedure, publicProcedure, rateLimitedProtectedProcedure, router } from '../_core/trpc';
 import { assertNotBlocked, checkAccountPassword, deleteOwnAccount, getAccountDeletionBlockers } from '../d1/accountDeletion';
 import { getAccountProfile } from '../d1/accountProfile';
 import { acceptOwnerTerms, getTermsAcceptedAt } from '../d1/ownerTerms';
+import { confirmRealEmail, requestRealEmail } from '../socialEmail';
+import { resolveAppUrl } from '../appUrl';
 import { checkMfaStepUpStatus, requireRecentMfaVerification } from '../mfa';
 import { verifyMfaStepUp } from '../mfaStepUp';
 import { rethrowDomainError } from '../routerUtils';
@@ -19,6 +21,31 @@ export const authRouter = router({
     const termsAcceptedAt = ctx.db ? await getTermsAcceptedAt(ctx.db, ctx.user.id) : null;
     return { ...rest, termsAcceptedAt };
   }),
+
+  /** A LINE / Facebook account with a placeholder email asks for a confirmation link to its real address (decision 2026-11-11). */
+  addRealEmail: rateLimitedProtectedProcedure
+    .input(z.object({ email: z.string().trim().toLowerCase().email().max(254) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Auth is not available.' });
+      try {
+        const appUrl = resolveAppUrl(ctx.publicAppUrl ?? (ctx.req?.url ? new URL(ctx.req.url).origin : undefined));
+        return await requestRealEmail({ auth: ctx.auth, userId: ctx.user.id, newEmail: input.email, appUrl });
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+
+  /** The signed-in account opens the link from addRealEmail; only the account that asked for it can use it. */
+  confirmRealEmail: rateLimitedProtectedProcedure
+    .input(z.object({ token: z.string().regex(/^[0-9a-f]{64}$/) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Auth is not available.' });
+      try {
+        return await confirmRealEmail({ auth: ctx.auth, userId: ctx.user.id, token: input.token });
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
 
   /** The signed-in account accepts the platform terms. Idempotent: the first acceptance time is kept. */
   acceptTerms: protectedProcedure.mutation(async ({ ctx }) => {

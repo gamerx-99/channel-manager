@@ -54,6 +54,7 @@ import { useTranslation } from "./lib/i18n";
 const LegalPage = React.lazy(() => import("./pages/LegalPage"));
 const GettingStarted = React.lazy(() => import("./pages/GettingStarted"));
 const GuestBooking = React.lazy(() => import("./pages/GuestBooking"));
+const ConfirmEmailLink = React.lazy(() => import("./pages/ConfirmEmailLink"));
 
 function RouteLoading() {
   const { t } = useTranslation();
@@ -81,6 +82,7 @@ function Router() {
         {(params) => <HotelOwnerSignup token={params.token} />}
       </Route>
       <Route path="/accept-invite" component={AcceptInvite} />
+      <Route path="/confirm-email" component={ConfirmEmailLink} />
       <Route path="/help/getting-started"><PrivateRoute><GettingStarted /></PrivateRoute></Route>
       <Route path="/dashboard/financials">
         <PrivateRoute><Financials /></PrivateRoute>

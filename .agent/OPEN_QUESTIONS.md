@@ -247,6 +247,11 @@ answer noted.
 - [ ] ASSUMPTION: a passkey sign-in is not challenged for a TOTP code, because a passkey is already two proofs (the device plus a fingerprint, face or PIN). The twoFactor plugin only challenges /sign-in/email, /sign-in/username and /sign-in/phone-number, and our social-callback gate only acts on /callback/*. Confirm that an owner or admin who turned on 2FA should still skip it with a passkey.
 - [ ] ASSUMPTION: the passkey is tied to the host without `www.` (rpID `hayhostth.com`), so it also works if the site is ever served from the apex. A custom domain for a hotel would need its own passkey.
 
+## Social accounts add a real email (2026-11-11)
+
+- [ ] ASSUMPTION: an address that already has a hayhost account gets "link sent" and no email, so the screen cannot be used to look up accounts. The screen's hint tells that person to sign in with the email and connect LINE / Facebook instead. Confirm, or choose to email the existing account a notice.
+- [ ] ASSUMPTION: the add-email screen and the owner terms screen are client gates; a placeholder account calling the API directly is not refused. Say if the server should refuse every other procedure until the email is confirmed.
+
 ## Free plan room quota (2026-11-11)
 
 - [ ] ASSUMPTION: "first 3 rooms by creation order" uses SQLite's rowid on `rooms` because the table has no created_at. Rowid follows insertion order; a VACUUM keeps the relative order. If an exact creation time is wanted, add `rooms.created_at` in a migration.
