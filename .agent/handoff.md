@@ -6357,3 +6357,10 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 
 - Follow-up the same day: the owner said the sample text came from another hotel's website (a resort's privacy page). Not reused, to avoid copying another business's text; `hotelGuestPrivacy.ts` rewritten in hayhost's own words to match what the system collects and the DPA/`/privacy` (sections: data collected, purposes + legal basis table, if you do not give it, recipients, overseas transfer, retention, security, seven rights, changes, contact). Tests updated (`hotelGuestPrivacy.test.ts` 6).
 
+## 2026-11-12 — Decision sheet batch deployed (owner: "รัน migration แล้ว deploy", then "production เลย")
+
+- Migration `20261111090000_owner_terms_acceptance` applied and verified (column present, nothing pending) on staging then production, before the code.
+- Staging Worker `038e0e8a-a795-45cb-9182-e77a94dda9d9`; production Worker `f8c02ede-1918-4048-8b35-de56c8d66954`, deployed from branch `worktree-finish-old-branch-work` at `6c1857f` (not pushed, not merged into main).
+- Before production: `pnpm test` 321 files, 2,268 tests; `pnpm check`; `pnpm build` passed. Smoke: /, /terms, /littlebromhs, /littlebromhs/privacy, auth.me all 200 on both.
+- Not verified live: signed-in screens (owner terms, add email, cancel dialog, consent box). Rollback target: `df72a19e-88a3-4e19-b72a-cf9b369513a6` (code only; the added column is harmless).
+
