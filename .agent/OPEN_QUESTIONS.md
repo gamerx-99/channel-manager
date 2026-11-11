@@ -241,3 +241,8 @@ answer noted.
 ## Guest mail after "confirm details" (2026-11-11)
 
 - [ ] ASSUMPTION: the durable `booking_received` mail (link `/booking/<id>?hotel=<hotel>`) replaces production's ad hoc "return to payment" mail (link `/<slug>/book?booking_id=...&hotel_id=...`), so the guest gets one mail. Confirm which link the guest should receive.
+
+## Passkey sign-in (2026-11-11)
+
+- [ ] ASSUMPTION: a passkey sign-in is not challenged for a TOTP code, because a passkey is already two proofs (the device plus a fingerprint, face or PIN). The twoFactor plugin only challenges /sign-in/email, /sign-in/username and /sign-in/phone-number, and our social-callback gate only acts on /callback/*. Confirm that an owner or admin who turned on 2FA should still skip it with a passkey.
+- [ ] ASSUMPTION: the passkey is tied to the host without `www.` (rpID `hayhostth.com`), so it also works if the site is ever served from the apex. A custom domain for a hotel would need its own passkey.

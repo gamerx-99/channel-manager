@@ -1,10 +1,11 @@
-import React, { FormEvent, useState } from 'react';
-import { ArrowRight, LockKeyhole, ShieldCheck, KeyRound } from 'lucide-react';
+import React, { FormEvent, useEffect, useState } from 'react';
+import { ArrowRight, Fingerprint, LockKeyhole, ShieldCheck, KeyRound } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
 import { MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
 import { isMfaEnabled } from '@/lib/featureFlags';
+import { classifyPasskeyError, passkeyAutofillSupported, passkeySupported } from '@/lib/passkey';
 import { useTranslation } from '@/lib/i18n';
 import { readSocialError, SocialSignIn } from '@/components/auth/SocialSignIn';
 import { CheckEmail } from '@/components/auth/CheckEmail';
@@ -44,6 +45,20 @@ export default function Login() {
     // Graceful fallback when rendered outside trpc.Provider in unit tests
   }
 
+  const canUsePasskey = passkeySupported();
+
+  // Offer saved passkeys in the email field's autofill list; picking one signs in without a click.
+  useEffect(() => {
+    if (isTwoFactor) return;
+    let cancelled = false;
+    void passkeyAutofillSupported().then(available => {
+      if (available && !cancelled) void signInWithPasskey(true);
+    });
+    return () => { cancelled = true; };
+    // Once per visit to the password form; the handler reads the latest state when it runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTwoFactor]);
+
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -75,47 +90,66 @@ export default function Login() {
         return;
       }
 
-      // Blocking MFA enrollment check for platform roles (T09-04)
-      try {
-        let roles: string[] = [];
-        let twoFactorEnabled = false;
-        let signedInWithoutRole = false;
-
-        if (trpcUtils) {
-          try {
-            const me = await trpcUtils.auth.me.fetch();
-            if (me) {
-              roles = (me.roles?.length ? me.roles : me.role ? [me.role] : []) as string[];
-              twoFactorEnabled = Boolean(me.twoFactorEnabled);
-              signedInWithoutRole = roles.length === 0;
-            }
-          } catch {
-            // Ignore tRPC fetch errors — fail open
-          }
-        }
-
-        if (isMfaEnabled() && !twoFactorEnabled && shouldEnforceMfaForRoles(roles)) {
-          setSubmitting(false);
-          navigate(MFA_ENROLL_PATH);
-          return;
-        }
-
-        // Confirming an email comes before the hotel step, so a new owner resumes it here.
-        if (signedInWithoutRole) {
-          setSubmitting(false);
-          navigate(next ?? '/dashboard');
-          return;
-        }
-      } catch {
-        // Ignore role resolution errors — allow navigation to dashboard
-      }
-
-      setSubmitting(false);
-      navigate('/dashboard');
+      await finishSignIn();
     } catch (err) {
       setSubmitting(false);
       setError(err instanceof Error ? err.message : "Sign in failed");
     }
+  }
+
+  /** Same next step for every way in: the platform-role MFA check, then the page the person came for. */
+  async function finishSignIn() {
+    // Blocking MFA enrollment check for platform roles (T09-04)
+    try {
+      let roles: string[] = [];
+      let twoFactorEnabled = false;
+      let signedInWithoutRole = false;
+
+      if (trpcUtils) {
+        try {
+          const me = await trpcUtils.auth.me.fetch();
+          if (me) {
+            roles = (me.roles?.length ? me.roles : me.role ? [me.role] : []) as string[];
+            twoFactorEnabled = Boolean(me.twoFactorEnabled);
+            signedInWithoutRole = roles.length === 0;
+          }
+        } catch {
+          // Ignore tRPC fetch errors — fail open
+        }
+      }
+
+      if (isMfaEnabled() && !twoFactorEnabled && shouldEnforceMfaForRoles(roles)) {
+        setSubmitting(false);
+        navigate(MFA_ENROLL_PATH);
+        return;
+      }
+
+      // Confirming an email comes before the hotel step, so a new owner resumes it here.
+      if (signedInWithoutRole) {
+        setSubmitting(false);
+        navigate(next ?? '/dashboard');
+        return;
+      }
+    } catch {
+      // Ignore role resolution errors — allow navigation to dashboard
+    }
+
+    setSubmitting(false);
+    navigate('/dashboard');
+  }
+
+  async function signInWithPasskey(autoFill = false) {
+    setError(null);
+    if (!autoFill) setSubmitting(true);
+    const { error: passkeyError } = await authClient.signIn.passkey({ autoFill });
+    if (passkeyError) {
+      if (autoFill) return;
+      setSubmitting(false);
+      // Closing the system prompt is a choice, so only a real failure shows a message.
+      if (classifyPasskeyError(passkeyError) !== "cancelled") setError(t("passkey.signInFailed"));
+      return;
+    }
+    await finishSignIn();
   }
 
   async function handleTotpSubmit(event: FormEvent<HTMLFormElement>) {
@@ -223,7 +257,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                autoComplete="email"
+                autoComplete="username webauthn"
                 required
               />
             </label>
@@ -242,6 +276,11 @@ export default function Login() {
             <button className="button button-primary login-button" type="submit" disabled={submitting}>
               {submitting ? t("login.signingIn") : t("login.continue")} <ArrowRight size={16} />
             </button>
+            {canUsePasskey ? (
+              <button className="button button-quiet login-button" type="button" disabled={submitting} onClick={() => void signInWithPasskey()} data-testid="passkey-sign-in">
+                <Fingerprint size={16} aria-hidden="true" /> {t("passkey.signInButton")}
+              </button>
+            ) : null}
             <div className="login-security">
               <ShieldCheck size={15} />
               <span>{t("login.securityNote")}</span>

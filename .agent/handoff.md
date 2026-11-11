@@ -6160,3 +6160,23 @@ Exit 0
 - Evidence: `pnpm check` exit 0; `pnpm test` 293 files, 2,084 tests passed; `pnpm build` passed.
 - Deployed: staging Version ID da182c26-4de0-4308-b6e4-b00019015f55, production Version ID 8b6ef8f6-a5f3-456a-8394-ac5ef1f28563 (100%). No migration pending on either. This production deploy also carries 6bac830 (dashboard wording, no decorative bars) and 106a48d (docs + test).
 - Production login page loads (200) and shows the new logo.
+
+## 2026-11-11 — Passkey sign-in (not deployed, migration not applied)
+
+- Server (commit 1ff4a44): `passkey()` plugin in `server/auth.ts`, relying party from the auth base URL by `server/passkeyConfig.ts` (www dropped, full host under workers.dev, localhost as is), `passkey` table in `drizzle/auth-schema.ts`, migration `drizzle/d1/20261111060000_add_passkey.sql` + journal idx 31.
+- Migration written by hand in drizzle-kit's format because `drizzle-kit generate` refuses to run: the snapshots in `drizzle/d1/meta` fork (0026/0029 and 20261106010000/20261110000000 point to the same parent). That was already broken before this work. No snapshot was added, like the two migrations before it. Fixing the snapshot chain is its own ticket.
+- Client: `passkeyClient()` in `auth-client.ts`; login page button "เข้าสู่ระบบด้วย Passkey" below the password button, email field `autocomplete="username webauthn"` plus autofill sign-in when the browser supports it; the password and passkey paths share one `finishSignIn()` (MFA enrol check, then the page the person came for); security page has a Passkey section (list, add with optional name defaulting to the device, delete with confirm). Buttons are hidden when `window.PublicKeyCredential` is missing; the section shows even while `VITE_FEATURE_MFA` is off. Cancelling the system prompt shows nothing.
+- Thai copy (new `passkey.*` keys; no glossary term needed a ban):
+
+| Key | English | Thai |
+|---|---|---|
+| passkey.signInButton | Sign in with a passkey | เข้าสู่ระบบด้วย Passkey |
+| passkey.title | Sign in with fingerprint or face | เข้าสู่ระบบด้วยลายนิ้วมือหรือใบหน้า |
+| passkey.lede | Use your fingerprint, face or screen lock instead of a password. | ใช้สแกนนิ้วหรือใบหน้าแทนรหัสผ่าน |
+| passkey.add | Add a passkey | เพิ่ม Passkey |
+| passkey.confirmDelete | Delete the passkey “{{name}}”? … | ลบ Passkey “{{name}}” ใช่ไหม? อุปกรณ์นั้นจะเข้าสู่ระบบด้วย Passkey ไม่ได้อีก |
+
+- 2FA interaction recorded as an ASSUMPTION in `server/auth.ts` and `.agent/OPEN_QUESTIONS.md`.
+- Evidence: `pnpm check` exit 0; `pnpm test` 299 files, 2,123 tests passed; `pnpm build` passed. The login button was looked at in a browser with passkey support faked (the preview was served over plain http, where browsers hide WebAuthn).
+- NOT verified: a real passkey registration and sign-in on a real device. That needs an https origin with the migration applied (staging).
+- Before deploying: apply `20261111060000_add_passkey` to the target database first (`wrangler d1 migrations list hayhost-<env> --env <env> --remote`, only that file pending, apply, then deploy). Without the table the button shows an error and the security page cannot list passkeys. Nothing was pushed, deployed or migrated.
