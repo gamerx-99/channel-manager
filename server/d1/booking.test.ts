@@ -348,30 +348,33 @@ describe("D1 booking repositories", () => {
       booking_id: hold.booking_id, hotel_id: "a", guest_name: "Guest Example", guest_email: "guest@example.test",
     }, now, sender, "https://hayhostth.com");
     expect((await db.select().from(bookings).where(eq(bookings.id, hold.booking_id)))[0]).toMatchObject({ guestEmail: "guest@example.test", status: "pending_payment" });
-    expect(sender.sentEmails.map(email => email.to)).toEqual(["guest@example.test", "desk@example.test"]);
+    // Owner decision 2026-11-11 (sheet 1.3): completing the booking emails the guest only.
+    expect(sender.sentEmails.map(email => email.to)).toEqual(["guest@example.test"]);
     expect(sender.sentEmails[0]?.text).toContain("Amount due: 200.00");
     expect(sender.sentEmails[0]?.text).toContain("Status: Awaiting payment");
     expect(sender.sentEmails[0]?.text).toContain(`/booking/${hold.booking_id}?hotel=a`);
-    expect(sender.sentEmails[1]?.text).toContain("/hotels/a/bookings");
-    expect(sender.sentEmails.every(email => email.subject.includes("received"))).toBe(true);
+    expect(sender.sentEmails[0]?.subject).toContain("received");
 
-    await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_received", ["guest", "hotel"], "https://hayhostth.com");
-    expect(sender.sentEmails).toHaveLength(2);
+    await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_received", ["guest"], "https://hayhostth.com");
+    expect(sender.sentEmails).toHaveLength(1);
 
     await db.update(bookings).set({ status: "pending_verification" }).where(eq(bookings.id, hold.booking_id));
     await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_awaiting_check", ["hotel"], "https://hayhostth.com", "session-check-1");
-    expect(sender.sentEmails).toHaveLength(3);
-    expect(sender.sentEmails[2]).toMatchObject({ to: "desk@example.test" });
-    expect(sender.sentEmails[2]?.text).toContain("Status: Awaiting payment verification");
-    expect(sender.sentEmails[2]?.text).toContain("Check-in: 2026-11-10 / Check-out: 2026-11-12");
+    expect(sender.sentEmails).toHaveLength(2);
+    expect(sender.sentEmails[1]).toMatchObject({ to: "desk@example.test" });
+    expect(sender.sentEmails[1]?.text).toContain("Status: Awaiting payment verification");
+    expect(sender.sentEmails[1]?.text).toContain("Check-in: 2026-11-10 / Check-out: 2026-11-12");
 
+    // Paid: the guest gets the confirmation and the hotel gets the new booking.
     await db.update(bookings).set({ status: "confirmed", paymentStatus: "verified" }).where(eq(bookings.id, hold.booking_id));
     await sendBookingNotice(db, sender, hold.booking_id, "a", "booking_confirmed", ["guest", "hotel"], "https://hayhostth.com");
-    expect(sender.sentEmails).toHaveLength(5);
-    expect(sender.sentEmails[3]?.text).toContain("Hotel address: Address");
-    expect(sender.sentEmails[3]?.text).toContain("Amount confirmed paid: 200.00");
-    expect(sender.sentEmails[3]?.text).toContain("Status: Confirmed");
-    expect(sender.sentEmails[4]?.to).toBe("desk@example.test");
+    expect(sender.sentEmails).toHaveLength(4);
+    expect(sender.sentEmails[2]?.to).toBe("guest@example.test");
+    expect(sender.sentEmails[2]?.text).toContain("Hotel address: Address");
+    expect(sender.sentEmails[2]?.text).toContain("Amount confirmed paid: 200.00");
+    expect(sender.sentEmails[2]?.text).toContain("Status: Confirmed");
+    expect(sender.sentEmails[3]?.to).toBe("desk@example.test");
+    expect(sender.sentEmails[3]?.text).toContain("/hotels/a/bookings");
   });
 
   it("rejects add-on service IDs belonging to another hotel", async () => {

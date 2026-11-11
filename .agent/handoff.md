@@ -6322,3 +6322,9 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Like 3.1, the gate is in the client; the server does not refuse other procedures for a placeholder account.
 - Evidence: `pnpm check` exit 0; `pnpm test` 316 files, 2,246 tests passed; `pnpm build` passed.
 
+## 2026-11-11 — 1.3 Booking email recipients (not deployed)
+
+- The opencode run for 1.3 / 5.3 / 3.2 was not used: the owner relayed a report, but no such change exists on gserver and the report did not match the decisions (1.3 kept the hotel email, 3.2 built marketing consent, 5.3 used a prompt). Claude did the three tasks.
+- `server/d1/booking.ts` `confirmBookingDetails`: `booking_received` now goes to `["guest"]` only. `booking_confirmed` stays guest + hotel (paymentRouter, three paths). `booking_awaiting_check` stays hotel-only (ASSUMPTION, in OPEN_QUESTIONS).
+- Test: `server/d1/booking.test.ts` "sends accurate received, awaiting-check, and confirmed notices…" now asserts guest only at booking, hotel gets `booking_confirmed`.
+

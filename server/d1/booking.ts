@@ -309,9 +309,12 @@ export async function confirmBookingDetails(db: D1ScopedDatabase, caller: D1Call
   const audit = results.at(-3)!;
   if (update.meta.changes !== 1) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This room hold has expired or is no longer available. Please start again." });
   if (audit.meta.changes !== 1) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking confirmation audit was not written." });
-  // Booking-received notice to the guest and the hotel, with the real booking data at send time.
+  // Owner decision 2026-11-11 (sheet 1.3): when the guest completes the booking, only the guest gets an email.
+  // The hotel hears about the booking once it is paid (`booking_confirmed`, guest + hotel, paymentRouter).
+  // ASSUMPTION: the hotel-only `booking_awaiting_check` notice (a slip waits for manual review) stays; the owner did
+  // not mention it, and without it nobody would know a slip is waiting.
   // A delivery failure never rolls the already-saved booking back.
-  await sendBookingNotice(db, emailSender, booking.id, booking.hotelId, "booking_received", ["guest", "hotel"], appUrl);
+  await sendBookingNotice(db, emailSender, booking.id, booking.hotelId, "booking_received", ["guest"], appUrl);
   return { booking_id: input.booking_id, hotel_id: input.hotel_id, status: "pending_payment" as const, expires_at: expiresAt.toISOString(), amount: satangToMoney(total) };
 }
 
