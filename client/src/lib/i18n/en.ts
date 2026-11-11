@@ -1000,6 +1000,7 @@ const en = {
     promptPayIdLabel: "PromptPay ID",
     promptPayIdHint: "Enter a 10-digit mobile starting 06, 08 or 09, or a 13-digit National/Tax ID.",
     promptPayInvalid: "Invalid PromptPay ID. Enter a 10-digit mobile starting 06, 08 or 09, or a 13-digit National/Tax ID.",
+    promptPayIdChecksum: "This 13-digit number is not a valid ID. Check it, or use the mobile number linked to PromptPay instead.",
     promptPaySavedInvalid: "The saved PromptPay ID is invalid. Enter a correct number and save it so guests can pay.",
     timeoutLabel: "Expires in (minutes)",
     minutes: "{{count}} min",

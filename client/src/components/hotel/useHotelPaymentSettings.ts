@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useMfaStepUp } from "@/lib/mfa";
-import { normalisePromptPayId } from "../../../../shared/promptPayId";
+import { checkPromptPayIdForSave, normalisePromptPayId } from "../../../../shared/promptPayId";
 import { useTranslation } from "@/lib/i18n";
 
 export function useHotelPromptPaySettings(hotelId: string) {
@@ -29,6 +29,7 @@ export function useHotelPromptPaySettings(hotelId: string) {
   const savedId = settings.data?.promptpay_id;
   const savedIdInvalid = Boolean(savedId && !normalisePromptPayId(savedId));
   const { mfaState, triggerStepUp, submitTotp, reset } = useMfaStepUp();
+  const invalidMessage = (problem: "format" | "id_checksum") => t(problem === "id_checksum" ? "financials.promptPayIdChecksum" : "financials.promptPayInvalid");
   const savePromptPay = trpc.slipok.savePromptPayId.useMutation({
     onSuccess(_data, variables) {
       void settings.refetch();
@@ -43,22 +44,23 @@ export function useHotelPromptPaySettings(hotelId: string) {
         void triggerStepUp();
         return;
       }
-      setSaveError(err.data?.code === "BAD_REQUEST" ? t("financials.promptPayInvalid") : err.message);
+      setSaveError(err.data?.code === "BAD_REQUEST" ? invalidMessage(/check digit/.test(err.message) ? "id_checksum" : "format") : err.message);
     },
   });
   const save = () => {
-    const normalised = normalisePromptPayId(promptPayId);
-    if (!normalised) {
-      setSaveError(t("financials.promptPayInvalid"));
+    const checked = checkPromptPayIdForSave(promptPayId);
+    if (!checked.ok) {
+      setSaveError(invalidMessage(checked.problem));
       return;
     }
-    savePromptPay.mutate({ hotel_id: hotelId, promptpay_id: normalised.value, payment_timeout_minutes: timeoutMin });
+    savePromptPay.mutate({ hotel_id: hotelId, promptpay_id: checked.value, payment_timeout_minutes: timeoutMin });
   };
   async function handleSave() {
     setSaveError(null);
     setSaved(false);
-    if (!normalisePromptPayId(promptPayId)) {
-      setSaveError(t("financials.promptPayInvalid"));
+    const checked = checkPromptPayIdForSave(promptPayId);
+    if (!checked.ok) {
+      setSaveError(invalidMessage(checked.problem));
       return;
     }
     if ((await triggerStepUp()) === "verified") save();
