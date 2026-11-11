@@ -42,6 +42,7 @@ export function getRequiredRoutePermission(pathname: string): Permission | null 
   if (pathname.startsWith("/staff-tasks")) return "staff.view_own_tasks";
   if (pathname.includes("/ota")) return "ota.view_status";
   if (pathname.includes("/staff")) return "property.manage_staff";
+  if (/^\/hotels\/[^/]+\/tm30$/.test(pathname)) return "operations.export_tm30";
   if (pathname.includes("/bookings")) return "operations.view_bookings";
   if (pathname.includes("/calendar")) return "property.view";
   if (pathname.startsWith("/hotels/")) return "property.view";

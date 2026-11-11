@@ -5,7 +5,8 @@ import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc'
 import { eq } from 'drizzle-orm';
 import { rooms } from '../../drizzle/d1-schema';
 import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/pricingModels';
-import { TM30_HEADERS, buildTm30Rows, createTm30Workbook } from '../tm30';
+import { TM30_HEADERS, buildTm30Rows, createTm30Workbook, selectTm30Arrivals, type Tm30ArrivalInput } from '../tm30';
+import { thaiToday } from '../d1/closedNights';
 import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
 import { resolveAppUrl } from '../appUrl';
 import {
@@ -130,6 +131,53 @@ export const previewTm30 = protectedProcedure.input(hotelIdSchema).query(async (
     return {
       headers: [...TM30_HEADERS],
       rows,
+    };
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    return rethrowDomainError(error);
+  }
+});
+
+const tm30ArrivalsSchema = z.object({ hotel_id: hotelIdSchema, date: z.string().date().optional() });
+
+/** Foreign guests arriving on a day (today in Thailand by default), for the TM.30 page. */
+async function loadTm30Arrivals(ctx: { db?: any; caller?: any; user: { id: string } }, input: z.infer<typeof tm30ArrivalsSchema>) {
+  const bookingList = await listBookingsForHotel(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+  const date = input.date ?? thaiToday(new Date());
+  const arrivals: Tm30ArrivalInput[] = (bookingList as any[]).map(booking => ({
+    id: booking.id,
+    check_in: booking.check_in,
+    check_out: booking.check_out,
+    status: booking.status,
+    room_number: booking.rooms?.room_number ?? null,
+    guests: booking.guests,
+  }));
+  return { date, ...selectTm30Arrivals(arrivals, date) };
+}
+
+export const tm30Arrivals = protectedProcedure.input(tm30ArrivalsSchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'operations.export_tm30');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    const { date, listed, ready } = await loadTm30Arrivals(ctx, input);
+    return { date, guests: listed, readyCount: ready.reduce((total, booking) => total + booking.guests.length, 0) };
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
+
+export const exportTm30Arrivals = protectedProcedure.input(tm30ArrivalsSchema).mutation(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input.hotel_id, 'operations.export_tm30');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    const { date, ready } = await loadTm30Arrivals(ctx, input);
+    if (!ready.length) throw new TRPCError({ code: 'BAD_REQUEST', message: 'No guest with a complete record arrives on this date.' });
+    const workbook = createTm30Workbook(ready);
+    return {
+      filename: `tm30-${input.hotel_id.slice(0, 8)}-${date}.xlsx`,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      rowCount: ready.reduce((total, booking) => total + booking.guests.length, 0),
+      base64: workbook.toString('base64'),
     };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
@@ -291,6 +339,8 @@ export const bookingRouter = router({
   bookings,
   exportTm30,
   previewTm30,
+  tm30Arrivals,
+  exportTm30Arrivals,
   createBooking,
   publicHotelAvailability,
   holdRoomType,

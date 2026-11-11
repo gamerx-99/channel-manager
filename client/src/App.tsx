@@ -27,6 +27,7 @@ const Hotels = React.lazy(() => import("./pages/Hotels"));
 const HotelDetail = React.lazy(() => import("./pages/HotelDetail"));
 const HotelFinanceSettings = React.lazy(() => import("./pages/HotelFinanceSettings"));
 const Bookings = React.lazy(() => import("./pages/Bookings"));
+const Tm30 = React.lazy(() => import("./pages/Tm30"));
 const OneCalendar = React.lazy(() => import("./pages/OneCalendar"));
 import { useHotel } from "./contexts/HotelContext";
 const PublicHotel = React.lazy(() => import("./pages/PublicHotel"));
@@ -121,6 +122,9 @@ function Router() {
       </Route>
       <Route path="/hotel-closure">
         <PrivateRoute><HotelClosure /></PrivateRoute>
+      </Route>
+      <Route path="/hotels/:id/tm30">
+        {(params) => <PrivateRoute><Tm30 id={params.id} /></PrivateRoute>}
       </Route>
       <Route path="/hotels/:id/bookings">
         {(params) => <PrivateRoute><Bookings id={params.id} /></PrivateRoute>}

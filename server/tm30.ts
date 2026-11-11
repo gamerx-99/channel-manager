@@ -175,3 +175,58 @@ export function createTm30Workbook(bookings: Tm30Booking[]): Buffer {
     cellStyles: true,
   }) as Buffer;
 }
+
+export type Tm30GuestProblem = "name" | "passport" | "gender" | "nationality" | "birth_date";
+
+/** Why a guest cannot go into the TM.30 file yet, or null when the record is complete. Does not throw. */
+export function tm30GuestProblem(guest: Tm30Guest): Tm30GuestProblem | null {
+  if (!guest.first_name.trim() || !guest.last_name.trim()) return "name";
+  if (!guest.passport_no.trim()) return "passport";
+  if (!guest.gender || !["M", "F"].includes(guest.gender)) return "gender";
+  if (!/^[A-Z]{3}$/.test(guest.nationality_code)) return "nationality";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(guest.birth_date)) return "birth_date";
+  return null;
+}
+
+export type Tm30ArrivalInput = Tm30Booking & { check_in: string; room_number: string | null };
+
+export type Tm30ArrivalGuest = {
+  booking_id: string;
+  name: string;
+  passport_no: string;
+  nationality_code: string;
+  room_number: string | null;
+  status: BookingStatus;
+  problem: Tm30GuestProblem | null;
+};
+
+/** A guest is expected or has arrived; held, unpaid, expired and cancelled bookings are not on the list. */
+const TM30_ARRIVAL_STATUSES: readonly BookingStatus[] = ["confirmed", "checked_in"];
+
+/**
+ * The foreign guests (bookings that carry passport details) arriving on `date`:
+ * `listed` is everyone shown on the page, `ready` is what can go into the file (complete records only).
+ */
+export function selectTm30Arrivals(bookings: readonly Tm30ArrivalInput[], date: string) {
+  const listed: Tm30ArrivalGuest[] = [];
+  const ready: Tm30Booking[] = [];
+  for (const booking of bookings) {
+    if (booking.check_in !== date || !TM30_ARRIVAL_STATUSES.includes(booking.status)) continue;
+    const complete: Tm30Guest[] = [];
+    for (const guest of booking.guests) {
+      const problem = tm30GuestProblem(guest);
+      listed.push({
+        booking_id: booking.id,
+        name: [guest.first_name, guest.middle_name, guest.last_name].map(part => part?.trim()).filter(Boolean).join(" "),
+        passport_no: guest.passport_no.trim(),
+        nationality_code: guest.nationality_code.trim(),
+        room_number: booking.room_number,
+        status: booking.status,
+        problem,
+      });
+      if (!problem) complete.push(guest);
+    }
+    if (complete.length) ready.push({ id: booking.id, check_out: booking.check_out, status: booking.status, guests: complete });
+  }
+  return { listed, ready };
+}

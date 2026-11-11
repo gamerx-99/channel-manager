@@ -6256,3 +6256,13 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Checked: read-only layout scan on the live staff, services, support-access and website-builder pages found no content flush against card edges.
 - Evidence: `pnpm check` exit 0; `pnpm test` 306 files, 2,170 tests passed; `pnpm build` passed.
 - NOT verified: the tour fix against a real incomplete hotel (the owner's own hotel has setup complete, so the bug cannot show there; reasoning plus tests only); phone widths for the new CSS (read, not seen); the nav link card is only previewed by injecting the same markup and CSS into the live page.
+
+## 2026-11-11 — TM.30 page and menu item (not deployed)
+
+- Owner answer to the open question: add "แจ้งที่พัก ตม.30" to the navigation; it opens a list of the foreign guests who check in today, with a file download and a button to the Immigration login page.
+- Server: `channelManager.tm30Arrivals` (list for a date, default today in Thailand) and `exportTm30Arrivals` (Excel of the complete records only; refuses to make an empty file). Both need `operations.export_tm30`. Pure logic in `server/tm30.ts`: `selectTm30Arrivals`, `tm30GuestProblem`. Listed = bookings with passport details, check-in on the date, status confirmed or checked in. A guest with a missing name, passport number, gender, ICAO nationality or birth date stays on the list with the reason and is left out of the file (the old export threw for the whole file instead).
+- Client: `Tm30.tsx` (UI), `useTm30Arrivals.ts` (logic, portal URL), `Tm30.css`; route `/hotels/:id/tm30` gated by `operations.export_tm30` in `routeScope.ts`; sidebar item after the rooms group; `downloadBase64File` moved to `client/src/lib/downloadFile.ts` and `Bookings.tsx` now uses it. The bookings page TM.30 panel is unchanged.
+- ASSUMPTION: "checked in today" = check-in date is the chosen day and status is confirmed or checked in, with the status shown, so a guest staff forgot to check in still appears (a missed TM.30 report matters more than one extra row). The 24-hour note on the page repeats the common rule; the owner may want it reworded by the lawyer.
+- Evidence: `pnpm check` exit 0; `pnpm test` 308 files, 2,188 tests passed; `pnpm build` passed. The page was previewed by injecting its markup and CSS into the live shell (a signed-in session with real guest data was not used, there are no foreign guests today).
+- NOT verified: the real page with real data and the download opened in Excel; phone width (CSS read, not seen). The date field uses the browser's native format, not the Buddhist year.
+

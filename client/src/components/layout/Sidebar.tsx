@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   ChevronDown,
   ExternalLink,
+  FileText,
   Globe,
   Hotel,
   LayoutDashboard,
@@ -76,7 +77,7 @@ export function getRoomsAndPricingItems(
 
 function getActivePath(location: string, selectedHotelId?: string | null) {
   if (!selectedHotelId) return location;
-  const hotelSubPaths = ["settings/general", "settings/finance", "bookings", "calendar", "services", "ota", "staff", "support-access", "profile"];
+  const hotelSubPaths = ["settings/general", "settings/finance", "bookings", "tm30", "calendar", "services", "ota", "staff", "support-access", "profile"];
   for (const subPath of hotelSubPaths) {
     const prefix = `/hotels/${selectedHotelId}/${subPath}`;
     if (location.startsWith(prefix)) return prefix;
@@ -110,7 +111,8 @@ export function Sidebar({
       ...(otaSyncEnabled && otaConnectivityEnabled && can("ota.view_status") ? [{ href: `/hotels/${selectedHotelId}/ota`, label: t("sidebar.otaSync"), icon: Globe }] : []),
     ]
     : [];
-  const servicesHref = selectedHotelId && can("property.manage_room_structure") ? `/hotels/${selectedHotelId}/services` : null;
+  const tm30Href = selectedHotelId && can("operations.export_tm30") ? `/hotels/${selectedHotelId}/tm30` : null;
+  const servicesHref =selectedHotelId && can("property.manage_room_structure") ? `/hotels/${selectedHotelId}/services` : null;
   const settingsItems = getHotelSettingsItems(selectedHotelId, can, t);
   const onSettingsPage = settingsItems.some(item => location.startsWith(item.href));
   const [settingsOpen, setSettingsOpen] = useState(onSettingsPage);
@@ -234,6 +236,12 @@ export function Sidebar({
               </div>
             )}
           </>
+        )}
+        {tm30Href && (
+          <Link href={tm30Href} className={`nav-link ${activePath === tm30Href ? "active" : ""}`} onClick={() => onClose()}>
+            <FileText size={17} strokeWidth={activePath === tm30Href ? 2.3 : 1.8} />
+            <span>{t("sidebar.tm30")}</span>
+          </Link>
         )}
         {servicesHref && (
           <Link href={servicesHref} className={`nav-link ${activePath === servicesHref ? "active" : ""}`} onClick={() => onClose()}>

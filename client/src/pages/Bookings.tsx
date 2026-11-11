@@ -10,6 +10,7 @@ import BookingWizard from '@/components/BookingWizard';
 import { useTranslation } from '@/lib/i18n';
 import { communicationsEnabled } from '@/lib/featureFlags';
 import { buildTm30PrintHtml } from '@/lib/tm30Print';
+import { downloadBase64File } from '@/lib/downloadFile';
 import { hasHotelPermission } from '@shared/authorization';
 import { useBillingCandidateEnabled } from '@/lib/useBillingCandidateEnabled';
 
@@ -28,19 +29,6 @@ function displayDay(offset = 0) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
-}
-
-function downloadBase64Xlsx(base64: string, filename: string, contentType: string) {
-  const binary = window.atob(base64);
-  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-  const url = URL.createObjectURL(new Blob([bytes], { type: contentType }));
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
 }
 
 export default function Bookings({ id }: { id: string }) {
@@ -121,7 +109,7 @@ export default function Bookings({ id }: { id: string }) {
 
   const exportTm30 = trpc.channelManager.exportTm30.useMutation({
     onSuccess: result => {
-      downloadBase64Xlsx(result.base64, result.filename, result.contentType);
+      downloadBase64File(result.base64, result.filename, result.contentType);
       setShowExport(false);
     },
   });

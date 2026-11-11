@@ -29,11 +29,12 @@ describe("Sidebar order", () => {
     return index;
   };
 
-  it("runs overview, bookings, rooms and pricing, extra services, website builder, staff, then the system section", () => {
+  it("runs overview, bookings, rooms and pricing, the TM.30 report, extra services, website builder, staff, then the system section", () => {
     const order = [
       at('{ href: "/dashboard", label:'),
       at("...hotelNavItems"),
       at('t("sidebar.roomsAndPricing")'),
+      at('t("sidebar.tm30")'),
       at('t("sidebar.services")'),
       at('t("sidebar.websiteBuilder")'),
       at('t("sidebar.staff")'),
