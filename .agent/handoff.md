@@ -6342,3 +6342,9 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Tests: `client/src/components/public-hotel/guestConsent.test.tsx` (3: disabled until ticked, links, hook never calls the server unticked). No existing test submitted the guest step, so none changed.
 - Not checked in a browser: the checkbox look on each booking theme.
 
+## 2026-11-11 — Decision sheet batch complete on branch (not pushed, not deployed)
+
+- Commits on `worktree-finish-old-branch-work` after `31d3103`: `1720750` 4.3, `2b9731c` 4.2, `55a27ec` 3.1, `7445625` 2.3, `9dc5a33` 1.3, `2409891` 5.3, `9828f34` 3.2.
+- Evidence over all of them: `pnpm check` exit 0; `pnpm test` 319 files, 2,259 tests passed; `pnpm build` passed.
+- To ship: apply migration `20261111090000_owner_terms_acceptance` to staging, deploy staging, then the same for production. The migration must go before the code, or `auth.me` fails. No other migration is in this batch.
+
