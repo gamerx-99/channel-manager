@@ -21,6 +21,8 @@ export const user = sqliteTable("user", {
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .$onUpdate(() => new Date()),
   twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).default(false),
+  /** When a hotel owner accepted the platform terms (owner decision, 2026-11-11). Not a Better Auth field. */
+  termsAcceptedAt: integer("terms_accepted_at", { mode: "timestamp_ms" }),
 });
 
 /**

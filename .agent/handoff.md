@@ -6303,3 +6303,12 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Evidence: `pnpm check` exit 0; `pnpm test` 312 files, 2,217 tests passed; `pnpm build` passed.
 - Split of the remaining items: 1.3, 5.3, 3.2 run by the owner in opencode (beam-free) from `.opencode-tasks/launch.sh`, each in its own worktree; Claude reviews and merges them. Claude does 4.2, 3.1, 2.3.
 
+## 2026-11-11 — 3.1 Owner terms acceptance (not deployed, migration not applied)
+
+- Migration `drizzle/d1/20261111090000_owner_terms_acceptance.sql` (`ALTER TABLE user ADD terms_accepted_at integer`), journal idx 32; hand-written because drizzle-kit generate is broken. Column added to `drizzle/auth-schema.ts` as `termsAcceptedAt` (not a Better Auth field; Better Auth ignores it).
+- Server: `server/d1/ownerTerms.ts` (`getTermsAcceptedAt`, `acceptOwnerTerms`, first time kept); `auth.me` now also returns `termsAcceptedAt`; new `auth.acceptTerms` (caller only, no input). CRM rows carry `ownerTermsAcceptedAt` (from `listHotelsWithTrialClock`).
+- Client: `mustAcceptOwnerTerms` (`client/src/lib/ownerTermsGate.ts`) checked in `PrivateRoute` before the app shell; `OwnerTerms.tsx` + `useOwnerTerms.ts` + `OwnerTerms.css`; terms body extracted into `client/src/components/LegalDocument.tsx` and reused by `LegalPage` (the /terms page renders as before: 15 sections checked in a browser). CRM gets a "ยอมรับข้อตกลง" column.
+- Tests: `server/d1/ownerTerms.test.ts` (migration column nullable, first acceptance kept, `acceptTerms` needs a session and touches only the caller, `me` reports it), `client/src/pages/OwnerTerms.test.tsx` (accept locked until the end, decline signs out to `/`, error message, who is asked, gate before the shell). No existing test changed.
+- Evidence: `pnpm check` exit 0; `pnpm test` 314 files, 2,227 tests passed; `pnpm build` passed.
+- Deploy order when ordered: apply 20261111090000 to staging then production BEFORE deploying the code, or `auth.me` fails on the missing column. Existing owners (production: the owner's own account) will see the terms screen once after the deploy.
+

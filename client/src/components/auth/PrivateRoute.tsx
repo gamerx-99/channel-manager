@@ -10,6 +10,8 @@ import { isSocialPlaceholderEmail } from "@shared/socialAuth";
 import { AppShell } from "../layout/AppShell";
 import { useTranslation } from "@/lib/i18n";
 import { HotelClosureRedirect } from "@/pages/HotelClosure";
+import OwnerTerms from "@/pages/OwnerTerms";
+import { mustAcceptOwnerTerms } from "@/lib/ownerTermsGate";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -27,6 +29,10 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated || !user) return null;
   if (roleError || hotelsError) {
     return <main className="auth-loading">{t("privateRoute.verifyAccess")}</main>;
+  }
+  // Owner decision 2026-11-11: a hotel owner must accept the platform terms before using the app.
+  if (mustAcceptOwnerTerms(authMe)) {
+    return <OwnerTerms />;
   }
   const decision = getRouteScopeDecision({
     role: authMe?.role,

@@ -1,0 +1,15 @@
+.owner-terms-page { min-height: 100vh; display: grid; place-items: center; padding: 32px 16px; background: var(--paper); }
+.owner-terms-card { width: min(760px, 100%); display: grid; gap: 14px; padding: 28px; border-radius: 17px; background: var(--white); box-shadow: var(--shadow); }
+.owner-terms-card h1 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
+.owner-terms-lede { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-muted); }
+/* Reuses the legal page typography (.legal-page) but not its page width, margins or padding. */
+.owner-terms-box.legal-page { width: auto; max-height: 52vh; overflow-y: auto; margin: 0; padding: 16px 18px; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); font-size: 14px; line-height: 1.7; }
+.owner-terms-box h2 { font-size: 16px; }
+.owner-terms-hint { margin: 0; font-size: 12px; color: var(--ink-muted); }
+.owner-terms-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .owner-terms-card { padding: 20px 16px; }
+  .owner-terms-box.legal-page { max-height: 58vh; }
+  .owner-terms-actions { flex-direction: column-reverse; }
+  .owner-terms-actions .button { width: 100%; justify-content: center; }
+}

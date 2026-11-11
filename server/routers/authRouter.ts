@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { protectedProcedure, publicProcedure, router } from '../_core/trpc';
 import { assertNotBlocked, checkAccountPassword, deleteOwnAccount, getAccountDeletionBlockers } from '../d1/accountDeletion';
 import { getAccountProfile } from '../d1/accountProfile';
+import { acceptOwnerTerms, getTermsAcceptedAt } from '../d1/ownerTerms';
 import { checkMfaStepUpStatus, requireRecentMfaVerification } from '../mfa';
 import { verifyMfaStepUp } from '../mfaStepUp';
 import { rethrowDomainError } from '../routerUtils';
@@ -11,10 +12,22 @@ import { userOnboarding } from '../../drizzle/d1-schema';
 import { eq } from 'drizzle-orm';
 
 export const authRouter = router({
-  me: publicProcedure.query(({ ctx }) => {
+  me: publicProcedure.query(async ({ ctx }) => {
     if (!ctx.user) return null;
     const { accessToken: _accessToken, session: _session, ...rest } = ctx.user;
-    return rest;
+    // Hotel owners must have accepted the platform terms before using the app (owner decision, 2026-11-11).
+    const termsAcceptedAt = ctx.db ? await getTermsAcceptedAt(ctx.db, ctx.user.id) : null;
+    return { ...rest, termsAcceptedAt };
+  }),
+
+  /** The signed-in account accepts the platform terms. Idempotent: the first acceptance time is kept. */
+  acceptTerms: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    try {
+      return { termsAcceptedAt: await acceptOwnerTerms(ctx.db, ctx.user.id) };
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
   }),
   logout: publicProcedure.mutation(() => ({ success: true as const })),
 

@@ -225,6 +225,13 @@
       "when": 1794376800000,
       "tag": "20261111060000_add_passkey",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1794387600000,
+      "tag": "20261111090000_owner_terms_acceptance",
+      "breakpoints": true
     }
   ]
 }

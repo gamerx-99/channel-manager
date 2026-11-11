@@ -362,7 +362,7 @@ function bangkokMonthStart(now: Date): Date {
  */
 export async function listHotelsWithTrialClock(db: D1ScopedDatabase) {
   const rows = await db.select({ id: hotels.id, name: hotels.name, slug: hotels.slug, ownerContact: hotels.ownerContact,
-    province: hotels.province, hotelCreatedAt: hotels.createdAt, ownerEmail: authUser.email, ownerCreatedAt: authUser.createdAt,
+    province: hotels.province, hotelCreatedAt: hotels.createdAt, ownerEmail: authUser.email, ownerCreatedAt: authUser.createdAt, ownerTermsAcceptedAt: authUser.termsAcceptedAt,
   }).from(hotels)
     .leftJoin(hotelUsers, and(eq(hotelUsers.hotelId, hotels.id), eq(hotelUsers.role, "hotel_owner")))
     .leftJoin(authUser, eq(authUser.id, hotelUsers.userId))
@@ -424,7 +424,7 @@ export async function listPlatformCrm(db: D1ScopedDatabase, caller: D1CallerCont
       .where(and(eq(subscriptionPayments.hotelId, hotel.id), eq(subscriptionPayments.status, "verified")))
       .orderBy(desc(subscriptionPayments.createdAt)).limit(1);
     const { plan, endsAt, daysLeft } = resolvePlan({ ownerCreatedAt: hotel.trialStartedAt, paidUntil: subscription?.paidUntil ?? null, now });
-    return { id: hotel.id, name: hotel.name, slug: hotel.slug, ownerEmail: hotel.ownerEmail, ownerContact: hotel.ownerContact,
+    return { id: hotel.id, name: hotel.name, slug: hotel.slug, ownerEmail: hotel.ownerEmail, ownerTermsAcceptedAt: hotel.ownerTermsAcceptedAt ?? null, ownerContact: hotel.ownerContact,
       province: hotel.province, plan, daysLeft, endsAt, accountCreatedAt: hotel.trialStartedAt, lastPaymentAt: payment?.createdAt ?? null, couponUsed: payment?.couponCode ?? null };
   }));
 }
