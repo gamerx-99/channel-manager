@@ -41,6 +41,15 @@ describe("PaymentSetupReminder", () => {
     expect(screen.getByRole("link", { name: "Go to finance settings" }).getAttribute("href")).toBe(`/hotels/${HOTEL}/settings/finance`);
   });
 
+  it("links to the SlipOK guide only when SlipOK is what is missing", () => {
+    render(<PaymentSetupReminder hotelId={HOTEL} enabled />);
+    expect(screen.getByRole("link", { name: "How to sign up for SlipOK" }).getAttribute("href")).toBe("/guides/slipok-guide.webp");
+    cleanup();
+    mocks.status = { data: { promptpay_configured: false, slipok_configured: true }, refetch: vi.fn() };
+    render(<PaymentSetupReminder hotelId={HOTEL} enabled />);
+    expect(screen.queryByRole("link", { name: "How to sign up for SlipOK" })).toBeNull();
+  });
+
   it("names only the setting that is still missing", () => {
     mocks.status = { data: { promptpay_configured: true, slipok_configured: false }, refetch: vi.fn() };
     render(<PaymentSetupReminder hotelId={HOTEL} enabled />);

@@ -6228,3 +6228,10 @@ Exit 0
 
 - Evidence: `pnpm check` exit 0; `pnpm test` 303 files, 2,146 tests passed; `pnpm build` passed. No migration.
 - NOT checked by eye: the popup and the finance tour step in a signed-in owner session (needs a backend). Check on staging after deploy.
+
+## 2026-11-11 — SlipOK guide wired in (not deployed)
+
+- The owner supplied the SlipOK sign-up guide as an image. It is `client/public/guides/slipok-guide.webp` (served at `/guides/slipok-guide.webp`) and `SLIPOK_GUIDE_URL` in `client/src/lib/paymentSetup.ts` points at it.
+- Links: the payment reminder popup (only when SlipOK is what is missing) and the SlipOK card on the finance settings page. Setting the constant to `null` removes both.
+- Copy note for the owner: the image says "แพ็คเก็จ"; the glossary spelling is "แพ็กเกจ". Image left as supplied.
+- Evidence: `pnpm check` exit 0; `pnpm test` 303 files, 2,147 tests passed; `pnpm build` passed and `dist/public/guides/slipok-guide.webp` is in the build.

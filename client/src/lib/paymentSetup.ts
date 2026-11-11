@@ -1,8 +1,8 @@
 export type PaymentSetupStatus = { promptpay_configured: boolean; slipok_configured: boolean };
 export type MissingPaymentSetup = "promptpay" | "slipok";
 
-/** The SlipOK sign-up guide the owner is writing; the reminder shows its link only once this is set. */
-export const SLIPOK_GUIDE_URL: string | null = null;
+/** The owner's SlipOK sign-up guide (an image in client/public/guides); set to null to hide every link to it. */
+export const SLIPOK_GUIDE_URL: string | null = "/guides/slipok-guide.webp";
 
 export function financeSettingsPath(hotelId: string) {
   return `/hotels/${hotelId}/settings/finance`;

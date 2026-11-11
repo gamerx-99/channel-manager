@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useMfaStepUp } from "@/lib/mfa";
 import { Card, CardContent } from "@/components/ui/card";
 import { branchIdFromApiUrl, SLIPOK_API_PREFIX } from "@/lib/slipokApi";
+import { SLIPOK_GUIDE_URL } from "@/lib/paymentSetup";
 
 // SlipOK is optional per hotel: without a key, staff check each slip by hand.
 export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
@@ -121,6 +122,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
           <h2>{t("slipOk.title")}</h2>
           <p className="lede">{t("slipOk.description")}</p>
           <p className="field-help">{t("slipOk.accountHint")}</p>
+          {SLIPOK_GUIDE_URL ? <p className="field-help"><a href={SLIPOK_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="text-link" data-testid="slipok-guide-link">{t("paymentSetup.guide")}</a></p> : null}
         </div>
       </div>
 
