@@ -6280,3 +6280,9 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - `main` is at 0138fee (all the work above). No migration is pending on staging or production for it.
 - `wrangler deploy --env staging` failed on every one of about 11 attempts over roughly 10 minutes with `binding DB of type d1 failed to generate. Please try again later or contact support. [code: 10021]` on `/workers/scripts/hayhost-stage/versions`. The same configuration deployed staging earlier today (passkey, version 919cdd02). The staging database itself answers (`select 1`, `d1 info`), `pnpm build` and the wrangler dry run pass, and Cloudflare's status page showed Workers as "degraded performance" with no D1 incident, so this looks like their control plane, not our code or config.
 - Nothing changed on staging or production: staging still runs 919cdd02, production still runs e42ce7a8. Retry `pnpm exec wrangler deploy --env staging` later; if it keeps failing, open a Cloudflare support case with the error code.
+
+## 2026-11-11 — Staging deployed (second try)
+
+- About 30 minutes after the Cloudflare error 10021, `wrangler deploy --env staging` worked: Version ID 67a21d6a-744c-4fec-ae15-b8343d5ad064 (100%), built from main 0ae9e89. No migration involved.
+- Probed: `/login` 200; `/guides/slipok-guide.jpg` 200 as `image/jpeg`; the `/hotels/:id/tm30` route serves the app; the passkey options answer with the staging rpId; the new `slipok.paymentSetupStatus` query answers 401 without a session.
+- Still to do by hand on staging with an owner account: payment reminder popup, tour finance step, the navigation link card and new order, the TM.30 page with a booking that has foreign guest details (download the .xls and try it at the Immigration site), 2FA turn on/off, general settings and finance settings layout. Production not touched (still e42ce7a8).
