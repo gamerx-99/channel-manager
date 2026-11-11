@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createD1PublicCallerContext } from '../db/scope';
+import { cancelHotelBooking, createD1PublicCallerContext } from '../db/scope';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc';
 import { eq } from 'drizzle-orm';
@@ -94,6 +94,26 @@ export const transitionBookingStatus = protectedProcedure
     if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
     try {
       return await dbTransitionBookingStatus(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  });
+
+/** Owner decision 2026-11-11 (sheet 5.3): a booking is cancelled only with a reason, which goes into the status log. */
+export const cancelBookingSchema = z.object({
+  hotel_id: hotelIdSchema,
+  booking_id: z.string().uuid(),
+  reason: z.string().trim().min(3).max(500),
+});
+
+/** Cancels a held, awaiting-payment or confirmed booking; its nights go back on sale. */
+export const cancelBooking = protectedProcedure
+  .input(cancelBookingSchema)
+  .mutation(async ({ ctx, input }) => {
+    requireHotelPermission(ctx.user, input.hotel_id, 'operations.cancel_bookings');
+    if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+    try {
+      return await cancelHotelBooking(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id, input.booking_id, new Date(), input.reason);
     } catch (error) {
       return rethrowDomainError(error);
     }

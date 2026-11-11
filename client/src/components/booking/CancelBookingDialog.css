@@ -1,0 +1,4 @@
+.cancel-booking-dialog { width: min(480px, 95vw); display: grid; gap: 14px; }
+.cancel-booking-reason { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.cancel-booking-reason textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 10px; font: inherit; font-weight: 400; resize: vertical; background: var(--white); color: var(--ink); }
+.cancel-booking-reason small { font-weight: 400; color: var(--ink-muted); }

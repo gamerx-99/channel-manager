@@ -253,9 +253,12 @@ export async function getHotelBookingValueSatang(
 }
 
 export async function cancelHotelBooking(
-  db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, bookingId: string, now = new Date(), reason: string | null = null,
+  db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, bookingId: string, now: Date, reason: string,
 ) {
   const scope = await resolveScope(db, caller, hotelId, "operations.cancel_bookings", "bookings.cancel", now);
+  // Owner decision 2026-11-11 (sheet 5.3): every cancellation records why.
+  const why = reason?.trim() ?? "";
+  if (why.length < 3 || why.length > 500) throw new TRPCError({ code: "BAD_REQUEST", message: "Give a reason for cancelling (3 to 500 characters)." });
   const [current] = await db.select({ id: bookings.id, status: bookings.status, roomId: bookings.roomId, checkIn: bookings.checkIn, checkOut: bookings.checkOut }).from(bookings).where(and(
     eq(bookings.id, bookingId), eq(bookings.hotelId, scope.hotelId),
   )).limit(1);
@@ -273,7 +276,7 @@ export async function cancelHotelBooking(
     db.$client.prepare(`insert into booking_status_log
       (id, booking_id, from_status, to_status, changed_by, reason)
       select ?, ?, ?, 'cancelled', ?, ? where changes() = 1`)
-      .bind(crypto.randomUUID(), bookingId, current.status, caller.userId, reason),
+      .bind(crypto.randomUUID(), bookingId, current.status, caller.userId, why),
     addNightsStatement(db, bookingId, getStayDates(current.checkIn, current.checkOut), now),
     releaseNightsStatement(db, bookingId, now),
   ]); } catch (error) {

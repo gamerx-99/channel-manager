@@ -247,6 +247,11 @@ answer noted.
 - [ ] ASSUMPTION: a passkey sign-in is not challenged for a TOTP code, because a passkey is already two proofs (the device plus a fingerprint, face or PIN). The twoFactor plugin only challenges /sign-in/email, /sign-in/username and /sign-in/phone-number, and our social-callback gate only acts on /callback/*. Confirm that an owner or admin who turned on 2FA should still skip it with a passkey.
 - [ ] ASSUMPTION: the passkey is tied to the host without `www.` (rpID `hayhostth.com`), so it also works if the site is ever served from the apex. A custom domain for a hotel would need its own passkey.
 
+## Cancel with a reason (2026-11-11, sheet 5.3)
+
+- [ ] The decision sheet's 5.3 could also mean closing a fully booked date on the calendar; this builds only "cancel a booking with a reason". Say if the calendar open/close needs a reason too.
+- [ ] The cancel reason is stored but shown nowhere yet, because the app has no booking history view. Say if staff should see it (for example on the bookings report).
+
 ## Booking email recipients (2026-11-11, sheet 1.3)
 
 - [ ] ASSUMPTION: the hotel still gets the "slip waits for manual check" email (`booking_awaiting_check`) when SlipOK cannot verify a slip; the decision only covered the booking and payment emails. Say if the hotel should not get it.

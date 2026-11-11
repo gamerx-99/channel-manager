@@ -6328,3 +6328,10 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - `server/d1/booking.ts` `confirmBookingDetails`: `booking_received` now goes to `["guest"]` only. `booking_confirmed` stays guest + hotel (paymentRouter, three paths). `booking_awaiting_check` stays hotel-only (ASSUMPTION, in OPEN_QUESTIONS).
 - Test: `server/d1/booking.test.ts` "sends accurate received, awaiting-check, and confirmed notices…" now asserts guest only at booking, hotel gets `booking_confirmed`.
 
+## 2026-11-11 — 5.3 Cancel a booking with a reason (not deployed)
+
+- The task file assumed `transitionBookingStatus` handles cancelling; it only does check-in and check-out, and nothing in the app could cancel a booking. Built on the existing `cancelHotelBooking` (`server/db/scope.ts`), which already released the nights and wrote the status log.
+- Server: `cancelHotelBooking` now requires a trimmed reason of 3 to 500 characters (BAD_REQUEST, nothing written); new `channelManager.cancelBooking` (`server/routers/bookingRouter.ts`, `requireHotelPermission` `operations.cancel_bookings`), registered in `server/routers.ts`.
+- Client: `client/src/components/booking/CancelBookingDialog.tsx` + `useCancelBooking.ts` + `cancelBooking.ts` (statuses from `ALLOWED_TRANSITIONS`) + `.css`; button on `Bookings.tsx` rows for users with the permission. i18n block `cancelBooking`.
+- Tests: `server/bookingRouter.cancel.test.ts` (3), `server/d1/booking.test.ts` new "refuses to cancel without a reason", `client/src/components/booking/CancelBookingDialog.test.tsx` (6).
+

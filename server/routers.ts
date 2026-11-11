@@ -96,6 +96,7 @@ import {
 import {
   bookings,
   transitionBookingStatus,
+  cancelBooking,
   exportTm30,
   previewTm30,
   tm30Arrivals,
@@ -153,6 +154,7 @@ export const appRouter = router({
     listHotelServicesProcedure,
     bookings,
     transitionBookingStatus,
+    cancelBooking,
     exportTm30,
     previewTm30,
     tm30Arrivals,

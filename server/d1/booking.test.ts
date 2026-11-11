@@ -197,6 +197,19 @@ describe("D1 booking repositories", () => {
     await expect(createBookingWithGuests(db, ownerA, bookingInput("a", "room-a-1", "confirmed", "2026-11-05", "2026-11-06"), [])).resolves.toMatchObject({ check_in: "2026-11-05" });
   });
 
+  it("refuses to cancel without a reason and changes nothing (owner decision 5.3)", async () => {
+    await seedHotel("a", "owner-a");
+    const keepId = "keep-me";
+    await db.insert(bookings).values({ id: keepId, hotelId: "a", roomId: "room-a-1", guestName: "Keep", checkIn: "2026-11-05", checkOut: "2026-11-06", price: "100.00", source: "manual", status: "confirmed" });
+    for (const reason of ["", "  ", " ab ", "x".repeat(501)]) {
+      await expect(cancelHotelBooking(db, ownerA, "a", keepId, new Date(), reason)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect((await db.select().from(bookings).where(eq(bookings.id, keepId)))[0]?.status).toBe("confirmed");
+    expect(await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, keepId))).toEqual([]);
+    await cancelHotelBooking(db, ownerA, "a", keepId, new Date(), "  Guest changed plans  ");
+    expect((await db.select().from(bookingStatusLog).where(eq(bookingStatusLog.bookingId, keepId)))[0]?.reason).toBe("Guest changed plans");
+  });
+
   it("rejects a booking status outside the Supabase lifecycle CHECK values", async () => {
     await seedHotel("a", "owner-a");
     await expect(createBookingWithGuests(db, ownerA, { ...bookingInput("a", "room-a-1"), status: "not_a_booking_status" } as any, [])).rejects.toMatchObject({ code: "BAD_REQUEST" });
