@@ -13,7 +13,7 @@ describe("hotel privacy notice for guests", () => {
     for (const language of ["th", "en"] as const) {
       const doc = hotelGuestPrivacy(language, HOTEL);
       expect(doc.intro).toContain("Little Bro Mae Hong Son");
-      expect(doc.intro).toContain("Hayhost Thailand");
+      expect(doc.sections[3]!.items!.join(" ")).toMatch(/Hayhost Thailand.*(data processor|ผู้ประมวลผลข้อมูล)/);
       expect(doc.sections).toHaveLength(10);
     }
     expect(hotelGuestPrivacy("th", HOTEL).intro).toContain("ผู้ควบคุมข้อมูลส่วนบุคคล");
@@ -36,11 +36,25 @@ describe("hotel privacy notice for guests", () => {
     expect(bare).toEqual(["Data controller: Quiet Inn", expect.stringContaining("support@hayhostth.com")]);
   });
 
-  it("keeps the owner's six data subject rights and the 30-day answer", () => {
+  it("lists the seven data subject rights, the 30-day answer and the right to complain", () => {
     for (const language of ["th", "en"] as const) {
       const rights = hotelGuestPrivacy(language, HOTEL).sections[7]!.items!;
-      expect(rights.filter(item => /^\(\d\)/.test(item))).toHaveLength(6);
+      expect(rights.filter(item => /^\(\d\)/.test(item))).toHaveLength(7);
       expect(rights.at(-1)).toContain("30");
+      expect(rights.at(-1)).toMatch(/Personal Data Protection Committee|คณะกรรมการคุ้มครองข้อมูลส่วนบุคคล/);
+    }
+  });
+
+  it("tells guests what the booking system really collects and where it goes", () => {
+    for (const language of ["th", "en"] as const) {
+      const doc = hotelGuestPrivacy(language, HOTEL);
+      const text = JSON.stringify(doc);
+      expect(text).toMatch(/TM\.30|ตม\.30/);
+      expect(text).toMatch(/passport|หนังสือเดินทาง/);
+      expect(text).toMatch(/slip|สลิป/);
+      expect(text).toMatch(/United States|สหรัฐอเมริกา/);
+      expect(text).toContain("60");
+      expect(doc.sections[1]!.table!.rows.length).toBeGreaterThanOrEqual(5);
     }
   });
 

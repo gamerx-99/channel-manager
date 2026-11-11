@@ -6355,3 +6355,5 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Page `client/src/pages/HotelPrivacy.tsx` + `useHotelPrivacy.ts` at `/:slug/privacy` (routed before `/:slug`); i18n block `hotelPrivacy`. `BookingStepGuest` takes `privacyHref`; `PublicBookingSection` passes `hotelPrivacyPath(hotel.slug)`.
 - Tests: `client/src/lib/hotelGuestPrivacy.test.ts` (5), `client/src/pages/HotelPrivacy.test.tsx` (3), `guestConsent.test.tsx` updated for the new link.
 
+- Follow-up the same day: the owner said the sample text came from another hotel's website (a resort's privacy page). Not reused, to avoid copying another business's text; `hotelGuestPrivacy.ts` rewritten in hayhost's own words to match what the system collects and the DPA/`/privacy` (sections: data collected, purposes + legal basis table, if you do not give it, recipients, overseas transfer, retention, security, seven rights, changes, contact). Tests updated (`hotelGuestPrivacy.test.ts` 6).
+
