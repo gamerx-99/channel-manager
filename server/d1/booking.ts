@@ -10,6 +10,7 @@ import { calculateServiceTotalSatang, getPublicHotelBySlug, getPublicRoomTypeAva
 import { getRequiredMinStayNights } from "../pricing";
 import { normalisePromptPayId } from "../../shared/promptPayId";
 import { CLOSED_NIGHT_ERROR_PREFIX, closedNightsForRoomType, NO_CLOSED_NIGHT_SQL, noClosedNightParams, NO_ALLOTMENT_EXCEEDED_SQL, noAllotmentExceededParams } from "./closedNights";
+import { FREE_PLAN_ROOM_LIMIT_MESSAGE, planCappedRoomIds } from "./planRoomLimit";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 import { sendBookingEmail, bookingEmailEventKey, type BookingEmailData, type BookingEmailRecipient, type BookingEmailType } from "./bookingEmails";
 import type { EmailSender } from "../email";
@@ -132,6 +133,7 @@ export async function createPublicBooking(db: D1ScopedDatabase, caller: D1Caller
     guestName, checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(amount),
     source: "walk-in", status: "confirmed", expiresAt: null, adults: null, children: null,
     public: true, guests: [guest], services: [], changedBy: caller.userId || null, reason: null,
+    excludedRoomIds: await planCappedRoomIds(db, hotel.id, now),
   }, now);
   if (insertResult[1]!.meta.changes !== 1) throw noAvailability();
   const [created] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
@@ -248,7 +250,7 @@ export async function holdRoomType(db: D1ScopedDatabase, caller: D1CallerContext
   const [settings] = await db.select({ holdTimeoutMinutes: hotelPaymentSettings.holdTimeoutMinutes }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotel.id)).limit(1);
   const expiresAt = new Date(now.getTime() + (settings?.holdTimeoutMinutes ?? 15) * 60_000);
   const bookingId = crypto.randomUUID();
-  const insertResult = await atomicInsert(db, { id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id, guestName: "", checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(result.pricing.totalPrice), source: "manual", status: "held", expiresAt, adults: input.adults, children: input.children.length, public: true, guests: [], services: [], changedBy: caller.userId || null, reason: "public_hold_created", createdIpHash: input.createdIpHash ?? null }, now);
+  const insertResult = await atomicInsert(db, { id: bookingId, hotelId: hotel.id, roomId: null, roomTypeId: roomType.id, guestName: "", checkIn: input.check_in, checkOut: input.check_out, price: satangToMoney(result.pricing.totalPrice), source: "manual", status: "held", expiresAt, adults: input.adults, children: input.children.length, public: true, guests: [], services: [], changedBy: caller.userId || null, reason: "public_hold_created", createdIpHash: input.createdIpHash ?? null , excludedRoomIds: await planCappedRoomIds(db, hotel.id, now) }, now);
   if (insertResult[1]!.meta.changes !== 1) throw noAvailability();
   const [created] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
   const [room] = created?.roomId ? await db.select({ roomNumber: rooms.roomNumber }).from(rooms).where(eq(rooms.id, created.roomId)).limit(1) : [];
@@ -395,6 +397,9 @@ export async function createBookingWithGuests(
   if (booking.room_id) {
     const [room] = await db.select({ roomTypeId: rooms.roomTypeId }).from(rooms).where(and(eq(rooms.id, booking.room_id), eq(rooms.hotelId, booking.hotel_id))).limit(1);
     if (!room) throw new TRPCError({ code: "NOT_FOUND", message: "Room not found." });
+    if ((await planCappedRoomIds(db, booking.hotel_id, now)).includes(booking.room_id)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: FREE_PLAN_ROOM_LIMIT_MESSAGE });
+    }
     const overrides = await db.select().from(rateOverrides).where(eq(rateOverrides.roomTypeId, room.roomTypeId));
     const required = getRequiredMinStayNights(booking.check_in, booking.check_out, overrides.map(row => ({ id: row.id, room_type_id: row.roomTypeId, start_date: row.startDate, end_date: row.endDate, override_price: row.overridePrice, min_stay_nights: row.minStayNights, created_at: row.createdAt.toISOString() })));
     const nights = getStayDates(booking.check_in, booking.check_out).length;
@@ -432,7 +437,10 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
   guests: Array<Omit<GuestRecord, "id" | "booking_id">>;
   services: Array<Omit<BookingServiceRecord, "id" | "booking_id" | "created_at">>;
   changedBy: string | null; reason: string | null;
+  /** Public bookings only: rooms the hotel's plan holds back (Free plan, rooms after the first three). */
+  excludedRoomIds?: readonly string[];
 }, now: Date) {
+  const excluded = input.excludedRoomIds ?? [];
   const bookingInsert = input.public
     ? db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by, created_ip_hash)
             select ?, ?, r.id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from rooms r join hotels h on h.id = r.hotel_id
@@ -441,8 +449,9 @@ async function atomicInsert(db: D1ScopedDatabase, input: {
                 and (b.status in ('confirmed', 'checked_in') or (b.status in ('held', 'pending_payment', 'pending_verification') and (b.expires_at is null or b.expires_at >= ?))))
               and ${NO_CLOSED_NIGHT_SQL}
               and ${NO_ALLOTMENT_EXCEEDED_SQL}
+              ${excluded.length ? `and r.id not in (${excluded.map(() => "?").join(", ")})` : ""}
             order by r.room_number limit 1`)
-          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime(), ...noClosedNightParams(input.checkIn, input.checkOut, now), ...noAllotmentExceededParams(input.checkIn, input.checkOut, now))
+          .bind(input.id, input.hotelId, input.guestName, input.checkIn, input.checkOut, input.price, input.source, input.status, input.expiresAt?.getTime() ?? null, input.adults, input.children, input.changedBy, input.createdIpHash ?? null, input.hotelId, input.roomTypeId, input.checkOut, input.checkIn, now.getTime(), ...noClosedNightParams(input.checkIn, input.checkOut, now), ...noAllotmentExceededParams(input.checkIn, input.checkOut, now), ...excluded)
     : db.$client.prepare(`insert into bookings (id, hotel_id, room_id, guest_name, check_in, check_out, price, source, status, expires_at, adults_count, children_count, created_by, payment_method, payment_status)
         select ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? from hotels h
         where h.id = ? and (? is null or exists (select 1 from rooms r where r.id = ? and r.hotel_id = ? and r.status <> 'maintenance'))

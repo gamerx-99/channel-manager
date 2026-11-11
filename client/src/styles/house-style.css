@@ -400,3 +400,9 @@
 @media (max-width: 640px) {
   .financials-page .financials-period-picker, .financials-page .financials-bookings-help { padding-left: 16px; padding-right: 16px; }
 }
+/* Free plan: rooms after the first three cannot take new bookings (owner decision, 2026-11-11). */
+.plan-room-limit-banner { margin: 0 24px 16px; padding: 12px 14px; border-radius: 10px; background: #f8f1dc; color: #6d5418; font-size: 13px; line-height: 1.5; }
+.room-type-row.is-plan-capped { opacity: .55; filter: grayscale(1); }
+.plan-room-limit-note { display: block; margin-top: 4px; font-size: 11px; line-height: 1.4; color: #8a6a20; }
+@media (max-width: 600px) { .plan-room-limit-banner { margin: 0 16px 14px; } }
+

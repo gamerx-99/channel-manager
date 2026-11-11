@@ -246,3 +246,9 @@ answer noted.
 
 - [ ] ASSUMPTION: a passkey sign-in is not challenged for a TOTP code, because a passkey is already two proofs (the device plus a fingerprint, face or PIN). The twoFactor plugin only challenges /sign-in/email, /sign-in/username and /sign-in/phone-number, and our social-callback gate only acts on /callback/*. Confirm that an owner or admin who turned on 2FA should still skip it with a passkey.
 - [ ] ASSUMPTION: the passkey is tied to the host without `www.` (rpID `hayhostth.com`), so it also works if the site is ever served from the apex. A custom domain for a hotel would need its own passkey.
+
+## Free plan room quota (2026-11-11)
+
+- [ ] ASSUMPTION: "first 3 rooms by creation order" uses SQLite's rowid on `rooms` because the table has no created_at. Rowid follows insertion order; a VACUUM keeps the relative order. If an exact creation time is wanted, add `rooms.created_at` in a migration.
+- [ ] ASSUMPTION: the quota counts rooms in maintenance too (they are still rooms of the hotel); only which rooms can be sold changes.
+

@@ -91,6 +91,7 @@ import {
   exportHotelData,
   previewHotelImport,
   applyHotelImport,
+  planRoomLimit,
 } from './routers/hotelRouter';
 import {
   bookings,
@@ -194,6 +195,7 @@ export const appRouter = router({
     exportHotelData,
     previewHotelImport,
     applyHotelImport,
+    planRoomLimit,
     ota: otaRouter,
   }),
 

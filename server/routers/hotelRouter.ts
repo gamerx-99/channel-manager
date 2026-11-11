@@ -1,3 +1,4 @@
+import { getPlanRoomLimit } from '../d1/planRoomLimit';
 import { z } from 'zod';
 import { isRoomAmenityKey } from '../../shared/roomAmenities';
 import { HOTEL_THEMES, isHotelThemeId, MAX_WEBSITE_GALLERY_PHOTOS } from '@shared/hotelThemes';
@@ -326,6 +327,17 @@ export const setHotelPublished = protectedProcedure
       return rethrowDomainError(error);
     }
   });
+
+/** Which rooms the hotel's plan holds back from new bookings (Free plan: everything after the first three rooms). */
+export const planRoomLimit = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
+  requireHotelPermission(ctx.user, input, 'property.view');
+  if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });
+  try {
+    return await getPlanRoomLimit(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input);
+  } catch (error) {
+    return rethrowDomainError(error);
+  }
+});
 
 export const hotel = protectedProcedure.input(hotelIdSchema).query(async ({ ctx, input }) => {
   if (!ctx.db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'D1 database required.' });

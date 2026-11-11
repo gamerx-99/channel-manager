@@ -259,6 +259,7 @@ const en = {
   accessRestricted: { title: "Access restricted", hotelNotVisible: "This property is outside your assigned hotel workspace.", permissionRequired: "Your current role does not have permission to open this workspace.", hotelRequired: "Set up a hotel or ask its administrator to invite you before opening this page.", platformOnly: "This area is available only to platform administrators.", returnToDashboard: "Return to dashboard" },
   bookingPayment: { contactProperty: "Please contact the property directly." },
   serverErrors: {
+    freePlanRoomLimit: "On the Free plan only the first 3 rooms can take new bookings. Upgrade to Pro to sell this room.",
     heroDeleteBlocked: "Choose another hero image before deleting this image.", noDraftToPublish: "There is no saved draft to publish.", draftHeroMissing: "The selected hero image is no longer available.",
     roomTypeUnavailable: "The selected room type is no longer available for the requested dates. Please choose another date or room type.",
     roomUnavailable: "The selected room is no longer available for the requested dates.", roomOverlap: "The selected room already has an overlapping booking.", checkOutAfterCheckIn: "Check-out date must be after check-in date.", checkOutLaterThanCheckIn: "Check-out date must be later than check-in date.", holdExpired: "This room hold has expired or is no longer available. Please start again.", hotelNotPublished: "Hotel not found or not published.", promptPayUnavailable: "This property cannot take PromptPay payments right now. Please contact the property directly.", paymentExpired: "This payment window has expired.", bookingNotReadyForPayment: "This booking is not ready for payment.", notAwaitingPayment: "This booking is not awaiting payment verification.", alreadyVerifying: "This booking is already being verified. Please wait for the result.", slipReused: "This slip has already been used to verify a different payment. Please contact the hotel.", notAwaitingManualVerification: "This booking is not awaiting manual verification.", bookingStatusChanged: "Booking status changed; reload and try again.", hotelAccessDenied: "Hotel access denied.", noHotelAccess: "You do not have access to this hotel.", hotelNotAvailable: "This hotel is not available to your account.", signInAgain: "Please sign in again.", icalFetchFailed: "Could not fetch or validate the iCal calendar.", staffChangeNotAllowed: "This staff permission change is not allowed.", lastAdminRemove: "The last Hotel Admin cannot be removed.", alreadyAssigned: "This user is already assigned to the selected hotel.", invitationInvalid: "This invitation link is invalid or has expired.", incorrectPassword: "Incorrect password.", rateOverlap: "This room type already has a rate override overlapping the selected dates.", duplicateDetails: "A hotel or room type with the same unique details already exists.", invalidValues: "The submitted values are not valid for this record.", maxOccupancyBase: "Maximum occupancy must be at least base occupancy.", imageTooLarge: "Images must be 5 MiB or smaller.", invalidImage: "Invalid image upload.",
@@ -833,6 +834,11 @@ const en = {
     childPriceFixed: "Fixed THB per child / night",
     childPricePercent: "Percent of normal room rate per child / night",
     childrenCountTowardMaxLabel: "Count eligible children toward maximum occupancy",
+  },
+  planRoomLimit: {
+    banner: "The Free plan sells {{limit}} rooms. Rooms created after those keep their data but cannot take new bookings. Upgrade to Pro to sell every room.",
+    upgrade: "Upgrade to Pro",
+    rowNote: "{{heldBack}} room(s) cannot take bookings on the Free plan",
   },
   hotelDataTransfer: {
     eyebrow: "Hotel data", title: "Hotel data: Export and import", description: "Save or import hotel setup without bookings or guests' personal information.",

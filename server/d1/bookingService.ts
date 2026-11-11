@@ -8,6 +8,7 @@ import { moneyToSatang, satangToMoney } from "../db/money";
 import { getRequiredMinStayNights } from "../pricing";
 import { getStayDates } from "@shared/stayDates";
 import { closedNightsByRoomType } from "./closedNights";
+import { planCappedRoomIds } from "./planRoomLimit";
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 
 const HOLD_STATUSES = ["held", "pending_payment", "pending_verification"] as const;
@@ -150,7 +151,9 @@ export async function getPublicRoomTypeAvailabilityForGuests(
 
 async function roomAvailabilityCounts(db: D1ScopedDatabase, hotelId: string, checkIn: string, checkOut: string, now: Date) {
   const roomTypesInHotel = await db.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.hotelId, hotelId));
-  const roomRows = await db.select({ id: rooms.id, roomTypeId: rooms.roomTypeId }).from(rooms).where(and(eq(rooms.hotelId, hotelId), ne(rooms.status, "maintenance")));
+  const heldBack = new Set(await planCappedRoomIds(db, hotelId, now));
+  const roomRows = (await db.select({ id: rooms.id, roomTypeId: rooms.roomTypeId }).from(rooms).where(and(eq(rooms.hotelId, hotelId), ne(rooms.status, "maintenance"))))
+    .filter(room => !heldBack.has(room.id));
   const roomIds = roomRows.map(row => row.id);
   const statusRows = roomIds.length
     ? await db.select({ roomId: bookings.roomId, status: bookings.status, expiresAt: bookings.expiresAt }).from(bookings).where(and(
