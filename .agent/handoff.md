@@ -6235,3 +6235,10 @@ Exit 0
 - Links: the payment reminder popup (only when SlipOK is what is missing) and the SlipOK card on the finance settings page. Setting the constant to `null` removes both.
 - Note: the phone screens inside the image show unreadable placeholder text, so it works as an outline of the steps, not as a screenshot of the real SlipOK screens.
 - Evidence: `pnpm check` exit 0; `pnpm test` 303 files, 2,147 tests passed; `pnpm build` passed and `dist/public/guides/slipok-guide.webp` is in the build.
+
+## 2026-11-11 — General settings page tidied (not deployed)
+
+- Owner screenshot of `/hotels/:id/settings/general`. Measured on the live page: the four sections under the profile form ("การจองจากหน้าเว็บ", "หน้าเว็บโรงแรม", export/import, "ปิดที่พักนี้") had no gap between them, the first two had their text and inputs flush against the card edge (0px side padding while the headings had 24px), and the closure card used 22px padding and 14px body text against 11px help text elsewhere.
+- Fix is CSS only, in `client/src/pages/HotelProfile.css` (page-scoped): 16px gap between the sections, 24px side padding (16px under 600px), 12px help text, the timeout field capped at 360px. `HotelClosureSettings.tsx` lost two inline styles (`marginTop: 18`, `padding: "0 22px 22px"`) for the class `hotel-closure-body`. No copy, logic or data changed.
+- Checked by injecting the same rules into the live page in a browser tab (nothing was saved or deployed): sections line up with their headings and the gaps are even.
+- Evidence: `pnpm check` exit 0; `pnpm test` 303 files, 2,148 tests passed; `pnpm build` passed.

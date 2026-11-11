@@ -41,4 +41,13 @@ describe('hotel profile page contract', () => {
     expect(detail).toContain("get('edit') === 'profile'");
     expect(detail).toContain('return <Redirect to={`/hotels/${id}/profile`} />');
   });
+
+  it('lines the sections under the form up with the form panels', () => {
+    const css = read('client/src/pages/HotelProfile.css');
+    expect(css).toContain('.hotel-profile-page > .panel + .panel { margin-top: 16px; }');
+    expect(css).toContain('.hotel-profile-page > .panel > .subtle-block { margin: 0; padding: 0 24px 16px;');
+    const closure = read('client/src/components/HotelClosureSettings.tsx');
+    expect(closure).toContain('className="hotel-closure-body"');
+    expect(closure).not.toContain('marginTop: 18');
+  });
 });

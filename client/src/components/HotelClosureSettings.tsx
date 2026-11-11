@@ -52,14 +52,14 @@ export default function HotelClosureSettings({ hotelId, hotelName }: { hotelId: 
   }
 
   return (
-    <section className="panel" aria-labelledby="hotel-closure-heading" data-testid="hotel-closure-settings" style={{ marginTop: 18 }}>
+    <section className="panel" aria-labelledby="hotel-closure-heading" data-testid="hotel-closure-settings">
       <div className="panel-heading">
         <div>
           <div className="eyebrow">{hotelName}</div>
           <h2 id="hotel-closure-heading">{t("hotelClosure.title")}</h2>
         </div>
       </div>
-      <div style={{ padding: "0 22px 22px" }}>
+      <div className="hotel-closure-body">
         <HotelDataExportButton hotelId={hotelId} hotelName={hotelName} />
         <div className="form-error" role="note" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
           <TriangleAlert size={15} aria-hidden="true" style={{ flex: "0 0 auto" }} />

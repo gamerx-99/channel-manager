@@ -30,7 +30,20 @@
 .hotel-profile-success { color: #17633d; font-weight: 600; }
 .hotel-profile-savebar .form-submit { display: flex; justify-self: stretch; justify-content: flex-end; gap: 10px; width: 100%; }
 .hotel-profile-savebar .button { min-height: 36px; }
+/* Sections under the profile form (web bookings, public site, export/import, closing the hotel):
+   the same 24px side padding and 16px gap as the form panels above. */
+.hotel-profile-page > .panel + .panel { margin-top: 16px; }
+.hotel-profile-page > .panel > .subtle-block { margin: 0; padding: 0 24px 16px; font-size: 12px; line-height: 1.5; }
+.hotel-profile-page > .panel > form.form-grid { grid-template-columns: minmax(0, 360px); gap: 14px; padding: 0 24px 24px; }
+.hotel-profile-page > .panel > .button { margin: 0 24px 24px; }
+.hotel-profile-page > .panel > .form-error { margin: 0 24px 24px; }
+.hotel-closure-body { padding: 0 24px 24px; }
+.hotel-closure-body .lede { margin: 8px 0 0; font-size: 12px; line-height: 1.5; }
+
 @media (max-width: 600px) {
+  .hotel-profile-page > .panel > .subtle-block, .hotel-profile-page > .panel > form.form-grid { padding-left: 16px; padding-right: 16px; }
+  .hotel-profile-page > .panel > .button, .hotel-profile-page > .panel > .form-error { margin-left: 16px; margin-right: 16px; margin-bottom: 16px; }
+  .hotel-closure-body { padding: 0 16px 16px; }
   .hotel-profile-fields, .hotel-profile-channels, .hotel-profile-map { padding: 16px; }
   .hotel-profile-fields, .hotel-profile-channels { grid-template-columns: minmax(0, 1fr); }
   .hotel-profile-fields { gap: 12px; }
