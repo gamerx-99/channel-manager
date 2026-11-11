@@ -1,9 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../../_core/hooks/useAuth";
 import { trpc } from "../../lib/trpc";
-import { shouldRedirectToMfaEnroll, MFA_ENROLL_PATH } from "@/lib/mfa";
-import { isMfaEnabled } from "@/lib/featureFlags";
 import { HotelProvider } from "../../contexts/HotelContext";
 import { getRouteScopeDecision } from "../../lib/routeScope";
 import { SELECTED_HOTEL_STORAGE_KEY } from "../../contexts/HotelContext";
@@ -16,7 +14,7 @@ import { HotelClosureRedirect } from "@/pages/HotelClosure";
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { user, loading, isAuthenticated, logout } = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/login" });
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const { data: authMe, isLoading: roleLoading, isError: roleError } = trpc.auth.me.useQuery(undefined, { refetchInterval: 15000 });
   const authRoles = (authMe?.roles?.length ? authMe.roles : authMe?.role ? [authMe.role] : []) as AppRole[];
   const {
@@ -25,32 +23,11 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     isError: hotelsError,
   } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user), refetchInterval: 15000 });
 
-  // Derives MFA requirement from Better Auth session / tRPC authMe without raw Supabase calls.
-  const twoFactorEnabled = Boolean(authMe?.twoFactorEnabled);
-  const needsMfaEnroll = Boolean(
-    isMfaEnabled() &&
-    isAuthenticated &&
-    user &&
-    !roleLoading &&
-    !roleError &&
-    shouldRedirectToMfaEnroll(authRoles, twoFactorEnabled),
-  );
-
-  useEffect(() => {
-    if (needsMfaEnroll) {
-      navigate(MFA_ENROLL_PATH);
-    }
-  }, [needsMfaEnroll, navigate]);
-
   if (loading || roleLoading || hotelsLoading) return <main className="auth-loading">{t("privateRoute.checkingSession")}</main>;
   if (!isAuthenticated || !user) return null;
   if (roleError || hotelsError) {
     return <main className="auth-loading">{t("privateRoute.verifyAccess")}</main>;
   }
-  if (needsMfaEnroll) {
-    return null;
-  }
-
   const decision = getRouteScopeDecision({
     role: authMe?.role,
     roles: authRoles,

@@ -3,9 +3,6 @@ import React from "react";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// These tests cover 2FA enforcement, which runs only while the MFA feature flag is on.
-vi.stubEnv("VITE_FEATURE_MFA", "true");
-
 const navigate = vi.fn();
 
 const mocks = vi.hoisted(() => ({
@@ -53,8 +50,8 @@ beforeEach(() => {
   mocks.useHotelsQuery.mockReturnValue({ data: [], isLoading: false, isError: false });
 });
 
-describe("PrivateRoute MFA enforcement (persistent, not just at login)", () => {
-  it("redirects an already-open super_admin session without a verified factor to /mfa/enroll", async () => {
+describe("PrivateRoute never forces 2FA enrolment (optional for every role, owner 2026-11-11)", () => {
+  it("does not redirect an open super_admin session that has no verified factor", async () => {
     mocks.useAuthMeQuery.mockReturnValue({
       data: { role: "super_admin", roles: ["super_admin"], twoFactorEnabled: false },
       isLoading: false,
@@ -67,8 +64,8 @@ describe("PrivateRoute MFA enforcement (persistent, not just at login)", () => {
       </PrivateRoute>,
     );
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/mfa/enroll"));
-    expect(screen.queryByTestId("protected-content")).toBeNull();
+    await waitFor(() => expect(screen.getByText(/Access restricted/i)).toBeTruthy());
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
   it("does not redirect a hotel_owner session without a factor (opt-in only)", async () => {

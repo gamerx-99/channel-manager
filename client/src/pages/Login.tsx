@@ -3,8 +3,6 @@ import { ArrowRight, Fingerprint, LockKeyhole, ShieldCheck, KeyRound } from 'luc
 import { Link, useLocation } from 'wouter';
 import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
-import { MFA_ENROLL_PATH, shouldEnforceMfaForRoles } from '@/lib/mfa';
-import { isMfaEnabled } from '@/lib/featureFlags';
 import { classifyPasskeyError, passkeyAutofillSupported, passkeySupported } from '@/lib/passkey';
 import { useTranslation } from '@/lib/i18n';
 import { readSocialError, SocialSignIn } from '@/components/auth/SocialSignIn';
@@ -97,31 +95,22 @@ export default function Login() {
     }
   }
 
-  /** Same next step for every way in: the platform-role MFA check, then the page the person came for. */
+  /** Same next step for every way in: the page the person came for. */
   async function finishSignIn() {
-    // Blocking MFA enrollment check for platform roles (T09-04)
+    // 2FA is optional (owner, 2026-11-11): nobody is sent to enrol; people turn it on in security settings.
     try {
-      let roles: string[] = [];
-      let twoFactorEnabled = false;
       let signedInWithoutRole = false;
 
       if (trpcUtils) {
         try {
           const me = await trpcUtils.auth.me.fetch();
           if (me) {
-            roles = (me.roles?.length ? me.roles : me.role ? [me.role] : []) as string[];
-            twoFactorEnabled = Boolean(me.twoFactorEnabled);
+            const roles = (me.roles?.length ? me.roles : me.role ? [me.role] : []) as string[];
             signedInWithoutRole = roles.length === 0;
           }
         } catch {
           // Ignore tRPC fetch errors — fail open
         }
-      }
-
-      if (isMfaEnabled() && !twoFactorEnabled && shouldEnforceMfaForRoles(roles)) {
-        setSubmitting(false);
-        navigate(MFA_ENROLL_PATH);
-        return;
       }
 
       // Confirming an email comes before the hotel step, so a new owner resumes it here.

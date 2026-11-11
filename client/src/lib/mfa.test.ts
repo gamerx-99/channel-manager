@@ -3,13 +3,9 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   hasVerifiedTotpFactor,
-  MFA_ENROLL_PATH,
-  shouldEnforceMfaForRoles,
-  shouldRedirectToMfaEnroll,
   cleanupUnverifiedFactors,
   prepareTotpEnrollment,
   useMfaStepUp,
-  mfaReturnPath,
 } from "./mfa";
 
 const authClientMocks = vi.hoisted(() => ({
@@ -59,10 +55,6 @@ beforeEach(() => {
 });
 
 describe("mfa pure helpers", () => {
-  it("exposes the blocking enroll path", () => {
-    expect(MFA_ENROLL_PATH).toBe("/mfa/enroll");
-  });
-
   it("detects verified totp factors", () => {
     expect(hasVerifiedTotpFactor(null)).toBe(false);
     expect(hasVerifiedTotpFactor({ totp: [], all: [] })).toBe(false);
@@ -70,23 +62,6 @@ describe("mfa pure helpers", () => {
     expect(hasVerifiedTotpFactor({ totp: [{ status: "verified" }] })).toBe(true);
     expect(hasVerifiedTotpFactor({ all: [{ factor_type: "totp", status: "verified" }] })).toBe(true);
     expect(hasVerifiedTotpFactor({ all: [{ factor_type: "phone", status: "verified" }] })).toBe(false);
-  });
-
-  it("enforces MFA only for platform roles", () => {
-    expect(shouldEnforceMfaForRoles(["super_admin"])).toBe(true);
-    expect(shouldEnforceMfaForRoles(["admin"])).toBe(true);
-    expect(shouldEnforceMfaForRoles(["hotel_owner"])).toBe(false);
-    expect(shouldEnforceMfaForRoles(["front_desk"])).toBe(false);
-    expect(shouldEnforceMfaForRoles([])).toBe(false);
-    expect(shouldEnforceMfaForRoles(null)).toBe(false);
-  });
-
-  it("redirects to enroll only when platform role lacks verified factor", () => {
-    expect(shouldRedirectToMfaEnroll(["super_admin"], { totp: [] })).toBe(true);
-    expect(shouldRedirectToMfaEnroll(["super_admin"], { totp: [{ status: "verified" }] })).toBe(false);
-    expect(shouldRedirectToMfaEnroll(["hotel_owner"], { totp: [] })).toBe(false);
-    expect(shouldRedirectToMfaEnroll(["super_admin"], false)).toBe(true);
-    expect(shouldRedirectToMfaEnroll(["super_admin"], true)).toBe(false);
   });
 
   it("cleanupUnverifiedFactors safely returns success in Better Auth runtime", async () => {
@@ -200,19 +175,5 @@ describe("useMfaStepUp Hook (server-backed step-up)", () => {
 
     act(() => { result.current.reset(); });
     expect(result.current.mfaState).toEqual({ status: "idle" });
-  });
-});
-
-describe("mfaReturnPath", () => {
-  it("returns to an in-app page after enrolling", () => {
-    expect(mfaReturnPath("?next=/dashboard/financials")).toBe("/dashboard/financials");
-    expect(mfaReturnPath("?next=/settings/security")).toBe("/settings/security");
-  });
-
-  it("never sends the user to another site", () => {
-    expect(mfaReturnPath("?next=//evil.example/dashboard")).toBe("/dashboard");
-    expect(mfaReturnPath("?next=https://evil.example")).toBe("/dashboard");
-    expect(mfaReturnPath("?next=/dashboardx")).toBe("/dashboard");
-    expect(mfaReturnPath("")).toBe("/dashboard");
   });
 });

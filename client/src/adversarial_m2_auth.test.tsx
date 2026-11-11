@@ -5,9 +5,6 @@ import { act, cleanup, render, renderHook, screen, waitFor } from "@testing-libr
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// These tests cover 2FA enforcement, which runs only while the MFA feature flag is on.
-vi.stubEnv("VITE_FEATURE_MFA", "true");
-
 // ==========================================
 // Hoisted Mocks
 // ==========================================
@@ -276,9 +273,9 @@ describe("Empirical Challenge: useAuth Hook & Reactive Session State", () => {
 });
 
 // =========================================================================
-// Suite 2: PrivateRoute MFA Enforcement & Role Boundaries
+// Suite 2: PrivateRoute never forces MFA enrolment (optional for every role) & Role Boundaries
 // =========================================================================
-describe("Empirical Challenge: PrivateRoute MFA Enforcement", () => {
+describe("Empirical Challenge: PrivateRoute does not force MFA enrolment", () => {
   beforeEach(() => {
     // By default, authenticated hook state
     authClientMocks.useSession.mockReturnValue({
@@ -289,7 +286,7 @@ describe("Empirical Challenge: PrivateRoute MFA Enforcement", () => {
     });
   });
 
-  it("BLOCKS un-enrolled super_admin: redirects to /mfa/enroll and does NOT leak protected children", async () => {
+  it("PERMITS un-enrolled super_admin: shows the page and never redirects to /mfa/enroll", async () => {
     trpcMocks.authMeQuery.mockReturnValue({
       data: { role: "super_admin", roles: ["super_admin"], twoFactorEnabled: false },
       isLoading: false,
@@ -303,12 +300,12 @@ describe("Empirical Challenge: PrivateRoute MFA Enforcement", () => {
     );
 
     await waitFor(() => {
-      expect(navigate).toHaveBeenCalledWith("/mfa/enroll");
+      expect(screen.getByTestId("critical-secret")).toBeTruthy();
     });
-    expect(screen.queryByTestId("critical-secret")).toBeNull();
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
-  it("BLOCKS un-enrolled admin (platform role): redirects to /mfa/enroll", async () => {
+  it("PERMITS un-enrolled admin (platform role): never redirects to /mfa/enroll", async () => {
     trpcMocks.authMeQuery.mockReturnValue({
       data: { role: "admin", roles: ["admin"], twoFactorEnabled: false },
       isLoading: false,
@@ -322,12 +319,12 @@ describe("Empirical Challenge: PrivateRoute MFA Enforcement", () => {
     );
 
     await waitFor(() => {
-      expect(navigate).toHaveBeenCalledWith("/mfa/enroll");
+      expect(screen.getByTestId("critical-secret")).toBeTruthy();
     });
-    expect(screen.queryByTestId("critical-secret")).toBeNull();
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
-  it("BLOCKS un-enrolled support (platform role): redirects to /mfa/enroll", async () => {
+  it("PERMITS un-enrolled support (platform role): never redirects to /mfa/enroll", async () => {
     trpcMocks.authMeQuery.mockReturnValue({
       data: { role: "support", roles: ["support"], twoFactorEnabled: false },
       isLoading: false,
@@ -341,9 +338,9 @@ describe("Empirical Challenge: PrivateRoute MFA Enforcement", () => {
     );
 
     await waitFor(() => {
-      expect(navigate).toHaveBeenCalledWith("/mfa/enroll");
+      expect(screen.getByTestId("critical-secret")).toBeTruthy();
     });
-    expect(screen.queryByTestId("critical-secret")).toBeNull();
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
   it("PERMITS enrolled super_admin (twoFactorEnabled: true): does not redirect to /mfa/enroll", async () => {
@@ -537,7 +534,7 @@ describe("Empirical Challenge: Login Page Inline 2FA Challenge Flow", () => {
     });
   });
 
-  it("redirects un-enrolled super_admin directly to /mfa/enroll after password login", async () => {
+  it("sends un-enrolled super_admin to the dashboard after password login (2FA is optional)", async () => {
     const user = userEvent.setup();
 
     authClientMocks.signInEmail.mockResolvedValue({
@@ -558,8 +555,8 @@ describe("Empirical Challenge: Login Page Inline 2FA Challenge Flow", () => {
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
     await waitFor(() => {
-      expect(navigate).toHaveBeenCalledWith("/mfa/enroll");
+      expect(navigate).toHaveBeenCalledWith("/dashboard");
     });
-    expect(navigate).not.toHaveBeenCalledWith("/dashboard");
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 });

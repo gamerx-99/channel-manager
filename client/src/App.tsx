@@ -16,7 +16,6 @@ const StaffShifts = React.lazy(() => import("./pages/StaffShifts"));
 const StaffTasks = React.lazy(() => import("./pages/StaffTasks"));
 const Communications = React.lazy(() => import("./pages/Communications"));
 const Login = React.lazy(() => import("./pages/Login"));
-const MfaEnroll = React.lazy(() => import("./pages/MfaEnroll"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 const HotelOwnerSignup = React.lazy(() => import("./pages/HotelOwnerSignup"));
@@ -71,7 +70,6 @@ function Router() {
     <React.Suspense fallback={<RouteLoading />}>
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/mfa/enroll" component={MfaEnroll} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/signup" component={Signup} />

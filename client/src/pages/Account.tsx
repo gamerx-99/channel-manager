@@ -1,9 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import PageState from "@/components/PageState";
-import MfaSettings from "@/components/MfaSettings";
 import { authClient } from "@/lib/auth-client";
-import { isMfaEnabled } from "@/lib/featureFlags";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 import { planHasEnd, planNameKey, signInMethod } from "./accountProfile";
@@ -35,8 +33,6 @@ export default function Account() {
         <div className="panel-heading"><div><h2 id="account-details-heading">{t("account.detailsTitle")}</h2></div></div>
         <AccountProfileEditor profile={profile} onSaved={() => void profileQuery.refetch()} />
       </section>
-
-      {isMfaEnabled() && <MfaSettings />}
 
       <section className="panel" aria-labelledby="account-signin-heading">
         <div className="panel-heading">

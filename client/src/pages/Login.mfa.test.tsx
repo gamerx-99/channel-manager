@@ -4,9 +4,6 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// These tests cover 2FA enforcement, which runs only while the MFA feature flag is on.
-vi.stubEnv("VITE_FEATURE_MFA", "true");
-
 const navigate = vi.fn();
 
 const mocks = vi.hoisted(() => ({
@@ -64,8 +61,8 @@ beforeEach(() => {
   mocks.signInEmail.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
 });
 
-describe("Login MFA enforcement (T09-04)", () => {
-  it("redirects super_admin without a verified TOTP factor to the enroll flow (blocking)", async () => {
+describe("Login never forces 2FA enrolment (optional for every role, owner 2026-11-11)", () => {
+  it("sends super_admin without a verified TOTP factor to the dashboard, not to enrol", async () => {
     const user = userEvent.setup();
 
     mocks.authMeFetch.mockResolvedValue({
@@ -81,11 +78,11 @@ describe("Login MFA enforcement (T09-04)", () => {
     await user.type(screen.getByLabelText(/Password/), "password123");
     await user.click(screen.getByRole("button", { name: /Continue/ }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/mfa/enroll"));
-    expect(navigate).not.toHaveBeenCalledWith("/dashboard");
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/dashboard"));
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
-  it("also redirects admin without a verified factor to enroll", async () => {
+  it("also sends admin without a verified factor to the dashboard", async () => {
     const user = userEvent.setup();
 
     mocks.authMeFetch.mockResolvedValue({
@@ -101,7 +98,8 @@ describe("Login MFA enforcement (T09-04)", () => {
     await user.type(screen.getByLabelText(/Password/), "password123");
     await user.click(screen.getByRole("button", { name: /Continue/ }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/mfa/enroll"));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/dashboard"));
+    expect(navigate).not.toHaveBeenCalledWith("/mfa/enroll");
   });
 
   it("allows super_admin with a verified TOTP factor to proceed to dashboard", async () => {

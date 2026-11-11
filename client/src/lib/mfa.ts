@@ -1,17 +1,6 @@
-import { PLATFORM_ROLES, type AppRole } from "@shared/authorization";
 import { useState, useCallback } from "react";
 import { authClient } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc";
-
-/** Blocking enroll path for platform roles without an MFA factor. */
-export const MFA_ENROLL_PATH = "/mfa/enroll";
-
-/** Where to go after enrolling: an in-app `next` page, never another site. */
-export function mfaReturnPath(search: string): string {
-  const next = new URLSearchParams(search).get("next");
-  return next && /^\/(dashboard|settings)(\/|$|\?)/.test(next) ? next : "/dashboard";
-}
-
 
 type FactorLike = {
   status?: string;
@@ -35,29 +24,6 @@ export function hasVerifiedTotpFactor(data: ListFactorsData): boolean {
     f => (f.factor_type === "totp" || (f as unknown as { type: string }).type === "totp" || f.factorType === "totp") && f.status === "verified"
   );
   return allVerified;
-}
-
-/**
- * Platform roles must enroll MFA before any authenticated access. Hotel-level roles are opt-in.
- */
-export function shouldEnforceMfaForRoles(roles: readonly string[] | null | undefined): boolean {
-  if (!roles || roles.length === 0) return false;
-  return roles.some(role => (PLATFORM_ROLES as readonly string[]).includes(role as AppRole));
-}
-
-/**
- * Convenience: given roles and either a factor payload or boolean twoFactorEnabled status,
- * returns true if the session must be redirected to the blocking enroll flow.
- */
-export function shouldRedirectToMfaEnroll(
-  roles: readonly string[] | null | undefined,
-  factorData?: boolean | ListFactorsData,
-): boolean {
-  if (!shouldEnforceMfaForRoles(roles)) return false;
-  if (typeof factorData === "boolean") {
-    return !factorData;
-  }
-  return !hasVerifiedTotpFactor(factorData);
 }
 
 export type CleanupFactorsResult = {

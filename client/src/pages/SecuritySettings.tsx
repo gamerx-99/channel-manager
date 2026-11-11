@@ -1,6 +1,7 @@
 import { hasHotelPermission } from "@shared/authorization";
 import DeleteAccountSettings from "@/components/DeleteAccountSettings";
 import LinkedAccountsSettings from "@/components/LinkedAccountsSettings";
+import MfaSettings from "@/components/MfaSettings";
 import PasskeySettings from "@/components/PasskeySettings";
 import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
@@ -26,6 +27,7 @@ export default function SecuritySettings() {
         </div>
       </section>
       <PasskeySettings />
+      <MfaSettings />
       <LinkedAccountsSettings />
       {hotelId && canManageSlipOk && <p className="field-help"><Link href={`/hotels/${hotelId}/settings/finance`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
       <DeleteAccountSettings />

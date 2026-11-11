@@ -6196,3 +6196,14 @@ Exit 0
 - Production Worker `hayhost`: Version ID e42ce7a8-e614-4dd1-add9-8c0ca5e8827b (100%), built from main 6e68817 after `pnpm check` exit 0 and `pnpm build`; the full suite had passed on the same code (299 files, 2,123 tests). `/login` and `/` return 200; the passkey options endpoint answers with rpId `hayhostth.com`; Google and LINE buttons still show next to the new Passkey button.
 - Staging has no Google secrets, so the Google button never shows there. Not a bug.
 - Not yet checked on production: a real passkey registration and sign-in with a production account.
+
+## 2026-11-11 — 2FA back, optional (not deployed)
+
+- Owner decision (DECISIONS.md, 2026-11-11): 2FA returns, optional for every role including platform admins; people enable and disable it themselves.
+- Removed: the `VITE_FEATURE_MFA` flag (`isMfaEnabled`), the forced redirect in `PrivateRoute` and `Login`, `shouldEnforceMfaForRoles` / `shouldRedirectToMfaEnroll`, `MFA_ENROLL_PATH` / `mfaReturnPath`, the `/mfa/enroll` route and `MfaEnroll.tsx` (its copy said enrolment was required; history stays in git). `featureFlags.mfa.test.ts` deleted with the flag.
+- Moved: `<MfaSettings />` from the account page to the security page, under Passkey. It already supported enable and disable with the person's password.
+- Kept: the TOTP challenge at sign-in for people who turned it on (password and social callback), and step-up for sensitive actions.
+- Tests changed on purpose, because they asserted the old forced behaviour: `App.privateRoute.mfa.test.tsx`, `adversarial_m2_auth.test.tsx` (three BLOCKS cases and the post-login redirect now assert PERMITS / dashboard), `Login.mfa.test.tsx` (two redirect cases now assert dashboard), `mfa.test.ts` (tests of removed helpers dropped). New: `Mfa.optional.contract.test.ts`. No assertion about a person with 2FA on was loosened.
+- Evidence: `pnpm check` exit 0; `pnpm test` 299 files, 2,121 tests passed.
+- Known limit: enabling needs the account password, so a person who only ever signed in with Google or LINE has no password to give. They can set one with "forgot password" first. Not changed here.
+- Left over, harmless: unused `mfaEnroll.*` Thai/English keys that only the removed page used (the login code screen still uses some `mfaEnroll.*` keys, so they were not bulk-deleted).
