@@ -6274,3 +6274,9 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - NOT verified: that the real Immigration site accepts a file written by this library. The file keeps the template's name-sheets and columns, so it should, but nobody has uploaded one. The owner should upload one test file at the portal before relying on it; if it is refused, the fallback is to hand the owner the untouched template and fill rows from the page.
 - Evidence: `pnpm check` exit 0; `pnpm test` 309 files, 2,195 tests passed; `pnpm build` passed (bundle builds with the embedded template).
 
+
+## 2026-11-11 — Push to main done; staging deploy blocked by a Cloudflare API error
+
+- `main` is at 0138fee (all the work above). No migration is pending on staging or production for it.
+- `wrangler deploy --env staging` failed on every one of about 11 attempts over roughly 10 minutes with `binding DB of type d1 failed to generate. Please try again later or contact support. [code: 10021]` on `/workers/scripts/hayhost-stage/versions`. The same configuration deployed staging earlier today (passkey, version 919cdd02). The staging database itself answers (`select 1`, `d1 info`), `pnpm build` and the wrangler dry run pass, and Cloudflare's status page showed Workers as "degraded performance" with no D1 incident, so this looks like their control plane, not our code or config.
+- Nothing changed on staging or production: staging still runs 919cdd02, production still runs e42ce7a8. Retry `pnpm exec wrangler deploy --env staging` later; if it keeps failing, open a Cloudflare support case with the error code.
