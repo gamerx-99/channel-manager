@@ -6152,3 +6152,11 @@ Exit 0
 - `refactor/hotel-name-once` (`6e142e5`) is superseded and was NOT ported: its sidebar status pill and "ดูหน้าเว็บที่พัก" link were removed on purpose by the owner on 2026-11-06 (DECISIONS.md, commit 554b246), and main already moved the profile editor to `/hotels/:id/settings/general`.
 - Evidence: `pnpm check` exit 0; `pnpm test` full suite passed on the ported change.
 - Staging drift: staging has two applied migrations whose files are gone from the repo (`20261108000000_booking_documents_annual_types`, `20261108000000_room_type_amenities_limit_12`); production has neither.
+
+## 2026-11-11 — One logo on every sign-in page, deployed
+
+- New `client/src/components/AuthLogo.tsx` (logo-wide.png in a light tile, 40px high, 32px under 760px) used on Login, Signup, ResetPassword, AcceptInvite, MfaEnroll and HotelOwnerSignup in place of the icon + text wordmark that was nearly invisible on the brick side panel. Commit a724f61 on main.
+- Checked in a browser at desktop width on Login, Signup, Reset password and Accept invite (found and fixed the tile stretching full width on pages where it sits directly in the side panel). Phone width not checked by eye; the 760px rule is untested visually.
+- Evidence: `pnpm check` exit 0; `pnpm test` 293 files, 2,084 tests passed; `pnpm build` passed.
+- Deployed: staging Version ID da182c26-4de0-4308-b6e4-b00019015f55, production Version ID 8b6ef8f6-a5f3-456a-8394-ac5ef1f28563 (100%). No migration pending on either. This production deploy also carries 6bac830 (dashboard wording, no decorative bars) and 106a48d (docs + test).
+- Production login page loads (200) and shows the new logo.
