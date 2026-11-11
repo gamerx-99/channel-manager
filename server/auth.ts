@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { bearer } from "better-auth/plugins/bearer";
+import { passkey } from "@better-auth/passkey";
 import { APIError } from "better-auth/api";
 import { drizzle } from "drizzle-orm/d1";
 import type { D1Database } from "@cloudflare/workers-types/index.ts";
@@ -9,6 +10,7 @@ import { authSchema } from "../drizzle/auth-schema";
 import { isSocialPlaceholderEmail } from "../shared/socialAuth";
 import { ResendEmailSender, type EmailSender } from "./email";
 import { isSocialCallback, requireTwoFactorOnSocialCallback, resolveSocialProviders } from "./socialAuth";
+import { PASSKEY_RP_NAME, passkeyRelyingParty } from "./passkeyConfig";
 
 export type CreateAuthOptions = {
   db: D1Database | any;
@@ -155,6 +157,14 @@ export function createAuth(options: CreateAuthOptions | (D1Database | any)) {
         issuer: "HayHost",
       }),
       bearer(),
+      // ASSUMPTION: a passkey sign-in is already a strong, two-step proof (the device plus a fingerprint,
+      // face or PIN), so it is not challenged for a TOTP code. requireTwoFactorOnSocialCallback only acts
+      // on /callback/* paths, so /passkey/verify-authentication is never blocked by it. Actions that need a
+      // recent step-up keep working as before.
+      passkey({
+        rpName: PASSKEY_RP_NAME,
+        ...passkeyRelyingParty(baseURL),
+      }),
     ],
   });
 }

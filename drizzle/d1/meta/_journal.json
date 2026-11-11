@@ -218,6 +218,13 @@
       "when": 1794322944510,
       "tag": "20261110000000_staff_invite_booking_email_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1794376800000,
+      "tag": "20261111060000_add_passkey",
+      "breakpoints": true
     }
   ]
 }
