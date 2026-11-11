@@ -1,11 +1,10 @@
 import type { BookingStatus } from "@shared/bookingLifecycle";
 import * as XLSX from "xlsx";
+import { TM30_OFFICIAL_TEMPLATE_BASE64 } from "./tm30OfficialTemplate";
 
-/**
- * Cloudflare Workers have no filesystem. The approved template is represented by
- * the header mapping below, so TM.30 export works on the edge without node:fs.
- */
-export const TM30_TEMPLATE_PATH = "";
+/** The Immigration Bureau's import template is an Excel 97-2003 file, so the export is one too (.xls). */
+export const TM30_FILE_EXTENSION = "xls";
+export const TM30_CONTENT_TYPE = "application/vnd.ms-excel";
 
 export const TM30_HEADERS = [
   "ชื่อ\nFirst Name *",
@@ -122,20 +121,20 @@ export function registerTm30TemplateLoader(loader: Tm30TemplateLoader | null) {
 }
 
 /**
- * Loads the configured official template when available. For local installs
- * without the optional binary, it creates a workbook with the approved header
- * mapping so preview/export remains usable. Setting TM30_TEMPLATE_PATH makes a
- * missing file an explicit configuration error instead of silently falling back.
+ * Loads the official Immigration template (the form sheet plus the example, nationality and gender sheets),
+ * embedded because Cloudflare Workers have no filesystem. Replace it with `scripts/embed-tm30-template.mjs`
+ * when Immigration publishes a new one.
  */
 export function loadTm30Template(): XLSX.WorkBook {
   if (customTemplateLoader) {
     return customTemplateLoader();
   }
-  return createMappedTemplateWorkbook();
+  return XLSX.read(TM30_OFFICIAL_TEMPLATE_BASE64, { type: "base64", cellStyles: true });
 }
 
+/** Text format ("@") like the official template, so a passport number or 00/00/1985 is never turned into a number or date. */
 function writeTextCell(sheet: XLSX.WorkSheet, address: string, value: string) {
-  sheet[address] = { t: "s", v: value };
+  sheet[address] = { t: "s", v: value, z: "@" };
 }
 
 /** Creates a TM.30 workbook from the configured template or approved mapping. */
@@ -171,7 +170,7 @@ export function createTm30Workbook(bookings: Tm30Booking[]): Buffer {
   });
   return XLSX.write(workbook, {
     type: "buffer",
-    bookType: "xlsx",
+    bookType: "biff8",
     cellStyles: true,
   }) as Buffer;
 }

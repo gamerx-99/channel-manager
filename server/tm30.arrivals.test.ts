@@ -100,7 +100,7 @@ describe("channelManager.tm30Arrivals and exportTm30Arrivals", () => {
   it("returns an Excel file with only the complete guests", async () => {
     bookingMocks.listBookingsForHotel.mockResolvedValue(listed([guest(), guest({ passport_no: "" })]));
     const result = await (await app("hotel_owner")).channelManager.exportTm30Arrivals({ hotel_id: HOTEL, date: "2026-11-11" });
-    expect(result.filename).toBe("tm30-11111111-2026-11-11.xlsx");
+    expect(result.filename).toBe("tm30-11111111-2026-11-11.xls");
     expect(result.rowCount).toBe(1);
     const workbook = XLSX.read(Buffer.from(result.base64, "base64"), { type: "buffer" });
     const rows = XLSX.utils.sheet_to_json<string[]>(workbook.Sheets[workbook.SheetNames[0]!]!, { header: 1 });

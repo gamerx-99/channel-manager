@@ -5,7 +5,7 @@ import { protectedProcedure, rateLimitedProcedure, router } from '../_core/trpc'
 import { eq } from 'drizzle-orm';
 import { rooms } from '../../drizzle/d1-schema';
 import { calculateServiceTotal, calcNights, calculateGrandTotal } from '@shared/pricingModels';
-import { TM30_HEADERS, buildTm30Rows, createTm30Workbook, selectTm30Arrivals, type Tm30ArrivalInput } from '../tm30';
+import { TM30_CONTENT_TYPE, TM30_FILE_EXTENSION, TM30_HEADERS, buildTm30Rows, createTm30Workbook, selectTm30Arrivals, type Tm30ArrivalInput } from '../tm30';
 import { thaiToday } from '../d1/closedNights';
 import { enforcePublicBookingRateLimit } from '../publicBookingRateLimit';
 import { resolveAppUrl } from '../appUrl';
@@ -107,8 +107,8 @@ export const exportTm30 = protectedProcedure.input(hotelIdSchema).mutation(async
     const rows = buildTm30Rows(bookingList as any);
     const workbook = createTm30Workbook(bookingList as any);
     return {
-      filename: `tm30-${input}-${new Date().toISOString().slice(0, 10)}.xlsx`,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      filename: `tm30-${input}-${new Date().toISOString().slice(0, 10)}.${TM30_FILE_EXTENSION}`,
+      contentType: TM30_CONTENT_TYPE,
       rowCount: rows.length,
       base64: workbook.toString('base64'),
     };
@@ -174,8 +174,8 @@ export const exportTm30Arrivals = protectedProcedure.input(tm30ArrivalsSchema).m
     if (!ready.length) throw new TRPCError({ code: 'BAD_REQUEST', message: 'No guest with a complete record arrives on this date.' });
     const workbook = createTm30Workbook(ready);
     return {
-      filename: `tm30-${input.hotel_id.slice(0, 8)}-${date}.xlsx`,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      filename: `tm30-${input.hotel_id.slice(0, 8)}-${date}.${TM30_FILE_EXTENSION}`,
+      contentType: TM30_CONTENT_TYPE,
       rowCount: ready.reduce((total, booking) => total + booking.guests.length, 0),
       base64: workbook.toString('base64'),
     };
