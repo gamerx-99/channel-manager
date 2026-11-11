@@ -1,11 +1,15 @@
 import React from "react";
 import { useTranslation } from "@/lib/i18n";
-import { legalContent, type LegalKind } from "@/lib/legalContent";
+import { legalContent, type LegalDocument as LegalDocumentContent, type LegalKind } from "@/lib/legalContent";
 
 /** The body of a legal document (intro, sections, tables), shared by the public legal pages and the owner terms screen. */
 export function LegalDocument({ kind }: { kind: LegalKind }) {
   const { language } = useTranslation();
-  const document = legalContent[language === "th" ? "th" : "en"][kind];
+  return <LegalDocumentBody document={legalContent[language === "th" ? "th" : "en"][kind]} />;
+}
+
+/** Renders any legal document, such as a hotel's own privacy notice. */
+export function LegalDocumentBody({ document }: { document: LegalDocumentContent }) {
   return (
     <>
       <p>{document.intro}</p>

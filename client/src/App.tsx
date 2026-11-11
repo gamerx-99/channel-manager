@@ -55,6 +55,7 @@ const LegalPage = React.lazy(() => import("./pages/LegalPage"));
 const GettingStarted = React.lazy(() => import("./pages/GettingStarted"));
 const GuestBooking = React.lazy(() => import("./pages/GuestBooking"));
 const ConfirmEmailLink = React.lazy(() => import("./pages/ConfirmEmailLink"));
+const HotelPrivacy = React.lazy(() => import("./pages/HotelPrivacy"));
 
 function RouteLoading() {
   const { t } = useTranslation();
@@ -159,6 +160,9 @@ function Router() {
         <PrivateRoute><WebsiteBuilder /></PrivateRoute>
       </Route>
       <Route path="/booking/:id" component={GuestBooking} />
+      <Route path="/:slug/privacy">
+        {(params) => <HotelPrivacy slug={params.slug} />}
+      </Route>
       <Route path="/:slug/book">
         {(params) => <PublicBooking slug={params.slug} />}
       </Route>

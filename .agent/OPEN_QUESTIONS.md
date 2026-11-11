@@ -251,6 +251,7 @@ answer noted.
 
 - [ ] ASSUMPTION: the tick is checked in the browser only and no consent record is stored (the decision said client-side validation). Say if a record (time of acceptance per booking) is wanted for disputes.
 - [ ] "เงื่อนไขการจอง" links to hayhost's general terms (`/terms`); hotels have no booking or cancellation policy of their own in the app. Say if each hotel should write its own conditions for this link.
+- [ ] The hotel privacy notice (`/<slug>/privacy`) shows only contacts the hotel already makes public (address, phone, Facebook, LINE when switched on); no email, because the hotel's email is not public. Hotels cannot edit the notice text yet. Section 7 keeps the owner's general retention wording rather than the periods in the DPA.
 
 ## Cancel with a reason (2026-11-11, sheet 5.3)
 

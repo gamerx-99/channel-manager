@@ -6348,3 +6348,10 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Evidence over all of them: `pnpm check` exit 0; `pnpm test` 319 files, 2,259 tests passed; `pnpm build` passed.
 - To ship: apply migration `20261111090000_owner_terms_acceptance` to staging, deploy staging, then the same for production. The migration must go before the code, or `auth.me` fails. No other migration is in this batch.
 
+## 2026-11-11 — Hotel privacy notice for guests (not deployed)
+
+- Owner pasted a privacy policy template; asked where it goes and whether guest data belongs to hayhost. Explained the current terms/DPA (hotel = controller, hayhost = processor); owner chose to name the hotel.
+- `client/src/lib/hotelGuestPrivacy.ts` builds the notice (th from the owner's text with "บริษัท" → "โรงแรม", one typo fixed in section 5; en translated) from the public hotel data; section 6 names Hayhost as processor, section 10 lists the hotel's public contacts and the Hayhost support fallback. `LegalDocumentBody` split out of `client/src/components/LegalDocument.tsx`.
+- Page `client/src/pages/HotelPrivacy.tsx` + `useHotelPrivacy.ts` at `/:slug/privacy` (routed before `/:slug`); i18n block `hotelPrivacy`. `BookingStepGuest` takes `privacyHref`; `PublicBookingSection` passes `hotelPrivacyPath(hotel.slug)`.
+- Tests: `client/src/lib/hotelGuestPrivacy.test.ts` (5), `client/src/pages/HotelPrivacy.test.tsx` (3), `guestConsent.test.tsx` updated for the new link.
+

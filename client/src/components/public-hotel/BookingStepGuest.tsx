@@ -16,6 +16,8 @@ export type BookingStepGuestProps = {
   setSpecialRequests: Booking["setSpecialRequests"];
   termsAccepted: Booking["termsAccepted"];
   setTermsAccepted: Booking["setTermsAccepted"];
+  /** The hotel's own privacy notice for guests (the hotel is the data controller). */
+  privacyHref: string;
   confirmDetailsMutation: Booking["confirmDetailsMutation"];
   handleConfirmDetails: Booking["handleConfirmDetails"];
   setWizardStep: Booking["setWizardStep"];
@@ -34,6 +36,7 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
     setSpecialRequests,
     termsAccepted,
     setTermsAccepted,
+    privacyHref,
     confirmDetailsMutation,
     handleConfirmDetails,
     setWizardStep,
@@ -110,7 +113,7 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
           {t("guestConsent.before")}
           <a href="/terms" target="_blank" rel="noopener noreferrer">{t("guestConsent.terms")}</a>
           {t("guestConsent.between")}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer">{t("guestConsent.privacy")}</a>
+          <a href={privacyHref} target="_blank" rel="noopener noreferrer">{t("guestConsent.privacy")}</a>
         </label>
       </div>
       <div className="booking-nav-row">

@@ -31,7 +31,7 @@ afterEach(cleanup);
 function guestStep(overrides: Record<string, unknown> = {}) {
   const props = {
     t, guestName: "Somchai", setGuestName: vi.fn(), guestPhone: "", setGuestPhone: vi.fn(), guestEmail: "", setGuestEmail: vi.fn(),
-    specialRequests: "", setSpecialRequests: vi.fn(), termsAccepted: false, setTermsAccepted: vi.fn(),
+    specialRequests: "", setSpecialRequests: vi.fn(), termsAccepted: false, setTermsAccepted: vi.fn(), privacyHref: "/littlebromhs/privacy",
     confirmDetailsMutation: { isPending: false }, handleConfirmDetails: vi.fn(), setWizardStep: vi.fn(), ...overrides,
   };
   return { props, view: render(<BookingStepGuest {...(props as any)} />) };
@@ -51,12 +51,12 @@ describe("guest consent before payment (owner decision 3.2)", () => {
     expect((screen.getByRole("button", { name: en.publicHotel.wizardNext }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("links the conditions and the privacy policy in a new tab", () => {
+  it("links the conditions and the hotel's own privacy notice in a new tab", () => {
     guestStep();
     const terms = screen.getByRole("link", { name: "booking conditions" });
     const privacy = screen.getByRole("link", { name: "privacy policy" });
     expect(terms.getAttribute("href")).toBe("/terms");
-    expect(privacy.getAttribute("href")).toBe("/privacy");
+    expect(privacy.getAttribute("href")).toBe("/littlebromhs/privacy");
     for (const link of [terms, privacy]) {
       expect(link.getAttribute("target")).toBe("_blank");
       expect(link.getAttribute("rel")).toBe("noopener noreferrer");

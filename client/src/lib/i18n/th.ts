@@ -2101,6 +2101,12 @@ const th: TranslationDictionary = {
     submessage: "หน้านี้อาจถูกย้ายหรือถูกลบไปแล้ว",
     goHome: "กลับสู่หน้าหลัก",
   },
+  hotelPrivacy: {
+    title: "นโยบายความเป็นส่วนตัวของ {{hotel}}",
+    back: "กลับไปหน้า {{hotel}}",
+    loading: "กำลังโหลดนโยบายความเป็นส่วนตัว…",
+    notFound: "ไม่พบนโยบายความเป็นส่วนตัวนี้",
+  },
   guestConsent: {
     before: "ฉันยอมรับ",
     terms: "เงื่อนไขการจอง",

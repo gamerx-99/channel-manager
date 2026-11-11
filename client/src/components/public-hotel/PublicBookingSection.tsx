@@ -7,6 +7,7 @@ import BookingStepServices from "./BookingStepServices";
 import BookingStepGuest from "./BookingStepGuest";
 import BookingStepPayment from "./BookingStepPayment";
 import BookingConfirmed from "./BookingConfirmed";
+import { hotelPrivacyPath } from "@/lib/hotelGuestPrivacy";
 
 type Page = ReturnType<typeof usePublicHotelPage>;
 type Booking = NonNullable<Page["booking"]>;
@@ -75,6 +76,7 @@ export default function PublicBookingSection({ page }: { page: Page }) {
             setSpecialRequests={setSpecialRequests}
             termsAccepted={booking.termsAccepted}
             setTermsAccepted={booking.setTermsAccepted}
+            privacyHref={hotel ? hotelPrivacyPath(hotel.slug) : "/privacy"}
             confirmDetailsMutation={confirmDetailsMutation}
             handleConfirmDetails={handleConfirmDetails}
             setWizardStep={setWizardStep}

@@ -2114,6 +2114,12 @@ const en = {
     submessage: "It may have been moved or deleted.",
     goHome: "Go Home",
   },
+  hotelPrivacy: {
+    title: "Privacy notice of {{hotel}}",
+    back: "Back to {{hotel}}",
+    loading: "Loading the privacy notice…",
+    notFound: "This privacy notice is not available",
+  },
   guestConsent: {
     before: "I accept the ",
     terms: "booking conditions",
