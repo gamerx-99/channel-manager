@@ -6207,3 +6207,24 @@ Exit 0
 - Evidence: `pnpm check` exit 0; `pnpm test` 299 files, 2,121 tests passed.
 - Known limit: enabling needs the account password, so a person who only ever signed in with Google or LINE has no password to give. They can set one with "forgot password" first. Not changed here.
 - Left over, harmless: unused `mfaEnroll.*` Thai/English keys that only the removed page used (the login code screen still uses some `mfaEnroll.*` keys, so they were not bulk-deleted).
+
+## 2026-11-11 — Payment setup reminder popup + finance step in the guided tour (not deployed)
+
+- Owner decisions (DECISIONS.md, 2026-11-11): the hotel owner gets a popup on every page change while PromptPay or SlipOK is not saved; the guided tour gets a finance settings step. Free may use SlipOK for now (temporary exception). SlipOK sign-up guide link is a placeholder (`SLIPOK_GUIDE_URL = null` in `client/src/lib/paymentSetup.ts`) until the owner writes the guide.
+- Server: `getPaymentSetupStatus` (`server/d1/payment.ts`) and `slipok.paymentSetupStatus` return only `{ promptpay_configured, slipok_configured }`; needs `property.manage_profile`, no 2FA step-up (unlike `slipok.getSettings`), never returns a secret. SlipOK counts as configured only with key, branch id and the switch on.
+- Client: `PaymentSetupReminder` mounted once in `AppShell` for `hotel_owner` memberships (not platform roles), off while the tour shows; refetches the status on every page so saving on the finance page ends it; closing hides it only on that page; never shown on the finance settings page; unknown status shows nothing.
+- Tour (done by a forked agent): steps hotel → room → finance → summary; session key `finance` resumes at step 2; the summary says "done" only when hotel, rooms and finance are all done; `shouldAutoStart` still depends only on hotel + rooms. Tests changed on purpose: `tourProgress.test.ts` (result shape has `financeDone`), `GuidedTour.contract.test.ts` (two literal-string assertions rewritten for the new click handler and resume mapping). No assertion loosened.
+- Thai copy (new `paymentSetup.*` and `guidedTour.finance*` / `pendingFinance`):
+
+| Key | Thai |
+|---|---|
+| paymentSetup.title | ยังตั้งค่าการรับเงินไม่ครบ |
+| paymentSetup.lede | แขกจะชำระเงินและระบบจะตรวจสลิปให้ได้ เมื่อตั้งค่าสิ่งต่อไปนี้ครบ |
+| paymentSetup.missingPromptPay | เลขพร้อมเพย์สำหรับรับเงิน |
+| paymentSetup.missingSlipOk | คีย์ SlipOK สำหรับตรวจสลิปอัตโนมัติ |
+| paymentSetup.goSettings / close | ไปตั้งค่าการเงิน / ปิด |
+| guidedTour.financeTitle | ตั้งค่าการรับเงิน |
+| guidedTour.financeBody | ใส่เลขพร้อมเพย์ให้แขกโอนเงินได้ และใส่คีย์ SlipOK ให้ระบบตรวจสลิปให้อัตโนมัติ |
+
+- Evidence: `pnpm check` exit 0; `pnpm test` 303 files, 2,146 tests passed; `pnpm build` passed. No migration.
+- NOT checked by eye: the popup and the finance tour step in a signed-in owner session (needs a backend). Check on staging after deploy.

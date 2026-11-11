@@ -7,6 +7,7 @@ import {
   removeSlipOkKey,
   savePromptPaySettings,
   getHotelPaymentConfig,
+  getPaymentSetupStatus,
   getBookingRequestTimeout,
   saveBookingRequestTimeout,
 } from '../d1/payment';
@@ -29,6 +30,19 @@ export const slipokRouter = router({
       if (!ctx.db) throw new Error('D1 database required.');
       try {
         return await getHotelPaymentConfig(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
+      } catch (error) {
+        return rethrowDomainError(error);
+      }
+    }),
+
+  /** Which payment settings are still missing; the owner reminder reads this on every page. */
+  paymentSetupStatus: protectedProcedure
+    .input(z.object({ hotel_id: hotelIdSchema }))
+    .query(async ({ ctx, input }) => {
+      requireHotelPermission(ctx.user, input.hotel_id, 'property.manage_profile');
+      if (!ctx.db) throw new Error('D1 database required.');
+      try {
+        return await getPaymentSetupStatus(ctx.db, ctx.caller ?? { userId: ctx.user.id }, input.hotel_id);
       } catch (error) {
         return rethrowDomainError(error);
       }

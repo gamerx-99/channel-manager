@@ -9,7 +9,7 @@ import "./HotelPaymentSettings.css";
 export default function HotelPaymentSettings({ hotelId }: { hotelId: string }) {
   const { t } = useTranslation();
   const state = useHotelPromptPaySettings(hotelId);
-  return <section className="panel hotel-payment-settings" aria-label={t("hotelPaymentSettings.title")}>
+  return <section className="panel hotel-payment-settings" data-tour="finance-settings" aria-label={t("hotelPaymentSettings.title")}>
     <div className="panel-heading"><div><div className="eyebrow">{t("hotelPaymentSettings.eyebrow")}</div><h2>{t("hotelPaymentSettings.title")}</h2></div></div>
     <section className="hotel-promptpay-settings" aria-labelledby="promptpay-settings-heading">
       <Card className="hotel-payment-card">

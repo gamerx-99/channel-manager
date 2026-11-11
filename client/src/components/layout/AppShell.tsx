@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { getTourProgress } from "@/lib/tour/tourProgress";
 import { GuidedTour } from "@/components/tour/GuidedTour";
+import { PaymentSetupReminder } from "@/components/PaymentSetupReminder";
 import { TOUR_STEP_KEY } from "@/components/tour/useGuidedTour";
 
 export function AppShell({ children, userName, userEmail, onLogout, roles, memberships = [] }: { children: React.ReactNode; userName: string; userEmail: string | null; onLogout: () => void; roles: readonly AppRole[]; memberships?: readonly (PermissionMembership & { expiresAt?: Date | string; mode?: "view" | "edit" })[] }) {
@@ -18,33 +19,42 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const [tourRequested, setTourRequested] = useState(() => window.sessionStorage.getItem(TOUR_STEP_KEY) === 'rooms');
+  const [tourRequested, setTourRequested] = useState(() => ['rooms', 'finance'].includes(window.sessionStorage.getItem(TOUR_STEP_KEY) ?? ''));
   const { selectedHotelId } = useHotel();
   const [location, navigate] = useLocation();
   const onboarding = trpc.auth.onboardingStatus.useQuery();
   const hotelQuery = trpc.channelManager.hotel.useQuery(selectedHotelId ?? "", { enabled: Boolean(selectedHotelId) });
   const setTourState = trpc.auth.setOnboardingTourState.useMutation({ onSuccess: () => void onboarding.refetch() });
-  const progress = getTourProgress({ hotel: hotelQuery.data ? { name: hotelQuery.data.name, address: hotelQuery.data.address, ownerContact: hotelQuery.data.owner_contact } : null, roomTypes: hotelQuery.data?.room_types ?? [], rooms: (hotelQuery.data?.rooms ?? []).map((room: any) => ({ roomTypeId: room.room_type_id })), skippedAt: onboarding.data?.tourSkippedAt ? new Date(onboarding.data.tourSkippedAt).getTime() : null, completedAt: onboarding.data?.tourCompletedAt ? new Date(onboarding.data.tourCompletedAt).getTime() : null });
   // Only someone who can set up the hotel and its rooms gets the setup tour: not front desk,
   // housekeeping, support or platform roles.
   const canSetUpHotel = Boolean(selectedHotelId) && memberships.some(m => m.hotelId === selectedHotelId
     && (!m.expiresAt || new Date(m.expiresAt).getTime() > Date.now())
     && m.permissions?.includes("property.manage_profile") && m.permissions?.includes("property.manage_room_structure"))
     && !roles.some(role => isPlatformRole(role));
+  // Payment setup (PromptPay + SlipOK) is the tour's last step; only the people who run the tour may ask.
+  const financeStatus = trpc.slipok.paymentSetupStatus.useQuery({ hotel_id: selectedHotelId ?? "" }, { enabled: canSetUpHotel });
+  const progress = getTourProgress({ hotel: hotelQuery.data ? { name: hotelQuery.data.name, address: hotelQuery.data.address, ownerContact: hotelQuery.data.owner_contact } : null, roomTypes: hotelQuery.data?.room_types ?? [], rooms: (hotelQuery.data?.rooms ?? []).map((room: any) => ({ roomTypeId: room.room_type_id })), skippedAt: onboarding.data?.tourSkippedAt ? new Date(onboarding.data.tourSkippedAt).getTime() : null, completedAt: onboarding.data?.tourCompletedAt ? new Date(onboarding.data.tourCompletedAt).getTime() : null, financeDone: financeStatus.data ? financeStatus.data.promptpay_configured && financeStatus.data.slipok_configured : undefined });
   const autoStart = canSetUpHotel && !onboarding.isLoading && !hotelQuery.isLoading && progress.shouldAutoStart;
-  const onTourRoute = location === `/hotels/${selectedHotelId}` || location === `/hotels/${selectedHotelId}/profile`;
-  const tourActive = onTourRoute && autoStart;
+  // The tour starts by itself only on the hotel pages; the finance page shows it only when the tour is resumed from there.
+  const onAutoStartRoute = location === `/hotels/${selectedHotelId}` || location === `/hotels/${selectedHotelId}/profile`;
+  const onTourRoute = onAutoStartRoute || location === `/hotels/${selectedHotelId}/settings/finance`;
+  const tourActive = onAutoStartRoute && autoStart;
   useEffect(() => {
     if (location === "/dashboard" && autoStart) navigate(`/hotels/${selectedHotelId}`);
   }, [location, selectedHotelId, autoStart, navigate]);
   const tourSteps = [
     { target: "hotel-settings", title: t("guidedTour.hotelTitle"), body: t("guidedTour.hotelBody"), action: t("guidedTour.hotelAction") },
     { target: "room-settings", title: t("guidedTour.roomTitle"), body: t("guidedTour.roomBody"), action: t("guidedTour.roomAction") },
+    { target: "finance-settings", title: t("guidedTour.financeTitle"), body: t("guidedTour.financeBody"), action: t("guidedTour.financeAction") },
     // Only say "done" when it is true; otherwise list what is still missing.
-    progress.hotelSettingsDone && progress.roomsDone
+    progress.hotelSettingsDone && progress.roomsDone && progress.financeDone
       ? { title: t("guidedTour.finishTitle"), body: t("guidedTour.finishBody") }
-      : { title: t("guidedTour.pendingTitle"), body: [!progress.hotelSettingsDone && t("guidedTour.pendingHotel"), !progress.roomsDone && t("guidedTour.pendingRooms"), t("guidedTour.pendingFooter")].filter(Boolean).join(" ") },
+      : { title: t("guidedTour.pendingTitle"), body: [!progress.hotelSettingsDone && t("guidedTour.pendingHotel"), !progress.roomsDone && t("guidedTour.pendingRooms"), !progress.financeDone && t("guidedTour.pendingFinance"), t("guidedTour.pendingFooter")].filter(Boolean).join(" ") },
   ];
+  // The payment setup reminder is for the hotel owner only, and waits while the guided tour is on screen.
+  const isHotelOwner = Boolean(selectedHotelId) && memberships.some(m => m.hotelId === selectedHotelId && m.role === "hotel_owner"
+    && (!m.expiresAt || new Date(m.expiresAt).getTime() > Date.now())) && !roles.some(role => isPlatformRole(role));
+  const tourShowing = onTourRoute && (tourActive || tourRequested);
   const can = (permission: Permission) => permission.startsWith("platform.")
     ? hasAnyPermission(roles, permission)
     : (permission !== "property.view_financials" || !roles.includes("support")) && !roles.includes("super_admin") && memberships.some(m => m.hotelId === selectedHotelId && (!m.expiresAt || new Date(m.expiresAt).getTime() > Date.now()) && (m.permissions?.includes(permission) ?? false));
@@ -92,7 +102,8 @@ export function AppShell({ children, userName, userEmail, onLogout, roles, membe
         />
         <SupportAccessBanner memberships={memberships} />
         <div className="page-wrap">{children}</div>
-        {onTourRoute && <GuidedTour steps={tourSteps} active={tourActive || tourRequested} onRoomStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms'); navigate(`/hotels/${selectedHotelId}`); }} onFinish={skipped => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(false); setTourState.mutate({ state: skipped ? "skipped" : "completed" }); }} onRestart={() => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(true); setTourState.mutate({ state: "reset" }); }} />}
+        <PaymentSetupReminder hotelId={selectedHotelId ?? null} enabled={isHotelOwner && !tourShowing} />
+        {onTourRoute && <GuidedTour steps={tourSteps} active={tourActive || tourRequested} onRoomStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'rooms'); navigate(`/hotels/${selectedHotelId}`); }} onFinanceStep={() => { window.sessionStorage.setItem(TOUR_STEP_KEY, 'finance'); navigate(`/hotels/${selectedHotelId}/settings/finance`); }} onFinish={skipped => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(false); setTourState.mutate({ state: skipped ? "skipped" : "completed" }); }} onRestart={() => { window.sessionStorage.removeItem(TOUR_STEP_KEY); setTourRequested(true); setTourState.mutate({ state: "reset" }); }} />}
       </main>
     </div>
   );

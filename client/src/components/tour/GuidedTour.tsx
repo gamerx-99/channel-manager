@@ -3,7 +3,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useGuidedTour, type TourStep } from "./useGuidedTour";
 import "./guidedTour.css";
 
-export function GuidedTour({ steps, active, onFinish, onRestart, onRoomStep }: { steps: TourStep[]; active: boolean; onFinish: (skipped: boolean) => void; onRestart: () => void; onRoomStep: () => void }) {
+export function GuidedTour({ steps, active, onFinish, onRestart, onRoomStep, onFinanceStep }: { steps: TourStep[]; active: boolean; onFinish: (skipped: boolean) => void; onRestart: () => void; onRoomStep: () => void; onFinanceStep: () => void }) {
   const { t } = useTranslation();
   const { step, stepIndex, rect, next, skip } = useGuidedTour(steps, active, onFinish);
   const panel = useRef<HTMLElement>(null);
@@ -58,7 +58,7 @@ export function GuidedTour({ steps, active, onFinish, onRestart, onRoomStep }: {
       {stepIndex < steps.length - 1 && <p className="guided-tour-count">{t("guidedTour.step", { current: stepIndex + 1, total: steps.length - 1 })}</p>}
       <h2>{step.title}</h2><p>{step.body}</p>
       {step.action && <p className="guided-tour-action">{step.action}</p>}
-      <div className="guided-tour-buttons">{stepIndex < steps.length - 1 && <button type="button" className="button button-quiet" onClick={skip}>{t("guidedTour.skip")}</button>}<button type="button" className="button button-primary" onClick={() => { if (step.target === "hotel-settings") onRoomStep(); next(); }}>{stepIndex === steps.length - 1 ? t("guidedTour.startUsing") : t("guidedTour.next")}</button></div>
+      <div className="guided-tour-buttons">{stepIndex < steps.length - 1 && <button type="button" className="button button-quiet" onClick={skip}>{t("guidedTour.skip")}</button>}<button type="button" className="button button-primary" onClick={() => { if (step.target === "hotel-settings") onRoomStep(); if (step.target === "room-settings") onFinanceStep(); next(); }}>{stepIndex === steps.length - 1 ? t("guidedTour.startUsing") : t("guidedTour.next")}</button></div>
     </section>
   </div>;
 }

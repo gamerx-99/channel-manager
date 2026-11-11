@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 
 export type TourStep = { target?: string; title: string; body: string; action?: string };
 export const TOUR_STEP_KEY = 'hayhost-guided-tour-step';
-const initialStep = () => window.sessionStorage.getItem(TOUR_STEP_KEY) === 'rooms' ? 1 : 0;
+const RESUME_STEP: Record<string, number> = { rooms: 1, finance: 2 };
+const initialStep = () => RESUME_STEP[window.sessionStorage.getItem(TOUR_STEP_KEY) ?? ''] ?? 0;
 export function useGuidedTour(steps: TourStep[], active: boolean, onFinish: (skipped: boolean) => void) {
   const [stepIndex, setStepIndex] = useState(initialStep);
   const [rect, setRect] = useState<DOMRect | null>(null);

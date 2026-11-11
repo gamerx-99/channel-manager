@@ -64,6 +64,24 @@ export async function getHotelPaymentConfig(db: D1ScopedDatabase, caller: D1Call
   return { promptpay_id: row.promptpayId, payment_timeout_minutes: row.paymentTimeoutMinutes };
 }
 
+/**
+ * Whether the hotel has saved a PromptPay number and a SlipOK key. Booleans only, so it needs no 2FA
+ * step-up (unlike getSlipOkSettings) and the reminder can ask on every page.
+ */
+export async function getPaymentSetupStatus(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
+  await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.setup_status.read", now);
+  const [row] = await db.select({
+    promptpayId: hotelPaymentSettings.promptpayId,
+    keyHash: hotelPaymentSettings.slipokKeyHash,
+    branchId: hotelPaymentSettings.slipokBranchId,
+    slipokEnabled: hotelPaymentSettings.slipokEnabled,
+  }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  return {
+    promptpay_configured: Boolean(row?.promptpayId?.trim()),
+    slipok_configured: Boolean(row?.keyHash && row.branchId && row.slipokEnabled),
+  };
+}
+
 export async function getBookingRequestTimeout(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "booking_request.timeout.read", now);
   const [row] = await db.select({ hours: hotelPaymentSettings.bookingRequestTimeoutHours })
