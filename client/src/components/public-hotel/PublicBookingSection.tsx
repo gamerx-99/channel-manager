@@ -73,6 +73,8 @@ export default function PublicBookingSection({ page }: { page: Page }) {
             setGuestEmail={setGuestEmail}
             specialRequests={specialRequests}
             setSpecialRequests={setSpecialRequests}
+            termsAccepted={booking.termsAccepted}
+            setTermsAccepted={booking.setTermsAccepted}
             confirmDetailsMutation={confirmDetailsMutation}
             handleConfirmDetails={handleConfirmDetails}
             setWizardStep={setWizardStep}

@@ -2114,6 +2114,13 @@ const en = {
     submessage: "It may have been moved or deleted.",
     goHome: "Go Home",
   },
+  guestConsent: {
+    before: "I accept the ",
+    terms: "booking conditions",
+    between: " and the ",
+    privacy: "privacy policy",
+    required: "Tick the box to accept the booking conditions and the privacy policy before going on to payment.",
+  },
   guestBooking: {
     eyebrow: "Booking details",
     title: "Your booking",

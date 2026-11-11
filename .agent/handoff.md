@@ -6335,3 +6335,10 @@ Owner request (three screenshots): tidy the finance settings page, remove the ci
 - Client: `client/src/components/booking/CancelBookingDialog.tsx` + `useCancelBooking.ts` + `cancelBooking.ts` (statuses from `ALLOWED_TRANSITIONS`) + `.css`; button on `Bookings.tsx` rows for users with the permission. i18n block `cancelBooking`.
 - Tests: `server/bookingRouter.cancel.test.ts` (3), `server/d1/booking.test.ts` new "refuses to cancel without a reason", `client/src/components/booking/CancelBookingDialog.test.tsx` (6).
 
+## 2026-11-11 — 3.2 Guest consent before payment (not deployed)
+
+- `useBookingWizard.ts`: `termsAccepted` state (reset with the wizard); `handleConfirmDetails` stops with `guestConsent.required` and does not call `confirmBookingDetails` while unticked. Nothing new is sent to the server.
+- `BookingStepGuest.tsx`: checkbox (label tied by id) with links to `/terms` and `/privacy` (new tab, `noopener noreferrer`); Next is disabled until ticked. `PublicBookingSection.tsx` passes the two props. Styles in `public-booking.css` (`.booking-consent`) plus the theme colour override in `booking-themes.css`. i18n block `guestConsent`.
+- Tests: `client/src/components/public-hotel/guestConsent.test.tsx` (3: disabled until ticked, links, hook never calls the server unticked). No existing test submitted the guest step, so none changed.
+- Not checked in a browser: the checkbox look on each booking theme.
+

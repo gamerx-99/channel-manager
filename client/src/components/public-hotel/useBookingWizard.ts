@@ -63,6 +63,9 @@ export function useBookingWizard(args: {
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
+  // Owner decision 2026-11-11 (sheet 3.2): the guest ticks the booking conditions before going on to payment.
+  // ASSUMPTION: checked in the browser only; no consent record is sent or stored.
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(null);
   const [wizardError, setWizardError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -170,6 +173,10 @@ export function useBookingWizard(args: {
       setWizardError(t("publicHotel.errorEnterFullName"));
       return;
     }
+    if (!termsAccepted) {
+      setWizardError(t("guestConsent.required"));
+      return;
+    }
 
     const services = (servicesQuery.data ?? [])
       .filter((s) => (selectedServiceQty[s.id] ?? 0) > 0)
@@ -212,6 +219,7 @@ export function useBookingWizard(args: {
     setGuestPhone("");
     setGuestEmail("");
     setSpecialRequests("");
+    setTermsAccepted(false);
     setConfirmedBookingId(null);
     setWizardError(null);
     setPaymentSuccess(false);
@@ -261,6 +269,8 @@ export function useBookingWizard(args: {
     setGuestEmail,
     specialRequests,
     setSpecialRequests,
+    termsAccepted,
+    setTermsAccepted,
     confirmedBookingId,
     setConfirmedBookingId,
     wizardError,

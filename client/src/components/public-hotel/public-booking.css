@@ -351,6 +351,31 @@
   font-weight: 600;
 }
 
+/* Owner decision 2026-11-11 (sheet 3.2): the guest ticks the booking conditions before payment. */
+.booking-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #e8eee8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.booking-consent input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: currentColor;
+}
+
+.booking-consent a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .booking-form-input {
   display: block;
   width: 100%;

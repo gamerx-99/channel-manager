@@ -247,6 +247,11 @@ answer noted.
 - [ ] ASSUMPTION: a passkey sign-in is not challenged for a TOTP code, because a passkey is already two proofs (the device plus a fingerprint, face or PIN). The twoFactor plugin only challenges /sign-in/email, /sign-in/username and /sign-in/phone-number, and our social-callback gate only acts on /callback/*. Confirm that an owner or admin who turned on 2FA should still skip it with a passkey.
 - [ ] ASSUMPTION: the passkey is tied to the host without `www.` (rpID `hayhostth.com`), so it also works if the site is ever served from the apex. A custom domain for a hotel would need its own passkey.
 
+## Guest consent before payment (2026-11-11, sheet 3.2)
+
+- [ ] ASSUMPTION: the tick is checked in the browser only and no consent record is stored (the decision said client-side validation). Say if a record (time of acceptance per booking) is wanted for disputes.
+- [ ] "เงื่อนไขการจอง" links to hayhost's general terms (`/terms`); hotels have no booking or cancellation policy of their own in the app. Say if each hotel should write its own conditions for this link.
+
 ## Cancel with a reason (2026-11-11, sheet 5.3)
 
 - [ ] The decision sheet's 5.3 could also mean closing a fully booked date on the calendar; this builds only "cancel a booking with a reason". Say if the calendar open/close needs a reason too.

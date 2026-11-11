@@ -14,6 +14,8 @@ export type BookingStepGuestProps = {
   setGuestEmail: Booking["setGuestEmail"];
   specialRequests: Booking["specialRequests"];
   setSpecialRequests: Booking["setSpecialRequests"];
+  termsAccepted: Booking["termsAccepted"];
+  setTermsAccepted: Booking["setTermsAccepted"];
   confirmDetailsMutation: Booking["confirmDetailsMutation"];
   handleConfirmDetails: Booking["handleConfirmDetails"];
   setWizardStep: Booking["setWizardStep"];
@@ -30,10 +32,13 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
     setGuestEmail,
     specialRequests,
     setSpecialRequests,
+    termsAccepted,
+    setTermsAccepted,
     confirmDetailsMutation,
     handleConfirmDetails,
     setWizardStep,
   } = props;
+  const blocked = confirmDetailsMutation.isPending || !termsAccepted;
 
   return (
     <form onSubmit={handleConfirmDetails} className="booking-form-grid">
@@ -92,14 +97,30 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
           className="booking-form-textarea"
         />
       </div>
+      <div className="booking-consent">
+        <input
+          id="booking-consent"
+          type="checkbox"
+          checked={termsAccepted}
+          onChange={(e) => setTermsAccepted(e.target.checked)}
+          required
+          data-testid="booking-consent"
+        />
+        <label htmlFor="booking-consent">
+          {t("guestConsent.before")}
+          <a href="/terms" target="_blank" rel="noopener noreferrer">{t("guestConsent.terms")}</a>
+          {t("guestConsent.between")}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer">{t("guestConsent.privacy")}</a>
+        </label>
+      </div>
       <div className="booking-nav-row">
         <button type="button" className="button button-quiet" onClick={() => setWizardStep(3)}>
           {t("publicHotel.wizardBack")}
         </button>
         <button
           type="submit"
-          disabled={confirmDetailsMutation.isPending}
-          className={`button public-button booking-action-button ${confirmDetailsMutation.isPending ? "is-disabled" : ""}`.trim()}
+          disabled={blocked}
+          className={`button public-button booking-action-button ${blocked ? "is-disabled" : ""}`.trim()}
         >
           {confirmDetailsMutation.isPending ? t("publicHotel.confirmingReservation") : t("publicHotel.wizardNext")}
         </button>

@@ -62,6 +62,7 @@
 .booking-page:not([data-booking-theme="default"]) .booking-step-indicator,
 .booking-page:not([data-booking-theme="default"]) .booking-form-heading,
 .booking-page:not([data-booking-theme="default"]) .booking-form-label,
+.booking-page:not([data-booking-theme="default"]) .booking-consent,
 .booking-page:not([data-booking-theme="default"]) .booking-summary-details,
 .booking-page:not([data-booking-theme="default"]) .booking-summary-services-heading,
 .booking-page:not([data-booking-theme="default"]) .booking-summary-service-row,
