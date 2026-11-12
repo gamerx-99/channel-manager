@@ -16,6 +16,8 @@ import { createAuth, type AuthInstance } from "../auth";
 import { createEmailSender, type EmailSender } from "../email";
 import type { PublicBookingLimiter } from "../publicBookingRateLimit";
 import { getMfaStepUpVerifiedAt } from "../mfaStepUp";
+import { getTermsAcceptedAt } from "../d1/ownerTerms";
+import { isSocialPlaceholderEmail } from "@shared/socialAuth";
 import type { R2Bucket } from "@cloudflare/workers-types/index.ts";
 
 export type SupabaseMembership = {
@@ -41,6 +43,12 @@ export type AppUserIdentity = {
   userMetadata: Record<string, unknown>;
   twoFactorEnabled?: boolean;
   session?: unknown;
+  /**
+   * A first-use step the account must finish before it may use the app (owner decisions 2026-11-11):
+   * a LINE/Facebook account adds a real email, then a hotel owner accepts the platform terms.
+   * Set only for real sessions; protected procedures refuse everything else until it is done.
+   */
+  pendingGate?: "add_real_email" | "accept_terms" | null;
 };
 
 export type SupabaseIdentity = AppUserIdentity;
@@ -249,6 +257,11 @@ export async function createContextFromRequest(
           },
           twoFactorEnabled,
           session,
+          pendingGate: isSocialPlaceholderEmail(authUser.email)
+            ? "add_real_email"
+            : membershipRows.some(row => row.role === "hotel_owner") && !(await getTermsAcceptedAt(db, authUser.id))
+              ? "accept_terms"
+              : null,
         };
 
         return {

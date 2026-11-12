@@ -53,11 +53,28 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
 
 export const rateLimitedProcedure = t.procedure.use(rateLimitMiddleware);
 
+/**
+ * What an account may call while it still owes a first-use step: its own account procedures (who am I,
+ * add/confirm email, accept terms) and the hotel list the private route loads alongside the gate screen.
+ */
+export function isAllowedBeforeGate(path: string) {
+  return path.startsWith("auth.") || path === "channelManager.hotels";
+}
+
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
   if (!ctx.user) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+  }
+  // The add-email and terms screens were enforced only in the browser, so a direct API call could skip them.
+  if (ctx.user.pendingGate && !isAllowedBeforeGate(opts.path)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: ctx.user.pendingGate === "add_real_email"
+        ? "Add and confirm a real email address before using hayhost."
+        : "Accept the hayhost terms before using the app.",
+    });
   }
 
   const result = await next({ ctx: { ...ctx, user: ctx.user } });

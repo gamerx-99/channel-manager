@@ -143,6 +143,8 @@ beforeEach(async () => {
   exec("insert into hotel_users (id, hotel_id, user_id, role) values ('outsider-member', ?, ?, 'hotel_owner')", OTHER_HOTEL, outsiderId);
   exec("insert into hotel_users (id, hotel_id, user_id, role) values ('frontdesk-member', ?, ?, 'front_desk')", HOTEL, frontDeskId);
   exec("insert into hotel_users (id, hotel_id, user_id, role) values ('housekeeping-member', ?, ?, 'housekeeping')", HOTEL, housekeepingId);
+  // Hotel owners must accept the platform terms before any hotel API answers them (server-side gate).
+  exec("update user set terms_accepted_at = ? where id in (?, ?)", Date.now(), ownerId, outsiderId);
 });
 
 afterEach(() => {
