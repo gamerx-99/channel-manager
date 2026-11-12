@@ -1,0 +1,44 @@
+/* Security settings: one column of cards, every card padded the same, actions on the right of their row. */
+.security-page { max-width: 880px; }
+
+.security-page .panel-heading h2 { display: flex; align-items: center; gap: 8px; }
+.security-page .panel-heading .lede { margin: 8px 0 0; }
+
+/* A status line with its action on the right; wraps under on narrow screens. */
+.security-action-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; padding: 14px 16px; border: 1px solid var(--rule); border-radius: 10px; }
+.security-action-row > p { margin: 0; flex: 1 1 240px; }
+.security-note { margin: 10px 0 0; font-size: 12px; color: var(--ink-muted); }
+.security-subpanel { margin-top: 12px; padding: 16px; border: 1px solid var(--rule); border-radius: 10px; display: grid; gap: 10px; }
+.security-subpanel h3 { margin: 0; }
+.security-subpanel .lede { margin: 0; }
+.security-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.security-page .panel-body > .form-error,
+.security-page .panel-body > .form-success { margin: 0 0 12px; }
+
+/* Text fields on this page (passkey name, codes, passwords). */
+.security-page label { display: grid; gap: 6px; font-size: 13px; }
+.security-page input { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--white); color: var(--ink); font-size: 14px; }
+.security-page input:focus-visible { border-color: var(--pine); outline: 2px solid var(--pine-soft); outline-offset: 1px; }
+
+.mfa-qr { width: 180px; height: 180px; border: 1px solid var(--rule); border-radius: 8px; }
+.mfa-secret { margin: 0; word-break: break-all; }
+.mfa-secret small { color: var(--ink-muted); }
+
+/* Delete account */
+.delete-account-warning { display: flex; gap: 8px; align-items: flex-start; margin: 0; }
+.delete-account-warning svg { flex: none; margin-top: 2px; }
+.delete-account-body h3 { margin: 16px 0 6px; font-size: 14px; }
+.delete-account-body ul.delete-account-goes { margin: 0; padding-left: 18px; list-style: disc; }
+.delete-account-body p { margin: 0; }
+.delete-account-blocked { margin-top: 16px; display: grid; gap: 10px; }
+.delete-account-hotels { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.delete-account-hotels li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; }
+.delete-account-hotels li strong { min-width: 0; overflow-wrap: anywhere; }
+.delete-account-hotels li .button { flex: none; width: auto; }
+
+.security-payment-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.security-payment-link p { margin: 0; }
+
+@media (max-width: 760px) {
+  .security-action-row { padding: 12px; }
+}

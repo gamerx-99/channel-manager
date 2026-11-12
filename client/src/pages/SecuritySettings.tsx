@@ -7,6 +7,7 @@ import { useHotel } from "@/contexts/HotelContext";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
+import "./security-page.css";
 
 export default function SecuritySettings() {
   const { t } = useTranslation();
@@ -29,7 +30,15 @@ export default function SecuritySettings() {
       <PasskeySettings />
       <MfaSettings />
       <LinkedAccountsSettings />
-      {hotelId && canManageSlipOk && <p className="field-help"><Link href={`/hotels/${hotelId}/settings/finance`}>{t("hotelPaymentSettings.manageLink")}</Link></p>}
+      {/* Slip checking moved to the hotel's finance settings; a card, not a stray line between cards. */}
+      {hotelId && canManageSlipOk && (
+        <section className="panel" aria-label={t("hotelPaymentSettings.manageLink")}>
+          <div className="panel-body security-payment-link">
+            <p className="field-help">{t("securitySettings.paymentMoved")}</p>
+            <Link href={`/hotels/${hotelId}/settings/finance`} className="button button-quiet">{t("hotelPaymentSettings.manageLink")}</Link>
+          </div>
+        </section>
+      )}
       <DeleteAccountSettings />
     </div>
   );

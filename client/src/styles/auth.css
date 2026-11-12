@@ -99,4 +99,5 @@
 .security-page > .page-intro { margin-bottom: 8px; }
 .security-page > .panel { margin: 0; min-width: 0; }
 .security-page > .field-help { margin: 0; }
+.passkey-settings > .field-help, .passkey-settings > .form-error { margin: 0 24px 16px; }
 

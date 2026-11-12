@@ -158,17 +158,14 @@ export default function MfaSettings() {
         <div>
           <div className="eyebrow">{t("mfaSettings.eyebrow")}</div>
           <h2 id="mfa-heading">{t("mfaSettings.title")}</h2>
+          <p className="lede">{t("mfaSettings.intro")}</p>
         </div>
         <span className={`status-pill ${hasVerified ? "live" : "setup"}`}>
           <i /> {hasVerified ? t("mfaSettings.enabled") : t("mfaSettings.notEnabled")}
         </span>
       </div>
 
-      <p className="lede" style={{ marginTop: 8 }}>
-        {t("mfaSettings.intro")}
-      </p>
-      <p className="lede">{t("mfaSettings.worksForEveryRole")}</p>
-
+      <div className="panel-body">
       {loading && (
         <p role="status" className="lede">
           {t("mfaSettings.loadingStatus")}
@@ -184,7 +181,7 @@ export default function MfaSettings() {
         </div>
       )}
       {success && (
-        <div className="form-success page-alert" role="status" style={{ color: "var(--pine)", borderColor: "var(--pine)" }}>
+        <div className="form-success page-alert" role="status">
           {success}
         </div>
       )}
@@ -193,14 +190,13 @@ export default function MfaSettings() {
         <>
           {hasVerified ? (
             <div className="mfa-factor-list" data-testid="mfa-verified">
-              <p>
-                {t("mfaSettings.activeDesc")}
-              </p>
               {verifiedFactors.map((f) => (
-                <div key={f.id} className="panel" style={{ padding: 12, marginTop: 12 }}>
-                  <strong data-testid="mfa-factor-id">{f.id.slice(0, 8)}…</strong>
-                  <small style={{ marginLeft: 8 }}>{f.factor_type} · {f.status}</small>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div key={f.id} className="security-action-row">
+                  <p>
+                    {t("mfaSettings.activeDesc")}{" "}
+                    <strong data-testid="mfa-factor-id">{f.id.slice(0, 8)}…</strong> <small>{f.factor_type} · {f.status}</small>
+                  </p>
+                  <div className="security-buttons">
                     <button
                       type="button"
                       className="button button-primary button-small"
@@ -226,7 +222,7 @@ export default function MfaSettings() {
               ))}
 
               {activeFactorId && !enrollData && (
-                <div className="panel" style={{ marginTop: 12, padding: 12 }} data-testid="mfa-verify-panel">
+                <div className="security-subpanel" data-testid="mfa-verify-panel">
                   <h3>{t("mfaSettings.enterVerificationCode")}</h3>
                   <p className="lede">{t("mfaSettings.enterCodeDesc")}</p>
                   <label>
@@ -242,7 +238,7 @@ export default function MfaSettings() {
                       maxLength={6}
                     />
                   </label>
-                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <div className="security-buttons">
                     <button
                       type="button"
                       className="button button-primary"
@@ -268,10 +264,23 @@ export default function MfaSettings() {
             </div>
           ) : (
             <div data-testid="mfa-not-enrolled">
-              <p>{t("mfaSettings.noneEnrolled")}</p>
+              <div className="security-action-row">
+                <p>{t("mfaSettings.noneEnrolled")}</p>
+                {!enrollData && !showPasswordPrompt && (
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    disabled={busy === "enroll"}
+                    onClick={() => void handleStartEnroll()}
+                  >
+                    {busy === "enroll" ? t("mfaSettings.enrolling") : t("mfaSettings.enrollAuthenticator")}
+                  </button>
+                )}
+              </div>
+              <p className="security-note">{t("mfaSettings.worksForEveryRole")}</p>
 
               {showPasswordPrompt && !enrollData && (
-                <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+                <div className="security-subpanel">
                   <h3>{t("mfaSettings.confirmPassword")}</h3>
                   <p className="lede">{t("mfaSettings.confirmPasswordDesc")}</p>
                   <label>
@@ -284,7 +293,7 @@ export default function MfaSettings() {
                       autoComplete="current-password"
                     />
                   </label>
-                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <div className="security-buttons">
                     <button
                       type="button"
                       className="button button-primary"
@@ -308,19 +317,8 @@ export default function MfaSettings() {
                 </div>
               )}
 
-              {!enrollData && !showPasswordPrompt && (
-                <button
-                  type="button"
-                  className="button button-primary"
-                  disabled={busy === "enroll"}
-                  onClick={() => void handleStartEnroll()}
-                >
-                  {busy === "enroll" ? t("mfaSettings.enrolling") : t("mfaSettings.enrollAuthenticator")}
-                </button>
-              )}
-
               {enrollData && (
-                <div className="panel" style={{ marginTop: 12, padding: 12 }} data-testid="mfa-enroll-panel">
+                <div className="security-subpanel" data-testid="mfa-enroll-panel">
                   <h3>{t("mfaSettings.scanQr")}</h3>
                   <p className="lede">{t("mfaSettings.scanQrDesc")}</p>
                   {enrollData.totp.qr_code && (
@@ -328,17 +326,17 @@ export default function MfaSettings() {
                       src={enrollData.totp.qr_code}
                       alt={t("mfaSettings.qrAlt")}
                       data-testid="mfa-qr"
-                      style={{ width: 180, height: 180, border: "1px solid var(--border)", borderRadius: 8 }}
+                      className="mfa-qr"
                     />
                   )}
-                  <p style={{ marginTop: 8, wordBreak: "break-all" }}>
+                  <p className="mfa-secret">
                     <strong>{t("mfaSettings.secret")}</strong> <code data-testid="mfa-secret">{enrollData.totp.secret}</code>
                   </p>
-                  <p style={{ wordBreak: "break-all" }}>
+                  <p className="mfa-secret">
                     <small>{enrollData.totp.uri}</small>
                   </p>
 
-                  <label style={{ marginTop: 12, display: "block" }}>
+                  <label>
                     {t("mfaSettings.verificationCode")}
                     <input
                       aria-label={t("mfaSettings.verificationCode")}
@@ -351,7 +349,7 @@ export default function MfaSettings() {
                       maxLength={6}
                     />
                   </label>
-                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <div className="security-buttons">
                     <button
                       type="button"
                       className="button button-primary"
@@ -379,6 +377,7 @@ export default function MfaSettings() {
           )}
         </>
       )}
+      </div>
     </section>
   );
 }

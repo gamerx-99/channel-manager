@@ -1842,7 +1842,8 @@ const en = {
   securitySettings: {
     eyebrow: "Settings / Security",
     title: "Security",
-    lede: "Manage your authenticator app, slip checking, and step-up verification for sensitive actions.",
+    lede: "Manage how you sign in, your authenticator app and your account.",
+    paymentMoved: "Payments and SlipOK slip checking are set up on the hotel's finance page.",
   },
   account: {
     eyebrow: "Account",

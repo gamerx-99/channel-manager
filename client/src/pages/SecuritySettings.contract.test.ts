@@ -70,7 +70,8 @@ describe("Security settings page contract", () => {
     const page = readFileSync(resolve(process.cwd(), "client/src/pages/SecuritySettings.tsx"), "utf8");
     expect(page).toContain('"property.manage_profile"');
     expect(page).not.toContain("SlipOkSettings");
-    expect(page).toContain("canManageSlipOk && <p");
+    // The link now sits in its own card instead of a stray line between cards.
+    expect(page).toContain("canManageSlipOk && (");
     expect(page).toContain("/hotels/${hotelId}/settings/finance");
   });
 });

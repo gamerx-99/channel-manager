@@ -94,30 +94,30 @@ export default function DeleteAccountSettings() {
         </div>
       </div>
 
-      <div className="panel-body">
-      <div className="form-error" role="note" style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 0 }}>
-        <TriangleAlert size={15} aria-hidden="true" style={{ flex: "0 0 auto" }} />
+      <div className="panel-body delete-account-body">
+      <div className="form-error delete-account-warning" role="note">
+        <TriangleAlert size={15} aria-hidden="true" />
         <span>{t("accountDeletion.warning")}</span>
       </div>
 
-      <h3 style={{ marginTop: 14 }}>{t("accountDeletion.goesTitle")}</h3>
-      <ul className="lede" style={{ margin: "6px 0 0", paddingLeft: 18, listStyle: "disc" }}>
+      <h3>{t("accountDeletion.goesTitle")}</h3>
+      <ul className="lede delete-account-goes">
         <li>{t("accountDeletion.goesAccount")}</li>
         <li>{t("accountDeletion.goesAccess")}</li>
         <li>{t("accountDeletion.goesInvites")}</li>
       </ul>
-      <h3 style={{ marginTop: 14 }}>{t("accountDeletion.staysTitle")}</h3>
-      <p className="lede" style={{ marginTop: 6 }}>{t("accountDeletion.staysRecords")}</p>
+      <h3>{t("accountDeletion.staysTitle")}</h3>
+      <p className="lede">{t("accountDeletion.staysRecords")}</p>
 
       {status.isLoading && <p role="status" className="field-help">{t("accountDeletion.loading")}</p>}
       {status.isError && <div className="form-error" role="alert">{t("accountDeletion.loadFailed")}</div>}
 
       {ownedHotels.length > 0 && (
-        <div data-testid="delete-account-blocked" style={{ marginTop: 14 }}>
+        <div data-testid="delete-account-blocked" className="delete-account-blocked">
           <p>{t("accountDeletion.blockedOwner")}</p>
-          <ul className="task-list">
+          <ul className="delete-account-hotels">
             {ownedHotels.map(hotel => (
-              <li key={hotel.id} className="task-item">
+              <li key={hotel.id}>
                 <strong>{hotel.name}</strong>
                 <Link href={`/hotels/${hotel.id}/staff`} className="button button-quiet button-small">{t("accountDeletion.manageStaff")}</Link>
               </li>
@@ -126,7 +126,7 @@ export default function DeleteAccountSettings() {
           <p className="lede">{t("accountDeletion.blockedHowTo", { email: SUPPORT_EMAIL })}</p>
         </div>
       )}
-      {status.data?.lastPlatformAdmin && <p data-testid="delete-account-last-admin" style={{ marginTop: 14 }}>{t("accountDeletion.blockedLastAdmin")}</p>}
+      {status.data?.lastPlatformAdmin && <p data-testid="delete-account-last-admin" className="delete-account-blocked">{t("accountDeletion.blockedLastAdmin")}</p>}
 
       {status.isSuccess && !blocked && !confirming && (
         <div className="form-submit"><button type="button" className="button button-quiet" onClick={() => setConfirming(true)}>
@@ -146,7 +146,7 @@ export default function DeleteAccountSettings() {
           }}
         >
           <div className="panel-heading"><div><div className="eyebrow">{t("accountDeletion.eyebrow")}</div><h3>{t("accountDeletion.confirmTitle")}</h3></div></div>
-          {error && <div className="form-error" role="alert" style={{ margin: 0 }}>{error}</div>}
+          {error && <div className="form-error" role="alert">{error}</div>}
           <div className="form-grid"><label>
             {t("accountDeletion.emailLabel", { email: accountEmail })}
             <input type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="off" />
