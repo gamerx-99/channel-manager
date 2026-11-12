@@ -16,7 +16,7 @@ export type HotelMediaItem = inferRouterOutputs<AppRouter>["channelManager"]["li
 
 // Wire to tRPC hotel_site_config router (saveHotelSiteConfig / getHotelSiteConfig) and hotel_media write path.
 // (uploadHotelMedia / deleteHotelMedia / listHotelMedia / setHotelMediaHero).
-// hotel_domains custom-domain flow is intentionally deferred (see DECISIONS.md) and not wired here.
+// hotel_domains custom-domain flow is intentionally deferred and not wired here.
 
 export function useWebsiteBuilder() {
   const { t, language } = useTranslation();

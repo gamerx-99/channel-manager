@@ -88,7 +88,7 @@ export async function checkAccountPassword(input: { auth: AuthInstance; db: D1Sc
  *
  * ASSUMPTION: bookings, guests, payments, message text and audit rows stay, without a link to
  * the person, because they are the hotel's records and may be legally required. How long they
- * must be kept is an open question; see .agent/OPEN_QUESTIONS.md.
+ * must be kept is an open question.
  */
 export async function deleteOwnAccount(db: D1ScopedDatabase, caller: D1CallerContext, now = new Date()) {
   const userId = selfId(caller);

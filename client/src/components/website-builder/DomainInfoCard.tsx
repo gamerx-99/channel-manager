@@ -14,7 +14,7 @@ export function DomainInfoCard() {
         <p className="text-xs leading-5 text-[var(--ink-muted)]">
           {t("websiteBuilder.aboutDomainsBody")}
         </p>
-        {/* Custom domain management (hotel_domains table integration) is deferred per DECISIONS.md */}
+        {/* Custom domain management (hotel_domains table integration) is deferred */}
       </CardContent>
     </Card>
   );

@@ -27,8 +27,7 @@ export async function resolveHotelPlan(db: D1ScopedDatabase, hotelId: string, no
 
 /**
  * Every room of the hotel in creation order.
- * ASSUMPTION: rooms has no created_at column, so SQLite's rowid (insertion order) stands for creation order;
- * logged in .agent/OPEN_QUESTIONS.md.
+ * ASSUMPTION: rooms has no created_at column, so SQLite's rowid (insertion order) stands for creation order.
  */
 async function roomIdsInCreationOrder(db: D1ScopedDatabase, hotelId: string): Promise<string[]> {
   const rows = await db.select({ id: rooms.id }).from(rooms).where(eq(rooms.hotelId, hotelId)).orderBy(sql`rooms.rowid`);

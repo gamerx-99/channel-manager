@@ -151,7 +151,7 @@ async function deleteHotelObjects(bucket: R2Bucket, hotelId: string) {
  * picked up by the next run. Every hotel table cascades from `hotels`.
  *
  * ASSUMPTION: this deletes outright rather than keeping unnamed bookings. What the law makes a
- * hotel keep is the hotel's to take away by export; see .agent/OPEN_QUESTIONS.md.
+ * hotel keep is the hotel's to take away by export.
  */
 export async function purgeClosedHotels(db: D1ScopedDatabase, bucket: R2Bucket, now = new Date()) {
   const due = await db.select({ id: hotels.id, requestedAt: hotels.closureRequestedAt }).from(hotels)

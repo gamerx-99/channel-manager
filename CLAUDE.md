@@ -1,8 +1,7 @@
 # CLAUDE.md — Project rules for channel-manager-mvp
 
 This file is the permanent rulebook for working in this repo. Read it in full every
-session before touching code. Details too long to keep here live in `specs/` — this
-file stays short enough to read every time.
+session before touching code.
 
 ## Stack & commands
 - Stack: TypeScript, Vite + React (client), Hono + tRPC on one Cloudflare Worker
@@ -34,14 +33,10 @@ server/_core/          tRPC setup (trpc.ts), request context (context.ts), syste
 server/d1/             Scoped D1 repositories; server/db/scope.ts holds the access checks
 shared/                Code shared by client and server (authorization.ts is load-bearing)
 drizzle/               D1 schema (d1-schema.ts, auth-schema.ts) and D1 migrations (d1/)
-*.sql (repo root)       Historical Supabase migrations + verify_*.sql — record only,
-                         see "Migrations" below
-.agent/                 Orchestration scaffold (this workflow) — see MASTER_PROMPT.md
-specs/                  Executable specs for the roadmap in todo.md's "Roadmap" section
 ```
 
 ## Protected files and actions
-See `.agent/BANNED_ZONE.md`. Keep secrets out of commits, do not rewrite applied
+Keep secrets out of commits, do not rewrite applied
 migrations, and review deploy configuration and destructive operations carefully.
 
 ## Conventions
@@ -68,7 +63,7 @@ migrations, and review deploy configuration and destructive operations carefully
   or UI tests as appropriate; a new page does not automatically need a string-contract
   test.
 - File roles: `.tsx` = UI only, `.ts` = logic (hooks + tested pure functions), `.css` = look
-  (no `style={{ }}` except runtime CSS variables). Details in `specs/ui-house-style.md`.
+  (no `style={{ }}` except runtime CSS variables).
 - Thai UI copy: read `docs/thai-glossary.md` before writing or changing any Thai string. It lists the
   approved wording for each term in context and the literal translations that are banned.
   `client/src/lib/i18n/thaiGlossary.test.ts` fails on a banned term or a missing th/en key.
@@ -86,14 +81,10 @@ against `wrangler.toml`, inspect the SQL, run `wrangler d1 migrations list <data
 pending. Run the full test suite and relevant typecheck/build before applying. Apply
 to staging first when both environments are requested; verify the new schema/data
 and an empty pending list there before applying
-to production. Verify production the same way and record the result in the handoff or
-delivery summary. If unrelated migrations are pending or a check fails, stop and
+to production. Verify production the same way and report the result. If unrelated migrations are pending or a check fails, stop and
 resolve the discrepancy before any remote write. Read-only `wrangler d1 execute
 --remote` is allowed for inspection; ad hoc remote writes need separate owner approval.
-Do not mark a migration-touching ticket DONE for a target environment until its
-migration is verified there. A combined owner instruction may also authorize code
-deployment. The root `YYYYMMDD_*.sql` / `verify_*.sql` files are the historical
-Supabase record — keep them, never edit them.
+A combined owner instruction may also authorize code deployment.
 
 ## Working rules
 1. Work within this repo unless the owner asks otherwise. Never commit secrets or
@@ -110,13 +101,5 @@ Supabase record — keep them, never edit them.
    fails, fix it or get the owner's explicit acceptance before deploying.
 5. Do not weaken tests merely to make them pass. Correct genuinely wrong tests with
    an explanation. Record important assumptions in code or the delivery summary.
-6. Update specs when the task changes a tracked spec; write a short handoff for a
-   milestone or remote operation. Seek an independent review for security, payments,
-   data loss, or similarly high-risk changes. Routine fixes may use self-review.
-
-## Where to start
-- `.agent/DECISIONS.md` — read the "Current owner decisions" register at the top first.
-  Never contradict it; when the owner decides something new, update it in the same turn.
-- `.agent/handoff.md` — what happened most recently
-- `specs/00-OVERVIEW.md` — the full roadmap and dependency graph
-- `todo.md` — the historical build log for everything before this workflow existed
+6. Seek an independent review for security, payments, data loss, or similarly
+   high-risk changes. Routine fixes may use self-review.

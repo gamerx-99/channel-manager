@@ -361,7 +361,7 @@ function bangkokMonthStart(now: Date): Date {
 /**
  * Every hotel once, with the date its trial clock starts: the earliest hotel_owner account's
  * creation date. ASSUMPTION: a hotel with no owner account (seed or demo data) uses the
- * hotel's own creation date; logged in .agent/OPEN_QUESTIONS.md.
+ * hotel's own creation date.
  */
 export async function listHotelsWithTrialClock(db: D1ScopedDatabase) {
   const rows = await db.select({ id: hotels.id, name: hotels.name, slug: hotels.slug, ownerContact: hotels.ownerContact,

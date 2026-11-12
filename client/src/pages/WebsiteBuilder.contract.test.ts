@@ -80,7 +80,6 @@ describe('WebsiteBuilder contract — Phase 06', () => {
 
   // ── hotel_domains deferral ───────────────────────────────────────────────
   it('WebsiteBuilder explicitly documents hotel_domains deferral (spec requirement)', () => {
-    expect(wbSource).toContain('DECISIONS.md');
     expect(wbSource).toContain('hotel_domains');
     expect(wbSource).toMatch(/deferred|deferral/i);
   });
