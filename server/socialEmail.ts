@@ -85,14 +85,20 @@ export async function facebookEmailFor(auth: AuthInstance, userId: string, fetch
     const context = await auth.$context;
     const facebook = (await context.internalAdapter.findAccounts(userId)).find(row => row.providerId === "facebook");
     if (!facebook) return null;
-    const tokens = await auth.api.getAccessToken({ body: { accountId: facebook.accountId, userId } });
+    // `accountId` here is Better Auth's own row id, not the Facebook user id (which is also called accountId).
+    const tokens = await auth.api.getAccessToken({ body: { accountId: facebook.id, userId } });
     if (!tokens?.accessToken) return null;
     const response = await fetchImpl(`https://graph.facebook.com/me?fields=email&access_token=${encodeURIComponent(tokens.accessToken)}`);
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error("[socialEmail] Facebook did not return the profile:", response.status);
+      return null;
+    }
     const body = (await response.json()) as { email?: unknown };
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    if (!email) console.warn("[socialEmail] Facebook shared no email for this account");
     return EMAIL_PATTERN.test(email) && !isSocialPlaceholderEmail(email) ? email : null;
-  } catch {
+  } catch (error) {
+    console.error("[socialEmail] could not read the Facebook email:", error instanceof Error ? error.message : error);
     return null;
   }
 }

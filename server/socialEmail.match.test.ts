@@ -5,7 +5,7 @@ import { discardSocialSignup, shortAccountName, socialEmailMatch, useSocialEmail
 function fakeAuth(options: { email: string; existing?: { name: string; providers: string[] } | null; hasFacebook?: boolean }) {
   const internalAdapter = {
     findUserById: vi.fn(async () => ({ id: "u-new", email: options.email })),
-    findAccounts: vi.fn(async () => (options.hasFacebook === false ? [] : [{ providerId: "facebook", accountId: "fb-1" }])),
+    findAccounts: vi.fn(async () => (options.hasFacebook === false ? [] : [{ id: "row-1", providerId: "facebook", accountId: "fb-1" }])),
     findUserByEmail: vi.fn(async () => (options.existing ? { user: { name: options.existing.name }, accounts: options.existing.providers.map(providerId => ({ providerId })) } : null)),
     updateUser: vi.fn(async () => undefined),
     deleteUser: vi.fn(async () => undefined),
@@ -30,6 +30,15 @@ describe("Facebook email on the add-email step", () => {
     const taken = fakeAuth({ email: PLACEHOLDER, existing: { name: "Tanutcha Srimrnee", providers: ["google", "credential", "google"] } });
     await expect(socialEmailMatch({ auth: taken.auth, userId: "u-new", fetchImpl: graph("owner@example.test") }))
       .resolves.toEqual({ kind: "taken", email: "owner@example.test", accountName: "Tanutcha S.", signInMethods: ["google", "credential"] });
+  });
+
+  // Regression: the Facebook user id was passed where Better Auth wants its own account row id, so the token
+  // lookup failed and every Facebook sign-in fell back to the typed-email form.
+  it("asks Better Auth for the token by its account row id", async () => {
+    const free = fakeAuth({ email: PLACEHOLDER });
+    await socialEmailMatch({ auth: free.auth, userId: "u-new", fetchImpl: graph("guest@example.test") });
+    expect((free.auth as unknown as { api: { getAccessToken: ReturnType<typeof vi.fn> } }).api.getAccessToken)
+      .toHaveBeenCalledWith({ body: { accountId: "row-1", userId: "u-new" } });
   });
 
   it("finds nothing without a Facebook sign-in or a shared email", async () => {
