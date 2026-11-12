@@ -4,6 +4,7 @@ import { generateQrDataUrl } from '../lib/qr';
 import { useTranslation } from '../lib/i18n';
 import { localizeServerMessage } from '../lib/serverErrors';
 import HotelContactsList from './hotel/HotelContactsList';
+import './PaymentQR.css';
 
 interface PaymentQRProps {
   bookingId: string;

@@ -1,0 +1,38 @@
+.guest-booking-page { min-height: 100vh; padding: 32px 16px; }
+.guest-booking-card { width: min(640px, 100%); margin: 0 auto; background: #fff; border-radius: 18px; box-shadow: 0 10px 30px rgba(27, 44, 37, .08); overflow: hidden; }
+
+.guest-booking-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 24px 24px 20px; border-bottom: 1px solid #e8ece9; }
+.guest-booking-head .eyebrow { margin-bottom: 6px; }
+.guest-booking-head h1 { margin: 0; font-size: 24px; line-height: 1.25; color: #1b2c25; }
+.guest-booking-ref { margin: 6px 0 0; font-size: 13px; color: #789087; }
+.guest-booking-ref strong { color: #1b2c25; font-weight: 600; letter-spacing: .02em; }
+
+.guest-booking-status { flex: none; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.guest-booking-status--waiting { background: #fdf3e2; color: #8a5a0b; }
+.guest-booking-status--review { background: #e9f0fb; color: #1f4e8a; }
+.guest-booking-status--done { background: #e6f4ec; color: #1d6b56; }
+.guest-booking-status--other { background: #f0f4f2; color: #456156; }
+
+.guest-booking-details { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; margin: 0; padding: 20px 24px; }
+.guest-booking-details > div { min-width: 0; }
+.guest-booking-details dt { font-size: 12px; color: #789087; margin-bottom: 4px; }
+.guest-booking-details dd { margin: 0; font-size: 15px; color: #1b2c25; font-weight: 500; overflow-wrap: anywhere; }
+.guest-booking-amount { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.guest-booking-pay { border-top: 1px solid #e8ece9; background: #fbfcfb; }
+.guest-booking-notice { margin: 0 24px 20px; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; }
+.guest-booking-notice--review { background: #e9f0fb; color: #1f4e8a; }
+.guest-booking-notice--done { background: #e6f4ec; color: #1d6b56; }
+
+.guest-booking-foot { display: flex; flex-direction: column; gap: 10px; padding: 16px 24px 22px; border-top: 1px solid #e8ece9; font-size: 13px; color: #789087; }
+.guest-booking-foot address { font-style: normal; line-height: 1.6; }
+.guest-booking-back { align-self: flex-start; color: #1d6b56; font-weight: 600; text-decoration: none; }
+.guest-booking-back:hover { text-decoration: underline; }
+
+@media (max-width: 560px) {
+  .guest-booking-page { padding: 16px 12px; }
+  .guest-booking-head { flex-direction: column; padding: 20px 16px 16px; }
+  .guest-booking-details { grid-template-columns: 1fr; padding: 16px; }
+  .guest-booking-notice { margin: 0 16px 16px; }
+  .guest-booking-foot { padding: 14px 16px 18px; }
+}
