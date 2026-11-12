@@ -6,6 +6,7 @@ import { escapeHtml } from "@shared/escapeHtml";
 import { normaliseSlipOkBranchId } from "@shared/slipokBranch";
 import { SlipOkError } from "../slipVerification";
 import { decryptSlipOkKey } from "../slipokCrypto";
+import { hotelNotificationAddress } from "./hotelNotifyEmail";
 
 /**
  * The hotel's SlipOK account as hayhost last saw it. Hotels manage SlipOK in LINE (LIFF), so they do not
@@ -108,9 +109,9 @@ export async function recordSlipOkHealth(
     }).where(eq(hotelPaymentSettings.hotelId, hotelId));
     if (!shouldAlert || !emailSender) return;
 
-    const [hotel] = await db.select({ name: hotels.name, notificationEmail: hotels.notificationEmail, ownerContact: hotels.ownerContact })
+    const [hotel] = await db.select({ id: hotels.id, name: hotels.name, notificationEmail: hotels.notificationEmail, ownerContact: hotels.ownerContact })
       .from(hotels).where(eq(hotels.id, hotelId)).limit(1);
-    const to = hotel?.notificationEmail || (hotel && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hotel.ownerContact) ? hotel.ownerContact : null);
+    const to = hotel ? await hotelNotificationAddress(db, hotel) : null;
     if (!hotel || !to) return;
     const delivery = await emailSender.sendEmail({ to, ...alertContent(hotel.name, health) });
     if (delivery.success) {

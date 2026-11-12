@@ -25,6 +25,8 @@ export type BookingEmailData = {
   hotelName: string;
   /** Hotel notification email; separate from `hotels.owner_contact`, which is a general contact. */
   hotelContactEmail: string | null;
+  /** Where the hotel's own copy goes; may be the owner's sign-in email, so it is never shown to guests. */
+  hotelRecipientEmail?: string | null;
   hotelContactPhone: string | null;
   hotelAddress: string;
   bookingRef: string;
@@ -161,7 +163,7 @@ export async function sendBookingEmail(
   recipient: BookingEmailRecipient,
   eventKey: string,
 ): Promise<{ sent: boolean; eventKey: string; error?: string }> {
-  const to = recipient === "hotel" ? data.hotelContactEmail : data.guestEmail;
+  const to = recipient === "hotel" ? (data.hotelRecipientEmail ?? data.hotelContactEmail) : data.guestEmail;
   if (!to) {
     // No recipient address exists (for example the hotel set no notification email),
     // so nothing is sent. The caller logs this instead of treating it as a delivery.

@@ -14,6 +14,7 @@ import { FREE_PLAN_ROOM_LIMIT_MESSAGE, planCappedRoomIds } from "./planRoomLimit
 import { addNightsStatement, isBookingNightsUniqueConflict, releaseExpiredHoldNightsStatement, releaseNightsStatement } from "./bookingNights";
 import { sendBookingEmail, bookingEmailEventKey, type BookingEmailData, type BookingEmailRecipient, type BookingEmailType } from "./bookingEmails";
 import type { EmailSender } from "../email";
+import { hotelNotificationAddress } from "./hotelNotifyEmail";
 import { resolveAppUrl } from "../appUrl";
 
 const noAvailability = () => new TRPCError({ code: "BAD_REQUEST", message: "The selected room type is no longer available for the requested dates. Please choose another date or room type." });
@@ -338,6 +339,7 @@ export async function loadBookingEmailData(db: D1ScopedDatabase, bookingId: stri
     hotelId,
     hotelName: hotel.name,
     hotelContactEmail: hotel.notificationEmail || (legacyContactLooksLikeEmail ? hotel.ownerContact : null),
+    hotelRecipientEmail: await hotelNotificationAddress(db, hotel),
     hotelContactPhone: hotel.publicPhone || (!legacyContactLooksLikeEmail ? hotel.ownerContact : null),
     hotelAddress: hotel.address,
     bookingRef: `BK-${booking.id.slice(0, 8).toUpperCase()}`,
