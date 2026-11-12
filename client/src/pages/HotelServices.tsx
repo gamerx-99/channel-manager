@@ -24,6 +24,7 @@ import { RoomTypeActions } from '@/components/RoomTypeActions';
 import { PageState } from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import type { PricingModel as HotelServicePricingModel } from '@shared/pricingModels';
+import './HotelServices.css';
 
 const formatCurrency = (value: number | string) =>
   new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(Number(value));
@@ -192,15 +193,15 @@ export default function HotelServices({ id }: { id: string }) {
         </div>
         {services && services.length > 0 ? (
           <div className="table-wrap">
-            <table className="data-table">
-              <thead><tr><th>{t('hotelServices.colName')}</th><th>{t('hotelServices.colPricingModel')}</th><th className="align-right">{t('hotelServices.colPrice')}</th><th>{t('hotelServices.colActive')}</th><th /></tr></thead>
+            <table className="data-table services-table">
+              <thead><tr><th className="services-col-name">{t('hotelServices.colName')}</th><th className="services-col-model">{t('hotelServices.colPricingModel')}</th><th className="services-col-center">{t('hotelServices.colPrice')}</th><th className="services-col-center">{t('hotelServices.colActive')}</th><th className="services-col-actions" /></tr></thead>
               <tbody>
                 {services.map(service => (
                   <tr key={service.id}>
                     <td><strong>{service.name}</strong></td>
                     <td>{pricingModelLabel(service.pricingModel as HotelServicePricingModel)}</td>
-                    <td className="align-right">{formatCurrency(service.unitPrice)}</td>
-                    <td><span className={`status-pill ${service.isActive ? 'live' : 'setup'}`}><i />{service.isActive ? t('hotelServices.activeYes') : t('hotelServices.activeNo')}</span></td>
+                    <td className="services-col-center services-price">{formatCurrency(service.unitPrice)}</td>
+                    <td className="services-col-center"><span className={`status-pill ${service.isActive ? 'live' : 'setup'}`}><i />{service.isActive ? t('hotelServices.activeYes') : t('hotelServices.activeNo')}</span></td>
                     <td className="align-right"><RoomTypeActions roomType={service as any} onEdit={openEditService as any} onDelete={openDeleteService as any} /></td>
                   </tr>
                 ))}

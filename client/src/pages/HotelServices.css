@@ -1,0 +1,18 @@
+/* Services table: fixed column widths so the few columns do not spread across the whole card,
+   with the price and the active pill centred under their headings. */
+.services-table { table-layout: fixed; width: 100%; }
+.services-table .services-col-name { width: 32%; }
+.services-table .services-col-model { width: 24%; }
+.services-table .services-col-center { width: 16%; text-align: center; }
+.services-table .services-col-actions { width: 12%; }
+.services-table .services-price { font-variant-numeric: tabular-nums; }
+.services-table td.services-col-center .status-pill { display: inline-flex; width: auto; }
+.services-table td:last-child { text-align: right; }
+
+@media (max-width: 760px) {
+  .services-table { table-layout: auto; }
+  .services-table .services-col-name,
+  .services-table .services-col-model,
+  .services-table .services-col-center,
+  .services-table .services-col-actions { width: auto; }
+}
