@@ -13,7 +13,11 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/lib/trpc", () => ({ trpc: { auth: { profile: { useQuery: () => mocks.profile } } } }));
+vi.mock("@/lib/trpc", () => ({ trpc: { auth: {
+  profile: { useQuery: () => mocks.profile },
+  socialProviders: { useQuery: () => ({ data: ["google", "line"] }) },
+} } }));
+vi.mock("@/lib/auth-client", () => ({ authClient: { linkSocial: vi.fn(async () => ({ error: null })), updateUser: vi.fn() } }));
 vi.mock("wouter", () => ({ Link: ({ href, children, ...props }: any) => <a href={href} {...props}>{children}</a> }));
 
 import Account from "./Account";
@@ -49,6 +53,16 @@ describe("Account page", () => {
     expect(screen.getByRole("link", { name: "Doi View" }).getAttribute("href")).toBe("/hotels/h-b");
   });
 
+  it("lists a sign-in method that is not connected yet, such as LINE, with a connect button", () => {
+    mocks.profile.data = profile;
+    render(<Account />);
+    const line = screen.getByTestId("account-connect-line");
+    expect(within(line).getByText("LINE")).toBeTruthy();
+    expect(within(line).getByRole("button", { name: "Connect" })).toBeTruthy();
+    // Google is already connected, so it shows once, as connected.
+    expect(screen.queryByTestId("account-connect-google")).toBeNull();
+  });
+
   it("gives each hotel its own plan, and says the plan belongs to the hotel (regression: a plan was thought to belong to the account)", () => {
     mocks.profile.data = profile;
     render(<Account />);
@@ -68,7 +82,10 @@ describe("Account page", () => {
     render(<Account />);
     expect(screen.getAllByPlaceholderText("Not provided")).toHaveLength(3);
     expect(screen.getByText("Email not verified")).toBeTruthy();
-    expect(screen.getByText("No sign-in methods are linked yet.")).toBeTruthy();
+    // With nothing linked, the methods the account could add are offered instead of an empty-list message.
+    expect(screen.queryByText("No sign-in methods are linked yet.")).toBeNull();
+    expect(screen.getByTestId("account-connect-line")).toBeTruthy();
+    expect(screen.getByTestId("account-connect-google")).toBeTruthy();
     expect(screen.getByText("This account does not own a property yet.")).toBeTruthy();
   });
 

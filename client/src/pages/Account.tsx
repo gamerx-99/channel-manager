@@ -5,10 +5,14 @@ import { authClient } from "@/lib/auth-client";
 import { useTranslation } from "@/lib/i18n";
 import { trpc } from "@/lib/trpc";
 import { planHasEnd, planNameKey, signInMethod } from "./accountProfile";
+import type { SocialProviderId } from "@shared/socialAuth";
 
 export default function Account() {
   const { t, language } = useTranslation();
   const profileQuery = trpc.auth.profile.useQuery(undefined, { retry: false });
+  const providersQuery = trpc.auth.socialProviders.useQuery(undefined, { retry: false });
+  const [connecting, setConnecting] = useState<SocialProviderId | null>(null);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const dateFormat = new Intl.DateTimeFormat(language === "th" ? "th-TH" : "en-GB", { dateStyle: "medium" });
 
   if (profileQuery.isLoading) {
@@ -19,6 +23,19 @@ export default function Account() {
   }
 
   const profile = profileQuery.data;
+  const unlinkedProviders = (providersQuery.data ?? []).filter(provider => !profile.linkedAccounts.includes(provider));
+
+  async function connect(provider: SocialProviderId) {
+    setConnecting(provider);
+    setConnectError(null);
+    const path = window.location.pathname;
+    const { error } = await authClient.linkSocial({ provider, callbackURL: path, errorCallbackURL: path });
+    if (error) {
+      setConnecting(null);
+      setConnectError(t("socialAuth.failed"));
+    }
+  }
+
   return (
     <div className="page-content account-page">
       <section className="page-intro intro-split">
@@ -39,7 +56,8 @@ export default function Account() {
           <div><h2 id="account-signin-heading">{t("account.signInTitle")}</h2></div>
           <Link href="/settings/security" className="text-link">{t("account.manageSignIn")}</Link>
         </div>
-        {profile.linkedAccounts.length ? (
+        {connectError ? <p className="form-error" role="alert">{connectError}</p> : null}
+        {profile.linkedAccounts.length || unlinkedProviders.length ? (
           <ul className="account-list">
             {profile.linkedAccounts.map(providerId => {
               const method = signInMethod(providerId);
@@ -47,6 +65,18 @@ export default function Account() {
                 <li key={providerId}>
                   <span className="account-hotel-name">{"key" in method ? t(method.key) : method.label}</span>
                   <span className="status-pill live"><i />{t("socialAuth.linked")}</span>
+                </li>
+              );
+            })}
+            {/* Providers this hotel can use but the account has not joined yet (for example LINE), with a connect button. */}
+            {unlinkedProviders.map(provider => {
+              const method = signInMethod(provider);
+              return (
+                <li key={provider} data-testid={`account-connect-${provider}`}>
+                  <span className="account-hotel-name">{"key" in method ? t(method.key) : method.label}</span>
+                  <button type="button" className="button button-quiet button-small" disabled={connecting !== null} onClick={() => void connect(provider)}>
+                    {t("socialAuth.connect")}
+                  </button>
                 </li>
               );
             })}
