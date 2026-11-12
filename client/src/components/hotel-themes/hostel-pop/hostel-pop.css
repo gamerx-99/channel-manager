@@ -47,7 +47,7 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
   min-height: 100vh;
 }

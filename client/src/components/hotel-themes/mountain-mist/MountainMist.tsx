@@ -5,6 +5,7 @@ import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 import { ArrowRight, ArrowUpRight, MapPin, Mountain, Users } from "lucide-react";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 
 const P = "hotelThemes.mountainMist.";
@@ -53,7 +54,7 @@ export default function MountainMistLanding(props: ThemeLandingProps) {
     <div className={`mountain-mist-page${bookHref && minPrice !== null ? " has-sticky-bar" : ""}`} style={heroStyle}>
       <header className="site-header">
         <div className="header-inner">
-          <a className="brand" href="#top">
+          <a className="brand" href="#top"><HotelLogo url={hotel?.logo_url} name={hotelName} />
             <span className="brand-mark" aria-hidden="true">
               <Mountain size={18} />
             </span>

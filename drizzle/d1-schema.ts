@@ -70,6 +70,8 @@ export const hotels = sqliteTable("hotels", {
   showInstagram: integer("show_instagram", { mode: "boolean" }).notNull().default(false),
   xUrl: text("x_url"),
   showX: integer("show_x", { mode: "boolean" }).notNull().default(false),
+  /** Stored as `/media/<hotelId>/<file>`; null means no logo and nothing is drawn. */
+  logoUrl: text("logo_url"),
 }, table => [
   check("hotels_acquisition_source_check", sql`${table.acquisitionSource} in ('direct', 'referral', 'agent')`),
   uniqueIndex("hotels_slug_key").on(table.slug),

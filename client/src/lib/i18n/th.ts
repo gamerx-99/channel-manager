@@ -718,6 +718,11 @@ const th: TranslationDictionary = {
     statusChanged: "การจองนี้ยกเลิกไม่ได้แล้ว เพราะสถานะเปลี่ยนไป กรุณาโหลดหน้าใหม่",
   },
   hotelProfile: {
+    logoHeading: "โลโก้",
+    logoUpload: "อัปโหลดโลโก้",
+    logoReplace: "เปลี่ยนโลโก้",
+    logoRemove: "ลบโลโก้",
+    logoHint: "ไม่เกิน 5 MB ถ้าไม่ใส่ โลโก้จะไม่แสดง",
     eyebrow: "ตั้งค่าโรงแรม",
     title: "ข้อมูลโรงแรม",
     lede: "แก้ไขข้อมูลโรงแรมและช่องทางติดต่อที่แสดงบนเว็บไซต์",

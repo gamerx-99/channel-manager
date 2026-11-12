@@ -11,6 +11,8 @@ import { d1Schema, hotels } from "../drizzle/d1-schema";
 import { eq } from "drizzle-orm";
 import {
   deleteHotelMediaFromR2,
+  removeHotelLogoFromR2,
+  setHotelLogoInR2,
   MAX_HOTEL_MEDIA_BYTES,
   uploadHotelMediaToR2,
   validateHotelMediaObjectKey,
@@ -243,6 +245,44 @@ export function createWorkerApp(dependencies: WorkerAppDependencies = {}) {
         status,
         headers: { "Content-Type": "application/json; charset=UTF-8" },
       });
+    }
+  });
+
+  app.post("/api/hotel-logo/:hotelId", async c => {
+    const db = c.env?.DB ? createDatabase(c.env.DB) : undefined;
+    const context = await requestContext(c.req.raw, c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"), db, c.env?.DB, c.env);
+    if (!context.user) return c.json({ error: "Authentication required." }, 401);
+    if (!db) return c.json({ error: "Database unavailable." }, 500);
+    try {
+      const input = await readBoundedJson(c.req.raw);
+      const filename = typeof input.filename === "string" ? input.filename : "";
+      const encoded = typeof input.base64 === "string" ? input.base64 : "";
+      const dataUrl = encoded.match(/^data:([^;,]+);base64,([\s\S]*)$/);
+      const contentType = dataUrl?.[1] ?? (typeof input.content_type === "string" ? input.content_type : "");
+      const base64 = dataUrl?.[2] ?? encoded;
+      if (!filename || filename.length > 255 || !base64) return c.json({ error: "Invalid image upload." }, 400);
+      const data = decodeBase64(base64);
+      if (data.byteLength > MAX_HOTEL_MEDIA_BYTES) return c.json({ error: "Images must be 5 MiB or smaller." }, 413);
+      const result = await setHotelLogoInR2(db, { userId: context.user.id }, c.env.MEDIA, { hotel_id: c.req.param("hotelId"), filename, content_type: contentType, data });
+      return c.json(result, 201);
+    } catch (error) {
+      const status = httpStatus(error);
+      const message = status === 500 ? "Logo upload failed." : error instanceof Error ? error.message : "Logo upload failed.";
+      return new Response(JSON.stringify({ error: message }), { status, headers: { "Content-Type": "application/json; charset=UTF-8" } });
+    }
+  });
+
+  app.delete("/api/hotel-logo/:hotelId", async c => {
+    const db = c.env?.DB ? createDatabase(c.env.DB) : undefined;
+    const context = await requestContext(c.req.raw, c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"), db, c.env?.DB, c.env);
+    if (!context.user) return c.json({ error: "Authentication required." }, 401);
+    if (!db) return c.json({ error: "Database unavailable." }, 500);
+    try {
+      return c.json(await removeHotelLogoFromR2(db, { userId: context.user.id }, c.env.MEDIA, c.req.param("hotelId")));
+    } catch (error) {
+      const status = httpStatus(error);
+      const message = status === 500 ? "Logo removal failed." : error instanceof Error ? error.message : "Logo removal failed.";
+      return new Response(JSON.stringify({ error: message }), { status, headers: { "Content-Type": "application/json; charset=UTF-8" } });
     }
   });
 

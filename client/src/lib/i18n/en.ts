@@ -731,6 +731,11 @@ const en = {
     statusChanged: "This booking can no longer be cancelled; its status has changed. Reload the page.",
   },
   hotelProfile: {
+    logoHeading: "Logo",
+    logoUpload: "Upload logo",
+    logoReplace: "Change logo",
+    logoRemove: "Remove logo",
+    logoHint: "Up to 5 MB. Without a logo, nothing is shown.",
     eyebrow: "Hotel settings",
     title: "Hotel information",
     lede: "Update your hotel details and the contact channels shown on your website.",

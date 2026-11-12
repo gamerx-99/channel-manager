@@ -5,6 +5,7 @@ import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 import "./boutique-noir.css";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 const P = "hotelThemes.boutiqueNoir.";
 
@@ -29,7 +30,7 @@ export default function BoutiqueNoirLanding(props: ThemeLandingProps) {
     <ThemeLanding themeId="boutique-noir" hotelName={hotelName} colors={colours}>
       <div className={`theme-boutique-noir${bookHref && minPrice !== null ? " has-sticky-bar" : ""}`}>
         <header className="site-header"><div className="header-inner">
-          <a className="brand" href="#top"><span className="brand-mark" aria-hidden="true"><Sparkles size={18} /></span><span className="brand-name">{hotelName}</span></a>
+          <a className="brand" href="#top"><HotelLogo url={hotel?.logo_url} name={hotelName} /><span className="brand-mark" aria-hidden="true"><Sparkles size={18} /></span><span className="brand-name">{hotelName}</span></a>
           <nav className="main-nav" aria-label={tt("mainNav")}>
             {showRooms && <a href="#rooms">{tt("navRooms")}</a>}{gallery.length > 0 && <a href="#gallery">{tt("navGallery")}</a>}{showLocation && <a href="#location">{tt("navLocation")}</a>}
           </nav>

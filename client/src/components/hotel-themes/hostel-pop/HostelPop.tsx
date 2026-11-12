@@ -1,5 +1,6 @@
 import React, { type CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight, Bed, MapPin, Sparkles, Users } from "lucide-react";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 import { ThemeLanding } from "../ThemeLanding";
 import type { ThemeLandingProps } from "../ThemeProps";
@@ -57,7 +58,7 @@ export default function HostelPopLanding(props: ThemeLandingProps) {
       {/* ================= HEADER ================= */}
       <header className="site-header">
         <div className="container header-inner">
-          <a className="brand" href="#top">
+          <a className="brand" href="#top"><HotelLogo url={hotel?.logo_url} name={hotelName} />
             <span className="brand-mark rotate-neg-4" aria-hidden="true">
               <Sparkles size={18} />
             </span>

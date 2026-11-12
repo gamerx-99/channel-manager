@@ -5,6 +5,7 @@ import { ThemeLanding } from "../ThemeLanding";
 import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 type Props = ThemeLandingProps;
 
@@ -34,7 +35,7 @@ export default function MinimalWhiteLanding({
     <ThemeLanding themeId="minimal-white" hotelName={hotelName} colors={colours}>
       <div className="minimal-page">
         <header className="minimal-header">
-          <a className="minimal-wordmark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>
+          <a className="minimal-wordmark" href={`/${hotel?.slug ?? ""}`}><HotelLogo url={hotel?.logo_url} name={hotelName} />{hotelName}</a>
           <nav aria-label={t("hotelThemes.minimalWhite.sections")}>
             <a href="#rooms">{t("hotelThemes.minimalWhite.rooms")}</a>
             <a href="#gallery">{t("hotelThemes.minimalWhite.gallery")}</a>

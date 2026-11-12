@@ -5,6 +5,7 @@ import { ThemeLanding } from "../ThemeLanding";
 import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 function CupDecoration() {
   return <div className="cafe-cup-stamp" aria-hidden="true"><div className="cup-rim"><div className="cup-steam" /></div><div className="cup-body"><div className="cup-handle" /></div></div>;
@@ -42,7 +43,7 @@ export default function CafeHomestayLanding({
     <ThemeLanding themeId="cafe-homestay" hotelName={hotelName} colors={colours}>
       <div className="cafe-page">
         <header className="cafe-header">
-          <a className="cafe-wordmark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>
+          <a className="cafe-wordmark" href={`/${hotel?.slug ?? ""}`}><HotelLogo url={hotel?.logo_url} name={hotelName} />{hotelName}</a>
           <nav aria-label={t("hotelThemes.cafeHomestay.sections")}>
             <a href="#rooms">{t("hotelThemes.cafeHomestay.rooms")}</a>
             <a href="#gallery">{t("hotelThemes.cafeHomestay.gallery")}</a>

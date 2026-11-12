@@ -4,6 +4,7 @@ import { PageState } from '@/components/PageState';
 import { useTranslation } from '@/lib/i18n';
 import { useHotelProfileForm, type HotelProfileForm } from '@/components/hotel/useHotelProfileForm';
 import HotelGeneralOperations from '@/components/hotel/HotelGeneralOperations';
+import HotelLogoUploader from '@/components/hotel/HotelLogoUploader';
 import './HotelProfile.css';
 
 const HotelMapPicker = lazy(() => import('@/components/hotel/HotelMapPicker'));
@@ -24,6 +25,7 @@ export default function HotelProfile({ id }: { id: string }) {
     { field: 'x_url', show: 'show_x', label: t('hotelProfile.xLabel'), showLabel: t('hotelDetail.showXOnSite'), placeholder: 'https://x.com/yourhotel', type: 'url', maxLength: 500 },
   ];
   return <div className="page-content hotel-profile-page">{intro}
+    <HotelLogoUploader hotelId={id} logoUrl={(hotelQuery.data as { logo_url?: string | null }).logo_url} onChanged={retry} />
     <form onSubmit={submit}>
       <section className="panel"><div className="panel-heading"><div><div className="eyebrow">{t('hotelProfile.basicEyebrow')}</div><h2>{t('hotelProfile.basicHeading')}</h2></div></div>
         <div data-tour="hotel-settings-fields" className="form-grid hotel-profile-fields">

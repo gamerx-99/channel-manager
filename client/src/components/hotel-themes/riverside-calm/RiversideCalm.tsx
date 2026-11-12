@@ -5,6 +5,7 @@ import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
 import "./riverside-calm.css";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 const P = "hotelThemes.riversideCalm.";
 
@@ -54,7 +55,7 @@ export default function RiversideCalmLanding(props: ThemeLandingProps) {
       {/* 1. HEADER / NAVIGATION */}
       <header className="site-header">
         <div className="header-inner">
-          <a className="brand" href="#top">
+          <a className="brand" href="#top"><HotelLogo url={hotel?.logo_url} name={hotelName} />
             <span className="brand-mark" aria-hidden="true">
               <Waves size={20} />
             </span>

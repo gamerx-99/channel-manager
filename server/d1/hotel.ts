@@ -141,6 +141,7 @@ export async function getManagedHotel(db: D1ScopedDatabase, caller: D1CallerCont
     id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, owner_contact: scope.permissions.includes("property.manage_profile") ? hotel.ownerContact : null,
     notification_email: scope.permissions.includes("property.manage_profile") ? hotel.notificationEmail : null,
     latitude: hotel.latitude, longitude: hotel.longitude, public_phone: hotel.publicPhone, show_public_phone: hotel.showPublicPhone,
+    logo_url: hotel.logoUrl ? servedMediaUrl(hotel.logoUrl) : null,
     facebook_url: hotel.facebookUrl, show_facebook: hotel.showFacebook, line_url: hotel.lineUrl, show_line: hotel.showLine, instagram_url: hotel.instagramUrl, show_instagram: hotel.showInstagram, x_url: hotel.xUrl, show_x: hotel.showX,
     public_enabled: hotel.publicEnabled, created_at: hotel.createdAt,
     room_types: hotelRoomTypes.map(row => ({
@@ -350,7 +351,7 @@ export async function getPublicHotel(db: D1ScopedDatabase, caller: D1CallerConte
     return priceOrder || left.id.localeCompare(right.id);
   });
   return {
-    hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, latitude: hotel.latitude, longitude: hotel.longitude, public_phone: hotel.showPublicPhone ? hotel.publicPhone : null, facebook_url: hotel.showFacebook ? hotel.facebookUrl : null, line_url: hotel.showLine ? hotel.lineUrl : null, instagram_url: hotel.showInstagram ? hotel.instagramUrl : null, x_url: hotel.showX ? hotel.xUrl : null, created_at: hotel.createdAt, theme: siteConfig[0]?.theme ?? null },
+    hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, address: hotel.address, latitude: hotel.latitude, longitude: hotel.longitude, logo_url: hotel.logoUrl ? servedMediaUrl(hotel.logoUrl) : null, public_phone: hotel.showPublicPhone ? hotel.publicPhone : null, facebook_url: hotel.showFacebook ? hotel.facebookUrl : null, line_url: hotel.showLine ? hotel.lineUrl : null, instagram_url: hotel.showInstagram ? hotel.instagramUrl : null, x_url: hotel.showX ? hotel.xUrl : null, created_at: hotel.createdAt, theme: siteConfig[0]?.theme ?? null },
     roomTypes: hotelRoomTypes.map(row => ({ ...row, bed_type: row.bedType, size_sqm: row.sizeSqm })),
     media,
   };

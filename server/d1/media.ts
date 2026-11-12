@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { R2Bucket } from "@cloudflare/workers-types/index.ts";
 import { and, eq } from "drizzle-orm";
-import { hotelMedia } from "../../drizzle/d1-schema";
+import { hotelMedia, hotels } from "../../drizzle/d1-schema";
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 
 export const MAX_HOTEL_MEDIA_BYTES = 5 * 1024 * 1024;
@@ -110,6 +110,60 @@ export async function uploadHotelMediaToR2(
   } catch {
     await bucket.delete(key).catch(() => undefined);
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Hotel media upload failed." });
+  }
+}
+
+/**
+ * The hotel logo is one image kept on the hotel row (`hotels.logo_url`), not in the photo
+ * library, so it never shows in the gallery. A new logo replaces and deletes the old file.
+ */
+export async function setHotelLogoInR2(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  bucket: R2Bucket,
+  input: { hotel_id: string; filename: string; content_type: string; data: Uint8Array },
+  now = new Date(),
+) {
+  const scope = await authorizeHotelAction(db, caller, input.hotel_id, "property.manage_profile", "hotel_logo.set", now);
+  const { contentType, extension } = validateHotelMediaUpload(input.data, input.content_type, input.filename);
+  const [current] = await db.select({ logoUrl: hotels.logoUrl }).from(hotels).where(eq(hotels.id, scope.hotelId)).limit(1);
+  const key = `${scope.hotelId}/${crypto.randomUUID()}.${extension}`;
+  const url = `/media/${key}`;
+  await bucket.put(key, input.data, {
+    httpMetadata: { contentType, cacheControl: HOTEL_MEDIA_CACHE_CONTROL },
+    customMetadata: { hotelId: scope.hotelId, kind: "logo" },
+  });
+  try {
+    await db.update(hotels).set({ logoUrl: url }).where(eq(hotels.id, scope.hotelId));
+  } catch {
+    await bucket.delete(key).catch(() => undefined);
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Logo upload failed." });
+  }
+  await deleteStoredLogoObject(bucket, scope.hotelId, current?.logoUrl ?? null);
+  return { logo_url: servedMediaUrl(url) };
+}
+
+export async function removeHotelLogoFromR2(
+  db: D1ScopedDatabase,
+  caller: D1CallerContext,
+  bucket: R2Bucket,
+  hotelId: string,
+  now = new Date(),
+) {
+  const scope = await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "hotel_logo.remove", now);
+  const [current] = await db.select({ logoUrl: hotels.logoUrl }).from(hotels).where(eq(hotels.id, scope.hotelId)).limit(1);
+  await db.update(hotels).set({ logoUrl: null }).where(eq(hotels.id, scope.hotelId));
+  await deleteStoredLogoObject(bucket, scope.hotelId, current?.logoUrl ?? null);
+  return { logo_url: null };
+}
+
+async function deleteStoredLogoObject(bucket: R2Bucket, hotelId: string, url: string | null) {
+  if (!url) return;
+  try {
+    const key = storedR2Key(hotelId, url);
+    if (key) await bucket.delete(key);
+  } catch {
+    // ASSUMPTION: an orphaned R2 object is harmless; the row already points at the new state.
   }
 }
 

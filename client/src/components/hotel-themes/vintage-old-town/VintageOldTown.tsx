@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 import { ThemeLanding } from "../ThemeLanding";
 import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
@@ -61,7 +62,7 @@ export default function VintageOldTownLanding(props: ThemeLandingProps) {
       {/* Header navigation */}
       <header className="site-header">
         <div className="header-inner">
-          <a className="brand" href="#top">
+          <a className="brand" href="#top"><HotelLogo url={hotel?.logo_url} name={hotelName} />
             <span className="brand-mark" aria-hidden="true">
               <Landmark size={20} />
             </span>

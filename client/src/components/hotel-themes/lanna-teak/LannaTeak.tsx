@@ -5,6 +5,7 @@ import { ThemeLanding } from "../ThemeLanding";
 import type { ThemeLandingProps } from "../ThemeProps";
 import { PoweredByHayhost } from "../PoweredByHayhost";
 import { MAX_WEBSITE_GALLERY_PHOTOS } from "@shared/hotelThemes";
+import { HotelLogo } from "@/components/hotel/HotelLogo";
 
 function KanokDivider() {
   return <div className="lanna-divider" aria-hidden="true"><span /><i /><span /></div>;
@@ -38,7 +39,7 @@ export default function LannaTeakLanding({
     <ThemeLanding themeId="lanna-teak" hotelName={hotelName} colors={colours}>
       <div className="lanna-page">
         <header className="lanna-header">
-          <a className="lanna-mark" href={`/${hotel?.slug ?? ""}`}>{hotelName}</a>
+          <a className="lanna-mark" href={`/${hotel?.slug ?? ""}`}><HotelLogo url={hotel?.logo_url} name={hotelName} />{hotelName}</a>
           <nav aria-label={t("hotelThemes.lannaTeak.sections")}>
             <a href="#story">{t("hotelThemes.lannaTeak.story")}</a>
             <a href="#stay">{t("hotelThemes.lannaTeak.rooms")}</a>

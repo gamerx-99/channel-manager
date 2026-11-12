@@ -8,7 +8,7 @@ import type { D1Database, R2Bucket, R2ObjectBody } from "@cloudflare/workers-typ
 import { d1Schema, hotelMedia, hotelUsers, hotels } from "../../drizzle/d1-schema";
 import type { D1ScopedDatabase } from "../db/scope";
 import { createWorkerApp, type WorkerEnv } from "../../worker/app";
-import { deleteHotelMediaFromR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload, servedMediaUrl } from "./media";
+import { deleteHotelMediaFromR2, removeHotelLogoFromR2, setHotelLogoInR2, MAX_HOTEL_MEDIA_BYTES, uploadHotelMediaToR2, validateHotelMediaObjectKey, validateHotelMediaUpload, servedMediaUrl } from "./media";
 import { publishHotelSiteConfig, setHotelMediaGallerySelection, setHotelMediaHero } from "./siteConfig";
 import { getPublicHotel } from "./hotel";
 
@@ -334,5 +334,53 @@ describe("servedMediaUrl", () => {
     expect(servedMediaUrl("https://cdn.example/x.png")).toBe("https://cdn.example/x.png");
     const toml = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../wrangler.toml"), "utf8");
     expect(toml).toMatch(/run_worker_first = \["\/api\/\*"\]/);
+  });
+});
+
+describe("D1 hotel logo on R2", () => {
+  const publicCaller = { access: "public" } as any;
+
+  it("is empty until a logo is saved, so public pages draw nothing", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const page = await getPublicHotel(db, publicCaller, "hotel-a-slug");
+    expect(page.hotel.logo_url).toBeNull();
+  });
+
+  it("stores one logo outside the photo library and serves it on the public hotel", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    const result = await setHotelLogoInR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "logo.png", content_type: "image/png", data: bytes });
+    expect(result.logo_url).toMatch(/^\/api\/media\/hotel-a\/[a-f0-9-]{36}\.png$/);
+    expect(await db.select().from(hotelMedia)).toEqual([]);
+    expect([...bucket.objects.keys()]).toHaveLength(1);
+    const page = await getPublicHotel(db, publicCaller, "hotel-a-slug");
+    expect(page.hotel.logo_url).toBe(result.logo_url);
+  });
+
+  it("replaces the logo and deletes the old file", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    const first = await setHotelLogoInR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "a.png", content_type: "image/png", data: bytes });
+    const second = await setHotelLogoInR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "b.png", content_type: "image/png", data: bytes });
+    expect(second.logo_url).not.toBe(first.logo_url);
+    expect([...bucket.objects.keys()]).toEqual([second.logo_url.slice("/api/media/".length)]);
+  });
+
+  it("removes the logo and its file", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    const bucket = new MemoryR2();
+    await setHotelLogoInR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "a.png", content_type: "image/png", data: bytes });
+    await removeHotelLogoFromR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, "hotel-a");
+    expect(bucket.objects.size).toBe(0);
+    expect((await getPublicHotel(db, publicCaller, "hotel-a-slug")).hotel.logo_url).toBeNull();
+  });
+
+  it("refuses another hotel's owner and non-image files, leaving R2 untouched", async () => {
+    await seedHotel("hotel-a", "owner-a");
+    await seedHotel("hotel-b", "owner-b");
+    const bucket = new MemoryR2();
+    await expect(setHotelLogoInR2(db, { userId: "owner-b" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "x.png", content_type: "image/png", data: bytes })).rejects.toThrow();
+    await expect(setHotelLogoInR2(db, { userId: "owner-a" }, bucket as unknown as R2Bucket, { hotel_id: "hotel-a", filename: "x.txt", content_type: "text/plain", data: new Uint8Array([0x3c, 0x68]) })).rejects.toThrow("Only image files can be uploaded.");
+    expect(bucket.objects.size).toBe(0);
   });
 });

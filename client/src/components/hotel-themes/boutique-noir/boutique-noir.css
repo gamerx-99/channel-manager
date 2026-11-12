@@ -43,7 +43,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 
