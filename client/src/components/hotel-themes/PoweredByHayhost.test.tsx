@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { PoweredByHayhost } from "./PoweredByHayhost";
 
 describe("PoweredByHayhost", () => {
-  it("links the hayhost word to the home page and keeps the rest as text", () => {
+  it("shows the hayhost logo linked to the home page, named by the label", () => {
     const html = renderToStaticMarkup(<PoweredByHayhost label="จองผ่าน hayhost" />);
-    expect(html).toContain("จองผ่าน ");
-    expect(html).toContain('<a class="powered-by-hayhost" href="https://www.hayhostth.com/" target="_blank" rel="noopener">hayhost</a>');
+    expect(html).toContain('href="https://www.hayhostth.com/"');
+    expect(html).toContain('aria-label="จองผ่าน hayhost"');
+    expect(html).toContain('src="/logo-wide.png"');
   });
 
   it("renders plain text when the label has no hayhost word", () => {

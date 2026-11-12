@@ -40,7 +40,27 @@ describe('HotelContactsList', () => {
       />
     );
     expect(html).toContain('href="https://line.me/R/ti/p/@hotel"');
-    expect(html).toContain('>LINE<');
-    expect(html.indexOf('LINE')).toBeLessThan(html.indexOf('Facebook'));
+    expect(html.indexOf('aria-label="LINE"')).toBeLessThan(html.indexOf('aria-label="Facebook"'));
+    expect(html.indexOf('tel:')).toBeLessThan(html.indexOf('aria-label="LINE"'));
+  });
+
+  it('shows icons instead of text labels and only for channels that are set', () => {
+    const html = renderToStaticMarkup(
+      <HotelContactsList phone="081 234 5678" facebookUrl="https://facebook.com/h" instagramUrl="https://instagram.com/h" />
+    );
+    expect(html).toContain('lucide-phone');
+    expect(html).toContain('lucide-facebook');
+    expect(html).toContain('lucide-instagram');
+    expect(html).not.toContain('>Facebook<');
+    expect(html).not.toContain('>Instagram<');
+    expect(html).not.toContain('contact-x');
+    expect(html).not.toContain('contact-line');
+  });
+
+  it('draws the X logo when an X link is set', () => {
+    const html = renderToStaticMarkup(<HotelContactsList xUrl="https://x.com/h" />);
+    expect(html).toContain('contact-x');
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('>X<');
   });
 });

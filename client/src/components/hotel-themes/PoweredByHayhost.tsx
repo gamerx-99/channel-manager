@@ -1,14 +1,12 @@
 import React from "react";
 
-// Renders a footer credit such as "จองผ่าน hayhost" with "hayhost" linked to our home page.
+// Footer credit: the hayhost logo linked to our home page. The label (e.g. "จองผ่าน hayhost")
+// stays as the accessible name. A label without the word "hayhost" is shown as plain text.
 export function PoweredByHayhost({ label }: { label: string }) {
-  const at = label.lastIndexOf("hayhost");
-  if (at < 0) return <span>{label}</span>;
+  if (!label.includes("hayhost")) return <span>{label}</span>;
   return (
-    <span>
-      {label.slice(0, at)}
-      <a className="powered-by-hayhost" href="https://www.hayhostth.com/" target="_blank" rel="noopener">hayhost</a>
-      {label.slice(at + "hayhost".length)}
-    </span>
+    <a className="powered-by-hayhost" href="https://www.hayhostth.com/" target="_blank" rel="noopener" aria-label={label} title={label}>
+      <img className="powered-by-hayhost-logo" src="/logo-wide.png" alt="" />
+    </a>
   );
 }

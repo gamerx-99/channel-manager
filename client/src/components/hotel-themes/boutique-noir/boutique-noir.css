@@ -1112,6 +1112,9 @@
 }
 .theme-boutique-noir .site-footer .powered-by-hayhost {
   color: inherit;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 10px;
 }
 @media (max-width: 768px) {
   .theme-boutique-noir .header-inner {
