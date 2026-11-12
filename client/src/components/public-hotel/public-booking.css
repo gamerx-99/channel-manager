@@ -509,3 +509,19 @@
   font-weight: 700;
   color: var(--pine);
 }
+
+.booking-email-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.booking-email-hint-action {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  color: inherit;
+}

@@ -1,4 +1,5 @@
 import React from "react";
+import { suggestEmailCorrection } from "@/lib/emailCheck";
 import type { usePublicHotelPage } from "./usePublicHotelPage";
 
 type Page = ReturnType<typeof usePublicHotelPage>;
@@ -12,6 +13,8 @@ export type BookingStepGuestProps = {
   setGuestPhone: Booking["setGuestPhone"];
   guestEmail: Booking["guestEmail"];
   setGuestEmail: Booking["setGuestEmail"];
+  guestEmailConfirm: Booking["guestEmailConfirm"];
+  setGuestEmailConfirm: Booking["setGuestEmailConfirm"];
   specialRequests: Booking["specialRequests"];
   setSpecialRequests: Booking["setSpecialRequests"];
   termsAccepted: Booking["termsAccepted"];
@@ -32,6 +35,8 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
     setGuestPhone,
     guestEmail,
     setGuestEmail,
+    guestEmailConfirm = "",
+    setGuestEmailConfirm,
     specialRequests,
     setSpecialRequests,
     termsAccepted,
@@ -42,6 +47,7 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
     setWizardStep,
   } = props;
   const blocked = confirmDetailsMutation.isPending || !termsAccepted;
+  const emailSuggestion = suggestEmailCorrection(guestEmail);
 
   return (
     <form onSubmit={handleConfirmDetails} className="booking-form-grid">
@@ -83,10 +89,34 @@ export default function BookingStepGuest(props: BookingStepGuestProps) {
             placeholder={t("publicHotel.emailPlaceholder")}
             value={guestEmail}
             onChange={(e) => setGuestEmail(e.target.value)}
+            autoComplete="email"
             required
             className="booking-form-input"
           />
+          {emailSuggestion ? (
+            <p className="booking-email-hint" role="note">
+              {t("publicHotel.emailDidYouMean", { email: emailSuggestion })}{" "}
+              <button type="button" className="booking-email-hint-action" onClick={() => { setGuestEmail(emailSuggestion); setGuestEmailConfirm(emailSuggestion); }}>
+                {t("publicHotel.emailUseSuggestion")}
+              </button>
+            </p>
+          ) : null}
         </div>
+      </div>
+      <div>
+        <label className="booking-form-label">
+          {t("publicHotel.emailConfirmLabel")}
+        </label>
+        <input
+          type="email"
+          placeholder={t("publicHotel.emailConfirmPlaceholder")}
+          value={guestEmailConfirm}
+          onChange={(e) => setGuestEmailConfirm(e.target.value)}
+          onPaste={(e) => e.preventDefault()}
+          autoComplete="off"
+          required
+          className="booking-form-input"
+        />
       </div>
       <div>
         <label className="booking-form-label">

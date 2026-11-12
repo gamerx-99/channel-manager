@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { emailsMatch, isValidGuestEmail, suggestEmailCorrection } from "@/lib/emailCheck";
 import { localizeServerMessage, storedLanguage } from "@/lib/serverErrors";
 import { bangkokDate } from "@shared/finance";
 import {
@@ -63,6 +64,8 @@ export function useBookingWizard(args: {
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
+  const [guestEmailConfirm, setGuestEmailConfirm] = useState("");
+  const warnedEmailRef = useRef("");
   // Owner decision 2026-11-11 (sheet 3.2): the guest ticks the booking conditions before going on to payment.
   // ASSUMPTION: checked in the browser only; no consent record is sent or stored.
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -173,6 +176,22 @@ export function useBookingWizard(args: {
       setWizardError(t("publicHotel.errorEnterFullName"));
       return;
     }
+    if (!isValidGuestEmail(guestEmail)) {
+      setWizardError(t("publicHotel.errorInvalidEmail"));
+      return;
+    }
+    if (!emailsMatch(guestEmail, guestEmailConfirm)) {
+      setWizardError(t("publicHotel.errorEmailMismatch"));
+      return;
+    }
+    // Domain (everything after @) looks like a typo: stop once and ask. Submitting
+    // the same address again is accepted, so unusual real domains are never locked out.
+    const domainSuggestion = suggestEmailCorrection(guestEmail);
+    if (domainSuggestion && warnedEmailRef.current !== guestEmail.trim().toLowerCase()) {
+      warnedEmailRef.current = guestEmail.trim().toLowerCase();
+      setWizardError(t("publicHotel.errorEmailDomainTypo", { email: domainSuggestion }));
+      return;
+    }
     if (!termsAccepted) {
       setWizardError(t("guestConsent.required"));
       return;
@@ -267,6 +286,8 @@ export function useBookingWizard(args: {
     setGuestPhone,
     guestEmail,
     setGuestEmail,
+    guestEmailConfirm,
+    setGuestEmailConfirm,
     specialRequests,
     setSpecialRequests,
     termsAccepted,

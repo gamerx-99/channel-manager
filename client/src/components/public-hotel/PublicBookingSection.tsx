@@ -15,7 +15,7 @@ type Booking = NonNullable<Page["booking"]>;
 export default function PublicBookingSection({ page }: { page: Page }) {
   const { hotel, accentColor, accentTextColor, t, booking } = page;
   if (!booking) return null;
-  const { wizardStep, setWizardStep, checkIn, setCheckIn, checkOut, setCheckOut, adults, setAdults, children, setChildren, preferredRoomTypeId, heldBooking, selectedServiceQty, setSelectedServiceQty, guestName, setGuestName, guestPhone, setGuestPhone, guestEmail, setGuestEmail, specialRequests, setSpecialRequests, confirmedBookingId, wizardError, setWizardError, paymentSuccess, setPaymentSuccess, remainingMs, isDatesValid, propertyChildRule, childRulesConfigured, childMeasurements, guestsValid, availabilityQuery, availableRoomTypes, holdRoomTypeMutation, servicesQuery, confirmDetailsMutation, handleResetBooking, handleHoldRoom, handleConfirmDetails, serviceLineTotal, selectedServicesTotal } = booking;
+  const { wizardStep, setWizardStep, checkIn, setCheckIn, checkOut, setCheckOut, adults, setAdults, children, setChildren, preferredRoomTypeId, heldBooking, selectedServiceQty, setSelectedServiceQty, guestName, setGuestName, guestPhone, setGuestPhone, guestEmail, setGuestEmail, specialRequests, setSpecialRequests, guestEmailConfirm, setGuestEmailConfirm, confirmedBookingId, wizardError, setWizardError, paymentSuccess, setPaymentSuccess, remainingMs, isDatesValid, propertyChildRule, childRulesConfigured, childMeasurements, guestsValid, availabilityQuery, availableRoomTypes, holdRoomTypeMutation, servicesQuery, confirmDetailsMutation, handleResetBooking, handleHoldRoom, handleConfirmDetails, serviceLineTotal, selectedServicesTotal } = booking;
   const renderStepContent = () => {
     switch (wizardStep) {
       case 1:
@@ -72,6 +72,8 @@ export default function PublicBookingSection({ page }: { page: Page }) {
             setGuestPhone={setGuestPhone}
             guestEmail={guestEmail}
             setGuestEmail={setGuestEmail}
+            guestEmailConfirm={guestEmailConfirm}
+            setGuestEmailConfirm={setGuestEmailConfirm}
             specialRequests={specialRequests}
             setSpecialRequests={setSpecialRequests}
             termsAccepted={booking.termsAccepted}

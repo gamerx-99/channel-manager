@@ -70,6 +70,7 @@ describe("guest consent before payment (owner decision 3.2)", () => {
       result.current.setHeldBooking({ bookingId: "b1", hotelId: "h1", roomId: "r1", expiresAt: "2099-01-01T00:00:00.000Z", roomTypeName: "", roomNumber: "", totalPrice: 0, nights: 1 });
       result.current.setGuestName("Somchai");
       result.current.setGuestEmail("guest@example.test");
+      result.current.setGuestEmailConfirm("guest@example.test");
     });
     act(() => result.current.handleConfirmDetails(submit()));
     expect(mocks.confirmMutate).not.toHaveBeenCalled();
