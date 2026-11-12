@@ -82,6 +82,22 @@ describe('slipok.saveKey (D1 router)', () => {
     );
     expect(mfaMocks.requireRecentMfaVerification).toHaveBeenCalled();
   });
+
+  it('stores only the branch segment when the whole SlipOK API URL is pasted', async () => {
+    dbMocks.saveSlipOkSettings.mockResolvedValueOnce(undefined);
+    const app = await caller();
+    await app.slipok.saveKey({ hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'https://api.slipok.com/api/line/apikey/12345' });
+    expect(dbMocks.saveSlipOkSettings.mock.calls.at(-1)?.[5]).toBe('12345');
+  });
+
+  it('rejects a branch value that is neither a branch ID nor the SlipOK API URL', async () => {
+    const app = await caller();
+    dbMocks.saveSlipOkSettings.mockClear();
+    await expect(
+      app.slipok.saveKey({ hotel_id: HOME_HOTEL, api_key: 'a-real-looking-key', branch_id: 'https://evil.example/12345' }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(dbMocks.saveSlipOkSettings).not.toHaveBeenCalled();
+  });
 });
 
 describe('SlipOK settings access boundaries', () => {

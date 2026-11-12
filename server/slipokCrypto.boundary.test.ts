@@ -14,7 +14,9 @@ function sourceFiles(folder: string): string[] {
 }
 
 describe("SlipOK credential crypto import boundary", () => {
-  it("allows encrypted-key decryption only in the slip verification procedure", () => {
+  // Decryption is allowed in two places only: the guest slip check, and the daily SlipOK account check
+  // (d1/slipokHealth.ts), which sends the key to SlipOK's quota endpoint and never returns it.
+  it("allows encrypted-key decryption only in the slip verification procedure and the daily account check", () => {
     const imports = sourceFiles(serverRoot).flatMap(path => {
       const text = readFileSync(path, "utf8");
       return [...text.matchAll(/import\s*\{([^}]+)\}\s*from\s*["'][^"']*slipokCrypto["']/g)].map(match => ({
@@ -23,12 +25,15 @@ describe("SlipOK credential crypto import boundary", () => {
         source: text,
       }));
     });
-    expect(imports.map(entry => entry.file).sort()).toEqual(["routers/paymentRouter.ts", "routers/slipokRouter.ts"]);
+    expect(imports.map(entry => entry.file).sort()).toEqual(["d1/slipokHealth.ts", "routers/paymentRouter.ts", "routers/slipokRouter.ts"]);
     expect(imports.find(entry => entry.file === "routers/paymentRouter.ts")?.names).toEqual(["decryptSlipOkKey"]);
+    expect(imports.find(entry => entry.file === "d1/slipokHealth.ts")?.names).toEqual(["decryptSlipOkKey"]);
     expect(imports.find(entry => entry.file === "routers/slipokRouter.ts")?.names.sort()).toEqual(["encryptSlipOkKey", "hashSlipOkKey"]);
 
     const decryptReferences = sourceFiles(serverRoot).filter(path => /\bdecryptSlipOkKey\b/.test(readFileSync(path, "utf8")));
-    expect(decryptReferences.map(path => relative(serverRoot, path).replaceAll("\\", "/"))).toEqual(["routers/paymentRouter.ts", "slipokCrypto.ts"]);
+    expect(decryptReferences.map(path => relative(serverRoot, path).replaceAll("\\", "/")).sort()).toEqual(["d1/slipokHealth.ts", "routers/paymentRouter.ts", "slipokCrypto.ts"]);
+    const healthSource = readFileSync(join(serverRoot, "d1/slipokHealth.ts"), "utf8");
+    expect(healthSource.split("runSlipOkHealthChecks")[1] ?? "").toContain("decryptSlipOkKey");
     const paymentSource = readFileSync(join(serverRoot, "routers/paymentRouter.ts"), "utf8");
     const verificationBody = paymentSource.split("verifySlip:")[1]?.split("manualVerify:")[0] ?? "";
     expect(verificationBody).toContain("decryptSlipOkKey");

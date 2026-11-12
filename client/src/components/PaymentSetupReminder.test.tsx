@@ -8,7 +8,7 @@ const HOTEL = "11111111-1111-4111-8111-111111111111";
 
 const mocks = vi.hoisted(() => ({
   location: "/dashboard",
-  status: { data: undefined as undefined | { promptpay_configured: boolean; slipok_configured: boolean }, refetch: vi.fn() },
+  status: { data: undefined as undefined | { promptpay_configured: boolean; slipok_configured: boolean; slipok_problem?: "package_expired" | "quota_exceeded" | "credentials_rejected" | null }, refetch: vi.fn() },
   useQuery: vi.fn(),
 }));
 
@@ -70,6 +70,23 @@ describe("PaymentSetupReminder", () => {
     mocks.status = { data: { promptpay_configured: false, slipok_configured: false }, refetch: vi.fn() };
     rerender(<PaymentSetupReminder hotelId={HOTEL} enabled={false} />);
     expect(screen.queryByTestId("payment-setup-reminder")).toBeNull();
+  });
+
+  it("warns about an expired SlipOK package even when everything is saved, and opens SlipOK", () => {
+    mocks.status = { data: { promptpay_configured: true, slipok_configured: true, slipok_problem: "package_expired" }, refetch: vi.fn() };
+    render(<PaymentSetupReminder hotelId={HOTEL} enabled />);
+    const dialog = screen.getByTestId("payment-setup-reminder");
+    expect(dialog.textContent).toContain("SlipOK has stopped checking slips");
+    expect(screen.getByTestId("slipok-problem").textContent).toContain("package has expired");
+    expect(screen.getByRole("link", { name: "Open SlipOK" }).getAttribute("href")).toBe("https://app.slipok.com");
+    expect(screen.queryByRole("link", { name: "Go to finance settings" })).toBeNull();
+  });
+
+  it("sends a rejected SlipOK key to the finance settings, where it is saved", () => {
+    mocks.status = { data: { promptpay_configured: true, slipok_configured: true, slipok_problem: "credentials_rejected" }, refetch: vi.fn() };
+    render(<PaymentSetupReminder hotelId={HOTEL} enabled />);
+    expect(screen.getByRole("link", { name: "Go to finance settings" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Open SlipOK" })).toBeNull();
   });
 
   it("does not ask the server unless it is enabled for this hotel", () => {

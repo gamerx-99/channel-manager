@@ -23,6 +23,7 @@ import { generatePromptPayQR, buildQrImageUrl } from '../promptpay';
 import { normalisePromptPayId } from '../../shared/promptPayId';
 import { decryptSlipOkKey } from '../slipokCrypto';
 import { verifySlipWithSlipOk, SlipOkError } from '../slipVerification';
+import { healthFromSlipOkError, recordSlipOkHealth } from '../d1/slipokHealth';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
 import { assertValidTransition, type BookingStatus } from '@shared/bookingLifecycle';
 import { moneyToSatang } from '../db/money';
@@ -346,7 +347,10 @@ export const paymentRouter = router({
           const result = await verifySlipWithSlipOk({ apiKey, branchId: config.slipok_branch_id }, {
             slipData: input.slip_data,
             expectedAmount: Number(session.amount),
+            contentType: input.slip_content_type,
           });
+          // SlipOK answered, so the hotel's account works; this clears any earlier warning.
+          await recordSlipOkHealth(db, ctx.emailSender ?? createEmailSender(), hotelId, 'ok');
 
           if (result.matched) {
             const candidateEnabled = isBillingCandidateEnabled(ctx.billingEnv?.BILLING_CANDIDATE_ENABLED);
@@ -409,6 +413,13 @@ export const paymentRouter = router({
           // CONFLICT is the reused-slip answer, already logged for staff.
           if (error instanceof TRPCError && error.code === 'CONFLICT') throw error;
           if (error instanceof SlipOkError) {
+            console.error('[verifySlip] SlipOK:', error.code, error.message);
+            // An expired package, used-up quota or rejected key is the hotel's to fix: save it and tell them.
+            const health = healthFromSlipOkError(error);
+            if (health) {
+              await recordSlipOkHealth(db, ctx.emailSender ?? createEmailSender(), hotelId, health);
+              return await manualReview(`slipok_${health}_manual_review_required`);
+            }
             if (error.code === 'UNREADABLE_SLIP') {
               // Nothing is known about the payment, so give back the status and room hold.
               await db.update(bookings).set({ status: bookingStatus, expiresAt: booking.expiresAt })

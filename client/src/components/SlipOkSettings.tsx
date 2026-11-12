@@ -6,7 +6,8 @@ import { useTranslation } from "@/lib/i18n";
 import { useMfaStepUp } from "@/lib/mfa";
 import { Card, CardContent } from "@/components/ui/card";
 import { branchIdFromApiUrl, SLIPOK_API_PREFIX } from "@/lib/slipokApi";
-import { SLIPOK_GUIDE_URL } from "@/lib/paymentSetup";
+import { SLIPOK_APP_URL } from "@/lib/paymentSetup";
+import { SLIPOK_GUIDE_URL, SLIPOK_MANUAL_URL } from "@/lib/paymentSetup";
 
 // SlipOK is optional per hotel: without a key, staff check each slip by hand.
 export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
@@ -123,6 +124,7 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
           <p className="lede">{t("slipOk.description")}</p>
           <p className="field-help">{t("slipOk.accountHint")}</p>
           {SLIPOK_GUIDE_URL ? <p className="field-help"><a href={SLIPOK_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="text-link" data-testid="slipok-guide-link">{t("paymentSetup.guide")}</a></p> : null}
+          <p className="field-help"><a href={SLIPOK_MANUAL_URL} target="_blank" rel="noopener noreferrer" className="text-link" data-testid="slipok-manual-link">{t("paymentSetup.manual")}</a></p>
         </div>
       </div>
 
@@ -229,6 +231,17 @@ export default function SlipOkSettings({ hotelId }: { hotelId: string }) {
                         {t("slipOk.apiLabel")}: <span className="text-[#1d6b56] break-all">{settingsQuery.data.branchId ? `${SLIPOK_API_PREFIX}${settingsQuery.data.branchId}` : "—"}</span> • {t("slipOk.keyLabel")}: <span className="text-[#789087]">••••••••</span>
                       </p>
                       <p className="mt-1 text-xs text-[#6c7e75]">{t("slipOk.keyHiddenNote")}</p>
+                      {typeof settingsQuery.data.quota === "number" ? (
+                        <p className="mt-1 text-xs text-[#456156]" data-testid="slipok-quota">{t("slipOk.quotaLeft", { count: settingsQuery.data.quota })}</p>
+                      ) : null}
+                      {settingsQuery.data.problem ? (
+                        <p className="mt-2 text-sm text-red-700" role="alert" data-testid="slipok-settings-problem">
+                          {t(settingsQuery.data.problem === "package_expired" ? "paymentSetup.slipOkPackageExpired"
+                            : settingsQuery.data.problem === "quota_exceeded" ? "paymentSetup.slipOkQuotaExceeded"
+                              : "paymentSetup.slipOkCredentialsRejected")}{" "}
+                          <a href={SLIPOK_APP_URL} target="_blank" rel="noopener noreferrer" className="underline">{t("paymentSetup.openSlipOk")}</a>
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex gap-2 ml-4">
                       <button

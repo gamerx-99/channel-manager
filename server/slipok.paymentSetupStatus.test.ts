@@ -40,12 +40,12 @@ const caller = () => ({ userId: "owner-1", roles: ["hotel_owner"], access: "auth
 
 describe("getPaymentSetupStatus", () => {
   it("reports nothing configured for a hotel with no payment settings row", async () => {
-    await expect(getPaymentSetupStatus(db, caller(), HOTEL)).resolves.toEqual({ promptpay_configured: false, slipok_configured: false });
+    await expect(getPaymentSetupStatus(db, caller(), HOTEL)).resolves.toEqual({ promptpay_configured: false, slipok_configured: false, slipok_problem: null });
   });
 
   it("sees a saved PromptPay number but not SlipOK", async () => {
     await db.insert(hotelPaymentSettings).values({ hotelId: HOTEL, promptpayId: "0812345678" });
-    await expect(getPaymentSetupStatus(db, caller(), HOTEL)).resolves.toEqual({ promptpay_configured: true, slipok_configured: false });
+    await expect(getPaymentSetupStatus(db, caller(), HOTEL)).resolves.toEqual({ promptpay_configured: true, slipok_configured: false, slipok_problem: null });
   });
 
   it("needs the SlipOK key, its branch id and the switch on", async () => {
@@ -62,7 +62,7 @@ describe("getPaymentSetupStatus", () => {
   it("never returns the secrets themselves", async () => {
     await db.insert(hotelPaymentSettings).values({ hotelId: HOTEL, promptpayId: "0812345678", slipokKeyEnc: "enc-secret", slipokKeyHash: "hash-secret", slipokBranchId: "branch-secret" });
     const status = await getPaymentSetupStatus(db, caller(), HOTEL);
-    expect(Object.keys(status).sort()).toEqual(["promptpay_configured", "slipok_configured"]);
+    expect(Object.keys(status).sort()).toEqual(["promptpay_configured", "slipok_configured", "slipok_problem"]);
     expect(JSON.stringify(status)).not.toMatch(/secret|0812345678|branch/);
   });
 });

@@ -12,6 +12,7 @@ import {
   saveBookingRequestTimeout,
 } from '../d1/payment';
 import { encryptSlipOkKey, hashSlipOkKey } from '../slipokCrypto';
+import { normaliseSlipOkBranchId } from '@shared/slipokBranch';
 import { rethrowDomainError, requireHotelPermission } from '../routerUtils';
 import { requireRecentMfaVerification } from '../mfa';
 
@@ -90,7 +91,10 @@ export const slipokRouter = router({
       z.object({
         hotel_id: hotelIdSchema,
         api_key: z.string().trim().min(8, 'SlipOK API key is too short.').max(512),
-        branch_id: z.string().trim().min(1, 'SlipOK branch ID is required.').max(128),
+        // Stored as the bare branch segment, whether the hotel pasted that or SlipOK's whole API URL.
+        branch_id: z.string().trim().min(1, 'SlipOK branch ID is required.').max(128)
+          .transform(value => normaliseSlipOkBranchId(value) ?? '')
+          .refine(value => value.length > 0, 'Enter the SlipOK API URL or branch ID.'),
       }),
     )
     .mutation(async ({ ctx, input }) => {

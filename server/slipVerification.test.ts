@@ -59,6 +59,21 @@ describe('verifySlipWithSlipOk', () => {
     );
   });
 
+  it('calls the right URL when the stored branch ID is the whole SlipOK API URL', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(mockResponse(200, { success: true, data: { amount: 1, transRef: 'TX-1' } }));
+    global.fetch = fetchMock;
+    await verifySlipWithSlipOk({ apiKey: FAKE_API_KEY, branchId: 'https://api.slipok.com/api/line/apikey/12345' }, { slipData: 'eA==', expectedAmount: 1 });
+    expect(fetchMock.mock.calls[0][0]).toBe('https://api.slipok.com/api/line/apikey/12345');
+  });
+
+  it('does not call SlipOK with a branch value it cannot read', async () => {
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock;
+    await expect(verifySlipWithSlipOk({ apiKey: FAKE_API_KEY, branchId: 'https://evil.example/1' }, { slipData: 'eA==', expectedAmount: 1 }))
+      .rejects.toMatchObject({ code: 'INVALID_KEY' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   // log: true makes SlipOK check the receiver bound to the hotel's branch.
   it('sends the image in files with amount and log', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
@@ -66,9 +81,23 @@ describe('verifySlipWithSlipOk', () => {
     );
     global.fetch = fetchMock;
 
-    await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'base64slipdata', expectedAmount: 3500 });
+    await verifySlipWithSlipOk(CREDENTIALS, { slipData: 'data:image/png;base64,iVBORw==', expectedAmount: 3500, contentType: 'image/png' });
 
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ files: 'base64slipdata', log: true, amount: 3500 });
+    // SlipOK reads `files` only as a multipart file upload, never as base64 text in JSON.
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.headers).toEqual({ 'x-authorization': FAKE_API_KEY });
+    const form = init.body as FormData;
+    expect(form).toBeInstanceOf(FormData);
+    const file = form.get('files') as File;
+    expect(file.type).toBe('image/png');
+    expect([...new Uint8Array(await file.arrayBuffer())]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    expect(form.get('log')).toBe('true');
+    expect(form.get('amount')).toBe('3500');
+  });
+
+  it.each([1001, 1002])('treats SlipOK code %i as a hotel credentials problem', async code => {
+    global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'bad' }));
+    await expect(verifySlipWithSlipOk(CREDENTIALS, { slipData: 'eA==', expectedAmount: 1 })).rejects.toMatchObject({ code: 'INVALID_KEY' });
   });
 
   it('ignores the old SLIP_OK_API variable', async () => {
@@ -98,7 +127,7 @@ describe('verifySlipWithSlipOk', () => {
     expect(result).toMatchObject({ matched: false, transactionRef: null, raw: { code } });
   });
 
-  it.each([1001, 1003, 1004, 1009, 1010])('sends SlipOK code %i to manual review', async code => {
+  it.each([1003, 1004, 1009, 1010])('sends SlipOK code %i to manual review', async code => {
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse(400, { code, message: 'later' }));
 
     await expect(

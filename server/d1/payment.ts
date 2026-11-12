@@ -5,6 +5,7 @@ import { bookings, hotelPaymentSettings, paymentSessions } from "../../drizzle/d
 import { authorizeHotelAction, type D1CallerContext, type D1ScopedDatabase } from "../db/scope";
 import { moneyToSatang } from "../db/money";
 import type { CreatePaymentSessionInput, PaymentSessionStatus, PaymentStatus } from "../db/types";
+import { slipOkProblem } from "./slipokHealth";
 
 function canonicalAmount(value: string | number) {
   const satang = moneyToSatang(String(value));
@@ -14,10 +15,11 @@ function canonicalAmount(value: string | number) {
 
 export async function getSlipOkSettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, now = new Date()) {
   await authorizeHotelAction(db, caller, hotelId, "property.manage_profile", "payment.slipok.read", now);
-  const [row] = await db.select({ keyHash: hotelPaymentSettings.slipokKeyHash, enabled: hotelPaymentSettings.slipokEnabled, branchId: hotelPaymentSettings.slipokBranchId })
+  const [row] = await db.select({ keyHash: hotelPaymentSettings.slipokKeyHash, enabled: hotelPaymentSettings.slipokEnabled, branchId: hotelPaymentSettings.slipokBranchId, quota: hotelPaymentSettings.slipokQuota, health: hotelPaymentSettings.slipokHealth })
     .from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
-  if (!row) return { configured: false, enabled: false, branchId: null };
-  return { configured: Boolean(row.keyHash), enabled: Boolean(row.enabled), branchId: row.branchId };
+  if (!row) return { configured: false, enabled: false, branchId: null, quota: null, problem: null };
+  const problem = row.keyHash ? slipOkProblem(row.health) : null;
+  return { configured: Boolean(row.keyHash), enabled: Boolean(row.enabled), branchId: row.branchId, quota: row.keyHash ? row.quota : null, problem };
 }
 
 export async function saveSlipOkSettings(db: D1ScopedDatabase, caller: D1CallerContext, hotelId: string, encryptedKey: string, keyHash: string, branchId: string, now = new Date()) {
@@ -76,10 +78,14 @@ export async function getPaymentSetupStatus(db: D1ScopedDatabase, caller: D1Call
     keyHash: hotelPaymentSettings.slipokKeyHash,
     branchId: hotelPaymentSettings.slipokBranchId,
     slipokEnabled: hotelPaymentSettings.slipokEnabled,
+    slipokHealth: hotelPaymentSettings.slipokHealth,
   }).from(hotelPaymentSettings).where(eq(hotelPaymentSettings.hotelId, hotelId)).limit(1);
+  const slipokConfigured = Boolean(row?.keyHash && row.branchId && row.slipokEnabled);
   return {
     promptpay_configured: Boolean(row?.promptpayId?.trim()),
-    slipok_configured: Boolean(row?.keyHash && row.branchId && row.slipokEnabled),
+    slipok_configured: slipokConfigured,
+    /** Set when SlipOK stopped checking slips for a reason the hotel must fix in SlipOK. */
+    slipok_problem: slipokConfigured ? slipOkProblem(row?.slipokHealth) : null,
   };
 }
 

@@ -9,6 +9,8 @@
  * SlipOK API docs: https://slipok.com/api-document
  */
 
+import { normaliseSlipOkBranchId } from '@shared/slipokBranch';
+
 const SLIPOK_BASE_URL = 'https://api.slipok.com/api/line/apikey';
 
 /** SlipOK read the slip and refused it: no such transfer, wrong amount or receiver, or a repeat. */
@@ -22,8 +24,10 @@ export interface SlipOkCredentials {
 }
 
 export interface SlipVerificationInput {
-  /** Base64 of the slip image */
+  /** Base64 of the slip image, with or without a data: URL prefix */
   slipData: string;
+  /** MIME type of the slip image; JPEG when not given */
+  contentType?: 'image/jpeg' | 'image/png' | 'image/webp';
   /** Expected amount in THB */
   expectedAmount: number;
 }
@@ -36,10 +40,19 @@ export interface SlipVerificationResult {
   raw: Record<string, unknown>;
 }
 
+function slipBytes(base64: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(base64.replace(/^data:[^,]*,/, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
 export class SlipOkError extends Error {
   constructor(
     message: string,
     public readonly code: 'INVALID_KEY' | 'API_ERROR' | 'UNREADABLE_SLIP',
+    /** SlipOK's own error code (1000–1014), when it sent one. */
+    public readonly slipokCode?: number,
   ) {
     super(message);
     this.name = 'SlipOkError';
@@ -58,19 +71,26 @@ export async function verifySlipWithSlipOk(
   credentials: SlipOkCredentials,
   input: SlipVerificationInput,
 ): Promise<SlipVerificationResult> {
-  const url = `${SLIPOK_BASE_URL}/${encodeURIComponent(credentials.branchId)}`;
+  const branchId = normaliseSlipOkBranchId(credentials.branchId);
+  if (!branchId) throw new SlipOkError('SlipOK branch ID is not a branch ID or SlipOK API URL.', 'INVALID_KEY');
+  const url = `${SLIPOK_BASE_URL}/${encodeURIComponent(branchId)}`;
+
+  // SlipOK takes the image as a file upload in `files` (multipart). A base64 string in a JSON body
+  // is read as "no slip" (code 1000), which sent every slip to staff review. `log` makes SlipOK
+  // check the receiver account bound to the branch and reject repeat slips.
+  const contentType = input.contentType ?? 'image/jpeg';
+  const form = new FormData();
+  form.append('files', new Blob([slipBytes(input.slipData)], { type: contentType }), `slip.${contentType.split('/')[1] ?? 'jpg'}`);
+  form.append('log', 'true');
+  form.append('amount', String(input.expectedAmount));
 
   let response: Response;
   try {
+    // No Content-Type header: fetch sets multipart/form-data with its boundary.
     response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-authorization': credentials.apiKey,
-      },
-      // `data` is the QR text, so an image goes in `files`. `log` makes SlipOK
-      // check the receiver account bound to the branch and reject repeat slips.
-      body: JSON.stringify({ files: input.slipData, log: true, amount: input.expectedAmount }),
+      headers: { 'x-authorization': credentials.apiKey },
+      body: form,
     });
   } catch (err) {
     throw new SlipOkError(
@@ -91,8 +111,14 @@ export async function verifySlipWithSlipOk(
     if (failure && SLIPOK_UNREADABLE_SLIP_CODES.has(failure.code as number)) {
       throw new SlipOkError('SlipOK could not read the slip image.', 'UNREADABLE_SLIP');
     }
-    // Includes 1009 bank outage and 1010 bank delay, which need a later recheck.
-    throw new SlipOkError(`SlipOK API error: HTTP ${response.status}`, 'API_ERROR');
+    // 1001 unknown branch, 1002 bad key: the hotel's settings, not the guest's slip.
+    if (failure && (failure.code === 1001 || failure.code === 1002)) {
+      throw new SlipOkError(`SlipOK rejected the hotel's credentials: code ${failure.code}`, 'INVALID_KEY', failure.code);
+    }
+    // Includes 1003/1004 package limits, 1009 bank outage and 1010 bank delay. The code goes in the
+    // message so the Worker log says why a slip went to staff review.
+    const slipokCode = typeof failure?.code === 'number' ? failure.code : undefined;
+    throw new SlipOkError(`SlipOK API error: HTTP ${response.status} code ${String(slipokCode ?? 'none')}`, 'API_ERROR', slipokCode);
   }
 
   let body: Record<string, unknown>;

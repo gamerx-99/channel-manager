@@ -145,7 +145,17 @@ describe("verifySlip outcomes", () => {
 
     await expect(submit(db, 9)).resolves.toMatchObject({ verified: false, pendingManualReview: true });
 
-    expect(loggedReasons()).toContain("slipok_key_rejected_manual_review_required");
+    // The reason now names the hotel's SlipOK account problem, which also triggers the hotel warning.
+    expect(loggedReasons()).toContain("slipok_credentials_rejected_manual_review_required");
+  });
+
+  it("names an expired SlipOK package as the reason a slip went to manual review", async () => {
+    verify.mockRejectedValueOnce(new SlipOkError("expired", "API_ERROR", 1003));
+    const { db } = fakeDb();
+
+    await expect(submit(db, 9)).resolves.toMatchObject({ verified: false, pendingManualReview: true });
+
+    expect(loggedReasons()).toContain("slipok_package_expired_manual_review_required");
   });
 
   it("sends the slip to manual review when the stored key cannot be decrypted", async () => {

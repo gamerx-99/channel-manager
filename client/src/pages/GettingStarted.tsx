@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { useHotel } from "@/contexts/HotelContext";
 import { trpc } from "@/lib/trpc";
 import { hasHotelPermission } from "@shared/authorization";
+import { SLIPOK_GUIDE_URL, SLIPOK_MANUAL_URL } from "@/lib/paymentSetup";
 import "./gettingStarted.css";
 
 export default function GettingStarted() {
@@ -13,6 +14,12 @@ export default function GettingStarted() {
   return <main className="page-content getting-started"><section className="page-intro"><div><div className="eyebrow">{t("guidedTour.helpEyebrow")}</div><h1>{t("guidedTour.helpTitle")}<span className="title-mark">.</span></h1><p className="lede">{t("guidedTour.helpLede")}</p></div></section>
     <section className="panel"><div className="panel-heading"><h2>{t("guidedTour.hotelTitle")}</h2></div><p>{t("guidedTour.hotelBody")}</p><p>{t("guidedTour.hotelAction")}</p></section>
     <section className="panel"><div className="panel-heading"><h2>{t("guidedTour.roomTitle")}</h2></div><p>{t("guidedTour.roomBody")}</p><p>{t("guidedTour.roomAction")}</p></section>
+    <section className="panel" data-testid="help-finance"><div className="panel-heading"><h2>{t("guidedTour.financeTitle")}</h2></div><p>{t("guidedTour.financeBody")}</p>
+      <ul>
+        {SLIPOK_GUIDE_URL ? <li><a href={SLIPOK_GUIDE_URL} target="_blank" rel="noopener noreferrer">{t("paymentSetup.guide")}</a></li> : null}
+        <li><a href={SLIPOK_MANUAL_URL} target="_blank" rel="noopener noreferrer">{t("paymentSetup.manual")}</a></li>
+      </ul>
+    </section>
     <section className="panel"><div className="panel-heading"><h2>{t("guidedTour.problemsTitle")}</h2></div><ul><li>{t("guidedTour.problemHotel")}</li><li>{t("guidedTour.problemRoom")}</li><li>{t("guidedTour.problemPublish")}</li></ul></section>
     <section className="panel"><div className="panel-heading"><h2>{t("guidedTour.askHelpTitle")}</h2></div><p>{t("guidedTour.askHelpBody")} <a href="mailto:support@hayhostth.com">support@hayhostth.com</a></p>{canManageSupport && selectedHotelId && <p>{t("guidedTour.supportAccessHint")} <Link href={`/hotels/${selectedHotelId}/support-access`}>{t("guidedTour.supportAccessLink")}</Link></p>}</section>
   </main>;

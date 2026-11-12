@@ -490,6 +490,13 @@ export const hotelPaymentSettings = sqliteTable("hotel_payment_settings", {
   slipokBranchId: text("slipok_branch_id"),
   holdTimeoutMinutes: integer("hold_timeout_minutes").notNull().default(15),
   bookingRequestTimeoutHours: integer("booking_request_timeout_hours").notNull().default(24),
+  /** Last known state of the hotel's SlipOK account: ok, package_expired, quota_exceeded or credentials_rejected. */
+  slipokHealth: text("slipok_health"),
+  /** Remaining SlipOK quota from the last daily check. */
+  slipokQuota: integer("slipok_quota"),
+  slipokCheckedAt: integer("slipok_checked_at", { mode: "timestamp_ms" }),
+  /** The problem the hotel was last emailed about, so the daily check does not repeat the same email. */
+  slipokAlertedHealth: text("slipok_alerted_health"),
 }, table => [
   check("hotel_payment_settings_payment_timeout_check", sql`${table.paymentTimeoutMinutes} between 5 and 60`),
   check("hotel_payment_settings_hold_timeout_check", sql`${table.holdTimeoutMinutes} between 5 and 60`),
