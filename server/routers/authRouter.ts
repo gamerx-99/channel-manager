@@ -4,7 +4,7 @@ import { protectedProcedure, publicProcedure, rateLimitedProtectedProcedure, rou
 import { assertNotBlocked, checkAccountPassword, deleteOwnAccount, getAccountDeletionBlockers } from '../d1/accountDeletion';
 import { getAccountProfile } from '../d1/accountProfile';
 import { acceptOwnerTerms, getTermsAcceptedAt } from '../d1/ownerTerms';
-import { confirmRealEmail, requestRealEmail } from '../socialEmail';
+import { confirmRealEmail, discardSocialSignup, requestRealEmail, socialEmailMatch, useSocialEmail } from '../socialEmail';
 import { resolveAppUrl } from '../appUrl';
 import { checkMfaStepUpStatus, requireRecentMfaVerification } from '../mfa';
 import { verifyMfaStepUp } from '../mfaStepUp';
@@ -46,6 +46,36 @@ export const authRouter = router({
         return rethrowDomainError(error);
       }
     }),
+
+  /** What the Facebook email of this new account matches: nothing, a free address, or an existing account. */
+  socialEmailMatch: rateLimitedProtectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.auth) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Auth is not available.' });
+    try {
+      return await socialEmailMatch({ auth: ctx.auth, userId: ctx.user.id });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  /** Takes the Facebook email for this account when it is free. */
+  useSocialEmail: rateLimitedProtectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.auth) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Auth is not available.' });
+    try {
+      return await useSocialEmail({ auth: ctx.auth, userId: ctx.user.id });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
+
+  /** Removes the just-made placeholder account, so the person can sign in to the account they already have. */
+  discardSocialSignup: rateLimitedProtectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.auth) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Auth is not available.' });
+    try {
+      return await discardSocialSignup({ auth: ctx.auth, userId: ctx.user.id, hasHotels: (ctx.user.memberships ?? []).length > 0 });
+    } catch (error) {
+      return rethrowDomainError(error);
+    }
+  }),
 
   /** The signed-in account accepts the platform terms. Idempotent: the first acceptance time is kept. */
   acceptTerms: protectedProcedure.mutation(async ({ ctx }) => {

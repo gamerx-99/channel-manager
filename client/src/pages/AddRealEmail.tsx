@@ -2,20 +2,32 @@ import React from "react";
 import { AuthLogo } from "@/components/AuthLogo";
 import { useTranslation } from "@/lib/i18n";
 import { useAddRealEmail } from "./useAddRealEmail";
+import { signInMethod } from "./accountProfile";
 import "./AddRealEmail.css";
 
 /** Shown instead of the app to a LINE / Facebook account that has no real email yet. */
 export default function AddRealEmail() {
   const { t } = useTranslation();
-  const { email, setEmail, sentTo, error, sending, confirming, submit, resend, changeEmail, signOut } = useAddRealEmail();
+  const { email, setEmail, sentTo, error, sending, confirming, checkingFacebook, existing, leaving, acceptExisting, declineExisting, submit, resend, changeEmail, signOut } = useAddRealEmail();
+  const methodNames = existing?.signInMethods.map(providerId => { const method = signInMethod(providerId); return "key" in method ? t(method.key) : method.label; }).join(", ");
 
   return (
     <main className="add-email-page" data-testid="add-real-email">
       <div className="add-email-card">
         <AuthLogo />
         <div className="eyebrow">{t("addRealEmail.eyebrow")}</div>
-        {confirming ? (
+        {confirming || checkingFacebook ? (
           <p className="add-email-lede" role="status">{t("addRealEmail.confirming")}</p>
+        ) : existing ? (
+          <div className="add-email-form" data-testid="add-email-existing">
+            <h1>{t("addRealEmail.existingTitle")}</h1>
+            <p className="add-email-lede">{t("addRealEmail.existingLede", { email: existing.email, name: existing.accountName })}</p>
+            {methodNames ? <p className="add-email-hint">{t("addRealEmail.existingMethods", { methods: methodNames })}</p> : null}
+            <div className="add-email-actions">
+              <button type="button" className="button button-quiet" onClick={declineExisting} disabled={leaving}>{t("addRealEmail.existingNo")}</button>
+              <button type="button" className="button button-primary" onClick={acceptExisting} disabled={leaving}>{t("addRealEmail.existingYes")}</button>
+            </div>
+          </div>
         ) : sentTo ? (
           <>
             <h1>{t("addRealEmail.sentTitle")}</h1>
@@ -43,7 +55,7 @@ export default function AddRealEmail() {
             </button>
           </form>
         )}
-        <button type="button" className="button button-quiet add-email-sign-out" onClick={() => void signOut()}>{t("addRealEmail.signOut")}</button>
+        {existing ? null : <button type="button" className="button button-quiet add-email-sign-out" onClick={() => void signOut()}>{t("addRealEmail.signOut")}</button>}
       </div>
     </main>
   );

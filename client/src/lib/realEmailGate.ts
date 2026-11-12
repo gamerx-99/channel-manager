@@ -6,6 +6,30 @@ export function mustAddRealEmail(me: { email?: string | null } | null | undefine
 }
 
 const PENDING_TOKEN_KEY = "hayhost.addRealEmailToken";
+const PENDING_LINK_KEY = "hayhost.linkAfterSignIn";
+
+/**
+ * Owner decision 2026-11-12: when a Facebook email already has an account, the person signs in to that account and
+ * Facebook is linked to it. The wish survives the sign-in here; it does nothing on its own, because linking needs
+ * the person to be signed in to the existing account and to approve Facebook again.
+ */
+export function rememberLinkAfterSignIn(provider: "facebook") {
+  try { localStorage.setItem(PENDING_LINK_KEY, provider); } catch { /* storage blocked: they can link on the Security page */ }
+}
+
+export function takeLinkAfterSignIn(): "facebook" | null {
+  try {
+    const provider = localStorage.getItem(PENDING_LINK_KEY);
+    localStorage.removeItem(PENDING_LINK_KEY);
+    return provider === "facebook" ? provider : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hasLinkAfterSignIn() {
+  try { return localStorage.getItem(PENDING_LINK_KEY) === "facebook"; } catch { return false; }
+}
 const TOKEN_PATTERN = /^[0-9a-f]{64}$/;
 
 /** The token from a /confirm-email?token=… link, or null when the link is broken. */

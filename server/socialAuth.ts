@@ -59,9 +59,11 @@ export function resolveSocialProviders(env: SocialEnv) {
     ...(facebook && {
       facebook: {
         ...facebook,
-        // Facebook's email is not stated as verified, so the permission would only add review work.
+        // The email is asked for so the add-email step can use it or find the person's existing account
+        // (server/socialEmail.ts). It is never trusted for sign-in: Facebook does not state it is verified,
+        // so the new account still gets a placeholder until that step.
         disableDefaultScope: true,
-        scope: ["public_profile"],
+        scope: ["public_profile", "email"],
         mapProfileToUser: (profile: { id?: string; sub?: string }) =>
           socialUserIdentity("facebook", { subject: profile.id ?? profile.sub ?? "" }),
       },

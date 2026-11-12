@@ -15,6 +15,9 @@ const mocks = vi.hoisted(() => ({
   requestOptions: {} as MutationOptions,
   confirmOptions: {} as MutationOptions,
   signOut: vi.fn(async () => ({})),
+  match: { kind: "none" } as { kind: "none" } | { kind: "free"; email: string } | { kind: "taken"; email: string; accountName: string; signInMethods: string[] },
+  useSocialEmailMutate: vi.fn(),
+  discardMutateAsync: vi.fn(async () => ({ removed: true })),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -22,6 +25,9 @@ vi.mock("@/lib/trpc", () => ({
     auth: {
       addRealEmail: { useMutation: (options: MutationOptions) => { mocks.requestOptions = options; return { mutate: mocks.requestMutate, isPending: false }; } },
       confirmRealEmail: { useMutation: (options: MutationOptions) => { mocks.confirmOptions = options; return { mutate: mocks.confirmMutate, isPending: false }; } },
+      socialEmailMatch: { useQuery: () => ({ data: mocks.match, isLoading: false }) },
+      useSocialEmail: { useMutation: () => ({ mutate: mocks.useSocialEmailMutate, isPending: false }) },
+      discardSocialSignup: { useMutation: () => ({ mutateAsync: mocks.discardMutateAsync, isPending: false }) },
     },
   },
 }));
@@ -35,11 +41,42 @@ beforeEach(() => {
   mocks.requestMutate.mockReset();
   mocks.confirmMutate.mockReset();
   mocks.signOut.mockClear();
+  mocks.match = { kind: "none" };
+  mocks.useSocialEmailMutate.mockReset();
+  mocks.discardMutateAsync.mockClear();
   assign.mockReset();
   localStorage.clear();
   vi.stubGlobal("location", { ...window.location, assign });
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+describe("add-email screen with a Facebook email", () => {
+  it("uses a free Facebook email at once, without asking", () => {
+    mocks.match = { kind: "free", email: "guest@example.test" };
+    render(<AddRealEmail />);
+    expect(mocks.useSocialEmailMutate).toHaveBeenCalledOnce();
+  });
+
+  it("asks before using an existing account, and on yes removes the new account and goes to sign in to link Facebook", async () => {
+    mocks.match = { kind: "taken", email: "owner@example.test", accountName: "Tanutcha S.", signInMethods: ["google"] };
+    render(<AddRealEmail />);
+    expect(screen.getByTestId("add-email-existing").textContent).toContain("Tanutcha S.");
+    expect(screen.getByTestId("add-email-existing").textContent).toContain("Google");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Yes, sign in with this account" }));
+    expect(mocks.discardMutateAsync).toHaveBeenCalledOnce();
+    expect(localStorage.getItem("hayhost.linkAfterSignIn")).toBe("facebook");
+    expect(assign).toHaveBeenCalledWith("/login?link=facebook");
+  });
+
+  it("on no removes the new account and goes back to sign-in, without linking", async () => {
+    mocks.match = { kind: "taken", email: "owner@example.test", accountName: "Tanutcha S.", signInMethods: ["google"] };
+    render(<AddRealEmail />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "No, back to sign-in" }));
+    expect(mocks.discardMutateAsync).toHaveBeenCalledOnce();
+    expect(localStorage.getItem("hayhost.linkAfterSignIn")).toBeNull();
+    expect(assign).toHaveBeenCalledWith("/login");
+  });
+});
 
 describe("add-email screen", () => {
   it("sends a link to the typed address, then offers to send again or use another email", async () => {

@@ -28,6 +28,7 @@ export default function Login() {
   const [totpCode, setTotpCode] = useState('');
   // A social sign-in on a 2FA account comes back here with the challenge already started.
   const [socialTwoFactor] = useState(() => new URLSearchParams(window.location.search).get("two_factor") === "1");
+  const [linkFacebookAfterSignIn] = useState(() => new URLSearchParams(window.location.search).get("link") === "facebook");
   const [isTwoFactor, setIsTwoFactor] = useState(socialTwoFactor);
   const [error, setError] = useState<string | null>(() => {
     const socialError = readSocialError();
@@ -238,6 +239,7 @@ export default function Login() {
             <h2>{t("login.titleCard")}</h2>
             <p>{t("login.descCard")}</p>
             {emailVerified ? <p role="status">{t("verifyEmail.verified")}</p> : null}
+            {linkFacebookAfterSignIn ? <p role="status" data-testid="login-link-facebook">{t("socialAuth.linkAfterSignIn")}</p> : null}
             {/* /signup sends people with a hotel on to the dashboard, and finishes setup for those without one. */}
             <SocialSignIn callbackURL="/signup" errorCallbackURL="/login" mode="login" />
             <label>

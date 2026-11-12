@@ -34,14 +34,16 @@ describe("social provider configuration", () => {
     expect(Object.keys(resolveSocialProviders(socialEnv))).toEqual(["google", "line"]);
   });
 
-  it("does not ask LINE or Facebook for an email", () => {
+  // Facebook's email is now asked for (owner, 2026-11-12) so the add-email step can use it or find the existing
+  // account; it is still not trusted at sign-in, so the new account keeps a placeholder (see the test above).
+  it("asks Facebook for the email but not LINE", () => {
     const providers = resolveSocialProviders({
       ...socialEnv,
       FACEBOOK_CLIENT_ID: "facebook-id",
       FACEBOOK_CLIENT_SECRET: "facebook-secret",
     });
     expect(providers.line?.scope).toEqual(["openid", "profile"]);
-    expect(providers.facebook?.scope).toEqual(["public_profile"]);
+    expect(providers.facebook?.scope).toEqual(["public_profile", "email"]);
   });
 });
 

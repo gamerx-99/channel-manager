@@ -13,7 +13,8 @@ import { HotelClosureRedirect } from "@/pages/HotelClosure";
 import OwnerTerms from "@/pages/OwnerTerms";
 import { mustAcceptOwnerTerms } from "@/lib/ownerTermsGate";
 import AddRealEmail from "@/pages/AddRealEmail";
-import { mustAddRealEmail } from "@/lib/realEmailGate";
+import { hasLinkAfterSignIn, mustAddRealEmail, takeLinkAfterSignIn } from "@/lib/realEmailGate";
+import { authClient } from "@/lib/auth-client";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -26,6 +27,15 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
     isLoading: hotelsLoading,
     isError: hotelsError,
   } = trpc.channelManager.hotels.useQuery(undefined, { enabled: Boolean(isAuthenticated && user), refetchInterval: 15000 });
+
+  // After "yes, sign in with this account" on the add-email screen: once signed in to the existing account,
+  // link Facebook to it (the person approves Facebook again; nothing is joined without that).
+  const readyToLink = Boolean(authMe) && !mustAddRealEmail(authMe);
+  React.useEffect(() => {
+    if (!readyToLink || !hasLinkAfterSignIn()) return;
+    const provider = takeLinkAfterSignIn();
+    if (provider) void authClient.linkSocial({ provider, callbackURL: "/settings/account", errorCallbackURL: "/settings/security" });
+  }, [readyToLink]);
 
   if (loading || roleLoading || hotelsLoading) return <main className="auth-loading">{t("privateRoute.checkingSession")}</main>;
   if (!isAuthenticated || !user) return null;
