@@ -8,7 +8,8 @@ describe("passkey contract", () => {
   it("registers the plugin on the client and the server", () => {
     expect(read("client/src/lib/auth-client.ts")).toContain("passkeyClient()");
     expect(read("server/auth.ts")).toContain("passkey({");
-    expect(read("drizzle/auth-schema.ts")).toContain("  passkey,\n};");
+    // Line endings differ between checkouts (CRLF on Windows), so match either.
+    expect(read("drizzle/auth-schema.ts")).toMatch(/\n {2}passkey,\r?\n\};/);
   });
 
   it("puts the passkey button and autofill hint on the login page", () => {
