@@ -2,12 +2,12 @@ import React from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { LegalDocumentBody } from "@/components/LegalDocument";
-import { useHotelPrivacy } from "./useHotelPrivacy";
+import { useHotelPrivacy, type HotelGuestDocumentKind } from "./useHotelPrivacy";
 import "./legal-page.css";
 
-/** A hotel's privacy notice for its guests; the booking consent box links here. */
-export default function HotelPrivacy({ slug }: { slug: string }) {
-  const { t, hotel, document, loading, failed } = useHotelPrivacy(slug);
+/** A hotel's privacy notice or booking conditions for its guests; the booking consent box links to both. */
+export default function HotelPrivacy({ slug, kind = "privacy" }: { slug: string; kind?: HotelGuestDocumentKind }) {
+  const { t, hotel, document, titleKey, loading, failed } = useHotelPrivacy(slug, kind);
 
   if (loading) return <main className="legal-page" role="status">{t("hotelPrivacy.loading")}</main>;
   if (failed || !hotel || !document) {
@@ -19,9 +19,9 @@ export default function HotelPrivacy({ slug }: { slug: string }) {
     );
   }
   return (
-    <main className="legal-page" data-testid="hotel-privacy">
+    <main className="legal-page" data-testid={kind === "booking-terms" ? "hotel-booking-terms" : "hotel-privacy"}>
       <Link href={`/${encodeURIComponent(slug)}`} className="legal-back"><ArrowLeft size={16} aria-hidden="true" /> {t("hotelPrivacy.back", { hotel: hotel.name })}</Link>
-      <h1>{t("hotelPrivacy.title", { hotel: hotel.name })}</h1>
+      <h1>{t(titleKey, { hotel: hotel.name })}</h1>
       <p className="legal-updated">{t("legal.updated")}</p>
       <LegalDocumentBody document={document} />
     </main>

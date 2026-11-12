@@ -51,11 +51,12 @@ describe("guest consent before payment (owner decision 3.2)", () => {
     expect((screen.getByRole("button", { name: en.publicHotel.wizardNext }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("links the conditions and the hotel's own privacy notice in a new tab", () => {
-    guestStep();
+  it("links the hotel's own booking conditions and privacy notice in a new tab", () => {
+    // Not hayhost's /terms: that is the contract with hotel owners, not a guest's booking conditions.
+    guestStep({ bookingTermsHref: "/littlebromhs/booking-terms" });
     const terms = screen.getByRole("link", { name: "booking conditions" });
     const privacy = screen.getByRole("link", { name: "privacy policy" });
-    expect(terms.getAttribute("href")).toBe("/terms");
+    expect(terms.getAttribute("href")).toBe("/littlebromhs/booking-terms");
     expect(privacy.getAttribute("href")).toBe("/littlebromhs/privacy");
     for (const link of [terms, privacy]) {
       expect(link.getAttribute("target")).toBe("_blank");

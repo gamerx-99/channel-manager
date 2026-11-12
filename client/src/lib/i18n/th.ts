@@ -2109,6 +2109,7 @@ const th: TranslationDictionary = {
   },
   hotelPrivacy: {
     title: "นโยบายความเป็นส่วนตัวของ {{hotel}}",
+    bookingTermsTitle: "เงื่อนไขการจองของ {{hotel}}",
     back: "กลับไปหน้า {{hotel}}",
     loading: "กำลังโหลดนโยบายความเป็นส่วนตัว…",
     notFound: "ไม่พบนโยบายความเป็นส่วนตัวนี้",

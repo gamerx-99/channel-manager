@@ -160,6 +160,9 @@ function Router() {
         <PrivateRoute><WebsiteBuilder /></PrivateRoute>
       </Route>
       <Route path="/booking/:id" component={GuestBooking} />
+      <Route path="/:slug/booking-terms">
+        {(params) => <HotelPrivacy slug={params.slug} kind="booking-terms" />}
+      </Route>
       <Route path="/:slug/privacy">
         {(params) => <HotelPrivacy slug={params.slug} />}
       </Route>

@@ -2122,6 +2122,7 @@ const en = {
   },
   hotelPrivacy: {
     title: "Privacy notice of {{hotel}}",
+    bookingTermsTitle: "Booking conditions of {{hotel}}",
     back: "Back to {{hotel}}",
     loading: "Loading the privacy notice…",
     notFound: "This privacy notice is not available",
